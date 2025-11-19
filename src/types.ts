@@ -15,6 +15,12 @@ export interface Resource {
   description: string;
 }
 
+export interface Currency {
+  copper: number;
+  silver: number;
+  gold: number;
+}
+
 export type ItemType = 'armor' | 'weapon' | 'ammunition' | 'item';
 export type WeaponClass = 'melee' | 'ranged';
 
@@ -147,6 +153,7 @@ export interface Character {
   proficiencyBonus: number;
   savingThrowProficiencies: string[];
   resources: Resource[];
+  currency: Currency;
   languagesAndProficiencies: string;
   appearance: string;
   backstory: string;

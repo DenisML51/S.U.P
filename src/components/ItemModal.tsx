@@ -202,8 +202,12 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                   <input
                     type="number"
                     value={weight}
-                    onChange={(e) => setWeight(Math.max(0, parseFloat(e.target.value) || 0))}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                      setWeight(Math.max(0, val));
+                    }}
                     step="0.1"
+                    min="0"
                     placeholder="0"
                     className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />

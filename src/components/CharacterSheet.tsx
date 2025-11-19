@@ -16,9 +16,10 @@ import { AttackViewModal } from './AttackViewModal';
 import { AbilityViewModal } from './AbilityViewModal';
 import { ItemViewModal } from './ItemViewModal';
 import { ResourceViewModal } from './ResourceViewModal';
+import { CurrencyModal } from './CurrencyModal';
 import { getLucideIcon } from '../utils/iconUtils';
-import { Attack, Ability } from '../types';
-import { Shield, Sword, Box, Zap } from 'lucide-react';
+import { Attack, Ability, Currency } from '../types';
+import { Shield, Sword, Box, Zap, Coins } from 'lucide-react';
 
 type TabType = 'personality' | 'health' | 'abilities' | 'attacks' | 'inventory' | 'equipment';
 type InventorySubTab = 'all' | 'armor' | 'weapon' | 'item' | 'ammunition';
@@ -52,6 +53,7 @@ export const CharacterSheet: React.FC = () => {
   const [viewingItem, setViewingItem] = useState<InventoryItem | undefined>(undefined);
   const [showResourceViewModal, setShowResourceViewModal] = useState(false);
   const [viewingResource, setViewingResource] = useState<Resource | undefined>(undefined);
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   
   if (!character) {
     return null;
@@ -506,6 +508,10 @@ export const CharacterSheet: React.FC = () => {
     setShowResourceViewModal(true);
   };
 
+  const saveCurrency = (currency: Currency) => {
+    updateCharacter({ ...character, currency });
+  };
+
   const toggleSkillProficiency = (skillId: string) => {
     const updatedSkills = character.skills.map(skill =>
       skill.id === skillId
@@ -571,43 +577,63 @@ export const CharacterSheet: React.FC = () => {
               </p>
             </div>
             
-            {/* Resources & Ammunition in Header */}
-            {character.resources && character.resources.length > 0 && (
-              <div className="flex gap-2 ml-6">
-                {character.resources.map((resource) => (
-                  <div
-                    key={resource.id}
-                    onClick={() => openResourceView(resource)}
-                    className="relative group cursor-pointer"
-                  >
-                    <div className="w-12 h-12 bg-dark-bg border border-dark-border rounded-xl flex items-center justify-center hover:border-blue-500 transition-all">
-                      {getLucideIcon(resource.iconName, { size: 24, className: 'text-blue-400' })}
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
-                        {resource.current}
-                      </div>
-                    </div>
-                    {/* Tooltip */}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                      {resource.name}: {resource.current}/{resource.max}
-                    </div>
-                  </div>
-                ))}
-                
-                {/* Ammunition Button */}
+            {/* Resources, Currency & Ammunition in Header */}
+            <div className="flex gap-2 ml-6">
+              {character.resources && character.resources.map((resource) => (
                 <div
-                  onClick={() => setShowAmmunitionModal(true)}
+                  key={resource.id}
+                  onClick={() => openResourceView(resource)}
                   className="relative group cursor-pointer"
                 >
-                  <div className="w-12 h-12 bg-dark-bg border border-dark-border rounded-xl flex items-center justify-center hover:border-orange-500 transition-all">
-                    <Zap className="w-6 h-6 text-orange-400" />
+                  <div className="w-12 h-12 bg-dark-bg border border-dark-border rounded-xl flex items-center justify-center hover:border-blue-500 transition-all">
+                    {getLucideIcon(resource.iconName, { size: 24, className: 'text-blue-400' })}
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
+                      {resource.current}
+                    </div>
                   </div>
                   {/* Tooltip */}
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    Боеприпасы
+                    {resource.name}: {resource.current}/{resource.max}
                   </div>
                 </div>
+              ))}
+              
+              {/* Currency Button */}
+              <div
+                onClick={() => setShowCurrencyModal(true)}
+                className="relative group cursor-pointer"
+              >
+                <div className="w-12 h-12 bg-dark-bg border border-dark-border rounded-xl flex items-center justify-center hover:border-yellow-500 transition-all">
+                  <Coins className="w-6 h-6 text-yellow-400" />
+                  <div className="absolute -bottom-1 -right-1 min-w-[20px] h-5 bg-yellow-500 rounded-full flex items-center justify-center text-[10px] font-bold px-1">
+                    {(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100).toFixed(0)}
+                  </div>
+                </div>
+                {/* Tooltip */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  Валюта: {(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100).toFixed(2)} ЗМ
+                </div>
               </div>
-            )}
+              
+              {/* Ammunition Button */}
+              <div
+                onClick={() => setShowAmmunitionModal(true)}
+                className="relative group cursor-pointer"
+              >
+                <div className="w-12 h-12 bg-dark-bg border border-dark-border rounded-xl flex items-center justify-center hover:border-orange-500 transition-all">
+                  <Zap className="w-6 h-6 text-orange-400" />
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-xs font-bold">
+                    {character.inventory
+                      .filter(item => item.type === 'ammunition')
+                      .reduce((sum, item) => sum + (item.quantity || 0), 0)}
+                  </div>
+                </div>
+                {/* Tooltip */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  Боеприпасы
+                </div>
+              </div>
+            </div>
           </div>
           
           <div className="flex gap-3">
@@ -1897,7 +1923,7 @@ export const CharacterSheet: React.FC = () => {
 
                               <div className="flex gap-2 text-xs flex-wrap items-center">
                                 <div className="bg-dark-card rounded px-2 py-1">
-                                  <span className="text-gray-400">Вес:</span> <span className="font-bold">{item.weight}</span>
+                                  <span className="text-gray-400">Вес:</span> <span className="font-bold">{item.weight % 1 === 0 ? item.weight : item.weight.toFixed(1)}</span>
                                 </div>
                                 <div className="bg-dark-card rounded px-2 py-1">
                                   <span className="text-gray-400">Цена:</span> <span className="font-bold">{item.cost}</span>
@@ -2101,7 +2127,7 @@ export const CharacterSheet: React.FC = () => {
                             −
                           </button>
                           <div className="flex-1 bg-dark-card rounded px-3 py-1.5 text-center text-sm">
-                            <span className="text-gray-400">Вес:</span> <span className="font-bold">{ammo.weight}</span> • 
+                            <span className="text-gray-400">Вес:</span> <span className="font-bold">{ammo.weight % 1 === 0 ? ammo.weight : ammo.weight.toFixed(1)}</span> • 
                             <span className="text-gray-400 ml-2">Цена:</span> <span className="font-bold">{ammo.cost}</span>
                           </div>
                           <button
@@ -2173,6 +2199,14 @@ export const CharacterSheet: React.FC = () => {
             }}
           />
         )}
+        
+        {/* Currency Modal */}
+        <CurrencyModal
+          isOpen={showCurrencyModal}
+          onClose={() => setShowCurrencyModal(false)}
+          currency={character.currency}
+          onSave={saveCurrency}
+        />
       </motion.div>
     </div>
   );

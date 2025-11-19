@@ -169,7 +169,7 @@ export const ItemViewModal: React.FC<ItemViewModalProps> = ({
               <div className="bg-dark-bg rounded-xl p-3 text-center">
                 <Weight className="w-4 h-4 text-gray-400 mx-auto mb-1" />
                 <div className="text-xs text-gray-400">Вес</div>
-                <div className="font-bold">{item.weight}</div>
+                <div className="font-bold">{item.weight % 1 === 0 ? item.weight : item.weight.toFixed(1)}</div>
               </div>
               <div className="bg-dark-bg rounded-xl p-3 text-center">
                 <DollarSign className="w-4 h-4 text-gray-400 mx-auto mb-1" />

@@ -140,6 +140,7 @@ export const CharacterCreation: React.FC = () => {
       proficiencyBonus,
       savingThrowProficiencies: savingThrows,
       resources: [],
+      currency: { copper: 0, silver: 0, gold: 0 },
       languagesAndProficiencies,
       appearance: '',
       backstory: '',
