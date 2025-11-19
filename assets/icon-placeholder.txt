@@ -1,0 +1,11 @@
+Этот файл - placeholder для иконки.
+
+Для создания иконки:
+1. Создайте PNG файл размером 256x256 или 512x512 пикселей
+2. Конвертируйте в ICO формат используя:
+   - Онлайн: https://convertio.co/png-ico/
+   - ImageMagick: magick convert icon.png icon.ico
+3. Сохраните как assets/icon.ico
+
+Пока иконка не создана, Electron будет использовать стандартную иконку Electron.
+
