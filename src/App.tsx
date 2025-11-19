@@ -1,27 +1,13 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { CharacterProvider, useCharacter } from './context/CharacterContext';
 import { CharacterCreation } from './components/CharacterCreation';
 import { CharacterSheet } from './components/CharacterSheet';
+import { CharacterList } from './components/CharacterList';
 import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { character, importFromJSON } = useCharacter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    try {
-      await importFromJSON(file);
-    } catch (error) {
-      alert('Ошибка при импорте файла');
-    }
-    
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+  const { character, goToCharacterList } = useCharacter();
   
   return (
     <div className="relative min-h-screen">
@@ -32,41 +18,37 @@ const AppContent: React.FC = () => {
       </div>
       
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 border-b border-dark-border bg-dark-card/50 backdrop-blur-xl"
-      >
-        <div className="max-w-7xl mx-auto px-8 py-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              Into The Dark
-            </h1>
-            <p className="text-sm text-gray-400">Character Manager</p>
+      {character && (
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 border-b border-dark-border bg-dark-card/50 backdrop-blur-xl"
+        >
+          <div className="max-w-7xl mx-auto px-8 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={goToCharacterList}
+                className="px-4 py-2 bg-dark-card border border-dark-border rounded-xl hover:bg-dark-hover transition-all flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>К списку персонажей</span>
+              </button>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                  {character.name}
+                </h1>
+                <p className="text-xs text-gray-400">
+                  {character.class} • Уровень {character.level}
+                </p>
+              </div>
+            </div>
           </div>
-          
-          <div className="flex gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              className="hidden"
-              id="import-file"
-            />
-            <label
-              htmlFor="import-file"
-              className="px-4 py-2 bg-dark-card border border-dark-border rounded-xl hover:bg-dark-hover transition-all cursor-pointer flex items-center gap-2"
-            >
-              <span>Импорт</span>
-            </label>
-          </div>
-        </div>
-      </motion.header>
+        </motion.header>
+      )}
       
       {/* Main Content */}
       <main className="relative z-10">
-        {character ? <CharacterSheet /> : <CharacterCreation />}
+        {character ? <CharacterSheet /> : <CharacterList />}
       </main>
     </div>
   );
@@ -81,4 +63,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

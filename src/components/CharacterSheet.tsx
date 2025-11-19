@@ -19,14 +19,16 @@ import { ItemViewModal } from './ItemViewModal';
 import { ResourceViewModal } from './ResourceViewModal';
 import { CurrencyModal } from './CurrencyModal';
 import { getLucideIcon } from '../utils/iconUtils';
-import { Attack, Ability, Currency } from '../types';
-import { Shield, Sword, Box, Zap, Coins, Settings, Target, CheckCircle2, XCircle, ArrowUp, Backpack } from 'lucide-react';
+import { Attack, Ability, Currency, Trait } from '../types';
+import { Shield, Sword, Box, Zap, Coins, Settings, Target, CheckCircle2, XCircle, ArrowUp, Backpack, Sparkles, Plus } from 'lucide-react';
+import { TraitModal } from './TraitModal';
+import { TraitViewModal } from './TraitViewModal';
 
 type TabType = 'personality' | 'health' | 'abilities' | 'attacks' | 'inventory' | 'equipment';
 type InventorySubTab = 'all' | 'armor' | 'weapon' | 'item' | 'ammunition';
 
 export const CharacterSheet: React.FC = () => {
-  const { character, exportToJSON, clearCharacter, updateCharacter } = useCharacter();
+  const { character, exportToJSON, goToCharacterList, updateCharacter } = useCharacter();
   
   const [activeTab, setActiveTab] = useState<TabType>('personality');
   const [inventorySubTab, setInventorySubTab] = useState<InventorySubTab>('all');
@@ -54,6 +56,10 @@ export const CharacterSheet: React.FC = () => {
   const [viewingItem, setViewingItem] = useState<InventoryItem | undefined>(undefined);
   const [showResourceViewModal, setShowResourceViewModal] = useState(false);
   const [viewingResource, setViewingResource] = useState<Resource | undefined>(undefined);
+  const [showTraitModal, setShowTraitModal] = useState(false);
+  const [editingTrait, setEditingTrait] = useState<Trait | undefined>(undefined);
+  const [showTraitViewModal, setShowTraitViewModal] = useState(false);
+  const [viewingTrait, setViewingTrait] = useState<Trait | undefined>(undefined);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   
   if (!character) {
@@ -61,6 +67,7 @@ export const CharacterSheet: React.FC = () => {
   }
   
   const race = RACES.find(r => r.id === character.race);
+  const selectedSubrace = race?.subraces?.find(sr => sr.id === character.subrace);
   const charClass = CLASSES.find(c => c.id === character.class);
   const selectedSubclass = charClass?.subclasses.find(sc => sc.id === character.subclass);
   
@@ -494,6 +501,36 @@ export const CharacterSheet: React.FC = () => {
     setShowAbilityViewModal(true);
   };
 
+  const saveTrait = (trait: Trait) => {
+    const currentTraits = character.traits || [];
+    const existingIndex = currentTraits.findIndex(t => t.id === trait.id);
+    const newTraits = existingIndex >= 0
+      ? currentTraits.map((t, i) => i === existingIndex ? trait : t)
+      : [...currentTraits, trait];
+    updateCharacter({ ...character, traits: newTraits });
+  };
+
+  const deleteTrait = (traitId: string) => {
+    const currentTraits = character.traits || [];
+    const newTraits = currentTraits.filter(t => t.id !== traitId);
+    updateCharacter({ ...character, traits: newTraits });
+  };
+
+  const openTraitView = (trait: Trait) => {
+    setViewingTrait(trait);
+    setShowTraitViewModal(true);
+  };
+
+  const openTraitModal = (trait?: Trait) => {
+    setEditingTrait(trait);
+    setShowTraitModal(true);
+  };
+
+  const closeTraitModal = () => {
+    setShowTraitModal(false);
+    setEditingTrait(undefined);
+  };
+
   const openItemView = (item: InventoryItem) => {
     setViewingItem(item);
     setShowItemViewModal(true);
@@ -651,10 +688,10 @@ export const CharacterSheet: React.FC = () => {
               PDF
             </button>
             <button
-              onClick={clearCharacter}
+              onClick={goToCharacterList}
               className="px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 transition-all text-sm"
             >
-              Новый
+              К списку
             </button>
           </div>
         </div>
@@ -1046,7 +1083,12 @@ export const CharacterSheet: React.FC = () => {
                       <div className="grid grid-cols-3 gap-4">
                         <div>
                           <div className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-semibold">Раса</div>
-                          <div className="text-lg font-bold text-gray-200">{race?.name}</div>
+                          <div className="text-lg font-bold text-gray-200">
+                            {race?.name}
+                            {selectedSubrace && (
+                              <span className="text-sm text-gray-400 font-normal ml-2">({selectedSubrace.name})</span>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <div className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-semibold">Класс</div>
@@ -1057,6 +1099,70 @@ export const CharacterSheet: React.FC = () => {
                           <div className="text-lg font-bold text-gray-200">{selectedSubclass?.name || '—'}</div>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Traits Section */}
+                    <div className="mb-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-bold text-gray-300">Черты</h4>
+                        <button
+                          onClick={() => openTraitModal()}
+                          className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold text-sm flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Добавить черту
+                        </button>
+                      </div>
+                      
+                      {(character.traits || []).length > 0 ? (
+                        <div className="space-y-4">
+                          {(character.traits || []).map((trait) => (
+                            <motion.div
+                              key={trait.id}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              onClick={() => openTraitView(trait)}
+                              className="group relative bg-gradient-to-br from-dark-card to-dark-bg rounded-xl border border-dark-border hover:border-purple-500/50 transition-all cursor-pointer overflow-hidden shadow-lg hover:shadow-xl hover:shadow-purple-500/10"
+                            >
+                              <div className="p-4">
+                                <div className="flex items-start gap-3 mb-2">
+                                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center border border-purple-500/30 flex-shrink-0">
+                                    <Sparkles className="w-5 h-5 text-purple-400" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h5 className="font-bold text-base text-gray-100 truncate">{trait.name}</h5>
+                                  </div>
+                                </div>
+                                {trait.description && (
+                                  <p className="text-sm text-gray-400 mt-2">{trait.description}</p>
+                                )}
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTraitModal(trait);
+                                }}
+                                className="absolute top-2 right-2 w-8 h-8 bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-hover opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center z-10"
+                                title="Редактировать"
+                              >
+                                <Settings className="w-4 h-4 text-gray-400" />
+                              </button>
+                            </motion.div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12 bg-dark-card rounded-xl border border-dark-border">
+                          <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-500" />
+                          <p className="text-sm text-gray-400 mb-2">Нет черт</p>
+                          <p className="text-xs text-gray-500 mb-4">Добавьте черты персонажа</p>
+                          <button
+                            onClick={() => openTraitModal()}
+                            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold text-sm"
+                          >
+                            Добавить первую черту
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Personality Fields - organized in sections */}
@@ -2257,6 +2363,27 @@ export const CharacterSheet: React.FC = () => {
           />
         )}
         
+        {/* Trait Modal */}
+        <TraitModal
+          isOpen={showTraitModal}
+          onClose={closeTraitModal}
+          trait={editingTrait}
+          onSave={saveTrait}
+          onDelete={editingTrait ? () => deleteTrait(editingTrait.id) : undefined}
+        />
+
+        {viewingTrait && (
+          <TraitViewModal
+            isOpen={showTraitViewModal}
+            onClose={() => setShowTraitViewModal(false)}
+            trait={viewingTrait}
+            onEdit={() => {
+              setShowTraitViewModal(false);
+              openTraitModal(viewingTrait);
+            }}
+          />
+        )}
+
         {/* Currency Modal */}
         <CurrencyModal
           isOpen={showCurrencyModal}
