@@ -11,10 +11,15 @@ export interface CharacterPreview {
   maxHP: number;
 }
 
+export type TabType = 'personality' | 'health' | 'abilities' | 'attacks' | 'equipment' | 'inventory' | 'stats';
+
 interface CharacterContextType {
   character: Character | null;
   charactersList: CharacterPreview[];
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
   updateCharacter: (character: Character) => void;
+  updateResourceCount: (resourceId: string, delta: number) => void;
   loadCharacter: (characterId: string) => void;
   createCharacter: (character: Character) => string;
   deleteCharacter: (characterId: string) => void;
@@ -74,6 +79,7 @@ const normalizeCharacter = (parsed: any): Character => {
 export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [character, setCharacter] = useState<Character | null>(null);
   const [charactersList, setCharactersList] = useState<CharacterPreview[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType>('personality');
 
   // Загружаем список персонажей при монтировании и мигрируем старые данные
   useEffect(() => {
@@ -206,6 +212,18 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
     } catch (e) {
       console.error('Failed to save character:', e);
     }
+  };
+
+  const updateResourceCount = (resourceId: string, delta: number) => {
+    if (!character) return;
+    const resource = character.resources.find(r => r.id === resourceId);
+    if (!resource) return;
+    
+    const newCurrent = Math.min(resource.max, Math.max(0, resource.current + delta));
+    const newResources = character.resources.map(r =>
+      r.id === resourceId ? { ...r, current: newCurrent } : r
+    );
+    updateCharacter({ ...character, resources: newResources });
   };
 
   const loadCharacter = (characterId: string) => {
@@ -355,7 +373,10 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
       value={{
         character,
         charactersList,
+        activeTab,
+        setActiveTab,
         updateCharacter,
+        updateResourceCount,
         loadCharacter,
         createCharacter,
         deleteCharacter,

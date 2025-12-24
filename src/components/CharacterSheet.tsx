@@ -20,20 +20,40 @@ import { ResourceViewModal } from './ResourceViewModal';
 import { CurrencyModal } from './CurrencyModal';
 import { getLucideIcon } from '../utils/iconUtils';
 import { Attack, Ability, Currency, Trait } from '../types';
-import { Shield, Sword, Box, Zap, Coins, Settings, Target, CheckCircle2, XCircle, ArrowUp, Backpack, Sparkles, Plus } from 'lucide-react';
+import { Shield, Sword, Box, Zap, Coins, Settings, Target, CheckCircle2, XCircle, ArrowUp, Backpack, Sparkles, Plus, Heart } from 'lucide-react';
 import { TraitModal } from './TraitModal';
 import { TraitViewModal } from './TraitViewModal';
 import { BasicInfoModal } from './BasicInfoModal';
 
-type TabType = 'personality' | 'health' | 'abilities' | 'attacks' | 'inventory' | 'equipment';
 type InventorySubTab = 'all' | 'armor' | 'weapon' | 'item' | 'ammunition';
 
 export const CharacterSheet: React.FC = () => {
-  const { character, exportToJSON, goToCharacterList, updateCharacter } = useCharacter();
+  const { character, updateCharacter, activeTab, setActiveTab, exportToJSON, goToCharacterList, updateResourceCount } = useCharacter();
   
-  const [activeTab, setActiveTab] = useState<TabType>('personality');
   const [inventorySubTab, setInventorySubTab] = useState<InventorySubTab>('all');
   const [selectedAttribute, setSelectedAttribute] = useState<string | null>(null);
+
+  // Global event listener for modal opening from Navbar
+  React.useEffect(() => {
+    const handleOpenModal = (e: any) => {
+      const { type, data } = e.detail;
+      if (type === 'currency') setShowCurrencyModal(true);
+      if (type === 'resource') {
+        setViewingResource(data);
+        setShowResourceViewModal(true);
+      }
+      if (type === 'ammunition') {
+        setShowAmmunitionModal(true);
+      }
+      if (type === 'inventory' && data === 'ammunition') {
+        // Use setActiveTab from context to switch to inventory tab
+        setActiveTab('inventory');
+        setInventorySubTab('ammunition');
+      }
+    };
+    window.addEventListener('open-character-modal', handleOpenModal);
+    return () => window.removeEventListener('open-character-modal', handleOpenModal);
+  }, [setActiveTab]);
   const [showHealthModal, setShowHealthModal] = useState(false);
   const [showSanityModal, setShowSanityModal] = useState(false);
   const [showExperienceModal, setShowExperienceModal] = useState(false);
@@ -183,17 +203,6 @@ export const CharacterSheet: React.FC = () => {
 
   const deleteResource = (resourceId: string) => {
     const newResources = character.resources.filter(r => r.id !== resourceId);
-    updateCharacter({ ...character, resources: newResources });
-  };
-
-  const updateResourceCount = (resourceId: string, delta: number) => {
-    const resource = character.resources.find(r => r.id === resourceId);
-    if (!resource) return;
-    
-    const newCurrent = Math.min(resource.max, Math.max(0, resource.current + delta));
-    const newResources = character.resources.map(r =>
-      r.id === resourceId ? { ...r, current: newCurrent } : r
-    );
     updateCharacter({ ...character, resources: newResources });
   };
 
@@ -602,280 +611,179 @@ export const CharacterSheet: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="max-w-[1600px] mx-auto"
       >
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold">{character.name}</h1>
-              <p className="text-gray-400">
-                {race?.name} • {charClass?.name} {selectedSubclass && `(${selectedSubclass.name})`}
-              </p>
+        {/* Stats Cards Header */}
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {/* Health Card */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowHealthModal(true)}
+            className={`bg-gradient-to-br from-red-500/10 to-red-600/10 border border-red-500/20 rounded-2xl p-4 flex flex-col items-start gap-3 hover:border-red-500/50 transition-all text-left group ${isDying ? 'border-red-500 from-red-900/20' : ''}`}
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className={`w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20 group-hover:shadow-red-500/40 transition-all ${isDying ? 'animate-pulse' : ''}`}>
+                <Heart className="w-6 h-6 text-white" />
+              </div>
+              <div className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border ${isDying ? 'text-red-400 bg-red-900/50 border-red-500' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>
+                {isDying ? 'DYING' : 'HP'}
+              </div>
             </div>
-            
-            {/* Resources, Currency & Ammunition in Header */}
-            <div className="flex gap-2 ml-6">
-              {character.resources && character.resources.map((resource) => (
-                <div
-                  key={resource.id}
-                  onClick={() => updateResourceCount(resource.id, -1)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    openResourceView(resource);
-                  }}
-                  className="relative group cursor-pointer"
-                >
-                  <div className="w-12 h-12 bg-dark-bg border border-dark-border rounded-xl flex items-center justify-center hover:border-blue-500 transition-all active:scale-95">
-                    {getLucideIcon(resource.iconName, { size: 24, className: 'text-blue-400' })}
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
-                      {resource.current}
-                    </div>
-                  </div>
-                  {/* Tooltip */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    {resource.name}: {resource.current}/{resource.max}
-                    <div className="text-xs text-gray-400 mt-1">ЛКМ: -1 • ПКМ: настройки</div>
-                  </div>
-                </div>
-              ))}
-              
-              {/* Currency Button */}
-              <div
-                onClick={() => setShowCurrencyModal(true)}
-                className="relative group cursor-pointer"
-              >
-                <div className="w-12 h-12 bg-dark-bg border border-dark-border rounded-xl flex items-center justify-center hover:border-yellow-500 transition-all">
-                  <Coins className="w-6 h-6 text-yellow-400" />
-                  <div className="absolute -bottom-1 -right-1 min-w-[20px] h-5 bg-yellow-500 rounded-full flex items-center justify-center text-[10px] font-bold px-1">
-                    {(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100).toFixed(0)}
-                  </div>
-                </div>
-                {/* Tooltip */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  Валюта: {(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100).toFixed(2)} ЗМ
-                </div>
+            <div>
+              <div className="text-xs text-gray-400 uppercase font-semibold">Здоровье</div>
+              <div className="text-2xl font-bold flex items-baseline gap-1">
+                <span className={isDying ? 'text-red-500' : ''}>{character.currentHP}</span>
+                {character.tempHP > 0 && <span className="text-sm text-blue-400">+{character.tempHP}</span>}
+                <span className="text-sm text-gray-500 font-normal">/ {getTotalMaxHP()}</span>
               </div>
-              
-              {/* Ammunition Button */}
-              <div
-                onClick={() => setShowAmmunitionModal(true)}
-                className="relative group cursor-pointer"
-              >
-                <div className="w-12 h-12 bg-dark-bg border border-dark-border rounded-xl flex items-center justify-center hover:border-orange-500 transition-all">
-                  <Zap className="w-6 h-6 text-orange-400" />
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-xs font-bold">
-                    {character.inventory
-                      .filter(item => item.type === 'ammunition')
-                      .reduce((sum, item) => sum + (item.quantity || 0), 0)}
-                  </div>
-                </div>
-                {/* Tooltip */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  Боеприпасы
-                </div>
+            </div>
+            {/* Health Bar Mini */}
+            <div className="w-full h-1.5 bg-dark-bg rounded-full overflow-hidden border border-red-500/10">
+              <div 
+                className={`h-full bg-gradient-to-r from-red-500 to-red-600 transition-all ${isDying ? 'animate-pulse' : ''}`}
+                style={{ width: `${Math.min((character.currentHP / getTotalMaxHP()) * 100, 100)}%` }}
+              />
+            </div>
+          </motion.button>
+
+          {/* Sanity Card */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowSanityModal(true)}
+            className={`bg-gradient-to-br from-purple-500/10 to-blue-600/10 border border-purple-500/20 rounded-2xl p-4 flex flex-col items-start gap-3 hover:border-purple-500/50 transition-all text-left group ${isInsane ? 'from-red-500/10 to-red-900/10 border-red-500/30' : ''}`}
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className={`w-10 h-10 bg-gradient-to-br rounded-xl flex items-center justify-center shadow-lg transition-all ${isInsane ? 'from-red-600 to-red-800 shadow-red-500/20' : 'from-purple-500 to-blue-600 shadow-purple-500/20 group-hover:shadow-purple-500/40'}`}>
+                <Zap className="w-6 h-6 text-white" />
               </div>
+              <div className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border ${isInsane ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-purple-400 bg-purple-500/10 border-purple-500/20'}`}>
+                {isInsane ? 'INSANE' : 'SAN'}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-400 uppercase font-semibold">Рассудок</div>
+              <div className="text-2xl font-bold flex items-baseline gap-1">
+                <span className={isInsane ? 'text-red-500' : ''}>{character.sanity}</span>
+                <span className="text-sm text-gray-500 font-normal">/ {getMaxSanity()}</span>
+              </div>
+            </div>
+            {/* Sanity Bar Mini */}
+            <div className="w-full h-1.5 bg-dark-bg rounded-full overflow-hidden border border-purple-500/10">
+              <div 
+                className={`h-full transition-all ${isInsane ? 'bg-red-600' : 'bg-gradient-to-r from-purple-500 to-blue-500'}`}
+                style={{ width: `${Math.min((character.sanity / getMaxSanity()) * 100, 100)}%` }}
+              />
+            </div>
+          </motion.button>
+
+          {/* AC Card */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowACModal(true)}
+            className="bg-gradient-to-br from-blue-500/10 to-indigo-600/10 border border-blue-500/20 rounded-2xl p-4 flex flex-col items-start gap-3 hover:border-blue-500/50 transition-all text-left group"
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-all">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-[10px] text-blue-400 font-bold uppercase tracking-wider bg-blue-500/10 px-2 py-1 rounded-md border border-blue-500/20">
+                AC
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-400 uppercase font-semibold">Защита</div>
+              <div className="text-3xl font-bold">
+                {character.armorClass}
+              </div>
+            </div>
+            <div className="text-[10px] text-gray-500 font-medium">Класс Брони</div>
+          </motion.button>
+
+          {/* Level/XP Card */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowExperienceModal(true)}
+            className="bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-amber-500/20 rounded-2xl p-4 flex flex-col items-start gap-3 hover:border-amber-500/50 transition-all text-left group"
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-all">
+                <ArrowUp className="w-6 h-6 text-white" />
+              </div>
+              {canLevelUp && (
+                <div className="animate-pulse bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg shadow-green-500/50">
+                  UP!
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="text-xs text-gray-400 uppercase font-semibold">Уровень {character.level}</div>
+              <div className="text-2xl font-bold flex items-baseline gap-1">
+                <span>{character.experience}</span>
+                <span className="text-sm text-gray-500 font-normal">XP</span>
+              </div>
+            </div>
+            {/* XP Bar Mini */}
+            <div className="w-full h-1.5 bg-dark-bg rounded-full overflow-hidden border border-amber-500/10">
+              <div 
+                className="h-full bg-gradient-to-r from-amber-500 to-orange-600 transition-all"
+                style={{ width: `${Math.min(xpProgress, 100)}%` }}
+              />
+            </div>
+          </motion.button>
+        </div>
+
+        {/* Secondary Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
+            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Мастерство</div>
+            <div className="text-xl font-bold text-blue-400">+{character.proficiencyBonus}</div>
+          </div>
+
+          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
+            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Скорость</div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => updateSpeed(Math.max(0, character.speed - 5))}
+                className="w-6 h-6 bg-dark-bg border border-dark-border rounded-md hover:bg-dark-hover transition-all text-sm font-bold"
+              >
+                −
+              </button>
+              <div className="text-lg font-bold">{character.speed}</div>
+              <button
+                onClick={() => updateSpeed(character.speed + 5)}
+                className="w-6 h-6 bg-dark-bg border border-dark-border rounded-md hover:bg-dark-hover transition-all text-sm font-bold"
+              >
+                +
+              </button>
             </div>
           </div>
+
+          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
+            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Инициатива</div>
+            <div className="text-xl font-bold text-gray-300">{getModifier('dexterity')}</div>
+          </div>
           
-          <div className="flex gap-3">
-            <button
-              onClick={() => exportToJSON()}
-              className="px-4 py-2 bg-dark-card border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-sm"
-            >
-              JSON
-            </button>
-            <button
-              onClick={async () => await exportToPDF(character)}
-              className="px-4 py-2 bg-dark-card border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-sm"
-            >
-              PDF
-            </button>
-            <button
-              onClick={goToCharacterList}
-              className="px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 transition-all text-sm"
-            >
-              К списку
-            </button>
+          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
+            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Восприятие</div>
+            <div className="text-xl font-bold text-gray-300">{getSkillModifier('perception')}</div>
+          </div>
+
+          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
+            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Пасс. Вним.</div>
+            <div className="text-xl font-bold text-gray-300">{10 + parseInt(getSkillModifier('perception'))}</div>
+          </div>
+
+          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
+            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Пасс. Озн.</div>
+            <div className="text-xl font-bold text-gray-300">{10 + parseInt(getSkillModifier('insight'))}</div>
           </div>
         </div>
 
-        {/* Level, XP, Speed, Sanity and Health */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="bg-dark-card rounded-2xl p-3 border border-dark-border mb-6"
-        >
-          {/* Health Bar - Top */}
-          <div className="mb-3 pb-3 border-b border-dark-border">
-            <div className="flex justify-between items-center mb-1.5">
-              <div className="text-sm text-gray-400">
-                Здоровье: 
-                <button 
-                  onClick={() => setShowHealthModal(true)}
-                  className="ml-2 font-semibold hover:text-white transition-colors cursor-pointer"
-                >
-                  <span className={isDying ? 'text-red-500' : 'text-white'}>
-                    {character.currentHP}
-                  </span>
-                  {character.tempHP > 0 && <span className="text-blue-400"> +{character.tempHP}</span>}
-                  <span className="text-gray-400"> / {getTotalMaxHP()}</span>
-                </button>
-                {isDying && <span className="ml-2 text-red-500 font-bold">БЕЗ СОЗНАНИЯ!</span>}
-              </div>
-            </div>
-            <div 
-              onClick={() => setShowHealthModal(true)}
-              className={`h-4 bg-dark-bg rounded-full overflow-hidden border cursor-pointer hover:border-red-500/50 transition-all relative ${
-                isDying ? 'border-red-500' : 'border-dark-border'
-              }`}
-            >
-              {/* Current HP Layer */}
-              <div
-                className={`h-full absolute left-0 transition-all duration-300 ${
-                  isDying 
-                    ? 'bg-gradient-to-r from-red-600 to-red-800 animate-pulse' 
-                    : 'bg-gradient-to-r from-red-500 to-pink-500'
-                }`}
-                style={{ 
-                  width: `${Math.min((character.currentHP / getTotalMaxHP()) * 100, 100)}%`
-                }}
-              />
-              {/* Temp HP Layer */}
-              {character.tempHP > 0 && (
-                <div
-                  className="h-full absolute transition-all duration-300 bg-gradient-to-r from-blue-400 to-cyan-500"
-                  style={{ 
-                    left: `${Math.min((character.currentHP / getTotalMaxHP()) * 100, 100)}%`,
-                    width: `${Math.min((character.tempHP / getTotalMaxHP()) * 100, 100)}%` 
-                  }}
-                />
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Stats */}
-            <div className="flex items-center gap-4">
-            <div>
-              <div className="text-sm text-gray-400">Уровень:</div>
-              <div className="text-3xl font-bold">{character.level}</div>
-            </div>
-
-            <div>
-              <div className="text-sm text-gray-400 text-center">Бонус владения:</div>
-              <div className="w-20 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-2xl font-bold text-center text-blue-400">
-                +{character.proficiencyBonus}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-sm text-gray-400 text-center">КБ:</div>
-              <button
-                onClick={() => setShowACModal(true)}
-                className="w-20 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-2xl font-bold text-center hover:border-blue-500 transition-all"
-              >
-                {character.armorClass}
-              </button>
-            </div>
-
-              <div>
-                <div className="text-sm text-gray-400 text-center mb-1">Скорость:</div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => updateSpeed(Math.max(0, character.speed - 5))}
-                    className="w-8 h-8 bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-hover transition-all text-lg font-bold"
-                  >
-                    −
-                  </button>
-                  <input
-                    type="number"
-                    value={character.speed}
-                    onChange={(e) => updateSpeed(parseInt(e.target.value) || 0)}
-                    className="w-16 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={() => updateSpeed(character.speed + 5)}
-                    className="w-8 h-8 bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-hover transition-all text-lg font-bold"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Sanity Bar */}
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <div className="text-sm text-gray-400">
-                  Рассудок: 
-                  <button 
-                    onClick={() => setShowSanityModal(true)}
-                    className="ml-2 font-semibold hover:text-white transition-colors cursor-pointer"
-                  >
-                    <span className={`font-semibold ${isInsane ? 'text-red-500' : 'text-white'}`}>
-                      {character.sanity}
-                    </span>
-                    <span className="text-gray-400"> / {getMaxSanity()}</span>
-                  </button>
-                  {isInsane && <span className="ml-2 text-red-500 font-bold">БЕЗУМИЕ!</span>}
-                </div>
-              </div>
-              <div 
-                onClick={() => setShowSanityModal(true)}
-                className={`h-4 bg-dark-bg rounded-full overflow-hidden border cursor-pointer hover:border-purple-500/50 transition-all ${
-                  isInsane ? 'border-red-500' : 'border-dark-border'
-                }`}
-              >
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    isInsane 
-                      ? 'bg-gradient-to-r from-red-600 to-red-800 animate-pulse' 
-                      : 'bg-gradient-to-r from-purple-500 to-blue-500'
-                  }`}
-                  style={{ width: `${Math.min((character.sanity / getMaxSanity()) * 100, 100)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* XP Bar */}
-          <div className="mt-3 pt-3 border-t border-dark-border">
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <div className="flex justify-between items-center mb-1.5">
-                  <div className="text-sm text-gray-400">
-                    Уровень <span className="text-white font-semibold">{character.level}</span> • Опыт: <span className="text-white font-semibold">{character.experience}</span>
-                  </div>
-                  {canLevelUp && (
-                    <button
-                      onClick={levelUp}
-                      className="px-3 py-1 bg-green-500 text-white rounded-lg text-xs font-semibold hover:bg-green-600 transition-all animate-pulse"
-                    >
-                      <ArrowUp className="w-3 h-3 inline mr-1" /> Повысить!
-                    </button>
-                  )}
-                </div>
-                <div className="h-2.5 bg-dark-bg rounded-full overflow-hidden border border-dark-border">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(xpProgress, 100)}%` }}
-                    transition={{ duration: 0.3 }}
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={() => setShowExperienceModal(true)}
-                className="px-3 py-2 bg-dark-card border border-dark-border rounded-lg hover:bg-dark-hover transition-all text-sm font-semibold flex-shrink-0"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-stretch">
           {/* Left Side - Attributes with Skills */}
-          <div className="space-y-4 flex flex-col">
+          <div className={`space-y-4 flex flex-col ${activeTab !== 'stats' ? 'hidden lg:flex' : 'flex'}`}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {ATTRIBUTES_LIST.map((attr, index) => {
                 const value = character.attributes[attr.id] || 10;
@@ -992,80 +900,12 @@ export const CharacterSheet: React.FC = () => {
           </div>
 
           {/* Right Side - Tabs */}
-          <div className="flex flex-col">
-            {/* Tab Navigation */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex gap-2 bg-dark-card rounded-xl p-2 border border-dark-border"
-            >
-              <button
-                onClick={() => setActiveTab('personality')}
-                className={`flex-1 px-2 py-2 rounded-lg font-semibold transition-all text-xs ${
-                  activeTab === 'personality'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-dark-bg text-gray-400 hover:text-white'
-                }`}
-              >
-                Личность
-              </button>
-              <button
-                onClick={() => setActiveTab('health')}
-                className={`flex-1 px-2 py-2 rounded-lg font-semibold transition-all text-xs ${
-                  activeTab === 'health'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-dark-bg text-gray-400 hover:text-white'
-                }`}
-              >
-                Здоровье
-              </button>
-              <button
-                onClick={() => setActiveTab('abilities')}
-                className={`flex-1 px-2 py-2 rounded-lg font-semibold transition-all text-xs ${
-                  activeTab === 'abilities'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-dark-bg text-gray-400 hover:text-white'
-                }`}
-              >
-                Способности
-              </button>
-              <button
-                onClick={() => setActiveTab('attacks')}
-                className={`flex-1 px-2 py-2 rounded-lg font-semibold transition-all text-xs ${
-                  activeTab === 'attacks'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-dark-bg text-gray-400 hover:text-white'
-                }`}
-              >
-                Атаки
-              </button>
-              <button
-                onClick={() => setActiveTab('equipment')}
-                className={`flex-1 px-2 py-2 rounded-lg font-semibold transition-all text-xs ${
-                  activeTab === 'equipment'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-dark-bg text-gray-400 hover:text-white'
-                }`}
-              >
-                Снаряжение
-              </button>
-              <button
-                onClick={() => setActiveTab('inventory')}
-                className={`flex-1 px-2 py-2 rounded-lg font-semibold transition-all text-xs ${
-                  activeTab === 'inventory'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-dark-bg text-gray-400 hover:text-white'
-                }`}
-              >
-                Инвентарь
-              </button>
-            </motion.div>
-
+          <div className={`flex flex-col ${activeTab === 'stats' ? 'hidden lg:flex' : 'flex'}`}>
             {/* Tab Content */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-dark-card rounded-xl border border-dark-border overflow-hidden mt-4 flex flex-col"
+              className="bg-dark-card rounded-xl border border-dark-border overflow-hidden flex flex-col"
               style={{ minHeight: '600px', maxHeight: '800px' }}
             >
               <div className="flex-1 overflow-y-auto p-6">
