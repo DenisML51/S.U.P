@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import { useCharacter } from '../../context/CharacterContext';
 import { 
   RACES, CLASSES, EXPERIENCE_BY_LEVEL, getProficiencyBonus, 
@@ -16,7 +17,8 @@ export const useCharacterSheetLogic = () => {
     setActiveTab, 
     // exportToJSON, 
     // goToCharacterList, 
-    updateResourceCount 
+    updateResourceCount,
+    settings
   } = useCharacter();
   
   const [inventorySubTab, setInventorySubTab] = useState<InventorySubTab>('all');
@@ -131,13 +133,26 @@ export const useCharacterSheetLogic = () => {
 
   // Handlers
   const saveExperience = (newExperience: number, newLevel: number) => {
+    const oldLevel = character.level;
     const newProfBonus = getProficiencyBonus(newLevel);
+    
     updateCharacter({
       ...character,
       experience: newExperience,
       level: newLevel,
       proficiencyBonus: newProfBonus,
     });
+
+    if (settings.notifications) {
+      if (newLevel > oldLevel) {
+        toast.success(`Уровень повышен! Теперь вы ${newLevel} уровня`, {
+          duration: 5000,
+          icon: '🎉'
+        });
+      } else {
+        toast.success(`Опыт обновлен: ${newExperience}`);
+      }
+    }
   };
 
   const updateSpeed = (newSpeed: number) => {
@@ -147,10 +162,19 @@ export const useCharacterSheetLogic = () => {
   const updateSanity = (newSanity: number) => {
     const maxSanity = getMaxSanity();
     const clampedSanity = Math.min(maxSanity, Math.max(0, newSanity));
+    const diff = clampedSanity - character.sanity;
+
     updateCharacter({ ...character, sanity: clampedSanity });
+
+    if (settings.notifications && diff !== 0) {
+      if (diff < 0) toast.error(`Потеря рассудка: ${diff} (${clampedSanity}/${maxSanity})`);
+      else toast.success(`Рассудок восстановлен: +${diff} (${clampedSanity}/${maxSanity})`);
+    }
   };
 
   const updateHealth = (current: number, max: number, temp: number, bonus: number) => {
+    const diff = current - character.currentHP;
+
     updateCharacter({
       ...character,
       currentHP: current,
@@ -158,6 +182,11 @@ export const useCharacterSheetLogic = () => {
       tempHP: temp,
       maxHPBonus: bonus,
     });
+
+    if (settings.notifications && diff !== 0) {
+      if (diff > 0) toast.success(`Здоровье: +${diff} (${current}/${max + bonus})`);
+      else toast.error(`Здоровье: ${diff} (${current}/${max + bonus})`);
+    }
   };
 
   const updateLanguagesAndProficiencies = (value: string) => {
@@ -235,7 +264,7 @@ export const useCharacterSheetLogic = () => {
     if (item.type === 'armor') {
       const newInventory = character.inventory.map((a: InventoryItem) => ({
         ...a,
-        equipped: a.type === 'armor' && a.id === itemId,
+        equipped: a.id === itemId ? true : (a.type === 'armor' ? false : a.equipped),
       }));
       const dexMod = Math.floor(((character.attributes.dexterity || 10) - 10) / 2);
       let calculatedAC = item.baseAC || 10;
@@ -279,6 +308,10 @@ export const useCharacterSheetLogic = () => {
       );
       updateCharacter({ ...character, inventory: newInventory });
     }
+
+    if (settings.notifications) {
+      toast.success(`Экипировано: ${item.name}`);
+    }
   };
 
   const unequipItem = (itemId: string) => {
@@ -308,6 +341,10 @@ export const useCharacterSheetLogic = () => {
       updateCharacter({ ...character, inventory: newInventory, attacks: newAttacks });
     } else {
       updateCharacter({ ...character, inventory: newInventory });
+    }
+
+    if (settings.notifications) {
+      toast(`Снято: ${item.name}`, { icon: '📦' });
     }
   };
 
@@ -463,6 +500,9 @@ export const useCharacterSheetLogic = () => {
 
   const saveCurrency = (currency: Currency) => {
     updateCharacter({ ...character, currency });
+    if (settings.notifications) {
+      toast.success('Кошелек обновлен');
+    }
   };
 
   const toggleSkillProficiency = (skillId: string) => {

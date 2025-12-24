@@ -1,8 +1,10 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
-// Безопасное API для взаимодействия с Electron (если понадобится в будущем)
+// Безопасное API для взаимодействия с Electron
 contextBridge.exposeInMainWorld('electronAPI', {
-  // Пример: можно добавить функции для работы с файлами
-  // getAppVersion: () => require('electron').app.getVersion(),
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  saveCharacter: (filePath, data) => ipcRenderer.invoke('save-character', { filePath, data }),
+  loadCharacters: (directoryPath) => ipcRenderer.invoke('load-characters', directoryPath),
+  deleteCharacter: (filePath) => ipcRenderer.invoke('delete-character', filePath),
 });
 

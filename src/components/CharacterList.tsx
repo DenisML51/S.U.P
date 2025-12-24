@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useCharacter } from '../context/CharacterContext';
 import { CharacterCard } from './CharacterCard';
 import { CharacterCreation } from './CharacterCreation/index';
-import { Plus, Upload, User } from 'lucide-react';
+import { Plus, Upload, User, Settings } from 'lucide-react';
+import { SettingsModal } from './SettingsModal';
 
 export const CharacterList: React.FC = () => {
-  const { charactersList, loadCharacter, deleteCharacter, importFromJSON, goToCharacterList } = useCharacter();
+  const { charactersList, loadCharacter, deleteCharacter, importFromJSON, goToCharacterList, settings } = useCharacter();
   const [showCreation, setShowCreation] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCardClick = (characterId: string) => {
     loadCharacter(characterId);
@@ -93,15 +95,30 @@ export const CharacterList: React.FC = () => {
             <Upload className="w-5 h-5" />
             Импорт персонажа
           </motion.label>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-3 bg-dark-card border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-gray-400 hover:text-white"
+            title="Настройки приложения"
+          >
+            <Settings className="w-5 h-5" />
+          </motion.button>
         </div>
 
         {/* Characters Grid */}
         {charactersList.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className={`grid gap-4 ${
+            settings.compactCards 
+              ? 'grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6' 
+              : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+          }`}>
             {charactersList.map((char) => (
               <CharacterCard
                 key={char.id}
                 character={char}
+                compact={settings.compactCards}
                 onClick={() => handleCardClick(char.id)}
                 onDelete={(e) => handleDelete(e, char.id)}
               />
@@ -129,6 +146,7 @@ export const CharacterList: React.FC = () => {
           </motion.div>
         )}
       </motion.div>
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 };

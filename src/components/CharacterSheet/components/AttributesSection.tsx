@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ATTRIBUTES_LIST, SKILLS_LIST, Character } from '../../../types';
+import { Target, Star } from 'lucide-react';
 
 interface AttributesSectionProps {
   character: Character;
@@ -24,8 +25,13 @@ export const AttributesSection: React.FC<AttributesSectionProps> = ({
   toggleSkillExpertise,
 }) => {
   return (
-    <div className={`space-y-4 flex flex-col ${activeTab !== 'stats' ? 'hidden lg:flex' : 'flex'}`}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div className={`space-y-6 flex flex-col ${activeTab !== 'stats' ? 'hidden lg:flex' : 'flex'}`}>
+      <div className="flex items-center gap-3 px-1">
+        <h3 className="text-xl font-bold tracking-tight text-gray-200 uppercase tracking-widest">Характеристики</h3>
+        <div className="h-px flex-1 bg-gradient-to-r from-dark-border to-transparent"></div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {ATTRIBUTES_LIST.map((attr, index) => {
           const value = character.attributes[attr.id] || 10;
           const modifier = getModifier(attr.id);
@@ -38,101 +44,92 @@ export const AttributesSection: React.FC<AttributesSectionProps> = ({
           return (
             <motion.div
               key={attr.id}
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="rounded-xl p-3 border border-dark-border bg-transparent"
+              className="group relative h-full flex flex-col"
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex-1">
-                  <div className="text-sm font-bold uppercase text-gray-300">{attr.name}</div>
-                  <div className="flex gap-2 mt-1">
-                    <div className="flex-1 bg-dark-bg rounded-lg p-1.5 text-center">
-                      <div className="text-xs text-gray-400">Провер.</div>
-                      <div className="text-lg font-bold">{modifier}</div>
+              {/* Attribute Header Card */}
+              <div className="bg-dark-card/30 border border-dark-border rounded-2xl p-4 transition-all hover:border-blue-500/30 flex-1 flex flex-col">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{attr.name}</span>
+                      {isProficient && (
+                        <div className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[8px] font-black text-blue-400 uppercase tracking-tighter">
+                          Спасбр.
+                        </div>
+                      )}
                     </div>
-                    <div className={`flex-1 rounded-lg p-1.5 text-center ${
-                      isProficient ? 'bg-blue-500/20 border border-blue-500/50' : 'bg-dark-bg'
-                    }`}>
-                      <div className="text-xs text-gray-400">Спасбр.</div>
-                      <div className={`text-lg font-bold ${isProficient ? 'text-blue-400' : ''}`}>
-                        {savingThrow}
+                    
+                    <div className="flex items-end gap-4">
+                      <div className="flex flex-col">
+                        <span className="text-3xl font-black text-white leading-none tracking-tighter">{modifier}</span>
+                        <span className="text-[8px] font-bold text-gray-600 uppercase mt-1">Модификатор</span>
+                      </div>
+                      
+                      <div className="flex flex-col border-l border-dark-border pl-4">
+                        <span className={`text-lg font-bold leading-none ${isProficient ? 'text-blue-400' : 'text-gray-400'}`}>
+                          {savingThrow}
+                        </span>
+                        <span className="text-[8px] font-bold text-gray-600 uppercase mt-1">Спасбросок</span>
                       </div>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => setSelectedAttribute(attr.id)}
+                    className="w-12 h-12 rounded-xl bg-dark-bg border border-dark-border flex flex-col items-center justify-center hover:border-blue-500 transition-all group/val"
+                  >
+                    <span className="text-lg font-black text-gray-200 group-hover/val:text-blue-400 transition-colors">{value}</span>
+                    <span className="text-[7px] font-black text-gray-600 uppercase">База</span>
+                  </button>
                 </div>
-                <button
-                  onClick={() => setSelectedAttribute(attr.id)}
-                  className="text-4xl font-bold ml-2 hover:text-blue-400 transition-colors cursor-pointer"
-                >
-                  {value}
-                </button>
-              </div>
-              
-              {/* Skills for this attribute */}
-              {attrSkills.length > 0 && (
-                <div className="border-t border-dark-border pt-2 mt-2">
-                  <div className="space-y-1">
+
+                {/* Compact Skills List */}
+                {attrSkills.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-dark-border/50 grid grid-cols-1 gap-1">
                     {attrSkills.map((skill) => {
-                      const skillInfo = SKILLS_LIST.find(s => s.id === skill.id);
-                      if (!skillInfo) return null;
-                      
                       const skillMod = getSkillModifier(skill.id);
-                      const isProficient = skill.proficient;
-                      const isExpertise = skill.expertise;
-                      
                       return (
                         <div
                           key={skill.id}
-                          className={`flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-all ${
-                            isProficient ? 'bg-blue-500/10 hover:bg-blue-500/20' : 'bg-dark-bg hover:bg-dark-hover'
-                          }`}
+                          className="flex items-center justify-between py-1 group/skill"
                         >
-                          <div className="flex items-center gap-2 flex-1">
-                            <button
-                              onClick={() => toggleSkillProficiency(skill.id)}
-                              className={`w-4 h-4 rounded border-2 transition-all flex-shrink-0 ${
-                                isProficient 
-                                  ? 'bg-blue-500 border-blue-500' 
-                                  : 'border-dark-border hover:border-blue-500'
-                              }`}
-                            >
-                              {isProficient && (
-                                <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => toggleSkillProficiency(skill.id)}
+                                className={`w-3 h-3 rounded-sm border transition-all ${
+                                  skill.proficient 
+                                    ? 'bg-blue-500 border-blue-500' 
+                                    : 'border-dark-border group-hover/skill:border-gray-500'
+                                }`}
+                              />
+                              {skill.proficient && (
+                                <button
+                                  onClick={() => toggleSkillExpertise(skill.id)}
+                                  className={`w-3 h-3 rounded-full border transition-all ${
+                                    skill.expertise 
+                                      ? 'bg-purple-500 border-purple-500' 
+                                      : 'border-dark-border hover:border-purple-500'
+                                  }`}
+                                />
                               )}
-                            </button>
-                            
-                            <button
-                              onClick={() => toggleSkillExpertise(skill.id)}
-                              disabled={!isProficient}
-                              className={`w-4 h-4 rounded-full border-2 transition-all flex-shrink-0 ${
-                                isExpertise 
-                                  ? 'bg-purple-500 border-purple-500' 
-                                  : isProficient 
-                                  ? 'border-dark-border hover:border-purple-500' 
-                                  : 'border-dark-border opacity-30 cursor-not-allowed'
-                              }`}
-                            >
-                              {isExpertise && (
-                                <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">
-                                  E
-                                </div>
-                              )}
-                            </button>
-                            
-                            <span className={`text-xs ${isProficient ? 'font-semibold' : 'text-gray-400'}`}>
-                              {skillInfo.name}
+                            </div>
+                            <span className={`text-[11px] transition-colors ${skill.proficient ? 'text-gray-200 font-bold' : 'text-gray-500'}`}>
+                              {skill.name}
                             </span>
                           </div>
-                          <span className="font-mono font-bold text-sm ml-2">{skillMod}</span>
+                          <span className={`text-xs font-mono ${skill.proficient ? 'text-blue-400 font-bold' : 'text-gray-600'}`}>
+                            {skillMod}
+                          </span>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </motion.div>
           );
         })}

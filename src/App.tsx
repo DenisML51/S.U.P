@@ -3,6 +3,7 @@ import { CharacterProvider, useCharacter } from './context/CharacterContext';
 import { CharacterSheet } from './components/CharacterSheet/index';
 import { CharacterList } from './components/CharacterList';
 import { Navbar } from './components/Navbar';
+import { Toaster } from 'react-hot-toast';
 
 const AppContent: React.FC = () => {
   const { character } = useCharacter();
@@ -22,6 +23,19 @@ const AppContent: React.FC = () => {
       <main className={`relative z-10 ${character ? 'pt-24' : ''}`}>
         {character ? <CharacterSheet /> : <CharacterList />}
       </main>
+
+      <Toaster 
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            background: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid #333',
+            borderRadius: '12px',
+            fontSize: '14px'
+          },
+        }}
+      />
     </div>
   );
 };

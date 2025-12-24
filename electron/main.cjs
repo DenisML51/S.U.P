@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -54,6 +54,63 @@ function createWindow() {
 // Этот метод будет вызван когда Electron закончит инициализацию
 app.whenReady().then(() => {
   createWindow();
+
+  // IPC Handlers
+  console.log('Registering IPC handlers...');
+  ipcMain.handle('select-directory', async () => {
+    console.log('Opening directory dialog...');
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory']
+    });
+    if (result.canceled) {
+      console.log('Dialog canceled');
+      return null;
+    }
+    console.log('Directory selected:', result.filePaths[0]);
+    return result.filePaths[0];
+  });
+
+  ipcMain.handle('save-character', async (event, { filePath, data }) => {
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('load-characters', async (event, directoryPath) => {
+    try {
+      if (!fs.existsSync(directoryPath)) return [];
+      const files = fs.readdirSync(directoryPath);
+      const characters = [];
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          const content = fs.readFileSync(path.join(directoryPath, file), 'utf8');
+          try {
+            const char = JSON.parse(content);
+            if (char.id && char.name) {
+              characters.push(char);
+            }
+          } catch (e) {}
+        }
+      }
+      return characters;
+    } catch (error) {
+      return [];
+    }
+  });
+
+  ipcMain.handle('delete-character', async (event, filePath) => {
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
 
   app.on('activate', () => {
     // На macOS обычно пересоздают окно в приложении когда кликают на иконку в доке

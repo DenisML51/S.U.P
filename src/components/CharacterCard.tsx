@@ -2,18 +2,61 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { CharacterPreview } from '../context/CharacterContext';
 import { CLASSES } from '../types';
-import { Heart, User } from 'lucide-react';
+import { Heart, User, X } from 'lucide-react';
 
 interface CharacterCardProps {
   character: CharacterPreview;
   onClick: () => void;
   onDelete: (e: React.MouseEvent) => void;
+  compact?: boolean;
 }
 
-export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick, onDelete }) => {
+export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick, onDelete, compact }) => {
   const charClass = CLASSES.find(c => c.id === character.class);
   const subclass = charClass?.subclasses.find(sc => sc.id === character.subclass);
   const healthPercentage = (character.currentHP / character.maxHP) * 100;
+
+  if (compact) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        onClick={onClick}
+        className="group relative bg-dark-card border border-dark-border hover:border-blue-500/50 transition-all cursor-pointer overflow-hidden rounded-xl shadow-lg p-3 flex items-center gap-3"
+      >
+        <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center border border-blue-500/30 flex-shrink-0 overflow-hidden">
+          {character.avatar ? (
+            <img src={character.avatar} alt={character.name} className="w-full h-full object-cover" />
+          ) : (
+            <User className="w-5 h-5 text-blue-400" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-sm text-gray-100 truncate">{character.name}</h3>
+          <p className="text-[10px] text-gray-500 truncate">{charClass?.name || character.class} • {character.level} ур.</p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <div className="w-12 h-1 bg-dark-bg rounded-full overflow-hidden border border-dark-border">
+            <div 
+              className={`h-full transition-all ${
+                healthPercentage > 75 ? 'bg-green-500' :
+                healthPercentage > 50 ? 'bg-blue-500' :
+                healthPercentage > 25 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${healthPercentage}%` }}
+            />
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(e); }}
+            className="opacity-0 group-hover:opacity-100 p-1 text-gray-600 hover:text-red-400 transition-all"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

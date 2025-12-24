@@ -15,10 +15,12 @@ import {
   Settings,
   LogOut,
   Download,
-  FileJson
+  FileJson,
+  Sliders
 } from 'lucide-react';
 import { getLucideIcon } from '../utils/iconUtils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SettingsModal } from './SettingsModal';
 
 const tabs: { id: TabType; label: string; icon: any }[] = [
   { id: 'stats', label: 'Статы', icon: BarChart2 },
@@ -34,6 +36,7 @@ export const Navbar: React.FC = () => {
   const { character, activeTab, setActiveTab, goToCharacterList, exportToJSON, updateResourceCount } = useCharacter();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -215,6 +218,16 @@ export const Navbar: React.FC = () => {
                     <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Управление
                     </div>
+                    <button
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('open-app-settings'));
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-dark-hover rounded-xl text-gray-300 hover:text-white transition-colors text-sm"
+                    >
+                      <Sliders className="w-4 h-4" />
+                      Настройки
+                    </button>
                     <button
                       onClick={() => {
                         exportToJSON();

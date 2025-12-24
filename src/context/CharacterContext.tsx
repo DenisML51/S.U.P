@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Character } from '../types';
+import { toast } from 'react-hot-toast';
 
 export interface CharacterPreview {
   id: string;
@@ -28,6 +29,7 @@ interface CharacterContextType {
   exportToJSON: (characterId?: string) => void;
   importFromJSON: (file: File) => Promise<string>;
   goToCharacterList: () => void;
+  settings: { storagePath: string | null; autoSave: boolean; compactCards: boolean; notifications: boolean };
 }
 
 const CharacterContext = createContext<CharacterContextType | undefined>(undefined);
@@ -82,12 +84,35 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [character, setCharacter] = useState<Character | null>(null);
   const [charactersList, setCharactersList] = useState<CharacterPreview[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('personality');
+  const [settings, setSettings] = useState({
+    storagePath: localStorage.getItem('trpg_storage_path'),
+    autoSave: localStorage.getItem('trpg_auto_save') !== 'false',
+    compactCards: localStorage.getItem('trpg_compact_cards') === 'true',
+    notifications: localStorage.getItem('trpg_notifications') !== 'false',
+  });
 
   // Загружаем список персонажей при монтировании и мигрируем старые данные
   useEffect(() => {
     migrateOldData();
     loadCharactersList();
+
+    const handleSettingsUpdate = (e: any) => {
+      const s = e.detail;
+      setSettings({
+        storagePath: s.storagePath,
+        autoSave: s.autoSave,
+        compactCards: s.compactCards,
+        notifications: s.showNotifications,
+      });
+    };
+    window.addEventListener('app-settings-updated', handleSettingsUpdate);
+    return () => window.removeEventListener('app-settings-updated', handleSettingsUpdate);
   }, []);
+
+  // Перезагружаем список при смене пути
+  useEffect(() => {
+    loadCharactersList();
+  }, [settings.storagePath]);
 
   const migrateOldData = () => {
     try {
@@ -141,8 +166,24 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
-  const loadCharactersList = () => {
+  const loadCharactersList = async () => {
     try {
+      if (settings.storagePath && (window as any).electronAPI) {
+        const characters = await (window as any).electronAPI.loadCharacters(settings.storagePath);
+        const previews: CharacterPreview[] = characters.map((c: Character) => ({
+          id: c.id,
+          name: c.name,
+          class: c.class,
+          subclass: c.subclass,
+          level: c.level,
+          currentHP: c.currentHP,
+          maxHP: c.maxHP,
+          avatar: c.avatar,
+        }));
+        setCharactersList(previews);
+        return;
+      }
+
       const saved = localStorage.getItem(CHARACTERS_LIST_KEY);
       if (saved) {
         const list = JSON.parse(saved);
@@ -165,7 +206,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
-  const updateCharacter = (newCharacter: Character) => {
+  const updateCharacter = async (newCharacter: Character) => {
     if (!newCharacter.id) {
       console.error('Character must have an ID');
       return;
@@ -181,7 +222,16 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
     
     // Сохраняем персонажа
     try {
-      localStorage.setItem(getCharacterStorageKey(normalized.id), JSON.stringify(normalized));
+      if (settings.storagePath && (window as any).electronAPI) {
+        const filePath = `${settings.storagePath}/${normalized.id}.json`;
+        await (window as any).electronAPI.saveCharacter(filePath, normalized);
+      } else {
+        localStorage.setItem(getCharacterStorageKey(normalized.id), JSON.stringify(normalized));
+      }
+
+      if (settings.notifications) {
+        toast.success('Персонаж сохранен');
+      }
       
       // Обновляем список персонажей
       const updatedList = charactersList.map(c => 
@@ -229,15 +279,38 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
       r.id === resourceId ? { ...r, current: newCurrent } : r
     );
     updateCharacter({ ...character, resources: newResources });
+
+    if (settings.notifications && delta !== 0) {
+      const resource = character.resources.find(r => r.id === resourceId);
+      if (delta < 0) toast.error(`${resource?.name}: ${newCurrent}/${resource?.max}`);
+      else toast.success(`${resource?.name}: ${newCurrent}/${resource?.max}`);
+    }
   };
 
-  const loadCharacter = (characterId: string) => {
+  const loadCharacter = async (characterId: string) => {
     try {
+      if (settings.storagePath && (window as any).electronAPI) {
+        const filePath = `${settings.storagePath}/${characterId}.json`;
+        const characters = await (window as any).electronAPI.loadCharacters(settings.storagePath);
+        const char = characters.find((c: Character) => c.id === characterId);
+        if (char) {
+          const normalized = normalizeCharacter(char);
+          setCharacter(normalized);
+          if (settings.notifications) {
+            toast.success(`Загружен: ${normalized.name}`);
+          }
+        }
+        return;
+      }
+
       const saved = localStorage.getItem(getCharacterStorageKey(characterId));
       if (saved) {
         const parsed = JSON.parse(saved);
         const normalized = normalizeCharacter(parsed);
         setCharacter(normalized);
+        if (settings.notifications) {
+          toast.success(`Загружен: ${normalized.name}`);
+        }
       } else {
         console.error('Character not found:', characterId);
       }
@@ -253,7 +326,12 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
     
     // Сохраняем персонажа
     try {
-      localStorage.setItem(getCharacterStorageKey(id), JSON.stringify(normalized));
+      if (settings.storagePath && (window as any).electronAPI) {
+        const filePath = `${settings.storagePath}/${id}.json`;
+        (window as any).electronAPI.saveCharacter(filePath, normalized);
+      } else {
+        localStorage.setItem(getCharacterStorageKey(id), JSON.stringify(normalized));
+      }
       
       // Добавляем в список
       const preview: CharacterPreview = {
@@ -278,10 +356,15 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
-  const deleteCharacter = (characterId: string) => {
+  const deleteCharacter = async (characterId: string) => {
     try {
-      // Удаляем из localStorage
-      localStorage.removeItem(getCharacterStorageKey(characterId));
+      if (settings.storagePath && (window as any).electronAPI) {
+        const filePath = `${settings.storagePath}/${characterId}.json`;
+        await (window as any).electronAPI.deleteCharacter(filePath);
+      } else {
+        // Удаляем из localStorage
+        localStorage.removeItem(getCharacterStorageKey(characterId));
+      }
       
       // Удаляем из списка
       const updatedList = charactersList.filter(c => c.id !== characterId);
@@ -364,9 +447,12 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
           const updatedList = [...charactersList.filter(c => c.id !== id), preview];
           saveCharactersList(updatedList);
           
-          setCharacter(characterWithId);
-          resolve(id);
-        } catch (error) {
+        setCharacter(characterWithId);
+        if (settings.notifications) {
+          toast.success(`Персонаж ${characterWithId.name} импортирован`);
+        }
+        resolve(id);
+      } catch (error) {
           reject(error);
         }
       };
@@ -391,6 +477,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
         exportToJSON,
         importFromJSON,
         goToCharacterList,
+        settings,
       }}
     >
       {children}
