@@ -8,8 +8,7 @@ interface ExperienceModalProps {
   onClose: () => void;
   experience: number;
   level: number;
-  onUpdate: (newExperience: number) => void;
-  onLevelUp: () => void;
+  onUpdate: (newExperience: number, newLevel: number) => void;
 }
 
 export const ExperienceModal: React.FC<ExperienceModalProps> = ({
@@ -18,22 +17,28 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
   experience,
   level,
   onUpdate,
-  onLevelUp,
 }) => {
   const [tempExperience, setTempExperience] = useState(experience);
+  const [tempLevel, setTempLevel] = useState(level);
   const [addAmount, setAddAmount] = useState('');
   const [removeAmount, setRemoveAmount] = useState('');
 
-  const currentLevelXP = EXPERIENCE_BY_LEVEL[level];
-  const nextLevelXP = EXPERIENCE_BY_LEVEL[level + 1] || EXPERIENCE_BY_LEVEL[20];
+  const currentLevelXP = EXPERIENCE_BY_LEVEL[tempLevel];
+  const nextLevelXP = EXPERIENCE_BY_LEVEL[tempLevel + 1] || EXPERIENCE_BY_LEVEL[20];
   const xpInCurrentLevel = tempExperience - currentLevelXP;
   const xpNeededForLevel = nextLevelXP - currentLevelXP;
   const xpProgress = (xpInCurrentLevel / xpNeededForLevel) * 100;
-  const canLevelUp = tempExperience >= nextLevelXP && level < 20;
+  const canLevelUp = tempExperience >= nextLevelXP && tempLevel < 20;
 
   const handleSave = () => {
-    onUpdate(tempExperience);
+    onUpdate(tempExperience, tempLevel);
     onClose();
+  };
+
+  const handleLevelUp = () => {
+    if (canLevelUp) {
+      setTempLevel(prev => prev + 1);
+    }
   };
 
   const handleAdd = (amount?: number) => {
@@ -87,7 +92,21 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
 
               {/* Level Display */}
               <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-6 mb-6 text-center border border-blue-500/30">
-                <div className="text-sm text-gray-400 mb-2">Уровень {level}</div>
+                <div className="flex items-center justify-center gap-4 mb-2">
+                  <button 
+                    onClick={() => setTempLevel(Math.max(1, tempLevel - 1))}
+                    className="w-8 h-8 rounded-lg bg-dark-bg border border-dark-border hover:bg-dark-hover transition-all flex items-center justify-center text-lg font-bold"
+                  >
+                    −
+                  </button>
+                  <div className="text-xl font-bold">Уровень {tempLevel}</div>
+                  <button 
+                    onClick={() => setTempLevel(Math.min(20, tempLevel + 1))}
+                    className="w-8 h-8 rounded-lg bg-dark-bg border border-dark-border hover:bg-dark-hover transition-all flex items-center justify-center text-lg font-bold"
+                  >
+                    +
+                  </button>
+                </div>
                 <div className="text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
                   {tempExperience}
                 </div>
@@ -96,10 +115,7 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                 </div>
                 {canLevelUp && (
                   <motion.button
-                    onClick={() => {
-                      onLevelUp();
-                      handleSave();
-                    }}
+                    onClick={handleLevelUp}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="mt-4 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-green-500/50 transition-all animate-pulse"
@@ -113,10 +129,10 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <div className="text-sm text-gray-400">
-                    До уровня {level + 1}: <span className="text-blue-400 font-semibold">{xpInCurrentLevel}</span> / <span className="text-gray-500">{xpNeededForLevel}</span>
+                    До уровня {tempLevel + 1}: <span className="text-blue-400 font-semibold">{Math.max(0, xpInCurrentLevel)}</span> / <span className="text-gray-500">{xpNeededForLevel}</span>
                   </div>
                   <div className="text-sm font-semibold text-gray-300">
-                    {Math.round(xpProgress)}%
+                    {Math.round(Math.max(0, Math.min(100, xpProgress)))}%
                   </div>
                 </div>
                 <div className="h-4 bg-dark-bg rounded-full overflow-hidden border border-dark-border shadow-inner">

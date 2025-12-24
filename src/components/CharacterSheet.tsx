@@ -20,7 +20,7 @@ import { ResourceViewModal } from './ResourceViewModal';
 import { CurrencyModal } from './CurrencyModal';
 import { getLucideIcon } from '../utils/iconUtils';
 import { Attack, Ability, Currency, Trait } from '../types';
-import { Shield, Sword, Box, Zap, Coins, Settings, Target, CheckCircle2, XCircle, ArrowUp, Backpack, Sparkles, Plus, Heart } from 'lucide-react';
+import { Shield, Sword, Box, Zap, Coins, Settings, Target, CheckCircle2, XCircle, ArrowUp, Backpack, Sparkles, Plus, Heart, Eye, Move, Timer, Compass, Brain } from 'lucide-react';
 import { TraitModal } from './TraitModal';
 import { TraitViewModal } from './TraitViewModal';
 import { BasicInfoModal } from './BasicInfoModal';
@@ -132,20 +132,14 @@ export const CharacterSheet: React.FC = () => {
   const xpProgress = (xpInCurrentLevel / xpNeededForLevel) * 100;
   const canLevelUp = character.experience >= nextLevelXP && character.level < 20;
 
-  const updateExperience = (newExperience: number) => {
-    updateCharacter({ ...character, experience: newExperience });
-  };
-
-  const levelUp = () => {
-    if (canLevelUp) {
-      const newLevel = character.level + 1;
-      const newProfBonus = getProficiencyBonus(newLevel);
-      updateCharacter({
-        ...character,
-        level: newLevel,
-        proficiencyBonus: newProfBonus,
-      });
-    }
+  const saveExperience = (newExperience: number, newLevel: number) => {
+    const newProfBonus = getProficiencyBonus(newLevel);
+    updateCharacter({
+      ...character,
+      experience: newExperience,
+      level: newLevel,
+      proficiencyBonus: newProfBonus,
+    });
   };
 
   const updateSpeed = (newSpeed: number) => {
@@ -734,54 +728,80 @@ export const CharacterSheet: React.FC = () => {
           </motion.button>
         </div>
 
-        {/* Secondary Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
-            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Мастерство</div>
-            <div className="text-xl font-bold text-blue-400">+{character.proficiencyBonus}</div>
-          </div>
-
-          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
-            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Скорость</div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => updateSpeed(Math.max(0, character.speed - 5))}
-                className="w-6 h-6 bg-dark-bg border border-dark-border rounded-md hover:bg-dark-hover transition-all text-sm font-bold"
-              >
-                −
-              </button>
-              <div className="text-lg font-bold">{character.speed}</div>
-              <button
-                onClick={() => updateSpeed(character.speed + 5)}
-                className="w-6 h-6 bg-dark-bg border border-dark-border rounded-md hover:bg-dark-hover transition-all text-sm font-bold"
-              >
-                +
-              </button>
+        {/* Secondary Stats Strip */}
+        <div className="max-w-5xl mx-auto mb-8">
+          <div className="flex flex-wrap items-stretch bg-dark-card/30 backdrop-blur-md border border-dark-border/50 rounded-2xl overflow-hidden shadow-xl">
+            {/* Proficiency */}
+            <div className="flex-1 min-w-[120px] flex flex-col items-center justify-center py-3 px-4 border-r border-dark-border/30 hover:bg-white/5 transition-all group">
+              <div className="flex items-center gap-1.5 mb-1">
+                <CheckCircle2 className="w-3 h-3 text-blue-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">Мастерство</span>
+              </div>
+              <div className="text-xl font-black text-blue-400">+{character.proficiencyBonus}</div>
             </div>
-          </div>
 
-          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
-            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Инициатива</div>
-            <div className="text-xl font-bold text-gray-300">{getModifier('dexterity')}</div>
-          </div>
-          
-          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
-            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Восприятие</div>
-            <div className="text-xl font-bold text-gray-300">{getSkillModifier('perception')}</div>
-          </div>
+            {/* Speed */}
+            <div className="flex-1 min-w-[140px] flex flex-col items-center justify-center py-3 px-4 border-r border-dark-border/30 hover:bg-white/5 transition-all group">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Move className="w-3 h-3 text-emerald-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">Скорость</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => updateSpeed(Math.max(0, character.speed - 5))}
+                  className="w-5 h-5 flex items-center justify-center rounded-full bg-dark-bg border border-dark-border hover:border-emerald-500/50 hover:text-emerald-400 transition-all text-xs font-bold"
+                >
+                  −
+                </button>
+                <div className="text-xl font-black text-gray-200">{character.speed}<span className="text-[10px] text-gray-500 ml-0.5 font-normal">фт</span></div>
+                <button
+                  onClick={() => updateSpeed(character.speed + 5)}
+                  className="w-5 h-5 flex items-center justify-center rounded-full bg-dark-bg border border-dark-border hover:border-emerald-500/50 hover:text-emerald-400 transition-all text-xs font-bold"
+                >
+                  +
+                </button>
+              </div>
+            </div>
 
-          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
-            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Пасс. Вним.</div>
-            <div className="text-xl font-bold text-gray-300">{10 + parseInt(getSkillModifier('perception'))}</div>
-          </div>
+            {/* Initiative */}
+            <div className="flex-1 min-w-[120px] flex flex-col items-center justify-center py-3 px-4 border-r border-dark-border/30 hover:bg-white/5 transition-all group">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Timer className="w-3 h-3 text-orange-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">Инициатива</span>
+              </div>
+              <div className="text-xl font-black text-orange-400">{getModifier('dexterity')}</div>
+            </div>
 
-          <div className="bg-dark-card/50 border border-dark-border rounded-xl p-3 flex flex-col items-center justify-center">
-            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Пасс. Озн.</div>
-            <div className="text-xl font-bold text-gray-300">{10 + parseInt(getSkillModifier('insight'))}</div>
+            {/* Perception */}
+            <div className="flex-1 min-w-[120px] flex flex-col items-center justify-center py-3 px-4 border-r border-dark-border/30 hover:bg-white/5 transition-all group">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Eye className="w-3 h-3 text-purple-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">Восприятие</span>
+              </div>
+              <div className="text-xl font-black text-purple-400">{getSkillModifier('perception')}</div>
+            </div>
+
+            {/* Passive Senses Group */}
+            <div className="flex-[1.5] min-w-[200px] flex items-stretch bg-black/20">
+              <div className="flex-1 flex flex-col items-center justify-center py-3 px-4 border-r border-dark-border/30 hover:bg-white/5 transition-all group">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Compass className="w-3 h-3 text-amber-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                  <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider whitespace-nowrap">Пасс. Вниман.</span>
+                </div>
+                <div className="text-xl font-black text-amber-400">{10 + parseInt(getSkillModifier('perception'))}</div>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center py-3 px-4 hover:bg-white/5 transition-all group">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Brain className="w-3 h-3 text-cyan-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                  <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider whitespace-nowrap">Пасс. Ознак.</span>
+                </div>
+                <div className="text-xl font-black text-cyan-400">{10 + parseInt(getSkillModifier('insight'))}</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:items-stretch">
           {/* Left Side - Attributes with Skills */}
           <div className={`space-y-4 flex flex-col ${activeTab !== 'stats' ? 'hidden lg:flex' : 'flex'}`}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -905,10 +925,9 @@ export const CharacterSheet: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-dark-card rounded-xl border border-dark-border overflow-hidden flex flex-col"
-              style={{ minHeight: '600px', maxHeight: '800px' }}
+              className="flex flex-col"
             >
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 py-6">
                 {activeTab === 'personality' && (
                   <div>
                     <h3 className="text-xl font-bold mb-6">Личность</h3>
@@ -2025,8 +2044,7 @@ export const CharacterSheet: React.FC = () => {
           onClose={() => setShowExperienceModal(false)}
           experience={character.experience}
           level={character.level}
-          onUpdate={updateExperience}
-          onLevelUp={levelUp}
+          onUpdate={saveExperience}
         />
 
         {/* Resource Modal */}

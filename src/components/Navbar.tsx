@@ -21,13 +21,13 @@ import { getLucideIcon } from '../utils/iconUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const tabs: { id: TabType; label: string; icon: any }[] = [
-  { id: 'stats', label: 'Характеристики', icon: BarChart2 },
-  { id: 'personality', label: 'Личность', icon: User },
-  { id: 'health', label: 'Здоровье', icon: Heart },
-  { id: 'abilities', label: 'Способности', icon: Sparkles },
+  { id: 'stats', label: 'Статы', icon: BarChart2 },
+  { id: 'personality', label: 'Герой', icon: User },
+  { id: 'health', label: 'Жизнь', icon: Heart },
+  { id: 'abilities', label: 'Умения', icon: Sparkles },
   { id: 'attacks', label: 'Атаки', icon: Swords },
-  { id: 'equipment', label: 'Снаряжение', icon: Shield },
-  { id: 'inventory', label: 'Инвентарь', icon: Briefcase },
+  { id: 'equipment', label: 'Броня', icon: Shield },
+  { id: 'inventory', label: 'Вещи', icon: Briefcase },
 ];
 
 export const Navbar: React.FC = () => {
@@ -58,7 +58,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 p-8 pointer-events-none">
-      <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4 pointer-events-auto bg-dark-card/80 backdrop-blur-xl border border-dark-border rounded-2xl px-6 py-3 shadow-2xl">
+      <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4 pointer-events-auto px-2 py-3">
         
         {/* Left: Name */}
         <div className="flex items-center gap-3 min-w-0">
@@ -89,17 +89,17 @@ export const Navbar: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative flex items-center gap-0 hover:gap-2 px-3 py-2 rounded-lg transition-all group ${
+                className={`relative flex items-center gap-0 hover:gap-3 px-4 py-2.5 rounded-xl transition-all group ${
                   isActive 
-                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' 
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-dark-hover'
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25' 
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-dark-card/50'
                 }`}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
+                <Icon className="w-6 h-6 flex-shrink-0" />
                 
                 <span
-                  className={`overflow-hidden whitespace-nowrap text-sm font-semibold transition-all duration-300 ${
-                    isActive ? 'max-w-[200px] opacity-100 ml-2' : 'max-w-0 opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 group-hover:ml-2'
+                  className={`overflow-hidden whitespace-nowrap text-sm font-bold transition-all duration-300 ${
+                    isActive ? 'max-w-[200px] opacity-100 ml-3' : 'max-w-0 opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 group-hover:ml-3'
                   }`}
                 >
                   {tab.label}
@@ -126,8 +126,8 @@ export const Navbar: React.FC = () => {
                   }}
                   className="relative group cursor-pointer"
                 >
-                  <div className="w-11 h-11 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:border-blue-500/50 hover:bg-dark-hover transition-all active:scale-95 shadow-lg">
-                    {getLucideIcon(resource.iconName, { className: "w-5 h-5 text-blue-400" })}
+                  <div className="w-12 h-12 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:border-blue-500/50 hover:bg-dark-hover transition-all active:scale-95 shadow-lg">
+                    {getLucideIcon(resource.iconName, { className: "w-6 h-6 text-blue-400" })}
                     <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm border border-dark-bg">
                       {resource.current}
                     </div>
@@ -152,8 +152,8 @@ export const Navbar: React.FC = () => {
               }}
               className="relative group cursor-pointer"
             >
-              <div className="w-11 h-11 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:border-orange-500/50 hover:bg-dark-hover transition-all active:scale-95 shadow-lg">
-                <Target className="w-5 h-5 text-orange-400" />
+              <div className="w-12 h-12 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:border-orange-500/50 hover:bg-dark-hover transition-all active:scale-95 shadow-lg">
+                <Target className="w-6 h-6 text-orange-400" />
                 <div className="absolute -bottom-1 -right-1 min-w-[20px] px-1 h-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm border border-dark-bg">
                   {totalAmmo}
                 </div>
@@ -175,8 +175,8 @@ export const Navbar: React.FC = () => {
             }}
             className="relative group cursor-pointer"
           >
-            <div className="w-11 h-11 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:border-yellow-500/50 hover:bg-dark-hover transition-all active:scale-95 shadow-lg">
-              <Coins className="w-5 h-5 text-yellow-500" />
+            <div className="w-12 h-12 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:border-yellow-500/50 hover:bg-dark-hover transition-all active:scale-95 shadow-lg">
+              <Coins className="w-6 h-6 text-yellow-500" />
               <div className="absolute -bottom-1 -right-1 min-w-[20px] px-1 h-5 bg-yellow-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm border border-dark-bg">
                 {Math.floor(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100)}
               </div>
@@ -192,11 +192,11 @@ export const Navbar: React.FC = () => {
           <div className="relative ml-2">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`p-2 rounded-xl transition-all ${
-                isMenuOpen ? 'bg-blue-500 text-white' : 'bg-dark-bg/50 text-gray-400 hover:text-white border border-dark-border/50'
+              className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all ${
+                isMenuOpen ? 'bg-blue-500 text-white' : 'bg-dark-bg/80 text-gray-400 hover:text-white border border-dark-border/50 shadow-lg'
               }`}
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-6 h-6" />
             </button>
 
             <AnimatePresence>
@@ -210,7 +210,7 @@ export const Navbar: React.FC = () => {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 mt-2 w-56 bg-dark-card border border-dark-border rounded-2xl shadow-2xl p-2 z-50 overflow-hidden"
+                    className="absolute right-0 mt-4 w-56 bg-dark-card border border-dark-border rounded-2xl shadow-2xl p-2 z-50 overflow-hidden"
                   >
                     <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Управление
