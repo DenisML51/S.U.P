@@ -9,6 +9,7 @@ export interface CharacterPreview {
   level: number;
   currentHP: number;
   maxHP: number;
+  avatar?: string;
 }
 
 export type TabType = 'personality' | 'health' | 'abilities' | 'attacks' | 'equipment' | 'inventory' | 'stats';
@@ -73,6 +74,7 @@ const normalizeCharacter = (parsed: any): Character => {
     flaws: parsed.flaws || '',
     traits: parsed.traits || [],
     subrace: parsed.subrace,
+    avatar: parsed.avatar,
   };
 };
 
@@ -111,6 +113,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
               level: normalized.level,
               currentHP: normalized.currentHP,
               maxHP: normalized.maxHP,
+              avatar: normalized.avatar,
             };
             
             const existingList = (() => {
@@ -191,6 +194,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
               level: normalized.level,
               currentHP: normalized.currentHP,
               maxHP: normalized.maxHP,
+              avatar: normalized.avatar,
             }
           : c
       );
@@ -205,6 +209,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
           level: normalized.level,
           currentHP: normalized.currentHP,
           maxHP: normalized.maxHP,
+          avatar: normalized.avatar,
         });
       }
       
@@ -259,6 +264,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
         level: normalized.level,
         currentHP: normalized.currentHP,
         maxHP: normalized.maxHP,
+        avatar: normalized.avatar,
       };
       
       const updatedList = [...charactersList, preview];
@@ -352,6 +358,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
             level: characterWithId.level,
             currentHP: characterWithId.currentHP,
             maxHP: characterWithId.maxHP,
+            avatar: characterWithId.avatar,
           };
           
           const updatedList = [...charactersList.filter(c => c.id !== id), preview];

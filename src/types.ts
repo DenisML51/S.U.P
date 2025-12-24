@@ -172,6 +172,7 @@ export interface Character {
   bonds: string;
   flaws: string;
   traits: Trait[];
+  avatar?: string; // Base64 avatar image
 }
 
 export const calculateLimbMaxHP = (maxHP: number, constitution: number): number => {

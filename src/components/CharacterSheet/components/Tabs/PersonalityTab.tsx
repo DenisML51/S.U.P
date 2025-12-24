@@ -4,6 +4,7 @@ import { Settings, Plus, Sparkles, User, History, Heart, Target, Users, BookOpen
 import { Character, Trait, Race, Class } from '../../../../types';
 import { MarkdownEditor } from '../../../MarkdownEditor';
 import { MarkdownText } from '../../../MarkdownText';
+import { AvatarUpload } from '../../../AvatarUpload';
 
 interface PersonalityTabProps {
   character: Character;
@@ -11,7 +12,7 @@ interface PersonalityTabProps {
   selectedSubrace: any;
   charClass: Class | undefined;
   selectedSubclass: any;
-  updatePersonalityField: (field: keyof Character, value: string) => void;
+  updatePersonalityField: (field: keyof Character, value: any) => void;
   updateLanguagesAndProficiencies: (value: string) => void;
   openTraitModal: (trait?: Trait) => void;
   openTraitView: (trait: Trait) => void;
@@ -41,13 +42,14 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
           
           <div className="p-8">
             <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
-              {/* Profile Icon / Avatar Placeholder */}
+              {/* Profile Icon / Avatar Upload */}
               <div className="relative">
-                <div className="w-24 h-24 rounded-2xl bg-dark-bg border border-dark-border flex items-center justify-center shadow-inner group/avatar">
-                  <User className="w-12 h-12 text-blue-400 group-hover/avatar:scale-110 transition-transform" />
-                  <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg">
-                    LVL {character.level}
-                  </div>
+                <AvatarUpload 
+                  currentAvatar={character.avatar} 
+                  onAvatarChange={(base64) => updatePersonalityField('avatar', base64)} 
+                />
+                <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg pointer-events-none">
+                  LVL {character.level}
                 </div>
               </div>
 
@@ -98,7 +100,7 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
           </button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {(character.traits || []).map((trait) => (
             <motion.div
               key={trait.id}
@@ -139,7 +141,7 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
       </div>
 
       {/* Narrative Sections */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div className="space-y-10">
         {/* Physical Column */}
         <div className="space-y-8">
           <SectionHeader icon={Fingerprint} label="Внешность и Происхождение" color="blue" />
@@ -192,20 +194,37 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
             />
           </div>
 
-          <div className="space-y-6">
-            <SectionHeader icon={Users} label="Связи и Навыки" color="purple" small />
-            <EditorField 
-              label="Союзники и Организации" 
-              value={character.alliesAndOrganizations} 
-              placeholder="Клан, гильдия, друзья..."
-              onChange={(val) => updatePersonalityField('alliesAndOrganizations', val)}
-            />
-            <EditorField 
-              label="Владения и Языки" 
-              value={character.languagesAndProficiencies} 
-              placeholder="Доспехи, инструменты, языки..."
-              onChange={updateLanguagesAndProficiencies}
-            />
+          <div className="space-y-10">
+            <div className="space-y-4">
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 group-hover:text-gray-400 transition-colors">
+                Мировоззрение
+              </label>
+              <input
+                type="text"
+                value={character.alignment || ''}
+                onChange={(e) => updatePersonalityField('alignment', e.target.value)}
+                className="w-full bg-dark-card/20 border border-dark-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                placeholder="Например: Законно-доброе..."
+              />
+            </div>
+
+            <div className="space-y-6">
+              <SectionHeader icon={Users} label="Связи и Навыки" color="purple" small />
+              <div className="space-y-6">
+                <EditorField 
+                  label="Союзники и Организации" 
+                  value={character.alliesAndOrganizations} 
+                  placeholder="Клан, гильдия, друзья..."
+                  onChange={(val) => updatePersonalityField('alliesAndOrganizations', val)}
+                />
+                <EditorField 
+                  label="Владения и Языки" 
+                  value={character.languagesAndProficiencies} 
+                  placeholder="Доспехи, инструменты, языки..."
+                  onChange={updateLanguagesAndProficiencies}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

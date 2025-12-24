@@ -205,7 +205,7 @@ export const useCharacterSheetLogic = () => {
     updateCharacter({ ...character, armorClass: newAC, limbs: newLimbs });
   };
 
-  const updatePersonalityField = (field: keyof Character, value: string) => {
+  const updatePersonalityField = (field: keyof Character, value: any) => {
     updateCharacter({ ...character, [field]: value });
   };
 

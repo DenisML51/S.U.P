@@ -37,8 +37,12 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
       <div className="p-4">
         {/* Header */}
         <div className="flex items-start gap-3 mb-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center border border-blue-500/30 flex-shrink-0">
-            <User className="w-6 h-6 text-blue-400" />
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center border border-blue-500/30 flex-shrink-0 overflow-hidden">
+            {character.avatar ? (
+              <img src={character.avatar} alt={character.name} className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-6 h-6 text-blue-400" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-lg text-gray-100 truncate mb-1">{character.name}</h3>

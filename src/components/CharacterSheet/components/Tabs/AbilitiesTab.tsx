@@ -93,7 +93,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                         />
                       </div>
                     </div>
-
+                    
                     <div className="flex items-center gap-1.5 ml-2">
                       <button
                         onClick={() => updateResourceCount(resource.id, -1)}
@@ -102,20 +102,20 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                       >
                         −
                       </button>
-                      <button
-                        onClick={() => updateResourceCount(resource.id, 1)}
-                        disabled={resource.current >= resource.max}
+                    <button
+                      onClick={() => updateResourceCount(resource.id, 1)}
+                      disabled={resource.current >= resource.max}
                         className="w-7 h-7 rounded-lg bg-dark-bg border border-dark-border hover:bg-dark-hover disabled:opacity-30 transition-all font-bold text-gray-300 flex items-center justify-center"
-                      >
-                        +
-                      </button>
-                      <button
-                        onClick={() => openResourceModal(resource)}
+                    >
+                      +
+                    </button>
+                    <button
+                      onClick={() => openResourceModal(resource)}
                         className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-200 hover:bg-dark-hover transition-all opacity-0 group-hover:opacity-100 ml-1"
-                        title="Настроить"
-                      >
+                      title="Настроить"
+                    >
                         <Settings className="w-3.5 h-3.5" />
-                      </button>
+                    </button>
                     </div>
                   </div>
                 </motion.div>
