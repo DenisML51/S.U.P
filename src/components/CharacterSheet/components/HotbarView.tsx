@@ -65,7 +65,7 @@ interface HotbarViewProps {
   setShowSanityModal: (show: boolean) => void;
   setShowACModal: (show: boolean) => void;
   setShowExperienceModal: (show: boolean) => void;
-  getModifier: (attr: string) => number;
+  getModifier: (attr: string) => string;
 }
 
 export const HotbarView: React.FC<HotbarViewProps> = ({
