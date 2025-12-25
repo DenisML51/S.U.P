@@ -152,7 +152,7 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
             <motion.div
               key={spell.id}
               onClick={() => openSpellView(spell)}
-              className="group relative flex items-center bg-dark-card/30 border border-white/5 hover:border-white/20 rounded-2xl transition-all duration-500 ease-out cursor-pointer overflow-hidden shadow-lg"
+              className="group relative bg-dark-card/30 border border-white/5 hover:border-white/20 rounded-2xl transition-all duration-300 ease-out cursor-pointer shadow-lg"
               style={{ 
                 borderColor: spell.prepared ? `${spell.color || '#3b82f6'}40` : undefined,
                 backgroundColor: spell.prepared ? `${spell.color || '#3b82f6'}05` : undefined,
@@ -160,35 +160,87 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
             >
               {/* Icon Section */}
               <div 
-                className="w-14 h-14 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 flex-shrink-0"
+                className="w-14 h-14 flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
                 style={{ color: spell.color || '#3b82f6' }}
               >
                 {getLucideIcon(spell.iconName || 'Wand2', { size: 28 })}
               </div>
 
-              {/* Expansion Content (Visible on Hover) */}
-              <div className="overflow-hidden max-w-0 group-hover:max-w-[400px] transition-all duration-500 ease-out whitespace-nowrap">
-                <div className="flex flex-col pr-5 pl-1 border-l border-white/5 ml-1">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-white text-sm tracking-tight">{spell.name}</span>
-                    <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
-                      {spell.level === 0 ? 'Заговор' : `${spell.level} круг`}
+              {/* Enhanced Tooltip */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-4 bg-dark-bg/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none z-50">
+                {/* Decorative glow */}
+                <div 
+                  className="absolute inset-0 rounded-2xl opacity-10 blur-xl -z-10"
+                  style={{ backgroundColor: spell.color || '#3b82f6' }}
+                />
+                
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-bold text-white text-base leading-tight">{spell.name}</span>
+                      <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 shrink-0 mt-0.5">
+                        {spell.level === 0 ? 'Заговор' : `${spell.level} круг`}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-gray-400 font-medium italic opacity-70">
+                      {spell.school}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${
-                      spell.actionType === 'bonus' ? 'text-green-400 border-green-500/30 bg-green-500/10' :
-                      spell.actionType === 'reaction' ? 'text-orange-400 border-orange-500/30 bg-orange-500/10' :
-                      'text-blue-400 border-blue-500/30 bg-blue-500/10'
-                    }`}>
-                      {spell.actionType === 'bonus' ? 'Бонусное' : 
-                       spell.actionType === 'reaction' ? 'Реакция' : 'Основное'}
-                    </span>
-                    <div className="flex items-center gap-1.5 text-[9px] text-gray-500 font-bold uppercase tracking-widest opacity-60">
-                      <Zap size={10} className="text-blue-400/50" />
-                      {spell.castingTime}
+
+                  <div className="h-px bg-white/5 w-full" />
+
+                  <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Время</span>
+                      <div className="flex items-center gap-1.5 text-[10px] text-gray-300 font-bold">
+                        <Zap size={10} className="text-blue-400" />
+                        {spell.castingTime}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Тип</span>
+                      <div className={`text-[10px] font-bold ${
+                        spell.actionType === 'bonus' ? 'text-green-400' :
+                        spell.actionType === 'reaction' ? 'text-orange-400' :
+                        'text-blue-400'
+                      }`}>
+                        {spell.actionType === 'bonus' ? 'Бонусное' : 
+                         spell.actionType === 'reaction' ? 'Реакция' : 'Основное'}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Дистанция</span>
+                      <span className="text-[10px] text-gray-300 font-bold">{spell.range}</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Длительность</span>
+                      <span className="text-[10px] text-gray-300 font-bold">{spell.duration}</span>
                     </div>
                   </div>
+                </div>
+
+                {/* Elegant SVG Arrow */}
+                <div className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-4 h-2.5 flex justify-center">
+                  <div 
+                    className="absolute inset-0 blur-[2px] opacity-20"
+                    style={{ backgroundColor: spell.color || '#3b82f6' }}
+                  />
+                  <svg 
+                    className="relative w-4 h-2.5" 
+                    viewBox="0 0 16 10" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path 
+                      d="M8 10L0 0H16L8 10Z" 
+                      fill="rgba(15, 15, 15, 0.95)"
+                    />
+                    <path 
+                      d="M0 0L8 10L16 0" 
+                      stroke="rgba(255, 255, 255, 0.1)" 
+                      strokeWidth="1"
+                    />
+                  </svg>
                 </div>
               </div>
             </motion.div>
