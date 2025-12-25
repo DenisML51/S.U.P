@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Resource, Limb, InventoryItem, Attack, Ability, Trait } from '../../types';
+import { Resource, Limb, InventoryItem, Attack, Ability, Trait, Spell } from '../../types';
 
 export const useCharacterModals = (setActiveTab: (tab: any) => void, setInventorySubTab: (tab: any) => void) => {
   const [showHealthModal, setShowHealthModal] = useState(false);
@@ -31,6 +31,11 @@ export const useCharacterModals = (setActiveTab: (tab: any) => void, setInventor
   const [viewingTrait, setViewingTrait] = useState<Trait | undefined>(undefined);
   const [showBasicInfoModal, setShowBasicInfoModal] = useState(false);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+  const [showSpellModal, setShowSpellModal] = useState(false);
+  const [editingSpell, setEditingSpell] = useState<Spell | undefined>(undefined);
+  const [showSpellViewModal, setShowSpellViewModal] = useState(false);
+  const [viewingSpell, setViewingSpell] = useState<Spell | undefined>(undefined);
+  const [showGrimmoireModal, setShowGrimmoireModal] = useState(false);
 
   useEffect(() => {
     const handleOpenModal = (e: any) => {
@@ -82,6 +87,11 @@ export const useCharacterModals = (setActiveTab: (tab: any) => void, setInventor
     viewingTrait, setViewingTrait,
     showBasicInfoModal, setShowBasicInfoModal,
     showCurrencyModal, setShowCurrencyModal,
+    showSpellModal, setShowSpellModal,
+    editingSpell, setEditingSpell,
+    showSpellViewModal, setShowSpellViewModal,
+    viewingSpell, setViewingSpell,
+    showGrimmoireModal, setShowGrimmoireModal,
   };
 };
 

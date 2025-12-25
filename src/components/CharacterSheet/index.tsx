@@ -8,6 +8,7 @@ import { AttributesSection } from './components/AttributesSection';
 import { PersonalityTab } from './components/Tabs/PersonalityTab';
 import { HealthTab } from './components/Tabs/HealthTab';
 import { AbilitiesTab } from './components/Tabs/AbilitiesTab';
+import { SpellsTab } from './components/Tabs/SpellsTab';
 import { AttacksTab } from './components/Tabs/AttacksTab';
 import { EquipmentTab } from './components/Tabs/EquipmentTab';
 import { InventoryTab } from './components/Tabs/InventoryTab';
@@ -158,6 +159,18 @@ export const CharacterSheet: React.FC = () => {
                     updateAbilitiesNotes={logic.updateAbilitiesNotes}
                     getActionTypeLabel={getActionTypeLabel}
                     getActionTypeColor={getActionTypeColor}
+                  />
+                )}
+
+                {activeTab === 'spells' && (
+                  <SpellsTab 
+                    character={character}
+                    openSpellModal={logic.openSpellModal}
+                    openSpellView={logic.openSpellView}
+                    toggleSpellPrepared={logic.toggleSpellPrepared}
+                    updateResourceCount={logic.updateResourceCount}
+                    updateSpellsNotes={logic.updateSpellsNotes}
+                    openGrimmoire={logic.openGrimmoire}
                   />
                 )}
 

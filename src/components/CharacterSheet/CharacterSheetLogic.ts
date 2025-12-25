@@ -9,6 +9,7 @@ import { useCharacterModals } from '../../hooks/character/useCharacterModals';
 import { useCharacterInventory } from '../../hooks/character/useCharacterInventory';
 import { useCharacterActions } from '../../hooks/character/useCharacterActions';
 import { useCharacterUpdate } from '../../hooks/character/useCharacterUpdate';
+import { useCharacterSpells } from '../../hooks/character/useCharacterSpells';
 
 export type InventorySubTab = 'all' | 'armor' | 'weapon' | 'item' | 'ammunition';
 
@@ -31,8 +32,9 @@ export const useCharacterSheetLogic = () => {
   const inventory = useCharacterInventory(character, updateCharacter, settings, stats?.getModifierValue || ((id: string) => 0));
   const actions = useCharacterActions(character, updateCharacter);
   const updates = useCharacterUpdate(character, updateCharacter, settings);
+  const spellsHook = useCharacterSpells(character, updateCharacter);
 
-  if (!character || !stats || !inventory || !actions || !updates) {
+  if (!character || !stats || !inventory || !actions || !updates || !spellsHook) {
     return { character: null };
   }
 
@@ -45,6 +47,7 @@ export const useCharacterSheetLogic = () => {
   // Combined Return Object
   return {
     character,
+    updateCharacter,
     activeTab,
     setActiveTab,
     inventorySubTab,
@@ -68,11 +71,18 @@ export const useCharacterSheetLogic = () => {
     // Actions, Abilities, Traits, Resources
     ...actions,
     
+    // Spells
+    ...spellsHook,
+    openGrimmoire: () => modals.setShowGrimmoireModal(true),
+
     // Update handlers
     ...updates,
+    saveCurrency: updates.updateCurrency, // Map updateCurrency to saveCurrency
 
     // Specialized logic
     updateResourceCount,
+    updateAmmunitionQuantity: inventory.updateItemQuantity, // Map for AmmunitionModal
+    updateArmorClass: (newAC: number, newLimbs: any) => updateCharacter({ ...character, armorClass: newAC, limbs: newLimbs }),
     updatePersonalityField: (field: any, value: any) => updateCharacter({ ...character, [field]: value }),
     updateLanguagesAndProficiencies: (value: string) => updateCharacter({ ...character, languagesAndProficiencies: value }),
     updateInventoryNotes: (notes: string) => updateCharacter({ ...character, inventoryNotes: notes }),
@@ -81,8 +91,19 @@ export const useCharacterSheetLogic = () => {
     updateAbilitiesNotes: (notes: string) => updateCharacter({ ...character, abilitiesNotes: notes }),
     updateSpeed: (newSpeed: number) => updateCharacter({ ...character, speed: newSpeed }),
     
-    // Wrappers for hooks that need extra logic
-    handleUpdateArmorClass: (newAC: number, newLimbs: any) => updateCharacter({ ...character, armorClass: newAC, limbs: newLimbs }),
+    // Explicit save mappings to avoid any ambiguity
+    saveResource: actions.saveResource,
+    deleteResource: actions.deleteResource,
+    saveItem: inventory.saveItem,
+    deleteItem: inventory.deleteItem,
+    saveAttack: actions.saveAttack,
+    deleteAttack: actions.deleteAttack,
+    saveAbility: actions.saveAbility,
+    deleteAbility: actions.deleteAbility,
+    saveTrait: actions.saveTrait,
+    deleteTrait: actions.deleteTrait,
+    saveSpell: spellsHook.saveSpell,
+    deleteSpell: spellsHook.deleteSpell,
     
     handleRollInitiative: () => {
       const result = stats.rollInitiative();
@@ -168,6 +189,18 @@ export const useCharacterSheetLogic = () => {
     openResourceView: (resource: any) => {
       modals.setViewingResource(resource);
       modals.setShowResourceViewModal(true);
+    },
+    openSpellModal: (spell?: any) => {
+      modals.setEditingSpell(spell);
+      modals.setShowSpellModal(true);
+    },
+    closeSpellModal: () => {
+      modals.setShowSpellModal(false);
+      modals.setEditingSpell(undefined);
+    },
+    openSpellView: (spell: any) => {
+      modals.setViewingSpell(spell);
+      modals.setShowSpellViewModal(true);
     },
   };
 };

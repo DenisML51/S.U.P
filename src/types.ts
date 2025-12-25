@@ -13,6 +13,8 @@ export interface Resource {
   current: number;
   max: number;
   description: string;
+  spellSlotLevel?: number; // 0 for cantrips, 1-9 for levels
+  color?: string; // Custom color
 }
 
 export interface Currency {
@@ -79,6 +81,8 @@ export interface Ability {
   resourceId?: string; // Which resource it uses
   resourceCost?: number;
   effect: string;
+  iconName?: string;
+  color?: string; // Custom color
 }
 
 export interface Limb {
@@ -127,6 +131,24 @@ export interface Trait {
   description: string;
 }
 
+export interface Spell {
+  id: string;
+  name: string;
+  level: number; // 0 for cantrips
+  school: string;
+  castingTime: string;
+  actionType: ActionType;
+  range: string;
+  components: string;
+  duration: string;
+  description: string;
+  effect: string;
+  prepared: boolean;
+  resourceId?: string; // Link to spell slots resource
+  iconName?: string; // Custom icon
+  color?: string; // Custom color
+}
+
 export interface Character {
   id?: string; // ID персонажа для управления несколькими персонажами
   name: string;
@@ -151,6 +173,10 @@ export interface Character {
   abilitiesNotes: string;
   attacks: Attack[];
   abilities: Ability[];
+  spells: Spell[];
+  spellsNotes: string;
+  knownSchools: string[]; // List of spell schools the character knows
+  maxPreparedSpells: { [level: number]: number }; // Max spells that can be prepared per level
   attributes: {
     [key: string]: number;
   };

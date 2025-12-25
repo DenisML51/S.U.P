@@ -18,6 +18,9 @@ import { ResourceViewModal } from '../../../ResourceViewModal';
 import { CurrencyModal } from '../../../CurrencyModal';
 import { TraitModal } from '../../../TraitModal';
 import { TraitViewModal } from '../../../TraitViewModal';
+import { SpellModal } from '../../../SpellModal';
+import { SpellViewModal } from '../../../SpellViewModal';
+import { GrimmoireModal } from '../../../GrimmoireModal';
 import { BasicInfoModal } from '../../../BasicInfoModal';
 import { AmmunitionModal } from '../../../AmmunitionModal';
 import { ATTRIBUTES_LIST, Character, Resource, Limb, InventoryItem, Attack, Ability, Trait, Currency } from '../../../../types';
@@ -104,6 +107,17 @@ interface CharacterSheetModalsProps {
   showCurrencyModal: boolean;
   setShowCurrencyModal: (show: boolean) => void;
   saveCurrency: (currency: Currency) => void;
+  showSpellModal: boolean;
+  closeSpellModal: () => void;
+  editingSpell: Spell | undefined;
+  saveSpell: (spell: Spell) => void;
+  deleteSpell: (spellId: string) => void;
+  showSpellViewModal: boolean;
+  setShowSpellViewModal: (show: boolean) => void;
+  viewingSpell: Spell | undefined;
+  openSpellModal: (spell?: Spell) => void;
+  showGrimmoireModal: boolean;
+  setShowGrimmoireModal: (show: boolean) => void;
 }
 
 export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props) => {
@@ -188,6 +202,17 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
     showCurrencyModal,
     setShowCurrencyModal,
     saveCurrency,
+    showSpellModal,
+    closeSpellModal,
+    editingSpell,
+    saveSpell,
+    deleteSpell,
+    showSpellViewModal,
+    setShowSpellViewModal,
+    viewingSpell,
+    openSpellModal,
+    showGrimmoireModal,
+    setShowGrimmoireModal,
   } = props;
 
   return (
@@ -384,6 +409,37 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
         onClose={() => setShowCurrencyModal(false)}
         currency={character.currency}
         onSave={saveCurrency}
+      />
+
+      <SpellModal
+        isOpen={showSpellModal}
+        onClose={closeSpellModal}
+        spell={editingSpell}
+        resources={character.resources || []}
+        onSave={saveSpell}
+        onDelete={editingSpell ? () => deleteSpell(editingSpell.id) : undefined}
+      />
+
+      {viewingSpell && (
+        <SpellViewModal
+          isOpen={showSpellViewModal}
+          onClose={() => setShowSpellViewModal(false)}
+          spell={viewingSpell}
+          resource={viewingSpell.resourceId ? character.resources.find(r => r.id === viewingSpell.resourceId) : undefined}
+          onEdit={() => {
+            setShowSpellViewModal(false);
+            setTimeout(() => openSpellModal(viewingSpell), 0);
+          }}
+        />
+      )}
+
+      <GrimmoireModal
+        isOpen={showGrimmoireModal}
+        onClose={() => setShowGrimmoireModal(false)}
+        character={character}
+        onSaveSpell={saveSpell}
+        onDeleteSpell={deleteSpell}
+        onUpdateCharacter={updateCharacter}
       />
     </>
   );

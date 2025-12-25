@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ability, Resource } from '../types';
+import { Ability, Resource, RESOURCE_ICONS } from '../types';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CustomSelect } from './CustomSelect';
+import { getLucideIcon } from '../utils/iconUtils';
 import { Sparkles, Zap, Clock, X, Minus, Plus } from 'lucide-react';
 
 interface AbilityModalProps {
@@ -28,6 +29,14 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
   const [resourceId, setResourceId] = useState(ability?.resourceId || '');
   const [resourceCost, setResourceCost] = useState(ability?.resourceCost || 1);
   const [effect, setEffect] = useState(ability?.effect || '');
+  const [iconName, setIconName] = useState(ability?.iconName || 'Sparkles');
+  const [color, setColor] = useState(ability?.color || '#a855f7');
+  const [showIconPicker, setShowIconPicker] = useState(false);
+
+  const colors = [
+    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', 
+    '#ec4899', '#06b6d4', '#6366f1', '#14b8a6', '#f97316'
+  ];
 
   // Синхронизация состояния с props при открытии модалки
   useEffect(() => {
@@ -38,13 +47,16 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
       setResourceId(ability?.resourceId || '');
       setResourceCost(ability?.resourceCost || 1);
       setEffect(ability?.effect || '');
+      setIconName(ability?.iconName || 'Sparkles');
+      setColor(ability?.color || '#a855f7');
+      setShowIconPicker(false);
     }
   }, [isOpen, ability]);
 
   const handleSave = () => {
     if (!name.trim()) return;
     
-    const newAbility: Ability = {
+    const newAbility: any = {
       id: ability?.id || `ability_${Date.now()}`,
       name,
       description,
@@ -52,6 +64,8 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
       resourceId: resourceId || undefined,
       resourceCost: resourceId ? resourceCost : undefined,
       effect,
+      iconName,
+      color,
     };
     
     onSave(newAbility);
@@ -82,10 +96,62 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
             className="bg-dark-card rounded-2xl border border-dark-border w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
           >
             {/* Header */}
-            <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm">
+            <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm relative z-[100]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                  <Sparkles className="w-5 h-5 text-white" />
+                <div className="flex flex-col gap-2">
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      onClick={() => setShowIconPicker(!showIconPicker)}
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all border border-white/10 hover:scale-105"
+                      style={{ backgroundColor: `${color}20`, color: color }}
+                    >
+                      {getLucideIcon(iconName, { size: 24 })}
+                    </button>
+                    
+                    <AnimatePresence>
+                      {showIconPicker && (
+                        <>
+                          <div className="fixed inset-0 z-[9998]" onClick={() => setShowIconPicker(false)} />
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                            className="absolute top-full left-0 mt-2 bg-dark-card border border-white/10 rounded-xl p-3 grid grid-cols-4 gap-2 z-[9999] shadow-2xl w-64 backdrop-blur-xl"
+                          >
+                            {RESOURCE_ICONS.map((ico) => (
+                              <button
+                                key={ico.name}
+                                type="button"
+                                onClick={() => {
+                                  setIconName(ico.name);
+                                  setShowIconPicker(false);
+                                }}
+                                className={`aspect-square hover:bg-white/10 rounded-lg flex items-center justify-center transition-all ${
+                                  iconName === ico.name ? 'bg-white/20 text-white' : 'text-gray-400'
+                                }`}
+                              >
+                                {getLucideIcon(ico.name, { size: 18 })}
+                              </button>
+                            ))}
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  
+                  {/* Color Picker */}
+                  <div className="flex gap-1">
+                    {colors.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setColor(c)}
+                        className={`w-3 h-3 rounded-full transition-all ${color === c ? 'scale-125 ring-2 ring-white/50' : 'opacity-50 hover:opacity-100'}`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">{ability ? 'Редактировать способность' : 'Новая способность'}</h2>

@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RESOURCE_ICONS, Resource } from '../types';
 import { getLucideIcon } from '../utils/iconUtils';
 import { MarkdownEditor } from './MarkdownEditor';
-import { X, Minus, Plus, Settings2, Sparkles } from 'lucide-react';
+import { CustomSelect } from './CustomSelect';
+import { X, Minus, Plus, Settings2, Sparkles, Wand2 } from 'lucide-react';
 
 interface ResourceModalProps {
   isOpen: boolean;
@@ -25,7 +26,14 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
   const [current, setCurrent] = useState(resource?.current || 0);
   const [max, setMax] = useState(resource?.max || 1);
   const [description, setDescription] = useState(resource?.description || '');
+  const [spellSlotLevel, setSpellSlotLevel] = useState<number | undefined>(resource?.spellSlotLevel);
+  const [color, setColor] = useState(resource?.color || '#3b82f6');
   const [showIconPicker, setShowIconPicker] = useState(false);
+
+  const colors = [
+    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', 
+    '#ec4899', '#06b6d4', '#6366f1', '#14b8a6', '#f97316'
+  ];
 
   // Синхронизация состояния с props при открытии модалки
   useEffect(() => {
@@ -35,6 +43,8 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       setCurrent(resource?.current || 0);
       setMax(resource?.max || 1);
       setDescription(resource?.description || '');
+      setSpellSlotLevel(resource?.spellSlotLevel);
+      setColor(resource?.color || '#3b82f6');
       setShowIconPicker(false);
     }
   }, [isOpen, resource]);
@@ -49,6 +59,8 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       current: Math.min(current, max),
       max,
       description,
+      spellSlotLevel,
+      color,
     };
     
     onSave(newResource);
@@ -73,10 +85,62 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
             className="bg-dark-card rounded-2xl border border-dark-border w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
           >
             {/* Header */}
-            <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm">
+            <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm relative z-[100]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <Settings2 className="w-5 h-5 text-white" />
+                <div className="flex flex-col gap-2">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowIconPicker(!showIconPicker)}
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all border border-white/10 hover:scale-105"
+                      style={{ backgroundColor: `${color}20`, color: color }}
+                    >
+                      {getLucideIcon(iconName, { size: 24 })}
+                    </button>
+                    
+                    <AnimatePresence>
+                      {showIconPicker && (
+                        <>
+                          <div className="fixed inset-0 z-[9998]" onClick={() => setShowIconPicker(false)} />
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                            className="absolute top-full left-0 mt-2 bg-dark-card border border-white/10 rounded-xl p-3 grid grid-cols-4 gap-2 z-[9999] shadow-2xl w-64 backdrop-blur-xl"
+                          >
+                            {RESOURCE_ICONS.map((ico) => (
+                              <button
+                                key={ico.name}
+                                type="button"
+                                onClick={() => {
+                                  setIconName(ico.name);
+                                  setShowIconPicker(false);
+                                }}
+                                className={`aspect-square hover:bg-white/10 rounded-lg flex items-center justify-center transition-all ${
+                                  iconName === ico.name ? 'bg-white/20 text-white' : 'text-gray-400'
+                                }`}
+                              >
+                                {getLucideIcon(ico.name, { size: 18 })}
+                              </button>
+                            ))}
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  
+                  {/* Color Picker */}
+                  <div className="flex gap-1">
+                    {colors.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setColor(c)}
+                        className={`w-3 h-3 rounded-full transition-all ${color === c ? 'scale-125 ring-2 ring-white/50' : 'opacity-50 hover:opacity-100'}`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">{resource ? 'Редактировать ресурс' : 'Новый ресурс'}</h2>
@@ -108,7 +172,8 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.9, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        className="absolute top-full left-0 mt-2 bg-dark-card border border-dark-border rounded-xl p-3 grid grid-cols-4 gap-2 z-30 shadow-2xl w-64"
+                        exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                        className="absolute top-full left-0 mt-2 bg-dark-card border border-white/10 rounded-xl p-3 grid grid-cols-4 gap-2 z-[9999] shadow-2xl w-64"
                       >
                         {RESOURCE_ICONS.map((ico) => (
                           <button
@@ -162,6 +227,32 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Magic Focus / Spell Slots */}
+              <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl space-y-4">
+                <div className="flex items-center gap-2 text-blue-400">
+                  <Wand2 size={16} />
+                  <span className="text-xs font-bold uppercase tracking-wider">Магическая фокусировка</span>
+                </div>
+                
+                <CustomSelect
+                  value={(spellSlotLevel ?? -1).toString()}
+                  onChange={(v) => {
+                    const val = parseInt(v);
+                    setSpellSlotLevel(val === -1 ? undefined : val);
+                    // Automatically set icon if it's a spell slot
+                    if (val !== -1) setIconName('Zap');
+                  }}
+                  options={[
+                    { value: '-1', label: 'Обычный ресурс' },
+                    { value: '0', label: 'Ячейки (Заговоры/Особое)' },
+                    ...Array.from({ length: 9 }, (_, i) => ({ value: (i + 1).toString(), label: `Ячейки ${i + 1} круга` }))
+                  ]}
+                />
+                <p className="text-[10px] text-gray-500 leading-relaxed px-1">
+                  Если выбрано, этот ресурс будет отображаться во вкладке заклинаний как ячейки соответствующего круга.
+                </p>
               </div>
 
               <div>

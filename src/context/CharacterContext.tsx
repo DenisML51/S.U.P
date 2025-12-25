@@ -13,7 +13,7 @@ export interface CharacterPreview {
   avatar?: string;
 }
 
-export type TabType = 'personality' | 'health' | 'abilities' | 'attacks' | 'equipment' | 'inventory' | 'stats';
+export type TabType = 'personality' | 'health' | 'abilities' | 'spells' | 'attacks' | 'equipment' | 'inventory' | 'stats';
 
 interface CharacterContextType {
   character: Character | null;
@@ -57,6 +57,15 @@ const normalizeCharacter = (parsed: any): Character => {
     attacksNotes: parsed.attacksNotes || '',
     equipmentNotes: parsed.equipmentNotes || '',
     abilitiesNotes: parsed.abilitiesNotes || '',
+    spells: parsed.spells || [],
+    spellsNotes: parsed.spellsNotes || '',
+    knownSchools: parsed.knownSchools || [
+      'Воплощение', 'Вызов', 'Иллюзия', 'Некромантия', 
+      'Очарование', 'Преобразование', 'Прорицание', 'Ограждение'
+    ],
+    maxPreparedSpells: parsed.maxPreparedSpells || {
+      0: 99, 1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 2, 7: 2, 8: 1, 9: 1
+    },
     attacks: (parsed.attacks || []).map((a: any) => ({ ...a, actionType: a.actionType || 'action' })),
     abilities: (parsed.abilities || []).map((a: any) => ({ ...a, actionType: a.actionType || 'action' })),
     attributeBonuses: parsed.attributeBonuses || {},
@@ -215,28 +224,13 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
 
     const normalized = normalizeCharacter(newCharacter);
-    if (!normalized.id) {
-      console.error('Normalized character must have an ID');
-      return;
-    }
     
+    // Use functional update to ensure we always have the latest state
     setCharacter(normalized);
     
-    // Сохраняем персонажа
-    try {
-      if (settings.storagePath && (window as any).electronAPI) {
-        const filePath = `${settings.storagePath}/${normalized.id}.json`;
-        await (window as any).electronAPI.saveCharacter(filePath, normalized);
-      } else {
-        localStorage.setItem(getCharacterStorageKey(normalized.id), JSON.stringify(normalized));
-      }
-
-      if (settings.notifications) {
-        toast.success('Персонаж сохранен');
-      }
-      
-      // Обновляем список персонажей
-      const updatedList = charactersList.map(c => 
+    // Also update in characters list
+    setCharactersList(prevList => {
+      const updatedList = prevList.map(c => 
         c.id === normalized.id 
           ? {
               id: normalized.id,
@@ -251,7 +245,6 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
           : c
       );
       
-      // Если персонажа нет в списке, добавляем
       if (!updatedList.find(c => c.id === normalized.id)) {
         updatedList.push({
           id: normalized.id,
@@ -265,7 +258,23 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
         });
       }
       
-      saveCharactersList(updatedList);
+      // Save updated list to storage
+      localStorage.setItem(CHARACTERS_LIST_KEY, JSON.stringify(updatedList));
+      return updatedList;
+    });
+
+    // Сохраняем персонажа
+    try {
+      if (settings.storagePath && (window as any).electronAPI) {
+        const filePath = `${settings.storagePath}/${normalized.id}.json`;
+        await (window as any).electronAPI.saveCharacter(filePath, normalized);
+      } else {
+        localStorage.setItem(getCharacterStorageKey(normalized.id), JSON.stringify(normalized));
+      }
+
+      if (settings.notifications) {
+        toast.success('Персонаж сохранен');
+      }
     } catch (e) {
       console.error('Failed to save character:', e);
     }

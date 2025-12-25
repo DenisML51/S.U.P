@@ -16,7 +16,8 @@ import {
   LogOut,
   Download,
   FileJson,
-  Sliders
+  Sliders,
+  Wand2
 } from 'lucide-react';
 import { getLucideIcon } from '../utils/iconUtils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +30,7 @@ const tabs: { id: TabType; label: string; icon: any }[] = [
   { id: 'personality', label: 'Герой', icon: User },
   { id: 'health', label: 'Жизнь', icon: Heart },
   { id: 'abilities', label: 'Умения', icon: Sparkles },
+  { id: 'spells', label: 'Магия', icon: Wand2 },
   { id: 'attacks', label: 'Атаки', icon: Swords },
   { id: 'equipment', label: 'Броня', icon: Shield },
   { id: 'inventory', label: 'Вещи', icon: Briefcase },

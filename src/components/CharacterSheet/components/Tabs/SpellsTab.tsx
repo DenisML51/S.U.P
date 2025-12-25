@@ -1,0 +1,235 @@
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Wand2, Plus, Search, Sparkles, Book, Star, Trash2, Edit2, Zap, Brain } from 'lucide-react';
+import { Character, Spell, Resource } from '../../../../types';
+import { MarkdownText } from '../../../MarkdownText';
+import { MarkdownEditor } from '../../../MarkdownEditor';
+import { getLucideIcon } from '../../../../utils/iconUtils';
+
+interface SpellsTabProps {
+  character: Character;
+  openSpellModal: (spell?: Spell) => void;
+  openSpellView: (spell: Spell) => void;
+  toggleSpellPrepared: (spellId: string) => void;
+  updateResourceCount: (resourceId: string, delta: number) => void;
+  updateSpellsNotes: (notes: string) => void;
+  openGrimmoire: () => void;
+}
+
+export const SpellsTab: React.FC<SpellsTabProps> = ({
+  character,
+  openSpellModal,
+  openSpellView,
+  toggleSpellPrepared,
+  updateResourceCount,
+  updateSpellsNotes,
+  openGrimmoire,
+}) => {
+  const [search, setSearch] = useState('');
+  const [activeLevel, setActiveLevel] = useState<number | 'all'>(-1); // -1 for all, 0 for cantrips, 1-9 for levels
+
+  const spells = character.spells || [];
+  
+  const filteredSpells = useMemo(() => {
+    return spells.filter(spell => {
+      if (!spell.prepared) return false;
+      const matchesSearch = spell.name.toLowerCase().includes(search.toLowerCase()) ||
+                          spell.school.toLowerCase().includes(search.toLowerCase());
+      const matchesLevel = activeLevel === -1 || spell.level === activeLevel;
+      return matchesSearch && matchesLevel;
+    });
+  }, [spells, search, activeLevel]);
+
+  const spellSlots = useMemo(() => {
+    return character.resources.filter(r => r.spellSlotLevel !== undefined);
+  }, [character.resources]);
+
+  const levels = useMemo(() => {
+    const uniqueLevels = Array.from(new Set(spells.map(s => s.level))).sort((a, b) => a - b);
+    return uniqueLevels;
+  }, [spells]);
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Controls Header */}
+      <div className="flex flex-col gap-6 sticky top-0 z-30 bg-dark-bg/80 backdrop-blur-md py-4 -mx-2 px-2 border-b border-white/5">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex-1 relative min-w-[200px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Поиск заклинания или школы..."
+              className="w-full bg-dark-card/30 border border-dark-border rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            />
+          </div>
+          
+          <button
+            onClick={() => openSpellModal()}
+            className="bg-white/5 hover:bg-white/10 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 border border-white/10 transition-all active:scale-95"
+          >
+            <Plus size={18} />
+            Новое заклинание
+          </button>
+
+          <button
+            onClick={openGrimmoire}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+          >
+            <Book size={18} />
+            Гримуар
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Spell Slots Compact (Icon based) */}
+          <div className="flex flex-wrap gap-3">
+            {spellSlots.sort((a, b) => (a.spellSlotLevel || 0) - (b.spellSlotLevel || 0)).map(slot => {
+              const romanNumerals = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+              const level = slot.spellSlotLevel || 0;
+              const isEmpty = slot.current <= 0;
+
+              return (
+                <div 
+                  key={slot.id}
+                  onClick={() => updateResourceCount(slot.id, -1)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('open-character-modal', { 
+                      detail: { type: 'resource', data: slot } 
+                    }));
+                  }}
+                  className="group relative cursor-pointer"
+                >
+                  <div className={`w-12 h-12 bg-dark-bg/80 border rounded-2xl flex flex-col items-center justify-center transition-all shadow-lg backdrop-blur-sm ${
+                    isEmpty ? 'border-red-500 bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-blue-500/40 hover:border-blue-500/60 bg-blue-500/5'
+                  }`}>
+                    {getLucideIcon(slot.iconName || 'Zap', { 
+                      size: 20, 
+                      className: isEmpty ? "text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "text-blue-400" 
+                    } as any)}
+                    {level > 0 && (
+                      <span className={`text-[11px] font-black mt-0.5 tracking-tighter leading-none ${isEmpty ? 'text-red-400' : 'text-blue-300'}`}>
+                        {romanNumerals[level]}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Tooltip */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
+                    <div className="font-bold text-gray-200">{slot.name}: {slot.current}/{slot.max}</div>
+                    <div className="text-gray-500 mt-1 uppercase tracking-tighter">ЛКМ: -1 • ПКМ: Настр.</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Level Filter */}
+          <div className="flex flex-wrap gap-1.5 p-1 bg-dark-card/30 border border-dark-border rounded-xl">
+            <button
+              onClick={() => setActiveLevel(-1)}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                activeLevel === -1 
+                  ? 'bg-blue-500 text-white shadow-lg' 
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Все
+            </button>
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(l => spells.some(s => s.level === l)).map(level => (
+              <button
+                key={level}
+                onClick={() => setActiveLevel(level)}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                  activeLevel === level 
+                    ? 'bg-blue-500 text-white shadow-lg' 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {level === 0 ? 'Заговоры' : level}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Spells Grid */}
+      <div className="flex flex-wrap gap-4">
+        <AnimatePresence mode="popLayout">
+          {filteredSpells.map((spell) => (
+            <motion.div
+              key={spell.id}
+              onClick={() => openSpellView(spell)}
+              className="group relative flex items-center bg-dark-card/30 border border-white/5 hover:border-white/20 rounded-2xl transition-all duration-500 ease-out cursor-pointer overflow-hidden shadow-lg"
+              style={{ 
+                borderColor: spell.prepared ? `${spell.color || '#3b82f6'}40` : undefined,
+                backgroundColor: spell.prepared ? `${spell.color || '#3b82f6'}05` : undefined,
+              }}
+            >
+              {/* Icon Section */}
+              <div 
+                className="w-14 h-14 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 flex-shrink-0"
+                style={{ color: spell.color || '#3b82f6' }}
+              >
+                {getLucideIcon(spell.iconName || 'Wand2', { size: 28 })}
+              </div>
+
+              {/* Expansion Content (Visible on Hover) */}
+              <div className="overflow-hidden max-w-0 group-hover:max-w-[400px] transition-all duration-500 ease-out whitespace-nowrap">
+                <div className="flex flex-col pr-5 pl-1 border-l border-white/5 ml-1">
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-white text-sm tracking-tight">{spell.name}</span>
+                    <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
+                      {spell.level === 0 ? 'Заговор' : `${spell.level} круг`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                      spell.actionType === 'bonus' ? 'text-green-400 border-green-500/30 bg-green-500/10' :
+                      spell.actionType === 'reaction' ? 'text-orange-400 border-orange-500/30 bg-orange-500/10' :
+                      'text-blue-400 border-blue-500/30 bg-blue-500/10'
+                    }`}>
+                      {spell.actionType === 'bonus' ? 'Бонусное' : 
+                       spell.actionType === 'reaction' ? 'Реакция' : 'Основное'}
+                    </span>
+                    <div className="flex items-center gap-1.5 text-[9px] text-gray-500 font-bold uppercase tracking-widest opacity-60">
+                      <Zap size={10} className="text-blue-400/50" />
+                      {spell.castingTime}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {filteredSpells.length === 0 && (
+        <div className="text-center py-20 bg-dark-card/20 rounded-3xl border border-dashed border-dark-border">
+          <div className="w-16 h-16 bg-dark-bg border border-dark-border rounded-2xl flex items-center justify-center mx-auto mb-4 text-gray-600">
+            <Book size={32} />
+          </div>
+          <h3 className="text-gray-400 font-bold">Заклинаний не найдено</h3>
+          <p className="text-sm text-gray-600 mt-1">Добавьте свое первое магическое умение</p>
+        </div>
+      )}
+
+      {/* Notes Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 px-1">
+          <h3 className="text-xl font-bold tracking-tight text-gray-200 uppercase tracking-widest">Заметки заклинателя</h3>
+          <div className="h-px flex-1 bg-gradient-to-r from-dark-border to-transparent"></div>
+        </div>
+        <MarkdownEditor
+          value={character.spellsNotes}
+          onChange={updateSpellsNotes}
+          placeholder="Особые правила, фокусировка, магические традиции..."
+          minHeight="150px"
+        />
+      </div>
+    </div>
+  );
+};
+
