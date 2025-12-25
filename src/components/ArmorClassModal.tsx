@@ -17,6 +17,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
   armorClass,
   limbs,
   onUpdate,
+  autoAC, // Ensure this is destuctured correctly
 }) => {
   const [baseAC, setBaseAC] = useState(armorClass);
   const [limbACs, setLimbACs] = useState<{[key: string]: number}>(
