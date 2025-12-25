@@ -66,7 +66,10 @@
       ],
       "icon": "assets/icon.ico",
       "publisherName": "Into The Dark",
-      "requestedExecutionLevel": "asInvoker"
+      "requestedExecutionLevel": "asInvoker",
+      "signingHashAlgorithms": [
+        "sha256"
+      ]
     },
     "nsis": {
       "oneClick": false,

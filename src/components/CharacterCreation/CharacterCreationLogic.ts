@@ -137,6 +137,10 @@ export const useCharacterCreationLogic = (onComplete?: () => void) => {
       abilitiesNotes: '',
       attacks: [],
       abilities: [],
+      spells: [],
+      spellsNotes: '',
+      knownSchools: [],
+      maxPreparedSpells: {},
       attributes,
       attributeBonuses: {},
       skills,
@@ -154,6 +158,7 @@ export const useCharacterCreationLogic = (onComplete?: () => void) => {
       bonds: '',
       flaws: '',
       traits: [],
+      conditions: [],
     };
     createCharacter(newCharacter);
     if (onComplete) {

@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { CharacterPreview } from '../context/CharacterContext';
-import { CLASSES } from '../types';
+import { CLASSES, Resistance } from '../types';
 import { Heart, User, X } from 'lucide-react';
+import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
 
 interface CharacterCardProps {
   character: CharacterPreview;
@@ -15,6 +16,32 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
   const charClass = CLASSES.find(c => c.id === character.class);
   const subclass = charClass?.subclasses.find(sc => sc.id === character.subclass);
   const healthPercentage = (character.currentHP / character.maxHP) * 100;
+
+  const renderMiniResistances = () => {
+    if (!character.resistances || character.resistances.length === 0) return null;
+    
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-3 pt-2 border-t border-white/5">
+        {character.resistances.map((res: Resistance) => {
+          const color = DAMAGE_TYPE_COLORS[res.type] || '#94a3b8';
+          
+          return (
+            <div 
+              key={res.id} 
+              className="relative flex items-center justify-center p-1 rounded bg-dark-bg/30 border border-white/5 group"
+              title={`${res.type}: ${res.level}`}
+              style={{ color }}
+            >
+              {getDamageTypeIcon(res.type, 16)}
+              {res.level === 'resistance' && <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-blue-600 rounded-full border border-dark-card" />}
+              {res.level === 'vulnerability' && <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-red-600 rounded-full border border-dark-card" />}
+              {res.level === 'immunity' && <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-purple-600 rounded-full border border-dark-card" />}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   if (compact) {
     return (
@@ -128,6 +155,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
             />
           </div>
         </div>
+        {renderMiniResistances()}
       </div>
     </motion.div>
   );

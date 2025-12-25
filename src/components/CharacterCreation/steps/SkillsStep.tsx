@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Check, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { ATTRIBUTES_LIST, Skill, Race, Class, Subclass } from '../../../types';
+import { ATTRIBUTES_LIST, Skill, Race, Class, Subclass, Subrace } from '../../../types';
 
 interface SkillsStepProps {
   skills: Skill[];

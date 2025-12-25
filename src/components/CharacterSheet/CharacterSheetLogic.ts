@@ -83,7 +83,8 @@ export const useCharacterSheetLogic = () => {
     // Specialized logic
     updateResourceCount,
     updateAmmunitionQuantity: inventory.updateItemQuantity, // Map for AmmunitionModal
-    updateArmorClass: (newAC: number, newLimbs: any) => updateCharacter({ ...character, armorClass: newAC, limbs: newLimbs }),
+    updateArmorClass: (newAC: number, newLimbs: any, newResistances: any[]) => 
+      updateCharacter({ ...character, armorClass: newAC, limbs: newLimbs, resistances: newResistances }),
     updatePersonalityField: (field: any, value: any) => updateCharacter({ ...character, [field]: value }),
     updateLanguagesAndProficiencies: (value: string) => updateCharacter({ ...character, languagesAndProficiencies: value }),
     updateInventoryNotes: (notes: string) => updateCharacter({ ...character, inventoryNotes: notes }),

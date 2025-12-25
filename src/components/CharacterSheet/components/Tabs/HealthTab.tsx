@@ -1,13 +1,15 @@
 import React from 'react';
-import { Shield, Activity, AlertCircle, Heart } from 'lucide-react';
-import { Character, Limb, getLimbInjuryLevel } from '../../../../types';
+import { Shield, Activity, AlertCircle, Heart, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react';
+import { Character, Limb, getLimbInjuryLevel, Resistance } from '../../../../types';
 import { motion } from 'framer-motion';
+import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../../../../utils/damageUtils';
 
 interface HealthTabProps {
   character: Character;
   getLimbType: (limbId: string) => 'head' | 'arm' | 'leg' | 'torso';
   openLimbModal: (limb: Limb) => void;
   openItemView: (item: any) => void;
+  openACModal: () => void;
 }
 
 export const HealthTab: React.FC<HealthTabProps> = ({
@@ -15,14 +17,88 @@ export const HealthTab: React.FC<HealthTabProps> = ({
   getLimbType,
   openLimbModal,
   openItemView,
+  openACModal,
 }) => {
+  const renderResistanceIcon = (res: Resistance) => {
+    const color = DAMAGE_TYPE_COLORS[res.type] || '#94a3b8';
+    
+    const getLevelIcon = () => {
+      switch (res.level) {
+        case 'resistance': return <ShieldCheck className="absolute -bottom-1 -right-1 w-2.5 h-2.5 text-white bg-blue-600 rounded-full border border-dark-card" />;
+        case 'vulnerability': return <ShieldAlert className="absolute -bottom-1 -right-1 w-2.5 h-2.5 text-white bg-red-600 rounded-full border border-dark-card" />;
+        case 'immunity': return <ShieldX className="absolute -bottom-1 -right-1 w-2.5 h-2.5 text-white bg-purple-600 rounded-full border border-dark-card" />;
+        default: return null;
+      }
+    };
+
+    const getLevelLabel = () => {
+      switch (res.level) {
+        case 'resistance': return 'Сопротивление';
+        case 'vulnerability': return 'Уязвимость';
+        case 'immunity': return 'Иммунитет';
+        default: return '';
+      }
+    };
+
+    return (
+      <motion.div
+        key={res.id}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative p-2 group cursor-help bg-dark-bg/40 border border-white/5 rounded-xl hover:border-white/10 transition-colors"
+        title={`${res.type}: ${getLevelLabel()}`}
+        style={{ color }}
+      >
+        <div className="relative">
+          {getDamageTypeIcon(res.type, 24)}
+          {res.level === 'resistance' && (
+            <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center border border-dark-card shadow-lg">
+              <ShieldCheck className="w-2.5 h-2.5 text-white" />
+            </div>
+          )}
+          {res.level === 'vulnerability' && (
+            <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center border border-dark-card shadow-lg">
+              <ShieldAlert className="w-2.5 h-2.5 text-white" />
+            </div>
+          )}
+          {res.level === 'immunity' && (
+            <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center border border-dark-card shadow-lg">
+              <ShieldX className="w-2.5 h-2.5 text-white" />
+            </div>
+          )}
+        </div>
+        
+        {/* Simple Hover Label */}
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-dark-card border border-dark-border rounded-xl text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 shadow-2xl translate-y-1 group-hover:translate-y-0">
+          <div className="font-black border-b border-white/10 pb-1 mb-1">{res.type}</div>
+          <div className="text-gray-400 font-bold">{getLevelLabel()}</div>
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-bold flex items-center gap-2">
-          <Activity className="w-5 h-5 text-blue-400" />
-          Состояние тела
-        </h3>
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Activity className="w-5 h-5 text-blue-400" />
+              Состояние тела
+            </h3>
+            
+            {/* Inline Resistances without Box */}
+            <div className="flex items-center gap-1">
+              {character.resistances?.map(renderResistanceIcon)}
+            </div>
+          </div>
+          <button
+            onClick={openACModal}
+            className="text-[10px] font-black uppercase bg-dark-card/50 border border-dark-border px-3 py-1.5 rounded-xl hover:border-blue-500/50 transition-all text-gray-400 hover:text-blue-400"
+          >
+            Настроить защиту
+          </button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">

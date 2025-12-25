@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Zap, Shield, ArrowUp } from 'lucide-react';
-import { Character } from '../../../types';
+import { Heart, Zap, Shield, ArrowUp, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react';
+import { Character, Resistance } from '../../../types';
+import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../../../utils/damageUtils';
 
 interface StatsHeaderProps {
   character: Character;
@@ -108,10 +109,50 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
             AC
           </div>
         </div>
-        <div>
-          <div className="text-xs text-gray-400 uppercase font-semibold">Защита</div>
-          <div className="text-3xl font-bold">
-            {character.armorClass}
+        <div className="w-full">
+          <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Защита</div>
+          <div className="flex items-center justify-between w-full">
+            <div className="text-3xl font-black text-blue-400">
+              {character.armorClass}
+            </div>
+            {character.resistances && character.resistances.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 justify-end max-w-[65%]">
+                {character.resistances.map((res: Resistance) => (
+                  <div 
+                    key={res.id} 
+                    className="relative group/res flex items-center justify-center p-1 rounded-lg bg-dark-bg/40 border border-white/5"
+                    style={{ color: DAMAGE_TYPE_COLORS[res.type] || '#94a3b8' }}
+                  >
+                    <div className="relative">
+                      {getDamageTypeIcon(res.type, 18)}
+                      {res.level === 'resistance' && (
+                        <div className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-blue-600 rounded-full flex items-center justify-center border border-dark-card shadow-sm">
+                          <ShieldCheck className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      )}
+                      {res.level === 'vulnerability' && (
+                        <div className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-red-600 rounded-full flex items-center justify-center border border-dark-card shadow-sm">
+                          <ShieldAlert className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      )}
+                      {res.level === 'immunity' && (
+                        <div className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-purple-600 rounded-full flex items-center justify-center border border-dark-card shadow-sm">
+                          <ShieldX className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full right-0 mb-2 px-2 py-1.5 bg-dark-card border border-dark-border rounded-lg text-[10px] whitespace-nowrap opacity-0 group-hover/res:opacity-100 transition-all pointer-events-none z-50 shadow-2xl text-gray-200 translate-y-1 group-hover/res:translate-y-0">
+                      <div className="font-bold border-b border-white/10 pb-1 mb-1">{res.type}</div>
+                      <div className="text-gray-400">
+                        {res.level === 'resistance' ? 'Сопротивление' : res.level === 'vulnerability' ? 'Уязвимость' : 'Иммунитет'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div className="text-[10px] text-gray-500 font-medium">Класс Брони</div>

@@ -3,7 +3,7 @@ import { Character, Currency, Skill, Limb, getProficiencyBonus } from '../../typ
 
 export const useCharacterUpdate = (
   character: Character | null,
-  updateCharacter: (char: Character, silent?: boolean) => void,
+  updateCharacter: (char: Character | ((prev: Character) => Character), silent?: boolean) => void,
   logHistory: (message: string, type?: 'health' | 'sanity' | 'resource' | 'inventory' | 'exp' | 'other') => void,
   settings: any
 ) => {
@@ -30,7 +30,7 @@ export const useCharacterUpdate = (
       else toast.error(`Здоровье: ${diff} (${nextHP}/${nextMax + nextBonus})`);
     }
 
-    updateCharacter(prev => ({
+    updateCharacter((prev: Character) => ({
       ...prev,
       currentHP: nextHP,
       maxHP: nextMax,
@@ -59,7 +59,7 @@ export const useCharacterUpdate = (
       else toast.success(`Рассудок восстановлен: +${diff} (${clampedSanity}/${maxVal})`);
     }
 
-    updateCharacter(prev => ({ ...prev, sanity: clampedSanity }), true);
+    updateCharacter((prev: Character) => ({ ...prev, sanity: clampedSanity }), true);
   };
 
   const saveExperience = (newExperience: number, newLevel: number) => {
@@ -81,7 +81,7 @@ export const useCharacterUpdate = (
       }
     }
 
-    updateCharacter(prev => ({
+    updateCharacter((prev: Character) => ({
       ...prev,
       experience: newExperience,
       level: newLevel,

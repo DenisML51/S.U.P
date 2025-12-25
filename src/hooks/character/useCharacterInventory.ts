@@ -3,7 +3,7 @@ import { Character, InventoryItem, Attack } from '../../types';
 
 export const useCharacterInventory = (
   character: Character | null,
-  updateCharacter: (char: Character, silent?: boolean) => void,
+  updateCharacter: (char: Character | ((prev: Character) => Character), silent?: boolean) => void,
   logHistory: (message: string, type?: 'health' | 'sanity' | 'resource' | 'inventory' | 'exp' | 'other') => void,
   settings: any,
   getModifierValue: (attrId: string) => number
@@ -52,7 +52,7 @@ export const useCharacterInventory = (
   };
 
   const equipItem = (itemId: string) => {
-    updateCharacter(prev => {
+    updateCharacter((prev: Character) => {
       const item = prev.inventory.find(i => i.id === itemId);
       if (!item) return prev;
 
@@ -114,7 +114,7 @@ export const useCharacterInventory = (
   };
 
   const unequipItem = (itemId: string) => {
-    updateCharacter(prev => {
+    updateCharacter((prev: Character) => {
       const item = prev.inventory.find(i => i.id === itemId);
       if (!item) return prev;
 
@@ -152,7 +152,7 @@ export const useCharacterInventory = (
   };
 
   const updateItemQuantity = (itemId: string, delta: number) => {
-    updateCharacter(prev => {
+    updateCharacter((prev: Character) => {
       const item = prev.inventory.find(i => i.id === itemId);
       if (!item) return prev;
 

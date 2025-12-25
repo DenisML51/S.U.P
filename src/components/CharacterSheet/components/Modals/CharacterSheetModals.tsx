@@ -23,7 +23,7 @@ import { SpellViewModal } from '../../../SpellViewModal';
 import { GrimmoireModal } from '../../../GrimmoireModal';
 import { BasicInfoModal } from '../../../BasicInfoModal';
 import { AmmunitionModal } from '../../../AmmunitionModal';
-import { ATTRIBUTES_LIST, Character, Resource, Limb, InventoryItem, Attack, Ability, Trait, Currency } from '../../../../types';
+import { ATTRIBUTES_LIST, Character, Resource, Limb, InventoryItem, Attack, Ability, Trait, Currency, Spell } from '../../../../types';
 
 interface CharacterSheetModalsProps {
   character: Character;
@@ -37,7 +37,7 @@ interface CharacterSheetModalsProps {
   showSanityModal: boolean;
   setShowSanityModal: (show: boolean) => void;
   getMaxSanity: () => number;
-  updateSanity: (newSanity: number) => void;
+  updateSanity: (newSanity: number, maxSanity: number) => void;
   showExperienceModal: boolean;
   setShowExperienceModal: (show: boolean) => void;
   saveExperience: (newExperience: number, newLevel: number) => void;
@@ -53,7 +53,7 @@ interface CharacterSheetModalsProps {
   updateLimb: (updatedLimb: Limb) => void;
   showACModal: boolean;
   setShowACModal: (show: boolean) => void;
-  updateArmorClass: (newAC: number, newLimbs: Limb[]) => void;
+  updateArmorClass: (newAC: number, newLimbs: Limb[], newResistances: any[]) => void;
   autoAC?: number;
   showItemModal: boolean;
   closeItemModal: () => void;
@@ -288,8 +288,11 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
         onClose={() => setShowACModal(false)}
         armorClass={character.armorClass}
         limbs={character.limbs || []}
+        resistances={character.resistances || []}
         onUpdate={updateArmorClass}
         autoAC={props.autoAC}
+        maxHP={character.maxHP}
+        constitution={character.attributes?.constitution || 10}
       />
 
       <ItemModal

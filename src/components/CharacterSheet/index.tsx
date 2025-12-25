@@ -18,7 +18,6 @@ import { ConditionsSection } from './components/ConditionsSection';
 
 export const CharacterSheet: React.FC = () => {
   const logic = useCharacterSheetLogic();
-  const { character, activeTab } = logic;
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
@@ -27,9 +26,11 @@ export const CharacterSheet: React.FC = () => {
     return () => window.removeEventListener('open-app-settings', handleOpenSettings);
   }, []);
 
-  if (!character) {
+  if (!logic.character) {
     return null;
   }
+
+  const { character, activeTab } = logic;
 
   const getItemIcon = (type: string) => {
     switch (type) {
@@ -145,6 +146,7 @@ export const CharacterSheet: React.FC = () => {
                     getLimbType={logic.getLimbType}
                     openLimbModal={logic.openLimbModal}
                     openItemView={logic.openItemView}
+                    openACModal={() => logic.setShowACModal(true)}
                   />
                 )}
 

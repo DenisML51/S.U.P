@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Character } from '../types';
+import { Character, Resistance } from '../types';
 import { toast } from 'react-hot-toast';
 
 export interface CharacterPreview {
@@ -11,6 +11,7 @@ export interface CharacterPreview {
   currentHP: number;
   maxHP: number;
   avatar?: string;
+  resistances?: Resistance[];
 }
 
 export type TabType = 'personality' | 'health' | 'abilities' | 'spells' | 'attacks' | 'equipment' | 'inventory' | 'stats';
@@ -99,6 +100,7 @@ const normalizeCharacter = (parsed: any): Character => {
     flaws: parsed.flaws || '',
     traits: parsed.traits || [],
     conditions: parsed.conditions || [],
+    resistances: parsed.resistances || [],
     history: parsed.history || [],
     subrace: parsed.subrace,
     avatar: parsed.avatar,
@@ -154,6 +156,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
         currentHP: normalized.currentHP,
         maxHP: normalized.maxHP,
         avatar: normalized.avatar,
+        resistances: normalized.resistances,
       };
 
       if (existingIndex >= 0) {
@@ -287,6 +290,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
         currentHP: normalized.currentHP,
         maxHP: normalized.maxHP,
         avatar: normalized.avatar,
+        resistances: normalized.resistances,
       };
       
       setCharactersList(prev => {
@@ -380,6 +384,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
             currentHP: characterWithId.currentHP,
             maxHP: characterWithId.maxHP,
             avatar: characterWithId.avatar,
+            resistances: characterWithId.resistances,
           };
           
           setCharactersList(prev => {
@@ -415,6 +420,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
           currentHP: c.currentHP,
           maxHP: c.maxHP,
           avatar: c.avatar,
+          resistances: c.resistances,
         }));
         setCharactersList(previews);
         setIsLoaded(true);
@@ -445,6 +451,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
                   currentHP: charData.currentHP,
                   maxHP: charData.maxHP,
                   avatar: charData.avatar,
+                  resistances: charData.resistances,
                 });
               }
             } catch (e) {}
@@ -484,6 +491,7 @@ export const CharacterProvider: React.FC<{ children: ReactNode }> = ({ children 
               currentHP: normalized.currentHP,
               maxHP: normalized.maxHP,
               avatar: normalized.avatar,
+              resistances: normalized.resistances,
             };
             
             setCharactersList(prev => {

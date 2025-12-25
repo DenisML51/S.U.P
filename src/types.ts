@@ -158,6 +158,20 @@ export interface HistoryEntry {
   type: 'health' | 'sanity' | 'resource' | 'inventory' | 'exp' | 'other';
 }
 
+export type ResistanceLevel = 'resistance' | 'vulnerability' | 'immunity' | 'none';
+
+export interface Resistance {
+  id: string;
+  type: string;
+  level: ResistanceLevel;
+}
+
+export const DAMAGE_TYPES = [
+  'Физический', 'Колющий', 'Рубящий', 'Дробящий', 
+  'Огонь', 'Холод', 'Электричество', 'Яд', 'Кислота', 
+  'Психический', 'Некротический', 'Лучистый', 'Силовой'
+];
+
 export interface Character {
   id?: string; // ID персонажа для управления несколькими персонажами
   name: string;
@@ -175,6 +189,7 @@ export interface Character {
   tempHP: number;
   maxHPBonus: number;
   limbs: Limb[];
+  resistances: Resistance[];
   inventory: InventoryItem[];
   inventoryNotes: string;
   attacksNotes: string;
