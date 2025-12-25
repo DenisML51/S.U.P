@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Attack, ATTRIBUTES_LIST } from '../types';
 import { Sword, Target, Zap } from 'lucide-react';
 import { MarkdownText } from './MarkdownText';
+import { getLucideIcon } from '../utils/iconUtils';
 
 interface AttackViewModalProps {
   isOpen: boolean;
@@ -39,8 +40,15 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
-                  <Sword className="w-6 h-6 text-white" />
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center border shadow-lg"
+                  style={{ 
+                    backgroundColor: `${attack.color || (attack.weaponId ? '#ef4444' : '#a855f7')}20`,
+                    borderColor: `${attack.color || (attack.weaponId ? '#ef4444' : '#a855f7')}40`,
+                    color: attack.color || (attack.weaponId ? '#ef4444' : '#a855f7')
+                  }}
+                >
+                  {getLucideIcon(attack.iconName || (attack.weaponId ? 'Sword' : 'Zap'), { size: 24 })}
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">{attack.name}</h2>

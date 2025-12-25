@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Sword, Zap, Settings, Target } from 'lucide-react';
 import { Character, Attack } from '../../../../types';
 import { MarkdownEditor } from '../../../MarkdownEditor';
+import { getLucideIcon } from '../../../../utils/iconUtils';
 
 interface AttacksTabProps {
   character: Character;
@@ -53,13 +54,22 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                     className="group relative bg-dark-card/50 rounded-xl border border-dark-border hover:border-red-500/30 transition-all cursor-pointer overflow-hidden p-4"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center border border-red-500/20 shadow-inner group-hover:scale-110 transition-transform">
-                        <Sword className="w-5 h-5 text-red-400" />
+                      <div 
+                        className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner group-hover:scale-110 transition-transform"
+                        style={{ 
+                          backgroundColor: `${attack.color || '#ef4444'}10`,
+                          borderColor: `${attack.color || '#ef4444'}20`
+                        }}
+                      >
+                        {getLucideIcon(attack.iconName || 'Sword', { 
+                          size: 20, 
+                          style: { color: attack.color || '#ef4444' }
+                        })}
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-bold text-gray-100 group-hover:text-red-400 transition-colors truncate">{attack.name}</h4>
+                          <h4 className="font-bold text-gray-100 group-hover:opacity-80 transition-opacity truncate">{attack.name}</h4>
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm ${getActionTypeColor(attack.actionType)}`}>
                             {getActionTypeLabel(attack.actionType)}
                           </span>
@@ -121,13 +131,22 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                     className="group relative bg-dark-card/50 rounded-xl border border-dark-border hover:border-purple-500/30 transition-all cursor-pointer overflow-hidden p-4"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center border border-purple-500/20 shadow-inner group-hover:scale-110 transition-transform">
-                        <Zap className="w-5 h-5 text-purple-400" />
+                      <div 
+                        className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner group-hover:scale-110 transition-transform"
+                        style={{ 
+                          backgroundColor: `${attack.color || '#a855f7'}10`,
+                          borderColor: `${attack.color || '#a855f7'}20`
+                        }}
+                      >
+                        {getLucideIcon(attack.iconName || 'Zap', { 
+                          size: 20, 
+                          style: { color: attack.color || '#a855f7' }
+                        })}
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-bold text-gray-100 group-hover:text-purple-400 transition-colors truncate">{attack.name}</h4>
+                          <h4 className="font-bold text-gray-100 group-hover:opacity-80 transition-opacity truncate">{attack.name}</h4>
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm ${getActionTypeColor(attack.actionType)}`}>
                             {getActionTypeLabel(attack.actionType)}
                           </span>

@@ -4,7 +4,9 @@ import { Attack } from '../types';
 import { ATTRIBUTES_LIST } from '../types';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CustomSelect } from './CustomSelect';
-import { Sword, Target, Zap, Clock, X } from 'lucide-react';
+import { IconPicker } from './IconPicker';
+import { getLucideIcon } from '../utils/iconUtils';
+import { Sword, Target, Zap, Clock, X, Minus, Plus } from 'lucide-react';
 
 interface AttackModalProps {
   isOpen: boolean;
@@ -30,6 +32,14 @@ export const AttackModal: React.FC<AttackModalProps> = ({
   const [usesAmmunition, setUsesAmmunition] = useState(attack?.usesAmmunition || false);
   const [ammunitionCost, setAmmunitionCost] = useState(attack?.ammunitionCost || 1);
   const [attribute, setAttribute] = useState(attack?.attribute || 'strength');
+  const [iconName, setIconName] = useState(attack?.iconName || 'Sword');
+  const [color, setColor] = useState(attack?.color || '#ef4444');
+  const [showIconPicker, setShowIconPicker] = useState(false);
+
+  const colors = [
+    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', 
+    '#ec4899', '#06b6d4', '#6366f1', '#14b8a6', '#f97316'
+  ];
 
   // Синхронизация состояния с props при открытии модалки
   useEffect(() => {
@@ -43,6 +53,9 @@ export const AttackModal: React.FC<AttackModalProps> = ({
       setUsesAmmunition(attack?.usesAmmunition || false);
       setAmmunitionCost(attack?.ammunitionCost || 1);
       setAttribute(attack?.attribute || 'strength');
+      setIconName(attack?.iconName || (attack?.weaponId ? 'Sword' : 'Zap'));
+      setColor(attack?.color || (attack?.weaponId ? '#ef4444' : '#a855f7'));
+      setShowIconPicker(false);
     }
   }, [isOpen, attack]);
 
@@ -61,6 +74,8 @@ export const AttackModal: React.FC<AttackModalProps> = ({
       ammunitionCost: usesAmmunition ? ammunitionCost : undefined,
       attribute,
       weaponId: attack?.weaponId,
+      iconName,
+      color,
     };
     
     onSave(newAttack);
@@ -91,10 +106,39 @@ export const AttackModal: React.FC<AttackModalProps> = ({
             className="bg-dark-card rounded-2xl border border-dark-border w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
           >
             {/* Header */}
-            <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm">
+            <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm relative z-[100]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/20">
-                  <Sword className="w-5 h-5 text-white" />
+                <div className="flex flex-col gap-2">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowIconPicker(!showIconPicker)}
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all border border-white/10 hover:scale-105"
+                      style={{ backgroundColor: `${color}20`, color: color }}
+                    >
+                      {getLucideIcon(iconName, { size: 24 })}
+                    </button>
+                    
+                    <IconPicker
+                      isOpen={showIconPicker}
+                      onClose={() => setShowIconPicker(false)}
+                      currentIcon={iconName}
+                      onSelect={setIconName}
+                    />
+                  </div>
+                  
+                  {/* Color Picker */}
+                  <div className="flex gap-1">
+                    {colors.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setColor(c)}
+                        className={`w-3 h-3 rounded-full transition-all ${color === c ? 'scale-125 ring-2 ring-white/50' : 'opacity-50 hover:opacity-100'}`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">{attack ? 'Редактировать атаку' : 'Новая атака'}</h2>

@@ -40,8 +40,15 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-white" />
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center border shadow-lg"
+                  style={{ 
+                    backgroundColor: `${ability.color || '#a855f7'}20`,
+                    borderColor: `${ability.color || '#a855f7'}40`,
+                    color: ability.color || '#a855f7'
+                  }}
+                >
+                  {getLucideIcon(ability.iconName || 'Zap', { size: 24 })}
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">{ability.name}</h2>

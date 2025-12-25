@@ -30,7 +30,7 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
   const [resourceId, setResourceId] = useState(ability?.resourceId || '');
   const [resourceCost, setResourceCost] = useState(ability?.resourceCost || 1);
   const [effect, setEffect] = useState(ability?.effect || '');
-  const [iconName, setIconName] = useState(ability?.iconName || 'Sparkles');
+  const [iconName, setIconName] = useState(ability?.iconName || 'Zap');
   const [color, setColor] = useState(ability?.color || '#a855f7');
   const [showIconPicker, setShowIconPicker] = useState(false);
 
@@ -48,7 +48,7 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
       setResourceId(ability?.resourceId || '');
       setResourceCost(ability?.resourceCost || 1);
       setEffect(ability?.effect || '');
-      setIconName(ability?.iconName || 'Sparkles');
+      setIconName(ability?.iconName || 'Zap');
       setColor(ability?.color || '#a855f7');
       setShowIconPicker(false);
     }

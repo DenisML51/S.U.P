@@ -146,13 +146,27 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                   className="group relative bg-dark-card/50 rounded-xl border border-dark-border hover:border-purple-500/30 transition-all cursor-pointer overflow-hidden p-4"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center border border-purple-500/20 shadow-inner group-hover:scale-110 transition-transform">
-                      <Zap className="w-5 h-5 text-purple-400" />
+                    <div 
+                      className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner group-hover:scale-110 transition-transform"
+                      style={{ 
+                        backgroundColor: `${ability.color || '#a855f7'}10`,
+                        borderColor: `${ability.color || '#a855f7'}20`
+                      }}
+                    >
+                      {getLucideIcon(ability.iconName || 'Zap', { 
+                        size: 20, 
+                        style: { color: ability.color || '#a855f7' }
+                      })}
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
-                        <h4 className="font-bold text-gray-100 group-hover:text-purple-400 transition-colors truncate">{ability.name}</h4>
+                        <h4 
+                          className="font-bold text-gray-100 transition-colors truncate"
+                          style={{ color: ability.color ? undefined : undefined }} // Just keeping structure
+                        >
+                          {ability.name}
+                        </h4>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm ${getActionTypeColor(ability.actionType)}`}>
                           {getActionTypeLabel(ability.actionType)}
                         </span>

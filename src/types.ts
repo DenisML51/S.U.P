@@ -73,6 +73,8 @@ export interface Attack {
   usesAmmunition?: boolean;
   ammunitionCost?: number;
   attribute?: string; // Which attribute to use for attack
+  iconName?: string;
+  color?: string;
 }
 
 export interface Ability {
