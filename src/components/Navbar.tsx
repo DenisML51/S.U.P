@@ -87,7 +87,7 @@ export const Navbar: React.FC = () => {
           </button>
           <div className="truncate">
             <h1 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent truncate">
-              {character.name}
+              {character.name.split(' ')[0].replace(/[.,!?;:]+$/, '')}
             </h1>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider truncate">
               {character.class} • {character.level} ур.
