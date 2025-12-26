@@ -47,6 +47,7 @@ interface CharacterSheetModalsProps {
   saveResource: (resource: Resource) => void;
   deleteResource: (resourceId: string) => void;
   selectedLimb: Limb | null;
+  setSelectedLimb: (limb: Limb | null) => void;
   showLimbModal: boolean;
   setShowLimbModal: (show: boolean) => void;
   getLimbType: (limbId: string) => 'head' | 'arm' | 'leg' | 'torso';
@@ -86,6 +87,7 @@ interface CharacterSheetModalsProps {
   setShowAbilityViewModal: (show: boolean) => void;
   setEditingAbility: (ability: Ability) => void;
   viewingItem: InventoryItem | undefined;
+  setViewingItem: (item: InventoryItem | undefined) => void;
   showItemViewModal: boolean;
   setShowItemViewModal: (show: boolean) => void;
   setEditingItem: (item: InventoryItem) => void;
@@ -182,6 +184,7 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
     setShowAbilityViewModal,
     setEditingAbility,
     viewingItem,
+    setViewingItem,
     showItemViewModal,
     setShowItemViewModal,
     setEditingItem,

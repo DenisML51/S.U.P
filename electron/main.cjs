@@ -112,6 +112,27 @@ app.whenReady().then(() => {
     }
   });
 
+  ipcMain.on('set-fullscreen', (event, isFullScreen) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      win.setFullScreen(isFullScreen);
+      win.setMenuBarVisibility(!isFullScreen);
+    }
+  });
+
+  ipcMain.on('toggle-fullscreen', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      const isFullScreen = win.isFullScreen();
+      win.setFullScreen(!isFullScreen);
+      win.setMenuBarVisibility(isFullScreen);
+    }
+  });
+
+  ipcMain.on('close-app', () => {
+    app.quit();
+  });
+
   app.on('activate', () => {
     // На macOS обычно пересоздают окно в приложении когда кликают на иконку в доке
     if (BrowserWindow.getAllWindows().length === 0) {

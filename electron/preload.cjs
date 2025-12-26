@@ -6,5 +6,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveCharacter: (filePath, data) => ipcRenderer.invoke('save-character', { filePath, data }),
   loadCharacters: (directoryPath) => ipcRenderer.invoke('load-characters', directoryPath),
   deleteCharacter: (filePath) => ipcRenderer.invoke('delete-character', filePath),
+  setFullScreen: (isFullScreen) => ipcRenderer.send('set-fullscreen', isFullScreen),
+  toggleFullScreen: () => ipcRenderer.send('toggle-fullscreen'),
+  closeApp: () => ipcRenderer.send('close-app'),
 });
 

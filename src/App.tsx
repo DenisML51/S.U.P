@@ -27,6 +27,12 @@ const AppContent: React.FC = () => {
       });
     };
     window.addEventListener('app-settings-updated', handleSettingsUpdate);
+
+    // Применяем полноэкранный режим при загрузке
+    if (localStorage.getItem('trpg_fullscreen') === 'true' && window.electronAPI) {
+      window.electronAPI.setFullScreen(true);
+    }
+
     return () => window.removeEventListener('app-settings-updated', handleSettingsUpdate);
   }, [isLoaded, loadCharactersList, migrateOldData, updateSettings]);
 

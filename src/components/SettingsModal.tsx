@@ -8,6 +8,7 @@ interface AppSettings {
   autoSave: boolean;
   compactCards: boolean;
   showNotifications: boolean;
+  fullscreen: boolean;
 }
 
 interface SettingsModalProps {
@@ -21,6 +22,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     autoSave: localStorage.getItem('trpg_auto_save') !== 'false',
     compactCards: localStorage.getItem('trpg_compact_cards') === 'true',
     showNotifications: localStorage.getItem('trpg_notifications') !== 'false',
+    fullscreen: localStorage.getItem('trpg_fullscreen') === 'true',
   });
 
   const handleSelectPath = async () => {
@@ -52,6 +54,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     localStorage.setItem('trpg_auto_save', String(updated.autoSave));
     localStorage.setItem('trpg_compact_cards', String(updated.compactCards));
     localStorage.setItem('trpg_notifications', String(updated.showNotifications));
+    localStorage.setItem('trpg_fullscreen', String(updated.fullscreen));
+
+    if (newSettings.hasOwnProperty('fullscreen') && window.electronAPI) {
+      window.electronAPI.setFullScreen(updated.fullscreen);
+    }
 
     // Dispatch event for other components to update
     window.dispatchEvent(new CustomEvent('app-settings-updated', { 
@@ -189,8 +196,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.showNotifications ? 'left-5' : 'left-1'}`} />
                     </div>
                   </label>
+
+                  <label className="p-4 bg-dark-bg/50 border border-dark-border rounded-2xl flex items-center justify-between cursor-pointer hover:border-orange-500/30 transition-all">
+                    <div className="flex items-center gap-3">
+                      <Monitor className="w-4 h-4 text-orange-400" />
+                      <span className="text-xs font-bold text-gray-300">Полноэкранный режим</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.fullscreen}
+                      onChange={(e) => updateSettings({ fullscreen: e.target.checked })}
+                      className="hidden"
+                    />
+                    <div className={`w-10 h-6 rounded-full relative transition-all ${settings.fullscreen ? 'bg-orange-500' : 'bg-gray-700'}`}>
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.fullscreen ? 'left-5' : 'left-1'}`} />
+                    </div>
+                  </label>
                 </div>
               </section>
+
+              {/* Dangerous Zone */}
+              {window.electronAPI && (
+                <section className="space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Trash2 className="w-4 h-4 text-red-400" />
+                    <h4 className="text-sm font-black uppercase tracking-widest text-gray-400">Система</h4>
+                  </div>
+                  <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                    <button
+                      onClick={() => {
+                        if (confirm('Вы уверены, что хотите выйти из приложения?')) {
+                          window.electronAPI.closeApp();
+                        }
+                      }}
+                      className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl font-bold text-xs transition-all border border-red-500/20"
+                    >
+                      Закрыть приложение
+                    </button>
+                  </div>
+                </section>
+              )}
             </div>
 
             <div className="p-6 bg-dark-card/50 border-t border-dark-border">

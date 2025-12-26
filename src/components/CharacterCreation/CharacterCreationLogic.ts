@@ -5,12 +5,6 @@ import {
   POINT_BUY_COSTS, getProficiencyBonus, calculateMaxSanity, 
   getDefaultLimbs, Race, Class, Subrace, Skill
 } from '../../types';
-import { 
-  Character, RACES, CLASSES, ATTRIBUTES_LIST, SKILLS_LIST, 
-  INITIAL_POINTS, ATTRIBUTE_START, ATTRIBUTE_MIN, ATTRIBUTE_MAX, 
-  POINT_BUY_COSTS, getProficiencyBonus, calculateMaxSanity, 
-  getDefaultLimbs, Race, Class, Subrace, Skill
-} from '../../types';
 import { useCharacterStore } from '../../store/useCharacterStore';
 
 export type Step = 'basic' | 'attributes' | 'skills';
