@@ -70,12 +70,12 @@ export const CharacterList: React.FC = () => {
       <motion.div
         layout
         transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-        className={`w-full max-w-7xl mx-auto flex flex-col items-center z-10`}
+        className="w-full flex flex-col items-center z-10"
       >
         {/* Header/Title - Always Centered */}
         <motion.div 
           layout
-          className={`relative z-20 flex flex-col items-center ${!hasStarted ? 'cursor-pointer group' : 'mb-16'}`}
+          className={`w-full relative z-20 flex flex-col items-center ${!hasStarted ? 'cursor-pointer group' : 'mb-16'}`}
           onClick={!hasStarted ? handleStart : undefined}
         >
           <motion.div
@@ -89,14 +89,14 @@ export const CharacterList: React.FC = () => {
               scale: { duration: 1, ease: [0.22, 1, 0.36, 1] },
               filter: { duration: 0.15 }
             }}
-            className="relative"
+            className="w-full flex justify-center"
           >
-            <h1 className={`font-black tracking-[0.1em] bg-gradient-to-b from-white via-white to-blue-500/50 bg-clip-text text-transparent transition-all duration-1000 flex items-baseline ${
+            <h1 className={`font-black tracking-[0.1em] bg-gradient-to-b from-white via-white to-blue-500/50 bg-clip-text text-transparent transition-all duration-1000 flex items-baseline justify-center ${
                 !hasStarted ? 'text-[15rem] leading-none' : 'text-8xl leading-none'
               }`}
               style={{ fontFamily: "'Orbitron', sans-serif" }}
             >
-              S<span className="font-sans">.</span>U<span className="font-sans">.</span>P<span className="font-sans">.</span>
+              <span className="font-sans opacity-0" aria-hidden="true">.</span>S<span className="font-sans">.</span>U<span className="font-sans">.</span>P<span className="font-sans">.</span>
             </h1>
             {!hasStarted && (
               <motion.div
@@ -126,7 +126,7 @@ export const CharacterList: React.FC = () => {
         </motion.div>
 
         {hasStarted && (
-          <div className="w-full flex flex-col items-center">
+          <div className="w-full max-w-7xl mx-auto flex flex-col items-center">
             {/* Characters Grid */}
             {charactersList.length > 0 ? (
               <motion.div 
@@ -178,49 +178,51 @@ export const CharacterList: React.FC = () => {
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 1.2, type: 'spring', damping: 20 }}
-          className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-2 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+          className="fixed bottom-10 left-0 right-0 z-50 flex justify-center pointer-events-none px-4"
         >
-          <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowCreation(true)}
-            className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors group"
-          >
-            <Plus className="w-6 h-6 mb-1 text-blue-400 group-hover:text-blue-300" />
-            <span className="text-[10px] font-black uppercase tracking-tighter text-blue-400/60 group-hover:text-blue-300">Создать</span>
-          </motion.button>
+          <div className="flex items-center gap-2 p-2 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto">
+            <motion.button
+              whileHover={{ scale: 1.1, backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowCreation(true)}
+              className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors group"
+            >
+              <Plus className="w-6 h-6 mb-1 text-blue-400 group-hover:text-blue-300" />
+              <span className="text-[10px] font-black uppercase tracking-tighter text-blue-400/60 group-hover:text-blue-300">Создать</span>
+            </motion.button>
 
-          <div className="w-[1px] h-10 bg-white/10 mx-1" />
+            <div className="w-[1px] h-10 bg-white/10 mx-1" />
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleImport}
-            className="hidden"
-            id="import-file"
-          />
-          <motion.label
-            whileHover={{ scale: 1.1, backgroundColor: 'rgba(168, 85, 247, 0.2)' }}
-            whileTap={{ scale: 0.95 }}
-            htmlFor="import-file"
-            className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors cursor-pointer group"
-          >
-            <Upload className="w-6 h-6 mb-1 text-purple-400 group-hover:text-purple-300" />
-            <span className="text-[10px] font-black uppercase tracking-tighter text-purple-400/60 group-hover:text-purple-300">Импорт</span>
-          </motion.label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+              id="import-file"
+            />
+            <motion.label
+              whileHover={{ scale: 1.1, backgroundColor: 'rgba(168, 85, 247, 0.2)' }}
+              whileTap={{ scale: 0.95 }}
+              htmlFor="import-file"
+              className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors cursor-pointer group"
+            >
+              <Upload className="w-6 h-6 mb-1 text-purple-400 group-hover:text-purple-300" />
+              <span className="text-[10px] font-black uppercase tracking-tighter text-purple-400/60 group-hover:text-purple-300">Импорт</span>
+            </motion.label>
 
-          <div className="w-[1px] h-10 bg-white/10 mx-1" />
+            <div className="w-[1px] h-10 bg-white/10 mx-1" />
 
-          <motion.button
-            whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsSettingsOpen(true)}
-            className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors group"
-          >
-            <Settings className="w-6 h-6 mb-1 text-gray-400 group-hover:text-white" />
-            <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500 group-hover:text-gray-300">Опции</span>
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors group"
+            >
+              <Settings className="w-6 h-6 mb-1 text-gray-400 group-hover:text-white" />
+              <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500 group-hover:text-gray-300">Опции</span>
+            </motion.button>
+          </div>
         </motion.div>
       )}
 
