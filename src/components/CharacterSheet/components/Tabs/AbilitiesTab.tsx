@@ -67,15 +67,29 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                   className="group relative bg-dark-card/50 rounded-xl border border-dark-border hover:border-blue-500/30 transition-all overflow-hidden p-4"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20 shadow-inner">
-                      {getLucideIcon(resource.iconName, { size: 20, className: 'text-blue-400' })}
+                    <div 
+                      className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner transition-colors"
+                      style={{ 
+                        backgroundColor: `${resource.color || '#3b82f6'}10`,
+                        borderColor: `${resource.color || '#3b82f6'}20`
+                      }}
+                    >
+                      {getLucideIcon(resource.iconName, { 
+                        size: 20, 
+                        style: { color: resource.color || '#3b82f6' }
+                      })}
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-end mb-2">
                         <h4 className="font-bold text-sm text-gray-100 truncate">{resource.name}</h4>
                         <div className="text-[10px] font-black tracking-tighter text-gray-400">
-                          <span className="text-blue-400 text-sm">{resource.current}</span> / {resource.max}
+                          <span 
+                            className="text-sm transition-colors"
+                            style={{ color: resource.color || '#3b82f6' }}
+                          >
+                            {resource.current}
+                          </span> / {resource.max}
                         </div>
                       </div>
                       

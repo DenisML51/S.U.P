@@ -43,17 +43,36 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
             className="bg-dark-card rounded-3xl border border-white/10 w-full max-w-lg overflow-hidden flex flex-col shadow-2xl"
           >
             {/* Header */}
-            <div className="relative p-8 pb-6 bg-gradient-to-br from-blue-500/10 to-transparent">
+            <div 
+              className="relative p-8 pb-6 bg-gradient-to-br from-blue-500/10 to-transparent"
+              style={{ backgroundImage: `linear-gradient(to bottom right, ${spell.color || '#3b82f6'}15, transparent)` }}
+            >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
-                    {getLucideIcon(spell.iconName || 'Wand2', { className: 'w-6 h-6 text-blue-400' })}
+                  <div 
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors"
+                    style={{ 
+                      backgroundColor: `${spell.color || '#3b82f6'}20`,
+                      borderColor: `${spell.color || '#3b82f6'}30`
+                    }}
+                  >
+                    {getLucideIcon(spell.iconName || 'Wand2', { 
+                      size: 24, 
+                      style: { color: spell.color || '#3b82f6' }
+                    })}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="text-2xl font-black text-white leading-tight">{spell.name}</h2>
                       {spell.prepared && (
-                        <div className="p-1 rounded-full bg-blue-500/20 text-blue-400" title="Подготовлено">
+                        <div 
+                          className="p-1 rounded-full transition-colors"
+                          style={{ 
+                            backgroundColor: `${spell.color || '#3b82f6'}20`,
+                            color: spell.color || '#3b82f6'
+                          }}
+                          title="Подготовлено"
+                        >
                           <Sparkles size={12} className="animate-pulse" />
                         </div>
                       )}
@@ -108,15 +127,31 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
 
             <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
               {resource && (
-                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-between">
+                <div 
+                  className="p-4 rounded-2xl flex items-center justify-between border transition-colors"
+                  style={{ 
+                    backgroundColor: `${resource.color || '#3b82f6'}10`,
+                    borderColor: `${resource.color || '#3b82f6'}20`
+                  }}
+                >
                   <div className="flex items-center gap-3">
-                    <Zap className="w-5 h-5 text-blue-400" />
+                    <Zap className="w-5 h-5" style={{ color: resource.color || '#3b82f6' }} />
                     <div>
-                      <div className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Использует ресурс</div>
+                      <div 
+                        className="text-[10px] font-bold uppercase tracking-widest"
+                        style={{ color: resource.color || '#3b82f6' }}
+                      >
+                        Использует ресурс
+                      </div>
                       <div className="text-sm font-bold text-white">{resource.name}</div>
                     </div>
                   </div>
-                  <div className="text-xl font-black text-blue-400">{resource.current} / {resource.max}</div>
+                  <div 
+                    className="text-xl font-black"
+                    style={{ color: resource.color || '#3b82f6' }}
+                  >
+                    {resource.current} / {resource.max}
+                  </div>
                 </div>
               )}
 

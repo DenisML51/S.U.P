@@ -92,15 +92,24 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
                   }}
                   className="group relative cursor-pointer"
                 >
-                  <div className={`w-12 h-12 bg-dark-bg/80 border rounded-2xl flex flex-col items-center justify-center transition-all shadow-lg backdrop-blur-sm ${
-                    isEmpty ? 'border-red-500 bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-blue-500/40 hover:border-blue-500/60 bg-blue-500/5'
-                  }`}>
+                  <div 
+                    className={`w-12 h-12 bg-dark-bg/80 border rounded-2xl flex flex-col items-center justify-center transition-all shadow-lg backdrop-blur-sm ${
+                      isEmpty ? 'border-red-500 bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : ''
+                    }`}
+                    style={!isEmpty ? { 
+                      borderColor: `${slot.color || '#3b82f6'}40`,
+                      backgroundColor: `${slot.color || '#3b82f6'}05`
+                    } : {}}
+                  >
                     {getLucideIcon(slot.iconName || 'Zap', { 
                       size: 20, 
-                      className: isEmpty ? "text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "text-blue-400" 
+                      style: { color: isEmpty ? '#ef4444' : (slot.color || '#60a5fa') }
                     } as any)}
                     {level > 0 && (
-                      <span className={`text-[11px] font-black mt-0.5 tracking-tighter leading-none ${isEmpty ? 'text-red-400' : 'text-blue-300'}`}>
+                      <span 
+                        className={`text-[11px] font-black mt-0.5 tracking-tighter leading-none`}
+                        style={{ color: isEmpty ? '#f87171' : (slot.color || '#93c5fd') }}
+                      >
                         {romanNumerals[level]}
                       </span>
                     )}

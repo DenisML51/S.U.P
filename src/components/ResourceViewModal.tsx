@@ -77,8 +77,17 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center">
-                  {getLucideIcon(tempResource.iconName, { className: "w-6 h-6 text-blue-400" })}
+                <div 
+                  className="w-12 h-12 rounded-xl border flex items-center justify-center transition-colors"
+                  style={{ 
+                    backgroundColor: `${tempResource.color || '#3b82f6'}20`,
+                    borderColor: `${tempResource.color || '#3b82f6'}30`
+                  }}
+                >
+                  {getLucideIcon(tempResource.iconName, { 
+                    style: { color: tempResource.color || '#3b82f6' },
+                    className: "w-6 h-6" 
+                  })}
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">{tempResource.name}</h2>
@@ -102,10 +111,16 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
 
             {/* Current/Max Display */}
             <div className="mb-6">
-              <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl p-6 text-center">
+              <div 
+                className="border rounded-xl p-6 text-center transition-colors"
+                style={{ 
+                  backgroundColor: `${tempResource.color || '#3b82f6'}10`,
+                  borderColor: `${tempResource.color || '#3b82f6'}30`
+                }}
+              >
                 <div className="text-sm text-gray-400 mb-2 uppercase">Текущее количество</div>
                 <div className="text-5xl font-bold mb-2">
-                  <span className="text-blue-400">{tempResource.current}</span>
+                  <span style={{ color: tempResource.color || '#3b82f6' }}>{tempResource.current}</span>
                   <span className="text-gray-400 text-3xl"> / {tempResource.max}</span>
                 </div>
                 <div className="h-3 bg-dark-card rounded-full overflow-hidden border border-dark-border mt-4">

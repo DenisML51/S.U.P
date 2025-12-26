@@ -24,13 +24,20 @@ export const ResourceGroup: React.FC<ResourceGroupProps> = ({
             window.dispatchEvent(new CustomEvent('open-character-modal', { detail: { type: 'resource', data: res } }));
           }}
           className={`relative group cursor-pointer w-10 h-10 bg-dark-card/30 border rounded-xl flex items-center justify-center transition-all ${
-            res.current === 0 ? 'border-red-500/50 bg-red-500/5' : 'border-white/5 hover:border-blue-500/30 hover:bg-white/5'
+            res.current === 0 ? 'border-red-500/50 bg-red-500/5' : 'hover:bg-white/5'
           }`}
+          style={res.current !== 0 ? {
+            borderColor: `${res.color || '#3b82f6'}30`
+          } : {}}
         >
-          {getLucideIcon(res.iconName, { size: 18, className: res.current === 0 ? "text-red-400" : "text-blue-400" })}
-          <span className={`absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-black text-white shadow-lg border border-dark-bg ${
-            res.current === 0 ? 'bg-red-500' : 'bg-blue-500'
-          }`}>
+          {getLucideIcon(res.iconName, { 
+            size: 18, 
+            style: { color: res.current === 0 ? '#f87171' : (res.color || '#60a5fa') }
+          })}
+          <span 
+            className={`absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-black text-white shadow-lg border border-dark-bg transition-colors`}
+            style={{ backgroundColor: res.current === 0 ? '#ef4444' : (res.color || '#3b82f6') }}
+          >
             {res.current}
           </span>
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 px-5 py-3 bg-dark-card border border-dark-border rounded-xl text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">

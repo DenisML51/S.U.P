@@ -87,16 +87,28 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
               </div>
 
               {resource && (
-                <div className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl">
+                <div 
+                  className="p-4 border rounded-xl"
+                  style={{ 
+                    backgroundColor: `${resource.color || '#a855f7'}10`,
+                    borderColor: `${resource.color || '#a855f7'}30`
+                  }}
+                >
                   <div className="flex items-center gap-3">
                     {resource.iconName && (
                       <div className="w-10 h-10 bg-dark-card rounded-lg flex items-center justify-center">
-                        {getLucideIcon(resource.iconName, { className: "w-5 h-5 text-purple-400" })}
+                        {getLucideIcon(resource.iconName, { 
+                          className: "w-5 h-5",
+                          style: { color: resource.color || '#a855f7' }
+                        })}
                       </div>
                     )}
                     <div className="flex-1">
                       <div className="text-sm text-gray-400">Тратит ресурс</div>
-                      <div className="font-semibold text-purple-400">
+                      <div 
+                        className="font-semibold"
+                        style={{ color: resource.color || '#a855f7' }}
+                      >
                         {ability.resourceCost} {resource.name}
                       </div>
                     </div>

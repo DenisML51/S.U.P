@@ -167,9 +167,20 @@ export const Navbar: React.FC = () => {
                     }}
                     className="relative group cursor-pointer"
                   >
-                    <div className="w-12 h-12 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:border-blue-500/50 hover:bg-dark-hover transition-all active:scale-95 shadow-lg">
-                      {getLucideIcon(resource.iconName, { className: "w-6 h-6 text-blue-400" })}
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm border border-dark-bg">
+                    <div 
+                      className="w-12 h-12 bg-dark-bg/80 border rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-lg"
+                      style={{ 
+                        borderColor: `${resource.color || '#3b82f6'}30`
+                      }}
+                    >
+                      {getLucideIcon(resource.iconName, { 
+                        size: 24, 
+                        style: { color: resource.color || '#3b82f6' }
+                      })}
+                      <div 
+                        className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm border border-dark-bg"
+                        style={{ backgroundColor: resource.color || '#3b82f6' }}
+                      >
                         {resource.current}
                       </div>
                     </div>
@@ -293,12 +304,21 @@ export const Navbar: React.FC = () => {
                             className="w-full flex items-center justify-between px-4 py-2 hover:bg-[#2a2a2a] text-gray-300 transition-colors text-sm group"
                           >
                             <div className="flex items-center gap-3">
-                              {getLucideIcon(resource.iconName, { className: "w-4 h-4 text-blue-400 group-hover:text-blue-300" })}
+                              {getLucideIcon(resource.iconName, { 
+                                size: 16, 
+                                style: { color: resource.color || '#3b82f6' },
+                                className: "group-hover:opacity-80" 
+                              })}
                               <span className="group-hover:text-white">{resource.name}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] text-gray-500 opacity-0 lg:group-hover:opacity-100 transition-opacity">ЛКМ: -1</span>
-                              <span className="text-xs font-bold text-blue-400">{resource.current}/{resource.max}</span>
+                              <span 
+                                className="text-xs font-bold"
+                                style={{ color: resource.color || '#3b82f6' }}
+                              >
+                                {resource.current}/{resource.max}
+                              </span>
                             </div>
                           </button>
                         ))}
