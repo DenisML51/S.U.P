@@ -91,7 +91,9 @@ export const ItemViewModal: React.FC<ItemViewModalProps> = ({
             {item.description && (
               <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
                 <div className="text-sm text-gray-400 mb-2">Описание</div>
-                <MarkdownText content={item.description} />
+                <div className="max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                  <MarkdownText content={item.description} />
+                </div>
               </div>
             )}
 

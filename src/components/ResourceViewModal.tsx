@@ -105,7 +105,9 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
             {tempResource.description && (
               <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
                 <div className="text-sm text-gray-400 mb-2 uppercase font-semibold">Описание</div>
-                <MarkdownText content={tempResource.description} />
+                <div className="max-h-32 overflow-y-auto custom-scrollbar pr-2">
+                  <MarkdownText content={tempResource.description} />
+                </div>
               </div>
             )}
 

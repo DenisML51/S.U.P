@@ -158,7 +158,7 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
               {spell.description && (
                 <div>
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Описание</div>
-                  <div className="text-sm text-gray-300 leading-relaxed italic">
+                  <div className="text-sm text-gray-300 leading-relaxed italic max-h-48 overflow-y-auto custom-scrollbar pr-2">
                     <MarkdownText content={spell.description} />
                   </div>
                 </div>
@@ -166,7 +166,7 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
 
               <div>
                 <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Эффект</div>
-                <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-3xl text-sm text-gray-200 leading-relaxed shadow-inner">
+                <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-3xl text-sm text-gray-200 leading-relaxed shadow-inner max-h-48 overflow-y-auto custom-scrollbar">
                   <MarkdownText content={spell.effect} />
                 </div>
               </div>

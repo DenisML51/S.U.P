@@ -55,7 +55,9 @@ export const TraitViewModal: React.FC<TraitViewModalProps> = ({
               {trait.description && (
                 <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
                   <div className="text-sm text-gray-400 mb-2 uppercase font-semibold">Описание</div>
-                  <MarkdownText content={trait.description} />
+                  <div className="max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                    <MarkdownText content={trait.description} />
+                  </div>
                 </div>
               )}
 

@@ -68,7 +68,9 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
             {ability.description && (
               <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
                 <div className="text-sm text-gray-400 mb-2">Описание</div>
-                <MarkdownText content={ability.description} />
+                <div className="max-h-32 overflow-y-auto custom-scrollbar pr-2">
+                  <MarkdownText content={ability.description} />
+                </div>
               </div>
             )}
 
@@ -124,7 +126,9 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
                   <Zap className="w-4 h-4 text-blue-400" />
                   <div className="text-sm font-semibold text-blue-400">Эффект</div>
                 </div>
-                <MarkdownText content={ability.effect} />
+                <div className="max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                  <MarkdownText content={ability.effect} />
+                </div>
               </div>
             </div>
 
