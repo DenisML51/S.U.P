@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, ShieldCheck, ShieldAlert, ShieldX, User, Plus, X } from 'lucide-react';
+import { Activity, ShieldCheck, ShieldAlert, ShieldX, User, Plus, X, Heart } from 'lucide-react';
 import { Character } from '../../../../types';
 import { CONDITIONS } from '../../../../constants/conditions';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../../../../utils/damageUtils';
@@ -137,8 +137,20 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
         </AnimatePresence>
       </div>
 
-      <div className="bg-dark-bg/95 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-3 shadow-2xl relative group/avatar">
-        <div className="absolute inset-0 rounded-[3rem] border border-white/5 pointer-events-none" />
+      <div className={`w-fit bg-dark-bg/95 backdrop-blur-3xl border-2 rounded-[3rem] p-3 shadow-2xl relative group/avatar transition-all duration-300 ${
+        character.currentHP === 0 
+          ? 'border-red-500 shadow-red-500/40 animate-pulse' 
+          : (character.tempHP || 0) > 0 
+            ? 'border-blue-500 shadow-blue-500/40' 
+            : 'border-white/10'
+      }`}>
+        <div className={`absolute inset-0 rounded-[3rem] border ${
+          character.currentHP === 0 
+            ? 'border-red-500/50' 
+            : (character.tempHP || 0) > 0 
+              ? 'border-blue-500/50' 
+              : 'border-white/5'
+        } pointer-events-none`} />
         <div className="w-44 h-44 rounded-[2.5rem] overflow-hidden border border-white/10 relative bg-dark-card shadow-2xl">
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent pointer-events-none" />
           {character.avatar ? (
@@ -163,6 +175,18 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
             </div>
           )}
         </div>
+
+        {/* Temporary HP Label */}
+        {(character.tempHP || 0) > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, x: "-50%", y: "50%", scale: 0.8 }}
+            animate={{ opacity: 1, x: "-50%", y: "50%", scale: 1 }}
+            className="absolute bottom-0 left-1/2 bg-dark-bg px-2 py-0.5 border border-blue-500 rounded-full flex items-center gap-1.5 z-30 shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+          >
+            <Heart size={14} className="text-blue-500 fill-blue-500/20" />
+            <span className="text-blue-400 text-sm font-black leading-none tracking-tight">{character.tempHP}</span>
+          </motion.div>
+        )}
       </div>
     </div>
   );

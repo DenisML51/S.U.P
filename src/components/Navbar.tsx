@@ -102,7 +102,7 @@ export const Navbar: React.FC = () => {
           <button
             onClick={() => setViewMode(viewMode === 'tabs' ? 'hotbar' : 'tabs')}
             className="truncate text-left group"
-            title={viewMode === 'tabs' ? 'Переключить в боевой режим (BG3)' : 'Вернуться к вкладкам'}
+            title={viewMode === 'tabs' ? 'Переключить в боевой режим' : 'Вернуться к вкладкам'}
           >
             <h1 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent truncate group-hover:from-blue-300 group-hover:to-purple-400 transition-all">
               {character.name.split(' ')[0].replace(/[.,!?;:]+$/, '')}
