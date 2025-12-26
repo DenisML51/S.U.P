@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Zap, Settings, CheckCircle2, XCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Zap, Settings, CheckCircle2, XCircle, ChevronDown } from 'lucide-react';
 import { Character, Resource, Ability } from '../../../../types';
 import { getLucideIcon } from '../../../../utils/iconUtils';
 import { MarkdownEditor } from '../../../MarkdownEditor';
@@ -28,6 +28,9 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
   getActionTypeLabel,
   getActionTypeColor,
 }) => {
+  const [showAllResources, setShowAllResources] = useState(false);
+  const displayedResources = showAllResources ? character.resources : character.resources?.slice(0, 3) || [];
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -57,84 +60,100 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
             <div className="h-px flex-1 bg-dark-border"></div>
           </div>
           <div className="space-y-3">
-            {character.resources.map((resource) => {
-              const percentage = resource.max > 0 ? (resource.current / resource.max) * 100 : 0;
-              return (
-                <motion.div
-                  key={resource.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="group relative bg-dark-card/50 rounded-xl border border-dark-border hover:border-blue-500/30 transition-all overflow-hidden p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <div 
-                      className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner transition-colors"
-                      style={{ 
-                        backgroundColor: `${resource.color || '#3b82f6'}10`,
-                        borderColor: `${resource.color || '#3b82f6'}20`
-                      }}
-                    >
-                      {getLucideIcon(resource.iconName, { 
-                        size: 20, 
-                        style: { color: resource.color || '#3b82f6' }
-                      })}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-end mb-2">
-                        <h4 className="font-bold text-sm text-gray-100 truncate">{resource.name}</h4>
-                        <div className="text-[10px] font-black tracking-tighter text-gray-400">
-                          <span 
-                            className="text-sm transition-colors"
-                            style={{ color: resource.color || '#3b82f6' }}
-                          >
-                            {resource.current}
-                          </span> / {resource.max}
+            <AnimatePresence mode="popLayout">
+              {displayedResources.map((resource) => {
+                const percentage = resource.max > 0 ? (resource.current / resource.max) * 100 : 0;
+                return (
+                  <motion.div
+                    key={resource.id}
+                    layout
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="group relative bg-dark-card/50 rounded-xl border border-dark-border hover:border-blue-500/30 transition-all overflow-hidden p-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div 
+                        className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner transition-colors"
+                        style={{ 
+                          backgroundColor: `${resource.color || '#3b82f6'}10`,
+                          borderColor: `${resource.color || '#3b82f6'}20`
+                        }}
+                      >
+                        {getLucideIcon(resource.iconName, { 
+                          size: 20, 
+                          style: { color: resource.color || '#3b82f6' }
+                        })}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-end mb-2">
+                          <h4 className="font-bold text-sm text-gray-100 truncate">{resource.name}</h4>
+                          <div className="text-[10px] font-black tracking-tighter text-gray-400">
+                            <span 
+                              className="text-sm transition-colors"
+                              style={{ color: resource.color || '#3b82f6' }}
+                            >
+                              {resource.current}
+                            </span> / {resource.max}
+                          </div>
+                        </div>
+                        
+                        <div className="h-1.5 bg-dark-bg rounded-full overflow-hidden border border-dark-border relative">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentage}%` }}
+                            transition={{ duration: 0.3 }}
+                            className={`h-full rounded-full transition-all ${
+                              percentage > 75 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                              percentage > 50 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
+                              percentage > 25 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                              'bg-gradient-to-r from-red-500 to-pink-500'
+                            }`}
+                          />
                         </div>
                       </div>
                       
-                      <div className="h-1.5 bg-dark-bg rounded-full overflow-hidden border border-dark-border relative">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${percentage}%` }}
-                          transition={{ duration: 0.3 }}
-                          className={`h-full rounded-full transition-all ${
-                            percentage > 75 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                            percentage > 50 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
-                            percentage > 25 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                            'bg-gradient-to-r from-red-500 to-pink-500'
-                          }`}
-                        />
+                      <div className="flex items-center gap-1.5 ml-2">
+                        <button
+                          onClick={() => updateResourceCount(resource.id, -1)}
+                          disabled={resource.current <= 0}
+                          className="w-7 h-7 rounded-lg bg-dark-bg border border-dark-border hover:bg-dark-hover disabled:opacity-30 transition-all font-bold text-gray-300 flex items-center justify-center"
+                        >
+                          −
+                        </button>
+                      <button
+                        onClick={() => updateResourceCount(resource.id, 1)}
+                        disabled={resource.current >= resource.max}
+                          className="w-7 h-7 rounded-lg bg-dark-bg border border-dark-border hover:bg-dark-hover disabled:opacity-30 transition-all font-bold text-gray-300 flex items-center justify-center"
+                      >
+                        +
+                      </button>
+                      <button
+                        onClick={() => openResourceModal(resource)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-200 hover:bg-dark-hover transition-all opacity-0 group-hover:opacity-100 ml-1"
+                        title="Настроить"
+                      >
+                          <Settings className="w-3.5 h-3.5" />
+                      </button>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-1.5 ml-2">
-                      <button
-                        onClick={() => updateResourceCount(resource.id, -1)}
-                        disabled={resource.current <= 0}
-                        className="w-7 h-7 rounded-lg bg-dark-bg border border-dark-border hover:bg-dark-hover disabled:opacity-30 transition-all font-bold text-gray-300 flex items-center justify-center"
-                      >
-                        −
-                      </button>
-                    <button
-                      onClick={() => updateResourceCount(resource.id, 1)}
-                      disabled={resource.current >= resource.max}
-                        className="w-7 h-7 rounded-lg bg-dark-bg border border-dark-border hover:bg-dark-hover disabled:opacity-30 transition-all font-bold text-gray-300 flex items-center justify-center"
-                    >
-                      +
-                    </button>
-                    <button
-                      onClick={() => openResourceModal(resource)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-200 hover:bg-dark-hover transition-all opacity-0 group-hover:opacity-100 ml-1"
-                      title="Настроить"
-                    >
-                        <Settings className="w-3.5 h-3.5" />
-                    </button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+
+            {character.resources.length > 3 && (
+              <button
+                onClick={() => setShowAllResources(!showAllResources)}
+                className="w-full py-2.5 mt-2 flex items-center justify-center gap-2 bg-dark-card/30 hover:bg-dark-card/50 border border-dark-border rounded-xl transition-all text-gray-400 hover:text-white group"
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showAllResources ? 'rotate-180' : ''}`} />
+                <span className="text-xs font-bold uppercase tracking-widest">
+                  {showAllResources ? 'Скрыть лишние' : `Показать все ресурсы (${character.resources.length})`}
+                </span>
+              </button>
+            )}
           </div>
         </div>
       )}

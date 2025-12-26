@@ -61,6 +61,7 @@ export const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isResourcesExpanded, setIsResourcesExpanded] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -145,11 +146,53 @@ export const Navbar: React.FC = () => {
         {/* Right: Resources, Currency, Ammo, Menu */}
         <div className="flex items-center gap-2">
           {/* Resources - Only on desktop and when NOT in hotbar mode */}
-          {viewMode !== 'hotbar' && (
+          {viewMode !== 'hotbar' && resourcesWithValues.length > 0 && (
             <div className="hidden xl:flex items-center gap-2">
-              {resourcesWithValues.map(resource => {
+              {resourcesWithValues.length > 5 && (
+                <button
+                  onClick={() => setIsResourcesExpanded(!isResourcesExpanded)}
+                  className={`w-12 h-12 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:bg-dark-card transition-all active:scale-95 shadow-lg group relative ${isResourcesExpanded ? 'bg-blue-500/20 border-blue-500/50' : ''}`}
+                  title={isResourcesExpanded ? "Свернуть ресурсы" : "Показать все ресурсы"}
+                >
+                  <ChevronLeft className={`w-6 h-6 transition-transform ${isResourcesExpanded ? 'rotate-180 text-blue-400' : 'text-gray-400 group-hover:text-white'}`} />
+                  {!isResourcesExpanded && (
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm border border-dark-bg">
+                      {resourcesWithValues.length - 5}
+                    </div>
+                  )}
+                </button>
+              )}
+              
+              <AnimatePresence mode="popLayout">
+                {(isResourcesExpanded 
+                  ? resourcesWithValues 
+                  : resourcesWithValues.slice(-5)
+                ).map((resource, idx) => {
+                  const total = resourcesWithValues.length;
+                  const isExtra = isResourcesExpanded && idx < (total - 5);
+                  
                 return (
-                  <div 
+                    <motion.div 
+                      layout
+                      initial={{ opacity: 0, scale: 0.5, x: 50, rotate: 10 }}
+                      animate={{ 
+                        opacity: 1, 
+                        scale: 1, 
+                        x: 0, 
+                        rotate: 0,
+                        transition: {
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 25,
+                          delay: isExtra ? (resourcesWithValues.length - 5 - idx) * 0.06 : 0
+                        }
+                      }}
+                      exit={{ 
+                        opacity: 0, 
+                        scale: 0.5, 
+                        x: 20,
+                        transition: { duration: 0.15 }
+                      }}
                     key={resource.id}
                     onClick={() => updateResourceCount(resource.id, -1)}
                     onContextMenu={(e) => {
@@ -182,9 +225,10 @@ export const Navbar: React.FC = () => {
                       <div className="font-bold text-gray-200">{resource.name}: {resource.current}/{resource.max}</div>
                       <div className="text-gray-500 mt-1">ЛКМ: -1 • ПКМ: просмотр</div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
+            </AnimatePresence>
             </div>
           )}
 
@@ -277,8 +321,8 @@ export const Navbar: React.FC = () => {
 
                     <div className="h-[1px] bg-[#333] mx-2 mb-1" />
 
-                    {/* Resources in menu when hidden from navbar */}
-                    {isXl && resourcesWithValues.length > 0 && (
+                    {/* Resources in menu */}
+                    {resourcesWithValues.length > 0 && (
                       <>
                         <div className="px-4 py-1.5 text-[10px] text-gray-500 font-bold uppercase tracking-widest">Ресурсы</div>
                         {resourcesWithValues.map(resource => (
@@ -294,7 +338,7 @@ export const Navbar: React.FC = () => {
                               }));
                               setIsMenuOpen(false);
                             }}
-                            className="w-full flex items-center justify-between px-4 py-2 hover:bg-[#2a2a2a] text-gray-300 transition-colors text-sm group"
+                            className="w-full flex items-center justify-start gap-4 px-4 py-2 hover:bg-[#2a2a2a] text-gray-300 transition-colors text-sm group"
                           >
                             <div className="flex items-center gap-3">
                               {getLucideIcon(resource.iconName, { 
@@ -302,16 +346,18 @@ export const Navbar: React.FC = () => {
                                 style: { color: resource.color || '#3b82f6' },
                                 className: "group-hover:opacity-80" 
                               })}
-                              <span className="group-hover:text-white">{resource.name}</span>
                             </div>
+                            <div className="flex flex-col items-start min-w-0">
+                              <span className="group-hover:text-white truncate w-full text-left">{resource.name}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-gray-500 opacity-0 lg:group-hover:opacity-100 transition-opacity">ЛКМ: -1</span>
                               <span 
-                                className="text-xs font-bold"
+                                  className="text-[11px] font-bold"
                                 style={{ color: resource.color || '#3b82f6' }}
                               >
                                 {resource.current}/{resource.max}
                               </span>
+                                <span className="text-[9px] text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">ЛКМ: -1</span>
+                              </div>
                             </div>
                           </button>
                         ))}
