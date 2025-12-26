@@ -218,6 +218,8 @@ export interface Character {
   abilities: Ability[];
   spells: Spell[];
   spellsNotes: string;
+  spellcastingDifficultyName?: string;
+  spellcastingDifficultyValue?: number;
   knownSchools: string[]; // List of spell schools the character knows
   maxPreparedSpells: { [level: number]: number }; // Max spells that can be prepared per level
   attributes: {

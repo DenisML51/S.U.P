@@ -68,6 +68,8 @@ const normalizeCharacter = (parsed: any): Character => {
     abilitiesNotes: parsed.abilitiesNotes || '',
     spells: parsed.spells || [],
     spellsNotes: parsed.spellsNotes || '',
+    spellcastingDifficultyName: parsed.spellcastingDifficultyName || 'СЛ ЗКЛ',
+    spellcastingDifficultyValue: parsed.spellcastingDifficultyValue || 10,
     knownSchools: parsed.knownSchools || [
       'Воплощение', 'Вызов', 'Иллюзия', 'Некромантия', 
       'Очарование', 'Преобразование', 'Прорицание', 'Ограждение'

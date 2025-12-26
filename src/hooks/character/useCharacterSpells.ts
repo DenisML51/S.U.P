@@ -33,11 +33,20 @@ export const useCharacterSpells = (
     updateCharacter({ ...character, spellsNotes: notes });
   };
 
+  const updateSpellcastingDifficulty = (name: string, value: number) => {
+    updateCharacter({ 
+      ...character, 
+      spellcastingDifficultyName: name,
+      spellcastingDifficultyValue: value 
+    });
+  };
+
   return {
     saveSpell,
     deleteSpell,
     toggleSpellPrepared,
     updateSpellsNotes,
+    updateSpellcastingDifficulty,
   };
 };
 

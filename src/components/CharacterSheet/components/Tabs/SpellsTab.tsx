@@ -12,6 +12,7 @@ interface SpellsTabProps {
   toggleSpellPrepared: (spellId: string) => void;
   updateResourceCount: (resourceId: string, delta: number) => void;
   updateSpellsNotes: (notes: string) => void;
+  updateSpellcastingDifficulty: (name: string, value: number) => void;
   openGrimmoire: () => void;
 }
 
@@ -21,6 +22,7 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
   toggleSpellPrepared,
   updateResourceCount,
   updateSpellsNotes,
+  updateSpellcastingDifficulty,
   openGrimmoire,
 }) => {
   const [search, setSearch] = useState('');
@@ -75,6 +77,26 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-4">
           {/* Spell Slots Compact (Icon based) */}
           <div className="flex flex-wrap gap-3">
+            {/* Spellcasting Difficulty Editor */}
+            <div className="flex items-center gap-2 bg-dark-bg/80 border border-purple-500/30 rounded-2xl px-3 h-12 shadow-lg backdrop-blur-sm group transition-all hover:border-purple-500/50">
+              <Brain size={18} className="text-purple-400" />
+              <div className="flex flex-col">
+                <input
+                  type="text"
+                  value={character.spellcastingDifficultyName || 'СЛ ЗКЛ'}
+                  onChange={(e) => updateSpellcastingDifficulty(e.target.value, character.spellcastingDifficultyValue || 10)}
+                  placeholder="Название..."
+                  className="bg-transparent border-none p-0 text-[10px] font-black uppercase tracking-tighter text-purple-400/70 focus:outline-none focus:text-purple-400 w-24"
+                />
+                <input
+                  type="number"
+                  value={character.spellcastingDifficultyValue || 10}
+                  onChange={(e) => updateSpellcastingDifficulty(character.spellcastingDifficultyName || 'СЛ ЗКЛ', parseInt(e.target.value) || 0)}
+                  className="bg-transparent border-none p-0 text-lg font-black text-white focus:outline-none w-12 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </div>
+            </div>
+
             {spellSlots.sort((a, b) => (a.spellSlotLevel || 0) - (b.spellSlotLevel || 0)).map(slot => {
               const romanNumerals = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
               const level = slot.spellSlotLevel || 0;

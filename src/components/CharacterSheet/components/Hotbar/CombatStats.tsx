@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Activity, Target, Wind } from 'lucide-react';
+import { Shield, Activity, Target, Wind, Brain } from 'lucide-react';
 import { Character } from '../../../../types';
 
 interface CombatStatsProps {
@@ -66,6 +66,18 @@ export const CombatStats: React.FC<CombatStatsProps> = ({
         <div className="flex items-center gap-2">
           <Wind size={14} className="text-green-400 group-hover/stat:scale-110 transition-transform" />
           <span className="text-sm font-black text-green-100">{character.speed}фт</span>
+        </div>
+      </div>
+
+      <div className="w-px h-10 bg-white/10" />
+
+      <div className="flex flex-col items-center justify-center h-10 group/stat transition-all">
+        <span className="text-[7px] font-black text-purple-400/70 uppercase tracking-[0.2em] mb-0.5 whitespace-nowrap">
+          {character.spellcastingDifficultyName || 'СЛ ЗКЛ'}
+        </span>
+        <div className="flex items-center gap-2">
+          <Brain size={14} className="text-purple-400 group-hover/stat:scale-110 transition-transform" />
+          <span className="text-sm font-black text-purple-100">{character.spellcastingDifficultyValue || 10}</span>
         </div>
       </div>
     </div>

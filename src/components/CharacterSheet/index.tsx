@@ -194,6 +194,7 @@ export const CharacterSheet: React.FC = () => {
                       toggleSpellPrepared={logic.toggleSpellPrepared}
                       updateResourceCount={logic.updateResourceCount}
                       updateSpellsNotes={logic.updateSpellsNotes}
+                      updateSpellcastingDifficulty={logic.updateSpellcastingDifficulty}
                       openGrimmoire={logic.openGrimmoire}
                     />
                   )}

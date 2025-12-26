@@ -90,7 +90,7 @@ export const GrimmoireModal: React.FC<GrimmoireModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-dark-card rounded-3xl border border-white/10 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+            className="bg-dark-card rounded-3xl border border-white/10 w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
           >
             {/* Header */}
             <div className="p-6 border-b border-white/5 bg-dark-card/50 backdrop-blur-xl flex items-center justify-between">
