@@ -63,12 +63,18 @@ export interface InventoryItem {
 
 export type ActionType = 'action' | 'bonus' | 'reaction';
 
+export interface DamageComponent {
+  damage: string;
+  type: string;
+}
+
 export interface Attack {
   id: string;
   name: string;
   description?: string;
   damage: string;
   damageType: string;
+  damageComponents?: DamageComponent[];
   hitBonus: number;
   actionType: ActionType;
   weaponId?: string; // Link to weapon in inventory
@@ -87,6 +93,9 @@ export interface Ability {
   resourceId?: string; // Which resource it uses
   resourceCost?: number;
   effect: string;
+  damage?: string;
+  damageType?: string;
+  damageComponents?: DamageComponent[];
   iconName?: string;
   color?: string; // Custom color
 }
@@ -149,6 +158,9 @@ export interface Spell {
   duration: string;
   description: string;
   effect: string;
+  damage?: string;
+  damageType?: string;
+  damageComponents?: DamageComponent[];
   prepared: boolean;
   resourceId?: string; // Link to spell slots resource
   iconName?: string; // Custom icon

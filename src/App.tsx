@@ -4,6 +4,7 @@ import { CharacterSheet } from './components/CharacterSheet/index';
 import { CharacterList } from './components/CharacterList';
 import { Navbar } from './components/Navbar';
 import { Toaster } from 'react-hot-toast';
+import { DiceRoller } from './components/DiceRoller';
 
 const AppContent: React.FC = () => {
   const { character, isLoaded, loadCharactersList, migrateOldData, updateSettings, settings } = useCharacterStore();
@@ -57,6 +58,8 @@ const AppContent: React.FC = () => {
       <main className={`relative z-10 ${character ? 'pt-24' : ''}`}>
         {character ? <CharacterSheet /> : <CharacterList />}
       </main>
+
+      {character && <DiceRoller />}
 
       <Toaster 
         position="bottom-center"

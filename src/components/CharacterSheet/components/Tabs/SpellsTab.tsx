@@ -5,6 +5,7 @@ import { Character, Spell, Resource } from '../../../../types';
 import { MarkdownText } from '../../../MarkdownText';
 import { MarkdownEditor } from '../../../MarkdownEditor';
 import { getLucideIcon } from '../../../../utils/iconUtils';
+import { DAMAGE_TYPE_COLORS } from '../../../../utils/damageUtils';
 
 interface SpellsTabProps {
   character: Character;
@@ -247,6 +248,32 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
                       <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Длительность</span>
                       <span className="text-[10px] text-gray-300 font-bold">{spell.duration}</span>
                     </div>
+                    {spell.damageComponents && spell.damageComponents.length > 0 ? (
+                      <div className="col-span-2 mt-1 pt-2 border-t border-white/5 flex flex-col gap-1">
+                        <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Урон</span>
+                        <div className="flex flex-wrap gap-2">
+                          {spell.damageComponents.map((comp, i) => (
+                            <div 
+                              key={i}
+                              className="text-[11px] font-black"
+                              style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }}
+                            >
+                              {comp.damage} <span className="text-[8px] opacity-60 ml-1 uppercase">{comp.type}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : spell.damage && (
+                      <div className="col-span-2 mt-1 pt-2 border-t border-white/5 flex items-center justify-between">
+                        <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Урон</span>
+                        <div 
+                          className="text-[11px] font-black"
+                          style={{ color: DAMAGE_TYPE_COLORS[spell.damageType || ''] || '#ef4444' }}
+                        >
+                          {spell.damage} {spell.damageType && <span className="text-[8px] opacity-60 ml-1">{spell.damageType}</span>}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

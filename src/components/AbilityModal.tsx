@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ability, Resource } from '../types';
+import { Ability, Resource, DAMAGE_TYPES, DamageComponent } from '../types';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CustomSelect } from './CustomSelect';
 import { IconPicker } from './IconPicker';
 import { getLucideIcon } from '../utils/iconUtils';
-import { Sparkles, Zap, Clock, X, Minus, Plus } from 'lucide-react';
+import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
+import { Sparkles, Zap, Clock, X, Minus, Plus, Sword, Trash2 } from 'lucide-react';
 
 interface AbilityModalProps {
   isOpen: boolean;
@@ -29,6 +30,12 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
   const [actionType, setActionType] = useState(ability?.actionType || 'action');
   const [resourceId, setResourceId] = useState(ability?.resourceId || '');
   const [resourceCost, setResourceCost] = useState(ability?.resourceCost || 1);
+  
+  const initialComponents = ability?.damageComponents?.length 
+    ? ability.damageComponents 
+    : (ability?.damage ? [{ damage: ability.damage, type: ability.damageType || '' }] : []);
+
+  const [components, setComponents] = useState<DamageComponent[]>(initialComponents);
   const [effect, setEffect] = useState(ability?.effect || '');
   const [iconName, setIconName] = useState(ability?.iconName || 'Zap');
   const [color, setColor] = useState(ability?.color || '#a855f7');
@@ -39,7 +46,6 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
     '#ec4899', '#06b6d4', '#6366f1', '#14b8a6', '#f97316'
   ];
 
-  // Синхронизация состояния с props при открытии модалки
   useEffect(() => {
     if (isOpen) {
       setName(ability?.name || '');
@@ -47,6 +53,12 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
       setActionType(ability?.actionType || 'action');
       setResourceId(ability?.resourceId || '');
       setResourceCost(ability?.resourceCost || 1);
+      
+      const comps = ability?.damageComponents?.length 
+        ? ability.damageComponents 
+        : (ability?.damage ? [{ damage: ability.damage, type: ability.damageType || '' }] : []);
+      
+      setComponents(comps);
       setEffect(ability?.effect || '');
       setIconName(ability?.iconName || 'Zap');
       setColor(ability?.color || '#a855f7');
@@ -57,13 +69,16 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
   const handleSave = () => {
     if (!name.trim()) return;
     
-    const newAbility: any = {
+    const newAbility: Ability = {
       id: ability?.id || `ability_${Date.now()}`,
       name,
       description,
       actionType: actionType as 'action' | 'bonus' | 'reaction',
       resourceId: resourceId || undefined,
       resourceCost: resourceId ? resourceCost : undefined,
+      damage: components[0]?.damage || undefined,
+      damageType: components[0]?.type || undefined,
+      damageComponents: components.length > 0 ? components : undefined,
       effect,
       iconName,
       color,
@@ -71,6 +86,20 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
     
     onSave(newAbility);
     onClose();
+  };
+
+  const addComponent = () => {
+    setComponents([...components, { damage: '1d6', type: '' }]);
+  };
+
+  const updateComponent = (index: number, field: keyof DamageComponent, value: string) => {
+    const next = [...components];
+    next[index] = { ...next[index], [field]: value };
+    setComponents(next);
+  };
+
+  const removeComponent = (index: number) => {
+    setComponents(components.filter((_, i) => i !== index));
   };
 
   const actionTypes = [
@@ -117,8 +146,6 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                       onSelect={setIconName}
                     />
                   </div>
-                  
-                  {/* Color Picker */}
                   <div className="flex gap-1">
                     {colors.map(c => (
                       <button
@@ -145,7 +172,6 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-              {/* Name */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Название способности</label>
                 <input
@@ -158,7 +184,6 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Action Type */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Clock className="w-3 h-3" />
@@ -181,7 +206,6 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                   </div>
                 </div>
 
-                {/* Resource Selection */}
                 <div>
                   <CustomSelect
                     label="Тратит ресурс"
@@ -196,7 +220,66 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                 </div>
               </div>
 
-              {/* Resource Cost */}
+              {/* Damage Section */}
+              <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between text-red-400 mb-1">
+                  <div className="flex items-center gap-2">
+                    <Sword className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase">Параметры урона</span>
+                  </div>
+                  <button
+                    onClick={addComponent}
+                    className="px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] font-black uppercase hover:bg-red-500/20 transition-all"
+                  >
+                    + Добавить тип
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {components.map((comp, idx) => (
+                    <div key={idx} className="flex items-start gap-2 relative group/comp animate-in slide-in-from-right-2 duration-300">
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={comp.damage}
+                          onChange={(e) => updateComponent(idx, 'damage', e.target.value)}
+                          placeholder="1d8+3"
+                          className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-lg font-black focus:outline-none focus:ring-1 focus:ring-red-500 transition-all text-center"
+                          style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }}
+                        />
+                        <div className="space-y-2">
+                          <CustomSelect
+                            label=""
+                            value={DAMAGE_TYPES.includes(comp.type) ? comp.type : (comp.type ? 'custom' : '')}
+                            onChange={(v) => updateComponent(idx, 'type', v === 'custom' ? '' : v)}
+                            options={[
+                              { value: '', label: 'Без типа' },
+                              ...DAMAGE_TYPES.map(t => ({ value: t, label: t })),
+                              { value: 'custom', label: 'Свой тип...' }
+                            ]}
+                          />
+                          {(comp.type === '' || !DAMAGE_TYPES.includes(comp.type)) && (
+                            <input
+                              type="text"
+                              value={comp.type}
+                              onChange={(e) => updateComponent(idx, 'type', e.target.value)}
+                              placeholder="Введите свой тип..."
+                              className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-[10px] text-center text-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeComponent(idx)}
+                        className="mt-2.5 p-2 text-gray-600 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {resourceId && (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
@@ -215,7 +298,6 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                 </motion.div>
               )}
 
-              {/* Description & Effect */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Краткое описание</label>
@@ -241,7 +323,6 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
               </div>
             </div>
 
-            {/* Footer Actions */}
             <div className="p-6 bg-dark-card/50 backdrop-blur-sm border-t border-dark-border flex gap-3">
               {ability && onDelete && (
                 <button
@@ -272,4 +353,3 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
     </AnimatePresence>
   );
 };
-

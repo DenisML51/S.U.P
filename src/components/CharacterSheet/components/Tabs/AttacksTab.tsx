@@ -4,6 +4,7 @@ import { Sword, Zap, Settings, Target } from 'lucide-react';
 import { Character, Attack } from '../../../../types';
 import { MarkdownEditor } from '../../../MarkdownEditor';
 import { getLucideIcon } from '../../../../utils/iconUtils';
+import { DAMAGE_TYPE_COLORS } from '../../../../utils/damageUtils';
 
 interface AttacksTabProps {
   character: Character;
@@ -75,18 +76,33 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                           </span>
                         </div>
                         
-                        <div className="flex items-center gap-3 text-xs">
+                        <div className="flex flex-wrap items-center gap-3 text-xs">
                           <span className="text-gray-300">
                             <span className="text-gray-500">Бонус:</span> <span className="font-bold text-blue-400">{attack.hitBonus >= 0 ? '+' : ''}{attack.hitBonus}</span>
                           </span>
                           <span className="text-gray-500">•</span>
-                          <span className="text-gray-300">
-                            <span className="text-gray-500">Урон:</span> <span className="font-bold text-red-400">{attack.damage}</span>
-                          </span>
-                          <span className="text-gray-500">•</span>
-                          <span className="text-gray-300 truncate">
-                            <span className="text-gray-500">Тип:</span> <span className="font-bold text-purple-400">{attack.damageType}</span>
-                          </span>
+                          {attack.damageComponents && attack.damageComponents.length > 0 ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              {attack.damageComponents.map((comp, i) => (
+                                <React.Fragment key={i}>
+                                  <span style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }} className="font-bold">
+                                    {comp.damage} <span className="text-[8px] opacity-60">{comp.type}</span>
+                                  </span>
+                                  {i < attack.damageComponents!.length - 1 && <span className="text-gray-600">+</span>}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          ) : (
+                            <>
+                              <span className="text-gray-300">
+                                <span className="text-gray-500">Урон:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damage}</span>
+                              </span>
+                              <span className="text-gray-500">•</span>
+                              <span className="text-gray-300 truncate">
+                                <span className="text-gray-500">Тип:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damageType || 'Без типа'}</span>
+                              </span>
+                            </>
+                          )}
                           {attack.usesAmmunition && (
                             <>
                               <span className="text-gray-500">•</span>
@@ -152,18 +168,33 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                           </span>
                         </div>
                         
-                        <div className="flex items-center gap-3 text-xs">
+                        <div className="flex flex-wrap items-center gap-3 text-xs">
                           <span className="text-gray-300">
                             <span className="text-gray-500">Бонус:</span> <span className="font-bold text-blue-400">{attack.hitBonus >= 0 ? '+' : ''}{attack.hitBonus}</span>
                           </span>
                           <span className="text-gray-500">•</span>
-                          <span className="text-gray-300">
-                            <span className="text-gray-500">Урон:</span> <span className="font-bold text-red-400">{attack.damage}</span>
-                          </span>
-                          <span className="text-gray-500">•</span>
-                          <span className="text-gray-300 truncate">
-                            <span className="text-gray-500">Тип:</span> <span className="font-bold text-purple-400">{attack.damageType}</span>
-                          </span>
+                          {attack.damageComponents && attack.damageComponents.length > 0 ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              {attack.damageComponents.map((comp, i) => (
+                                <React.Fragment key={i}>
+                                  <span style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }} className="font-bold">
+                                    {comp.damage} <span className="text-[8px] opacity-60">{comp.type}</span>
+                                  </span>
+                                  {i < attack.damageComponents!.length - 1 && <span className="text-gray-600">+</span>}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          ) : (
+                            <>
+                              <span className="text-gray-300">
+                                <span className="text-gray-500">Урон:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damage}</span>
+                              </span>
+                              <span className="text-gray-500">•</span>
+                              <span className="text-gray-300 truncate">
+                                <span className="text-gray-500">Тип:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damageType || 'Без типа'}</span>
+                              </span>
+                            </>
+                          )}
                           {attack.usesAmmunition && (
                             <>
                               <span className="text-gray-500">•</span>

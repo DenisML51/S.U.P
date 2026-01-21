@@ -4,6 +4,7 @@ import { Attack, ATTRIBUTES_LIST } from '../types';
 import { Sword, Target, Zap } from 'lucide-react';
 import { MarkdownText } from './MarkdownText';
 import { getLucideIcon } from '../utils/iconUtils';
+import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
 
 interface AttackViewModalProps {
   isOpen: boolean;
@@ -80,7 +81,7 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
             )}
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
               <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4 text-center">
                 <Target className="w-5 h-5 text-blue-400 mx-auto mb-2" />
                 <div className="text-xs text-gray-400 mb-1">Бонус к попаданию</div>
@@ -89,10 +90,44 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
                 </div>
               </div>
               
-              <div className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-xl p-4 text-center">
-                <Sword className="w-5 h-5 text-red-400 mx-auto mb-2" />
-                <div className="text-xs text-gray-400 mb-1">Урон</div>
-                <div className="text-2xl font-bold text-red-400">{attack.damage}</div>
+              <div className="space-y-2">
+                {attack.damageComponents && attack.damageComponents.length > 0 ? (
+                  attack.damageComponents.map((comp, idx) => (
+                    <div 
+                      key={idx}
+                      className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-xl p-3 text-center"
+                      style={{ 
+                        borderColor: `${DAMAGE_TYPE_COLORS[comp.type] || '#ef4444'}40`,
+                        backgroundImage: `linear-gradient(to bottom right, ${DAMAGE_TYPE_COLORS[comp.type] || '#ef4444'}15, transparent)`
+                      }}
+                    >
+                      <div className="text-[10px] text-gray-400 mb-1 uppercase tracking-widest">{comp.type || 'Урон'}</div>
+                      <div 
+                        className="text-xl font-black"
+                        style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }}
+                      >
+                        {comp.damage}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div 
+                    className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-xl p-4 text-center h-full flex flex-col justify-center"
+                    style={{ 
+                      borderColor: `${DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444'}40`,
+                      backgroundImage: `linear-gradient(to bottom right, ${DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444'}15, transparent)`
+                    }}
+                  >
+                    <Sword className="w-5 h-5 mx-auto mb-2" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }} />
+                    <div className="text-xs text-gray-400 mb-1">Урон</div>
+                    <div 
+                      className="text-2xl font-black"
+                      style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}
+                    >
+                      {attack.damage}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

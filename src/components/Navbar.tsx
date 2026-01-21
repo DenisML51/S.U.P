@@ -53,6 +53,7 @@ export const Navbar: React.FC = () => {
     goToCharacterList, 
     exportToJSON, 
     updateResourceCount,
+    resetAllResources,
     viewMode,
     setViewMode
   } = useCharacterStore();
@@ -61,6 +62,7 @@ export const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [isResourcesExpanded, setIsResourcesExpanded] = useState(false);
 
   useEffect(() => {
@@ -302,6 +304,7 @@ export const Navbar: React.FC = () => {
                     onClick={() => {
                       setIsMenuOpen(false);
                       setIsHistoryOpen(false);
+                      setIsResourcesOpen(false);
                     }}
                   />
                   <motion.div
@@ -321,99 +324,127 @@ export const Navbar: React.FC = () => {
 
                     <div className="h-[1px] bg-[#333] mx-2 mb-1" />
 
-                    {/* Resources in menu */}
-                    {resourcesWithValues.length > 0 && (
-                      <>
-                        <div className="px-4 py-1.5 text-[10px] text-gray-500 font-bold uppercase tracking-widest">Ресурсы</div>
-                        {resourcesWithValues.map(resource => (
-                          <button
-                            key={resource.id}
-                            onClick={() => {
-                              updateResourceCount(resource.id, -1);
-                            }}
-                            onContextMenu={(e) => {
-                              e.preventDefault();
-                              window.dispatchEvent(new CustomEvent('open-character-modal', { 
-                                detail: { type: 'resource', data: resource } 
-                              }));
-                              setIsMenuOpen(false);
-                            }}
-                            className="w-full flex items-center justify-start gap-4 px-4 py-2 hover:bg-[#2a2a2a] text-gray-300 transition-colors text-sm group"
+                    {/* Resources Trigger Item */}
+                    <div className="relative px-2">
+                      <button
+                        onMouseEnter={() => {
+                          setIsResourcesOpen(true);
+                          setIsHistoryOpen(false);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsResourcesOpen(!isResourcesOpen);
+                          if (isHistoryOpen) setIsHistoryOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[#2a2a2a] transition-all text-sm group ${
+                          isResourcesOpen ? 'bg-[#2a2a2a] text-white' : 'text-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Sparkles className={`w-4 h-4 transition-colors ${isResourcesOpen ? 'text-blue-400' : 'text-gray-400 group-hover:text-blue-400'}`} />
+                          <span className="group-hover:text-white">Ресурсы</span>
+                        </div>
+                        <ChevronLeft className={`w-4 h-4 transition-all ${isResourcesOpen ? 'text-blue-400 -translate-x-1' : 'text-gray-600'}`} />
+                      </button>
+
+                      {/* Cascading Resources Panel */}
+                      <AnimatePresence>
+                        {isResourcesOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, x: 10, scale: 0.98 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: 10, scale: 0.98 }}
+                            className="absolute right-[calc(100%+12px)] top-[-40px] w-64 bg-[#1a1a1a] border border-[#333] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden z-[70] backdrop-blur-xl pointer-events-auto"
                           >
-                            <div className="flex items-center gap-3">
-                              {getLucideIcon(resource.iconName, { 
-                                size: 16, 
-                                style: { color: resource.color || '#3b82f6' },
-                                className: "group-hover:opacity-80" 
-                              })}
-                            </div>
-                            <div className="flex flex-col items-start min-w-0">
-                              <span className="group-hover:text-white truncate w-full text-left">{resource.name}</span>
-                            <div className="flex items-center gap-2">
-                              <span 
-                                  className="text-[11px] font-bold"
-                                style={{ color: resource.color || '#3b82f6' }}
-                              >
-                                {resource.current}/{resource.max}
-                              </span>
-                                <span className="text-[9px] text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">ЛКМ: -1</span>
+                            <div className="px-4 py-3 border-b border-[#333] bg-[#111]/50 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Управление ресурсами</span>
                               </div>
                             </div>
-                          </button>
-                        ))}
-                        <div className="h-[1px] bg-[#333] mx-2 my-1" />
-                      </>
-                    )}
-
-                    {/* Ammo & Currency in menu when hidden from navbar */}
-                    {isMobile && (
-                      <>
-                        <div className="px-4 py-1.5 text-[10px] text-gray-500 font-bold uppercase tracking-widest">Инвентарь</div>
-                        {totalAmmo > 0 && (
-                          <button
-                            onClick={() => {
-                              window.dispatchEvent(new CustomEvent('open-character-modal', { 
-                                detail: { type: 'ammunition' } 
-                              }));
-                              setIsMenuOpen(false);
-                            }}
-                            className="w-full flex items-center justify-between px-4 py-2 hover:bg-[#2a2a2a] text-gray-300 transition-colors text-sm group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Target className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
-                              <span className="group-hover:text-white">Боеприпасы</span>
+                            <div className="p-1.5 max-h-[400px] overflow-y-auto custom-scrollbar">
+                              {resourcesWithValues.length > 0 ? (
+                                <div className="space-y-1">
+                                  {resourcesWithValues.map(resource => (
+                                    <button
+                                      key={resource.id}
+                                      onClick={() => updateResourceCount(resource.id, -1)}
+                                      onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        window.dispatchEvent(new CustomEvent('open-character-modal', { 
+                                          detail: { type: 'resource', data: resource } 
+                                        }));
+                                        setIsMenuOpen(false);
+                                      }}
+                                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[#2a2a2a] text-gray-300 transition-all text-sm group"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div 
+                                          className="w-8 h-8 rounded-lg flex items-center justify-center bg-black/20"
+                                          style={{ color: resource.color || '#3b82f6' }}
+                                        >
+                                          {getLucideIcon(resource.iconName, { size: 16 })}
+                                        </div>
+                                        <div className="flex flex-col items-start">
+                                          <span className="group-hover:text-white text-[13px] font-medium">{resource.name}</span>
+                                        </div>
+                                      </div>
+                                      <div 
+                                        className="text-xs font-black px-2 py-1 rounded-lg bg-black/40 border border-white/5"
+                                        style={{ color: resource.color || '#3b82f6' }}
+                                      >
+                                        {resource.current}/{resource.max}
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="py-8 flex flex-col items-center justify-center text-gray-600 text-center">
+                                  <Sparkles className="w-8 h-8 opacity-10 mb-2" />
+                                  <p className="text-[9px] font-black uppercase tracking-widest opacity-40">Нет доступных ресурсов</p>
+                                </div>
+                              )}
                             </div>
-                            <span className="text-xs font-bold text-orange-400">{totalAmmo}</span>
-                          </button>
+                            <div className="p-3 bg-[#111]/30 border-t border-[#333] flex flex-col gap-2">
+                              {resourcesWithValues.length > 0 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm('Восстановить все ресурсы?')) {
+                                      resetAllResources();
+                                    }
+                                  }}
+                                  className="w-full py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg text-[9px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-600/30 hover:text-blue-300 transition-all"
+                                >
+                                  Длинный отдых
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsResourcesOpen(false);
+                                }}
+                                className="w-full py-2 bg-[#222] border border-[#333] rounded-lg text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
+                              >
+                                Свернуть
+                              </button>
+                            </div>
+                          </motion.div>
                         )}
-                        <button
-                          onClick={() => {
-                            window.dispatchEvent(new CustomEvent('open-character-modal', { 
-                              detail: { type: 'currency' } 
-                            }));
-                            setIsMenuOpen(false);
-                          }}
-                          className="w-full flex items-center justify-between px-4 py-2 hover:bg-[#2a2a2a] text-gray-300 transition-colors text-sm group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Coins className="w-4 h-4 text-yellow-500 group-hover:text-yellow-400" />
-                            <span className="group-hover:text-white">Валюта</span>
-                          </div>
-                          <span className="text-xs font-bold text-yellow-500">
-                            {Math.floor(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100)}
-                          </span>
-                        </button>
-                        <div className="h-[1px] bg-[#333] mx-2 my-1" />
-                      </>
-                    )}
+                      </AnimatePresence>
+                    </div>
 
                     {/* History Trigger Item */}
                     <div className="relative px-2">
                       <button
-                        onMouseEnter={() => setIsHistoryOpen(true)}
+                        onMouseEnter={() => {
+                          setIsHistoryOpen(true);
+                          setIsResourcesOpen(false);
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           setIsHistoryOpen(!isHistoryOpen);
+                          if (isResourcesOpen) setIsResourcesOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[#2a2a2a] transition-all text-sm group ${
                           isHistoryOpen ? 'bg-[#2a2a2a] text-white' : 'text-gray-300'
@@ -457,7 +488,7 @@ export const Navbar: React.FC = () => {
                                                      entry.type === 'resource' ? 'text-blue-400' :
                                                      entry.type === 'inventory' ? 'text-amber-400' :
                                                      entry.type === 'exp' ? 'text-green-400' : 'text-gray-400';
-
+                                    
                                     const bgColor = entry.type === 'health' ? 'group-hover:bg-red-500/5' : 
                                                    entry.type === 'sanity' ? 'group-hover:bg-purple-500/5' :
                                                    entry.type === 'resource' ? 'group-hover:bg-blue-500/5' :
@@ -504,6 +535,48 @@ export const Navbar: React.FC = () => {
                         )}
                       </AnimatePresence>
                     </div>
+
+                    {/* Ammo & Currency in menu when hidden from navbar */}
+                    {isMobile && (
+                      <>
+                        <div className="px-4 py-1.5 text-[10px] text-gray-500 font-bold uppercase tracking-widest">Инвентарь</div>
+                        {totalAmmo > 0 && (
+                          <button
+                            onClick={() => {
+                              window.dispatchEvent(new CustomEvent('open-character-modal', { 
+                                detail: { type: 'ammunition' } 
+                              }));
+                              setIsMenuOpen(false);
+                            }}
+                            className="w-full flex items-center justify-between px-4 py-2 hover:bg-[#2a2a2a] text-gray-300 transition-colors text-sm group"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Target className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
+                              <span className="group-hover:text-white">Боеприпасы</span>
+                            </div>
+                            <span className="text-xs font-bold text-orange-400">{totalAmmo}</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('open-character-modal', { 
+                              detail: { type: 'currency' } 
+                            }));
+                            setIsMenuOpen(false);
+                          }}
+                          className="w-full flex items-center justify-between px-4 py-2 hover:bg-[#2a2a2a] text-gray-300 transition-colors text-sm group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Coins className="w-4 h-4 text-yellow-500 group-hover:text-yellow-400" />
+                            <span className="group-hover:text-white">Валюта</span>
+                          </div>
+                          <span className="text-xs font-bold text-yellow-500">
+                            {Math.floor(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100)}
+                          </span>
+                        </button>
+                        <div className="h-[1px] bg-[#333] mx-2 my-1" />
+                      </>
+                    )}
 
                     <div className="px-2">
                       <button

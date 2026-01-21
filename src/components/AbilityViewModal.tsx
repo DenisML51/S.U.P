@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Ability, Resource } from '../types';
-import { Sparkles, Zap } from 'lucide-react';
+import { Sparkles, Zap, Sword } from 'lucide-react';
 import { getLucideIcon } from '../utils/iconUtils';
 import { MarkdownText } from './MarkdownText';
+import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
 
 interface AbilityViewModalProps {
   isOpen: boolean;
@@ -112,6 +113,61 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
                         style={{ color: resource.color || '#a855f7' }}
                       >
                         {ability.resourceCost} {resource.name}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {ability.damageComponents && ability.damageComponents.length > 0 ? (
+                ability.damageComponents.map((comp, idx) => (
+                  <div 
+                    key={idx}
+                    className="p-4 border rounded-xl"
+                    style={{ 
+                      backgroundColor: `${DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444'}10`,
+                      borderColor: `${DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444'}30`
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-dark-card rounded-lg flex items-center justify-center">
+                        <div style={{ color: DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444' }}>
+                          {getDamageTypeIcon(comp.type || '', 20)}
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm text-gray-400">Урон</div>
+                        <div 
+                          className="text-lg font-black"
+                          style={{ color: DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444' }}
+                        >
+                          {comp.damage} {comp.type && <span className="text-xs uppercase ml-1 opacity-60">{comp.type}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : ability.damage && (
+                <div 
+                  className="p-4 border rounded-xl"
+                  style={{ 
+                    backgroundColor: `${DAMAGE_TYPE_COLORS[ability.damageType || ''] || '#ef4444'}10`,
+                    borderColor: `${DAMAGE_TYPE_COLORS[ability.damageType || ''] || '#ef4444'}30`
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-dark-card rounded-lg flex items-center justify-center">
+                      <div style={{ color: DAMAGE_TYPE_COLORS[ability.damageType || ''] || '#ef4444' }}>
+                        {getDamageTypeIcon(ability.damageType || '', 20)}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-400">Урон</div>
+                      <div 
+                        className="text-lg font-black"
+                        style={{ color: DAMAGE_TYPE_COLORS[ability.damageType || ''] || '#ef4444' }}
+                      >
+                        {ability.damage} {ability.damageType && <span className="text-xs uppercase ml-1 opacity-60">{ability.damageType}</span>}
                       </div>
                     </div>
                   </div>

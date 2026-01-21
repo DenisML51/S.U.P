@@ -4,6 +4,7 @@ import { Zap, Settings, CheckCircle2, XCircle, ChevronDown } from 'lucide-react'
 import { Character, Resource, Ability } from '../../../../types';
 import { getLucideIcon } from '../../../../utils/iconUtils';
 import { MarkdownEditor } from '../../../MarkdownEditor';
+import { DAMAGE_TYPE_COLORS } from '../../../../utils/damageUtils';
 
 interface AbilitiesTabProps {
   character: Character;
@@ -205,14 +206,38 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                         </span>
                       </div>
                       
-                      {(ability.description || (usedResource && ability.resourceCost)) && (
-                        <div className="flex items-center gap-2 text-xs mt-0.5">
+                      {(ability.description || (usedResource && ability.resourceCost) || ability.damage) && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs mt-0.5">
                           {ability.description && (
                             <span className="text-gray-400 line-clamp-1 italic">{ability.description}</span>
                           )}
+                          {ability.damageComponents && ability.damageComponents.length > 0 ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              {ability.damageComponents.map((comp, i) => (
+                                <React.Fragment key={i}>
+                                  <div 
+                                    className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-white/10 bg-white/5 font-black text-[10px]"
+                                    style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }}
+                                  >
+                                    <span>{comp.damage}</span>
+                                    {comp.type && <span className="opacity-60 uppercase text-[8px] tracking-tighter">{comp.type}</span>}
+                                  </div>
+                                  {i < ability.damageComponents!.length - 1 && <span className="text-gray-600">+</span>}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          ) : ability.damage && (
+                            <div 
+                              className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-white/10 bg-white/5 font-black text-[10px]"
+                              style={{ color: DAMAGE_TYPE_COLORS[ability.damageType || ''] || '#ef4444' }}
+                            >
+                              <span>{ability.damage}</span>
+                              {ability.damageType && <span className="opacity-60 uppercase text-[8px] tracking-tighter">{ability.damageType}</span>}
+                            </div>
+                          )}
                           {usedResource && ability.resourceCost && (
                             <>
-                              {ability.description && <span className="text-gray-600">•</span>}
+                              {(ability.description || ability.damage) && <span className="text-gray-600">•</span>}
                               <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                                 canUse 
                                   ? 'bg-green-500/10 border-green-500/30 text-green-400' 

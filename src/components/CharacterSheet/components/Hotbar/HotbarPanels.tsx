@@ -13,6 +13,7 @@ interface HotbarPanelsProps {
   };
   hoveredItemId: string | null;
   onItemClick: (action: any) => void;
+  onItemRightClick: (action: any) => void;
   onItemHover: (item: any, rect: DOMRect) => void;
   onItemUnhover: () => void;
 }
@@ -21,6 +22,7 @@ export const HotbarPanels: React.FC<HotbarPanelsProps> = ({
   actionGroups,
   hoveredItemId,
   onItemClick,
+  onItemRightClick,
   onItemHover,
   onItemUnhover
 }) => {
@@ -76,6 +78,10 @@ export const HotbarPanels: React.FC<HotbarPanelsProps> = ({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     onClick={() => onItemClick(action)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      onItemRightClick(action);
+                    }}
                     onMouseEnter={(e) => onItemHover(action, e.currentTarget.getBoundingClientRect())}
                     onMouseLeave={onItemUnhover}
                     className="relative w-12 h-12 bg-dark-card/60 border border-white/5 rounded-2xl flex items-center justify-center cursor-pointer hover:scale-110 hover:bg-dark-card hover:border-white/20 active:scale-95 transition-all shadow-lg"

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Spell, Resource } from '../types';
+import { Spell, Resource, DAMAGE_TYPES, DamageComponent } from '../types';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CustomSelect } from './CustomSelect';
 import { IconPicker } from './IconPicker';
 import { getLucideIcon } from '../utils/iconUtils';
-import { Wand2, Clock, MapPin, Sparkles, X, Minus, Plus, Shield, Target, Search } from 'lucide-react';
+import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
+import { Wand2, Clock, MapPin, Sparkles, X, Minus, Plus, Shield, Target, Search, Sword, Trash2 } from 'lucide-react';
 
 interface SpellModalProps {
   isOpen: boolean;
@@ -34,6 +35,12 @@ export const SpellModal: React.FC<SpellModalProps> = ({
   const [range, setRange] = useState(spell?.range || '60 футов');
   const [components, setComponents] = useState(spell?.components || 'В, С');
   const [duration, setDuration] = useState(spell?.duration || 'Мгновенная');
+  
+  const initialComponents = spell?.damageComponents?.length 
+    ? spell.damageComponents 
+    : (spell?.damage ? [{ damage: spell.damage, type: spell.damageType || '' }] : []);
+
+  const [damageComponents, setDamageComponents] = useState<DamageComponent[]>(initialComponents);
   const [description, setDescription] = useState(spell?.description || '');
   const [effect, setEffect] = useState(spell?.effect || '');
   const [resourceId, setResourceId] = useState(spell?.resourceId || '');
@@ -57,6 +64,12 @@ export const SpellModal: React.FC<SpellModalProps> = ({
       setRange(spell?.range || '60 футов');
       setComponents(spell?.components || 'В, С');
       setDuration(spell?.duration || 'Мгновенная');
+      
+      const comps = spell?.damageComponents?.length 
+        ? spell.damageComponents 
+        : (spell?.damage ? [{ damage: spell.damage, type: spell.damageType || '' }] : []);
+      
+      setDamageComponents(comps);
       setDescription(spell?.description || '');
       setEffect(spell?.effect || '');
       setResourceId(spell?.resourceId || '');
@@ -82,6 +95,9 @@ export const SpellModal: React.FC<SpellModalProps> = ({
       duration,
       description,
       effect,
+      damage: damageComponents[0]?.damage || undefined,
+      damageType: damageComponents[0]?.type || undefined,
+      damageComponents: damageComponents.length > 0 ? damageComponents : undefined,
       resourceId: resourceId || undefined,
       prepared,
       iconName,
@@ -90,6 +106,20 @@ export const SpellModal: React.FC<SpellModalProps> = ({
     
     onSave(newSpell);
     onClose();
+  };
+
+  const addDamageComponent = () => {
+    setDamageComponents([...damageComponents, { damage: '1d6', type: '' }]);
+  };
+
+  const updateDamageComponent = (index: number, field: keyof DamageComponent, value: string) => {
+    const next = [...damageComponents];
+    next[index] = { ...next[index], [field]: value };
+    setDamageComponents(next);
+  };
+
+  const removeDamageComponent = (index: number) => {
+    setDamageComponents(damageComponents.filter((_, i) => i !== index));
   };
 
   const actionTypes = [
@@ -146,8 +176,6 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                       onSelect={setIconName}
                     />
                   </div>
-                  
-                  {/* Color Picker */}
                   <div className="flex gap-1">
                     {colors.map(c => (
                       <button
@@ -174,7 +202,6 @@ export const SpellModal: React.FC<SpellModalProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-              {/* Name & Level */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Название</label>
@@ -196,7 +223,6 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                 </div>
               </div>
 
-              {/* School & Action Type */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <CustomSelect
                   label="Школа магии"
@@ -229,7 +255,6 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                 </div>
               </div>
 
-              {/* Resource Selection & Prepared */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <CustomSelect
@@ -261,7 +286,67 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                 </div>
               </div>
 
-              {/* Spell Details Grid */}
+              {/* Damage Section */}
+              <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between text-red-400 mb-1">
+                  <div className="flex items-center gap-2">
+                    <Sword className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase">Параметры урона</span>
+                  </div>
+                  <button
+                    onClick={addDamageComponent}
+                    className="px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] font-black uppercase hover:bg-red-500/20 transition-all"
+                  >
+                    + Добавить тип
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {damageComponents.map((comp, idx) => (
+                    <div key={idx} className="flex items-start gap-2 relative group/comp animate-in slide-in-from-right-2 duration-300">
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={comp.damage}
+                          onChange={(e) => updateDamageComponent(idx, 'damage', e.target.value)}
+                          placeholder="8d6"
+                          className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-lg font-black focus:outline-none focus:ring-1 focus:ring-red-500 transition-all text-center"
+                          style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }}
+                        />
+                        <div className="space-y-2">
+                          <CustomSelect
+                            label=""
+                            value={DAMAGE_TYPES.includes(comp.type) ? comp.type : (comp.type ? 'custom' : '')}
+                            onChange={(v) => updateDamageComponent(idx, 'type', v === 'custom' ? '' : v)}
+                            options={[
+                              { value: '', label: 'Без типа' },
+                              ...DAMAGE_TYPES.map(t => ({ value: t, label: t })),
+                              { value: 'custom', label: 'Свой тип...' }
+                            ]}
+                            placeholder="Выберите тип..."
+                          />
+                          {(comp.type === '' || !DAMAGE_TYPES.includes(comp.type)) && (
+                            <input
+                              type="text"
+                              value={comp.type}
+                              onChange={(e) => updateDamageComponent(idx, 'type', e.target.value)}
+                              placeholder="Введите свой тип..."
+                              className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-[10px] text-center text-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeDamageComponent(idx)}
+                        className="mt-2.5 p-2 text-gray-600 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Время накл.</label>
@@ -325,7 +410,6 @@ export const SpellModal: React.FC<SpellModalProps> = ({
               </div>
             </div>
 
-            {/* Footer Actions */}
             <div className="p-6 bg-dark-card/50 backdrop-blur-sm border-t border-dark-border flex gap-3">
               {spell && onDelete && (
                 <button
@@ -356,4 +440,3 @@ export const SpellModal: React.FC<SpellModalProps> = ({
     </AnimatePresence>
   );
 };
-

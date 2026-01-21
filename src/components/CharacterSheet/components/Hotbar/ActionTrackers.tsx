@@ -21,9 +21,9 @@ export const ActionTrackers: React.FC<ActionTrackersProps> = ({
     const currentSpent = spentActions[id];
     let newSpent = currentSpent;
     if (index < currentSpent) {
-      newSpent = index; // Unspend this and all after it
+      newSpent = index;
     } else {
-      newSpent = index + 1; // Spend this and all before it
+      newSpent = index + 1;
     }
 
     updateCharacter({

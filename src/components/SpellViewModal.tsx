@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Spell, Resource } from '../types';
 import { MarkdownText } from './MarkdownText';
 import { getLucideIcon } from '../utils/iconUtils';
-import { Wand2, Clock, MapPin, Sparkles, X, Edit2, Zap, Target } from 'lucide-react';
+import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
+import { Wand2, Clock, MapPin, Sparkles, X, Edit2, Zap, Target, Sword } from 'lucide-react';
 
 interface SpellViewModalProps {
   isOpen: boolean;
@@ -151,6 +152,69 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
                     style={{ color: resource.color || '#3b82f6' }}
                   >
                     {resource.current} / {resource.max}
+                  </div>
+                </div>
+              )}
+
+              {spell.damageComponents && spell.damageComponents.length > 0 ? (
+                spell.damageComponents.map((comp, idx) => (
+                  <div 
+                    key={idx}
+                    className="p-4 rounded-2xl flex items-center justify-between border transition-colors"
+                    style={{ 
+                      backgroundColor: `${DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444'}10`,
+                      borderColor: `${DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444'}20`
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div style={{ color: DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444' }}>
+                        {getDamageTypeIcon(comp.type || '', 20)}
+                      </div>
+                      <div>
+                        <div 
+                          className="text-[10px] font-bold uppercase tracking-widest"
+                          style={{ color: DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444' }}
+                        >
+                          Урон
+                        </div>
+                        <div className="text-sm font-bold text-white">{comp.type || 'Без типа'}</div>
+                      </div>
+                    </div>
+                    <div 
+                      className="text-2xl font-black"
+                      style={{ color: DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444' }}
+                    >
+                      {comp.damage}
+                    </div>
+                  </div>
+                ))
+              ) : spell.damage && (
+                <div 
+                  className="p-4 rounded-2xl flex items-center justify-between border transition-colors"
+                  style={{ 
+                    backgroundColor: `${DAMAGE_TYPE_COLORS[spell.damageType || ''] || '#ef4444'}10`,
+                    borderColor: `${DAMAGE_TYPE_COLORS[spell.damageType || ''] || '#ef4444'}20`
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div style={{ color: DAMAGE_TYPE_COLORS[spell.damageType || ''] || '#ef4444' }}>
+                      {getDamageTypeIcon(spell.damageType || '', 20)}
+                    </div>
+                    <div>
+                      <div 
+                        className="text-[10px] font-bold uppercase tracking-widest"
+                        style={{ color: DAMAGE_TYPE_COLORS[spell.damageType || ''] || '#ef4444' }}
+                      >
+                        Урон
+                      </div>
+                      <div className="text-sm font-bold text-white">{spell.damageType || 'Без типа'}</div>
+                    </div>
+                  </div>
+                  <div 
+                    className="text-2xl font-black"
+                    style={{ color: DAMAGE_TYPE_COLORS[spell.damageType || ''] || '#ef4444' }}
+                  >
+                    {spell.damage}
                   </div>
                 </div>
               )}

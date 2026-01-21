@@ -34,6 +34,7 @@ interface CharacterState {
   loadCharactersList: () => Promise<void>;
   migrateOldData: () => void;
   updateSettings: (settings: Partial<CharacterState['settings']>) => void;
+  resetAllResources: () => void;
 }
 
 const CHARACTERS_LIST_KEY = 'trpg_characters_list';
@@ -475,5 +476,19 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   updateSettings: (newSettings) => set(state => ({
     settings: { ...state.settings, ...newSettings }
   })),
+
+  resetAllResources: () => {
+    const { character, updateCharacter, logHistory } = get();
+    if (!character) return;
+
+    const newResources = character.resources.map(r => ({
+      ...r,
+      current: r.max
+    }));
+
+    updateCharacter({ ...character, resources: newResources }, true);
+    logHistory('Все ресурсы восстановлены (Длинный отдых)', 'resource');
+    toast.success('Все ресурсы восстановлены');
+  },
 }));
 

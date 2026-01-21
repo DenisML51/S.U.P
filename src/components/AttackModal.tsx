@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Attack } from '../types';
+import { Attack, DAMAGE_TYPES, DamageComponent } from '../types';
 import { ATTRIBUTES_LIST } from '../types';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CustomSelect } from './CustomSelect';
 import { IconPicker } from './IconPicker';
 import { getLucideIcon } from '../utils/iconUtils';
-import { Sword, Target, Zap, Clock, X, Minus, Plus } from 'lucide-react';
+import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
+import { Sword, Target, Zap, Clock, X, Minus, Plus, Trash2 } from 'lucide-react';
 
 interface AttackModalProps {
   isOpen: boolean;
@@ -25,8 +26,13 @@ export const AttackModal: React.FC<AttackModalProps> = ({
 }) => {
   const [name, setName] = useState(attack?.name || '');
   const [description, setDescription] = useState(attack?.description || '');
-  const [damage, setDamage] = useState(attack?.damage || '1d6');
-  const [damageType, setDamageType] = useState(attack?.damageType || '');
+  
+  // Initialize components from existing damage/damageType or damageComponents
+  const initialComponents = attack?.damageComponents?.length 
+    ? attack.damageComponents 
+    : [{ damage: attack?.damage || '1d6', type: attack?.damageType || '' }];
+
+  const [components, setComponents] = useState<DamageComponent[]>(initialComponents);
   const [hitBonus, setHitBonus] = useState(attack?.hitBonus || 0);
   const [actionType, setActionType] = useState(attack?.actionType || 'action');
   const [usesAmmunition, setUsesAmmunition] = useState(attack?.usesAmmunition || false);
@@ -46,8 +52,12 @@ export const AttackModal: React.FC<AttackModalProps> = ({
     if (isOpen) {
       setName(attack?.name || '');
       setDescription(attack?.description || '');
-      setDamage(attack?.damage || '1d6');
-      setDamageType(attack?.damageType || '');
+      
+      const comps = attack?.damageComponents?.length 
+        ? attack.damageComponents 
+        : [{ damage: attack?.damage || '1d6', type: attack?.damageType || '' }];
+      
+      setComponents(comps);
       setHitBonus(attack?.hitBonus || 0);
       setActionType(attack?.actionType || 'action');
       setUsesAmmunition(attack?.usesAmmunition || false);
@@ -66,8 +76,10 @@ export const AttackModal: React.FC<AttackModalProps> = ({
       id: attack?.id || `attack_${Date.now()}`,
       name,
       description,
-      damage,
-      damageType,
+      // For backward compatibility, use the first component
+      damage: components[0]?.damage || '',
+      damageType: components[0]?.type || '',
+      damageComponents: components,
       hitBonus,
       actionType: actionType as 'action' | 'bonus' | 'reaction',
       usesAmmunition,
@@ -80,6 +92,21 @@ export const AttackModal: React.FC<AttackModalProps> = ({
     
     onSave(newAttack);
     onClose();
+  };
+
+  const addComponent = () => {
+    setComponents([...components, { damage: '1d6', type: '' }]);
+  };
+
+  const updateComponent = (index: number, field: keyof DamageComponent, value: string) => {
+    const next = [...components];
+    next[index] = { ...next[index], [field]: value };
+    setComponents(next);
+  };
+
+  const removeComponent = (index: number) => {
+    if (components.length <= 1) return;
+    setComponents(components.filter((_, i) => i !== index));
   };
 
   const actionTypes = [
@@ -167,8 +194,8 @@ export const AttackModal: React.FC<AttackModalProps> = ({
               </div>
 
               {/* Main Stats Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl h-full flex flex-col justify-between">
                   <div className="flex items-center gap-2 text-blue-400 mb-3">
                     <Target className="w-4 h-4" />
                     <span className="text-xs font-bold uppercase">Попадание</span>
@@ -180,27 +207,66 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                   </div>
                 </div>
 
-                <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl">
-                  <div className="flex items-center gap-2 text-red-400 mb-3">
-                    <Sword className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase">Урон</span>
+                <div className="md:col-span-2 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl space-y-4 flex flex-col">
+                  <div className="flex items-center justify-between text-red-400 mb-1">
+                    <div className="flex items-center gap-2">
+                      <Sword className="w-4 h-4" />
+                      <span className="text-xs font-bold uppercase">Урон</span>
+                    </div>
+                    <button
+                      onClick={addComponent}
+                      className="px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] font-black uppercase hover:bg-red-500/20 transition-all"
+                    >
+                      + Добавить тип
+                    </button>
                   </div>
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={damage}
-                      onChange={(e) => setDamage(e.target.value)}
-                      placeholder="1d8+3"
-                      className="w-full bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-center font-bold text-red-400 focus:outline-none focus:ring-1 focus:ring-red-500"
-                    />
-                    <input
-                      type="text"
-                      value={damageType}
-                      onChange={(e) => setDamageType(e.target.value)}
-                      placeholder="Тип урона"
-                      className="w-full bg-transparent text-[10px] text-center text-gray-500 focus:outline-none"
-                    />
+                  
+                  <div className="space-y-3">
+                    {components.map((comp, idx) => (
+                      <div key={idx} className="flex items-start gap-2 relative group/comp animate-in slide-in-from-right-2 duration-300">
+                        <div className="flex-1 space-y-2">
+                          <input
+                            type="text"
+                            value={comp.damage}
+                            onChange={(e) => updateComponent(idx, 'damage', e.target.value)}
+                            placeholder="1d8+3"
+                            className="w-full bg-dark-bg border border-dark-border rounded-lg px-2 py-2 text-center text-lg font-black focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
+                            style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }}
+                          />
+                          <div className="space-y-2">
+                            <CustomSelect
+                              label=""
+                              value={DAMAGE_TYPES.includes(comp.type) ? comp.type : (comp.type ? 'custom' : '')}
+                              onChange={(v) => updateComponent(idx, 'type', v === 'custom' ? '' : v)}
+                              options={[
+                                { value: '', label: 'Без типа' },
+                                ...DAMAGE_TYPES.map(t => ({ value: t, label: t })),
+                                { value: 'custom', label: 'Свой тип...' }
+                              ]}
+                            />
+                            {(comp.type === '' || !DAMAGE_TYPES.includes(comp.type)) && (
+                              <input
+                                type="text"
+                                value={comp.type}
+                                onChange={(e) => updateComponent(idx, 'type', e.target.value)}
+                                placeholder="Введите свой тип..."
+                                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-[10px] text-center text-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
+                              />
+                            )}
+                          </div>
+                        </div>
+                        {components.length > 1 && (
+                          <button
+                            onClick={() => removeComponent(idx)}
+                            className="mt-2.5 p-2 text-gray-600 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
+                  <p className="text-[8px] text-gray-500 text-center uppercase tracking-wider mt-auto">Сложите несколько типов урона для одного приема</p>
                 </div>
               </div>
 

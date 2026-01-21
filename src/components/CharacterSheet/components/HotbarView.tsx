@@ -116,6 +116,21 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
   };
 
   const onItemClick = (action: any) => {
+    if (action.damageComponents && action.damageComponents.length > 0) {
+      window.dispatchEvent(new CustomEvent('open-dice-hub', { 
+        detail: { components: action.damageComponents } 
+      }));
+    } else if (action.damage) {
+      window.dispatchEvent(new CustomEvent('open-dice-hub', { detail: { formula: action.damage } }));
+    } else {
+      if (action.hotbarType === 'spell') openSpellView(action);
+      else if (action.hotbarType === 'attack') openAttackView(action);
+      else if (action.hotbarType === 'ability') openAbilityView(action);
+      else if (action.hotbarType === 'item') openItemView(action);
+    }
+  };
+
+  const onItemRightClick = (action: any) => {
     if (action.hotbarType === 'spell') openSpellView(action);
     else if (action.hotbarType === 'attack') openAttackView(action);
     else if (action.hotbarType === 'ability') openAbilityView(action);
@@ -180,6 +195,7 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
               actionGroups={actionGroups}
               hoveredItemId={hoveredItem?.id}
               onItemClick={onItemClick}
+              onItemRightClick={onItemRightClick}
               onItemHover={handleItemHover}
               onItemUnhover={handleItemUnhover}
             />

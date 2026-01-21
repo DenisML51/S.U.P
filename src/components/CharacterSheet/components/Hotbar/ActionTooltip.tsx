@@ -10,8 +10,9 @@ import {
   Brain,
   Sparkles
 } from 'lucide-react';
-import { Character, ATTRIBUTES_LIST } from '../../../../types';
+import { Character, ATTRIBUTES_LIST, DAMAGE_TYPES } from '../../../../types';
 import { MarkdownText } from '../../../MarkdownText';
+import { DAMAGE_TYPE_COLORS } from '../../../../utils/damageUtils';
 
 interface ActionTooltipProps {
   hoveredData: any;
@@ -53,6 +54,49 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
 
   const hotbarType = hoveredData.hotbarType;
 
+  const colorizeDamage = (damage: string, defaultType: string = '', components?: any[]) => {
+    if (components && components.length > 0) {
+      return (
+        <div className="flex flex-wrap gap-x-2 gap-y-1">
+          {components.map((comp, i) => (
+            <span key={i} style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }}>
+              {comp.damage}{comp.type && <span className="text-[7px] uppercase ml-0.5 opacity-60">{comp.type}</span>}
+              {i < components.length - 1 && <span className="text-gray-500 ml-1">+</span>}
+            </span>
+          ))}
+        </div>
+      );
+    }
+
+    if (!damage) return null;
+    
+    // ... existing logic for simple string parsing if needed ...
+    if (!DAMAGE_TYPES.some(t => damage.toLowerCase().includes(t.toLowerCase()))) {
+      return (
+        <span style={{ color: DAMAGE_TYPE_COLORS[defaultType] || '#ef4444' }}>
+          {damage} {defaultType && <span className="text-[8px] uppercase ml-1 opacity-60">{defaultType}</span>}
+        </span>
+      );
+    }
+
+    const parts = damage.split(/(\s*\+\s*|\s+и\s+)/);
+    return (
+      <span>
+        {parts.map((part, i) => {
+          const foundType = DAMAGE_TYPES.find(t => part.toLowerCase().includes(t.toLowerCase()));
+          if (foundType) {
+            return (
+              <span key={i} style={{ color: DAMAGE_TYPE_COLORS[foundType] }}>
+                {part}
+              </span>
+            );
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </span>
+    );
+  };
+
   if (hotbarType === 'spell') {
     subtitle = item.school;
     details = [
@@ -60,17 +104,38 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
       { label: 'Дистанция', value: item.range },
       { label: 'Длительность', value: item.duration },
     ];
+    if (item.damage || (item.damageComponents && item.damageComponents.length > 0)) {
+      details.push({ 
+        label: 'Урон', 
+        value: item.damage, 
+        icon: Sword,
+        customRender: colorizeDamage(item.damage, item.damageType, item.damageComponents)
+      });
+    }
   } else if (hotbarType === 'attack') {
     subtitle = item.weaponId ? 'Атака оружием' : 'Прием';
     details = [
       { label: 'Попадание', value: `${item.hitBonus >= 0 ? '+' : ''}${item.hitBonus}`, icon: Target },
-      { label: 'Урон', value: item.damage, icon: Sword },
+      { 
+        label: 'Урон', 
+        value: item.damage, 
+        icon: Sword,
+        customRender: colorizeDamage(item.damage, item.damageType, item.damageComponents)
+      },
       { label: 'Тип', value: item.damageType, icon: Skull },
       { label: 'Характеристика', value: ATTRIBUTES_LIST.find(a => a.id === item.attribute)?.name || item.attribute || '—', icon: Brain },
     ];
     color = item.color || (item.weaponId ? '#ef4444' : '#a855f7');
   } else if (hotbarType === 'ability') {
     subtitle = 'Способность';
+    if (item.damage || (item.damageComponents && item.damageComponents.length > 0)) {
+      details.push({ 
+        label: 'Урон', 
+        value: item.damage, 
+        icon: Sword,
+        customRender: colorizeDamage(item.damage, item.damageType, item.damageComponents)
+      });
+    }
     if (item.resourceId) {
       const res = character.resources.find(r => r.id === item.resourceId);
       if (res) details.push({ label: 'Ресурс', value: `${item.resourceCost} ${res.name}`, icon: Sparkles });
@@ -149,12 +214,14 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
 
         {details.length > 0 && (
           <div className="grid grid-cols-2 gap-y-3 gap-x-6">
-            {details.map((d, i) => (
+            {details.map((d: any, i) => (
               <div key={i} className="flex flex-col gap-1 overflow-hidden">
                 <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">{d.label}</span>
                 <div className="flex items-center gap-2 text-xs text-gray-200 font-bold break-words">
                   {d.icon && <d.icon size={12} className="text-blue-400 shrink-0" />}
-                  <span className="break-words line-clamp-2">{d.value}</span>
+                  <span className="break-words line-clamp-2">
+                    {d.customRender || d.value}
+                  </span>
                 </div>
               </div>
             ))}
