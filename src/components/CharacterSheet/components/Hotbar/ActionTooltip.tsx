@@ -50,7 +50,7 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
   let description = item.description || '';
   let effect = item.effect || '';
   let color = item.color || '#3b82f6';
-  let details: { label: string; value: string; icon?: any }[] = [];
+  let details: { label: string; value: string; icon?: any; customRender?: React.ReactNode }[] = [];
 
   const hotbarType = hoveredData.hotbarType;
 

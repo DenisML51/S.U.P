@@ -236,7 +236,7 @@ export const DiceRoller: React.FC = () => {
 
   const removeDie = (id: string) => {
     setSelectedDice(prev => {
-      const idx = prev.findLastIndex(d => d.id === id);
+      const idx = prev.findLastIndex((d: {id: string, style: any, type?: string}) => d.id === id);
       if (idx === -1) return prev;
       const next = [...prev];
       next.splice(idx, 1);
