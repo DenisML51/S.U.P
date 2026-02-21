@@ -15,6 +15,7 @@ interface CustomSelectProps {
   placeholder?: string;
   className?: string;
   label?: string;
+  minimal?: boolean;
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -24,6 +25,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   placeholder = 'Выберите...',
   className = '',
   label,
+  minimal = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,21 +52,26 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full bg-dark-bg/50 backdrop-blur-md border border-dark-border rounded-xl px-4 py-2.5 text-sm flex items-center justify-between hover:border-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
+        className={`w-full bg-dark-bg/50 backdrop-blur-md border border-dark-border rounded-xl flex items-center justify-between hover:border-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
           isOpen ? 'border-blue-500/50' : ''
-        }`}
+        } ${minimal ? 'p-2' : 'px-4 py-2.5 text-sm'}`}
+        title={minimal ? selectedOption?.label : undefined}
       >
-        <div className="flex items-center gap-2 overflow-hidden">
+        <div className={`flex items-center gap-2 overflow-hidden ${minimal ? 'justify-center w-full' : ''}`}>
           {selectedOption?.icon}
-          <span className={`truncate ${!selectedOption ? 'text-gray-500' : 'text-white'}`}>
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
+          {!minimal && (
+            <span className={`truncate ${!selectedOption ? 'text-gray-500' : 'text-white'}`}>
+              {selectedOption ? selectedOption.label : placeholder}
+            </span>
+          )}
         </div>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
-          }`}
-        />
+        {!minimal && (
+          <ChevronDown
+            className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
+              isOpen ? 'rotate-180' : ''
+            }`}
+          />
+        )}
       </button>
 
       <AnimatePresence>
@@ -74,7 +81,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             animate={{ opacity: 1, y: 4, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.1 }}
-            className="absolute z-[100] w-full mt-1 bg-dark-card border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl"
+            className={`absolute z-[100] w-max min-w-full mt-1 bg-dark-card border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl ${minimal ? 'left-1/2 -translate-x-1/2' : 'left-0'}`}
           >
             <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
               {options.map((option) => (

@@ -56,6 +56,7 @@ export interface InventoryItem {
   weaponClass?: WeaponClass;
   damage?: string; // e.g., "1d6+2"
   damageType?: string; // e.g., "Колющий"
+  damageComponents?: DamageComponent[];
   ammunitionType?: string; // e.g., "Стрелы"
   iconName?: string;
   color?: string;
