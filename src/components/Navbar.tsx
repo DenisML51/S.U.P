@@ -93,7 +93,6 @@ export const Navbar: React.FC = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 p-8 pointer-events-none">
       <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4 pointer-events-auto px-2 py-3">
         
-        {/* Left: Name */}
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => setViewMode(viewMode === 'tabs' ? 'hotbar' : 'tabs')}
@@ -110,7 +109,6 @@ export const Navbar: React.FC = () => {
           </button>
         </div>
 
-        {/* Center: Tabs */}
         <div className="flex items-center bg-dark-bg/50 rounded-xl p-1 border border-dark-border/50 overflow-x-auto no-scrollbar">
           {visibleTabs.map((tab) => {
             const Icon = tab.icon;
@@ -145,9 +143,7 @@ export const Navbar: React.FC = () => {
           })}
         </div>
 
-        {/* Right: Resources, Currency, Ammo, Menu */}
         <div className="flex items-center gap-2">
-          {/* Resources - Only on desktop and when NOT in hotbar mode */}
           {viewMode !== 'hotbar' && resourcesWithValues.length > 0 && (
             <div className="hidden xl:flex items-center gap-2">
               {resourcesWithValues.length > 5 && (
@@ -222,7 +218,6 @@ export const Navbar: React.FC = () => {
                         {resource.current}
                       </div>
                     </div>
-                    {/* Tooltip */}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
                       <div className="font-bold text-gray-200">{resource.name}: {resource.current}/{resource.max}</div>
                       <div className="text-gray-500 mt-1">ЛКМ: -1 • ПКМ: просмотр</div>
@@ -234,7 +229,6 @@ export const Navbar: React.FC = () => {
             </div>
           )}
 
-          {/* Ammo - Only on desktop and when NOT in hotbar mode */}
           {viewMode !== 'hotbar' && totalAmmo > 0 && (
             <div 
               onClick={() => {
@@ -250,7 +244,6 @@ export const Navbar: React.FC = () => {
                   {totalAmmo}
                 </div>
               </div>
-              {/* Tooltip */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
                 <div className="font-bold text-gray-200">Боеприпасы</div>
                 <div className="text-gray-500 mt-1">Клик: быстрая трата</div>
@@ -258,7 +251,6 @@ export const Navbar: React.FC = () => {
             </div>
           )}
 
-          {/* Currency - Only on desktop and when NOT in hotbar mode */}
           {viewMode !== 'hotbar' && (
             <div 
               onClick={() => {
@@ -274,7 +266,6 @@ export const Navbar: React.FC = () => {
                   {Math.floor(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100)}
                 </div>
               </div>
-              {/* Tooltip */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
                 <div className="font-bold text-gray-200">Валюта: {(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100).toFixed(2)} ЗМ</div>
                 <div className="text-gray-500 mt-1">Клик: управление кошельком</div>
@@ -282,7 +273,6 @@ export const Navbar: React.FC = () => {
             </div>
           )}
 
-          {/* Menu */}
           <div className="relative ml-2">
             <button
               onClick={() => {
@@ -313,7 +303,6 @@ export const Navbar: React.FC = () => {
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     className="absolute right-0 mt-4 w-64 bg-[#1a1a1a] border border-[#333] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] py-2 z-[60] overflow-visible backdrop-blur-xl"
                   >
-                    {/* Header */}
                     <div className="px-4 py-3 mb-1">
                       <div className="text-sm font-bold text-white mb-0.5 truncate">{character.name}</div>
                       <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-lg text-[9px] font-black text-blue-400 uppercase tracking-wider">
@@ -324,7 +313,6 @@ export const Navbar: React.FC = () => {
 
                     <div className="h-[1px] bg-[#333] mx-2 mb-1" />
 
-                    {/* Resources Trigger Item */}
                     <div className="relative px-2">
                       <button
                         onMouseEnter={() => {
@@ -347,7 +335,6 @@ export const Navbar: React.FC = () => {
                         <ChevronLeft className={`w-4 h-4 transition-all ${isResourcesOpen ? 'text-blue-400 -translate-x-1' : 'text-gray-600'}`} />
                       </button>
 
-                      {/* Cascading Resources Panel */}
                       <AnimatePresence>
                         {isResourcesOpen && (
                           <motion.div
@@ -434,7 +421,6 @@ export const Navbar: React.FC = () => {
                       </AnimatePresence>
                     </div>
 
-                    {/* History Trigger Item */}
                     <div className="relative px-2">
                       <button
                         onMouseEnter={() => {
@@ -457,7 +443,6 @@ export const Navbar: React.FC = () => {
                         <ChevronLeft className={`w-4 h-4 transition-all ${isHistoryOpen ? 'text-blue-400 -translate-x-1' : 'text-gray-600'}`} />
                       </button>
 
-                      {/* Cascading History Panel */}
                       <AnimatePresence>
                         {isHistoryOpen && (
                           <motion.div
@@ -536,7 +521,6 @@ export const Navbar: React.FC = () => {
                       </AnimatePresence>
                     </div>
 
-                    {/* Ammo & Currency in menu when hidden from navbar */}
                     {isMobile && (
                       <>
                         <div className="px-4 py-1.5 text-[10px] text-gray-500 font-bold uppercase tracking-widest">Инвентарь</div>

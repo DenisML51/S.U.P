@@ -62,7 +62,6 @@ export const CharacterList: React.FC = () => {
 
   return (
     <div className={`min-h-screen p-8 flex flex-col items-center ${!hasStarted ? 'justify-center' : ''} overflow-x-hidden`}>
-      {/* Background Glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-blue-500/5 blur-[120px] rounded-full transition-opacity duration-1000 ${hasStarted ? 'opacity-100' : 'opacity-0'}`} />
       </div>
@@ -72,8 +71,7 @@ export const CharacterList: React.FC = () => {
         transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
         className="w-full flex flex-col items-center z-10"
       >
-        {/* Header/Title - Always Centered */}
-        <motion.div 
+        <motion.div
           layout
           className={`w-full relative z-20 flex flex-col items-center ${!hasStarted ? 'cursor-pointer group' : 'mb-16'}`}
           onClick={!hasStarted ? handleStart : undefined}
@@ -127,7 +125,6 @@ export const CharacterList: React.FC = () => {
 
         {hasStarted && (
           <div className="w-full max-w-7xl mx-auto flex flex-col items-center">
-            {/* Characters Grid */}
             {charactersList.length > 0 ? (
               <motion.div 
                 initial={{ opacity: 0, y: 40 }}
@@ -172,7 +169,6 @@ export const CharacterList: React.FC = () => {
         )}
       </motion.div>
 
-      {/* CONCEPTUAL COMMAND DOCK */}
       {hasStarted && (
         <motion.div
           initial={{ y: 100, opacity: 0 }}

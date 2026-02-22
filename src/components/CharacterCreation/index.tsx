@@ -30,7 +30,6 @@ export const CharacterCreation: React.FC<CharacterCreationProps> = ({ onComplete
         transition={{ duration: 0.5 }}
         className="max-w-7xl mx-auto"
       >
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -50,7 +49,6 @@ export const CharacterCreation: React.FC<CharacterCreationProps> = ({ onComplete
             )}
           </div>
 
-          {/* Progress Steps */}
           <div className="flex items-center gap-4 mb-6">
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -94,7 +92,6 @@ export const CharacterCreation: React.FC<CharacterCreationProps> = ({ onComplete
           </div>
         </div>
 
-        {/* Content */}
         <AnimatePresence mode="wait">
           {currentStep === 'basic' && (
             <BasicInfoStep 

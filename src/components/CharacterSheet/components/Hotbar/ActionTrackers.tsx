@@ -95,7 +95,6 @@ export const ActionTrackers: React.FC<ActionTrackersProps> = ({
             );
           })}
 
-          {/* Action Limit Popover */}
           <AnimatePresence>
             {editingActionId === act.id && (
               <>

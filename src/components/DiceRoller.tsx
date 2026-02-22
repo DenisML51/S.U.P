@@ -12,12 +12,10 @@ import { toast } from 'react-hot-toast';
 import { DAMAGE_TYPES } from '../types';
 import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
 
-// Helper to parse dice formula like "2d20 radiant + 3d10 cold + 5"
 const parseDiceFormula = (formula: string) => {
   const dice: { id: string, count: number, type?: string }[] = [];
   let bonus = 0;
 
-  // Split by "+" and "and" (и)
   const parts = formula.toLowerCase().split(/\s*\+\s*|\s+и\s+/);
 
   parts.forEach(part => {
@@ -25,7 +23,6 @@ const parseDiceFormula = (formula: string) => {
     if (!trimmed) return;
 
     if (trimmed.includes('d')) {
-      // Look for damage type after the dice
       const diceMatch = trimmed.match(/(\d*)d(\d+)(.*)/);
       if (diceMatch) {
         const count = diceMatch[1] === '' ? 1 : parseInt(diceMatch[1]);
@@ -57,7 +54,6 @@ const parseDiceFormula = (formula: string) => {
   return { dice, bonus };
 };
 
-// Helper to generate positions for dice pile with "layering" logic
 const getRandomDiceStyles = (index: number) => {
   const colCount = 6;
   const rowCount = 2;

@@ -52,7 +52,6 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
       exit={{ opacity: 0, x: 20 }}
       className="grid grid-cols-1 lg:grid-cols-3 gap-6"
     >
-      {/* Skills */}
       <div className="lg:col-span-2 space-y-6">
         <div className="bg-gradient-to-br from-dark-card to-dark-bg rounded-2xl p-6 border border-dark-border shadow-lg">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -133,9 +132,7 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
         </div>
       </div>
 
-      {/* Sidebar */}
       <div className="space-y-6">
-        {/* Languages */}
         <div className="bg-gradient-to-br from-dark-card to-dark-bg rounded-2xl p-6 border border-dark-border shadow-lg">
           <h3 className="text-lg font-semibold mb-4">Владения и языки</h3>
           <textarea
@@ -147,7 +144,6 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
           />
         </div>
 
-        {/* Character Preview */}
         {(name || race || charClass) && (
           <div className="bg-gradient-to-br from-dark-card to-dark-bg rounded-2xl p-6 border border-dark-border shadow-lg">
             <h3 className="text-lg font-semibold mb-4">Предпросмотр</h3>
@@ -186,7 +182,6 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
         )}
       </div>
 
-      {/* Navigation & Save */}
       <div className="lg:col-span-3 flex justify-between items-center pt-6 border-t border-dark-border">
         <button
           onClick={() => setCurrentStep('attributes')}

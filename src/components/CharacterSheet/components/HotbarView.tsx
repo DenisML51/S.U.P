@@ -9,8 +9,6 @@ import {
   CLASSES
 } from '../../../types';
 import { useCharacterStore } from '../../../store/useCharacterStore';
-
-// Sub-components
 import { CombatPanel } from './Hotbar/CombatPanel';
 import { StatusBars } from './Hotbar/StatusBars';
 import { PortraitGroup } from './Hotbar/PortraitGroup';
@@ -76,17 +74,14 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
       setHoveredRect(null);
     }, 150);
   };
-  
-  // Combat State
+
   const [isInCombat, setIsInCombat] = useState(false);
   const [initiative, setInitiative] = useState<number | null>(null);
 
-  // Subclass Icon logic
   const charClass = useMemo(() => CLASSES.find(c => c.id === character.class), [character.class]);
   const subclass = useMemo(() => charClass?.subclasses.find(sc => sc.id === character.subclass), [charClass, character.subclass]);
   const subclassIcon = subclass?.icon ? `/icons/subclasses/${subclass.icon}` : null;
 
-  // Action categories
   const actionGroups = useMemo(() => {
     const attacks = (character.attacks || []).map(a => ({ ...a, hotbarType: 'attack' }));
     const abilities = (character.abilities || []).map(a => ({ ...a, hotbarType: 'ability' }));

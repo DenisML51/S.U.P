@@ -33,7 +33,6 @@ export const AmmunitionModal: React.FC<AmmunitionModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border p-6 w-full max-w-lg shadow-2xl overflow-hidden"
           >
-            {/* Header with Gradient Background */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center shadow-lg shadow-orange-500/20">

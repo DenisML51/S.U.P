@@ -132,7 +132,6 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
               </button>
             </div>
 
-            {/* Tabs */}
             <div className="flex p-1 bg-dark-bg/50 rounded-xl mb-6 border border-dark-border">
               <button
                 onClick={() => setActiveTab('ac')}
@@ -161,7 +160,6 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
             <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               {activeTab === 'ac' ? (
                 <div className="space-y-6">
-                  {/* Base AC Section */}
                   <section>
                     <div className="text-xs text-gray-400 mb-3 uppercase font-bold tracking-wider px-1">Базовый КБ</div>
                     <div className="bg-dark-bg rounded-xl p-4 border-2 border-blue-500/50 shadow-lg shadow-blue-500/10">
@@ -194,7 +192,6 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                     </div>
                   </section>
 
-                  {/* Limbs Section */}
                   <section>
                     <div className="flex justify-between items-center mb-3 px-1">
                       <div className="text-xs text-gray-400 uppercase font-bold tracking-wider">КБ и ЗК конечностей</div>
@@ -336,7 +333,6 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
               )}
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3 mt-8">
               <button
                 onClick={onClose}

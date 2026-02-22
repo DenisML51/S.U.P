@@ -27,8 +27,7 @@ export const AttackModal: React.FC<AttackModalProps> = ({
   const [name, setName] = useState(attack?.name || '');
   const [description, setDescription] = useState(attack?.description || '');
   
-  // Initialize components from existing damage/damageType or damageComponents
-  const initialComponents = attack?.damageComponents?.length 
+  const initialComponents = attack?.damageComponents?.length
     ? attack.damageComponents 
     : [{ damage: attack?.damage || '1d6', type: attack?.damageType || '' }];
 
@@ -47,7 +46,6 @@ export const AttackModal: React.FC<AttackModalProps> = ({
     '#ec4899', '#06b6d4', '#6366f1', '#14b8a6', '#f97316'
   ];
 
-  // Синхронизация состояния с props при открытии модалки
   useEffect(() => {
     if (isOpen) {
       setName(attack?.name || '');
@@ -76,7 +74,6 @@ export const AttackModal: React.FC<AttackModalProps> = ({
       id: attack?.id || `attack_${Date.now()}`,
       name,
       description,
-      // For backward compatibility, use the first component
       damage: components[0]?.damage || '',
       damageType: components[0]?.type || '',
       damageComponents: components,
@@ -132,7 +129,6 @@ export const AttackModal: React.FC<AttackModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
           >
-            {/* Header */}
             <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm relative z-[100]">
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-2">
@@ -154,7 +150,6 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                     />
                   </div>
                   
-                  {/* Color Picker */}
                   <div className="flex gap-1">
                     {colors.map(c => (
                       <button
@@ -181,7 +176,6 @@ export const AttackModal: React.FC<AttackModalProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-              {/* Name */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Название атаки</label>
                 <input
@@ -193,7 +187,6 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                 />
               </div>
 
-              {/* Main Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl h-full flex flex-col justify-between">
                   <div className="flex items-center gap-2 text-blue-400 mb-3">
@@ -270,7 +263,6 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                 </div>
               </div>
 
-              {/* Action & Attribute */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -307,7 +299,6 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                 </div>
               </div>
 
-              {/* Ammunition */}
               <div className={`p-4 rounded-2xl border transition-all ${usesAmmunition ? 'bg-orange-500/5 border-orange-500/20' : 'bg-dark-bg/30 border-dark-border'}`}>
                 <label className="flex items-center justify-between cursor-pointer">
                   <div className="flex items-center gap-3">
@@ -346,7 +337,6 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                 )}
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Дополнительные эффекты</label>
                 <MarkdownEditor
@@ -359,7 +349,6 @@ export const AttackModal: React.FC<AttackModalProps> = ({
               </div>
             </div>
 
-            {/* Footer Actions */}
             <div className="p-6 bg-dark-card/50 backdrop-blur-sm border-t border-dark-border flex gap-3">
               {attack && onDelete && !attack.weaponId && (
                 <button

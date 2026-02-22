@@ -38,7 +38,6 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border p-6 w-full max-w-lg shadow-2xl"
           >
-            {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div 
@@ -65,7 +64,6 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
               </button>
             </div>
 
-            {/* Description */}
             {ability.description && (
               <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
                 <div className="text-sm text-gray-400 mb-2">Описание</div>
@@ -75,7 +73,6 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
               </div>
             )}
 
-            {/* Action Type & Resource */}
             <div className="grid gap-3 mb-6">
               <div className="p-3 bg-dark-bg rounded-lg flex items-center justify-between">
                 <span className="text-sm text-gray-400">Тип действия</span>
@@ -175,7 +172,6 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
               )}
             </div>
 
-            {/* Effect */}
             <div className="mb-6">
               <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
@@ -188,7 +184,6 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3">
               <button
                 onClick={onClose}

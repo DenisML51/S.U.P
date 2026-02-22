@@ -61,7 +61,6 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -69,7 +68,6 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
             onClick={onClose}
             className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
           >
-            {/* Modal */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -77,7 +75,6 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
               onClick={(e) => e.stopPropagation()}
               className="bg-dark-card rounded-2xl border border-dark-border p-6 w-full max-w-lg"
             >
-              {/* Header */}
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Опыт</h2>
                 <button
@@ -90,7 +87,6 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                 </button>
               </div>
 
-              {/* Level Display */}
               <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-6 mb-6 text-center border border-blue-500/30">
                 <div className="flex items-center justify-center gap-4 mb-2">
                   <button 
@@ -125,7 +121,6 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                 )}
               </div>
 
-              {/* Progress Bar */}
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <div className="text-sm text-gray-400">
@@ -145,9 +140,7 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                 </div>
               </div>
 
-              {/* Quick Actions */}
               <div className="space-y-3 mb-6">
-                {/* Add XP */}
                 <div>
                   <div className="text-sm text-gray-400 mb-2 uppercase">Добавить опыт</div>
                   <div className="flex gap-2">
@@ -168,7 +161,6 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                   </div>
                 </div>
 
-                {/* Remove XP */}
                 <div>
                   <div className="text-sm text-gray-400 mb-2 uppercase">Убрать опыт</div>
                   <div className="flex gap-2">
@@ -189,7 +181,6 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                   </div>
                 </div>
 
-                {/* Quick buttons */}
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => handleAdd(100)}
@@ -212,7 +203,6 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                 </div>
               </div>
 
-              {/* Manual Control */}
               <div>
                 <div className="text-sm text-gray-400 mb-2 uppercase">Текущий опыт</div>
                 <div className="flex items-center gap-2">
@@ -240,7 +230,6 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={onClose}

@@ -10,7 +10,7 @@ interface DamageComponentSectionProps {
   onUpdateComponent: (index: number, field: keyof DamageComponent, value: string) => void;
   onRemoveComponent: (index: number) => void;
   title?: string;
-  color?: string; // 'red', 'blue', 'purple', etc.
+  color?: string;
 }
 
 export const DamageComponentSection: React.FC<DamageComponentSectionProps> = ({

@@ -20,7 +20,6 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {/* Resistances & Status Group */}
       <div className="flex flex-wrap gap-1 mb-1 max-w-[140px] justify-center relative">
         <AnimatePresence mode="popLayout">
           {character.conditions?.map(condId => {
@@ -73,7 +72,6 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
               )}
             </div>
             
-            {/* Resistance Tooltip */}
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-dark-bg/95 border border-white/10 rounded-2xl text-[11px] whitespace-nowrap opacity-0 group-hover/res:opacity-100 transition-all pointer-events-none z-[1001] shadow-2xl text-gray-200 translate-y-2 group-hover/res:translate-y-0 backdrop-blur-2xl">
               <div className="font-black border-b border-white/10 pb-1.5 mb-1.5 uppercase tracking-widest text-[9px]" style={{ color: DAMAGE_TYPE_COLORS[res.type] }}>{res.type}</div>
               <div className="text-gray-400 font-bold">
@@ -95,7 +93,6 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
           <Plus size={18} />
         </button>
 
-        {/* Condition Picker Popover */}
         <AnimatePresence>
           {showConditionPicker && (
             <motion.div
@@ -160,7 +157,6 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
               <User size={64} className="text-gray-700" />
             </div>
           )}
-          {/* Subclass Icon */}
           {subclassIcon && (
             <div className="absolute bottom-2 right-2 w-12 h-12 bg-dark-bg/95 border border-white/10 rounded-2xl p-2.5 shadow-2xl overflow-hidden group-hover/avatar:border-blue-500/30 transition-colors">
               <img 
@@ -176,7 +172,6 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
           )}
         </div>
 
-        {/* Temporary HP Label */}
         {(character.tempHP || 0) > 0 && (
           <motion.div 
             initial={{ opacity: 0, x: "-50%", y: "50%", scale: 0.8 }}

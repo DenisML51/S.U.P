@@ -40,8 +40,7 @@ export const HotbarPanels: React.FC<HotbarPanelsProps> = ({
           key={cat.id} 
           className="flex flex-col gap-0 flex-1 min-w-0 bg-dark-bg backdrop-blur-3xl border border-white/5 rounded-[2rem] shadow-2xl relative overflow-hidden group/cat-panel transition-all duration-500 hover:border-white/10"
         >
-          {/* Subtle color glow in background */}
-          <div 
+          <div
             className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-24 blur-[40px] opacity-10 pointer-events-none transition-opacity duration-500 group-hover/cat-panel:opacity-20"
             style={{ backgroundColor: cat.color }}
           />

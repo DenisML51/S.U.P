@@ -2,8 +2,6 @@ import { useState, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { RACES, CLASSES, Race, Class, Subrace, Subclass } from '../../types';
-
-// New Decentralized Hooks
 import { useCharacterStats } from '../../hooks/character/useCharacterStats';
 import { useCharacterModals } from '../../hooks/character/useCharacterModals';
 import { useCharacterInventory } from '../../hooks/character/useCharacterInventory';
@@ -29,7 +27,6 @@ export const useCharacterSheetLogic = () => {
   const [inventorySubTab, setInventorySubTab] = useState<InventorySubTab>('all');
   const [selectedAttribute, setSelectedAttribute] = useState<string | null>(null);
 
-  // Initialize Decentralized Hooks
   const stats = useCharacterStats(character);
   const modals = useCharacterModals(setActiveTab, setInventorySubTab);
   const inventory = useCharacterInventory(character, updateCharacter, logHistory, settings, stats?.getModifierValue || ((id: string) => 0));
@@ -41,13 +38,11 @@ export const useCharacterSheetLogic = () => {
     return { character: null };
   }
 
-  // Memoized derived data
   const race = useMemo(() => RACES.find((r: Race) => r.id === character.race), [character.race]);
   const selectedSubrace = useMemo(() => race?.subraces?.find((sr: Subrace) => sr.id === character.subrace), [race, character.subrace]);
   const charClass = useMemo(() => CLASSES.find((c: Class) => c.id === character.class), [character.class]);
   const selectedSubclass = useMemo(() => charClass?.subclasses.find((sc: Subclass) => sc.id === character.subclass), [charClass, character.subclass]);
 
-  // Combined Return Object
   return {
     character,
     updateCharacter,
@@ -63,30 +58,23 @@ export const useCharacterSheetLogic = () => {
     selectedSubrace,
     charClass,
     selectedSubclass,
-    
-    // Stats & Calculations
+
     ...stats,
-    
-    // Modals state & handlers
+
     ...modals,
-    
-    // Inventory handlers
+
     ...inventory,
-    
-    // Actions, Abilities, Traits, Resources
+
     ...actions,
-    
-    // Spells
+
     ...spellsHook,
     openGrimmoire: () => modals.setShowGrimmoireModal(true),
 
-    // Update handlers
     ...updates,
-    saveCurrency: updates.updateCurrency, // Map updateCurrency to saveCurrency
+    saveCurrency: updates.updateCurrency,
 
-    // Specialized logic
     updateResourceCount,
-    updateAmmunitionQuantity: inventory.updateItemQuantity, // Map for AmmunitionModal
+    updateAmmunitionQuantity: inventory.updateItemQuantity,
     updateArmorClass: (newAC: number, newLimbs: any, newResistances: any[]) => 
       updateCharacter({ ...character, armorClass: newAC, limbs: newLimbs, resistances: newResistances }),
     updatePersonalityField: (field: any, value: any) => updateCharacter({ ...character, [field]: value }),
@@ -96,8 +84,7 @@ export const useCharacterSheetLogic = () => {
     updateEquipmentNotes: (notes: string) => updateCharacter({ ...character, equipmentNotes: notes }),
     updateAbilitiesNotes: (notes: string) => updateCharacter({ ...character, abilitiesNotes: notes }),
     updateSpeed: (newSpeed: number) => updateCharacter({ ...character, speed: newSpeed }),
-    
-    // Explicit save mappings to avoid any ambiguity
+
     saveResource: actions.saveResource,
     deleteResource: actions.deleteResource,
     saveItem: inventory.saveItem,
@@ -121,7 +108,6 @@ export const useCharacterSheetLogic = () => {
         duration: 4000,
       });
 
-      // Using setTimeout to ensure character context state is ready
       setTimeout(() => logHistory(`Бросок инициативы: ${totalStr}`, 'other'), 0);
       
       return result;

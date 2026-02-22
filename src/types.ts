@@ -15,8 +15,8 @@ export interface Resource {
   current: number;
   max: number;
   description: string;
-  spellSlotLevel?: number; // 0 for cantrips, 1-9 for levels
-  color?: string; // Custom color
+  spellSlotLevel?: number;
+  color?: string;
 }
 
 export interface Currency {
@@ -36,10 +36,9 @@ export interface InventoryItem {
   weight: number;
   cost: number;
   description: string;
-  quantity?: number; // For items and ammunition
-  itemClass?: string; // For regular items
-  
-  // Armor specific
+  quantity?: number;
+  itemClass?: string;
+
   baseAC?: number;
   dexModifier?: boolean;
   maxDexModifier?: number | null;
@@ -51,13 +50,12 @@ export interface InventoryItem {
     rightLeg: number;
     leftLeg: number;
   };
-  
-  // Weapon specific
+
   weaponClass?: WeaponClass;
-  damage?: string; // e.g., "1d6+2"
-  damageType?: string; // e.g., "Колющий"
+  damage?: string;
+  damageType?: string;
   damageComponents?: DamageComponent[];
-  ammunitionType?: string; // e.g., "Стрелы"
+  ammunitionType?: string;
   iconName?: string;
   color?: string;
 }
@@ -78,10 +76,10 @@ export interface Attack {
   damageComponents?: DamageComponent[];
   hitBonus: number;
   actionType: ActionType;
-  weaponId?: string; // Link to weapon in inventory
+  weaponId?: string;
   usesAmmunition?: boolean;
   ammunitionCost?: number;
-  attribute?: string; // Which attribute to use for attack
+  attribute?: string;
   iconName?: string;
   color?: string;
 }
@@ -91,14 +89,14 @@ export interface Ability {
   name: string;
   description: string;
   actionType: ActionType;
-  resourceId?: string; // Which resource it uses
+  resourceId?: string;
   resourceCost?: number;
   effect: string;
   damage?: string;
   damageType?: string;
   damageComponents?: DamageComponent[];
   iconName?: string;
-  color?: string; // Custom color
+  color?: string;
 }
 
 export interface Limb {
@@ -150,7 +148,7 @@ export interface Trait {
 export interface Spell {
   id: string;
   name: string;
-  level: number; // 0 for cantrips
+  level: number;
   school: string;
   castingTime: string;
   actionType: ActionType;
@@ -163,9 +161,9 @@ export interface Spell {
   damageType?: string;
   damageComponents?: DamageComponent[];
   prepared: boolean;
-  resourceId?: string; // Link to spell slots resource
-  iconName?: string; // Custom icon
-  color?: string; // Custom color
+  resourceId?: string;
+  iconName?: string;
+  color?: string;
 }
 
 export interface HistoryEntry {
@@ -205,10 +203,10 @@ export const DAMAGE_TYPES = [
 ];
 
 export interface Character {
-  id?: string; // ID персонажа для управления несколькими персонажами
+  id?: string;
   name: string;
   race: string;
-  subrace?: string; // Подраса для человека
+  subrace?: string;
   class: string;
   subclass: string;
   level: number;
@@ -233,8 +231,8 @@ export interface Character {
   spellsNotes: string;
   spellcastingDifficultyName?: string;
   spellcastingDifficultyValue?: number;
-  knownSchools: string[]; // List of spell schools the character knows
-  maxPreparedSpells: { [level: number]: number }; // Max spells that can be prepared per level
+  knownSchools: string[];
+  maxPreparedSpells: { [level: number]: number };
   attributes: {
     [key: string]: number;
   };
@@ -257,8 +255,8 @@ export interface Character {
   bonds: string;
   flaws: string;
   traits: Trait[];
-  conditions: string[]; // List of condition IDs
-  avatar?: string; // Base64 avatar image
+  conditions: string[];
+  avatar?: string;
   history?: HistoryEntry[];
   actionLimits?: {
     action: number;
@@ -293,9 +291,9 @@ export const getDefaultLimbs = (maxHP: number, constitution: number, baseAC: num
 export interface Subrace {
   id: string;
   name: string;
-  attributeBonuses: string; // Описание прибавок характеристик
-  appearance: string; // Внешность и особенности
-  abilities: string; // Способности
+  attributeBonuses: string;
+  appearance: string;
+  abilities: string;
 }
 
 export interface Race {
@@ -367,7 +365,7 @@ export const RACES: Race[] = [
 export interface Subclass {
   id: string;
   name: string;
-  icon?: string; // Icon file name or path
+  icon?: string;
 }
 
 export interface Class {
@@ -531,7 +529,6 @@ export const SKILLS_LIST = [
   { id: 'persuasion', name: 'Убеждение', attribute: 'charisma' },
 ];
 
-// D&D 5e Point Buy System
 export const POINT_BUY_COSTS: { [key: number]: number } = {
   8: 0,
   9: 1,
@@ -548,7 +545,6 @@ export const ATTRIBUTE_MIN = 8;
 export const ATTRIBUTE_MAX = 15;
 export const ATTRIBUTE_START = 8;
 
-// D&D 5e Experience Points by Level
 export const EXPERIENCE_BY_LEVEL: { [key: number]: number } = {
   1: 0,
   2: 300,
@@ -572,7 +568,6 @@ export const EXPERIENCE_BY_LEVEL: { [key: number]: number } = {
   20: 355000,
 };
 
-// Proficiency Bonus by Level
 export const getProficiencyBonus = (level: number): number => {
   if (level >= 17) return 6;
   if (level >= 13) return 5;
@@ -581,18 +576,14 @@ export const getProficiencyBonus = (level: number): number => {
   return 2;
 };
 
-// Sanity Modifier from Wisdom
 export const getSanityModifierFromWisdom = (wisdom: number): number => {
   if (wisdom >= 10) {
-    // Каждые 2 очка свыше 10 дают +5
     return Math.floor((wisdom - 10) / 2) * 5;
   } else {
-    // Каждое очко ниже 10 отнимает 5
     return (wisdom - 10) * 5;
   }
 };
 
-// Calculate Max Sanity
 export const calculateMaxSanity = (
   classId: string,
   wisdom: number,
@@ -604,14 +595,12 @@ export const calculateMaxSanity = (
   const levelBonus = Math.floor(level / 2);
   
   const total = mentalStrength + wisdomModifier + levelBonus;
-  
-  // Максимум 100, минимум 0
+
   return Math.min(100, Math.max(0, total));
 };
 
-// Available icons for resources and abilities
 export const RESOURCE_ICONS = ALL_AVAILABLE_ICONS.map(name => ({
   name,
-  label: name // In a real app, you might want more descriptive labels
+  label: name
 }));
 

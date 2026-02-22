@@ -38,7 +38,6 @@ export const ItemModal: React.FC<ItemModalProps> = ({
     '#ec4899', '#06b6d4', '#6366f1', '#14b8a6', '#f97316'
   ];
   
-  // Armor specific
   const [baseAC, setBaseAC] = useState(item?.baseAC || 10);
   const [dexModifier, setDexModifier] = useState(item?.dexModifier ?? true);
   const [maxDexModifier, setMaxDexModifier] = useState<number | null>(item?.maxDexModifier ?? null);
@@ -51,13 +50,11 @@ export const ItemModal: React.FC<ItemModalProps> = ({
     leftLeg: 0,
   });
   
-  // Weapon specific
   const [weaponClass, setWeaponClass] = useState<WeaponClass>(item?.weaponClass || 'melee');
   const [damage, setDamage] = useState(item?.damage || '');
   const [damageType, setDamageType] = useState(item?.damageType || '');
   const [ammunitionType, setAmmunitionType] = useState(item?.ammunitionType || '');
 
-  // Синхронизация состояния с props при открытии модалки
   useEffect(() => {
     if (isOpen) {
       setName(item?.name || '');
@@ -103,7 +100,6 @@ export const ItemModal: React.FC<ItemModalProps> = ({
       color: color || undefined,
     };
 
-    // Add type-specific fields
     if (type === 'armor') {
       newItem.baseAC = baseAC;
       newItem.dexModifier = dexModifier;
@@ -154,7 +150,6 @@ export const ItemModal: React.FC<ItemModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
           >
-            {/* Header */}
             <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm sticky top-0 z-20">
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-2">
@@ -262,7 +257,6 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 </div>
               ) : (
                 <div className="p-6 space-y-6">
-                  {/* Basic Info */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div>
@@ -343,7 +337,6 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Type Specific Fields */}
                   <AnimatePresence mode="wait">
                     {type === 'weapon' && (
                       <motion.div
@@ -490,7 +483,6 @@ export const ItemModal: React.FC<ItemModalProps> = ({
               )}
             </div>
 
-            {/* Footer Actions */}
             <div className="p-6 bg-dark-card/50 backdrop-blur-sm border-t border-dark-border flex gap-3">
               {item && onDelete && (
                 <button

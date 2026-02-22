@@ -1,17 +1,13 @@
-# Dependencies
 node_modules/
 /.pnp
 .pnp.js
 
-# Testing
 /coverage
 
-# Production
 /dist
 /release
 /build
 
-# Misc
 .DS_Store
 .env.local
 .env.development.local
@@ -22,16 +18,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Electron
 *.log
 *.log.*
 
-# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
 Thumbs.db

@@ -62,7 +62,6 @@ export const TraitModal: React.FC<TraitModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
           >
-            {/* Header */}
             <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
@@ -109,7 +108,6 @@ export const TraitModal: React.FC<TraitModalProps> = ({
               </div>
             </div>
 
-            {/* Footer Actions */}
             <div className="p-6 bg-dark-card/50 backdrop-blur-sm border-t border-dark-border flex gap-3">
               {onDelete && trait && (
                 <button

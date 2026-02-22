@@ -53,7 +53,6 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
       exit={{ opacity: 0, x: 20 }}
       className="space-y-6"
     >
-      {/* Name Input */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -72,7 +71,6 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         />
       </motion.div>
       
-      {/* Race Selection */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -140,7 +138,6 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         )}
       </motion.div>
 
-      {/* Subrace Selection */}
       {(isCustomRace || (selectedRace && selectedRace.subraces && selectedRace.subraces.length > 0) || isCustomSubrace) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -226,7 +223,6 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         </motion.div>
       )}
       
-      {/* Class Selection */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -297,7 +293,6 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         )}
       </motion.div>
 
-      {/* Subclass Selection */}
       {(isCustomClass || (selectedClass && selectedClass.subclasses && selectedClass.subclasses.length > 0) || isCustomSubclass) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -361,7 +356,6 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         </motion.div>
       )}
 
-      {/* Speed */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -391,7 +385,6 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         </div>
       </motion.div>
 
-      {/* Next Button */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

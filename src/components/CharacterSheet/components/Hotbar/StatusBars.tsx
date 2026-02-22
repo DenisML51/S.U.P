@@ -26,7 +26,6 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
 
   return (
     <div className="flex items-end gap-4 mb-2">
-      {/* Sanity Bar */}
       <div className="flex items-center justify-center w-7 h-48">
         <div 
           className={`w-full h-full bg-dark-bg/95 border rounded-full overflow-hidden flex flex-col-reverse cursor-pointer shadow-2xl relative group transition-all duration-500 ${
@@ -47,7 +46,6 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay" />
           </motion.div>
           
-          {/* Numbers on hover */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
             <span className="text-[12px] font-black text-white drop-shadow-[0_0_8px_rgba(0,0,0,1)] -rotate-90">
               {sanity}
@@ -71,7 +69,6 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
         </div>
       </div>
 
-      {/* Health Bar */}
       <div className="flex items-center justify-center w-7 h-48">
         <div 
           className={`w-full h-full bg-dark-bg/95 border rounded-full overflow-hidden flex flex-col-reverse cursor-pointer shadow-2xl relative group transition-all duration-500 ${
@@ -79,10 +76,8 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
           }`}
           onClick={onHealthClick}
         >
-          {/* Main Container for Fills to handle overflow and layering */}
           <div className="absolute inset-0 flex flex-col-reverse overflow-hidden rounded-full">
-            {/* Main HP Fill */}
-            <motion.div 
+            <motion.div
               initial={{ height: 0 }}
               animate={{ height: `${hpPercentage}%` }}
               className={`w-full relative transition-all duration-700 ${
@@ -94,7 +89,6 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay" />
             </motion.div>
 
-            {/* Temp HP Layer */}
             {tempHP > 0 && (
               <motion.div 
                 initial={{ height: 0 }}
@@ -109,7 +103,6 @@ export const StatusBars: React.FC<StatusBarsProps> = ({
 
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent pointer-events-none z-20" />
 
-          {/* Numbers on hover */}
           <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30 pointer-events-none">
             <span className="text-[12px] font-black text-white drop-shadow-[0_0_8px_rgba(0,0,0,1)] -rotate-90 whitespace-nowrap">
               {currentHP}{tempHP > 0 ? `+${tempHP}` : ''}

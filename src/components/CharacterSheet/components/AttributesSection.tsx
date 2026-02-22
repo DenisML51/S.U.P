@@ -38,7 +38,6 @@ export const AttributesSection: React.FC<AttributesSectionProps> = ({
           const savingThrow = getSavingThrowModifier(attr.id);
           const isProficient = character.savingThrowProficiencies?.includes(attr.id);
           
-          // Get skills for this attribute
           const attrSkills = character.skills?.filter(s => s.attribute === attr.id) || [];
           
           return (
@@ -49,7 +48,6 @@ export const AttributesSection: React.FC<AttributesSectionProps> = ({
               transition={{ delay: index * 0.05 }}
               className="group relative h-full flex flex-col"
             >
-              {/* Attribute Header Card */}
               <div className="bg-dark-card/30 border border-dark-border rounded-2xl p-4 transition-all hover:border-blue-500/30 flex-1 flex flex-col">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -86,7 +84,6 @@ export const AttributesSection: React.FC<AttributesSectionProps> = ({
                   </button>
                 </div>
 
-                {/* Compact Skills List */}
                 {attrSkills.length > 0 && (
                   <div className="mt-4 pt-3 border-t border-dark-border/50 grid grid-cols-1 gap-1">
                     {attrSkills.map((skill) => {

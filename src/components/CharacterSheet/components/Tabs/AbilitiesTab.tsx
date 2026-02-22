@@ -52,7 +52,6 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
         </div>
       </div>
 
-      {/* Resources Section */}
       {character.resources && character.resources.length > 0 && (
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-3">
@@ -159,7 +158,6 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
         </div>
       )}
 
-      {/* Abilities Section */}
       {character.abilities && character.abilities.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
@@ -197,7 +195,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                       <div className="flex items-center gap-3 mb-1">
                         <h4 
                           className="font-bold text-gray-100 transition-colors truncate"
-                          style={{ color: ability.color ? undefined : undefined }} // Just keeping structure
+                          style={{ color: ability.color ? undefined : undefined }}
                         >
                           {ability.name}
                         </h4>
@@ -274,7 +272,6 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
         </div>
       )}
 
-      {/* Text notes at the end */}
       <div className="mt-6">
         <div className="text-xs text-gray-400 mb-2 uppercase">Заметки</div>
         <MarkdownEditor

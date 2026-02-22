@@ -15,7 +15,6 @@ interface CharacterState {
     notifications: boolean;
   };
 
-  // Actions
   setCharacter: (character: Character | null) => void;
   setCharactersList: (list: CharacterPreview[]) => void;
   setActiveTab: (tab: TabType) => void;
@@ -183,8 +182,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     const normalized = normalizeCharacter(updated);
     
     set({ character: normalized });
-    
-    // Sync to storage
+
     saveToStorage(normalized, settings, silent);
     const newList = updateListInStorage(normalized, charactersList);
     set({ charactersList: newList });
@@ -338,7 +336,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
         if (!Array.isArray(list)) list = [];
       }
 
-      // Recovery logic if list is empty
       if (list.length === 0) {
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);

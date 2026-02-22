@@ -27,7 +27,6 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
   const [tempValue, setTempValue] = useState(attributeValue);
   const [tempBonus, setTempBonus] = useState(attributeBonus);
 
-  // Sync state with props when modal opens or attribute changes
   useEffect(() => {
     if (isOpen) {
       setTempValue(attributeValue);
@@ -68,7 +67,6 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -76,7 +74,6 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
             onClick={onClose}
             className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
           >
-            {/* Modal */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -84,7 +81,6 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
               onClick={(e) => e.stopPropagation()}
               className="bg-dark-card rounded-2xl border border-dark-border p-6 w-full max-w-md"
             >
-              {/* Header */}
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">{attributeName}</h2>
                 <button
@@ -97,7 +93,6 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                 </button>
               </div>
 
-              {/* Value Control */}
               <div className="mb-6">
                 <div className="text-sm text-gray-400 mb-2 uppercase">Значение</div>
                 <div className="flex items-center justify-center gap-4 bg-dark-bg rounded-xl p-6">
@@ -126,7 +121,6 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                 </div>
               </div>
 
-              {/* Bonus Control */}
               <div className="mb-6">
                 <div className="text-sm text-gray-400 mb-2 uppercase">Бонус к характеристике</div>
                 <div className="bg-dark-bg rounded-xl p-4">
@@ -157,7 +151,6 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                 </div>
               </div>
 
-              {/* Modifier Display */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-dark-bg rounded-xl p-4 text-center border-2 border-blue-500/50">
                   <div className="text-xs text-gray-400 mb-1 uppercase">Бонус к проверке</div>
@@ -187,7 +180,6 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                 </div>
               </div>
 
-              {/* Saving Throw Proficiency */}
               <div className="mb-6">
                 <button
                   onClick={onToggleProficiency}
@@ -212,7 +204,6 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                 </button>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
                 <button
                   onClick={onClose}

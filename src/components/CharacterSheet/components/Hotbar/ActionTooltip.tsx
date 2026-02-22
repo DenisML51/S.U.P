@@ -33,7 +33,6 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
 }) => {
   if (!hoveredData || !hoveredRect) return null;
 
-  // Get live data to ensure real-time updates (e.g. quantity)
   let item = hoveredData;
   if (hoveredData.hotbarType === 'item') {
     item = character.inventory.find(i => i.id === hoveredData.id) || hoveredData;
@@ -70,7 +69,6 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
 
     if (!damage) return null;
     
-    // ... existing logic for simple string parsing if needed ...
     if (!DAMAGE_TYPES.some(t => damage.toLowerCase().includes(t.toLowerCase()))) {
       return (
         <span style={{ color: DAMAGE_TYPE_COLORS[defaultType] || '#ef4444' }}>
@@ -169,8 +167,7 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
         style={{ backgroundColor: color }}
       />
       
-      {/* Arrow */}
-      <div 
+      <div
         className="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rotate-45 border-b border-r border-white/10 bg-dark-bg/95 shadow-[2px_2px_5px_rgba(0,0,0,0.2)]"
       />
       

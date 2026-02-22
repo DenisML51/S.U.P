@@ -92,7 +92,6 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
       onClick={onClick}
       className="group relative bg-gradient-to-br from-dark-card to-dark-bg rounded-xl border border-dark-border hover:border-blue-500/50 transition-all cursor-pointer overflow-hidden shadow-lg hover:shadow-xl hover:shadow-blue-500/10"
     >
-      {/* Delete button */}
       <button
         onClick={onDelete}
         className="absolute top-2 right-2 w-8 h-8 bg-red-500/20 border border-red-500/30 rounded-lg hover:bg-red-500/30 opacity-0 group-hover:opacity-100 transition-all z-10 flex items-center justify-center"
@@ -104,7 +103,6 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
       </button>
 
       <div className="p-4">
-        {/* Header */}
         <div className="flex items-start gap-3 mb-3">
           <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center border border-blue-500/30 flex-shrink-0 overflow-hidden">
             {character.avatar ? (
@@ -122,14 +120,12 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
           </div>
         </div>
 
-        {/* Level Badge */}
         <div className="flex items-center gap-2 mb-3">
           <div className="px-2.5 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg">
             <span className="text-xs font-semibold text-blue-400">Уровень {character.level}</span>
           </div>
         </div>
 
-        {/* Health Bar */}
         <div className="mb-2">
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-1.5">

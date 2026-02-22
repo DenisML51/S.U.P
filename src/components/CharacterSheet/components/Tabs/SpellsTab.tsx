@@ -27,7 +27,7 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
   openGrimmoire,
 }) => {
   const [search, setSearch] = useState('');
-  const [activeLevel, setActiveLevel] = useState<number | 'all'>(-1); // -1 for all, 0 for cantrips, 1-9 for levels
+  const [activeLevel, setActiveLevel] = useState<number | 'all'>(-1);
 
   const spells = character.spells || [];
   
@@ -52,7 +52,6 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Controls Header */}
       <div className="flex flex-col gap-6 sticky top-0 z-30 bg-dark-bg/80 backdrop-blur-md py-4 -mx-2 px-2 border-b border-white/5">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex-1 relative min-w-[200px]">
@@ -76,9 +75,7 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Spell Slots Compact (Icon based) */}
           <div className="flex flex-wrap gap-3">
-            {/* Spellcasting Difficulty Editor */}
             <div className="flex items-center gap-2 bg-dark-bg/80 border border-purple-500/30 rounded-2xl px-3 h-12 shadow-lg backdrop-blur-sm group transition-all hover:border-purple-500/50">
               <Brain size={18} className="text-purple-400" />
               <div className="flex flex-col">
@@ -138,7 +135,6 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
                     )}
                   </div>
                   
-                  {/* Tooltip */}
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
                     <div className="font-bold text-gray-200">{slot.name}: {slot.current}/{slot.max}</div>
                     <div className="text-gray-500 mt-1 uppercase tracking-tighter">ЛКМ: -1 • ПКМ: Настр.</div>
@@ -148,7 +144,6 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
             })}
           </div>
 
-          {/* Level Filter */}
           <div className="flex flex-wrap gap-1.5 p-1 bg-dark-card/30 border border-dark-border rounded-xl">
             <button
               onClick={() => setActiveLevel(-1)}
@@ -177,7 +172,6 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
         </div>
       </div>
 
-      {/* Spells Grid */}
       <div className="flex flex-wrap gap-4">
         <AnimatePresence mode="popLayout">
           {filteredSpells.map((spell) => (
@@ -190,18 +184,15 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
                 backgroundColor: spell.prepared ? `${spell.color || '#3b82f6'}05` : undefined,
               }}
             >
-              {/* Icon Section */}
-              <div 
+              <div
                 className="w-14 h-14 flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
                 style={{ color: spell.color || '#3b82f6' }}
               >
                 {getLucideIcon(spell.iconName || 'Wand2', { size: 28 })}
               </div>
 
-              {/* Enhanced Tooltip */}
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-4 bg-dark-bg/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none z-50">
-                {/* Decorative glow */}
-                <div 
+                <div
                   className="absolute inset-0 rounded-2xl opacity-10 blur-xl -z-10"
                   style={{ backgroundColor: spell.color || '#3b82f6' }}
                 />
@@ -277,7 +268,6 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
                   </div>
                 </div>
 
-                {/* Elegant SVG Arrow */}
                 <div className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-4 h-2.5 flex justify-center">
                   <div 
                     className="absolute inset-0 blur-[2px] opacity-20"
@@ -316,7 +306,6 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
         </div>
       )}
 
-      {/* Notes Section */}
       <div className="space-y-4">
         <div className="flex items-center gap-3 px-1">
           <h3 className="text-xl font-bold tracking-tight text-gray-200 uppercase tracking-widest">Заметки заклинателя</h3>

@@ -58,7 +58,6 @@ export const ResourceGroup: React.FC<ResourceGroupProps> = ({
           {Math.floor(character.currency.gold + character.currency.silver/10 + character.currency.copper/100)}
         </span>
         
-        {/* Currency Tooltip */}
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 px-5 py-3 bg-dark-card border border-dark-border rounded-xl text-sm whitespace-nowrap opacity-0 group-hover/currency:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
           <div className="font-bold text-gray-200">Валюта: {(character.currency.gold + character.currency.silver/10 + character.currency.copper/100).toFixed(2)} ЗМ</div>
           <div className="text-gray-400 mt-1.5 text-[11px]">Клик: управление кошельком</div>
@@ -75,7 +74,6 @@ export const ResourceGroup: React.FC<ResourceGroupProps> = ({
             {character.inventory.filter(i => i.type === 'ammunition').reduce((sum, i) => sum + (i.quantity || 0), 0)}
           </span>
 
-          {/* Ammo Tooltip */}
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 px-5 py-3 bg-dark-card border border-dark-border rounded-xl text-sm whitespace-nowrap opacity-0 group-hover/ammo:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
             <div className="font-bold text-gray-200">Боеприпасы: {character.inventory.filter(i => i.type === 'ammunition').reduce((sum, i) => sum + (i.quantity || 0), 0)} шт</div>
             <div className="text-gray-400 mt-1.5 text-[11px]">Нажми для управления</div>

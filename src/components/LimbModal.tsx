@@ -21,7 +21,6 @@ export const LimbModal: React.FC<LimbModalProps> = ({
   const [damageAmount, setDamageAmount] = useState('');
   const [healAmount, setHealAmount] = useState('');
 
-  // Обновляем состояние при изменении limb
   useEffect(() => {
     setCurrentHP(limb.currentHP);
     setDamageAmount('');
@@ -89,7 +88,6 @@ export const LimbModal: React.FC<LimbModalProps> = ({
               </button>
             </div>
 
-            {/* HP and AC Display */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className={`rounded-xl p-4 border-2 ${getInjuryColor()}`}>
                 <div className="text-xs text-gray-400 mb-1 text-center">Здоровье (ЗК)</div>
@@ -114,7 +112,6 @@ export const LimbModal: React.FC<LimbModalProps> = ({
               </div>
             )}
 
-            {/* Damage / Heal */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
                 <div className="text-xs text-gray-400 mb-2 uppercase">Урон</div>
@@ -157,7 +154,6 @@ export const LimbModal: React.FC<LimbModalProps> = ({
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-2">
               <button
                 onClick={() => setCurrentHP(maxHP)}

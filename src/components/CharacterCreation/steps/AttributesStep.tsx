@@ -44,7 +44,6 @@ export const AttributesStep: React.FC<AttributesStepProps> = ({
       exit={{ opacity: 0, x: 20 }}
       className="space-y-6"
     >
-      {/* Points Counter */}
       <div className="bg-gradient-to-br from-dark-card to-dark-bg rounded-2xl p-6 border border-dark-border shadow-lg">
         <div className="flex items-center justify-between">
           <div>
@@ -68,7 +67,6 @@ export const AttributesStep: React.FC<AttributesStepProps> = ({
         </div>
       </div>
 
-      {/* Attributes */}
       <div className="bg-gradient-to-br from-dark-card to-dark-bg rounded-2xl p-6 border border-dark-border shadow-lg">
         <div className="space-y-3">
           {ATTRIBUTES_LIST.map((attr) => (
@@ -122,7 +120,6 @@ export const AttributesStep: React.FC<AttributesStepProps> = ({
         </div>
       </div>
 
-      {/* Navigation */}
       <div className="flex justify-between">
         <button
           onClick={() => setCurrentStep('basic')}

@@ -103,7 +103,6 @@ export const BasicInfoModal: React.FC<BasicInfoModalProps> = ({
               </div>
 
               <div className="space-y-6">
-                {/* Name */}
                 <div>
                   <label className="block text-sm font-semibold mb-3 text-gray-300">
                     Имя персонажа
@@ -118,7 +117,6 @@ export const BasicInfoModal: React.FC<BasicInfoModalProps> = ({
                   />
                 </div>
 
-                {/* Race Selection */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-sm font-semibold text-gray-300">Раса</label>
@@ -181,7 +179,6 @@ export const BasicInfoModal: React.FC<BasicInfoModalProps> = ({
                   )}
                 </div>
 
-                {/* Subrace Selection */}
                 {(isCustomRace || (selectedRace && selectedRace.subraces && selectedRace.subraces.length > 0) || isCustomSubrace) && (
                   <div>
                     <div className="flex items-center justify-between mb-3">
@@ -240,7 +237,6 @@ export const BasicInfoModal: React.FC<BasicInfoModalProps> = ({
                   </div>
                 )}
 
-                {/* Class Selection */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-sm font-semibold text-gray-300 flex items-center gap-2">
@@ -306,7 +302,6 @@ export const BasicInfoModal: React.FC<BasicInfoModalProps> = ({
                   )}
                 </div>
 
-                {/* Subclass Selection */}
                 {(isCustomClass || (selectedClass && selectedClass.subclasses && selectedClass.subclasses.length > 0) || isCustomSubclass) && (
                   <div>
                     <div className="flex items-center justify-between mb-3">

@@ -70,7 +70,6 @@ export const HealthTab: React.FC<HealthTabProps> = ({
           )}
         </div>
         
-        {/* Simple Hover Label */}
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-dark-card border border-dark-border rounded-xl text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 shadow-2xl translate-y-1 group-hover:translate-y-0">
           <div className="font-black border-b border-white/10 pb-1 mb-1">{res.type}</div>
           <div className="text-gray-400 font-bold">{getLevelLabel()}</div>
@@ -87,13 +86,11 @@ export const HealthTab: React.FC<HealthTabProps> = ({
           Состояние тела
         </h3>
         
-        {/* Resistances wrap under title */}
         <div className="flex flex-wrap gap-2">
           {character.resistances?.map(renderResistanceIcon)}
         </div>
       </div>
 
-      {/* Equipped Armor Summary */}
       {character.inventory && character.inventory.find(i => i.equipped && i.type === 'armor') && (
         <div className="space-y-3 mt-4">
           <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Текущая защита</h4>
@@ -122,27 +119,19 @@ export const HealthTab: React.FC<HealthTabProps> = ({
 
   const renderLimbs = () => (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-      {/* Body Diagram Column */}
       <div className="bg-dark-card/30 rounded-3xl border border-dark-border p-8 flex justify-center relative overflow-hidden group">
-        {/* Subtle Background Glow */}
         <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
         
         <div className="relative" style={{ width: '280px', height: '420px' }}>
-          {/* Minimalist Tactical Body SVG */}
           <svg viewBox="0 0 200 300" className="w-full h-full opacity-20 stroke-blue-500 fill-none" strokeWidth="1">
-            {/* Head */}
             <circle cx="100" cy="35" r="20" />
-            {/* Torso */}
             <path d="M 80 60 L 120 60 L 125 130 L 75 130 Z" />
-            {/* Arms */}
             <path d="M 75 65 L 40 100 L 45 140" />
             <path d="M 125 65 L 160 100 L 155 140" />
-            {/* Legs */}
             <path d="M 85 130 L 75 200 L 80 270" />
             <path d="M 115 130 L 125 200 L 120 270" />
           </svg>
 
-          {/* Tactical Target Lines */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-500/30" />
             <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-500/30" />
@@ -150,7 +139,6 @@ export const HealthTab: React.FC<HealthTabProps> = ({
             <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-500/30" />
           </div>
 
-          {/* Floating Limb Status Bubbles */}
           {character.limbs && character.limbs.map((limb) => {
             const injuryLevel = getLimbInjuryLevel(limb.currentHP);
             const percentage = Math.max(0, (limb.currentHP / limb.maxHP) * 100);
@@ -198,7 +186,6 @@ export const HealthTab: React.FC<HealthTabProps> = ({
         </div>
       </div>
 
-      {/* Detailed Limbs List */}
       <div className="space-y-3">
         <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Детали повреждений</h4>
         <div className="grid grid-cols-1 gap-2">

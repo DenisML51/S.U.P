@@ -66,8 +66,7 @@ export const useCharacterStats = (character: Character | null) => {
       }
     }
 
-    // Add shield if equipped (simple check for now, can be improved)
-    const hasShield = character.inventory.some(item => 
+    const hasShield = character.inventory.some(item =>
       item.equipped && (item.name.toLowerCase().includes('щит') || item.name.toLowerCase().includes('shield'))
     );
     const shieldBonus = hasShield ? 2 : 0;

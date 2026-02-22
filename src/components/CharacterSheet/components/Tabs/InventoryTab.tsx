@@ -44,7 +44,6 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
         </button>
       </div>
 
-      {/* Sub-tabs for inventory */}
       <div className="flex gap-2 mb-4 overflow-x-auto">
         {(['all', 'armor', 'weapon', 'item', 'ammunition'] as InventorySubTab[]).map((subTab) => (
           <button
@@ -185,7 +184,6 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
         </div>
       )}
 
-      {/* Text notes at the end */}
       <div className="mt-6">
         <div className="text-xs text-gray-400 mb-2 uppercase">Быстрые заметки</div>
         <MarkdownEditor

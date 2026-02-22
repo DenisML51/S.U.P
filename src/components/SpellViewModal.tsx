@@ -43,8 +43,7 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-3xl border border-white/10 w-full max-w-lg overflow-hidden flex flex-col shadow-2xl"
           >
-            {/* Header */}
-            <div 
+            <div
               className="relative p-8 pb-6 bg-gradient-to-br from-blue-500/10 to-transparent"
               style={{ backgroundImage: `linear-gradient(to bottom right, ${spell.color || '#3b82f6'}15, transparent)` }}
             >
@@ -93,7 +92,6 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
                 </button>
               </div>
 
-              {/* Quick Info Grid */}
               <div className="grid grid-cols-2 gap-3 mt-6">
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
                   <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase mb-1">

@@ -108,7 +108,6 @@ export const EquipmentTab: React.FC<EquipmentTabProps> = ({
         </div>
       )}
 
-      {/* Text notes at the end */}
       <div className="mt-6">
         <div className="text-xs text-gray-400 mb-2 uppercase">Заметки</div>
         <MarkdownEditor

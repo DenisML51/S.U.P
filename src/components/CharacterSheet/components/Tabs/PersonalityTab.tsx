@@ -33,16 +33,13 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
 }) => {
   return (
     <div className="space-y-10 pb-10 text-gray-100">
-      {/* Premium Header Card */}
       <div className="relative group">
         <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
         <div className="relative bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-2xl">
-          {/* Top Banner Accent */}
           <div className="h-2 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-50" />
           
           <div className="p-8">
             <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
-              {/* Profile Icon / Avatar Upload */}
               <div className="relative">
                 <AvatarUpload 
                   currentAvatar={character.avatar} 
@@ -53,7 +50,6 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
                 </div>
               </div>
 
-              {/* Name & Basic Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-4 mb-2">
                   <h2 className="text-4xl font-black tracking-tight truncate">{character.name}</h2>
@@ -84,7 +80,6 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
         </div>
       </div>
 
-      {/* Traits Grid */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-3">
@@ -142,9 +137,7 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
         </div>
       </div>
 
-      {/* Narrative Sections */}
       <div className="space-y-10">
-        {/* Physical Column */}
         <div className="space-y-8">
           <SectionHeader icon={Fingerprint} label="Внешность и Происхождение" color="blue" />
           
@@ -165,7 +158,6 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
           </div>
         </div>
 
-        {/* Mental Column */}
         <div className="space-y-8">
           <SectionHeader icon={Heart} label="Характер и Психология" color="pink" />
           
@@ -234,7 +226,6 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
   );
 };
 
-// Helper Components
 const SectionHeader: React.FC<{ icon: any, label: string, color: string, small?: boolean }> = ({ icon: Icon, label, color, small }) => (
   <div className={`flex items-center gap-3 px-1 ${small ? 'mt-4' : ''}`}>
     <div className={`w-8 h-8 bg-dark-card border border-dark-border rounded-lg flex items-center justify-center shadow-inner`}>

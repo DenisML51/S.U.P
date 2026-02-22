@@ -37,7 +37,6 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
 
       {character.attacks && character.attacks.length > 0 ? (
         <>
-          {/* Weapon Attacks */}
           {character.attacks.filter(a => a.weaponId).length > 0 && (
             <>
               <div className="flex items-center gap-2 mb-3">
@@ -129,7 +128,6 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
             </>
           )}
 
-          {/* Custom Attacks */}
           {character.attacks.filter(a => !a.weaponId).length > 0 && (
             <>
               <div className="flex items-center gap-2 mb-3">
@@ -229,7 +227,6 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
         </div>
       )}
 
-      {/* Text notes at the end */}
       <div className="mt-6">
         <div className="text-xs text-gray-400 mb-2 uppercase">Заметки</div>
         <MarkdownEditor

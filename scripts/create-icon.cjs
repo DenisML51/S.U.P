@@ -1,4 +1,3 @@
-// Скрипт для создания базовой иконки
 const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
@@ -23,21 +22,19 @@ async function createIcon() {
     fs.mkdirSync(assetsDir, { recursive: true });
   }
 
-  // Создаем PNG
   const pngPath = path.join(assetsDir, 'icon.png');
   await sharp(Buffer.from(svg))
     .resize(size, size)
     .png()
     .toFile(pngPath);
   
-  console.log('✅ PNG иконка создана:', pngPath);
+  console.log('PNG иконка создана:', pngPath);
 
-  // Создаем дополнительные размеры для лучшего качества
   const sizes = [16, 32, 48, 64, 128, 256];
-  console.log('📦 Созданы размеры:', sizes.join(', '));
+  console.log('Созданы размеры:', sizes.join(', '));
   
   console.log('');
-  console.log('⚠️  Для Windows нужен ICO файл:');
+  console.log('⚠Для Windows нужен ICO файл:');
   console.log('   1. Откройте: https://convertio.co/png-ico/');
   console.log('   2. Загрузите assets/icon.png');
   console.log('   3. Скачайте и сохраните как assets/icon.ico');
@@ -45,12 +42,12 @@ async function createIcon() {
   console.log('   Или используйте ImageMagick:');
   console.log('   magick convert assets/icon.png assets/icon.ico');
 
-  console.log('✅ Базовая иконка создана!');
-  console.log('📝 Файлы:');
+  console.log('Базовая иконка создана!');
+  console.log('Файлы:');
   console.log('   - assets/icon.png (256x256)');
   console.log('   - assets/icon.svg (векторная)');
   console.log('');
-  console.log('💡 Для замены иконки:');
+  console.log('Для замены иконки:');
   console.log('   1. Создайте свою иконку 256x256 или 512x512 PNG');
   console.log('   2. Конвертируйте в ICO: https://convertio.co/png-ico/');
   console.log('   3. Замените assets/icon.ico');

@@ -36,7 +36,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
     '#ec4899', '#06b6d4', '#6366f1', '#14b8a6', '#f97316'
   ];
 
-  // Синхронизация состояния с props при открытии модалки
   useEffect(() => {
     if (isOpen) {
       setName(resource?.name || '');
@@ -85,7 +84,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
           >
-            {/* Header */}
             <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm relative z-[100]">
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-2">
@@ -107,7 +105,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
                     />
                   </div>
                   
-                  {/* Color Picker */}
                   <div className="flex gap-1">
                     {colors.map(c => (
                       <button
@@ -166,7 +163,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
                 </div>
               </div>
 
-              {/* Magic Focus / Spell Slots */}
               <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl space-y-4">
                 <div className="flex items-center gap-2 text-blue-400">
                   <Wand2 size={16} />
@@ -178,7 +174,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
                   onChange={(v) => {
                     const val = parseInt(v);
                     setSpellSlotLevel(val === -1 ? undefined : val);
-                    // Automatically set icon if it's a spell slot
                     if (val !== -1) setIconName('Zap');
                   }}
                   options={[
@@ -207,7 +202,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
               </div>
             </div>
 
-            {/* Footer Actions */}
             <div className="p-6 bg-dark-card/50 backdrop-blur-sm border-t border-dark-border flex gap-3">
               {resource && onDelete && (
                 <button

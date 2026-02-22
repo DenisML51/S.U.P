@@ -29,7 +29,6 @@ const AppContent: React.FC = () => {
     };
     window.addEventListener('app-settings-updated', handleSettingsUpdate);
 
-    // Применяем полноэкранный режим при загрузке
     if (localStorage.getItem('trpg_fullscreen') === 'true' && window.electronAPI) {
       window.electronAPI.setFullScreen(true);
     }
@@ -45,16 +44,13 @@ const AppContent: React.FC = () => {
   
   return (
     <div className="relative min-h-screen bg-dark-bg text-white">
-      {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
-      {/* Navbar */}
       {character && <Navbar key={character.id} />}
       
-      {/* Main Content */}
       <main className={`relative z-10 ${character ? 'pt-24' : ''}`}>
         {character ? <CharacterSheet /> : <CharacterList />}
       </main>

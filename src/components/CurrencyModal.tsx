@@ -20,7 +20,6 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
   const [silver, setSilver] = useState(currency.silver);
   const [gold, setGold] = useState(currency.gold);
 
-  // Синхронизация состояния с props при открытии модалки
   useEffect(() => {
     if (isOpen) {
       setCopper(currency.copper);
@@ -42,7 +41,6 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
   const updateSilver = (delta: number) => setSilver(Math.max(0, silver + delta));
   const updateGold = (delta: number) => setGold(Math.max(0, gold + delta));
 
-  // Конвертация валют
   const convertCopperToSilver = () => {
     if (copper >= 10) {
       const silverGain = Math.floor(copper / 10);
@@ -90,7 +88,6 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border p-5 w-full max-w-lg"
           >
-            {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center">
@@ -108,9 +105,7 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
               </button>
             </div>
 
-            {/* Currency Cards */}
             <div className="space-y-3 mb-5">
-              {/* Gold */}
               <div className="bg-gradient-to-br from-yellow-500/10 to-amber-600/10 border border-yellow-500/30 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -157,7 +152,6 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
                 </div>
               </div>
 
-              {/* Silver */}
               <div className="bg-gradient-to-br from-gray-400/10 to-gray-500/10 border border-gray-400/30 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -204,7 +198,6 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
                 </div>
               </div>
 
-              {/* Copper */}
               <div className="bg-gradient-to-br from-orange-700/10 to-amber-800/10 border border-orange-700/30 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -252,7 +245,6 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
               </div>
             </div>
 
-            {/* Conversion Buttons */}
             <div className="bg-dark-bg rounded-xl p-3 mb-4 border border-dark-border">
               <div className="text-xs text-gray-400 mb-2 uppercase">Конвертация</div>
               <div className="grid grid-cols-2 gap-2">
@@ -287,7 +279,6 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
               </div>
             </div>
 
-            {/* Total in Gold */}
             <div className="bg-gradient-to-r from-yellow-500/10 to-amber-600/10 border border-yellow-500/20 rounded-xl p-3 mb-4 text-center">
               <div className="text-xs text-gray-400 mb-1">Всего в золотых</div>
               <div className="text-2xl font-bold text-yellow-400">
@@ -295,7 +286,6 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3">
               <button
                 onClick={onClose}

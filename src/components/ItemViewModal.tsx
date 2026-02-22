@@ -61,7 +61,6 @@ export const ItemViewModal: React.FC<ItemViewModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border p-6 w-full max-w-lg"
           >
-            {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div 
@@ -87,7 +86,6 @@ export const ItemViewModal: React.FC<ItemViewModalProps> = ({
               </button>
             </div>
 
-            {/* Description */}
             {item.description && (
               <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
                 <div className="text-sm text-gray-400 mb-2">Описание</div>
@@ -97,7 +95,6 @@ export const ItemViewModal: React.FC<ItemViewModalProps> = ({
               </div>
             )}
 
-            {/* Armor Stats */}
             {item.type === 'armor' && (
               <div className="mb-6 space-y-3">
                 <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4">
@@ -141,7 +138,6 @@ export const ItemViewModal: React.FC<ItemViewModalProps> = ({
               </div>
             )}
 
-            {/* Weapon Stats */}
             {item.type === 'weapon' && (
               <div className="mb-6 bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-xl p-4">
                 <div className="text-sm text-gray-400 mb-3">Характеристики оружия</div>
@@ -168,7 +164,6 @@ export const ItemViewModal: React.FC<ItemViewModalProps> = ({
               </div>
             )}
 
-            {/* Item Class */}
             {item.itemClass && (
               <div className="mb-6 p-3 bg-dark-bg rounded-xl">
                 <div className="text-xs text-gray-400">Класс предмета</div>
@@ -176,7 +171,6 @@ export const ItemViewModal: React.FC<ItemViewModalProps> = ({
               </div>
             )}
 
-            {/* Weight, Cost, Quantity */}
             <div className="grid grid-cols-3 gap-3 mb-6">
               <div className="bg-dark-bg rounded-xl p-3 text-center">
                 <Weight className="w-4 h-4 text-gray-400 mx-auto mb-1" />
@@ -197,7 +191,6 @@ export const ItemViewModal: React.FC<ItemViewModalProps> = ({
               )}
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3">
               <button
                 onClick={onClose}

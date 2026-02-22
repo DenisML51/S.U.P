@@ -37,7 +37,6 @@ export const IconPicker: React.FC<IconPickerProps> = ({
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
             className="absolute top-full left-0 mt-2 bg-dark-card border border-white/10 rounded-2xl shadow-2xl z-[9999] w-72 overflow-hidden flex flex-col backdrop-blur-xl"
           >
-            {/* Tabs */}
             <div className="flex border-b border-white/5 p-1 bg-white/5">
               <button
                 onClick={() => setActiveTab('lucide')}
@@ -57,7 +56,6 @@ export const IconPicker: React.FC<IconPickerProps> = ({
               </button>
             </div>
 
-            {/* Search */}
             <div className="p-2 border-b border-white/5">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500" />
@@ -71,7 +69,6 @@ export const IconPicker: React.FC<IconPickerProps> = ({
               </div>
             </div>
 
-            {/* Grid */}
             <div className="p-3 grid grid-cols-4 gap-2 max-h-64 overflow-y-auto custom-scrollbar">
               {filteredIcons.map((name) => (
                 <button

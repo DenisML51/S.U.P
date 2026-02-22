@@ -45,7 +45,6 @@ export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
                 <X size={14} />
               </button>
               
-              {/* Tooltip */}
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 rounded-lg bg-dark-bg border border-white/10 text-xs text-white/70 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-2xl backdrop-blur-xl">
                 {condition.description}
               </div>

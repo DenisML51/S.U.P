@@ -60,8 +60,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       window.electronAPI.setFullScreen(updated.fullscreen);
     }
 
-    // Dispatch event for other components to update
-    window.dispatchEvent(new CustomEvent('app-settings-updated', { 
+    window.dispatchEvent(new CustomEvent('app-settings-updated', {
       detail: updated
     }));
   };
@@ -99,7 +98,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
 
             <div className="p-8 space-y-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
-              {/* Storage Section */}
               <section className="space-y-4">
                 <div className="flex items-center gap-3 mb-2">
                   <FolderOpen className="w-4 h-4 text-blue-400" />
@@ -157,7 +155,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </div>
               </section>
 
-              {/* Interface Section */}
               <section className="space-y-4">
                 <div className="flex items-center gap-3 mb-2">
                   <Monitor className="w-4 h-4 text-purple-400" />
@@ -215,7 +212,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </div>
               </section>
 
-              {/* Dangerous Zone */}
               {window.electronAPI && (
                 <section className="space-y-4">
                   <div className="flex items-center gap-3 mb-2">

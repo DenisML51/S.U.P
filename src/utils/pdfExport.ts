@@ -15,7 +15,6 @@ const loadFonts = async () => {
   }
   
   try {
-    // Ждем шрифты не более 3 секунд
     await Promise.race([
       document.fonts.ready,
       new Promise(resolve => setTimeout(resolve, 3000))
@@ -27,7 +26,6 @@ const loadFonts = async () => {
 
 export const exportToPDF = async (character: Character) => {
   await loadFonts();
-  // Create a toast to show progress
   const loadingToast = document.createElement('div');
   loadingToast.style.position = 'fixed';
   loadingToast.style.bottom = '20px';
@@ -43,15 +41,14 @@ export const exportToPDF = async (character: Character) => {
   loadingToast.innerText = 'Подготовка PDF...';
   document.body.appendChild(loadingToast);
 
-  // Создаем временный контейнер для рендеринга
   const container = document.createElement('div');
   container.className = 'pdf-export-container';
-  container.style.position = 'fixed'; // Use fixed instead of absolute
+  container.style.position = 'fixed';
   container.style.left = '0';
   container.style.top = '0';
   container.style.width = '794px'; 
-  container.style.zIndex = '-1'; // Behind everything
-  container.style.opacity = '0.01'; // Almost invisible but still rendered
+  container.style.zIndex = '-1';
+  container.style.opacity = '0.01';
   container.style.pointerEvents = 'none';
   container.style.backgroundColor = '#f4e4bc';
   container.style.color = '#2c1810';
@@ -60,7 +57,6 @@ export const exportToPDF = async (character: Character) => {
   const charClass = CLASSES.find(c => c.id === character.class);
   const subclass = charClass?.subclasses.find(sc => sc.id === character.subclass);
 
-  // Decorative SVG Ornaments
   const ornamentTop = `<svg width="100%" height="20" viewBox="0 0 400 20" preserveAspectRatio="none"><path d="M0 10 Q100 0 200 10 Q300 20 400 10" fill="none" stroke="#2c1810" stroke-width="1" opacity="0.5"/></svg>`;
   
   const sectionTitle = (title: string) => `
@@ -71,7 +67,6 @@ export const exportToPDF = async (character: Character) => {
     </div>
   `;
 
-  // Формируем HTML контент
   container.innerHTML = `
     <style>
       .pdf-page {
@@ -79,7 +74,6 @@ export const exportToPDF = async (character: Character) => {
         box-sizing: border-box;
         position: relative;
         background-color: #f4e4bc !important;
-        /* Убираем внешнюю текстуру, которая может блокировать экспорт по CORS */
         background-image: radial-gradient(#d4c4a1 1px, transparent 1px);
         background-size: 20px 20px;
         min-height: 1120px; 
@@ -135,7 +129,6 @@ export const exportToPDF = async (character: Character) => {
     </style>
 
     <div class="pdf-page">
-      <!-- Header -->
       <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px double #2c1810; padding-bottom: 20px;">
         <div style="font-family: 'MedievalSharp', cursive; font-size: 14px; opacity: 0.6; margin-bottom: 5px;">INTO THE DARK</div>
         <h1 style="font-family: 'MedievalSharp', cursive; font-size: 38px; margin: 0; letter-spacing: 4px; color: #2c1810;">ЛИСТ ПЕРСОНАЖА</h1>
@@ -148,7 +141,6 @@ export const exportToPDF = async (character: Character) => {
       </div>
 
       <div style="display: flex; gap: 20px;">
-        <!-- Avatar if exists -->
         ${character.avatar ? `
           <div style="flex: 0 0 150px;">
             <img src="${character.avatar}" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #2c1810; padding: 3px; background: white; border-radius: 4px;" />
@@ -156,7 +148,6 @@ export const exportToPDF = async (character: Character) => {
         ` : ''}
         
         <div style="flex: 1;">
-          <!-- Primary Stats -->
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
             <div class="stat-box">
               <div class="stat-label">Здоровье</div>
@@ -194,7 +185,6 @@ export const exportToPDF = async (character: Character) => {
       </div>
 
       <div style="margin-top: 30px; display: grid; grid-template-columns: 220px 1fr; gap: 25px;">
-        <!-- Left Column: Attributes & Skills -->
         <div>
           ${sectionTitle('Характеристики')}
           <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -256,7 +246,6 @@ export const exportToPDF = async (character: Character) => {
           </div>
         </div>
 
-        <!-- Right Column: Attacks, Abilities, Spells -->
         <div>
           <div class="section-block">
             ${sectionTitle('Атаки')}
@@ -413,14 +402,12 @@ export const exportToPDF = async (character: Character) => {
   document.body.appendChild(container);
   
   try {
-    // Ждем загрузки всех изображений (аватара и текстур)
     const images = container.getElementsByTagName('img');
     await Promise.all(Array.from(images).map(img => {
       if (img.complete) return Promise.resolve();
       return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
     }));
 
-    // Создаем PDF
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -429,7 +416,6 @@ export const exportToPDF = async (character: Character) => {
     
     const pages = container.querySelectorAll('.pdf-page');
     
-    // Небольшая задержка перед рендерингом, чтобы стили применились
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const pageHeightMM = 297;
@@ -438,13 +424,12 @@ export const exportToPDF = async (character: Character) => {
     for (let i = 0; i < pages.length; i++) {
       const page = pages[i] as HTMLElement;
       
-      // Рендерим каждую страницу отдельно
       const canvas = await html2canvas(page, {
         scale: 2,
         backgroundColor: '#f4e4bc',
-        logging: true, // Включаем логирование для отладки
+        logging: true,
         useCORS: true,
-        allowTaint: false, // Обязательно false для toDataURL
+        allowTaint: false,
       });
       
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -457,8 +442,7 @@ export const exportToPDF = async (character: Character) => {
       while (heightLeft > 0) {
         if (i > 0 || position < 0) pdf.addPage();
         
-        // Закрашиваем всю страницу PDF в цвет фона, чтобы не было белых дыр
-        pdf.setFillColor(244, 228, 188); // #f4e4bc в формате RGB
+        pdf.setFillColor(244, 228, 188);
         pdf.rect(0, 0, pageWidthMM, pageHeightMM, 'F');
         
         pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
@@ -467,14 +451,12 @@ export const exportToPDF = async (character: Character) => {
         position -= pageHeightMM;
       }
     }
-    
-    // Сохраняем
+
     pdf.save(`${character.name || 'character'}.pdf`);
   } catch (error) {
     console.error('PDF Export Error:', error);
     alert('Ошибка при экспорте PDF. Проверьте консоль для деталей.');
   } finally {
-    // Удаляем временный контейнер
     if (container.parentNode) document.body.removeChild(container);
     if (loadingToast.parentNode) document.body.removeChild(loadingToast);
   }

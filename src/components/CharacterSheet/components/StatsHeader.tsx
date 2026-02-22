@@ -33,7 +33,6 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
 }) => {
   return (
     <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      {/* Health Card */}
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -64,7 +63,6 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
         </div>
       </motion.button>
 
-      {/* Sanity Card */}
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -94,7 +92,6 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
         </div>
       </motion.button>
 
-      {/* AC Card */}
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -151,7 +148,6 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
         <div className="text-[10px] text-gray-500 font-medium">Класс Брони</div>
       </motion.button>
 
-      {/* Level/XP Card */}
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}

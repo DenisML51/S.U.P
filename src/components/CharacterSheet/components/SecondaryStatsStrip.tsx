@@ -25,7 +25,6 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
   return (
     <div className="max-w-5xl mx-auto mb-8">
       <div className="flex flex-wrap items-stretch bg-dark-card/30 backdrop-blur-md border border-dark-border/50 rounded-2xl shadow-xl relative">
-        {/* Proficiency */}
         <div className="flex-1 min-w-[120px] flex flex-col items-center justify-center py-3 px-4 border-r border-dark-border/30 hover:bg-blue-500/5 transition-all group rounded-l-2xl relative overflow-hidden">
           <div className="absolute -left-4 -top-4 w-12 h-12 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-colors" />
           
@@ -41,9 +40,7 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
           </div>
         </div>
 
-        {/* Speed */}
         <div className="flex-1 min-w-[160px] flex flex-col items-center justify-center py-3 px-4 border-r border-dark-border/30 hover:bg-emerald-500/5 transition-all group overflow-hidden relative">
-          {/* Decorative background element */}
           <div className="absolute -right-4 -bottom-4 w-12 h-12 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-colors" />
           
           <div className="flex items-center gap-1.5 mb-2 relative z-10">
@@ -77,7 +74,6 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
           </div>
         </div>
 
-        {/* Initiative */}
         <div className="flex-1 min-w-[140px] flex flex-col border-r border-dark-border/30 relative">
           <button 
             onClick={onRollInitiative}
@@ -134,7 +130,6 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
           </AnimatePresence>
         </div>
 
-        {/* Perception */}
         <div className="flex-1 min-w-[120px] flex flex-col items-center justify-center py-3 px-4 border-r border-dark-border/30 hover:bg-purple-500/5 transition-all group relative overflow-hidden">
           <div className="absolute -right-4 -top-4 w-12 h-12 bg-purple-500/5 rounded-full blur-xl group-hover:bg-purple-500/10 transition-colors" />
           
@@ -150,7 +145,6 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
           </div>
         </div>
 
-        {/* Passive Senses Group */}
         <div className="flex-[1.5] min-w-[220px] flex items-stretch bg-black/20 rounded-r-2xl border-l border-dark-border/30 overflow-hidden">
           <div className="flex-1 flex flex-col items-center justify-center py-3 px-4 border-r border-dark-border/30 hover:bg-amber-500/5 transition-all group relative overflow-hidden">
             <div className="absolute -left-4 -bottom-4 w-10 h-10 bg-amber-500/5 rounded-full blur-lg group-hover:bg-amber-500/10 transition-colors" />

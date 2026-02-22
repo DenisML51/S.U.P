@@ -30,7 +30,6 @@ export const ExperienceBar: React.FC<ExperienceBarProps> = ({
           className="h-full bg-gradient-to-r from-amber-700 via-amber-500 to-amber-300 relative transition-all group-hover:from-amber-600 group-hover:via-amber-400 group-hover:to-amber-200"
         >
           <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] mix-blend-overlay" />
-          {/* XP Markers */}
           {[20, 40, 60, 80].map(m => (
             <div key={m} className="absolute top-0 bottom-0 w-px bg-black/20" style={{ left: `${m}%` }} />
           ))}

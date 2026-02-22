@@ -20,29 +20,23 @@ function createWindow() {
     titleBarStyle: 'default',
   };
 
-  // Добавляем иконку только если файл существует
   if (fs.existsSync(iconPath)) {
     windowOptions.icon = iconPath;
   }
 
   const win = new BrowserWindow(windowOptions);
 
-  // Показываем окно только после загрузки
   win.once('ready-to-show', () => {
     win.show();
   });
 
-  // Загружаем приложение
   if (process.env.NODE_ENV === 'development') {
-    // В режиме разработки подключаемся к Vite dev server
     win.loadURL('http://localhost:5173');
     win.webContents.openDevTools();
   } else {
-    // В продакшене загружаем собранные файлы
     win.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  // Обработка ошибок загрузки
   win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
     console.error('Failed to load:', errorCode, errorDescription);
     if (process.env.NODE_ENV === 'development') {
@@ -51,11 +45,9 @@ function createWindow() {
   });
 }
 
-// Этот метод будет вызван когда Electron закончит инициализацию
 app.whenReady().then(() => {
   createWindow();
 
-  // IPC Handlers
   console.log('Registering IPC handlers...');
   ipcMain.handle('select-directory', async () => {
     console.log('Opening directory dialog...');
@@ -134,21 +126,18 @@ app.whenReady().then(() => {
   });
 
   app.on('activate', () => {
-    // На macOS обычно пересоздают окно в приложении когда кликают на иконку в доке
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
 });
 
-// Выходим когда все окна закрыты, кроме macOS
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-// Обработка ошибок
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
 });

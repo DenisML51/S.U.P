@@ -20,7 +20,6 @@ export const SanityModal: React.FC<SanityModalProps> = ({
   const [restoreAmount, setRestoreAmount] = useState('');
   const [lossAmount, setLossAmount] = useState('');
 
-  // Sync tempSanity when currentSanity or isOpen changes
   React.useEffect(() => {
     if (isOpen) {
       setTempSanity(isNaN(currentSanity) ? 0 : currentSanity);
@@ -55,7 +54,6 @@ export const SanityModal: React.FC<SanityModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -63,7 +61,6 @@ export const SanityModal: React.FC<SanityModalProps> = ({
             onClick={onClose}
             className="fixed inset-0 bg-black/70 z-[1040] flex items-center justify-center p-4"
           >
-            {/* Modal */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -71,7 +68,6 @@ export const SanityModal: React.FC<SanityModalProps> = ({
               onClick={(e) => e.stopPropagation()}
               className="bg-dark-card rounded-2xl border border-dark-border p-6 w-full max-w-lg"
             >
-              {/* Header */}
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Рассудок</h2>
                 <button
@@ -84,7 +80,6 @@ export const SanityModal: React.FC<SanityModalProps> = ({
                 </button>
               </div>
 
-              {/* Sanity Display */}
               <div className={`rounded-xl p-6 mb-6 text-center border-2 ${
                 isInsane 
                   ? 'bg-red-500/10 border-red-500' 
@@ -103,9 +98,7 @@ export const SanityModal: React.FC<SanityModalProps> = ({
                 )}
               </div>
 
-              {/* Quick Actions */}
               <div className="space-y-3 mb-6">
-                {/* Restore */}
                 <div>
                   <div className="text-sm text-gray-400 mb-2 uppercase">Восстановление рассудка</div>
                   <div className="flex gap-2">
@@ -126,7 +119,6 @@ export const SanityModal: React.FC<SanityModalProps> = ({
                   </div>
                 </div>
 
-                {/* Loss */}
                 <div>
                   <div className="text-sm text-gray-400 mb-2 uppercase">Потеря рассудка</div>
                   <div className="flex gap-2">
@@ -147,7 +139,6 @@ export const SanityModal: React.FC<SanityModalProps> = ({
                   </div>
                 </div>
 
-                {/* Quick buttons */}
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setTempSanity(maxSanity)}
@@ -164,7 +155,6 @@ export const SanityModal: React.FC<SanityModalProps> = ({
                 </div>
               </div>
 
-              {/* Manual Control */}
               <div>
                 <div className="text-sm text-gray-400 mb-2 uppercase">Текущий рассудок</div>
                 <div className="flex items-center gap-2">
@@ -195,7 +185,6 @@ export const SanityModal: React.FC<SanityModalProps> = ({
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={onClose}

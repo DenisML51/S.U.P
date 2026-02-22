@@ -38,7 +38,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
 
   function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
-      setCrop(undefined); // Makes crop preview update correctly
+      setCrop(undefined);
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         setImgSrc(reader.result?.toString() || '');
@@ -150,7 +150,6 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
   );
 };
 
-// Helper function to crop image
 async function getCroppedImg(image: HTMLImageElement, crop: PixelCrop): Promise<string> {
   const canvas = document.createElement('canvas');
   const scaleX = image.naturalWidth / image.width;

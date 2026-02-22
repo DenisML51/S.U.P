@@ -38,7 +38,6 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border p-6 w-full max-w-lg shadow-2xl"
           >
-            {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div 
@@ -70,7 +69,6 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
               </button>
             </div>
 
-            {/* Description */}
             {attack.description && (
               <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
                 <div className="text-sm text-gray-400 mb-2">Описание</div>
@@ -80,7 +78,6 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
               </div>
             )}
 
-            {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
               <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4 text-center">
                 <Target className="w-5 h-5 text-blue-400 mx-auto mb-2" />
@@ -131,7 +128,6 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
               </div>
             </div>
 
-            {/* Details */}
             <div className="space-y-3 mb-6">
               <div className="flex items-center justify-between p-3 bg-dark-bg rounded-lg">
                 <span className="text-sm text-gray-400">Тип урона</span>
@@ -165,7 +161,6 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
               )}
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3">
               <button
                 onClick={onClose}

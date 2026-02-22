@@ -155,7 +155,6 @@ export const SpellModal: React.FC<SpellModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
           >
-            {/* Header */}
             <div className="p-6 border-b border-dark-border flex items-center justify-between bg-dark-card/50 backdrop-blur-sm relative z-[100]">
               <div className="flex items-center gap-4">
                 <div className="flex flex-col gap-2">
@@ -286,7 +285,6 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                 </div>
               </div>
 
-              {/* Damage Section */}
               <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl space-y-4">
                 <div className="flex items-center justify-between text-red-400 mb-1">
                   <div className="flex items-center gap-2">

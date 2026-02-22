@@ -74,7 +74,6 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-2xl border border-dark-border p-6 w-full max-w-lg shadow-2xl"
           >
-            {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div 
@@ -101,7 +100,6 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
               </button>
             </div>
 
-            {/* Description */}
             {tempResource.description && (
               <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
                 <div className="text-sm text-gray-400 mb-2 uppercase font-semibold">Описание</div>
@@ -111,7 +109,6 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
               </div>
             )}
 
-            {/* Current/Max Display */}
             <div className="mb-6">
               <div 
                 className="border rounded-xl p-6 text-center transition-colors"
@@ -141,9 +138,7 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
               </div>
             </div>
 
-            {/* Quick Actions */}
             <div className="space-y-3 mb-6">
-              {/* Add */}
               <div>
                 <div className="text-sm text-gray-400 mb-2 uppercase">Добавить ресурс</div>
                 <div className="flex gap-2">
@@ -164,7 +159,6 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
                 </div>
               </div>
 
-              {/* Remove */}
               <div>
                 <div className="text-sm text-gray-400 mb-2 uppercase">Убрать ресурс</div>
                 <div className="flex gap-2">
@@ -185,7 +179,6 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
                 </div>
               </div>
 
-              {/* Quick buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setTempResource({ ...tempResource, current: tempResource.max })}
@@ -202,7 +195,6 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
               </div>
             </div>
 
-            {/* Manual Control */}
             <div className="mb-6">
               <div className="text-sm text-gray-400 mb-2 uppercase">Текущее количество</div>
               <div className="flex items-center gap-2">
@@ -233,7 +225,6 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3">
               <button
                 onClick={onClose}

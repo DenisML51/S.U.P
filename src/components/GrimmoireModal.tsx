@@ -68,7 +68,7 @@ export const GrimmoireModal: React.FC<GrimmoireModalProps> = ({
   };
 
   const canPrepare = (spell: Spell) => {
-    if (spell.prepared) return true; // Can always unprepare
+    if (spell.prepared) return true;
     const levelMax = getMaxPrepared(spell.level);
     const levelCurrent = getPreparedCount(spell.level);
     const knowsSchool = knownSchools.includes(spell.school);
@@ -92,7 +92,6 @@ export const GrimmoireModal: React.FC<GrimmoireModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-dark-card rounded-3xl border border-white/10 w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
           >
-            {/* Header */}
             <div className="p-6 border-b border-white/5 bg-dark-card/50 backdrop-blur-xl flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
@@ -128,7 +127,6 @@ export const GrimmoireModal: React.FC<GrimmoireModalProps> = ({
             </div>
 
             <div className="flex-1 overflow-hidden flex">
-              {/* Main List */}
               <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-6">
                 <div className="flex items-center gap-4 sticky top-0 z-10 bg-dark-card/80 backdrop-blur-md py-2">
                   <div className="flex-1 relative">
@@ -226,7 +224,6 @@ export const GrimmoireModal: React.FC<GrimmoireModalProps> = ({
                 </div>
               </div>
 
-              {/* Sidebar Settings */}
               <AnimatePresence>
                 {showSettings && (
                   <motion.div
@@ -236,7 +233,6 @@ export const GrimmoireModal: React.FC<GrimmoireModalProps> = ({
                     className="border-l border-white/5 bg-white/5 backdrop-blur-xl overflow-y-auto custom-scrollbar"
                   >
                     <div className="p-6 space-y-8">
-                      {/* Known Schools */}
                       <div>
                         <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                           <Sparkles size={12} className="text-purple-400" />
@@ -260,7 +256,6 @@ export const GrimmoireModal: React.FC<GrimmoireModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Limits */}
                       <div>
                         <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                           <Wand2 size={12} className="text-purple-400" />

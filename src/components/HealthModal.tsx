@@ -12,7 +12,6 @@ interface HealthModalProps {
   tempHP: number;
   maxHPBonus: number;
   onUpdate: (current: number, max: number, temp: number, bonus: number) => void;
-  // New props for expanded view
   character?: Character;
   getLimbType?: (limbId: string) => 'head' | 'arm' | 'leg' | 'torso';
   openLimbModal?: (limb: Limb) => void;
@@ -65,7 +64,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
     if (isNaN(value) || value <= 0) return;
     
     if (tempTemp > 0) {
-      // Сначала снимаем временное здоровье
       const remainingDamage = Math.max(0, value - tempTemp);
       setTempTemp(Math.max(0, tempTemp - value));
       if (remainingDamage > 0) {
@@ -81,7 +79,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -89,7 +86,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
             onClick={onClose}
             className="fixed inset-0 bg-black/70 z-[1040] flex items-center justify-center p-4"
           >
-            {/* Modal */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ 
@@ -102,9 +98,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
               onClick={(e) => e.stopPropagation()}
               className="bg-dark-card rounded-2xl border border-dark-border shadow-2xl flex flex-col lg:flex-row overflow-hidden max-h-[85vh] lg:max-h-[90vh]"
             >
-              {/* Main Content (Left Side/Top) */}
               <div className={`p-6 flex flex-col ${isExpanded ? 'lg:w-[512px] lg:border-r border-white/5' : 'w-full'} overflow-y-auto custom-scrollbar`}>
-                {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                   <div className="flex items-center gap-3">
                     <h2 className="text-2xl font-bold">Здоровье</h2>
@@ -132,7 +126,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                   </button>
                 </div>
 
-                {/* HP Display */}
                 <div className="bg-dark-bg rounded-xl p-4 lg:p-6 mb-6 text-center">
                   <div className="text-4xl lg:text-6xl font-bold mb-2">
                     {tempCurrent}
@@ -148,9 +141,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                   )}
                 </div>
 
-                {/* Quick Actions */}
                 <div className="space-y-3 mb-6">
-                  {/* Healing */}
                   <div>
                     <div className="text-sm text-gray-400 mb-2 uppercase">Лечение</div>
                     <div className="flex gap-2">
@@ -171,7 +162,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Damage */}
                   <div>
                     <div className="text-sm text-gray-400 mb-2 uppercase">Урон</div>
                     <div className="flex gap-2">
@@ -192,7 +182,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Quick buttons */}
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setTempCurrent(getTotalMaxHP())}
@@ -209,9 +198,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                   </div>
                 </div>
 
-                {/* Manual Controls */}
                 <div className="space-y-4">
-                  {/* Current HP */}
                   <div>
                     <div className="text-sm text-gray-400 mb-2 uppercase">Текущее здоровье</div>
                     <div className="flex items-center gap-2">
@@ -236,7 +223,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Temp HP */}
                   <div>
                     <div className="text-sm text-gray-400 mb-2 uppercase">Временное здоровье</div>
                     <div className="flex items-center gap-2">
@@ -261,7 +247,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Max HP */}
                   <div>
                     <div className="text-sm text-gray-400 mb-2 uppercase">Максимальное здоровье</div>
                     <div className="flex items-center gap-2">
@@ -286,7 +271,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Max HP Bonus */}
                   <div>
                     <div className="text-sm text-gray-400 mb-2 uppercase">Бонус к максимуму</div>
                     <div className="flex items-center gap-2">
@@ -312,7 +296,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={onClose}
@@ -329,7 +312,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                 </div>
               </div>
 
-              {/* Expanded Details (Right Side/Bottom) */}
               <AnimatePresence>
                 {isExpanded && character && (
                   <motion.div
@@ -338,7 +320,6 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                     exit={{ opacity: 0, x: 20 }}
                     className="flex-1 p-4 lg:p-8 bg-dark-bg/30 overflow-y-auto custom-scrollbar border-t lg:border-t-0 lg:border-l border-white/5"
                   >
-                    {/* Sub Tabs */}
                     <div className="flex gap-2 mb-6 bg-black/20 p-1 rounded-xl w-fit">
                       <button
                         onClick={() => setActiveSubTab('overview')}

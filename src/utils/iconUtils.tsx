@@ -1,11 +1,6 @@
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
 
-/**
- * Registry for custom SVG icons.
- * You can add your custom icons here.
- * Make sure they use `currentColor` for stroke or fill to support dynamic coloring.
- */
 export const CUSTOM_ICONS: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
   'Pentagram': (props) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -23,15 +18,12 @@ export const CUSTOM_ICONS: Record<string, React.FC<React.SVGProps<SVGSVGElement>
 };
 
 export const getLucideIcon = (iconName: string, props?: any) => {
-  // Check if it's a custom icon first
   const CustomIcon = CUSTOM_ICONS[iconName];
   if (CustomIcon) {
-    // Standard size for custom icons if not provided
     const size = props?.size || 24;
     return <CustomIcon width={size} height={size} {...props} />;
   }
 
-  // Fallback to Lucide icons
   const Icon = (LucideIcons as any)[iconName];
   if (!Icon) {
     return <LucideIcons.Circle {...props} />;
@@ -39,9 +31,6 @@ export const getLucideIcon = (iconName: string, props?: any) => {
   return <Icon {...props} />;
 };
 
-/**
- * Lucide icons specifically selected for the picker
- */
 export const LUCIDE_PICKER_ICONS = [
   'Zap', 'Flame', 'Sparkles', 'Star', 'Sword', 'Shield', 'Swords', 'Axe', 
   'Heart', 'Brain', 'Eye', 'Droplet', 'Target', 'Activity', 'Circle', 
@@ -61,12 +50,5 @@ export const LUCIDE_PICKER_ICONS = [
   'Watch', 'Wifi', 'Wine', 'X', 'ZapOff'
 ];
 
-/**
- * Custom icons list
- */
 export const CUSTOM_PICKER_ICONS = Object.keys(CUSTOM_ICONS);
-
-/**
- * Total list for types compatibility
- */
 export const ALL_AVAILABLE_ICONS = [...CUSTOM_PICKER_ICONS, ...LUCIDE_PICKER_ICONS];
