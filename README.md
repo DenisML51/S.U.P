@@ -17,7 +17,6 @@
   <img alt="Tailwind" src="https://img.shields.io/badge/Tailwind_CSS-3.3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
   <img alt="Vite" src="https://img.shields.io/badge/Vite-5.0-646CFF?style=flat-square&logo=vite&logoColor=white" />
   <img alt="Platform" src="https://img.shields.io/badge/platform-Windows_x64-0078D4?style=flat-square&logo=windows&logoColor=white" />
-  <img alt="License" src="https://img.shields.io/badge/license-Private-gray?style=flat-square" />
 </p>
 
 ---
@@ -34,8 +33,6 @@
 - [Возможности](#возможности)
 - [Скриншоты](#скриншоты)
 - [Технологии](#технологии)
-- [Установка и запуск](#установка-и-запуск)
-- [Сборка](#сборка)
 - [Структура проекта](#структура-проекта)
 - [Архитектура](#архитектура)
 
@@ -142,56 +139,56 @@
 
 <!-- Замените путь на актуальный скриншот -->
 <p align="center">
-  <img src="docs/screenshots/character-list.png" alt="Список персонажей" width="800" />
+  <img src="assets/img.png" alt="Список персонажей" width="800" />
 </p>
 
 ### Лист персонажа — вкладки
 
 <!-- Замените путь на актуальный скриншот -->
 <p align="center">
-  <img src="docs/screenshots/character-sheet.png" alt="Лист персонажа" width="800" />
+  <img src="assets/img_1.png" alt="Лист персонажа" width="800" />
 </p>
 
 ### Заклинания
 
 <!-- Замените путь на актуальный скриншот -->
 <p align="center">
-  <img src="docs/screenshots/spells.png" alt="Управление заклинаниями" width="800" />
+  <img src="assets/img_2.png" alt="Управление заклинаниями" width="800" />
 </p>
 
-### Редактирование заклинания (двухколоночный layout)
+### Редактирование заклинания
 
 <!-- Замените путь на актуальный скриншот -->
 <p align="center">
-  <img src="docs/screenshots/spell-modal.png" alt="Модалка заклинания" width="800" />
+  <img src="assets/img_3.png" alt="Модалка заклинания" width="800" />
 </p>
 
 ### Атаки и урон
 
 <!-- Замените путь на актуальный скриншот -->
 <p align="center">
-  <img src="docs/screenshots/attacks.png" alt="Атаки" width="800" />
+  <img src="assets/img_4.png" alt="Атаки" width="800" />
 </p>
 
 ### Боевой режим (Hotbar)
 
 <!-- Замените путь на актуальный скриншот -->
 <p align="center">
-  <img src="docs/screenshots/hotbar.png" alt="Боевой режим" width="800" />
+  <img src="assets/img_5.png" alt="Боевой режим" width="800" />
 </p>
 
 ### Бросок кубиков
 
 <!-- Замените путь на актуальный скриншот -->
 <p align="center">
-  <img src="docs/screenshots/dice-roller.png" alt="Бросок кубиков" width="800" />
+  <img src="assets/img_6.png" alt="Бросок кубиков" width="800" />
 </p>
 
 ### Здоровье и повреждения конечностей
 
 <!-- Замените путь на актуальный скриншот -->
 <p align="center">
-  <img src="docs/screenshots/health.png" alt="Система здоровья" width="800" />
+  <img src="assets/img_7.png" alt="Система здоровья" width="800" />
 </p>
 
 ---
@@ -287,7 +284,7 @@ Into-the-Dark-App/
 |   |   |-- iconUtils.tsx              # Утилиты иконок
 |   |   '-- pdfExport.ts              # Логика PDF-экспорта
 |   |
-|   |-- types.ts                       # TypeScript-интерфейсы (600+ строк)
+|   |-- types.ts                       # TypeScript-интерфейсы
 |   |-- App.tsx                        # Корневой компонент
 |   |-- main.tsx                       # Точка входа
 |   '-- index.css                      # Глобальные стили
