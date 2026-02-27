@@ -164,10 +164,8 @@ export const CharacterSheet: React.FC = () => {
                   {activeTab === 'health' && (
                     <HealthTab 
                       character={character}
-                      getLimbType={logic.getLimbType}
                       openLimbModal={logic.openLimbModal}
                       openItemView={logic.openItemView}
-                      openACModal={() => logic.setShowACModal(true)}
                     />
                   )}
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Heart, Shield, Activity } from 'lucide-react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { Character, Limb } from '../types';
 import { HealthTab } from './CharacterSheet/components/Tabs/HealthTab';
 import { useI18n } from '../i18n/I18nProvider';
@@ -14,10 +14,8 @@ interface HealthModalProps {
   maxHPBonus: number;
   onUpdate: (current: number, max: number, temp: number, bonus: number) => void;
   character?: Character;
-  getLimbType?: (limbId: string) => 'head' | 'arm' | 'leg' | 'torso';
   openLimbModal?: (limb: Limb) => void;
   openItemView?: (item: any) => void;
-  openACModal?: () => void;
   updateLimb?: (limb: Limb) => void;
 }
 
@@ -30,15 +28,12 @@ export const HealthModal: React.FC<HealthModalProps> = ({
   maxHPBonus,
   onUpdate,
   character,
-  getLimbType,
   openLimbModal,
   openItemView,
-  openACModal,
   updateLimb,
 }) => {
   const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'limbs'>('overview');
   const [tempCurrent, setTempCurrent] = useState(currentHP);
   const [tempMax, setTempMax] = useState(maxHP);
   const [tempTemp, setTempTemp] = useState(tempHP);
@@ -322,36 +317,11 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                     exit={{ opacity: 0, x: 20 }}
                     className="flex-1 p-4 lg:p-8 bg-dark-bg/30 overflow-y-auto custom-scrollbar border-t lg:border-t-0 lg:border-l border-white/5"
                   >
-                    <div className="flex gap-2 mb-6 bg-black/20 p-1 rounded-xl w-fit">
-                      <button
-                        onClick={() => setActiveSubTab('overview')}
-                        className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
-                          activeSubTab === 'overview'
-                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
-                            : 'text-gray-500 hover:text-gray-300'
-                        }`}
-                      >
-                        {t('health.overview')}
-                      </button>
-                      <button
-                        onClick={() => setActiveSubTab('limbs')}
-                        className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
-                          activeSubTab === 'limbs'
-                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
-                            : 'text-gray-500 hover:text-gray-300'
-                        }`}
-                      >
-                        {t('health.limbs')}
-                      </button>
-                    </div>
-
                     <HealthTab 
                       character={character}
-                      getLimbType={getLimbType || (() => 'torso')}
                       openLimbModal={openLimbModal || (() => {})}
                       openItemView={openItemView || (() => {})}
-                      openACModal={openACModal || (() => {})}
-                      view={activeSubTab}
+                      view="all"
                     />
                   </motion.div>
                 )}

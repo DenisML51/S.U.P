@@ -253,7 +253,6 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
         maxHPBonus={character.maxHPBonus}
         onUpdate={updateHealth}
         character={character}
-        getLimbType={getLimbType}
         openLimbModal={(limb) => {
           setSelectedLimb(limb);
           setShowLimbModal(true);
@@ -262,7 +261,6 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
           setViewingItem(item);
           setShowItemViewModal(true);
         }}
-        openACModal={() => setShowACModal(true)}
         updateLimb={updateLimb}
       />
 
