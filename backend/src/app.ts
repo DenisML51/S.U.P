@@ -15,12 +15,14 @@ import { notificationRoutes } from './routes/notifications.js';
 
 export const buildApp = () => {
   const app = Fastify({ logger: true });
-  const allowedOrigins = new Set([env.APP_ORIGIN, 'http://localhost:5174']);
+  const allowedOrigins = new Set([env.APP_ORIGIN]);
+  const isLocalDevOrigin = (origin: string) =>
+    /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
 
   app.register(cookie);
   app.register(cors, {
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.has(origin)) {
+      if (!origin || allowedOrigins.has(origin) || isLocalDevOrigin(origin)) {
         cb(null, true);
         return;
       }

@@ -1,22 +1,32 @@
 import React from 'react';
-import { Shield, Activity, Target, Wind, Brain } from 'lucide-react';
+import { Shield, Target, Wind, Brain, LoaderCircle } from 'lucide-react';
 import { Character } from '../../../../types';
 import { useI18n } from '../../../../i18n/I18nProvider';
 
 interface CombatStatsProps {
   character: Character;
+  isInCombat: boolean;
+  isCombatReady: boolean;
+  canStartSharedCombat: boolean;
   initiative: number | null;
   getModifier: (attr: string) => string;
   onACClick: () => void;
-  onInitiativeClick: () => void;
+  onEnterCombatClick: () => void;
+  onStartSharedCombatClick: () => void;
+  onInitiativeRollClick: () => void;
 }
 
 export const CombatStats: React.FC<CombatStatsProps> = ({
   character,
+  isInCombat,
+  isCombatReady,
+  canStartSharedCombat,
   initiative,
   getModifier,
   onACClick,
-  onInitiativeClick
+  onEnterCombatClick,
+  onStartSharedCombatClick,
+  onInitiativeRollClick
 }) => {
   const { t } = useI18n();
   const spellDcName =
@@ -25,6 +35,24 @@ export const CombatStats: React.FC<CombatStatsProps> = ({
     character.spellcastingDifficultyName === 'SPELL DC'
       ? t('spellsTab.spellDcShort')
       : character.spellcastingDifficultyName;
+  const initiativeValue =
+    initiative !== null
+      ? initiative
+      : `${getModifier('dexterity')}${character.initiativeBonus ? ` + ${character.initiativeBonus}` : ''}`;
+  const onInitiativeAction = () => {
+    if (isInCombat) {
+      onInitiativeRollClick();
+      return;
+    }
+    if (canStartSharedCombat) {
+      onStartSharedCombatClick();
+      return;
+    }
+    if (isCombatReady) {
+      return;
+    }
+    onEnterCombatClick();
+  };
   return (
     <div className="flex items-center gap-6 px-6 py-1.5 bg-dark-bg/95 backdrop-blur-3xl border border-white/10 rounded-[1.25rem] shadow-2xl relative overflow-hidden">
       <div className="absolute inset-0 bg-white/[0.02] pointer-events-none" />
@@ -41,21 +69,27 @@ export const CombatStats: React.FC<CombatStatsProps> = ({
       
       <div className="w-px h-10 bg-white/10" />
 
-      <div 
-        className="flex flex-col items-center justify-center h-10 cursor-pointer group/stat transition-all"
-        onClick={onInitiativeClick}
+      <button
+        onClick={onInitiativeAction}
+        disabled={isCombatReady && !canStartSharedCombat}
+        className={`flex h-10 flex-col items-center justify-center transition-all ${
+          isCombatReady && !canStartSharedCombat
+            ? 'cursor-default opacity-70'
+            : 'cursor-pointer hover:opacity-90'
+        }`}
       >
         <span className="text-[7px] font-black text-gray-500 uppercase tracking-[0.2em] mb-0.5">{t('secondary.initiative')}</span>
-        <div className="flex items-center gap-2">
-          <Activity size={14} className="text-amber-400 group-hover/stat:scale-110 transition-transform" />
-          <span className="text-sm font-black text-amber-100">
-            {initiative !== null 
-              ? initiative 
-              : `${getModifier('dexterity')}${character.initiativeBonus ? ` + ${character.initiativeBonus}` : ''}`
-            }
+        <span className={`text-sm font-black ${
+          isInCombat ? 'text-amber-100' : canStartSharedCombat ? 'text-emerald-100' : 'text-amber-100'
+        }`}>
+          <span className="inline-flex items-center gap-1.5">
+            {isCombatReady && !canStartSharedCombat && (
+              <LoaderCircle size={12} className="animate-spin text-blue-300" />
+            )}
+            {initiativeValue}
           </span>
-        </div>
-      </div>
+        </span>
+      </button>
 
       <div className="w-px h-10 bg-white/10" />
 

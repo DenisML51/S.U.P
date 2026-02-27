@@ -83,9 +83,11 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
   const lastSentActionStateRef = useRef<string>('');
   const lastSentHpStateRef = useRef<string>('');
   const lastKnownRoundRef = useRef<number>(1);
+  const startRequestedRef = useRef(false);
   const user = useAuthStore((state) => state.user);
   const { lobby, members, meRole, combatState, sendCombatEvent } = useLobbyStore();
-  const isInCombat = lobby ? Boolean(combatState?.isInCombat) : isInCombatLocal;
+  const sharedLobbyCombatActive = Boolean(lobby && combatState?.isInCombat);
+  const isInCombat = lobby ? sharedLobbyCombatActive || isInCombatLocal : isInCombatLocal;
   const initiative = lobby ? initiativeLocal : initiativeLocal;
 
   const subclassIcon = null;
@@ -102,34 +104,99 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
     if (!user || !members.length) return null;
     return members.find((member) => member.userId === user.id) ?? null;
   }, [members, user]);
+  const resolvedMemberId = useMemo(() => {
+    if (meMember?.id) {
+      return meMember.id;
+    }
+    if (!user || !combatState?.membersCombat?.length) {
+      return null;
+    }
+    return combatState.membersCombat.find((member) => member.userId === user.id)?.memberId ?? null;
+  }, [combatState?.membersCombat, meMember?.id, user]);
 
-  const startCombat = () => {
-    const res = handleRollInitiative();
-    setInitiativeLocal(res.total);
-    if (lobby) {
-      const limits = character.actionLimits || { action: 1, bonus: 1, reaction: 1 };
-      const spent = character.spentActions || { action: 0, bonus: 0, reaction: 0 };
-      if (meMember) {
-        sendCombatEvent('combat.actionUsed', {
-          memberId: meMember.id,
-          action: `A:${spent.action}/${limits.action} B:${spent.bonus}/${limits.bonus} R:${spent.reaction}/${limits.reaction}`,
-          actionState: {
-            actionLimits: limits,
-            spentActions: spent,
-            initiative: res.total
-          }
-        });
+  const onlineMemberIds = useMemo(
+    () => members.filter((member) => member.status === 'ONLINE').map((member) => member.id),
+    [members]
+  );
+  const readyMemberIds = useMemo(() => {
+    const readySet = new Set<string>();
+    (combatState?.membersCombat ?? []).forEach((member) => {
+      if (member.currentAction === 'ReadyForCombat') {
+        readySet.add(member.memberId);
       }
-      if (meRole === 'MASTER') {
-        sendCombatEvent('combat.start', {});
+      if (typeof member.initiative === 'number' && Number.isFinite(member.initiative)) {
+        readySet.add(member.memberId);
+      }
+    });
+    if (isInCombatLocal && resolvedMemberId) {
+      readySet.add(resolvedMemberId);
+    }
+    return readySet;
+  }, [combatState?.membersCombat, isInCombatLocal, resolvedMemberId]);
+  const readyOnlineCount = useMemo(
+    () => onlineMemberIds.filter((memberId) => readyMemberIds.has(memberId)).length,
+    [onlineMemberIds, readyMemberIds]
+  );
+  const allOnlineReady =
+    onlineMemberIds.length > 0 && readyOnlineCount === onlineMemberIds.length;
+  const canStartSharedCombat =
+    Boolean(lobby) &&
+    !sharedLobbyCombatActive &&
+    meRole === 'MASTER' &&
+    isInCombatLocal &&
+    allOnlineReady &&
+    onlineMemberIds.length >= 2;
+
+  const enterCombat = () => {
+    if (lobby) {
+      setIsInCombatLocal(true);
+      if (resolvedMemberId) {
+        sendCombatEvent('combat.actionUsed', {
+          memberId: resolvedMemberId,
+          action: 'ReadyForCombat'
+        });
       }
       return;
     }
     setIsInCombatLocal(true);
   };
 
+  const startSharedCombat = () => {
+    if (!lobby || meRole !== 'MASTER') return;
+    sendCombatEvent('combat.start', {});
+  };
+
+  const rollInitiativeInCombat = () => {
+    const res = handleRollInitiative();
+    setInitiativeLocal(res.total);
+    if (!lobby || !resolvedMemberId) {
+      return;
+    }
+    const limits = character.actionLimits || { action: 1, bonus: 1, reaction: 1 };
+    const spent = character.spentActions || { action: 0, bonus: 0, reaction: 0 };
+    sendCombatEvent('combat.actionUsed', {
+      memberId: resolvedMemberId,
+      action: `A:${spent.action}/${limits.action} B:${spent.bonus}/${limits.bonus} R:${spent.reaction}/${limits.reaction}`,
+      actionState: {
+        actionLimits: limits,
+        spentActions: spent,
+        initiative: res.total
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (!canStartSharedCombat) {
+      startRequestedRef.current = false;
+      return;
+    }
+    if (startRequestedRef.current) return;
+    startRequestedRef.current = true;
+    startSharedCombat();
+  }, [canStartSharedCombat]);
+
   const nextTurn = () => {
-    if (lobby && combatState) {
+    if (lobby && sharedLobbyCombatActive) {
       sendCombatEvent('combat.nextTurn', {});
       return;
     }
@@ -142,7 +209,7 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
   const endCombat = () => {
     setIsInCombatLocal(false);
     setInitiativeLocal(null);
-    if (lobby) {
+    if (lobby && sharedLobbyCombatActive) {
       sendCombatEvent('combat.end', {});
       return;
     }
@@ -176,14 +243,14 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
   };
 
   useEffect(() => {
-    if (!lobby || !combatState?.isInCombat || !meMember) return;
+    if (!lobby || !sharedLobbyCombatActive || !resolvedMemberId) return;
     const limits = character.actionLimits || { action: 1, bonus: 1, reaction: 1 };
     const spent = character.spentActions || { action: 0, bonus: 0, reaction: 0 };
-    const payloadKey = JSON.stringify({ limits, spent, memberId: meMember.id, initiative: initiativeLocal });
+    const payloadKey = JSON.stringify({ limits, spent, memberId: resolvedMemberId, initiative: initiativeLocal });
     if (lastSentActionStateRef.current === payloadKey) return;
     lastSentActionStateRef.current = payloadKey;
     sendCombatEvent('combat.actionUsed', {
-      memberId: meMember.id,
+      memberId: resolvedMemberId,
       action: `A:${spent.action}/${limits.action} B:${spent.bonus}/${limits.bonus} R:${spent.reaction}/${limits.reaction}`,
       actionState: {
         actionLimits: limits,
@@ -193,9 +260,8 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
     });
   }, [
     lobby,
-    combatState?.isInCombat,
-    meMember?.id,
-    meMember?.characterId,
+    sharedLobbyCombatActive,
+    resolvedMemberId,
     character.spentActions?.action,
     character.spentActions?.bonus,
     character.spentActions?.reaction,
@@ -207,9 +273,9 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
   ]);
 
   useEffect(() => {
-    if (!lobby || !combatState?.isInCombat || !meMember) return;
+    if (!lobby || !sharedLobbyCombatActive || !resolvedMemberId) return;
     const hpPayload = {
-      memberId: meMember.id,
+      memberId: resolvedMemberId,
       currentHP: character.currentHP,
       maxHP: getTotalMaxHP()
     };
@@ -219,8 +285,8 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
     sendCombatEvent('combat.hpChanged', hpPayload);
   }, [
     lobby,
-    combatState?.isInCombat,
-    meMember?.id,
+    sharedLobbyCombatActive,
+    resolvedMemberId,
     character.currentHP,
     character.maxHP,
     character.maxHPBonus,
@@ -229,7 +295,7 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
   ]);
 
   useEffect(() => {
-    if (!lobby || !combatState?.isInCombat) return;
+    if (!lobby || !sharedLobbyCombatActive) return;
     const nextRound = combatState.round ?? 1;
     const prevRound = lastKnownRoundRef.current;
     if (nextRound > prevRound) {
@@ -239,7 +305,7 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
       });
     }
     lastKnownRoundRef.current = nextRound;
-  }, [lobby, combatState?.isInCombat, combatState?.round, character, updateCharacter]);
+  }, [lobby, sharedLobbyCombatActive, combatState?.round, character, updateCharacter]);
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('combat-mode-changed', { detail: { isInCombat } }));
@@ -262,9 +328,9 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
 
   return (
     <>
-      {lobby && isInCombat && <PlayersCombatSidebar />}
-      {lobby && isInCombat && <CombatLobbyChat />}
-      {lobby && isInCombat && <CombatInitiativeStrip />}
+      {sharedLobbyCombatActive && <PlayersCombatSidebar />}
+      {sharedLobbyCombatActive && <CombatLobbyChat />}
+      {sharedLobbyCombatActive && <CombatInitiativeStrip />}
 
       <div className="fixed bottom-6 left-0 right-0 z-[40] flex flex-col items-center pointer-events-none px-2 sm:px-4">
         
@@ -301,10 +367,15 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
 
                 <CombatStats 
                   character={character}
+                  isInCombat={sharedLobbyCombatActive || (!lobby && isInCombat)}
+                  isCombatReady={Boolean(lobby) && isInCombatLocal && !sharedLobbyCombatActive}
+                  canStartSharedCombat={canStartSharedCombat}
                   initiative={initiative}
                   getModifier={getModifier}
                   onACClick={() => setShowACModal(true)}
-                  onInitiativeClick={startCombat}
+                  onEnterCombatClick={enterCombat}
+                  onStartSharedCombatClick={startSharedCombat}
+                  onInitiativeRollClick={rollInitiativeInCombat}
                 />
               </div>
               

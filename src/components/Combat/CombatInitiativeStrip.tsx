@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useLobbyStore } from '../../store/useLobbyStore';
 import { useCharacterStore } from '../../store/useCharacterStore';
 
@@ -27,6 +28,21 @@ export const CombatInitiativeStrip: React.FC = () => {
     };
   });
   const currentId = combatState.activeMemberId ?? ordered[0]?.id ?? null;
+  const centeredOrder = (() => {
+    if (!ordered.length || !currentId) {
+      return ordered;
+    }
+    const currentIdx = ordered.findIndex((member) => member.id === currentId);
+    if (currentIdx < 0) {
+      return ordered;
+    }
+    const targetCenterIdx = Math.floor(ordered.length / 2);
+    const shift = targetCenterIdx - currentIdx;
+    return ordered.map((_, idx) => {
+      const sourceIdx = ((idx - shift) % ordered.length + ordered.length) % ordered.length;
+      return ordered[sourceIdx];
+    });
+  })();
 
   const getAvatar = (memberId: string, characterId: string | null) => {
     const fromOrder = ordered.find((member) => member.id === memberId)?.avatar;
@@ -38,34 +54,39 @@ export const CombatInitiativeStrip: React.FC = () => {
 
   return (
     <div className="fixed top-3 left-1/2 z-[47] -translate-x-1/2">
-      <div className="flex items-end gap-3">
-        {ordered.map((member, index) => {
+      <div className="flex items-end gap-3.5">
+        {centeredOrder.map((member, index) => {
           const isActive = member.id === currentId;
           const avatar = getAvatar(member.id, member.characterId);
           const initiativeLabel =
             typeof member.initiative === 'number' ? `Иниц. ${member.initiative}` : `Иниц. #${index + 1}`;
           return (
-            <div key={member.id} className="flex flex-col items-center gap-1">
+            <motion.div
+              key={member.id}
+              layout
+              transition={{ type: 'spring', stiffness: 360, damping: 30, mass: 0.7 }}
+              className="flex flex-col items-center gap-1.5"
+            >
               {avatar ? (
                 <img
                   src={avatar}
                   title={member.name}
                   className={`object-cover transition-all ${
-                    isActive ? 'h-16 w-16 rounded-md opacity-100' : 'h-12 w-12 rounded-md opacity-80'
+                    isActive ? 'h-20 w-20 rounded-lg opacity-100' : 'h-16 w-16 rounded-lg opacity-80'
                   }`}
                 />
               ) : (
                 <div
                   title={member.name}
                   className={`flex items-center justify-center bg-white/10 font-black text-white transition-all ${
-                    isActive ? 'h-16 w-16 rounded-md text-[12px] opacity-100' : 'h-12 w-12 rounded-md text-[10px] opacity-80'
+                    isActive ? 'h-20 w-20 rounded-lg text-[14px] opacity-100' : 'h-16 w-16 rounded-lg text-[12px] opacity-80'
                   }`}
                 >
                   {avatarFallback(member.name)}
                 </div>
               )}
               <div className={`text-[10px] ${isActive ? 'text-white' : 'text-gray-400'}`}>{initiativeLabel}</div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
