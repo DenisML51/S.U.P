@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { Character, Resistance, CharacterPreview, TabType, ViewMode } from '../types';
 import { toast } from 'react-hot-toast';
+import {
+  createCharacterApi,
+  deleteCharacterApi,
+  getCharacterApi,
+  listCharactersApi,
+  updateCharacterApi
+} from '../api/characters';
 
 interface CharacterState {
   character: Character | null;
@@ -35,9 +42,6 @@ interface CharacterState {
   updateSettings: (settings: Partial<CharacterState['settings']>) => void;
   resetAllResources: () => void;
 }
-
-const CHARACTERS_LIST_KEY = 'trpg_characters_list';
-const getCharacterStorageKey = (id: string) => `trpg_character_${id}`;
 
 const normalizeCharacter = (parsed: any): Character => {
   const sanity = (parsed.sanity !== undefined && !isNaN(Number(parsed.sanity))) ? Number(parsed.sanity) : 50;
@@ -110,12 +114,8 @@ const normalizeCharacter = (parsed: any): Character => {
 
 const saveToStorage = async (normalized: Character, settings: CharacterState['settings'], silent: boolean) => {
   try {
-    if (settings.storagePath && (window as any).electronAPI) {
-      const filePath = `${settings.storagePath}/${normalized.id}.json`;
-      await (window as any).electronAPI.saveCharacter(filePath, normalized);
-    } else {
-      localStorage.setItem(getCharacterStorageKey(normalized.id!), JSON.stringify(normalized));
-    }
+    if (!normalized.id) return;
+    await updateCharacterApi(normalized.id, normalized);
 
     if (settings.notifications && !silent) {
       toast.success('Персонаж сохранен');
@@ -148,7 +148,6 @@ const updateListInStorage = (normalized: Character, prevList: CharacterPreview[]
     updatedList = [...prevList, preview];
   }
   
-  localStorage.setItem(CHARACTERS_LIST_KEY, JSON.stringify(updatedList));
   return updatedList;
 };
 
@@ -240,14 +239,8 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   loadCharacter: async (characterId) => {
     const { settings } = get();
     try {
-      let char: Character | null = null;
-      if (settings.storagePath && (window as any).electronAPI) {
-        const characters = await (window as any).electronAPI.loadCharacters(settings.storagePath);
-        char = characters.find((c: Character) => c.id === characterId) || null;
-      } else {
-        const saved = localStorage.getItem(getCharacterStorageKey(characterId));
-        if (saved) char = JSON.parse(saved);
-      }
+      const { character } = await getCharacterApi(characterId);
+      const char: Character | null = character ?? null;
 
       if (char) {
         const normalized = normalizeCharacter(char);
@@ -271,7 +264,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     const characterWithId = { ...newCharacter, id };
     const normalized = normalizeCharacter(characterWithId);
     
-    saveToStorage(normalized, settings, true);
+    createCharacterApi(normalized).catch((e) => {
+      console.error('Failed to create character:', e);
+      toast.error('Не удалось сохранить персонажа на сервере');
+    });
     const newList = updateListInStorage(normalized, charactersList);
     set({ 
       character: normalized, 
@@ -284,17 +280,11 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   },
 
   deleteCharacter: async (characterId) => {
-    const { settings, charactersList, character } = get();
+    const { charactersList, character } = get();
     try {
-      if (settings.storagePath && (window as any).electronAPI) {
-        const filePath = `${settings.storagePath}/${characterId}.json`;
-        await (window as any).electronAPI.deleteCharacter(filePath);
-      } else {
-        localStorage.removeItem(getCharacterStorageKey(characterId));
-      }
+      await deleteCharacterApi(characterId);
       
       const newList = charactersList.filter(c => c.id !== characterId);
-      localStorage.setItem(CHARACTERS_LIST_KEY, JSON.stringify(newList));
       
       set({ 
         charactersList: newList,
@@ -310,60 +300,9 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   goToCharacterList: () => set({ character: null }),
 
   loadCharactersList: async () => {
-    const { settings } = get();
     try {
-      if (settings.storagePath && (window as any).electronAPI) {
-        const characters = await (window as any).electronAPI.loadCharacters(settings.storagePath);
-        const previews: CharacterPreview[] = characters.map((c: Character) => ({
-          id: c.id,
-          name: c.name,
-          class: c.class,
-          subclass: c.subclass,
-          level: c.level,
-          currentHP: c.currentHP,
-          maxHP: c.maxHP,
-          avatar: c.avatar,
-          resistances: c.resistances,
-        }));
-        set({ charactersList: previews, isLoaded: true });
-        return;
-      }
-
-      const saved = localStorage.getItem(CHARACTERS_LIST_KEY);
-      let list = [];
-      if (saved) {
-        list = JSON.parse(saved);
-        if (!Array.isArray(list)) list = [];
-      }
-
-      if (list.length === 0) {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key?.startsWith('trpg_character_')) {
-            try {
-              const charData = JSON.parse(localStorage.getItem(key)!);
-              if (charData && charData.id && charData.name) {
-                list.push({
-                  id: charData.id,
-                  name: charData.name,
-                  class: charData.class,
-                  subclass: charData.subclass,
-                  level: charData.level,
-                  currentHP: charData.currentHP,
-                  maxHP: charData.maxHP,
-                  avatar: charData.avatar,
-                  resistances: charData.resistances,
-                });
-              }
-            } catch (e) {}
-          }
-        }
-        if (list.length > 0) {
-          localStorage.setItem(CHARACTERS_LIST_KEY, JSON.stringify(list));
-        }
-      }
-
-      set({ charactersList: list, isLoaded: true });
+      const response = await listCharactersApi();
+      set({ charactersList: response.characters, isLoaded: true });
     } catch (e) {
       console.error('Failed to load characters list:', e);
       set({ charactersList: [], isLoaded: true });
@@ -371,54 +310,15 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   },
 
   migrateOldData: () => {
-    try {
-      const oldCharacter = localStorage.getItem('trpg_character');
-      if (oldCharacter) {
-        try {
-          const parsed = JSON.parse(oldCharacter);
-          if (parsed && typeof parsed === 'object' && parsed.name && parsed.attributes) {
-            const id = `char_migrated_${Date.now()}`;
-            const normalized = normalizeCharacter({ ...parsed, id });
-            localStorage.setItem(getCharacterStorageKey(id), JSON.stringify(normalized));
-            
-            const preview: CharacterPreview = {
-              id,
-              name: normalized.name,
-              class: normalized.class,
-              subclass: normalized.subclass,
-              level: normalized.level,
-              currentHP: normalized.currentHP,
-              maxHP: normalized.maxHP,
-              avatar: normalized.avatar,
-              resistances: normalized.resistances,
-            };
-            
-            set(state => {
-              const newList = [...state.charactersList, preview];
-              localStorage.setItem(CHARACTERS_LIST_KEY, JSON.stringify(newList));
-              return { charactersList: newList };
-            });
-            
-            localStorage.removeItem('trpg_character');
-          }
-        } catch (e) {
-          console.error('Failed to migrate old character:', e);
-        }
-      }
-    } catch (e) {
-      console.error('Failed to migrate old data:', e);
-    }
+    // Local migration disabled after moving persistence to backend API.
   },
 
   exportToJSON: (characterId) => {
-    const { character } = get();
+    const { character, charactersList } = get();
     const id = characterId || character?.id;
     if (!id) return;
-
-    const saved = localStorage.getItem(getCharacterStorageKey(id));
-    if (!saved) return;
-    
-    const charToExport = JSON.parse(saved);
+    const charToExport = character?.id === id ? character : charactersList.find((c) => c.id === id);
+    if (!charToExport) return;
     const dataStr = JSON.stringify(charToExport, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -433,7 +333,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     const { charactersList, settings } = get();
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const content = e.target?.result as string;
           const parsed = JSON.parse(content);
@@ -446,9 +346,8 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
           const normalized = normalizeCharacter(parsed);
           const id = normalized.id || `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const characterWithId = { ...normalized, id };
-          
-          localStorage.setItem(getCharacterStorageKey(id), JSON.stringify(characterWithId));
-          
+          await createCharacterApi(characterWithId);
+
           const newList = updateListInStorage(characterWithId, charactersList);
           
           set({ 

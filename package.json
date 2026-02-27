@@ -6,6 +6,8 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:full": "concurrently \"npm run dev\" \"npm run dev:backend\"",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "electron": "electron .",

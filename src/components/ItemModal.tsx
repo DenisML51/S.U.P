@@ -5,6 +5,7 @@ import { InventoryItem, ItemType, WeaponClass } from '../types';
 import { MarkdownEditor } from './MarkdownEditor';
 import { IconPicker } from './IconPicker';
 import { getLucideIcon } from '../utils/iconUtils';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface ItemModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  const { t } = useI18n();
   const [name, setName] = useState(item?.name || '');
   const [type, setType] = useState<ItemType>(item?.type || 'item');
   const [description, setDescription] = useState(item?.description || '');
@@ -124,10 +126,10 @@ export const ItemModal: React.FC<ItemModalProps> = ({
   };
 
   const typeData: Record<ItemType, { icon: any, label: string, color: string, bg: string, border: string, text: string, shadow: string, desc: string }> = {
-    armor: { icon: Shield, label: 'Броня', color: 'blue', bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-400', shadow: 'shadow-blue-500/10', desc: 'Защитные доспехи и щиты' },
-    weapon: { icon: weaponClass === 'ranged' ? Crosshair : Sword, label: 'Оружие', color: 'red', bg: 'bg-red-500/20', border: 'border-red-500/30', text: 'text-red-400', shadow: 'shadow-red-500/10', desc: 'Мечи, луки, огнестрел' },
-    ammunition: { icon: Disc, label: 'Боеприпас', color: 'orange', bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-400', shadow: 'shadow-orange-500/10', desc: 'Стрелы, патроны, болты' },
-    item: { icon: Box, label: 'Предмет', color: 'purple', bg: 'bg-purple-500/20', border: 'border-purple-500/30', text: 'text-purple-400', shadow: 'shadow-purple-500/10', desc: 'Зелья, еда, снаряжение' },
+    armor: { icon: Shield, label: t('itemModal.type.armor.label'), color: 'blue', bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-400', shadow: 'shadow-blue-500/10', desc: t('itemModal.type.armor.desc') },
+    weapon: { icon: weaponClass === 'ranged' ? Crosshair : Sword, label: t('itemModal.type.weapon.label'), color: 'red', bg: 'bg-red-500/20', border: 'border-red-500/30', text: 'text-red-400', shadow: 'shadow-red-500/10', desc: t('itemModal.type.weapon.desc') },
+    ammunition: { icon: Disc, label: t('itemModal.type.ammunition.label'), color: 'orange', bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-400', shadow: 'shadow-orange-500/10', desc: t('itemModal.type.ammunition.desc') },
+    item: { icon: Box, label: t('itemModal.type.item.label'), color: 'purple', bg: 'bg-purple-500/20', border: 'border-purple-500/30', text: 'text-purple-400', shadow: 'shadow-purple-500/10', desc: t('itemModal.type.item.desc') },
   };
 
   const safeType = typeData[type] ? type : 'item';
@@ -201,8 +203,8 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                   )}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{item ? 'Редактировать предмет' : 'Добавить предмет'}</h2>
-                  <p className="text-xs text-gray-400">{item ? name : 'Создание нового снаряжения'}</p>
+                  <h2 className="text-xl font-bold">{item ? t('itemModal.title.edit') : t('itemModal.title.add')}</h2>
+                  <p className="text-xs text-gray-400">{item ? name : t('itemModal.subtitle.add')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -212,7 +214,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                     className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-dark-bg border border-dark-border text-gray-400 hover:border-blue-500/50 transition-all flex items-center gap-2"
                   >
                     <ChevronRight className="w-3 h-3 rotate-180" />
-                    Назад
+                    {t('common.back')}
                   </button>
                 )}
                 <button 
@@ -228,7 +230,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
               {step === 'type' ? (
                 <div className="p-6 space-y-6">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Выберите тип предмета</h3>
+                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">{t('itemModal.selectType')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {(['armor', 'weapon', 'ammunition', 'item'] as ItemType[]).map((t) => (
                         <button
@@ -260,24 +262,24 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Название</label>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('common.name')}</label>
                         <input
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          placeholder="Меч, Зелье, Доспех..."
+                          placeholder={t('itemModal.placeholder.name')}
                           className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                         />
                       </div>
                       
                       {type === 'item' && (
                         <div>
-                          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Класс предмета</label>
+                          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('itemModal.itemClass')}</label>
                           <input
                             type="text"
                             value={itemClass}
                             onChange={(e) => setItemClass(e.target.value)}
-                            placeholder="Зелье, инструмент..."
+                            placeholder={t('itemModal.placeholder.itemClass')}
                             className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                           />
                         </div>
@@ -285,7 +287,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Вес (фунты)</label>
+                          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('itemModal.weight')}</label>
                           <div className="flex items-center gap-2">
                             <button onClick={() => setWeight(Math.max(0, weight - 0.5))} className="w-10 h-10 rounded-lg bg-dark-bg border border-dark-border hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white"><Minus className="w-4 h-4" /></button>
                             <input
@@ -298,7 +300,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                           </div>
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Цена (золото)</label>
+                          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('itemModal.price')}</label>
                           <input
                             type="number"
                             value={cost}
@@ -310,7 +312,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
                       {(type === 'item' || type === 'ammunition') && (
                         <div>
-                          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Количество</label>
+                          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('common.amount')}</label>
                           <div className="flex items-center gap-2">
                             <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-lg bg-dark-bg border border-dark-border hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white"><Minus className="w-4 h-4" /></button>
                             <input
@@ -326,11 +328,11 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                     </div>
 
                     <div className="space-y-4">
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Описание</label>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('common.description')}</label>
                       <MarkdownEditor
                         value={description}
                         onChange={setDescription}
-                        placeholder="Свойства, эффекты, история предмета..."
+                        placeholder={t('itemModal.placeholder.description')}
                         rows={8}
                         minHeight="180px"
                       />
@@ -347,28 +349,28 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                       >
                         <div className="flex items-center gap-2 text-red-400 mb-2">
                           <Sword className="w-4 h-4" />
-                          <h3 className="text-sm font-bold">Параметры оружия</h3>
+                          <h3 className="text-sm font-bold">{t('itemModal.weaponParams')}</h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs text-gray-500 mb-2">Класс оружия</label>
+                            <label className="block text-xs text-gray-500 mb-2">{t('itemModal.weaponClass')}</label>
                             <div className="flex gap-2 p-1 bg-dark-bg rounded-lg border border-dark-border">
                               <button
                                 onClick={() => setWeaponClass('melee')}
                                 className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${weaponClass === 'melee' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'text-gray-500 hover:text-gray-300'}`}
                               >
-                                Мили
+                                {t('itemModal.weaponClass.melee')}
                               </button>
                               <button
                                 onClick={() => setWeaponClass('ranged')}
                                 className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${weaponClass === 'ranged' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'text-gray-500 hover:text-gray-300'}`}
                               >
-                                Огнестрел
+                                {t('itemModal.weaponClass.ranged')}
                               </button>
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-500 mb-2">Урон</label>
+                            <label className="block text-xs text-gray-500 mb-2">{t('common.damage')}</label>
                             <input
                               type="text"
                               value={damage}
@@ -378,23 +380,23 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-500 mb-2">Тип урона</label>
+                            <label className="block text-xs text-gray-500 mb-2">{t('itemModal.damageType')}</label>
                             <input
                               type="text"
                               value={damageType}
                               onChange={(e) => setDamageType(e.target.value)}
-                              placeholder="Рубящий, колющий..."
+                              placeholder={t('itemModal.placeholder.damageType')}
                               className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                             />
                           </div>
                           {weaponClass === 'ranged' && (
                             <div>
-                              <label className="block text-xs text-gray-500 mb-2">Тип боеприпаса</label>
+                              <label className="block text-xs text-gray-500 mb-2">{t('itemModal.ammoType')}</label>
                               <input
                                 type="text"
                                 value={ammunitionType}
                                 onChange={(e) => setAmmunitionType(e.target.value)}
-                                placeholder="Стрелы, пули..."
+                                placeholder={t('itemModal.placeholder.ammoType')}
                                 className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                               />
                             </div>
@@ -412,11 +414,11 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                       >
                         <div className="flex items-center gap-2 text-blue-400 mb-2">
                           <Shield className="w-4 h-4" />
-                          <h3 className="text-sm font-bold">Параметры брони</h3>
+                          <h3 className="text-sm font-bold">{t('itemModal.armorParams')}</h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
-                            <label className="block text-xs text-gray-500 mb-2">Базовый КБ</label>
+                            <label className="block text-xs text-gray-500 mb-2">{t('itemModal.baseAc')}</label>
                             <input
                               type="number"
                               value={baseAC}
@@ -425,23 +427,23 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                             />
                           </div>
                           <div className="col-span-2">
-                            <label className="block text-xs text-gray-500 mb-2">Модификатор ловкости</label>
+                            <label className="block text-xs text-gray-500 mb-2">{t('itemModal.dexModifier')}</label>
                             <div className="flex items-center gap-3 h-10">
                               <button
                                 onClick={() => setDexModifier(!dexModifier)}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-xs font-bold ${dexModifier ? 'bg-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/20' : 'bg-dark-bg text-gray-500 border-dark-border hover:border-gray-500'}`}
                               >
                                 {dexModifier ? <Check className="w-3 h-3" /> : <div className="w-3 h-3" />}
-                                Добавлять ловкость
+                                {t('itemModal.includeDex')}
                               </button>
                               {dexModifier && (
                                 <div className="flex-1 flex items-center gap-2">
-                                  <span className="text-[10px] text-gray-500">Макс:</span>
+                                  <span className="text-[10px] text-gray-500">{t('itemModal.max')}:</span>
                                   <input
                                     type="number"
                                     value={maxDexModifier ?? ''}
                                     onChange={(e) => setMaxDexModifier(e.target.value ? Math.max(0, parseInt(e.target.value) || 0) : null)}
-                                    placeholder="∞"
+                                    placeholder={t('itemModal.infinity')}
                                     className="w-full bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   />
                                 </div>
@@ -453,16 +455,16 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                         <div>
                           <label className="block text-xs text-gray-500 mb-2 flex items-center gap-2">
                             <Info className="w-3 h-3" />
-                            Защита по зонам (опционально)
+                            {t('itemModal.limbArmorOptional')}
                           </label>
                           <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                             {[
-                              { id: 'head', label: 'Голова' },
-                              { id: 'torso', label: 'Торс' },
-                              { id: 'rightArm', label: 'П. рука' },
-                              { id: 'leftArm', label: 'Л. рука' },
-                              { id: 'rightLeg', label: 'П. нога' },
-                              { id: 'leftLeg', label: 'Л. нога' }
+                              { id: 'head', label: t('itemModal.limbs.head') },
+                              { id: 'torso', label: t('itemModal.limbs.torso') },
+                              { id: 'rightArm', label: t('itemModal.limbs.rightArm') },
+                              { id: 'leftArm', label: t('itemModal.limbs.leftArm') },
+                              { id: 'rightLeg', label: t('itemModal.limbs.rightLeg') },
+                              { id: 'leftLeg', label: t('itemModal.limbs.leftLeg') }
                             ].map((limb) => (
                               <div key={limb.id}>
                                 <div className="text-[9px] text-gray-500 text-center mb-1">{limb.label}</div>
@@ -490,14 +492,14 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                   className="px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 transition-all text-sm font-bold flex items-center gap-2"
                 >
                   <X className="w-4 h-4" />
-                  Удалить
+                  {t('common.delete')}
                 </button>
               )}
               <button
                 onClick={onClose}
                 className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-sm font-bold text-gray-400"
               >
-                Отмена
+                {t('common.cancel')}
               </button>
               {step === 'details' && (
                 <button
@@ -505,7 +507,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                   disabled={!name.trim()}
                   className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:shadow-lg hover:shadow-blue-500/40 transition-all text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Сохранить предмет
+                  {t('itemModal.save')}
                 </button>
               )}
             </div>

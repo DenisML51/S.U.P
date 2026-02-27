@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: itd-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: intothedark
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d intothedark"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: itd-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/intothedark?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

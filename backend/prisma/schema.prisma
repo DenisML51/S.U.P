@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String                  @id @default(cuid())
+  name            String
+  email           String                  @unique
+  passwordHash    String
+  emailVerifiedAt DateTime?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  codes           EmailVerificationCode[]
+  refreshTokens   RefreshToken[]
+  characters      Character[]
+  notificationReads UserNotificationRead[]
+}
+
+model PendingRegistration {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  codeHash     String
+  expiresAt    DateTime
+  attempts     Int      @default(0)
+  consumedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([expiresAt, consumedAt])
+}
+
+model EmailVerificationCode {
+  id         String   @id @default(cuid())
+  userId     String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String
+  userAgent  String?
+  ip         String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Character {
+  id               String   @id @default(cuid())
+  userId           String
+  name             String
+  class            String
+  level            Int
+  encryptedPayload String   @db.Text
+  payloadIv        String
+  payloadTag       String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+  @@index([userId, name])
+}
+
+model SystemNotification {
+  id          String   @id @default(cuid())
+  title       String
+  message     String   @db.Text
+  type        String   @default("info")
+  isActive    Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  reads       UserNotificationRead[]
+
+  @@index([isActive, publishedAt])
+}
+
+model UserNotificationRead {
+  id             String   @id @default(cuid())
+  userId         String
+  notificationId String
+  readAt         DateTime @default(now())
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification SystemNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationId])
+  @@index([userId, readAt])
+}

@@ -10,6 +10,7 @@ import {
   Briefcase, 
   BarChart2,
   Menu,
+  Bell,
   Coins,
   Target,
   ChevronLeft,
@@ -31,21 +32,16 @@ import {
 import { getLucideIcon } from '../utils/iconUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SettingsModal } from './SettingsModal';
+import { useAuthStore } from '../store/useAuthStore';
+import { useSystemNotificationsStore } from '../store/useSystemNotificationsStore';
+import { useI18n } from '../i18n/I18nProvider';
 
 import { exportToPDF } from '../utils/pdfExport';
 
-const tabs: { id: TabType; label: string; icon: any }[] = [
-  { id: 'stats', label: 'Статы', icon: BarChart2 },
-  { id: 'personality', label: 'Герой', icon: User },
-  { id: 'health', label: 'Жизнь', icon: Heart },
-  { id: 'abilities', label: 'Умения', icon: Sparkles },
-  { id: 'spells', label: 'Магия', icon: Wand2 },
-  { id: 'attacks', label: 'Атаки', icon: Swords },
-  { id: 'equipment', label: 'Броня', icon: Shield },
-  { id: 'inventory', label: 'Вещи', icon: Briefcase },
-];
-
 export const Navbar: React.FC = () => {
+  const { t } = useI18n();
+  const { user } = useAuthStore();
+  const { notifications, fetchNotifications, markRead, markAllRead } = useSystemNotificationsStore();
   const { 
     character, 
     activeTab, 
@@ -64,6 +60,7 @@ export const Navbar: React.FC = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [isResourcesExpanded, setIsResourcesExpanded] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -80,14 +77,30 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [activeTab, setActiveTab]);
 
+  useEffect(() => {
+    if (!user) return;
+    fetchNotifications();
+  }, [user, fetchNotifications]);
+
   if (!character) return null;
 
   const totalAmmo = character.inventory
     .filter(item => item.type === 'ammunition')
     .reduce((sum, item) => sum + (item.quantity || 0), 0);
 
-  const visibleTabs = isMobile ? tabs : tabs.filter(t => t.id !== 'stats');
+  const tabs: { id: TabType; label: string; icon: any }[] = [
+    { id: 'stats', label: t('tabs.stats'), icon: BarChart2 },
+    { id: 'personality', label: t('tabs.hero'), icon: User },
+    { id: 'health', label: t('tabs.health'), icon: Heart },
+    { id: 'abilities', label: t('tabs.abilities'), icon: Sparkles },
+    { id: 'spells', label: t('tabs.magic'), icon: Wand2 },
+    { id: 'attacks', label: t('tabs.attacks'), icon: Swords },
+    { id: 'equipment', label: t('tabs.armor'), icon: Shield },
+    { id: 'inventory', label: t('tabs.items'), icon: Briefcase }
+  ];
+  const visibleTabs = isMobile ? tabs : tabs.filter((tab) => tab.id !== 'stats');
   const resourcesWithValues = character.resources.filter(r => r.max > 0);
+  const unreadCount = notifications.filter((item) => !item.isRead).length;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 p-8 pointer-events-none">
@@ -97,7 +110,7 @@ export const Navbar: React.FC = () => {
           <button
             onClick={() => setViewMode(viewMode === 'tabs' ? 'hotbar' : 'tabs')}
             className="truncate text-left group border border-transparent hover:border-white/10 rounded-xl px-3 py-1.5 -mx-3 transition-all"
-            title={viewMode === 'tabs' ? 'Переключить в боевой режим' : 'Вернуться к вкладкам'}
+            title={viewMode === 'tabs' ? t('navbar.switchCombat') : t('navbar.switchTabs')}
           >
             <h1 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent truncate group-hover:from-blue-300 group-hover:to-purple-400 transition-all">
               {character.name.split(' ')[0].replace(/[.,!?;:]+$/, '')}
@@ -144,6 +157,90 @@ export const Navbar: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsNotificationsOpen((prev) => !prev);
+                if (!isNotificationsOpen) {
+                  const unreadIds = notifications.filter((item) => !item.isRead).map((item) => item.id);
+                  if (unreadIds.length > 0) {
+                    void markRead(unreadIds);
+                  }
+                }
+              }}
+              className="w-12 h-12 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:bg-dark-card transition-all active:scale-95 shadow-lg relative"
+              title={t('navbar.systemNotifications')}
+            >
+              <Bell className="w-5 h-5 text-gray-300" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500 text-white text-[10px] font-black flex items-center justify-center border border-dark-bg">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {isNotificationsOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[50]"
+                    onClick={() => setIsNotificationsOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                    className="absolute right-0 mt-3 w-[360px] bg-[#1a1a1a] border border-[#333] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden z-[60] backdrop-blur-xl"
+                  >
+                    <div className="px-4 py-3 border-b border-[#333] flex items-center justify-between">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">{t('navbar.notifications')}</div>
+                      <button
+                        onClick={() => {
+                          void markAllRead();
+                        }}
+                        className="text-[10px] text-blue-400 hover:text-blue-300 font-bold"
+                      >
+                        {t('navbar.markAllRead')}
+                      </button>
+                    </div>
+                    <div className="max-h-[420px] overflow-y-auto custom-scrollbar p-2">
+                      {notifications.length > 0 ? (
+                        <div className="space-y-1">
+                          {notifications.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                if (!item.isRead) {
+                                  void markRead([item.id]);
+                                }
+                              }}
+                              className={`w-full text-left p-3 rounded-xl border transition-all ${
+                                item.isRead
+                                  ? 'bg-black/20 border-[#2e2e2e] text-gray-400'
+                                  : 'bg-blue-500/10 border-blue-500/30 text-gray-100'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="font-bold text-sm">{item.title}</div>
+                                {!item.isRead && <span className="w-2 h-2 mt-1 rounded-full bg-blue-400" />}
+                              </div>
+                              <div className="text-xs mt-1.5 leading-snug">{item.message}</div>
+                              <div className="text-[10px] mt-2 text-gray-500">
+                                {new Date(item.publishedAt).toLocaleString()}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-10 text-center text-gray-500 text-sm">{t('navbar.noNotifications')}</div>
+                      )}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
           {viewMode !== 'hotbar' && resourcesWithValues.length > 0 && (
             <div className="hidden xl:flex items-center gap-2">
               {resourcesWithValues.length > 5 && (

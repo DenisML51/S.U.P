@@ -5,11 +5,18 @@ import { CharacterList } from './components/CharacterList';
 import { Navbar } from './components/Navbar';
 import { Toaster } from 'react-hot-toast';
 import { DiceRoller } from './components/DiceRoller';
+import { useAuthStore } from './store/useAuthStore';
 
 const AppContent: React.FC = () => {
+  const { user, isLoading, init } = useAuthStore();
   const { character, isLoaded, loadCharactersList, migrateOldData, updateSettings, settings } = useCharacterStore();
 
   useEffect(() => {
+    init();
+  }, [init]);
+
+  useEffect(() => {
+    if (!user) return;
     const initialize = async () => {
       if (!isLoaded) {
         migrateOldData();
@@ -34,14 +41,18 @@ const AppContent: React.FC = () => {
     }
 
     return () => window.removeEventListener('app-settings-updated', handleSettingsUpdate);
-  }, [isLoaded, loadCharactersList, migrateOldData, updateSettings]);
+  }, [isLoaded, loadCharactersList, migrateOldData, updateSettings, user]);
 
   useEffect(() => {
-    if (isLoaded) {
+    if (isLoaded && user) {
       loadCharactersList();
     }
-  }, [settings.storagePath, isLoaded, loadCharactersList]);
-  
+  }, [settings.storagePath, isLoaded, loadCharactersList, user]);
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-gray-300">Loading...</div>;
+  }
+
   return (
     <div className="relative min-h-screen bg-dark-bg text-white">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">

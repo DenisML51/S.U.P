@@ -3,10 +3,15 @@ import { motion } from 'framer-motion';
 import { useCharacterStore } from '../store/useCharacterStore';
 import { CharacterCard } from './CharacterCard';
 import { CharacterCreation } from './CharacterCreation/index';
-import { Plus, Upload, User, Settings } from 'lucide-react';
+import { Plus, Upload, User, Settings, LogOut } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
+import { useAuthStore } from '../store/useAuthStore';
+import { AuthScreen } from './AuthScreen';
+import { useI18n } from '../i18n/I18nProvider';
 
 export const CharacterList: React.FC = () => {
+  const { t } = useI18n();
+  const { user, logout } = useAuthStore();
   const { charactersList, loadCharacter, deleteCharacter, importFromJSON, goToCharacterList, settings } = useCharacterStore();
   const [showCreation, setShowCreation] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -27,7 +32,7 @@ export const CharacterList: React.FC = () => {
 
   const handleDelete = (e: React.MouseEvent, characterId: string) => {
     e.stopPropagation();
-    if (window.confirm('Вы уверены, что хотите удалить этого персонажа?')) {
+    if (window.confirm(t('character.deleteConfirm'))) {
       deleteCharacter(characterId);
     }
   };
@@ -40,7 +45,7 @@ export const CharacterList: React.FC = () => {
       await importFromJSON(file);
       setShowCreation(false);
     } catch (error) {
-      alert('Ошибка при импорте файла');
+      alert(t('character.importError'));
     }
     
     if (fileInputRef.current) {
@@ -117,7 +122,7 @@ export const CharacterList: React.FC = () => {
                 className="text-blue-400/80 text-sm font-black tracking-[0.5em] uppercase"
                 style={{ fontFamily: "'Orbitron', sans-serif" }}
               >
-                Система Управления Персонажем
+                {t('start.subtitle')}
               </motion.p>
             </motion.div>
           )}
@@ -125,7 +130,8 @@ export const CharacterList: React.FC = () => {
 
         {hasStarted && (
           <div className="w-full max-w-7xl mx-auto flex flex-col items-center">
-            {charactersList.length > 0 ? (
+            {user ? (
+              charactersList.length > 0 ? (
               <motion.div 
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -152,7 +158,7 @@ export const CharacterList: React.FC = () => {
                   </motion.div>
                 ))}
               </motion.div>
-            ) : (
+              ) : (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -162,14 +168,40 @@ export const CharacterList: React.FC = () => {
                 <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10">
                   <User className="w-10 h-10 text-white/20" />
                 </div>
-                <h3 className="text-xl font-bold text-white/40 tracking-widest uppercase">Список пуст</h3>
+                <h3 className="text-xl font-bold text-white/40 tracking-widest uppercase">{t('character.empty')}</h3>
+              </motion.div>
+              )
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="w-full flex justify-center py-12"
+              >
+                <AuthScreen embedded />
               </motion.div>
             )}
           </div>
         )}
       </motion.div>
 
-      {hasStarted && (
+      {hasStarted && user && (
+        <div className="fixed top-8 right-8 z-40 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-sm font-bold text-white">{user.name}</div>
+            <div className="text-xs text-gray-400">{user.email}</div>
+          </div>
+          <button
+            onClick={() => logout()}
+            className="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 transition-colors flex items-center justify-center"
+            title={t('account.logoutTitle')}
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {hasStarted && user && (
         <motion.div
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -184,7 +216,7 @@ export const CharacterList: React.FC = () => {
               className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors group"
             >
               <Plus className="w-6 h-6 mb-1 text-blue-400 group-hover:text-blue-300" />
-              <span className="text-[10px] font-black uppercase tracking-tighter text-blue-400/60 group-hover:text-blue-300">Создать</span>
+              <span className="text-[10px] font-black uppercase tracking-tighter text-blue-400/60 group-hover:text-blue-300">{t('toolbar.create')}</span>
             </motion.button>
 
             <div className="w-[1px] h-10 bg-white/10 mx-1" />
@@ -204,7 +236,7 @@ export const CharacterList: React.FC = () => {
               className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors cursor-pointer group"
             >
               <Upload className="w-6 h-6 mb-1 text-purple-400 group-hover:text-purple-300" />
-              <span className="text-[10px] font-black uppercase tracking-tighter text-purple-400/60 group-hover:text-purple-300">Импорт</span>
+              <span className="text-[10px] font-black uppercase tracking-tighter text-purple-400/60 group-hover:text-purple-300">{t('toolbar.import')}</span>
             </motion.label>
 
             <div className="w-[1px] h-10 bg-white/10 mx-1" />
@@ -216,7 +248,7 @@ export const CharacterList: React.FC = () => {
               className="flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors group"
             >
               <Settings className="w-6 h-6 mb-1 text-gray-400 group-hover:text-white" />
-              <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500 group-hover:text-gray-300">Опции</span>
+              <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500 group-hover:text-gray-300">{t('toolbar.options')}</span>
             </motion.button>
           </div>
         </motion.div>

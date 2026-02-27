@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, X, FolderOpen, Save, Trash2, Bell, Eye, EyeOff, Monitor } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useI18n } from '../i18n/I18nProvider';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface AppSettings {
   storagePath: string | null;
@@ -17,6 +19,7 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useI18n();
   const [settings, setSettings] = useState<AppSettings>({
     storagePath: localStorage.getItem('trpg_storage_path'),
     autoSave: localStorage.getItem('trpg_auto_save') !== 'false',
@@ -162,6 +165,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-dark-bg/50 border border-dark-border rounded-2xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Monitor className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-bold text-gray-300">{t('settings.language')}</span>
+                    </div>
+                    <LanguageSwitcher />
+                  </div>
+
                   <label className="p-4 bg-dark-bg/50 border border-dark-border rounded-2xl flex items-center justify-between cursor-pointer hover:border-purple-500/30 transition-all">
                     <div className="flex items-center gap-3">
                       {settings.compactCards ? <EyeOff className="w-4 h-4 text-purple-400" /> : <Eye className="w-4 h-4 text-purple-400" />}
