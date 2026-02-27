@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getLucideIcon, LUCIDE_PICKER_ICONS, CUSTOM_PICKER_ICONS } from '../utils/iconUtils';
-import { Search, X } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface IconPickerProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   currentIcon,
   onSelect,
 }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'lucide' | 'custom'>(
     CUSTOM_PICKER_ICONS.includes(currentIcon) ? 'custom' : 'lucide'
   );
@@ -63,7 +65,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Поиск иконки..."
+                  placeholder={t('iconPicker.search')}
                   className="w-full bg-dark-bg/50 border border-white/5 rounded-lg pl-8 pr-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                 />
               </div>
@@ -88,7 +90,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
               ))}
               {filteredIcons.length === 0 && (
                 <div className="col-span-4 py-8 text-center text-[10px] text-gray-600 font-bold uppercase tracking-widest">
-                  Ничего не найдено
+                  {t('iconPicker.notFound')}
                 </div>
               )}
             </div>

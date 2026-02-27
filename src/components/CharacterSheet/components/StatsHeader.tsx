@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Heart, Zap, Shield, ArrowUp, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react';
 import { Character, Resistance } from '../../../types';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../../../utils/damageUtils';
+import { useI18n } from '../../../i18n/I18nProvider';
 
 interface StatsHeaderProps {
   character: Character;
@@ -31,6 +32,7 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
   setShowACModal,
   setShowExperienceModal,
 }) => {
+  const { t } = useI18n();
   return (
     <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <motion.button
@@ -42,7 +44,7 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <Heart className={`w-4 h-4 ${isDying ? 'text-red-500 animate-pulse' : 'text-red-400'}`} />
-            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Здоровье</div>
+            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">{t('health.title')}</div>
           </div>
           <div className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${isDying ? 'text-red-400 bg-red-900/50 border-red-500' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>
             {isDying ? 'DYING' : 'HP'}
@@ -72,7 +74,7 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <Zap className={`w-4 h-4 ${isInsane ? 'text-red-500' : 'text-purple-400'}`} />
-            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Рассудок</div>
+            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">{t('sanity.title')}</div>
           </div>
           <div className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${isInsane ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-purple-400 bg-purple-500/10 border-purple-500/20'}`}>
             {isInsane ? 'INSANE' : 'SAN'}
@@ -101,7 +103,7 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-blue-400" />
-            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Защита</div>
+            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">{t('statsHeader.defense')}</div>
           </div>
           <div className="text-[9px] text-blue-400 font-bold uppercase tracking-wider bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
             AC
@@ -145,7 +147,7 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
             </div>
           )}
         </div>
-        <div className="text-[10px] text-gray-500 font-medium">Класс Брони</div>
+        <div className="text-[10px] text-gray-500 font-medium">{t('statsHeader.armorClass')}</div>
       </motion.button>
 
       <motion.button
@@ -157,7 +159,7 @@ export const StatsHeader: React.FC<StatsHeaderProps> = ({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <ArrowUp className="w-4 h-4 text-amber-400" />
-            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Уровень {character.level}</div>
+            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">{t('experience.level')} {character.level}</div>
           </div>
           {canLevelUp && (
             <div className="animate-pulse bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-lg shadow-green-500/50">

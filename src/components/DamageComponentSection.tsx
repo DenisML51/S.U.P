@@ -3,6 +3,7 @@ import { Sword, Trash2, Shield, AlertCircle, ShieldX } from 'lucide-react';
 import { DamageComponent, DAMAGE_TYPES } from '../types';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
 import { CustomSelect } from './CustomSelect';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface DamageComponentSectionProps {
   components: DamageComponent[];
@@ -18,9 +19,11 @@ export const DamageComponentSection: React.FC<DamageComponentSectionProps> = ({
   onAddComponent,
   onUpdateComponent,
   onRemoveComponent,
-  title = "Параметры урона",
+  title,
   color = "red"
 }) => {
+  const { t } = useI18n();
+  const sectionTitle = title ?? t('damageSection.damageTitle');
   const colorClass = {
     red: "text-red-400",
     blue: "text-blue-400",
@@ -36,13 +39,13 @@ export const DamageComponentSection: React.FC<DamageComponentSectionProps> = ({
   }[color as 'red' | 'blue' | 'purple' | 'amber'] || "bg-red-500/5 border-red-500/20";
 
   const damageOptions = [
-    { value: '', label: 'Без типа', icon: <div className="w-4 h-4 rounded-full border border-gray-600" /> },
+    { value: '', label: t('common.noType'), icon: <div className="w-4 h-4 rounded-full border border-gray-600" /> },
     ...DAMAGE_TYPES.map(t => ({
       value: t,
       label: t,
       icon: <div style={{ color: DAMAGE_TYPE_COLORS[t] }}>{getDamageTypeIcon(t, 14)}</div>
     })),
-    { value: 'custom', label: 'Свой тип...', icon: <AlertCircle size={14} className="text-gray-500" /> }
+    { value: 'custom', label: t('spellModal.customType'), icon: <AlertCircle size={14} className="text-gray-500" /> }
   ];
 
   return (
@@ -50,13 +53,13 @@ export const DamageComponentSection: React.FC<DamageComponentSectionProps> = ({
       <div className={`flex items-center justify-between ${colorClass} mb-1`}>
         <div className="flex items-center gap-2">
           <Sword className="w-4 h-4" />
-          <span className="text-xs font-black uppercase tracking-wider">{title}</span>
+          <span className="text-xs font-black uppercase tracking-wider">{sectionTitle}</span>
         </div>
         <button
           onClick={onAddComponent}
           className={`px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black uppercase hover:bg-white/10 transition-all ${colorClass}`}
         >
-          + Добавить тип
+          {t('spellModal.addDamageType')}
         </button>
       </div>
       
@@ -86,14 +89,14 @@ export const DamageComponentSection: React.FC<DamageComponentSectionProps> = ({
                     type="text"
                     value={comp.type}
                     onChange={(e) => onUpdateComponent(idx, 'type', e.target.value)}
-                    placeholder="Введите свой тип..."
+                    placeholder={t('spellModal.enterCustomType')}
                     className="w-full bg-transparent border-none px-1 text-[9px] font-bold text-gray-500 focus:outline-none"
                   />
                 )}
               </div>
             </div>
             
-            {components.length > (title === "Параметры оружия" ? 0 : 1) && (
+            {components.length > (sectionTitle === t('damageSection.weaponTitle') ? 0 : 1) && (
               <button
                 onClick={() => onRemoveComponent(idx)}
                 className="p-2 text-gray-600 hover:text-red-400 transition-colors"
@@ -105,7 +108,7 @@ export const DamageComponentSection: React.FC<DamageComponentSectionProps> = ({
         ))}
         {components.length === 0 && (
           <div className="text-center py-4 text-xs text-gray-500 font-bold uppercase tracking-widest opacity-50">
-            Урон не задан
+            {t('damageSection.empty')}
           </div>
         )}
       </div>

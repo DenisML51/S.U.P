@@ -5,6 +5,8 @@ import { Character, Resource, Ability } from '../../../../types';
 import { getLucideIcon } from '../../../../utils/iconUtils';
 import { MarkdownEditor } from '../../../MarkdownEditor';
 import { DAMAGE_TYPE_COLORS } from '../../../../utils/damageUtils';
+import { useI18n } from '../../../../i18n/I18nProvider';
+import { getDamageTypeLabel } from '../../../../i18n/domainLabels';
 
 interface AbilitiesTabProps {
   character: Character;
@@ -29,25 +31,26 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
   getActionTypeLabel,
   getActionTypeColor,
 }) => {
+  const { t } = useI18n();
   const [showAllResources, setShowAllResources] = useState(false);
   const displayedResources = showAllResources ? character.resources : character.resources?.slice(0, 3) || [];
 
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold">Способности</h3>
+        <h3 className="text-xl font-bold">{t('tabs.abilities')}</h3>
         <div className="flex gap-2">
           <button
             onClick={() => openResourceModal()}
             className="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl hover:shadow-lg transition-all font-semibold text-xs"
           >
-            + Ресурс
+            + {t('abilitiesTab.resource')}
           </button>
           <button
             onClick={() => openAbilityModal()}
             className="px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl hover:shadow-lg transition-all font-semibold text-xs"
           >
-            + Способность
+            + {t('abilitiesTab.ability')}
           </button>
         </div>
       </div>
@@ -56,7 +59,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="h-px flex-1 bg-dark-border"></div>
-            <span className="text-xs text-gray-400 uppercase font-semibold">Ресурсы</span>
+            <span className="text-xs text-gray-400 uppercase font-semibold">{t('navbar.resources')}</span>
             <div className="h-px flex-1 bg-dark-border"></div>
           </div>
           <div className="space-y-3">
@@ -132,7 +135,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                       <button
                         onClick={() => openResourceModal(resource)}
                           className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-200 hover:bg-dark-hover transition-all opacity-0 group-hover:opacity-100 ml-1"
-                        title="Настроить"
+                        title={t('common.configure')}
                       >
                           <Settings className="w-3.5 h-3.5" />
                       </button>
@@ -150,7 +153,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
               >
                 <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showAllResources ? 'rotate-180' : ''}`} />
                 <span className="text-xs font-bold uppercase tracking-widest">
-                  {showAllResources ? 'Скрыть лишние' : `Показать все ресурсы (${character.resources.length})`}
+                  {showAllResources ? t('abilitiesTab.hideExtra') : `${t('abilitiesTab.showAllResources')} (${character.resources.length})`}
                 </span>
               </button>
             )}
@@ -162,7 +165,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="h-px flex-1 bg-dark-border"></div>
-            <span className="text-xs text-gray-400 uppercase font-semibold">Способности</span>
+            <span className="text-xs text-gray-400 uppercase font-semibold">{t('tabs.abilities')}</span>
             <div className="h-px flex-1 bg-dark-border"></div>
           </div>
           <div className="space-y-3">
@@ -218,7 +221,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                                     style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }}
                                   >
                                     <span>{comp.damage}</span>
-                                    {comp.type && <span className="opacity-60 uppercase text-[8px] tracking-tighter">{comp.type}</span>}
+                                    {comp.type && <span className="opacity-60 uppercase text-[8px] tracking-tighter">{getDamageTypeLabel(comp.type, t)}</span>}
                                   </div>
                                   {i < ability.damageComponents!.length - 1 && <span className="text-gray-600">+</span>}
                                 </React.Fragment>
@@ -230,7 +233,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                               style={{ color: DAMAGE_TYPE_COLORS[ability.damageType || ''] || '#ef4444' }}
                             >
                               <span>{ability.damage}</span>
-                              {ability.damageType && <span className="opacity-60 uppercase text-[8px] tracking-tighter">{ability.damageType}</span>}
+                              {ability.damageType && <span className="opacity-60 uppercase text-[8px] tracking-tighter">{getDamageTypeLabel(ability.damageType, t)}</span>}
                             </div>
                           )}
                           {usedResource && ability.resourceCost && (
@@ -253,7 +256,7 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
                     <button
                       onClick={(e) => { e.stopPropagation(); openAbilityModal(ability); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-200 hover:bg-dark-hover transition-all opacity-0 group-hover:opacity-100"
-                      title="Настроить"
+                      title={t('common.configure')}
                     >
                       <Settings className="w-4 h-4" />
                     </button>
@@ -267,17 +270,17 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
 
       {!character.resources?.length && !character.abilities?.length && (
         <div className="text-gray-400 text-center py-12">
-          <p className="mb-4">Нет ресурсов и способностей</p>
-          <p className="text-sm">Добавьте ресурсы и способности</p>
+          <p className="mb-4">{t('abilitiesTab.empty')}</p>
+          <p className="text-sm">{t('abilitiesTab.emptyHint')}</p>
         </div>
       )}
 
       <div className="mt-6">
-        <div className="text-xs text-gray-400 mb-2 uppercase">Заметки</div>
+        <div className="text-xs text-gray-400 mb-2 uppercase">{t('abilitiesTab.notes')}</div>
         <MarkdownEditor
           value={character.abilitiesNotes || ''}
           onChange={updateAbilitiesNotes}
-          placeholder="Дополнительные заметки о способностях..."
+          placeholder={t('abilitiesTab.notesPlaceholder')}
           minHeight="60px"
         />
       </div>

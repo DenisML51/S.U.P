@@ -7,6 +7,8 @@ import { IconPicker } from './IconPicker';
 import { getLucideIcon } from '../utils/iconUtils';
 import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
 import { Wand2, Clock, MapPin, Sparkles, X, Minus, Plus, Shield, Target, Search, Sword, Trash2 } from 'lucide-react';
+import { useI18n } from '../i18n/I18nProvider';
+import { getDamageTypeLabel } from '../i18n/domainLabels';
 
 interface SpellModalProps {
   isOpen: boolean;
@@ -27,14 +29,15 @@ export const SpellModal: React.FC<SpellModalProps> = ({
   onDelete,
   knownSchools = [],
 }) => {
+  const { t } = useI18n();
   const [name, setName] = useState(spell?.name || '');
   const [level, setLevel] = useState(spell?.level || 0);
   const [school, setSchool] = useState(spell?.school || '');
   const [actionType, setActionType] = useState(spell?.actionType || 'action');
-  const [castingTime, setCastingTime] = useState(spell?.castingTime || '1 действие');
-  const [range, setRange] = useState(spell?.range || '60 футов');
-  const [components, setComponents] = useState(spell?.components || 'В, С');
-  const [duration, setDuration] = useState(spell?.duration || 'Мгновенная');
+  const [castingTime, setCastingTime] = useState(spell?.castingTime || t('spellModal.default.castingTime'));
+  const [range, setRange] = useState(spell?.range || t('spellModal.default.range'));
+  const [components, setComponents] = useState(spell?.components || t('spellModal.default.components'));
+  const [duration, setDuration] = useState(spell?.duration || t('spellModal.default.duration'));
   
   const initialComponents = spell?.damageComponents?.length 
     ? spell.damageComponents 
@@ -60,10 +63,10 @@ export const SpellModal: React.FC<SpellModalProps> = ({
       setLevel(spell?.level || 0);
       setSchool(spell?.school || '');
       setActionType(spell?.actionType || 'action');
-      setCastingTime(spell?.castingTime || '1 действие');
-      setRange(spell?.range || '60 футов');
-      setComponents(spell?.components || 'В, С');
-      setDuration(spell?.duration || 'Мгновенная');
+      setCastingTime(spell?.castingTime || t('spellModal.default.castingTime'));
+      setRange(spell?.range || t('spellModal.default.range'));
+      setComponents(spell?.components || t('spellModal.default.components'));
+      setDuration(spell?.duration || t('spellModal.default.duration'));
       
       const comps = spell?.damageComponents?.length 
         ? spell.damageComponents 
@@ -123,14 +126,14 @@ export const SpellModal: React.FC<SpellModalProps> = ({
   };
 
   const actionTypes = [
-    { id: 'action', label: 'Основное', activeClass: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' },
-    { id: 'bonus', label: 'Бонусное', activeClass: 'bg-green-500 text-white shadow-lg shadow-green-500/20' },
-    { id: 'reaction', label: 'Реакция', activeClass: 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' },
+    { id: 'action', label: t('spellModal.actionType.action'), activeClass: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' },
+    { id: 'bonus', label: t('spellModal.actionType.bonus'), activeClass: 'bg-green-500 text-white shadow-lg shadow-green-500/20' },
+    { id: 'reaction', label: t('spellModal.actionType.reaction'), activeClass: 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' },
   ];
 
   const spellLevels = [
-    { value: '0', label: 'Заговор' },
-    ...Array.from({ length: 9 }, (_, i) => ({ value: (i + 1).toString(), label: `${i + 1} круг` }))
+    { value: '0', label: t('spellView.cantrip') },
+    ...Array.from({ length: 9 }, (_, i) => ({ value: (i + 1).toString(), label: `${i + 1} ${t('spellView.circle')}` }))
   ];
 
   const schools = [
@@ -188,8 +191,8 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                   </div>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{spell ? 'Редактировать заклинание' : 'Новое заклинание'}</h2>
-                  <p className="text-xs text-gray-400">Мистические силы вашего персонажа</p>
+                  <h2 className="text-xl font-bold">{spell ? t('spellModal.editTitle') : t('spellModal.newTitle')}</h2>
+                  <p className="text-xs text-gray-400">{t('spellModal.subtitle')}</p>
                 </div>
               </div>
               <button 
@@ -203,18 +206,18 @@ export const SpellModal: React.FC<SpellModalProps> = ({
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Название</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('common.name')}</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Огненный шар, Лечение ран..."
+                    placeholder={t('spellModal.namePlaceholder')}
                     className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
                 <div>
                   <CustomSelect
-                    label="Круг"
+                    label={t('spellModal.circle')}
                     value={level.toString()}
                     onChange={(v) => setLevel(parseInt(v))}
                     options={spellLevels}
@@ -224,16 +227,16 @@ export const SpellModal: React.FC<SpellModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <CustomSelect
-                  label="Школа магии"
+                  label={t('spellModal.school')}
                   value={school}
                   onChange={setSchool}
                   options={schools}
-                  placeholder="Выберите школу..."
+                  placeholder={t('spellModal.selectSchool')}
                 />
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Clock className="w-3 h-3" />
-                    Тип действия
+                    {t('spellModal.actionType.label')}
                   </label>
                   <div className="grid grid-cols-3 gap-2 p-1 bg-dark-bg rounded-xl border border-dark-border">
                     {actionTypes.map((t) => (
@@ -257,16 +260,16 @@ export const SpellModal: React.FC<SpellModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <CustomSelect
-                    label="Использовать ячейки"
+                    label={t('spellModal.useSlots')}
                     value={resourceId}
                     onChange={setResourceId}
                     options={[
-                      { value: '', label: 'Не требует ячеек' },
+                      { value: '', label: t('spellModal.noSlots') },
                       ...resources
                         .filter(r => r.spellSlotLevel !== undefined)
                         .map(r => ({ value: r.id, label: r.name }))
                     ]}
-                    placeholder="Выберите ячейки..."
+                    placeholder={t('spellModal.selectSlots')}
                   />
                 </div>
                 <div className="flex items-end pb-1">
@@ -280,7 +283,7 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                     }`}
                   >
                     <Sparkles size={14} className={prepared ? 'animate-pulse' : ''} />
-                    {prepared ? 'Подготовлено' : 'Не подготовлено'}
+                    {prepared ? t('spellView.prepared') : t('spellModal.notPrepared')}
                   </button>
                 </div>
               </div>
@@ -289,13 +292,13 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                 <div className="flex items-center justify-between text-red-400 mb-1">
                   <div className="flex items-center gap-2">
                     <Sword className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase">Параметры урона</span>
+                    <span className="text-xs font-bold uppercase">{t('spellModal.damageSettings')}</span>
                   </div>
                   <button
                     onClick={addDamageComponent}
                     className="px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] font-black uppercase hover:bg-red-500/20 transition-all"
                   >
-                    + Добавить тип
+                    {t('spellModal.addDamageType')}
                   </button>
                 </div>
                 
@@ -317,18 +320,18 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                             value={DAMAGE_TYPES.includes(comp.type) ? comp.type : (comp.type ? 'custom' : '')}
                             onChange={(v) => updateDamageComponent(idx, 'type', v === 'custom' ? '' : v)}
                             options={[
-                              { value: '', label: 'Без типа' },
-                              ...DAMAGE_TYPES.map(t => ({ value: t, label: t })),
-                              { value: 'custom', label: 'Свой тип...' }
+                              { value: '', label: t('common.noType') },
+                              ...DAMAGE_TYPES.map((dt) => ({ value: dt, label: getDamageTypeLabel(dt, t) })),
+                              { value: 'custom', label: t('spellModal.customType') }
                             ]}
-                            placeholder="Выберите тип..."
+                            placeholder={t('spellModal.selectType')}
                           />
                           {(comp.type === '' || !DAMAGE_TYPES.includes(comp.type)) && (
                             <input
                               type="text"
                               value={comp.type}
                               onChange={(e) => updateDamageComponent(idx, 'type', e.target.value)}
-                              placeholder="Введите свой тип..."
+                              placeholder={t('spellModal.enterCustomType')}
                               className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-[10px] text-center text-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
                             />
                           )}
@@ -347,7 +350,7 @@ export const SpellModal: React.FC<SpellModalProps> = ({
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Время накл.</label>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">{t('spellModal.castTimeShort')}</label>
                   <input
                     type="text"
                     value={castingTime}
@@ -356,7 +359,7 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Дистанция</label>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">{t('spellView.range')}</label>
                   <input
                     type="text"
                     value={range}
@@ -365,7 +368,7 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Компоненты</label>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">{t('spellView.components')}</label>
                   <input
                     type="text"
                     value={components}
@@ -374,7 +377,7 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Длительность</label>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">{t('spellView.duration')}</label>
                   <input
                     type="text"
                     value={duration}
@@ -385,22 +388,22 @@ export const SpellModal: React.FC<SpellModalProps> = ({
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Описание</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('common.description')}</label>
                   <MarkdownEditor
                     value={description}
                     onChange={setDescription}
-                    placeholder="Краткое описание для списка..."
+                    placeholder={t('spellModal.descriptionPlaceholder')}
                     rows={2}
                     minHeight="60px"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Полный эффект</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('spellModal.fullEffect')}</label>
                   <MarkdownEditor
                     value={effect}
                     onChange={setEffect}
-                    placeholder="Подробные правила заклинания..."
+                    placeholder={t('spellModal.effectPlaceholder')}
                     rows={4}
                     minHeight="120px"
                   />
@@ -415,21 +418,21 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                   className="px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 transition-all text-sm font-bold flex items-center gap-2"
                 >
                   <X className="w-4 h-4" />
-                  Удалить
+                  {t('common.delete')}
                 </button>
               )}
               <button
                 onClick={onClose}
                 className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-sm font-bold text-gray-400"
               >
-                Отмена
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 disabled={!name.trim()}
                 className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl hover:shadow-lg hover:shadow-blue-500/40 transition-all text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Сохранить заклинание
+                {t('spellModal.save')}
               </button>
             </div>
           </motion.div>

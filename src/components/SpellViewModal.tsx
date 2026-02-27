@@ -5,6 +5,7 @@ import { MarkdownText } from './MarkdownText';
 import { getLucideIcon } from '../utils/iconUtils';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
 import { Wand2, Clock, MapPin, Sparkles, X, Edit2, Zap, Target, Sword } from 'lucide-react';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface SpellViewModalProps {
   isOpen: boolean;
@@ -21,9 +22,10 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
   resource,
   onEdit,
 }) => {
+  const { t } = useI18n();
   const getLevelLabel = (level: number) => {
-    if (level === 0) return 'Заговор';
-    return `${level} круг`;
+    if (level === 0) return t('spellView.cantrip');
+    return `${level} ${t('spellView.circle')}`;
   };
 
   return (
@@ -71,7 +73,7 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
                             backgroundColor: `${spell.color || '#3b82f6'}20`,
                             color: spell.color || '#3b82f6'
                           }}
-                          title="Подготовлено"
+                          title={t('spellView.prepared')}
                         >
                           <Sparkles size={12} className="animate-pulse" />
                         </div>
@@ -96,28 +98,28 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
                   <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase mb-1">
                     <Clock size={12} className="text-blue-400" />
-                    Накладывание
+                    {t('spellView.castingTime')}
                   </div>
                   <div className="text-sm text-gray-200 font-semibold">{spell.castingTime}</div>
                 </div>
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
                   <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase mb-1">
                     <Target size={12} className="text-blue-400" />
-                    Дистанция
+                    {t('spellView.range')}
                   </div>
                   <div className="text-sm text-gray-200 font-semibold">{spell.range}</div>
                 </div>
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
                   <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase mb-1">
                     <MapPin size={12} className="text-blue-400" />
-                    Компоненты
+                    {t('spellView.components')}
                   </div>
                   <div className="text-sm text-gray-200 font-semibold">{spell.components}</div>
                 </div>
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
                   <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase mb-1">
                     <Clock size={12} className="text-blue-400" />
-                    Длительность
+                    {t('spellView.duration')}
                   </div>
                   <div className="text-sm text-gray-200 font-semibold">{spell.duration}</div>
                 </div>
@@ -140,7 +142,7 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
                         className="text-[10px] font-bold uppercase tracking-widest"
                         style={{ color: resource.color || '#3b82f6' }}
                       >
-                        Использует ресурс
+                        {t('spellView.usesResource')}
                       </div>
                       <div className="text-sm font-bold text-white">{resource.name}</div>
                     </div>
@@ -173,9 +175,9 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
                           className="text-[10px] font-bold uppercase tracking-widest"
                           style={{ color: DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444' }}
                         >
-                          Урон
+                          {t('common.damage')}
                         </div>
-                        <div className="text-sm font-bold text-white">{comp.type || 'Без типа'}</div>
+                        <div className="text-sm font-bold text-white">{comp.type || t('common.noType')}</div>
                       </div>
                     </div>
                     <div 
@@ -203,9 +205,9 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
                         className="text-[10px] font-bold uppercase tracking-widest"
                         style={{ color: DAMAGE_TYPE_COLORS[spell.damageType || ''] || '#ef4444' }}
                       >
-                        Урон
+                        {t('common.damage')}
                       </div>
-                      <div className="text-sm font-bold text-white">{spell.damageType || 'Без типа'}</div>
+                      <div className="text-sm font-bold text-white">{spell.damageType || t('common.noType')}</div>
                     </div>
                   </div>
                   <div 
@@ -219,7 +221,7 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
 
               {spell.description && (
                 <div>
-                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Описание</div>
+                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">{t('common.description')}</div>
                   <div className="text-sm text-gray-300 leading-relaxed italic max-h-48 overflow-y-auto custom-scrollbar pr-2">
                     <MarkdownText content={spell.description} />
                   </div>
@@ -227,7 +229,7 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
               )}
 
               <div>
-                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Эффект</div>
+                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">{t('spellView.effect')}</div>
                 <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-3xl text-sm text-gray-200 leading-relaxed shadow-inner max-h-48 overflow-y-auto custom-scrollbar">
                   <MarkdownText content={spell.effect} />
                 </div>
@@ -240,7 +242,7 @@ export const SpellViewModal: React.FC<SpellViewModalProps> = ({
                 className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all text-sm font-bold text-white flex items-center justify-center gap-2"
               >
                 <Edit2 size={16} />
-                Редактировать
+                {t('common.edit')}
               </button>
             </div>
           </motion.div>

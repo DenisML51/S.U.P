@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trait } from '../types';
 import { X, Sparkles, Plus } from 'lucide-react';
 import { MarkdownEditor } from './MarkdownEditor';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface TraitModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export const TraitModal: React.FC<TraitModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
@@ -68,8 +70,8 @@ export const TraitModal: React.FC<TraitModalProps> = ({
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{trait ? 'Редактировать черту' : 'Новая черта'}</h2>
-                  <p className="text-xs text-gray-400">Особенности и черты характера</p>
+                  <h2 className="text-xl font-bold">{trait ? t('traitModal.editTitle') : t('traitModal.newTitle')}</h2>
+                  <p className="text-xs text-gray-400">{t('traitModal.subtitle')}</p>
                 </div>
               </div>
               <button 
@@ -82,12 +84,12 @@ export const TraitModal: React.FC<TraitModalProps> = ({
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Название черты</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('traitModal.nameLabel')}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Название черты..."
+                  placeholder={t('traitModal.namePlaceholder')}
                   className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                   onKeyPress={(e) => e.key === 'Enter' && handleSave()}
                 />
@@ -96,12 +98,12 @@ export const TraitModal: React.FC<TraitModalProps> = ({
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <Plus className="w-3 h-3 text-purple-400" />
-                  Описание и эффекты
+                  {t('traitModal.descriptionLabel')}
                 </label>
                 <MarkdownEditor
                   value={description}
                   onChange={setDescription}
-                  placeholder="Подробное описание черты..."
+                  placeholder={t('traitModal.descriptionPlaceholder')}
                   rows={8}
                   minHeight="200px"
                 />
@@ -115,21 +117,21 @@ export const TraitModal: React.FC<TraitModalProps> = ({
                   className="px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 transition-all text-sm font-bold flex items-center gap-2"
                 >
                   <X className="w-4 h-4" />
-                  Удалить
+                  {t('common.delete')}
                 </button>
               )}
               <button
                 onClick={onClose}
                 className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-sm font-bold text-gray-400"
               >
-                Отмена
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 disabled={!name.trim()}
                 className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl hover:shadow-lg hover:shadow-purple-500/40 transition-all text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Сохранить черту
+                {t('traitModal.save')}
               </button>
             </div>
           </motion.div>

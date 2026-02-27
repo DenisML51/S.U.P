@@ -5,6 +5,7 @@ import { Sparkles, Zap, Sword } from 'lucide-react';
 import { getLucideIcon } from '../utils/iconUtils';
 import { MarkdownText } from './MarkdownText';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface AbilityViewModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
   resource,
   onEdit,
 }) => {
+  const { t } = useI18n();
   return (
     <AnimatePresence>
       {isOpen && (
@@ -66,7 +68,7 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
 
             {ability.description && (
               <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
-                <div className="text-sm text-gray-400 mb-2">Описание</div>
+                <div className="text-sm text-gray-400 mb-2">{t('common.description')}</div>
                 <div className="max-h-32 overflow-y-auto custom-scrollbar pr-2">
                   <MarkdownText content={ability.description} />
                 </div>
@@ -75,14 +77,14 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
 
             <div className="grid gap-3 mb-6">
               <div className="p-3 bg-dark-bg rounded-lg flex items-center justify-between">
-                <span className="text-sm text-gray-400">Тип действия</span>
+                <span className="text-sm text-gray-400">{t('spellModal.actionType.label')}</span>
                 <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
                   ability.actionType === 'action' ? 'bg-blue-500/20 text-blue-400' :
                   ability.actionType === 'bonus' ? 'bg-green-500/20 text-green-400' :
                   'bg-orange-500/20 text-orange-400'
                 }`}>
-                  {ability.actionType === 'action' ? 'Основное' :
-                   ability.actionType === 'bonus' ? 'Бонусное' : 'Реакция'}
+                  {ability.actionType === 'action' ? t('spellModal.actionType.action') :
+                   ability.actionType === 'bonus' ? t('spellModal.actionType.bonus') : t('spellModal.actionType.reaction')}
                 </span>
               </div>
 
@@ -104,7 +106,7 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
                       </div>
                     )}
                     <div className="flex-1">
-                      <div className="text-sm text-gray-400">Тратит ресурс</div>
+                      <div className="text-sm text-gray-400">{t('abilityModal.consumesResource')}</div>
                       <div 
                         className="font-semibold"
                         style={{ color: resource.color || '#a855f7' }}
@@ -133,7 +135,7 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
                         </div>
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm text-gray-400">Урон</div>
+                        <div className="text-sm text-gray-400">{t('common.damage')}</div>
                         <div 
                           className="text-lg font-black"
                           style={{ color: DAMAGE_TYPE_COLORS[comp.type || ''] || '#ef4444' }}
@@ -159,7 +161,7 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
                       </div>
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm text-gray-400">Урон</div>
+                      <div className="text-sm text-gray-400">{t('common.damage')}</div>
                       <div 
                         className="text-lg font-black"
                         style={{ color: DAMAGE_TYPE_COLORS[ability.damageType || ''] || '#ef4444' }}
@@ -176,7 +178,7 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
               <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Zap className="w-4 h-4 text-blue-400" />
-                  <div className="text-sm font-semibold text-blue-400">Эффект</div>
+                  <div className="text-sm font-semibold text-blue-400">{t('spellView.effect')}</div>
                 </div>
                 <div className="max-h-48 overflow-y-auto custom-scrollbar pr-2">
                   <MarkdownText content={ability.effect} />
@@ -189,13 +191,13 @@ export const AbilityViewModal: React.FC<AbilityViewModalProps> = ({
                 onClick={onClose}
                 className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all font-semibold"
               >
-                Закрыть
+                {t('common.close')}
               </button>
               <button
                 onClick={onEdit}
                 className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:shadow-lg transition-all font-semibold"
               >
-                Редактировать
+                {t('common.edit')}
               </button>
             </div>
           </motion.div>

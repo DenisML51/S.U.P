@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Limb, Resistance, ResistanceLevel, DAMAGE_TYPES } from '../types';
 import { Trash2, Plus, ShieldCheck, ShieldAlert, ShieldX, Shield, Zap } from 'lucide-react';
 import { CustomSelect } from './CustomSelect';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface ArmorClassModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
   maxHP = 10,
   constitution = 10,
 }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'ac' | 'resistances'>('ac');
   const [baseAC, setBaseAC] = useState(armorClass);
   const [limbACs, setLimbACs] = useState<{[key: string]: number}>(
@@ -97,10 +99,10 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
 
   const getLevelLabel = (level: ResistanceLevel) => {
     switch (level) {
-      case 'resistance': return 'Сопротивление';
-      case 'vulnerability': return 'Уязвимость';
-      case 'immunity': return 'Иммунитет';
-      default: return 'Нет';
+      case 'resistance': return t('armorClass.level.resistance');
+      case 'vulnerability': return t('armorClass.level.vulnerability');
+      case 'immunity': return t('armorClass.level.immunity');
+      default: return t('itemView.no');
     }
   };
 
@@ -124,7 +126,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
             className="bg-dark-card rounded-2xl border border-dark-border p-5 w-full max-w-md my-8 shadow-2xl"
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Настройка защиты</h2>
+              <h2 className="text-xl font-bold">{t('armorClass.title')}</h2>
               <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-dark-hover transition-all flex items-center justify-center border border-transparent hover:border-white/10">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -142,7 +144,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                 }`}
               >
                 <Shield className="w-3.5 h-3.5" />
-                Броня и конечности
+                {t('armorClass.tabs.armorLimbs')}
               </button>
               <button
                 onClick={() => setActiveTab('resistances')}
@@ -153,7 +155,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                 }`}
               >
                 <Zap className="w-3.5 h-3.5" />
-                Сопротивления
+                {t('armorClass.tabs.resistances')}
               </button>
             </div>
 
@@ -161,16 +163,16 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
               {activeTab === 'ac' ? (
                 <div className="space-y-6">
                   <section>
-                    <div className="text-xs text-gray-400 mb-3 uppercase font-bold tracking-wider px-1">Базовый КБ</div>
+                    <div className="text-xs text-gray-400 mb-3 uppercase font-bold tracking-wider px-1">{t('armorClass.baseAc')}</div>
                     <div className="bg-dark-bg rounded-xl p-4 border-2 border-blue-500/50 shadow-lg shadow-blue-500/10">
                       <div className="flex justify-between items-center mb-2">
-                        <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Общий КБ</div>
+                        <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{t('armorClass.totalAc')}</div>
                         {autoAC !== undefined && (
                           <button 
                             onClick={() => setBaseAC(autoAC)}
                             className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors uppercase font-bold"
                           >
-                            Авто ({autoAC})
+                            {t('armorClass.auto')} ({autoAC})
                           </button>
                         )}
                       </div>
@@ -194,13 +196,13 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
 
                   <section>
                     <div className="flex justify-between items-center mb-3 px-1">
-                      <div className="text-xs text-gray-400 uppercase font-bold tracking-wider">КБ и ЗК конечностей</div>
+                      <div className="text-xs text-gray-400 uppercase font-bold tracking-wider">{t('armorClass.limbsAcHp')}</div>
                       <button
                         onClick={applySuggestedMaxHP}
                         className="text-[10px] text-purple-400 hover:text-purple-300 transition-colors uppercase font-bold flex items-center gap-1"
                         title={`Расчитать по формуле: ceil(${maxHP}/2) + mod(${constitution}) = ${calculateSuggestedMaxHP()}`}
                       >
-                        Рассчитать ЗК ({calculateSuggestedMaxHP()})
+                        {t('armorClass.calcHp')} ({calculateSuggestedMaxHP()})
                       </button>
                     </div>
 
@@ -208,7 +210,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                       onClick={() => setAllLimbsAC(baseAC)}
                       className="w-full py-2 mb-4 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-all text-[10px] font-black uppercase tracking-wider"
                     >
-                      Применить КБ ко всем
+                      {t('armorClass.applyAll')}
                     </button>
 
                     <div className="space-y-3">
@@ -219,7 +221,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                              <div className="text-[9px] text-gray-500 uppercase font-black">КБ</div>
+                              <div className="text-[9px] text-gray-500 uppercase font-black">{t('limb.ac')}</div>
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => setLimbACs({ ...limbACs, [limb.id]: Math.max(0, (limbACs[limb.id] || limb.ac) - 1) })}
@@ -242,7 +244,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                               </div>
                             </div>
                             <div className="space-y-1">
-                              <div className="text-[9px] text-gray-500 uppercase font-black">Макс. ЗК</div>
+                              <div className="text-[9px] text-gray-500 uppercase font-black">{t('armorClass.maxLimbHp')}</div>
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => setLimbMaxHPs({ ...limbMaxHPs, [limb.id]: Math.max(1, (limbMaxHPs[limb.id] || limb.maxHP) - 1) })}
@@ -274,12 +276,12 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                 <div className="space-y-6">
                   <section>
                     <div className="flex justify-between items-center mb-4 px-1">
-                      <div className="text-xs text-gray-400 uppercase font-bold tracking-wider">Сопротивления и Уязвимости</div>
+                      <div className="text-xs text-gray-400 uppercase font-bold tracking-wider">{t('armorClass.resistancesAndVuln')}</div>
                       <button
                         onClick={addResistance}
                         className="flex items-center gap-1 text-[10px] font-black uppercase bg-purple-500/20 text-purple-400 px-2 py-1.5 rounded-lg border border-purple-500/30 hover:bg-purple-500/30 transition-all shadow-lg shadow-purple-500/5"
                       >
-                        <Plus className="w-3.5 h-3.5" /> Добавить
+                        <Plus className="w-3.5 h-3.5" /> {t('common.add')}
                       </button>
                     </div>
 
@@ -287,7 +289,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                       {localResistances.length === 0 ? (
                         <div className="text-center py-12 bg-dark-bg/20 border-2 border-dashed border-dark-border rounded-2xl text-gray-500 text-sm flex flex-col items-center gap-3">
                           <Zap className="w-8 h-8 opacity-20" />
-                          <span>Нет настроенных сопротивлений</span>
+                          <span>{t('armorClass.noResistances')}</span>
                         </div>
                       ) : (
                         localResistances.map((res) => (
@@ -338,13 +340,13 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                 onClick={onClose}
                 className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-sm font-bold text-gray-400"
               >
-                Отмена
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:shadow-xl hover:shadow-blue-500/20 transition-all text-sm font-black text-white uppercase tracking-wider"
               >
-                Сохранить
+                {t('common.save')}
               </button>
             </div>
           </motion.div>

@@ -3,6 +3,7 @@ import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from 'react-im
 import 'react-image-crop/dist/ReactCrop.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Check, Image as ImageIcon } from 'lucide-react';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface AvatarUploadProps {
   currentAvatar?: string;
@@ -30,6 +31,7 @@ function centerAspectCrop(
 }
 
 export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAvatarChange }) => {
+  const { t } = useI18n();
   const [imgSrc, setImgSrc] = useState('');
   const imgRef = useRef<HTMLImageElement>(null);
   const [crop, setCrop] = useState<Crop>();
@@ -66,14 +68,14 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
     <div className="relative group/avatar-container">
       <div className="w-24 h-24 rounded-2xl bg-dark-bg border border-dark-border flex items-center justify-center shadow-inner overflow-hidden relative">
         {currentAvatar ? (
-          <img src={currentAvatar} alt="Avatar" className="w-full h-full object-cover group-hover/avatar-container:scale-110 transition-transform" />
+          <img src={currentAvatar} alt={t('avatar.alt')} className="w-full h-full object-cover group-hover/avatar-container:scale-110 transition-transform" />
         ) : (
           <ImageIcon className="w-12 h-12 text-blue-400 opacity-50 group-hover/avatar-container:scale-110 transition-transform" />
         )}
         
         <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar-container:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer z-10">
           <Upload className="w-6 h-6 text-white mb-1" />
-          <span className="text-[8px] font-black uppercase tracking-widest text-white">Изменить</span>
+          <span className="text-[8px] font-black uppercase tracking-widest text-white">{t('avatar.change')}</span>
           <input type="file" accept="image/*" className="hidden" onChange={onSelectFile} />
         </label>
       </div>
@@ -95,7 +97,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
               className="bg-dark-card border border-dark-border rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col"
             >
               <div className="p-6 border-b border-dark-border flex justify-between items-center bg-dark-card/50">
-                <h3 className="text-lg font-bold text-white">Редактор фото</h3>
+                <h3 className="text-lg font-bold text-white">{t('avatar.editor')}</h3>
                 <button onClick={() => setShowCropper(false)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
                   <X className="w-5 h-5 text-gray-400" />
                 </button>
@@ -112,7 +114,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
                   >
                     <img
                       ref={imgRef}
-                      alt="Crop me"
+                      alt={t('avatar.cropAlt')}
                       src={imgSrc}
                       style={{ maxHeight: '50vh' }}
                       onLoad={onImageLoad}
@@ -123,7 +125,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
 
               <div className="p-6 space-y-4">
                 <p className="text-[10px] text-center text-gray-500 uppercase font-bold tracking-widest leading-relaxed">
-                  Тяните за углы рамки для изменения размера • Перемещайте рамку мышкой
+                  {t('avatar.hint')}
                 </p>
 
                 <div className="flex gap-3">
@@ -131,14 +133,14 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
                     onClick={() => setShowCropper(false)}
                     className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl font-bold text-gray-400 hover:text-white transition-all text-sm"
                   >
-                    Отмена
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={createCroppedImage}
                     className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:shadow-lg hover:shadow-blue-500/20 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-sm"
                   >
                     <Check className="w-4 h-4" />
-                    Применить
+                    {t('common.apply')}
                   </button>
                 </div>
               </div>

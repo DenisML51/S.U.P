@@ -5,6 +5,8 @@ import { Character, Attack } from '../../../../types';
 import { MarkdownEditor } from '../../../MarkdownEditor';
 import { getLucideIcon } from '../../../../utils/iconUtils';
 import { DAMAGE_TYPE_COLORS } from '../../../../utils/damageUtils';
+import { useI18n } from '../../../../i18n/I18nProvider';
+import { getDamageTypeLabel } from '../../../../i18n/domainLabels';
 
 interface AttacksTabProps {
   character: Character;
@@ -23,15 +25,16 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
   getActionTypeLabel,
   getActionTypeColor,
 }) => {
+  const { t } = useI18n();
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold">Атаки</h3>
+        <h3 className="text-xl font-bold">{t('tabs.attacks')}</h3>
         <button
           onClick={() => openAttackModal()}
           className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:shadow-lg hover:shadow-blue-500/50 transition-all font-semibold text-sm"
         >
-          + Добавить атаку
+          + {t('attacksTab.addAttack')}
         </button>
       </div>
 
@@ -41,7 +44,7 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
             <>
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-px flex-1 bg-dark-border"></div>
-                <span className="text-xs text-gray-400 uppercase font-semibold">Атаки от оружия</span>
+                <span className="text-xs text-gray-400 uppercase font-semibold">{t('attacksTab.weaponAttacks')}</span>
                 <div className="h-px flex-1 bg-dark-border"></div>
               </div>
               <div className="space-y-3 mb-6">
@@ -77,7 +80,7 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                         
                         <div className="flex flex-wrap items-center gap-3 text-xs">
                           <span className="text-gray-300">
-                            <span className="text-gray-500">Бонус:</span> <span className="font-bold text-blue-400">{attack.hitBonus >= 0 ? '+' : ''}{attack.hitBonus}</span>
+                            <span className="text-gray-500">{t('attacksTab.bonus')}:</span> <span className="font-bold text-blue-400">{attack.hitBonus >= 0 ? '+' : ''}{attack.hitBonus}</span>
                           </span>
                           <span className="text-gray-500">•</span>
                           {attack.damageComponents && attack.damageComponents.length > 0 ? (
@@ -85,7 +88,7 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                               {attack.damageComponents.map((comp, i) => (
                                 <React.Fragment key={i}>
                                   <span style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }} className="font-bold">
-                                    {comp.damage} <span className="text-[8px] opacity-60">{comp.type}</span>
+                                    {comp.damage} <span className="text-[8px] opacity-60">{getDamageTypeLabel(comp.type, t)}</span>
                                   </span>
                                   {i < attack.damageComponents!.length - 1 && <span className="text-gray-600">+</span>}
                                 </React.Fragment>
@@ -94,11 +97,11 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                           ) : (
                             <>
                               <span className="text-gray-300">
-                                <span className="text-gray-500">Урон:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damage}</span>
+                                <span className="text-gray-500">{t('common.damage')}:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damage}</span>
                               </span>
                               <span className="text-gray-500">•</span>
                               <span className="text-gray-300 truncate">
-                                <span className="text-gray-500">Тип:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damageType || 'Без типа'}</span>
+                                <span className="text-gray-500">{t('attacksTab.type')}:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damageType ? getDamageTypeLabel(attack.damageType, t) : t('common.noType')}</span>
                               </span>
                             </>
                           )}
@@ -117,7 +120,7 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                       <button
                         onClick={(e) => { e.stopPropagation(); openAttackModal(attack); }}
                         className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-200 hover:bg-dark-hover transition-all opacity-0 group-hover:opacity-100"
-                        title="Настроить"
+                        title={t('common.configure')}
                       >
                         <Settings className="w-4 h-4" />
                       </button>
@@ -132,7 +135,7 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
             <>
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-px flex-1 bg-dark-border"></div>
-                <span className="text-xs text-gray-400 uppercase font-semibold">Пользовательские атаки</span>
+                <span className="text-xs text-gray-400 uppercase font-semibold">{t('attacksTab.customAttacks')}</span>
                 <div className="h-px flex-1 bg-dark-border"></div>
               </div>
               <div className="space-y-3">
@@ -168,7 +171,7 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                         
                         <div className="flex flex-wrap items-center gap-3 text-xs">
                           <span className="text-gray-300">
-                            <span className="text-gray-500">Бонус:</span> <span className="font-bold text-blue-400">{attack.hitBonus >= 0 ? '+' : ''}{attack.hitBonus}</span>
+                            <span className="text-gray-500">{t('attacksTab.bonus')}:</span> <span className="font-bold text-blue-400">{attack.hitBonus >= 0 ? '+' : ''}{attack.hitBonus}</span>
                           </span>
                           <span className="text-gray-500">•</span>
                           {attack.damageComponents && attack.damageComponents.length > 0 ? (
@@ -176,7 +179,7 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                               {attack.damageComponents.map((comp, i) => (
                                 <React.Fragment key={i}>
                                   <span style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }} className="font-bold">
-                                    {comp.damage} <span className="text-[8px] opacity-60">{comp.type}</span>
+                                    {comp.damage} <span className="text-[8px] opacity-60">{getDamageTypeLabel(comp.type, t)}</span>
                                   </span>
                                   {i < attack.damageComponents!.length - 1 && <span className="text-gray-600">+</span>}
                                 </React.Fragment>
@@ -185,11 +188,11 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                           ) : (
                             <>
                               <span className="text-gray-300">
-                                <span className="text-gray-500">Урон:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damage}</span>
+                                <span className="text-gray-500">{t('common.damage')}:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damage}</span>
                               </span>
                               <span className="text-gray-500">•</span>
                               <span className="text-gray-300 truncate">
-                                <span className="text-gray-500">Тип:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damageType || 'Без типа'}</span>
+                                <span className="text-gray-500">{t('attacksTab.type')}:</span> <span className="font-bold" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}>{attack.damageType ? getDamageTypeLabel(attack.damageType, t) : t('common.noType')}</span>
                               </span>
                             </>
                           )}
@@ -208,7 +211,7 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
                       <button
                         onClick={(e) => { e.stopPropagation(); openAttackModal(attack); }}
                         className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-200 hover:bg-dark-hover transition-all opacity-0 group-hover:opacity-100"
-                        title="Настроить"
+                        title={t('common.configure')}
                       >
                         <Settings className="w-4 h-4" />
                       </button>
@@ -222,17 +225,17 @@ export const AttacksTab: React.FC<AttacksTabProps> = ({
       ) : (
         <div className="text-gray-400 text-center py-12">
           <Sword className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-          <p className="text-sm">Нет атак</p>
-          <p className="text-xs mt-1">Экипируйте оружие или добавьте атаку</p>
+          <p className="text-sm">{t('attacksTab.empty')}</p>
+          <p className="text-xs mt-1">{t('attacksTab.emptyHint')}</p>
         </div>
       )}
 
       <div className="mt-6">
-        <div className="text-xs text-gray-400 mb-2 uppercase">Заметки</div>
+        <div className="text-xs text-gray-400 mb-2 uppercase">{t('attacksTab.notes')}</div>
         <MarkdownEditor
           value={character.attacksNotes || ''}
           onChange={updateAttacksNotes}
-          placeholder="Дополнительные заметки об атаках..."
+          placeholder={t('attacksTab.notesPlaceholder')}
           minHeight="60px"
         />
       </div>

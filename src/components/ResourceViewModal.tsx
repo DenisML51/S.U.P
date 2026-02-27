@@ -4,6 +4,7 @@ import { Resource } from '../types';
 import { getLucideIcon } from '../utils/iconUtils';
 import { X } from 'lucide-react';
 import { MarkdownText } from './MarkdownText';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface ResourceViewModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
   onEdit,
   onUpdate,
 }) => {
+  const { t } = useI18n();
   const [tempResource, setTempResource] = useState(resource);
   const [addAmount, setAddAmount] = useState('');
   const [removeAmount, setRemoveAmount] = useState('');
@@ -102,7 +104,7 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
 
             {tempResource.description && (
               <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
-                <div className="text-sm text-gray-400 mb-2 uppercase font-semibold">Описание</div>
+                <div className="text-sm text-gray-400 mb-2 uppercase font-semibold">{t('common.description')}</div>
                 <div className="max-h-32 overflow-y-auto custom-scrollbar pr-2">
                   <MarkdownText content={tempResource.description} />
                 </div>
@@ -117,7 +119,7 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
                   borderColor: `${tempResource.color || '#3b82f6'}30`
                 }}
               >
-                <div className="text-sm text-gray-400 mb-2 uppercase">Текущее количество</div>
+                <div className="text-sm text-gray-400 mb-2 uppercase">{t('common.currentAmount')}</div>
                 <div className="text-5xl font-bold mb-2">
                   <span style={{ color: tempResource.color || '#3b82f6' }}>{tempResource.current}</span>
                   <span className="text-gray-400 text-3xl"> / {tempResource.max}</span>
@@ -140,41 +142,41 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
 
             <div className="space-y-3 mb-6">
               <div>
-                <div className="text-sm text-gray-400 mb-2 uppercase">Добавить ресурс</div>
+                <div className="text-sm text-gray-400 mb-2 uppercase">{t('resourceView.addResource')}</div>
                 <div className="flex gap-2">
                   <input
                     type="number"
                     value={addAmount}
                     onChange={(e) => setAddAmount(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
-                    placeholder="Количество"
+                    placeholder={t('common.amount')}
                     className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                   <button
                     onClick={() => handleAdd()}
                     className="px-6 py-2 bg-green-500/20 border border-green-500/50 text-green-400 rounded-lg hover:bg-green-500/30 transition-all font-semibold"
                   >
-                    Добавить
+                    {t('common.add')}
                   </button>
                 </div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-400 mb-2 uppercase">Убрать ресурс</div>
+                <div className="text-sm text-gray-400 mb-2 uppercase">{t('resourceView.removeResource')}</div>
                 <div className="flex gap-2">
                   <input
                     type="number"
                     value={removeAmount}
                     onChange={(e) => setRemoveAmount(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleRemove()}
-                    placeholder="Количество"
+                    placeholder={t('common.amount')}
                     className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                   <button
                     onClick={() => handleRemove()}
                     className="px-6 py-2 bg-red-500/20 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/30 transition-all font-semibold"
                   >
-                    Убрать
+                    {t('common.remove')}
                   </button>
                 </div>
               </div>
@@ -184,19 +186,19 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
                   onClick={() => setTempResource({ ...tempResource, current: tempResource.max })}
                   className="py-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all font-semibold text-sm"
                 >
-                  Полное восстановление
+                  {t('common.fullRestore')}
                 </button>
                 <button
                   onClick={() => setTempResource({ ...tempResource, current: 0 })}
                   className="py-2 bg-dark-bg border border-dark-border text-gray-400 rounded-lg hover:bg-dark-hover transition-all font-semibold text-sm"
                 >
-                  Обнулить
+                  {t('resourceView.resetZero')}
                 </button>
               </div>
             </div>
 
             <div className="mb-6">
-              <div className="text-sm text-gray-400 mb-2 uppercase">Текущее количество</div>
+              <div className="text-sm text-gray-400 mb-2 uppercase">{t('common.currentAmount')}</div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setTempResource({ ...tempResource, current: Math.max(0, tempResource.current - 1) })}
@@ -230,19 +232,19 @@ export const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
                 onClick={onClose}
                 className="flex-1 px-4 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all font-semibold"
               >
-                Отмена
+                {t('common.cancel')}
               </button>
               <button
                 onClick={onEdit}
                 className="px-4 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all font-semibold"
               >
-                Настроить
+                {t('common.configure')}
               </button>
               <button
                 onClick={handleSave}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:shadow-lg hover:shadow-blue-500/50 transition-all font-semibold"
               >
-                Сохранить
+                {t('common.save')}
               </button>
             </div>
           </motion.div>

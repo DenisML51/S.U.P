@@ -1,8 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CLASSES, Resistance, CharacterPreview } from '../types';
+import { Resistance, CharacterPreview } from '../types';
 import { Heart, User, X } from 'lucide-react';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
+import { useI18n } from '../i18n/I18nProvider';
+import { getDamageTypeLabel, getResistanceLevelLabel } from '../i18n/domainLabels';
 
 interface CharacterCardProps {
   character: CharacterPreview;
@@ -12,8 +14,7 @@ interface CharacterCardProps {
 }
 
 export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick, onDelete, compact }) => {
-  const charClass = CLASSES.find(c => c.id === character.class);
-  const subclass = charClass?.subclasses.find(sc => sc.id === character.subclass);
+  const { t } = useI18n();
   const healthPercentage = (character.currentHP / character.maxHP) * 100;
 
   const renderMiniResistances = () => {
@@ -28,7 +29,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
             <div 
               key={res.id} 
               className="relative flex items-center justify-center p-1 rounded bg-dark-bg/30 border border-white/5 group"
-              title={`${res.type}: ${res.level}`}
+              title={`${getDamageTypeLabel(res.type, t)}: ${getResistanceLevelLabel(res.level, t)}`}
               style={{ color }}
             >
               {getDamageTypeIcon(res.type, 16)}
@@ -60,7 +61,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-sm text-gray-100 truncate">{character.name}</h3>
-          <p className="text-[10px] text-gray-500 truncate">{charClass?.name || character.class} • {character.level} ур.</p>
+          <p className="text-[10px] text-gray-500 truncate">{character.class} • {character.level} {t('common.levelShort')}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <div className="w-12 h-1 bg-dark-bg rounded-full overflow-hidden border border-dark-border">
@@ -95,7 +96,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
       <button
         onClick={onDelete}
         className="absolute top-2 right-2 w-8 h-8 bg-red-500/20 border border-red-500/30 rounded-lg hover:bg-red-500/30 opacity-0 group-hover:opacity-100 transition-all z-10 flex items-center justify-center"
-        title="Удалить персонажа"
+        title={t('characterCard.delete')}
       >
         <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -114,15 +115,15 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-lg text-gray-100 truncate mb-1">{character.name}</h3>
             <div className="text-xs text-gray-400">
-              {charClass?.name || character.class}
-              {(subclass?.name || character.subclass) && ` • ${subclass?.name || character.subclass}`}
+              {character.class}
+              {character.subclass && ` • ${character.subclass}`}
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2 mb-3">
           <div className="px-2.5 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-            <span className="text-xs font-semibold text-blue-400">Уровень {character.level}</span>
+            <span className="text-xs font-semibold text-blue-400">{t('experience.level')} {character.level}</span>
           </div>
         </div>
 
@@ -130,7 +131,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-1.5">
               <Heart className="w-3.5 h-3.5 text-red-400" />
-              <span className="text-xs text-gray-400">Здоровье</span>
+              <span className="text-xs text-gray-400">{t('health.title')}</span>
             </div>
             <span className="text-xs font-semibold text-gray-300">
               {character.currentHP} / {character.maxHP}

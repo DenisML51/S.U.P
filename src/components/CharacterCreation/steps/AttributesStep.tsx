@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Zap } from 'lucide-react';
 import { ATTRIBUTES_LIST } from '../../../types';
+import { useI18n } from '../../../i18n/I18nProvider';
+import { getAttributeLabel } from '../../../i18n/domainLabels';
 
 interface AttributesStepProps {
   pointsUsed: number;
@@ -36,6 +38,7 @@ export const AttributesStep: React.FC<AttributesStepProps> = ({
   isAttributesValid,
   setCurrentStep,
 }) => {
+  const { t } = useI18n();
   return (
     <motion.div
       key="attributes"
@@ -47,9 +50,9 @@ export const AttributesStep: React.FC<AttributesStepProps> = ({
       <div className="bg-gradient-to-br from-dark-card to-dark-bg rounded-2xl p-6 border border-dark-border shadow-lg">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-gray-400 mb-1">Очки характеристик</div>
+            <div className="text-sm text-gray-400 mb-1">{t('creation.attributePoints')}</div>
             <div className="text-2xl font-bold">
-              Использовано: <span className="text-blue-400">{pointsUsed}</span> / {INITIAL_POINTS}
+              {t('creation.used')}: <span className="text-blue-400">{pointsUsed}</span> / {INITIAL_POINTS}
             </div>
           </div>
           <div className={`px-6 py-3 rounded-xl border-2 ${
@@ -60,7 +63,7 @@ export const AttributesStep: React.FC<AttributesStepProps> = ({
               : 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400'
           }`}>
             <div className="text-sm font-semibold mb-1">
-              {pointsRemaining === 0 ? 'Готово!' : pointsRemaining < 0 ? 'Перерасход' : 'Осталось'}
+              {pointsRemaining === 0 ? t('creation.ready') : pointsRemaining < 0 ? t('creation.overspend') : t('creation.remaining')}
             </div>
             <div className="text-2xl font-bold">{pointsRemaining}</div>
           </div>
@@ -88,8 +91,8 @@ export const AttributesStep: React.FC<AttributesStepProps> = ({
                   )}
                 </button>
                 <div className="flex-1">
-                  <div className="font-semibold text-lg">{attr.name}</div>
-                  <div className="text-xs text-gray-400">Стоимость: {getCost(attributes[attr.id])} очков</div>
+                  <div className="font-semibold text-lg">{getAttributeLabel(attr.id, t)}</div>
+                  <div className="text-xs text-gray-400">{t('creation.cost')}: {getCost(attributes[attr.id])} {t('creation.points')}</div>
                 </div>
               </div>
               
@@ -104,7 +107,7 @@ export const AttributesStep: React.FC<AttributesStepProps> = ({
                 
                 <div className="text-center min-w-[100px]">
                   <div className="text-3xl font-bold">{attributes[attr.id]}</div>
-                  <div className="text-sm text-gray-400">Мод: {getModifier(attributes[attr.id])}</div>
+                  <div className="text-sm text-gray-400">{t('creation.mod')}: {getModifier(attributes[attr.id])}</div>
                 </div>
                 
                 <button
@@ -125,14 +128,14 @@ export const AttributesStep: React.FC<AttributesStepProps> = ({
           onClick={() => setCurrentStep('basic')}
           className="px-6 py-3 bg-dark-card border border-dark-border rounded-xl font-semibold hover:bg-dark-hover transition-all"
         >
-          Назад
+          {t('common.back')}
         </button>
         <button
           onClick={() => isAttributesValid && setCurrentStep('skills')}
           disabled={!isAttributesValid}
           className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-blue-500/50 transition-all flex items-center gap-2"
         >
-          Далее: Навыки
+          {t('creation.nextSkills')}
           <Zap className="w-5 h-5" />
         </button>
       </div>

@@ -1,17 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { RACES, CLASSES, Race, Class, Subrace, Subclass } from '../../types';
 import { useCharacterStats } from '../../hooks/character/useCharacterStats';
 import { useCharacterModals } from '../../hooks/character/useCharacterModals';
 import { useCharacterInventory } from '../../hooks/character/useCharacterInventory';
 import { useCharacterActions } from '../../hooks/character/useCharacterActions';
 import { useCharacterUpdate } from '../../hooks/character/useCharacterUpdate';
 import { useCharacterSpells } from '../../hooks/character/useCharacterSpells';
+import { useI18n } from '../../i18n/I18nProvider';
 
 export type InventorySubTab = 'all' | 'armor' | 'weapon' | 'item' | 'ammunition';
 
 export const useCharacterSheetLogic = () => {
+  const { t } = useI18n();
   const { 
     character, 
     updateCharacter, 
@@ -38,11 +39,6 @@ export const useCharacterSheetLogic = () => {
     return { character: null };
   }
 
-  const race = useMemo(() => RACES.find((r: Race) => r.id === character.race), [character.race]);
-  const selectedSubrace = useMemo(() => race?.subraces?.find((sr: Subrace) => sr.id === character.subrace), [race, character.subrace]);
-  const charClass = useMemo(() => CLASSES.find((c: Class) => c.id === character.class), [character.class]);
-  const selectedSubclass = useMemo(() => charClass?.subclasses.find((sc: Subclass) => sc.id === character.subclass), [charClass, character.subclass]);
-
   return {
     character,
     updateCharacter,
@@ -54,11 +50,6 @@ export const useCharacterSheetLogic = () => {
     setSelectedAttribute,
     viewMode,
     setViewMode,
-    race,
-    selectedSubrace,
-    charClass,
-    selectedSubclass,
-
     ...stats,
 
     ...modals,
@@ -100,15 +91,15 @@ export const useCharacterSheetLogic = () => {
     
     handleRollInitiative: () => {
       const result = stats.rollInitiative();
-      const bonusStr = result.bonus !== 0 ? ` + ${result.bonus} (бонус)` : '';
+      const bonusStr = result.bonus !== 0 ? ` + ${result.bonus} (${t('log.bonus')})` : '';
       const totalStr = `${result.total} (${result.roll} + ${result.mod >= 0 ? '+' : ''}${result.mod}${bonusStr})`;
       
-      toast.success(`Инициатива: ${totalStr}`, {
+      toast.success(`${t('secondary.initiative')}: ${totalStr}`, {
         icon: '🎲',
         duration: 4000,
       });
 
-      setTimeout(() => logHistory(`Бросок инициативы: ${totalStr}`, 'other'), 0);
+      setTimeout(() => logHistory(`${t('log.initiativeRoll')}: ${totalStr}`, 'other'), 0);
       
       return result;
     },

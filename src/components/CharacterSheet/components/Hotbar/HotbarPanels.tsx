@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sword, Sparkles, Wand2, Box } from 'lucide-react';
 import { Attack, Ability, Spell, InventoryItem } from '../../../../types';
 import { getLucideIcon } from '../../../../utils/iconUtils';
+import { useI18n } from '../../../../i18n/I18nProvider';
 
 interface HotbarPanelsProps {
   actionGroups: {
@@ -26,11 +27,12 @@ export const HotbarPanels: React.FC<HotbarPanelsProps> = ({
   onItemHover,
   onItemUnhover
 }) => {
+  const { t } = useI18n();
   const categories = [
-    { id: 'attacks', label: 'Атаки', icon: Sword, data: actionGroups.attacks, color: '#ef4444' },
-    { id: 'abilities', label: 'Умения', icon: Sparkles, data: actionGroups.abilities, color: '#a855f7' },
-    { id: 'spells', label: 'Магия', icon: Wand2, data: actionGroups.spells, color: '#3b82f6' },
-    { id: 'items', label: 'Вещи', icon: Box, data: actionGroups.items, color: '#94a3b8' },
+    { id: 'attacks', label: t('tabs.attacks'), icon: Sword, data: actionGroups.attacks, color: '#ef4444' },
+    { id: 'abilities', label: t('tabs.abilities'), icon: Sparkles, data: actionGroups.abilities, color: '#a855f7' },
+    { id: 'spells', label: t('hotbar.spells'), icon: Wand2, data: actionGroups.spells, color: '#3b82f6' },
+    { id: 'items', label: t('hotbar.items'), icon: Box, data: actionGroups.items, color: '#94a3b8' },
   ];
 
   return (
@@ -106,7 +108,7 @@ export const HotbarPanels: React.FC<HotbarPanelsProps> = ({
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-2 opacity-20">
                   <cat.icon size={32} style={{ color: cat.color }} />
-                  <span className="text-[8px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>Пусто</span>
+                  <span className="text-[8px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>{t('hotbar.empty')}</span>
                 </div>
               )}
             </AnimatePresence>

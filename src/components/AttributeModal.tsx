@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface AttributeModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
   onUpdateValue,
   onToggleProficiency,
 }) => {
+  const { t } = useI18n();
   const [tempValue, setTempValue] = useState(attributeValue);
   const [tempBonus, setTempBonus] = useState(attributeBonus);
 
@@ -94,7 +96,7 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
               </div>
 
               <div className="mb-6">
-                <div className="text-sm text-gray-400 mb-2 uppercase">Значение</div>
+                <div className="text-sm text-gray-400 mb-2 uppercase">{t('attributeModal.value')}</div>
                 <div className="flex items-center justify-center gap-4 bg-dark-bg rounded-xl p-6">
                   <button
                     onClick={handleDecrement}
@@ -107,7 +109,7 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                   <div className="text-center min-w-[100px]">
                     <div className="text-5xl font-bold mb-2">{tempValue}</div>
                     <div className="text-sm text-gray-400">
-                      Базовый: {Math.floor((tempValue - 10) / 2) >= 0 ? `+${Math.floor((tempValue - 10) / 2)}` : Math.floor((tempValue - 10) / 2)}
+                      {t('attributeModal.base')}: {Math.floor((tempValue - 10) / 2) >= 0 ? `+${Math.floor((tempValue - 10) / 2)}` : Math.floor((tempValue - 10) / 2)}
                     </div>
                   </div>
                   
@@ -122,7 +124,7 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
               </div>
 
               <div className="mb-6">
-                <div className="text-sm text-gray-400 mb-2 uppercase">Бонус к характеристике</div>
+                <div className="text-sm text-gray-400 mb-2 uppercase">{t('attributeModal.attributeBonus')}</div>
                 <div className="bg-dark-bg rounded-xl p-4">
                   <div className="flex items-center justify-center gap-3">
                     <button
@@ -146,14 +148,14 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                     </button>
                   </div>
                   <div className="text-center text-xs text-gray-400 mt-3">
-                    Дополнительный бонус от предметов, заклинаний и т.д.
+                    {t('attributeModal.bonusHint')}
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-dark-bg rounded-xl p-4 text-center border-2 border-blue-500/50">
-                  <div className="text-xs text-gray-400 mb-1 uppercase">Бонус к проверке</div>
+                  <div className="text-xs text-gray-400 mb-1 uppercase">{t('attributeModal.checkBonus')}</div>
                   <div className="text-3xl font-bold text-blue-400">{getTempModifier(tempValue, tempBonus)}</div>
                   {tempBonus !== 0 && (
                     <div className="text-xs text-gray-400 mt-1">
@@ -166,7 +168,7 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                 <div className={`rounded-xl p-4 text-center border-2 ${
                   isProficient ? 'bg-blue-500/20 border-blue-500/50' : 'bg-dark-bg border-dark-border'
                 }`}>
-                  <div className="text-xs text-gray-400 mb-1 uppercase">Бонус к спасброску</div>
+                  <div className="text-xs text-gray-400 mb-1 uppercase">{t('attributeModal.saveBonus')}</div>
                   <div className={`text-3xl font-bold ${isProficient ? 'text-blue-400' : ''}`}>
                     {getTempSavingThrow(tempValue, tempBonus, isProficient)}
                   </div>
@@ -189,7 +191,7 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                       : 'border-dark-border hover:border-blue-500/50'
                   }`}
                 >
-                  <span className="font-semibold">Переопределён. спасбросок</span>
+                  <span className="font-semibold">{t('attributeModal.saveProficiency')}</span>
                   <div className={`w-6 h-6 rounded border-2 transition-all ${
                     isProficient 
                       ? 'bg-blue-500 border-blue-500' 
@@ -209,13 +211,13 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                   onClick={onClose}
                   className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all font-semibold"
                 >
-                  Отмена
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleSave}
                   className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:shadow-lg hover:shadow-blue-500/50 transition-all font-semibold"
                 >
-                  Сохранить
+                  {t('common.save')}
                 </button>
               </div>
             </motion.div>

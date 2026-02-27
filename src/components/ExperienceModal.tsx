@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUp } from 'lucide-react';
 import { EXPERIENCE_BY_LEVEL } from '../types';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface ExperienceModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
   level,
   onUpdate,
 }) => {
+  const { t } = useI18n();
   const [tempExperience, setTempExperience] = useState(experience);
   const [tempLevel, setTempLevel] = useState(level);
   const [addAmount, setAddAmount] = useState('');
@@ -76,7 +78,7 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
               className="bg-dark-card rounded-2xl border border-dark-border p-6 w-full max-w-lg"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Опыт</h2>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">{t('experience.title')}</h2>
                 <button
                   onClick={onClose}
                   className="w-8 h-8 rounded-lg hover:bg-dark-hover transition-all flex items-center justify-center"
@@ -95,7 +97,7 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                   >
                     −
                   </button>
-                  <div className="text-xl font-bold">Уровень {tempLevel}</div>
+                  <div className="text-xl font-bold">{t('experience.level')} {tempLevel}</div>
                   <button 
                     onClick={() => setTempLevel(Math.min(20, tempLevel + 1))}
                     className="w-8 h-8 rounded-lg bg-dark-bg border border-dark-border hover:bg-dark-hover transition-all flex items-center justify-center text-lg font-bold"
@@ -116,7 +118,7 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                     whileTap={{ scale: 0.95 }}
                     className="mt-4 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-green-500/50 transition-all animate-pulse"
                   >
-                    <ArrowUp className="w-4 h-4 inline mr-1" /> Повысить уровень!
+                    <ArrowUp className="w-4 h-4 inline mr-1" /> {t('experience.levelUp')}
                   </motion.button>
                 )}
               </div>
@@ -124,7 +126,7 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <div className="text-sm text-gray-400">
-                    До уровня {tempLevel + 1}: <span className="text-blue-400 font-semibold">{Math.max(0, xpInCurrentLevel)}</span> / <span className="text-gray-500">{xpNeededForLevel}</span>
+                    {t('experience.toLevel')} {tempLevel + 1}: <span className="text-blue-400 font-semibold">{Math.max(0, xpInCurrentLevel)}</span> / <span className="text-gray-500">{xpNeededForLevel}</span>
                   </div>
                   <div className="text-sm font-semibold text-gray-300">
                     {Math.round(Math.max(0, Math.min(100, xpProgress)))}%
@@ -142,41 +144,41 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
 
               <div className="space-y-3 mb-6">
                 <div>
-                  <div className="text-sm text-gray-400 mb-2 uppercase">Добавить опыт</div>
+                  <div className="text-sm text-gray-400 mb-2 uppercase">{t('experience.addXp')}</div>
                   <div className="flex gap-2">
                     <input
                       type="number"
                       value={addAmount}
                       onChange={(e) => setAddAmount(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
-                      placeholder="Количество"
+                      placeholder={t('common.amount')}
                       className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                     <button
                       onClick={() => handleAdd()}
                       className="px-6 py-2 bg-green-500/20 border border-green-500/50 text-green-400 rounded-lg hover:bg-green-500/30 transition-all font-semibold"
                     >
-                      Добавить
+                      {t('common.add')}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-gray-400 mb-2 uppercase">Убрать опыт</div>
+                  <div className="text-sm text-gray-400 mb-2 uppercase">{t('experience.removeXp')}</div>
                   <div className="flex gap-2">
                     <input
                       type="number"
                       value={removeAmount}
                       onChange={(e) => setRemoveAmount(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleRemove()}
-                      placeholder="Количество"
+                      placeholder={t('common.amount')}
                       className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                     <button
                       onClick={() => handleRemove()}
                       className="px-6 py-2 bg-red-500/20 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/30 transition-all font-semibold"
                     >
-                      Убрать
+                      {t('common.remove')}
                     </button>
                   </div>
                 </div>
@@ -204,7 +206,7 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
               </div>
 
               <div>
-                <div className="text-sm text-gray-400 mb-2 uppercase">Текущий опыт</div>
+                <div className="text-sm text-gray-400 mb-2 uppercase">{t('experience.currentXp')}</div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setTempExperience(Math.max(0, tempExperience - 1))}
@@ -235,13 +237,13 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
                   onClick={onClose}
                   className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all font-semibold"
                 >
-                  Отмена
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleSave}
                   className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:shadow-lg hover:shadow-blue-500/50 transition-all font-semibold"
                 >
-                  Сохранить
+                  {t('common.save')}
                 </button>
               </div>
             </motion.div>

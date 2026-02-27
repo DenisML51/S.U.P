@@ -23,7 +23,9 @@ import { SpellViewModal } from '../../../SpellViewModal';
 import { GrimmoireModal } from '../../../GrimmoireModal';
 import { BasicInfoModal } from '../../../BasicInfoModal';
 import { AmmunitionModal } from '../../../AmmunitionModal';
-import { ATTRIBUTES_LIST, Character, Resource, Limb, InventoryItem, Attack, Ability, Trait, Currency, Spell } from '../../../../types';
+import { Character, Resource, Limb, InventoryItem, Attack, Ability, Trait, Currency, Spell } from '../../../../types';
+import { useI18n } from '../../../../i18n/I18nProvider';
+import { getAttributeLabel } from '../../../../i18n/domainLabels';
 
 interface CharacterSheetModalsProps {
   character: Character;
@@ -123,6 +125,7 @@ interface CharacterSheetModalsProps {
 }
 
 export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props) => {
+  const { t } = useI18n();
   const {
     character,
     selectedAttribute,
@@ -224,7 +227,7 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
       <AttributeModal
         isOpen={!!selectedAttribute}
         onClose={() => setSelectedAttribute(null)}
-        attributeName={selectedAttribute ? ATTRIBUTES_LIST.find(a => a.id === selectedAttribute)?.name || '' : ''}
+        attributeName={selectedAttribute ? getAttributeLabel(selectedAttribute, t) : ''}
         attributeValue={selectedAttribute ? character.attributes[selectedAttribute] || 10 : 10}
         attributeBonus={selectedAttribute ? character.attributeBonuses?.[selectedAttribute] || 0 : 0}
         isProficient={selectedAttribute ? character.savingThrowProficiencies?.includes(selectedAttribute) || false : false}

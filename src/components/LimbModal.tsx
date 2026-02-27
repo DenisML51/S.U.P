@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Limb, getLimbInjuryLevel, INJURY_DESCRIPTIONS } from '../types';
+import { useI18n } from '../i18n/I18nProvider';
+import { getLimbLabel } from '../i18n/domainLabels';
 
 interface LimbModalProps {
   isOpen: boolean;
@@ -17,6 +19,7 @@ export const LimbModal: React.FC<LimbModalProps> = ({
   limbType,
   onUpdate,
 }) => {
+  const { t } = useI18n();
   const [currentHP, setCurrentHP] = useState(limb.currentHP);
   const [damageAmount, setDamageAmount] = useState('');
   const [healAmount, setHealAmount] = useState('');
@@ -80,7 +83,7 @@ export const LimbModal: React.FC<LimbModalProps> = ({
             className="bg-dark-card rounded-2xl border border-dark-border p-5 w-full max-w-md"
           >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">{limb.name}</h2>
+              <h2 className="text-xl font-bold">{getLimbLabel(limb.id, limb.name, t)}</h2>
               <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-dark-hover transition-all flex items-center justify-center">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -90,7 +93,7 @@ export const LimbModal: React.FC<LimbModalProps> = ({
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className={`rounded-xl p-4 border-2 ${getInjuryColor()}`}>
-                <div className="text-xs text-gray-400 mb-1 text-center">Здоровье (ЗК)</div>
+                <div className="text-xs text-gray-400 mb-1 text-center">{t('limb.health')}</div>
                 <div className="text-center">
                   <div className="text-3xl font-bold">{currentHP}</div>
                   <div className="text-xs text-gray-400">/ {maxHP}</div>
@@ -98,7 +101,7 @@ export const LimbModal: React.FC<LimbModalProps> = ({
               </div>
 
               <div className="rounded-xl p-4 border-2 border-blue-500/50 bg-blue-500/10">
-                <div className="text-xs text-gray-400 mb-1 text-center">КБ</div>
+                <div className="text-xs text-gray-400 mb-1 text-center">{t('limb.ac')}</div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-blue-400">{ac}</div>
                 </div>
@@ -107,14 +110,14 @@ export const LimbModal: React.FC<LimbModalProps> = ({
 
             {injuryLevel !== 'none' && injuryDesc && (
               <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 mb-4">
-                <div className="text-xs font-bold text-red-400 mb-1">ТРАВМА</div>
+                <div className="text-xs font-bold text-red-400 mb-1">{t('limb.injury')}</div>
                 <div className="text-sm">{injuryDesc}</div>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
-                <div className="text-xs text-gray-400 mb-2 uppercase">Урон</div>
+                <div className="text-xs text-gray-400 mb-2 uppercase">{t('common.damage')}</div>
                 <div className="relative bg-dark-bg border border-dark-border rounded-lg overflow-hidden">
                   <input
                     type="number"
@@ -134,7 +137,7 @@ export const LimbModal: React.FC<LimbModalProps> = ({
               </div>
 
               <div>
-                <div className="text-xs text-gray-400 mb-2 uppercase">Лечение</div>
+                <div className="text-xs text-gray-400 mb-2 uppercase">{t('limb.healing')}</div>
                 <div className="relative bg-dark-bg border border-dark-border rounded-lg overflow-hidden">
                   <input
                     type="number"
@@ -159,13 +162,13 @@ export const LimbModal: React.FC<LimbModalProps> = ({
                 onClick={() => setCurrentHP(maxHP)}
                 className="flex-1 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all text-sm font-semibold"
               >
-                Полное лечение
+                {t('limb.fullHeal')}
               </button>
               <button
                 onClick={handleSave}
                 className="flex-1 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:shadow-lg transition-all text-sm font-semibold"
               >
-                Сохранить
+                {t('common.save')}
               </button>
             </div>
           </motion.div>

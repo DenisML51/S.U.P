@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ATTRIBUTES_LIST, SKILLS_LIST, Character } from '../../../types';
 import { Target, Star } from 'lucide-react';
+import { useI18n } from '../../../i18n/I18nProvider';
+import { getAttributeLabel } from '../../../i18n/domainLabels';
 
 interface AttributesSectionProps {
   character: Character;
@@ -24,10 +26,11 @@ export const AttributesSection: React.FC<AttributesSectionProps> = ({
   toggleSkillProficiency,
   toggleSkillExpertise,
 }) => {
+  const { t } = useI18n();
   return (
     <div className={`space-y-6 flex flex-col ${activeTab !== 'stats' ? 'hidden lg:flex' : 'flex'}`}>
       <div className="flex items-center gap-3 px-1">
-        <h3 className="text-xl font-bold tracking-tight text-gray-200 uppercase tracking-widest">Характеристики</h3>
+        <h3 className="text-xl font-bold tracking-tight text-gray-200 uppercase tracking-widest">{t('creation.steps.attributes')}</h3>
         <div className="h-px flex-1 bg-gradient-to-r from-dark-border to-transparent"></div>
       </div>
 
@@ -52,10 +55,10 @@ export const AttributesSection: React.FC<AttributesSectionProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{attr.name}</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{getAttributeLabel(attr.id, t)}</span>
                       {isProficient && (
                         <div className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[8px] font-black text-blue-400 uppercase tracking-tighter">
-                          Спасбр.
+                          {t('attributesSection.saveShort')}
                         </div>
                       )}
                     </div>
@@ -63,14 +66,14 @@ export const AttributesSection: React.FC<AttributesSectionProps> = ({
                     <div className="flex items-end gap-4">
                       <div className="flex flex-col">
                         <span className="text-3xl font-black text-white leading-none tracking-tighter">{modifier}</span>
-                        <span className="text-[8px] font-bold text-gray-600 uppercase mt-1">Модификатор</span>
+                        <span className="text-[8px] font-bold text-gray-600 uppercase mt-1">{t('attributesSection.modifier')}</span>
                       </div>
                       
                       <div className="flex flex-col border-l border-dark-border pl-4">
                         <span className={`text-lg font-bold leading-none ${isProficient ? 'text-blue-400' : 'text-gray-400'}`}>
                           {savingThrow}
                         </span>
-                        <span className="text-[8px] font-bold text-gray-600 uppercase mt-1">Спасбросок</span>
+                        <span className="text-[8px] font-bold text-gray-600 uppercase mt-1">{t('attributesSection.savingThrow')}</span>
                       </div>
                     </div>
                   </div>
@@ -80,7 +83,7 @@ export const AttributesSection: React.FC<AttributesSectionProps> = ({
                     className="w-12 h-12 rounded-xl bg-dark-bg border border-dark-border flex flex-col items-center justify-center hover:border-blue-500 transition-all group/val"
                   >
                     <span className="text-lg font-black text-gray-200 group-hover/val:text-blue-400 transition-colors">{value}</span>
-                    <span className="text-[7px] font-black text-gray-600 uppercase">База</span>
+                    <span className="text-[7px] font-black text-gray-600 uppercase">{t('attributesSection.base')}</span>
                   </button>
                 </div>
 

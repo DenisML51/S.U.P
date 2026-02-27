@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Character } from '../types';
-import { RACES, CLASSES, ATTRIBUTES_LIST, SKILLS_LIST, calculateMaxSanity } from '../types';
+import { ATTRIBUTES_LIST, SKILLS_LIST, calculateMaxSanity } from '../types';
 import { CONDITIONS } from '../constants/conditions';
 
 const loadFonts = async () => {
@@ -53,9 +53,6 @@ export const exportToPDF = async (character: Character) => {
   container.style.backgroundColor = '#f4e4bc';
   container.style.color = '#2c1810';
   
-  const race = RACES.find(r => r.id === character.race);
-  const charClass = CLASSES.find(c => c.id === character.class);
-  const subclass = charClass?.subclasses.find(sc => sc.id === character.subclass);
 
   const ornamentTop = `<svg width="100%" height="20" viewBox="0 0 400 20" preserveAspectRatio="none"><path d="M0 10 Q100 0 200 10 Q300 20 400 10" fill="none" stroke="#2c1810" stroke-width="1" opacity="0.5"/></svg>`;
   
@@ -135,7 +132,7 @@ export const exportToPDF = async (character: Character) => {
         <div style="margin-top: 15px; font-size: 16px;">
           ${character.name ? `<span style="font-family: 'MedievalSharp', cursive; font-size: 28px;">${character.name}</span><br>` : ''}
           <span style="opacity: 0.8;">
-            ${race?.name || character.race} • ${charClass?.name || character.class}${subclass ? ` (${subclass.name})` : ''} • Уровень ${character.level || 1}
+            ${character.race} • ${character.class}${character.subclass ? ` (${character.subclass})` : ''} • Уровень ${character.level || 1}
           </span>
         </div>
       </div>

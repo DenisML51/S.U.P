@@ -18,8 +18,10 @@ import { CharacterSheetModals } from './components/Modals/CharacterSheetModals';
 import { SettingsModal } from '../SettingsModal';
 import { ConditionsSection } from './components/ConditionsSection';
 import { HotbarView } from './components/HotbarView';
+import { useI18n } from '../../i18n/I18nProvider';
 
 export const CharacterSheet: React.FC = () => {
+  const { t } = useI18n();
   const logic = useCharacterSheetLogic();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -65,19 +67,19 @@ export const CharacterSheet: React.FC = () => {
 
   const getItemTypeLabel = (type: string) => {
     switch (type) {
-      case 'armor': return 'Броня';
-      case 'weapon': return 'Оружие';
-      case 'ammunition': return 'Боеприпас';
-      default: return 'Предмет';
+      case 'armor': return t('itemModal.type.armor.label');
+      case 'weapon': return t('itemModal.type.weapon.label');
+      case 'ammunition': return t('itemModal.type.ammunition.label');
+      default: return t('itemModal.type.item.label');
     }
   };
 
   const getActionTypeLabel = (actionType: string) => {
     switch (actionType) {
-      case 'action': return 'Основное';
-      case 'bonus': return 'Бонусное';
-      case 'reaction': return 'Реакция';
-      default: return 'Основное';
+      case 'action': return t('spellModal.actionType.action');
+      case 'bonus': return t('spellModal.actionType.bonus');
+      case 'reaction': return t('spellModal.actionType.reaction');
+      default: return t('spellModal.actionType.action');
     }
   };
 
@@ -151,10 +153,6 @@ export const CharacterSheet: React.FC = () => {
                   {activeTab === 'personality' && (
                     <PersonalityTab 
                       character={character}
-                      race={logic.race}
-                      selectedSubrace={logic.selectedSubrace}
-                      charClass={logic.charClass}
-                      selectedSubclass={logic.selectedSubclass}
                       updatePersonalityField={logic.updatePersonalityField}
                       updateLanguagesAndProficiencies={logic.updateLanguagesAndProficiencies}
                       openTraitModal={logic.openTraitModal}

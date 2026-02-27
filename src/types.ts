@@ -585,12 +585,11 @@ export const getSanityModifierFromWisdom = (wisdom: number): number => {
 };
 
 export const calculateMaxSanity = (
-  classId: string,
+  _classId: string,
   wisdom: number,
   level: number
 ): number => {
-  const classData = CLASSES.find(c => c.id === classId);
-  const mentalStrength = classData?.mentalStrength || 50;
+  const mentalStrength = 50;
   const wisdomModifier = getSanityModifierFromWisdom(wisdom);
   const levelBonus = Math.floor(level / 2);
   

@@ -11,6 +11,7 @@ import { useCharacterStore } from '../store/useCharacterStore';
 import { toast } from 'react-hot-toast';
 import { DAMAGE_TYPES } from '../types';
 import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
+import { useI18n } from '../i18n/I18nProvider';
 
 const parseDiceFormula = (formula: string) => {
   const dice: { id: string, count: number, type?: string }[] = [];
@@ -157,6 +158,7 @@ const DICE_TYPES: DiceConfig[] = [
 ];
 
 export const DiceRoller: React.FC = () => {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDice, setSelectedDice] = useState<{id: string, style: any, type?: string}[]>([]);
   const [bonuses, setBonuses] = useState<Record<string, number>>({});
@@ -268,21 +270,21 @@ export const DiceRoller: React.FC = () => {
     const damageBreakdown = Object.entries(totalsByType)
       .filter(([_, total]) => total !== 0)
       .map(([type, total]) => {
-        const typeLabel = type || 'Урон';
+        const typeLabel = type || t('common.damage');
         return `${total} ${typeLabel.toLowerCase()}`;
       }).join(', ');
 
     const detailedHistory = Object.entries(totalsByType)
       .filter(([_, total]) => total !== 0)
       .map(([type, total]) => {
-        const typeLabel = type || 'Без типа';
+        const typeLabel = type || t('common.noType');
         const rolls = rollDetailsByType[type]?.join(' + ') || '';
         const bonusForType = bonuses[type] || 0;
-        const bonusStr = bonusForType !== 0 ? ` + ${bonusForType}(бонус)` : '';
+        const bonusStr = bonusForType !== 0 ? ` + ${bonusForType}(${t('dice.bonus')})` : '';
         return `${typeLabel}: ${total} [${rolls}${bonusStr}]`;
       }).join(' | ');
 
-    const message = `Бросок: ${grandTotal} (${damageBreakdown}). Детали: ${detailedHistory}`;
+    const message = `${t('dice.roll')}: ${grandTotal} (${damageBreakdown}). ${t('dice.details')}: ${detailedHistory}`;
     
     toast.success(
       <div className="flex flex-col gap-2 min-w-[200px]">
@@ -291,7 +293,7 @@ export const DiceRoller: React.FC = () => {
             <Dices className="w-5 h-5 text-blue-400" />
             <span className="font-black text-2xl text-white">{grandTotal}</span>
           </div>
-          <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Итого</span>
+          <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('dice.total')}</span>
         </div>
         <div className="space-y-1">
           {Object.entries(totalsByType)
@@ -302,7 +304,7 @@ export const DiceRoller: React.FC = () => {
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: type ? (DAMAGE_TYPE_COLORS[type] || '#94a3b8') : '#94a3b8' }}
               >
-                {type || 'Общий'}
+                {type || t('dice.overall')}
               </span>
               <span 
                 className="font-black text-sm"
@@ -373,12 +375,12 @@ export const DiceRoller: React.FC = () => {
                   <div className="p-2 bg-blue-500/20 rounded-xl border border-blue-500/20">
                     <Dices className="w-5 h-5 text-blue-400" strokeWidth={3} />
                   </div>
-                  <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white">Дайс-Хаб</h3>
+                  <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white">{t('dice.hub')}</h3>
                 </div>
                 <button 
                   onClick={reset}
                   className="p-2 text-slate-500 hover:text-white transition-all bg-white/5 rounded-lg border border-white/5 hover:border-white/10 active:scale-90"
-                  title="Очистить"
+                  title={t('common.reset')}
                 >
                   <RotateCcw size={16} strokeWidth={2.5} />
                 </button>
@@ -423,7 +425,7 @@ export const DiceRoller: React.FC = () => {
                       <span className="text-sm font-black text-amber-500 leading-none">
                         {totalBonus > 0 ? `+${totalBonus}` : totalBonus}
                       </span>
-                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-0.5">Бонус</span>
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-0.5">{t('dice.bonus')}</span>
                     </div>
                   )}
                 </button>
@@ -433,7 +435,7 @@ export const DiceRoller: React.FC = () => {
                 {selectedDice.length === 0 && totalBonus === 0 ? (
                   <div className="flex flex-col items-center gap-2 opacity-10">
                     <Dices size={40} strokeWidth={1.5} className="text-slate-400" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-center">Пул пуст</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-center">{t('dice.poolEmpty')}</span>
                   </div>
                 ) : (
                   <div className="relative w-full h-full">
@@ -478,7 +480,7 @@ export const DiceRoller: React.FC = () => {
                 }`}
               >
                 <Play className={`w-4 h-4 ${hasSelection ? 'fill-current animate-pulse' : ''}`} />
-                СДЕЛАТЬ БРОСОК
+                {t('dice.rollNow')}
               </button>
               
               {hasSelection && (

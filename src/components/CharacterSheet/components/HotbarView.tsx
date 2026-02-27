@@ -5,8 +5,7 @@ import {
   Attack, 
   Ability, 
   Spell, 
-  InventoryItem, 
-  CLASSES
+  InventoryItem
 } from '../../../types';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { CombatPanel } from './Hotbar/CombatPanel';
@@ -78,9 +77,7 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
   const [isInCombat, setIsInCombat] = useState(false);
   const [initiative, setInitiative] = useState<number | null>(null);
 
-  const charClass = useMemo(() => CLASSES.find(c => c.id === character.class), [character.class]);
-  const subclass = useMemo(() => charClass?.subclasses.find(sc => sc.id === character.subclass), [charClass, character.subclass]);
-  const subclassIcon = subclass?.icon ? `/icons/subclasses/${subclass.icon}` : null;
+  const subclassIcon = null;
 
   const actionGroups = useMemo(() => {
     const attacks = (character.attacks || []).map(a => ({ ...a, hotbarType: 'attack' }));

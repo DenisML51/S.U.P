@@ -5,6 +5,7 @@ import { Sword, Target, Zap } from 'lucide-react';
 import { MarkdownText } from './MarkdownText';
 import { getLucideIcon } from '../utils/iconUtils';
 import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface AttackViewModalProps {
   isOpen: boolean;
@@ -19,7 +20,8 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
   attack,
   onEdit,
 }) => {
-  const attributeName = ATTRIBUTES_LIST.find(a => a.id === attack.attribute)?.name || 'Сила';
+  const { t } = useI18n();
+  const attributeName = ATTRIBUTES_LIST.find(a => a.id === attack.attribute)?.name || t('attackView.defaultAttribute');
 
   return (
     <AnimatePresence>
@@ -54,7 +56,7 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
                   <h2 className="text-2xl font-bold">{attack.name}</h2>
                   {attack.weaponId && (
                     <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full mt-1 inline-block">
-                      От оружия
+                      {t('attackView.fromWeapon')}
                     </span>
                   )}
                 </div>
@@ -71,7 +73,7 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
 
             {attack.description && (
               <div className="mb-6 p-4 bg-dark-bg rounded-xl border border-dark-border">
-                <div className="text-sm text-gray-400 mb-2">Описание</div>
+                <div className="text-sm text-gray-400 mb-2">{t('common.description')}</div>
                 <div className="max-h-48 overflow-y-auto custom-scrollbar pr-2">
                   <MarkdownText content={attack.description} />
                 </div>
@@ -81,7 +83,7 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
               <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4 text-center">
                 <Target className="w-5 h-5 text-blue-400 mx-auto mb-2" />
-                <div className="text-xs text-gray-400 mb-1">Бонус к попаданию</div>
+                <div className="text-xs text-gray-400 mb-1">{t('attackView.hitBonus')}</div>
                 <div className="text-3xl font-bold text-blue-400">
                   {attack.hitBonus >= 0 ? '+' : ''}{attack.hitBonus}
                 </div>
@@ -98,7 +100,7 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
                         backgroundImage: `linear-gradient(to bottom right, ${DAMAGE_TYPE_COLORS[comp.type] || '#ef4444'}15, transparent)`
                       }}
                     >
-                      <div className="text-[10px] text-gray-400 mb-1 uppercase tracking-widest">{comp.type || 'Урон'}</div>
+                      <div className="text-[10px] text-gray-400 mb-1 uppercase tracking-widest">{comp.type || t('common.damage')}</div>
                       <div 
                         className="text-xl font-black"
                         style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }}
@@ -116,7 +118,7 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
                     }}
                   >
                     <Sword className="w-5 h-5 mx-auto mb-2" style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }} />
-                    <div className="text-xs text-gray-400 mb-1">Урон</div>
+                    <div className="text-xs text-gray-400 mb-1">{t('common.damage')}</div>
                     <div 
                       className="text-2xl font-black"
                       style={{ color: DAMAGE_TYPE_COLORS[attack.damageType] || '#ef4444' }}
@@ -130,24 +132,24 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
 
             <div className="space-y-3 mb-6">
               <div className="flex items-center justify-between p-3 bg-dark-bg rounded-lg">
-                <span className="text-sm text-gray-400">Тип урона</span>
+                <span className="text-sm text-gray-400">{t('itemModal.damageType')}</span>
                 <span className="font-semibold">{attack.damageType}</span>
               </div>
               
               <div className="flex items-center justify-between p-3 bg-dark-bg rounded-lg">
-                <span className="text-sm text-gray-400">Характеристика</span>
+                <span className="text-sm text-gray-400">{t('attackModal.attribute')}</span>
                 <span className="font-semibold">{attributeName}</span>
               </div>
 
               <div className="flex items-center justify-between p-3 bg-dark-bg rounded-lg">
-                <span className="text-sm text-gray-400">Тип действия</span>
+                <span className="text-sm text-gray-400">{t('spellModal.actionType.label')}</span>
                 <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
                   attack.actionType === 'action' ? 'bg-blue-500/20 text-blue-400' :
                   attack.actionType === 'bonus' ? 'bg-green-500/20 text-green-400' :
                   'bg-orange-500/20 text-orange-400'
                 }`}>
-                  {attack.actionType === 'action' ? 'Основное' :
-                   attack.actionType === 'bonus' ? 'Бонусное' : 'Реакция'}
+                  {attack.actionType === 'action' ? t('spellModal.actionType.action') :
+                   attack.actionType === 'bonus' ? t('spellModal.actionType.bonus') : t('spellModal.actionType.reaction')}
                 </span>
               </div>
 
@@ -155,7 +157,7 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
                 <div className="flex items-center gap-2 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
                   <Zap className="w-4 h-4 text-orange-400" />
                   <span className="text-sm text-orange-400">
-                    Тратит {attack.ammunitionCost} боеприпас(а) за атаку
+                    {t('attackView.ammoUsagePrefix')} {attack.ammunitionCost} {t('attackView.ammoUsageSuffix')}
                   </span>
                 </div>
               )}
@@ -166,13 +168,13 @@ export const AttackViewModal: React.FC<AttackViewModalProps> = ({
                 onClick={onClose}
                 className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all font-semibold"
               >
-                Закрыть
+                {t('common.close')}
               </button>
               <button
                 onClick={onEdit}
                 className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:shadow-lg transition-all font-semibold"
               >
-                Редактировать
+                {t('common.edit')}
               </button>
             </div>
           </motion.div>

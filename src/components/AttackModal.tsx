@@ -8,6 +8,8 @@ import { IconPicker } from './IconPicker';
 import { getLucideIcon } from '../utils/iconUtils';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
 import { Sword, Target, Zap, Clock, X, Minus, Plus, Trash2 } from 'lucide-react';
+import { useI18n } from '../i18n/I18nProvider';
+import { getAttributeLabel, getDamageTypeLabel } from '../i18n/domainLabels';
 
 interface AttackModalProps {
   isOpen: boolean;
@@ -24,6 +26,7 @@ export const AttackModal: React.FC<AttackModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  const { t } = useI18n();
   const [name, setName] = useState(attack?.name || '');
   const [description, setDescription] = useState(attack?.description || '');
   
@@ -107,9 +110,9 @@ export const AttackModal: React.FC<AttackModalProps> = ({
   };
 
   const actionTypes = [
-    { id: 'action', label: 'Основное', activeClass: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' },
-    { id: 'bonus', label: 'Бонусное', activeClass: 'bg-green-500 text-white shadow-lg shadow-green-500/20' },
-    { id: 'reaction', label: 'Реакция', activeClass: 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' },
+    { id: 'action', label: t('spellModal.actionType.action'), activeClass: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' },
+    { id: 'bonus', label: t('spellModal.actionType.bonus'), activeClass: 'bg-green-500 text-white shadow-lg shadow-green-500/20' },
+    { id: 'reaction', label: t('spellModal.actionType.reaction'), activeClass: 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' },
   ];
 
   return (
@@ -163,8 +166,8 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                   </div>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{attack ? 'Редактировать атаку' : 'Новая атака'}</h2>
-                  <p className="text-xs text-gray-400">Настройка боевых параметров</p>
+                  <h2 className="text-xl font-bold">{attack ? t('attackModal.editTitle') : t('attackModal.newTitle')}</h2>
+                  <p className="text-xs text-gray-400">{t('attackModal.subtitle')}</p>
                 </div>
               </div>
               <button 
@@ -177,12 +180,12 @@ export const AttackModal: React.FC<AttackModalProps> = ({
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Название атаки</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('attackModal.nameLabel')}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Меч +1, Выстрел из лука..."
+                  placeholder={t('attackModal.namePlaceholder')}
                   className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 />
               </div>
@@ -191,7 +194,7 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                 <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl h-full flex flex-col justify-between">
                   <div className="flex items-center gap-2 text-blue-400 mb-3">
                     <Target className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase">Попадание</span>
+                    <span className="text-xs font-bold uppercase">{t('attackModal.hit')}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <button onClick={() => setHitBonus(hitBonus - 1)} className="w-8 h-8 rounded-lg bg-dark-bg border border-dark-border hover:border-blue-500/50 flex items-center justify-center">-</button>
@@ -204,13 +207,13 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                   <div className="flex items-center justify-between text-red-400 mb-1">
                     <div className="flex items-center gap-2">
                       <Sword className="w-4 h-4" />
-                      <span className="text-xs font-bold uppercase">Урон</span>
+                      <span className="text-xs font-bold uppercase">{t('common.damage')}</span>
                     </div>
                     <button
                       onClick={addComponent}
                       className="px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] font-black uppercase hover:bg-red-500/20 transition-all"
                     >
-                      + Добавить тип
+                      {t('spellModal.addDamageType')}
                     </button>
                   </div>
                   
@@ -232,9 +235,9 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                               value={DAMAGE_TYPES.includes(comp.type) ? comp.type : (comp.type ? 'custom' : '')}
                               onChange={(v) => updateComponent(idx, 'type', v === 'custom' ? '' : v)}
                               options={[
-                                { value: '', label: 'Без типа' },
-                                ...DAMAGE_TYPES.map(t => ({ value: t, label: t })),
-                                { value: 'custom', label: 'Свой тип...' }
+                                { value: '', label: t('common.noType') },
+                                ...DAMAGE_TYPES.map((dt) => ({ value: dt, label: getDamageTypeLabel(dt, t) })),
+                                { value: 'custom', label: t('spellModal.customType') }
                               ]}
                             />
                             {(comp.type === '' || !DAMAGE_TYPES.includes(comp.type)) && (
@@ -242,7 +245,7 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                                 type="text"
                                 value={comp.type}
                                 onChange={(e) => updateComponent(idx, 'type', e.target.value)}
-                                placeholder="Введите свой тип..."
+                                placeholder={t('spellModal.enterCustomType')}
                                 className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-[10px] text-center text-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
                               />
                             )}
@@ -259,7 +262,7 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                       </div>
                     ))}
                   </div>
-                  <p className="text-[8px] text-gray-500 text-center uppercase tracking-wider mt-auto">Сложите несколько типов урона для одного приема</p>
+                  <p className="text-[8px] text-gray-500 text-center uppercase tracking-wider mt-auto">{t('attackModal.damageHint')}</p>
                 </div>
               </div>
 
@@ -267,7 +270,7 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Clock className="w-3 h-3" />
-                    Тип действия
+                    {t('spellModal.actionType.label')}
                   </label>
                   <div className="grid grid-cols-3 gap-2 p-1 bg-dark-bg rounded-xl border border-dark-border">
                     {actionTypes.map((t) => (
@@ -288,12 +291,12 @@ export const AttackModal: React.FC<AttackModalProps> = ({
 
                 <div>
                   <CustomSelect
-                    label="Характеристика"
+                    label={t('attackModal.attribute')}
                     value={attribute}
                     onChange={setAttribute}
                     options={ATTRIBUTES_LIST.map(attr => ({ 
                       value: attr.id, 
-                      label: `${attr.name} (${attr.shortName})` 
+                      label: `${getAttributeLabel(attr.id, t)} (${attr.shortName})` 
                     }))}
                   />
                 </div>
@@ -306,8 +309,8 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                       <Zap className={`w-4 h-4 ${usesAmmunition ? 'text-orange-400' : 'text-gray-600'}`} />
                     </div>
                     <div>
-                      <span className={`text-sm font-bold ${usesAmmunition ? 'text-orange-400' : 'text-gray-400'}`}>Расход боеприпасов</span>
-                      <p className="text-[10px] text-gray-500">Тратит стрелы или патроны при атаке</p>
+                      <span className={`text-sm font-bold ${usesAmmunition ? 'text-orange-400' : 'text-gray-400'}`}>{t('attackModal.ammoUsage')}</span>
+                      <p className="text-[10px] text-gray-500">{t('attackModal.ammoUsageHint')}</p>
                     </div>
                   </div>
                   <input
@@ -327,7 +330,7 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                     animate={{ opacity: 1, height: 'auto' }}
                     className="mt-4 pt-4 border-t border-orange-500/20 flex items-center justify-between"
                   >
-                    <span className="text-xs text-gray-400">Количество за выстрел</span>
+                    <span className="text-xs text-gray-400">{t('attackModal.perShot')}</span>
                     <div className="flex items-center gap-3">
                       <button onClick={() => setAmmunitionCost(Math.max(1, ammunitionCost - 1))} className="w-7 h-7 rounded bg-dark-bg border border-orange-500/30 flex items-center justify-center text-orange-400">-</button>
                       <span className="text-sm font-bold w-4 text-center">{ammunitionCost}</span>
@@ -338,11 +341,11 @@ export const AttackModal: React.FC<AttackModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Дополнительные эффекты</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('attackModal.extraEffects')}</label>
                 <MarkdownEditor
                   value={description}
                   onChange={setDescription}
-                  placeholder="Опишите особые свойства атаки..."
+                  placeholder={t('attackModal.extraEffectsPlaceholder')}
                   rows={4}
                   minHeight="120px"
                 />
@@ -356,21 +359,21 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                   className="px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 transition-all text-sm font-bold flex items-center gap-2"
                 >
                   <X className="w-4 h-4" />
-                  Удалить
+                  {t('common.delete')}
                 </button>
               )}
               <button
                 onClick={onClose}
                 className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-sm font-bold text-gray-400"
               >
-                Отмена
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 disabled={!name.trim()}
                 className="flex-1 py-3 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl hover:shadow-lg hover:shadow-red-500/40 transition-all text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Сохранить атаку
+                {t('attackModal.save')}
               </button>
             </div>
           </motion.div>

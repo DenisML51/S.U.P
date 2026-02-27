@@ -6,6 +6,7 @@ import { BasicInfoStep } from './steps/BasicInfoStep';
 import { AttributesStep } from './steps/AttributesStep';
 import { SkillsStep } from './steps/SkillsStep';
 import { INITIAL_POINTS } from '../../types';
+import { useI18n } from '../../i18n/I18nProvider';
 
 interface CharacterCreationProps {
   onComplete?: () => void;
@@ -13,13 +14,14 @@ interface CharacterCreationProps {
 }
 
 export const CharacterCreation: React.FC<CharacterCreationProps> = ({ onComplete, onCancel }) => {
+  const { t } = useI18n();
   const logic = useCharacterCreationLogic(onComplete);
   const { currentStep, setCurrentStep, isBasicValid, isAttributesValid } = logic;
 
   const steps = [
-    { id: 'basic', label: 'Основное', icon: User },
-    { id: 'attributes', label: 'Характеристики', icon: TrendingUp },
-    { id: 'skills', label: 'Навыки', icon: Zap },
+    { id: 'basic', label: t('creation.steps.basic'), icon: User },
+    { id: 'attributes', label: t('creation.steps.attributes'), icon: TrendingUp },
+    { id: 'skills', label: t('creation.steps.skills'), icon: Zap },
   ];
 
   return (
@@ -34,9 +36,9 @@ export const CharacterCreation: React.FC<CharacterCreationProps> = ({ onComplete
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                Создание Персонажа
+                {t('creation.title')}
               </h1>
-              <p className="text-gray-400">Создайте нового персонажа для вашего приключения</p>
+              <p className="text-gray-400">{t('creation.subtitle')}</p>
             </div>
             {onCancel && (
               <button
@@ -44,7 +46,7 @@ export const CharacterCreation: React.FC<CharacterCreationProps> = ({ onComplete
                 className="px-4 py-2 bg-dark-card border border-dark-border rounded-xl hover:bg-dark-hover transition-all flex items-center gap-2"
               >
                 <X className="w-4 h-4" />
-                Отмена
+                {t('common.cancel')}
               </button>
             )}
           </div>
@@ -105,18 +107,8 @@ export const CharacterCreation: React.FC<CharacterCreationProps> = ({ onComplete
               setCharClass={logic.setCharClass}
               subclass={logic.subclass}
               setSubclass={logic.setSubclass}
-              isCustomRace={logic.isCustomRace}
-              setIsCustomRace={logic.setIsCustomRace}
-              isCustomSubrace={logic.isCustomSubrace}
-              setIsCustomSubrace={logic.setIsCustomSubrace}
-              isCustomClass={logic.isCustomClass}
-              setIsCustomClass={logic.setIsCustomClass}
-              isCustomSubclass={logic.isCustomSubclass}
-              setIsCustomSubclass={logic.setIsCustomSubclass}
               speed={logic.speed}
               setSpeed={logic.setSpeed}
-              selectedRace={logic.selectedRace}
-              selectedClass={logic.selectedClass}
               isBasicValid={logic.isBasicValid}
               setCurrentStep={logic.setCurrentStep}
             />
@@ -154,9 +146,6 @@ export const CharacterCreation: React.FC<CharacterCreationProps> = ({ onComplete
               race={logic.race}
               subrace={logic.subrace}
               charClass={logic.charClass}
-              selectedRace={logic.selectedRace}
-              selectedSubrace={logic.selectedSubrace}
-              selectedClass={logic.selectedClass}
               subclass={logic.subclass}
               setCurrentStep={logic.setCurrentStep}
               isFormValid={logic.isFormValid}

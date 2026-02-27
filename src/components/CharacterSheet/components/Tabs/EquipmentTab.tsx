@@ -3,6 +3,8 @@ import { Backpack, Zap, Sword, Shield } from 'lucide-react';
 import { Character, InventoryItem } from '../../../../types';
 import { MarkdownEditor } from '../../../MarkdownEditor';
 import { MarkdownText } from '../../../MarkdownText';
+import { useI18n } from '../../../../i18n/I18nProvider';
+import { getDamageTypeLabel } from '../../../../i18n/domainLabels';
 
 interface EquipmentTabProps {
   character: Character;
@@ -23,16 +25,17 @@ export const EquipmentTab: React.FC<EquipmentTabProps> = ({
   getItemIcon,
   getItemTypeLabel,
 }) => {
+  const { t } = useI18n();
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold">Снаряжение</h3>
+        <h3 className="text-xl font-bold">{t('tabs.equipment')}</h3>
         <button
           onClick={() => setShowAmmunitionModal(true)}
           className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl hover:shadow-lg transition-all font-semibold text-sm flex items-center gap-2"
         >
           <Zap className="w-4 h-4" />
-          Боеприпасы
+          {t('navbar.ammo')}
         </button>
       </div>
 
@@ -71,13 +74,13 @@ export const EquipmentTab: React.FC<EquipmentTabProps> = ({
                           <Sword className="w-3 h-3" />
                           <span>{item.damage}</span>
                           <span className="text-gray-600 font-normal">•</span>
-                          <span>{item.damageType}</span>
+                          <span>{getDamageTypeLabel(item.damageType || '', t)}</span>
                         </div>
                       )}
                       {isArmor && (
                         <div className="flex items-center gap-1 text-blue-400 font-bold">
                           <Shield className="w-3 h-3" />
-                          <span>КБ {item.baseAC}</span>
+                          <span>{t('limb.ac')} {item.baseAC}</span>
                         </div>
                       )}
                       <div className="text-gray-500 flex items-center gap-1">
@@ -93,7 +96,7 @@ export const EquipmentTab: React.FC<EquipmentTabProps> = ({
                     onClick={(e) => { e.stopPropagation(); unequipItem(item.id); }}
                     className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all"
                   >
-                    Снять
+                    {t('common.unequip')}
                   </button>
                 </div>
               </div>
@@ -103,17 +106,17 @@ export const EquipmentTab: React.FC<EquipmentTabProps> = ({
       ) : (
         <div className="text-gray-400 text-center py-12">
           <Backpack className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-          <p className="text-sm">Нет экипированных предметов</p>
-          <p className="text-xs mt-1">Экипируйте предметы из инвентаря</p>
+          <p className="text-sm">{t('equipment.empty')}</p>
+          <p className="text-xs mt-1">{t('equipment.emptyHint')}</p>
         </div>
       )}
 
       <div className="mt-6">
-        <div className="text-xs text-gray-400 mb-2 uppercase">Заметки</div>
+        <div className="text-xs text-gray-400 mb-2 uppercase">{t('common.notes')}</div>
         <MarkdownEditor
           value={character.equipmentNotes || ''}
           onChange={updateEquipmentNotes}
-          placeholder="Дополнительные заметки о снаряжении..."
+          placeholder={t('equipment.notesPlaceholder')}
           minHeight="60px"
         />
       </div>

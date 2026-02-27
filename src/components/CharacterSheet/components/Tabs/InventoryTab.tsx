@@ -4,6 +4,7 @@ import { Character, InventoryItem } from '../../../../types';
 import { InventorySubTab } from '../../CharacterSheetLogic';
 import { MarkdownEditor } from '../../../MarkdownEditor';
 import { MarkdownText } from '../../../MarkdownText';
+import { useI18n } from '../../../../i18n/I18nProvider';
 
 interface InventoryTabProps {
   character: Character;
@@ -32,15 +33,16 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
   getItemIcon,
   getItemTypeLabel,
 }) => {
+  const { t } = useI18n();
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold">Инвентарь</h3>
+        <h3 className="text-xl font-bold">{t('navbar.inventory')}</h3>
         <button
           onClick={() => openItemModal()}
           className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:shadow-lg hover:shadow-blue-500/50 transition-all font-semibold text-sm"
         >
-          + Добавить предмет
+          + {t('inventoryTab.addItem')}
         </button>
       </div>
 
@@ -55,11 +57,11 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                 : 'bg-dark-card border border-dark-border text-gray-400 hover:border-blue-500/50'
             }`}
           >
-            {subTab === 'all' && 'Все'}
-            {subTab === 'armor' && 'Броня'}
-            {subTab === 'weapon' && 'Оружие'}
-            {subTab === 'item' && 'Предметы'}
-            {subTab === 'ammunition' && 'Боеприпасы'}
+            {subTab === 'all' && t('inventoryTab.all')}
+            {subTab === 'armor' && t('itemModal.type.armor.label')}
+            {subTab === 'weapon' && t('itemModal.type.weapon.label')}
+            {subTab === 'item' && t('inventoryTab.items')}
+            {subTab === 'ammunition' && t('navbar.ammo')}
           </button>
         ))}
       </div>
@@ -102,7 +104,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                       </span>
                       {item.equipped && (
                         <span className="px-2 py-0.5 bg-blue-500 text-white text-[9px] font-black uppercase tracking-wider rounded-full shadow-lg shadow-blue-500/20">
-                          Экип.
+                          {t('inventoryTab.equippedShort')}
                         </span>
                       )}
                     </div>
@@ -119,7 +121,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                       {isArmor && (
                         <div className="flex items-center gap-1 text-blue-400 font-bold">
                           <Shield className="w-3 h-3" />
-                          <span>КБ {item.baseAC}</span>
+                            <span>{t('limb.ac')} {item.baseAC}</span>
                         </div>
                       )}
                       <div className="text-gray-500 flex items-center gap-1">
@@ -161,14 +163,14 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                             : 'bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20'
                         }`}
                       >
-                        {item.equipped ? 'Снять' : 'Надеть'}
+                        {item.equipped ? t('inventoryTab.unequip') : t('inventoryTab.equip')}
                       </button>
                     )}
 
                     <button
                       onClick={() => openItemModal(item)}
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-200 hover:bg-dark-hover transition-all"
-                      title="Редактировать"
+                      title={t('common.edit')}
                     >
                       <Settings className="w-4 h-4" />
                     </button>
@@ -180,16 +182,16 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
         </div>
       ) : (
         <div className="text-gray-400 text-center py-8">
-          <p className="text-sm">Нет предметов в инвентаре</p>
+          <p className="text-sm">{t('inventoryTab.empty')}</p>
         </div>
       )}
 
       <div className="mt-6">
-        <div className="text-xs text-gray-400 mb-2 uppercase">Быстрые заметки</div>
+        <div className="text-xs text-gray-400 mb-2 uppercase">{t('inventoryTab.quickNotes')}</div>
         <MarkdownEditor
           value={character.inventoryNotes || ''}
           onChange={updateInventoryNotes}
-          placeholder="Список предметов в текстовом виде..."
+          placeholder={t('inventoryTab.notesPlaceholder')}
           minHeight="60px"
         />
       </div>

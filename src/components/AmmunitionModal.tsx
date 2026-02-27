@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, X, Minus, Plus, Package, Disc } from 'lucide-react';
 import { InventoryItem } from '../types';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface AmmunitionModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const AmmunitionModal: React.FC<AmmunitionModalProps> = ({
   ammunition,
   onUpdateQuantity,
 }) => {
+  const { t } = useI18n();
   return (
     <AnimatePresence>
       {isOpen && (
@@ -39,8 +41,8 @@ export const AmmunitionModal: React.FC<AmmunitionModalProps> = ({
                   <Disc className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">Боеприпасы</h2>
-                  <p className="text-xs text-gray-400">Управление запасами стрел и патронов</p>
+                  <h2 className="text-xl font-bold">{t('navbar.ammo')}</h2>
+                  <p className="text-xs text-gray-400">{t('ammoModal.subtitle')}</p>
                 </div>
               </div>
               <button 
@@ -65,7 +67,7 @@ export const AmmunitionModal: React.FC<AmmunitionModalProps> = ({
                         <div className="flex gap-3 mt-1">
                           <span className="text-[10px] text-gray-500 uppercase font-semibold flex items-center gap-1">
                             <Package className="w-3 h-3" />
-                            Вес: {ammo.weight % 1 === 0 ? ammo.weight : ammo.weight.toFixed(1)}
+                            {t('itemView.weight')}: {ammo.weight % 1 === 0 ? ammo.weight : ammo.weight.toFixed(1)}
                           </span>
                         </div>
                       </div>
@@ -107,9 +109,9 @@ export const AmmunitionModal: React.FC<AmmunitionModalProps> = ({
             ) : (
               <div className="text-center py-12 bg-dark-bg/30 rounded-2xl border border-dashed border-dark-border">
                 <Disc className="w-12 h-12 mx-auto mb-3 text-gray-600 opacity-50" />
-                <p className="text-gray-400 font-medium">Боеприпасы не найдены</p>
+                <p className="text-gray-400 font-medium">{t('ammoModal.empty')}</p>
                 <p className="text-xs text-gray-500 mt-1 max-w-[200px] mx-auto">
-                  Добавьте патроны или стрелы в инвентаре, выбрав тип "Боеприпас"
+                  {t('ammoModal.emptyHint')}
                 </p>
               </div>
             )}
@@ -118,7 +120,7 @@ export const AmmunitionModal: React.FC<AmmunitionModalProps> = ({
               onClick={onClose}
               className="w-full mt-6 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all font-semibold text-gray-300 hover:text-white"
             >
-              Закрыть
+              {t('common.close')}
             </button>
           </motion.div>
         </motion.div>

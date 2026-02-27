@@ -13,6 +13,8 @@ import {
 import { Character, ATTRIBUTES_LIST, DAMAGE_TYPES } from '../../../../types';
 import { MarkdownText } from '../../../MarkdownText';
 import { DAMAGE_TYPE_COLORS } from '../../../../utils/damageUtils';
+import { useI18n } from '../../../../i18n/I18nProvider';
+import { getAttributeLabel, getDamageTypeLabel } from '../../../../i18n/domainLabels';
 
 interface ActionTooltipProps {
   hoveredData: any;
@@ -31,6 +33,7 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
   onMouseLeave,
   updateCharacter
 }) => {
+  const { t } = useI18n();
   if (!hoveredData || !hoveredRect) return null;
 
   let item = hoveredData;
@@ -98,37 +101,37 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
   if (hotbarType === 'spell') {
     subtitle = item.school;
     details = [
-      { label: 'Время', value: item.castingTime, icon: Zap },
-      { label: 'Дистанция', value: item.range },
-      { label: 'Длительность', value: item.duration },
+      { label: t('spellsTab.time'), value: item.castingTime, icon: Zap },
+      { label: t('spellView.range'), value: item.range },
+      { label: t('spellView.duration'), value: item.duration },
     ];
     if (item.damage || (item.damageComponents && item.damageComponents.length > 0)) {
       details.push({ 
-        label: 'Урон', 
+        label: t('common.damage'), 
         value: item.damage, 
         icon: Sword,
         customRender: colorizeDamage(item.damage, item.damageType, item.damageComponents)
       });
     }
   } else if (hotbarType === 'attack') {
-    subtitle = item.weaponId ? 'Атака оружием' : 'Прием';
+    subtitle = item.weaponId ? t('tooltip.weaponAttack') : t('tooltip.maneuver');
     details = [
-      { label: 'Попадание', value: `${item.hitBonus >= 0 ? '+' : ''}${item.hitBonus}`, icon: Target },
+      { label: t('attackModal.hit'), value: `${item.hitBonus >= 0 ? '+' : ''}${item.hitBonus}`, icon: Target },
       { 
-        label: 'Урон', 
+        label: t('common.damage'), 
         value: item.damage, 
         icon: Sword,
         customRender: colorizeDamage(item.damage, item.damageType, item.damageComponents)
       },
-      { label: 'Тип', value: item.damageType, icon: Skull },
-      { label: 'Характеристика', value: ATTRIBUTES_LIST.find(a => a.id === item.attribute)?.name || item.attribute || '—', icon: Brain },
+      { label: t('attacksTab.type'), value: getDamageTypeLabel(item.damageType, t), icon: Skull },
+      { label: t('attackModal.attribute'), value: item.attribute ? getAttributeLabel(item.attribute, t) : '—', icon: Brain },
     ];
     color = item.color || (item.weaponId ? '#ef4444' : '#a855f7');
   } else if (hotbarType === 'ability') {
-    subtitle = 'Способность';
+    subtitle = t('tabs.abilities');
     if (item.damage || (item.damageComponents && item.damageComponents.length > 0)) {
       details.push({ 
-        label: 'Урон', 
+        label: t('common.damage'), 
         value: item.damage, 
         icon: Sword,
         customRender: colorizeDamage(item.damage, item.damageType, item.damageComponents)
@@ -136,14 +139,14 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
     }
     if (item.resourceId) {
       const res = character.resources.find(r => r.id === item.resourceId);
-      if (res) details.push({ label: 'Ресурс', value: `${item.resourceCost} ${res.name}`, icon: Sparkles });
+      if (res) details.push({ label: t('abilitiesTab.resource'), value: `${item.resourceCost} ${res.name}`, icon: Sparkles });
     }
     color = item.color || '#a855f7';
   } else if (hotbarType === 'item') {
-    subtitle = item.type === 'weapon' ? 'Оружие' : item.type === 'armor' ? 'Броня' : 'Предмет';
-    if (item.damage) details.push({ label: 'Урон', value: `${item.damage} ${item.damageType}`, icon: Sword });
-    if (item.baseAC) details.push({ label: 'КБ', value: item.baseAC.toString(), icon: Shield });
-    if (item.quantity !== undefined) details.push({ label: 'Количество', value: item.quantity.toString(), icon: Box });
+    subtitle = item.type === 'weapon' ? t('itemModal.type.weapon.label') : item.type === 'armor' ? t('itemModal.type.armor.label') : t('itemModal.type.item.label');
+    if (item.damage) details.push({ label: t('common.damage'), value: `${item.damage} ${getDamageTypeLabel(item.damageType, t)}`, icon: Sword });
+    if (item.baseAC) details.push({ label: t('limb.ac'), value: item.baseAC.toString(), icon: Shield });
+    if (item.quantity !== undefined) details.push({ label: t('common.amount'), value: item.quantity.toString(), icon: Box });
     color = '#94a3b8';
   }
 
@@ -179,7 +182,7 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
               <span className="font-bold text-white text-lg leading-tight break-words">{title}</span>
                 {hotbarType === 'spell' && (
                   <span className="text-[9px] font-black text-blue-400 uppercase tracking-[0.15em] bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20 w-fit whitespace-nowrap">
-                    {item.level === 0 ? 'Заговор' : `${item.level} КРУГ`}
+                    {item.level === 0 ? t('spellView.cantrip') : `${item.level} ${t('spellView.circle').toUpperCase()}`}
                   </span>
                 )}
               </div>
@@ -198,7 +201,7 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
                   borderColor: `${item.actionType === 'bonus' ? '#22c55e' : item.actionType === 'reaction' ? '#f97316' : '#3b82f6'}20`
                 }}
               >
-                {item.actionType === 'bonus' ? 'Бонус' : item.actionType === 'reaction' ? 'Реакция' : 'Осн.'}
+                {item.actionType === 'bonus' ? t('tooltip.bonusShort') : item.actionType === 'reaction' ? t('tooltip.reactionShort') : t('tooltip.actionShort')}
               </span>
             )}
           </div>
@@ -254,7 +257,7 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
             className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 hover:border-blue-500/50 rounded-xl text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-blue-500/5 group/use mt-1"
           >
             <Box size={14} className="group-hover/use:scale-110 transition-transform" />
-            ИСПОЛЬЗОВАТЬ
+            {t('tooltip.use')}
           </button>
         )}
       </div>

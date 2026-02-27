@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Character, Resistance, CharacterPreview, TabType, ViewMode } from '../types';
 import { toast } from 'react-hot-toast';
+import { translations, Locale } from '../i18n/translations';
 import {
   createCharacterApi,
   deleteCharacterApi,
@@ -8,6 +9,16 @@ import {
   listCharactersApi,
   updateCharacterApi
 } from '../api/characters';
+
+const getLocale = (): Locale => {
+  const saved = localStorage.getItem('itd_locale');
+  return saved === 'en' ? 'en' : 'ru';
+};
+
+const tStore = (key: string): string => {
+  const locale = getLocale();
+  return translations[locale][key] ?? translations.ru[key] ?? key;
+};
 
 interface CharacterState {
   character: Character | null;
@@ -72,7 +83,10 @@ const normalizeCharacter = (parsed: any): Character => {
     abilitiesNotes: parsed.abilitiesNotes || '',
     spells: parsed.spells || [],
     spellsNotes: parsed.spellsNotes || '',
-    spellcastingDifficultyName: parsed.spellcastingDifficultyName || 'СЛ ЗКЛ',
+    spellcastingDifficultyName:
+      parsed.spellcastingDifficultyName && parsed.spellcastingDifficultyName !== 'СЛ ЗКЛ'
+        ? parsed.spellcastingDifficultyName
+        : '',
     spellcastingDifficultyValue: parsed.spellcastingDifficultyValue || 10,
     knownSchools: parsed.knownSchools || [
       'Воплощение', 'Вызов', 'Иллюзия', 'Некромантия', 
@@ -117,9 +131,7 @@ const saveToStorage = async (normalized: Character, settings: CharacterState['se
     if (!normalized.id) return;
     await updateCharacterApi(normalized.id, normalized);
 
-    if (settings.notifications && !silent) {
-      toast.success('Персонаж сохранен');
-    }
+    // Auto-save is silent to avoid noisy technical toasts.
   } catch (e) {
     console.error('Failed to save character:', e);
   }
@@ -204,8 +216,8 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
 
     if (delta !== 0) {
       const message = delta < 0 
-        ? `Потрачен ресурс: ${resource.name} (${newCurrent}/${maxVal})`
-        : `Восстановлен ресурс: ${resource.name} (${newCurrent}/${maxVal})`;
+        ? `${tStore('log.resourceSpent')}: ${resource.name} (${newCurrent}/${maxVal})`
+        : `${tStore('log.resourceRestored')}: ${resource.name} (${newCurrent}/${maxVal})`;
       
       logHistory(message, 'resource');
 
@@ -250,7 +262,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
           viewMode: 'tabs'
         });
         if (settings.notifications) {
-          toast.success(`Загружен: ${normalized.name}`);
+          toast.success(`${tStore('log.loaded')}: ${normalized.name}`);
         }
       }
     } catch (e) {
@@ -266,7 +278,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     
     createCharacterApi(normalized).catch((e) => {
       console.error('Failed to create character:', e);
-      toast.error('Не удалось сохранить персонажа на сервере');
+      toast.error(tStore('log.serverSaveFailed'));
     });
     const newList = updateListInStorage(normalized, charactersList);
     set({ 
@@ -357,7 +369,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
             viewMode: 'tabs'
           });
           if (settings.notifications) {
-            toast.success(`Персонаж ${characterWithId.name} импортирован`);
+            toast.success(`${tStore('log.characterImported')}: ${characterWithId.name}`);
           }
           resolve(id);
         } catch (error) {
@@ -383,8 +395,8 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     }));
 
     updateCharacter({ ...character, resources: newResources }, true);
-    logHistory('Все ресурсы восстановлены (Длинный отдых)', 'resource');
-    toast.success('Все ресурсы восстановлены');
+    logHistory(tStore('log.allResourcesRestoredLongRest'), 'resource');
+    toast.success(tStore('log.allResourcesRestored'));
   },
 }));
 

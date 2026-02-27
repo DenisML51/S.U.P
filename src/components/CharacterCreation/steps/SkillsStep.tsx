@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Check, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { ATTRIBUTES_LIST, Skill, Race, Class, Subclass, Subrace } from '../../../types';
+import { ATTRIBUTES_LIST, Skill } from '../../../types';
+import { useI18n } from '../../../i18n/I18nProvider';
+import { getAttributeLabel } from '../../../i18n/domainLabels';
 
 interface SkillsStepProps {
   skills: Skill[];
@@ -15,9 +17,6 @@ interface SkillsStepProps {
   race: string;
   subrace: string;
   charClass: string;
-  selectedRace: Race | undefined;
-  selectedSubrace: Subrace | undefined;
-  selectedClass: Class | undefined;
   subclass: string;
   setCurrentStep: (step: any) => void;
   isFormValid: boolean;
@@ -36,14 +35,12 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
   race,
   subrace,
   charClass,
-  selectedRace,
-  selectedSubrace,
-  selectedClass,
   subclass,
   setCurrentStep,
   isFormValid,
   handleSave,
 }) => {
+  const { t } = useI18n();
   return (
     <motion.div
       key="skills"
@@ -56,10 +53,10 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
         <div className="bg-gradient-to-br from-dark-card to-dark-bg rounded-2xl p-6 border border-dark-border shadow-lg">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Zap className="w-5 h-5" />
-            Навыки
+            {t('creation.steps.skills')}
           </h3>
           <div className="text-xs text-gray-400 mb-4 flex items-center gap-2">
-            <Check className="w-3 h-3" /> = владение, E = экспертиза
+            <Check className="w-3 h-3" /> {t('creation.skillsLegend')}
           </div>
           
           <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
@@ -70,7 +67,7 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
               return (
                 <div key={attr.id} className="mb-4">
                   <div className="text-xs font-semibold text-gray-400 mb-3 uppercase">
-                    {attr.name}
+                    {getAttributeLabel(attr.id, t)}
                   </div>
                   <div className="space-y-2">
                     {attrSkills.map((skill) => {
@@ -134,47 +131,45 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
 
       <div className="space-y-6">
         <div className="bg-gradient-to-br from-dark-card to-dark-bg rounded-2xl p-6 border border-dark-border shadow-lg">
-          <h3 className="text-lg font-semibold mb-4">Владения и языки</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('creation.proficienciesLanguages')}</h3>
           <textarea
             value={languagesAndProficiencies}
             onChange={(e) => setLanguagesAndProficiencies(e.target.value)}
             rows={8}
             className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none"
-            placeholder="Доспехи, оружие, языки..."
+            placeholder={t('creation.proficienciesPlaceholder')}
           />
         </div>
 
         {(name || race || charClass) && (
           <div className="bg-gradient-to-br from-dark-card to-dark-bg rounded-2xl p-6 border border-dark-border shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Предпросмотр</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('creation.preview')}</h3>
             <div className="space-y-3">
               {name && (
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">Имя</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('common.name')}</div>
                   <div className="font-semibold">{name}</div>
                 </div>
               )}
               {race && (
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">Раса</div>
-                  <div className="font-semibold">{selectedRace?.name || race}</div>
-                  {(selectedSubrace || subrace) && (
-                    <div className="text-xs text-gray-500 mt-1">({selectedSubrace?.name || subrace})</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('basicInfo.race')}</div>
+                  <div className="font-semibold">{race}</div>
+                  {subrace && (
+                    <div className="text-xs text-gray-500 mt-1">({subrace})</div>
                   )}
                 </div>
               )}
               {charClass && (
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">Класс</div>
-                  <div className="font-semibold">{selectedClass?.name || charClass}</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('basicInfo.class')}</div>
+                  <div className="font-semibold">{charClass}</div>
                 </div>
               )}
-              {(subclass || (selectedClass && subclass)) && (
+              {subclass && (
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">Подкласс</div>
-                  <div className="font-semibold">
-                    {selectedClass?.subclasses.find(sc => sc.id === subclass)?.name || subclass}
-                  </div>
+                  <div className="text-xs text-gray-400 mb-1">{t('basicInfo.subclass')}</div>
+                  <div className="font-semibold">{subclass}</div>
                 </div>
               )}
             </div>
@@ -187,13 +182,13 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
           onClick={() => setCurrentStep('attributes')}
           className="px-6 py-3 bg-dark-card border border-dark-border rounded-xl font-semibold hover:bg-dark-hover transition-all"
         >
-          Назад
+          {t('common.back')}
         </button>
         <div className="flex items-center gap-3">
           {!isFormValid && (
             <div className="flex items-center gap-2 text-sm text-yellow-400">
               <AlertCircle className="w-4 h-4" />
-              Заполните все обязательные поля
+              {t('creation.fillRequired')}
             </div>
           )}
           <button
@@ -202,7 +197,7 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
             className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-green-500/50 transition-all flex items-center gap-2"
           >
             <CheckCircle2 className="w-5 h-5" />
-            Создать персонажа
+            {t('creation.createCharacter')}
           </button>
         </div>
       </div>

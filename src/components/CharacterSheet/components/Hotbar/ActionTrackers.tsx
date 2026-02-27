@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Circle, Triangle, Zap, Minus, Plus } from 'lucide-react';
 import { Character } from '../../../../types';
+import { useI18n } from '../../../../i18n/I18nProvider';
 
 interface ActionTrackersProps {
   character: Character;
@@ -12,6 +13,7 @@ export const ActionTrackers: React.FC<ActionTrackersProps> = ({
   character,
   updateCharacter
 }) => {
+  const { t } = useI18n();
   const [editingActionId, setEditingActionId] = useState<string | null>(null);
 
   const actionLimits = character.actionLimits || { action: 1, bonus: 1, reaction: 1 };
@@ -44,9 +46,9 @@ export const ActionTrackers: React.FC<ActionTrackersProps> = ({
   };
 
   const actions = [
-    { id: 'action' as const, icon: Circle, color: '#3b82f6', title: 'Основное действие' },
-    { id: 'bonus' as const, icon: Triangle, color: '#22c55e', title: 'Бонусное действие' },
-    { id: 'reaction' as const, icon: Zap, color: '#f97316', title: 'Реакция' }
+    { id: 'action' as const, icon: Circle, color: '#3b82f6', title: t('actionTracker.action') },
+    { id: 'bonus' as const, icon: Triangle, color: '#22c55e', title: t('actionTracker.bonus') },
+    { id: 'reaction' as const, icon: Zap, color: '#f97316', title: t('actionTracker.reaction') }
   ];
 
   return (
@@ -109,7 +111,7 @@ export const ActionTrackers: React.FC<ActionTrackersProps> = ({
                     {act.title}
                   </div>
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-[10px] text-gray-500 font-bold uppercase whitespace-nowrap">Кол-во за ход:</span>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase whitespace-nowrap">{t('actionTracker.perTurn')}</span>
                     <div className="flex items-center gap-3">
                       <button 
                         onClick={() => updateActionLimit(act.id, actionLimits[act.id] - 1)}

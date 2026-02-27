@@ -6,6 +6,8 @@ import { MarkdownText } from '../../../MarkdownText';
 import { MarkdownEditor } from '../../../MarkdownEditor';
 import { getLucideIcon } from '../../../../utils/iconUtils';
 import { DAMAGE_TYPE_COLORS } from '../../../../utils/damageUtils';
+import { useI18n } from '../../../../i18n/I18nProvider';
+import { getDamageTypeLabel } from '../../../../i18n/domainLabels';
 
 interface SpellsTabProps {
   character: Character;
@@ -26,8 +28,15 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
   updateSpellcastingDifficulty,
   openGrimmoire,
 }) => {
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [activeLevel, setActiveLevel] = useState<number | 'all'>(-1);
+  const spellDcName =
+    !character.spellcastingDifficultyName ||
+    character.spellcastingDifficultyName === 'СЛ ЗКЛ' ||
+    character.spellcastingDifficultyName === 'SPELL DC'
+      ? t('spellsTab.spellDc')
+      : character.spellcastingDifficultyName;
 
   const spells = character.spells || [];
   
@@ -60,7 +69,7 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Поиск заклинания или школы..."
+              placeholder={t('spellsTab.searchPlaceholder')}
               className="w-full bg-dark-card/30 border border-dark-border rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
           </div>
@@ -70,7 +79,7 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
           >
             <Book size={18} />
-            Гримуар
+            {t('spellsTab.grimoire')}
           </button>
         </div>
 
@@ -81,15 +90,15 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
               <div className="flex flex-col">
                 <input
                   type="text"
-                  value={character.spellcastingDifficultyName || 'СЛ ЗКЛ'}
+                  value={spellDcName}
                   onChange={(e) => updateSpellcastingDifficulty(e.target.value, character.spellcastingDifficultyValue || 10)}
-                  placeholder="Название..."
+                  placeholder={t('spellsTab.namePlaceholder')}
                   className="bg-transparent border-none p-0 text-[10px] font-black uppercase tracking-tighter text-purple-400/70 focus:outline-none focus:text-purple-400 w-24"
                 />
                 <input
                   type="number"
                   value={character.spellcastingDifficultyValue || 10}
-                  onChange={(e) => updateSpellcastingDifficulty(character.spellcastingDifficultyName || 'СЛ ЗКЛ', parseInt(e.target.value) || 0)}
+                  onChange={(e) => updateSpellcastingDifficulty(spellDcName, parseInt(e.target.value) || 0)}
                   className="bg-transparent border-none p-0 text-lg font-black text-white focus:outline-none w-12 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
@@ -137,7 +146,7 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
                   
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
                     <div className="font-bold text-gray-200">{slot.name}: {slot.current}/{slot.max}</div>
-                    <div className="text-gray-500 mt-1 uppercase tracking-tighter">ЛКМ: -1 • ПКМ: Настр.</div>
+                    <div className="text-gray-500 mt-1 uppercase tracking-tighter">{t('spellsTab.slotHint')}</div>
                   </div>
                 </div>
               );
@@ -153,7 +162,7 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
                   : 'text-gray-500 hover:text-gray-300'
               }`}
             >
-              Все
+              {t('common.all')}
             </button>
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(l => spells.some(s => s.level === l)).map(level => (
               <button
@@ -165,7 +174,7 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
                     : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
-                {level === 0 ? 'Заговоры' : level}
+                {level === 0 ? t('spellsTab.cantrips') : level}
               </button>
             ))}
           </div>
@@ -202,7 +211,7 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
                     <div className="flex items-start justify-between gap-2">
                       <span className="font-bold text-white text-base leading-tight">{spell.name}</span>
                       <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 shrink-0 mt-0.5">
-                        {spell.level === 0 ? 'Заговор' : `${spell.level} круг`}
+                        {spell.level === 0 ? t('spellView.cantrip') : `${spell.level} ${t('spellView.circle')}`}
                       </span>
                     </div>
                     <span className="text-[10px] text-gray-400 font-medium italic opacity-70">
@@ -214,34 +223,34 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
 
                   <div className="grid grid-cols-2 gap-y-2 gap-x-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Время</span>
+                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">{t('spellsTab.time')}</span>
                       <div className="flex items-center gap-1.5 text-[10px] text-gray-300 font-bold">
                         <Zap size={10} className="text-blue-400" />
                         {spell.castingTime}
                       </div>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Тип</span>
+                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">{t('spellsTab.type')}</span>
                       <div className={`text-[10px] font-bold ${
                         spell.actionType === 'bonus' ? 'text-green-400' :
                         spell.actionType === 'reaction' ? 'text-orange-400' :
                         'text-blue-400'
                       }`}>
-                        {spell.actionType === 'bonus' ? 'Бонусное' : 
-                         spell.actionType === 'reaction' ? 'Реакция' : 'Основное'}
+                        {spell.actionType === 'bonus' ? t('spellModal.actionType.bonus') : 
+                         spell.actionType === 'reaction' ? t('spellModal.actionType.reaction') : t('spellModal.actionType.action')}
                       </div>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Дистанция</span>
+                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">{t('spellView.range')}</span>
                       <span className="text-[10px] text-gray-300 font-bold">{spell.range}</span>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Длительность</span>
+                      <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">{t('spellView.duration')}</span>
                       <span className="text-[10px] text-gray-300 font-bold">{spell.duration}</span>
                     </div>
                     {spell.damageComponents && spell.damageComponents.length > 0 ? (
                       <div className="col-span-2 mt-1 pt-2 border-t border-white/5 flex flex-col gap-1">
-                        <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Урон</span>
+                        <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">{t('common.damage')}</span>
                         <div className="flex flex-wrap gap-2">
                           {spell.damageComponents.map((comp, i) => (
                             <div 
@@ -249,19 +258,19 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
                               className="text-[11px] font-black"
                               style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#ef4444' }}
                             >
-                              {comp.damage} <span className="text-[8px] opacity-60 ml-1 uppercase">{comp.type}</span>
+                              {comp.damage} <span className="text-[8px] opacity-60 ml-1 uppercase">{getDamageTypeLabel(comp.type, t)}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                     ) : spell.damage && (
                       <div className="col-span-2 mt-1 pt-2 border-t border-white/5 flex items-center justify-between">
-                        <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">Урон</span>
+                        <span className="text-[8px] text-gray-500 uppercase font-black tracking-tighter">{t('common.damage')}</span>
                         <div 
                           className="text-[11px] font-black"
                           style={{ color: DAMAGE_TYPE_COLORS[spell.damageType || ''] || '#ef4444' }}
                         >
-                          {spell.damage} {spell.damageType && <span className="text-[8px] opacity-60 ml-1">{spell.damageType}</span>}
+                          {spell.damage} {spell.damageType && <span className="text-[8px] opacity-60 ml-1">{getDamageTypeLabel(spell.damageType, t)}</span>}
                         </div>
                       </div>
                     )}
@@ -301,20 +310,20 @@ export const SpellsTab: React.FC<SpellsTabProps> = ({
           <div className="w-16 h-16 bg-dark-bg border border-dark-border rounded-2xl flex items-center justify-center mx-auto mb-4 text-gray-600">
             <Book size={32} />
           </div>
-          <h3 className="text-gray-400 font-bold">Заклинаний не найдено</h3>
-          <p className="text-sm text-gray-600 mt-1">Добавьте свое первое магическое умение</p>
+          <h3 className="text-gray-400 font-bold">{t('spellsTab.empty')}</h3>
+          <p className="text-sm text-gray-600 mt-1">{t('spellsTab.emptyHint')}</p>
         </div>
       )}
 
       <div className="space-y-4">
         <div className="flex items-center gap-3 px-1">
-          <h3 className="text-xl font-bold tracking-tight text-gray-200 uppercase tracking-widest">Заметки заклинателя</h3>
+          <h3 className="text-xl font-bold tracking-tight text-gray-200 uppercase tracking-widest">{t('spellsTab.casterNotes')}</h3>
           <div className="h-px flex-1 bg-gradient-to-r from-dark-border to-transparent"></div>
         </div>
         <MarkdownEditor
           value={character.spellsNotes}
           onChange={updateSpellsNotes}
-          placeholder="Особые правила, фокусировка, магические традиции..."
+          placeholder={t('spellsTab.notesPlaceholder')}
           minHeight="150px"
         />
       </div>

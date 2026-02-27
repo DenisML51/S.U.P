@@ -1,5 +1,6 @@
 import { toast } from 'react-hot-toast';
 import { Character, InventoryItem, Attack } from '../../types';
+import { useI18n } from '../../i18n/I18nProvider';
 
 export const useCharacterInventory = (
   character: Character | null,
@@ -8,6 +9,7 @@ export const useCharacterInventory = (
   settings: any,
   getModifierValue: (attrId: string) => number
 ) => {
+  const { t } = useI18n();
   if (!character) return null;
 
   const calculateACForState = (inventory: InventoryItem[], attributes: {[key: string]: number}) => {
@@ -48,7 +50,7 @@ export const useCharacterInventory = (
     const item = character.inventory.find(i => i.id === itemId);
     const newInventory = character.inventory.filter(i => i.id !== itemId);
     updateCharacter({ ...character, inventory: newInventory });
-    if (item) logHistory(`Удален предмет: ${item.name}`, 'inventory');
+    if (item) logHistory(`${t('log.itemDeleted')}: ${item.name}`, 'inventory');
   };
 
   const equipItem = (itemId: string) => {
@@ -106,9 +108,9 @@ export const useCharacterInventory = (
 
     const item = character?.inventory.find(i => i.id === itemId);
     if (item) {
-      logHistory(`Экипировано: ${item.name}`, 'inventory');
+      logHistory(`${t('log.itemEquipped')}: ${item.name}`, 'inventory');
       if (settings.notifications) {
-        toast.success(`Экипировано: ${item.name}`);
+        toast.success(`${t('log.itemEquipped')}: ${item.name}`);
       }
     }
   };
@@ -144,9 +146,9 @@ export const useCharacterInventory = (
 
     const item = character?.inventory.find(i => i.id === itemId);
     if (item) {
-      logHistory(`Снято: ${item.name}`, 'inventory');
+      logHistory(`${t('log.itemUnequipped')}: ${item.name}`, 'inventory');
       if (settings.notifications) {
-        toast(`Снято: ${item.name}`, { icon: '📦' });
+        toast(`${t('log.itemUnequipped')}: ${item.name}`, { icon: '📦' });
       }
     }
   };
@@ -165,8 +167,8 @@ export const useCharacterInventory = (
 
       if (delta !== 0) {
         const message = delta > 0 
-          ? `Получено: ${item.name} (+${delta})`
-          : `Потрачено: ${item.name} (${delta})`;
+          ? `${t('log.itemGained')}: ${item.name} (+${delta})`
+          : `${t('log.itemSpent')}: ${item.name} (${delta})`;
         setTimeout(() => logHistory(message, 'inventory'), 0);
       }
 

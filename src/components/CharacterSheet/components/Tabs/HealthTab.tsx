@@ -3,6 +3,8 @@ import { Shield, Activity, AlertCircle, Heart, ShieldCheck, ShieldAlert, ShieldX
 import { Character, Limb, getLimbInjuryLevel, Resistance } from '../../../../types';
 import { motion } from 'framer-motion';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../../../../utils/damageUtils';
+import { useI18n } from '../../../../i18n/I18nProvider';
+import { getDamageTypeLabel, getLimbLabel } from '../../../../i18n/domainLabels';
 
 interface HealthTabProps {
   character: Character;
@@ -21,6 +23,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
   openACModal,
   view = 'all',
 }) => {
+  const { t } = useI18n();
   const renderResistanceIcon = (res: Resistance) => {
     const color = DAMAGE_TYPE_COLORS[res.type] || '#94a3b8';
     
@@ -35,9 +38,9 @@ export const HealthTab: React.FC<HealthTabProps> = ({
 
     const getLevelLabel = () => {
       switch (res.level) {
-        case 'resistance': return 'Сопротивление';
-        case 'vulnerability': return 'Уязвимость';
-        case 'immunity': return 'Иммунитет';
+        case 'resistance': return t('armorClass.level.resistance');
+        case 'vulnerability': return t('armorClass.level.vulnerability');
+        case 'immunity': return t('armorClass.level.immunity');
         default: return '';
       }
     };
@@ -48,7 +51,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         className="relative p-2 group cursor-help bg-dark-bg/40 border border-white/5 rounded-xl hover:border-white/10 transition-colors"
-        title={`${res.type}: ${getLevelLabel()}`}
+        title={`${getDamageTypeLabel(res.type, t)}: ${getLevelLabel()}`}
         style={{ color }}
       >
         <div className="relative">
@@ -71,7 +74,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
         </div>
         
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-dark-card border border-dark-border rounded-xl text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 shadow-2xl translate-y-1 group-hover:translate-y-0">
-          <div className="font-black border-b border-white/10 pb-1 mb-1">{res.type}</div>
+          <div className="font-black border-b border-white/10 pb-1 mb-1">{getDamageTypeLabel(res.type, t)}</div>
           <div className="text-gray-400 font-bold">{getLevelLabel()}</div>
         </div>
       </motion.div>
@@ -83,7 +86,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
       <div>
         <h3 className="text-xl font-bold flex items-center gap-2 mb-4">
           <Activity className="w-5 h-5 text-blue-400" />
-          Состояние тела
+          {t('healthTab.bodyState')}
         </h3>
         
         <div className="flex flex-wrap gap-2">
@@ -93,7 +96,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
 
       {character.inventory && character.inventory.find(i => i.equipped && i.type === 'armor') && (
         <div className="space-y-3 mt-4">
-          <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Текущая защита</h4>
+          <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">{t('healthTab.currentDefense')}</h4>
           {character.inventory.filter(i => i.equipped && i.type === 'armor').map((armor) => (
             <button
               key={armor.id}
@@ -106,7 +109,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
                 </div>
                 <div className="text-left">
                   <div className="text-lg font-bold text-gray-100">{armor.name}</div>
-                  <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest">Базовая броня</div>
+                  <div className="text-[10px] text-blue-400 font-black uppercase tracking-widest">{t('healthTab.baseArmor')}</div>
                 </div>
               </div>
               <div className="text-3xl font-black text-blue-400 px-4">{armor.baseAC || 0}</div>
@@ -173,7 +176,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
                 className={`absolute flex flex-col items-center gap-1 p-2 rounded-2xl border backdrop-blur-md transition-all shadow-xl ${getColorClasses()}`}
                 style={getPosition()}
               >
-                <span className="text-[10px] font-black uppercase tracking-tighter opacity-70 leading-none">{limb.name}</span>
+                <span className="text-[10px] font-black uppercase tracking-tighter opacity-70 leading-none">{getLimbLabel(limb.id, limb.name, t)}</span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-black leading-none">{limb.currentHP}</span>
                   <div className="w-8 h-1 bg-dark-bg/50 rounded-full overflow-hidden">
@@ -187,7 +190,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
       </div>
 
       <div className="space-y-3">
-        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Детали повреждений</h4>
+        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">{t('healthTab.damageDetails')}</h4>
         <div className="grid grid-cols-1 gap-2">
           {character.limbs && character.limbs.map((limb) => {
             const injuryLevel = getLimbInjuryLevel(limb.currentHP);
@@ -211,8 +214,8 @@ export const HealthTab: React.FC<HealthTabProps> = ({
                     {isInjured ? <AlertCircle className="w-4 h-4" /> : <Shield className="w-4 h-4 opacity-50" />}
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-gray-200">{limb.name}</div>
-                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">КБ: {limb.ac}</div>
+                    <div className="text-sm font-bold text-gray-200">{getLimbLabel(limb.id, limb.name, t)}</div>
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{t('limb.ac')}: {limb.ac}</div>
                   </div>
                 </div>
                 
@@ -223,8 +226,8 @@ export const HealthTab: React.FC<HealthTabProps> = ({
                       injuryLevel === 'severe' ? 'bg-orange-500/20 text-orange-400' :
                       'bg-yellow-500/20 text-yellow-400'
                     }`}>
-                      {injuryLevel === 'destroyed' ? 'Разрушено' : 
-                       injuryLevel === 'severe' ? 'Тяжелое' : 'Легкое'}
+                      {injuryLevel === 'destroyed' ? t('healthTab.injury.destroyed') : 
+                       injuryLevel === 'severe' ? t('healthTab.injury.severe') : t('healthTab.injury.light')}
                     </span>
                   )}
                   <div className="text-right">

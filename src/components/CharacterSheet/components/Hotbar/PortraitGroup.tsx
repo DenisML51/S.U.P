@@ -4,6 +4,8 @@ import { Activity, ShieldCheck, ShieldAlert, ShieldX, User, Plus, X, Heart } fro
 import { Character } from '../../../../types';
 import { CONDITIONS } from '../../../../constants/conditions';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../../../../utils/damageUtils';
+import { useI18n } from '../../../../i18n/I18nProvider';
+import { getConditionDescription, getConditionName, getDamageTypeLabel, getResistanceLevelLabel } from '../../../../i18n/domainLabels';
 
 interface PortraitGroupProps {
   character: Character;
@@ -16,6 +18,7 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
   subclassIcon,
   updateCharacter
 }) => {
+  const { t } = useI18n();
   const [showConditionPicker, setShowConditionPicker] = useState(false);
 
   return (
@@ -38,9 +41,9 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
               >
                 <Activity size={20} className="text-orange-400" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-72 p-5 rounded-3xl bg-dark-bg/95 border border-white/10 text-xs text-white/90 opacity-0 group-hover/cond:opacity-100 pointer-events-none transition-all z-[1001] shadow-2xl backdrop-blur-2xl translate-y-2 group-hover/cond:translate-y-0 border-t-white/20">
-                  <div className="font-black text-orange-400 mb-3 border-b border-orange-500/20 pb-3 uppercase tracking-[0.2em] text-[11px] text-center">{cond?.name || condId}</div>
-                  <div className="leading-relaxed text-gray-300 font-medium text-sm text-center">{cond?.description}</div>
-                  <div className="mt-4 pt-3 border-t border-white/5 text-[10px] text-white/30 italic font-black text-center tracking-widest uppercase">НАЖМИТЕ, ЧТОБЫ УДАЛИТЬ</div>
+                  <div className="font-black text-orange-400 mb-3 border-b border-orange-500/20 pb-3 uppercase tracking-[0.2em] text-[11px] text-center">{getConditionName(condId, cond?.name || condId, t)}</div>
+                  <div className="leading-relaxed text-gray-300 font-medium text-sm text-center">{getConditionDescription(condId, cond?.description || '', t)}</div>
+                  <div className="mt-4 pt-3 border-t border-white/5 text-[10px] text-white/30 italic font-black text-center tracking-widest uppercase">{t('conditions.clickToRemove')}</div>
                 </div>
               </motion.div>
             );
@@ -73,9 +76,9 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
             </div>
             
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-dark-bg/95 border border-white/10 rounded-2xl text-[11px] whitespace-nowrap opacity-0 group-hover/res:opacity-100 transition-all pointer-events-none z-[1001] shadow-2xl text-gray-200 translate-y-2 group-hover/res:translate-y-0 backdrop-blur-2xl">
-              <div className="font-black border-b border-white/10 pb-1.5 mb-1.5 uppercase tracking-widest text-[9px]" style={{ color: DAMAGE_TYPE_COLORS[res.type] }}>{res.type}</div>
+              <div className="font-black border-b border-white/10 pb-1.5 mb-1.5 uppercase tracking-widest text-[9px]" style={{ color: DAMAGE_TYPE_COLORS[res.type] }}>{getDamageTypeLabel(res.type, t)}</div>
               <div className="text-gray-400 font-bold">
-                {res.level === 'resistance' ? 'Сопротивление' : res.level === 'vulnerability' ? 'Уязвимость' : 'Иммунитет'}
+                {getResistanceLevelLabel(res.level, t)}
               </div>
             </div>
           </div>
@@ -88,7 +91,7 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
               ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' 
               : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'
           }`}
-          title="Добавить состояние"
+          title={t('conditions.add')}
         >
           <Plus size={18} />
         </button>
@@ -102,7 +105,7 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
               className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 p-4 bg-dark-bg/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl z-[1002] w-80"
             >
               <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/5">
-                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Состояния</span>
+                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">{t('conditions.title')}</span>
                 <button onClick={() => setShowConditionPicker(false)} className="text-gray-500 hover:text-white p-1">
                   <X size={14} />
                 </button>
@@ -124,7 +127,7 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
                           : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10'
                       }`}
                     >
-                      {cond.name}
+                      {getConditionName(cond.id, cond.name, t)}
                     </button>
                   );
                 })}

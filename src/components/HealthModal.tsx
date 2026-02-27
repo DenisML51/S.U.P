@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Heart, Shield, Activity } from 'lucide-react';
 import { Character, Limb } from '../types';
 import { HealthTab } from './CharacterSheet/components/Tabs/HealthTab';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface HealthModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
   openACModal,
   updateLimb,
 }) => {
+  const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'limbs'>('overview');
   const [tempCurrent, setTempCurrent] = useState(currentHP);
@@ -101,7 +103,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
               <div className={`p-6 flex flex-col ${isExpanded ? 'lg:w-[512px] lg:border-r border-white/5' : 'w-full'} overflow-y-auto custom-scrollbar`}>
                 <div className="flex justify-between items-center mb-6">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-bold">Здоровье</h2>
+                    <h2 className="text-2xl font-bold">{t('health.title')}</h2>
                     {character && (
                       <button
                         onClick={() => setIsExpanded(!isExpanded)}
@@ -112,7 +114,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                         }`}
                       >
                         {isExpanded ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-                        {isExpanded ? 'Скрыть детали' : 'Подробно'}
+                        {isExpanded ? t('health.hideDetails') : t('health.details')}
                       </button>
                     )}
                   </div>
@@ -143,41 +145,41 @@ export const HealthModal: React.FC<HealthModalProps> = ({
 
                 <div className="space-y-3 mb-6">
                   <div>
-                    <div className="text-sm text-gray-400 mb-2 uppercase">Лечение</div>
+                    <div className="text-sm text-gray-400 mb-2 uppercase">{t('limb.healing')}</div>
                     <div className="flex gap-2">
                       <input
                         type="number"
                         value={healAmount}
                         onChange={(e) => setHealAmount(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleHeal()}
-                        placeholder="Количество"
+                        placeholder={t('common.amount')}
                         className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-green-500 min-w-0"
                       />
                       <button
                         onClick={() => handleHeal()}
                         className="px-4 lg:px-6 py-2 bg-green-500/20 border border-green-500/50 text-green-400 rounded-lg hover:bg-green-500/30 transition-all font-semibold whitespace-nowrap"
                       >
-                        Лечить
+                        {t('health.heal')}
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-sm text-gray-400 mb-2 uppercase">Урон</div>
+                    <div className="text-sm text-gray-400 mb-2 uppercase">{t('common.damage')}</div>
                     <div className="flex gap-2">
                       <input
                         type="number"
                         value={damageAmount}
                         onChange={(e) => setDamageAmount(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleDamage()}
-                        placeholder="Количество"
+                        placeholder={t('common.amount')}
                         className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-red-500 min-w-0"
                       />
                       <button
                         onClick={() => handleDamage()}
                         className="px-4 lg:px-6 py-2 bg-red-500/20 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/30 transition-all font-semibold whitespace-nowrap"
                       >
-                        Урон
+                        {t('common.damage')}
                       </button>
                     </div>
                   </div>
@@ -187,20 +189,20 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                       onClick={() => setTempCurrent(getTotalMaxHP())}
                       className="py-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all font-semibold text-xs lg:text-sm"
                     >
-                      Полное лечение
+                      {t('limb.fullHeal')}
                     </button>
                     <button
                       onClick={() => { setTempCurrent(0); setTempTemp(0); }}
                       className="py-2 bg-dark-bg border border-dark-border text-gray-400 rounded-lg hover:bg-dark-hover transition-all font-semibold text-xs lg:text-sm"
                     >
-                      Без сознания
+                      {t('health.unconscious')}
                     </button>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <div className="text-sm text-gray-400 mb-2 uppercase">Текущее здоровье</div>
+                    <div className="text-sm text-gray-400 mb-2 uppercase">{t('health.currentHp')}</div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setTempCurrent(Math.max(0, tempCurrent - 1))}
@@ -224,7 +226,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                   </div>
 
                   <div>
-                    <div className="text-sm text-gray-400 mb-2 uppercase">Временное здоровье</div>
+                    <div className="text-sm text-gray-400 mb-2 uppercase">{t('health.tempHp')}</div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setTempTemp(Math.max(0, tempTemp - 1))}
@@ -248,7 +250,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                   </div>
 
                   <div>
-                    <div className="text-sm text-gray-400 mb-2 uppercase">Максимальное здоровье</div>
+                    <div className="text-sm text-gray-400 mb-2 uppercase">{t('health.maxHp')}</div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setTempMax(Math.max(1, tempMax - 1))}
@@ -272,7 +274,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                   </div>
 
                   <div>
-                    <div className="text-sm text-gray-400 mb-2 uppercase">Бонус к максимуму</div>
+                    <div className="text-sm text-gray-400 mb-2 uppercase">{t('health.maxBonus')}</div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setTempBonus(tempBonus - 1)}
@@ -301,13 +303,13 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                     onClick={onClose}
                     className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all font-semibold"
                   >
-                    Отмена
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={handleSave}
                     className="flex-1 py-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl hover:shadow-lg hover:shadow-red-500/50 transition-all font-semibold"
                   >
-                    Сохранить
+                    {t('common.save')}
                   </button>
                 </div>
               </div>
@@ -329,7 +331,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                             : 'text-gray-500 hover:text-gray-300'
                         }`}
                       >
-                        Обзор
+                        {t('health.overview')}
                       </button>
                       <button
                         onClick={() => setActiveSubTab('limbs')}
@@ -339,7 +341,7 @@ export const HealthModal: React.FC<HealthModalProps> = ({
                             : 'text-gray-500 hover:text-gray-300'
                         }`}
                       >
-                        Конечности
+                        {t('health.limbs')}
                       </button>
                     </div>
 

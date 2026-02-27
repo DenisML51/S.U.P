@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface SanityModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const SanityModal: React.FC<SanityModalProps> = ({
   maxSanity,
   onUpdate,
 }) => {
+  const { t } = useI18n();
   const [tempSanity, setTempSanity] = useState(isNaN(currentSanity) ? 0 : currentSanity);
   const [restoreAmount, setRestoreAmount] = useState('');
   const [lossAmount, setLossAmount] = useState('');
@@ -69,7 +71,7 @@ export const SanityModal: React.FC<SanityModalProps> = ({
               className="bg-dark-card rounded-2xl border border-dark-border p-6 w-full max-w-lg"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Рассудок</h2>
+                <h2 className="text-2xl font-bold">{t('sanity.title')}</h2>
                 <button
                   onClick={onClose}
                   className="w-8 h-8 rounded-lg hover:bg-dark-hover transition-all flex items-center justify-center"
@@ -93,48 +95,48 @@ export const SanityModal: React.FC<SanityModalProps> = ({
                 </div>
                 {isInsane && (
                   <div className="mt-3 text-red-500 font-bold text-lg animate-pulse">
-                    БЕЗУМИЕ!
+                    {t('sanity.madness')}
                   </div>
                 )}
               </div>
 
               <div className="space-y-3 mb-6">
                 <div>
-                  <div className="text-sm text-gray-400 mb-2 uppercase">Восстановление рассудка</div>
+                  <div className="text-sm text-gray-400 mb-2 uppercase">{t('sanity.recovery')}</div>
                   <div className="flex gap-2">
                     <input
                       type="number"
                       value={restoreAmount}
                       onChange={(e) => setRestoreAmount(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleGain()}
-                      placeholder="Количество"
+                      placeholder={t('common.amount')}
                       className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <button
                       onClick={() => handleGain()}
                       className="px-6 py-2 bg-purple-500/20 border border-purple-500/50 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-all font-semibold"
                     >
-                      Восстановить
+                      {t('sanity.restore')}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-gray-400 mb-2 uppercase">Потеря рассудка</div>
+                  <div className="text-sm text-gray-400 mb-2 uppercase">{t('sanity.loss')}</div>
                   <div className="flex gap-2">
                     <input
                       type="number"
                       value={lossAmount}
                       onChange={(e) => setLossAmount(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleLoss()}
-                      placeholder="Количество"
+                      placeholder={t('common.amount')}
                       className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                     <button
                       onClick={() => handleLoss()}
                       className="px-6 py-2 bg-red-500/20 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/30 transition-all font-semibold"
                     >
-                      Потеря
+                      {t('sanity.lose')}
                     </button>
                   </div>
                 </div>
@@ -144,19 +146,19 @@ export const SanityModal: React.FC<SanityModalProps> = ({
                     onClick={() => setTempSanity(maxSanity)}
                     className="py-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all font-semibold text-sm"
                   >
-                    Полное восстановление
+                    {t('sanity.fullRestore')}
                   </button>
                   <button
                     onClick={() => setTempSanity(0)}
                     className="py-2 bg-dark-bg border border-dark-border text-gray-400 rounded-lg hover:bg-dark-hover transition-all font-semibold text-sm"
                   >
-                    Полное безумие
+                    {t('sanity.fullMadness')}
                   </button>
                 </div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-400 mb-2 uppercase">Текущий рассудок</div>
+                <div className="text-sm text-gray-400 mb-2 uppercase">{t('sanity.current')}</div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setTempSanity(Math.max(0, tempSanity - 1))}
@@ -181,7 +183,7 @@ export const SanityModal: React.FC<SanityModalProps> = ({
                   </button>
                 </div>
                 <div className="text-center text-xs text-gray-400 mt-2">
-                  Максимум рассчитывается автоматически: Ментальная сила + Мудрость + Уровень
+                  {t('sanity.maxHint')}
                 </div>
               </div>
 
@@ -190,13 +192,13 @@ export const SanityModal: React.FC<SanityModalProps> = ({
                   onClick={onClose}
                   className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all font-semibold"
                 >
-                  Отмена
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleSave}
                   className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all font-semibold"
                 >
-                  Сохранить
+                  {t('common.save')}
                 </button>
               </div>
             </motion.div>

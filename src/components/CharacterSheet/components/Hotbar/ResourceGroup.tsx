@@ -2,6 +2,7 @@ import React from 'react';
 import { Coins, Target } from 'lucide-react';
 import { Character } from '../../../../types';
 import { getLucideIcon } from '../../../../utils/iconUtils';
+import { useI18n } from '../../../../i18n/I18nProvider';
 
 interface ResourceGroupProps {
   character: Character;
@@ -12,6 +13,7 @@ export const ResourceGroup: React.FC<ResourceGroupProps> = ({
   character,
   updateResourceCount
 }) => {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-1 px-2 py-1.5 bg-dark-bg/95 backdrop-blur-3xl border border-white/10 rounded-[1.25rem] shadow-2xl relative">
       <div className="absolute inset-0 bg-white/[0.02] pointer-events-none rounded-[1.25rem]" />
@@ -42,7 +44,7 @@ export const ResourceGroup: React.FC<ResourceGroupProps> = ({
           </span>
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 px-5 py-3 bg-dark-card border border-dark-border rounded-xl text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
             <div className="font-bold text-gray-200">{res.name}: {res.current}/{res.max}</div>
-            <div className="text-gray-400 mt-1.5 text-[11px]">ЛКМ: -1 • ПКМ: просмотр</div>
+            <div className="text-gray-400 mt-1.5 text-[11px]">{t('resource.tooltipControls')}</div>
           </div>
         </div>
       ))}
@@ -59,8 +61,8 @@ export const ResourceGroup: React.FC<ResourceGroupProps> = ({
         </span>
         
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 px-5 py-3 bg-dark-card border border-dark-border rounded-xl text-sm whitespace-nowrap opacity-0 group-hover/currency:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
-          <div className="font-bold text-gray-200">Валюта: {(character.currency.gold + character.currency.silver/10 + character.currency.copper/100).toFixed(2)} ЗМ</div>
-          <div className="text-gray-400 mt-1.5 text-[11px]">Клик: управление кошельком</div>
+          <div className="font-bold text-gray-200">{t('resource.currency')}: {(character.currency.gold + character.currency.silver/10 + character.currency.copper/100).toFixed(2)} {t('resource.goldShort')}</div>
+          <div className="text-gray-400 mt-1.5 text-[11px]">{t('resource.currencyHint')}</div>
         </div>
       </div>
 
@@ -75,8 +77,8 @@ export const ResourceGroup: React.FC<ResourceGroupProps> = ({
           </span>
 
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 px-5 py-3 bg-dark-card border border-dark-border rounded-xl text-sm whitespace-nowrap opacity-0 group-hover/ammo:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
-            <div className="font-bold text-gray-200">Боеприпасы: {character.inventory.filter(i => i.type === 'ammunition').reduce((sum, i) => sum + (i.quantity || 0), 0)} шт</div>
-            <div className="text-gray-400 mt-1.5 text-[11px]">Нажми для управления</div>
+            <div className="font-bold text-gray-200">{t('resource.ammo')}: {character.inventory.filter(i => i.type === 'ammunition').reduce((sum, i) => sum + (i.quantity || 0), 0)} {t('resource.pcs')}</div>
+            <div className="text-gray-400 mt-1.5 text-[11px]">{t('resource.ammoHint')}</div>
           </div>
         </div>
       )}

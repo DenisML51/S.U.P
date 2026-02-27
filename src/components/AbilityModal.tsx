@@ -7,6 +7,8 @@ import { IconPicker } from './IconPicker';
 import { getLucideIcon } from '../utils/iconUtils';
 import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
 import { Sparkles, Zap, Clock, X, Minus, Plus, Sword, Trash2 } from 'lucide-react';
+import { useI18n } from '../i18n/I18nProvider';
+import { getDamageTypeLabel } from '../i18n/domainLabels';
 
 interface AbilityModalProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  const { t } = useI18n();
   const [name, setName] = useState(ability?.name || '');
   const [description, setDescription] = useState(ability?.description || '');
   const [actionType, setActionType] = useState(ability?.actionType || 'action');
@@ -103,9 +106,9 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
   };
 
   const actionTypes = [
-    { id: 'action', label: 'Основное', activeClass: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' },
-    { id: 'bonus', label: 'Бонусное', activeClass: 'bg-green-500 text-white shadow-lg shadow-green-500/20' },
-    { id: 'reaction', label: 'Реакция', activeClass: 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' },
+    { id: 'action', label: t('spellModal.actionType.action'), activeClass: 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' },
+    { id: 'bonus', label: t('spellModal.actionType.bonus'), activeClass: 'bg-green-500 text-white shadow-lg shadow-green-500/20' },
+    { id: 'reaction', label: t('spellModal.actionType.reaction'), activeClass: 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' },
   ];
 
   return (
@@ -158,8 +161,8 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                   </div>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{ability ? 'Редактировать способность' : 'Новая способность'}</h2>
-                  <p className="text-xs text-gray-400">Уникальные умения вашего героя</p>
+                  <h2 className="text-xl font-bold">{ability ? t('abilityModal.editTitle') : t('abilityModal.newTitle')}</h2>
+                  <p className="text-xs text-gray-400">{t('abilityModal.subtitle')}</p>
                 </div>
               </div>
               <button 
@@ -172,12 +175,12 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Название способности</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('abilityModal.nameLabel')}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Второе дыхание, Мощная атака..."
+                  placeholder={t('abilityModal.namePlaceholder')}
                   className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 />
               </div>
@@ -186,7 +189,7 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Clock className="w-3 h-3" />
-                    Тип действия
+                    {t('spellModal.actionType.label')}
                   </label>
                   <div className="grid grid-cols-3 gap-2 p-1 bg-dark-bg rounded-xl border border-dark-border">
                     {actionTypes.map((t) => (
@@ -207,14 +210,14 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
 
                 <div>
                   <CustomSelect
-                    label="Тратит ресурс"
+                    label={t('abilityModal.consumesResource')}
                     value={resourceId}
                     onChange={setResourceId}
                     options={[
-                      { value: '', label: 'Не требует' },
+                      { value: '', label: t('abilityModal.noResource') },
                       ...resources.map(r => ({ value: r.id, label: r.name }))
                     ]}
-                    placeholder="Выберите ресурс..."
+                    placeholder={t('abilityModal.selectResource')}
                   />
                 </div>
               </div>
@@ -223,13 +226,13 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                 <div className="flex items-center justify-between text-red-400 mb-1">
                   <div className="flex items-center gap-2">
                     <Sword className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase">Параметры урона</span>
+                    <span className="text-xs font-bold uppercase">{t('spellModal.damageSettings')}</span>
                   </div>
                   <button
                     onClick={addComponent}
                     className="px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] font-black uppercase hover:bg-red-500/20 transition-all"
                   >
-                    + Добавить тип
+                    {t('spellModal.addDamageType')}
                   </button>
                 </div>
                 
@@ -251,9 +254,9 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                             value={DAMAGE_TYPES.includes(comp.type) ? comp.type : (comp.type ? 'custom' : '')}
                             onChange={(v) => updateComponent(idx, 'type', v === 'custom' ? '' : v)}
                             options={[
-                              { value: '', label: 'Без типа' },
-                              ...DAMAGE_TYPES.map(t => ({ value: t, label: t })),
-                              { value: 'custom', label: 'Свой тип...' }
+                              { value: '', label: t('common.noType') },
+                              ...DAMAGE_TYPES.map((dt) => ({ value: dt, label: getDamageTypeLabel(dt, t) })),
+                              { value: 'custom', label: t('spellModal.customType') }
                             ]}
                           />
                           {(comp.type === '' || !DAMAGE_TYPES.includes(comp.type)) && (
@@ -261,7 +264,7 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                               type="text"
                               value={comp.type}
                               onChange={(e) => updateComponent(idx, 'type', e.target.value)}
-                              placeholder="Введите свой тип..."
+                              placeholder={t('spellModal.enterCustomType')}
                               className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-[10px] text-center text-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
                             />
                           )}
@@ -286,7 +289,7 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                 >
                   <div className="flex items-center gap-2 text-purple-400">
                     <Zap className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase">Стоимость использования</span>
+                    <span className="text-xs font-bold uppercase">{t('abilityModal.cost')}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <button onClick={() => setResourceCost(Math.max(1, resourceCost - 1))} className="w-8 h-8 rounded-lg bg-dark-bg border border-purple-500/30 flex items-center justify-center text-purple-400 hover:bg-purple-500/10 transition-all"><Minus className="w-4 h-4" /></button>
@@ -298,22 +301,22 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Краткое описание</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('abilityModal.shortDescription')}</label>
                   <MarkdownEditor
                     value={description}
                     onChange={setDescription}
-                    placeholder="Пара слов для списка способностей..."
+                    placeholder={t('abilityModal.shortDescriptionPlaceholder')}
                     rows={2}
                     minHeight="60px"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Полный эффект</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('spellModal.fullEffect')}</label>
                   <MarkdownEditor
                     value={effect}
                     onChange={setEffect}
-                    placeholder="Подробное описание того, что делает способность..."
+                    placeholder={t('abilityModal.effectPlaceholder')}
                     rows={4}
                     minHeight="120px"
                   />
@@ -328,21 +331,21 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                   className="px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 transition-all text-sm font-bold flex items-center gap-2"
                 >
                   <X className="w-4 h-4" />
-                  Удалить
+                  {t('common.delete')}
                 </button>
               )}
               <button
                 onClick={onClose}
                 className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-sm font-bold text-gray-400"
               >
-                Отмена
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 disabled={!name.trim()}
                 className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:shadow-lg hover:shadow-blue-500/40 transition-all text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Сохранить умение
+                {t('abilityModal.save')}
               </button>
             </div>
           </motion.div>

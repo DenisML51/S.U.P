@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Move, Timer, Eye, Compass, Plus, Minus, Settings2, Brain } from 'lucide-react';
 import { Character } from '../../../types';
+import { useI18n } from '../../../i18n/I18nProvider';
 
 interface SecondaryStatsStripProps {
   character: Character;
@@ -20,6 +21,7 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
   onRollInitiative,
   updateInitiativeBonus,
 }) => {
+  const { t } = useI18n();
   const [showInitiativeSettings, setShowInitiativeSettings] = useState(false);
 
   return (
@@ -32,7 +34,7 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
             <div className="w-4 h-4 rounded-lg bg-blue-500/20 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
               <CheckCircle2 className="w-2.5 h-2.5 text-blue-400" />
             </div>
-            <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Мастерство</span>
+            <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{t('secondary.proficiency')}</span>
           </div>
           
           <div className="text-2xl font-black text-blue-400 leading-none tracking-tighter drop-shadow-[0_0_8px_rgba(59,130,246,0.4)] relative z-10">
@@ -47,7 +49,7 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
             <div className="w-4 h-4 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
               <Move className="w-2.5 h-2.5 text-emerald-400" />
             </div>
-            <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Скорость</span>
+            <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{t('secondary.speed')}</span>
           </div>
           
           <div className="flex items-center gap-4 relative z-10">
@@ -62,7 +64,7 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
               <div className="text-2xl font-black text-white leading-none tracking-tighter drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
                 {character.speed}
               </div>
-              <div className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest mt-1">футов</div>
+              <div className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest mt-1">{t('secondary.feet')}</div>
             </div>
             
             <button
@@ -81,10 +83,10 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
           >
             <div className="flex items-center gap-1.5 mb-1">
               <Timer className="w-3 h-3 text-orange-400 opacity-50 group-hover:opacity-100 transition-opacity" />
-              <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">Инициатива</span>
+              <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">{t('secondary.initiative')}</span>
             </div>
             <div className="text-2xl font-black text-orange-400 group-hover:scale-110 transition-transform">{getModifier('dexterity')}</div>
-            <div className="text-[7px] text-gray-600 uppercase font-bold mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Бросить 1d20</div>
+            <div className="text-[7px] text-gray-600 uppercase font-bold mt-1 opacity-0 group-hover:opacity-100 transition-opacity">{t('secondary.rollD20')}</div>
           </button>
           
           <button 
@@ -106,7 +108,7 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
                 className="absolute top-[calc(100%+4px)] left-0 right-0 z-[100] bg-dark-card border border-dark-border/50 rounded-xl overflow-hidden shadow-2xl backdrop-blur-xl"
               >
                 <div className="p-3 bg-orange-500/5 space-y-2">
-                  <div className="text-[8px] font-bold text-orange-400/60 uppercase tracking-widest text-center">Сторонний бонус</div>
+                  <div className="text-[8px] font-bold text-orange-400/60 uppercase tracking-widest text-center">{t('secondary.miscBonus')}</div>
                   <div className="flex items-center justify-center gap-3">
                     <button 
                       onClick={() => updateInitiativeBonus?.((character.initiativeBonus || 0) - 1)}
@@ -137,7 +139,7 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
             <div className="w-4 h-4 rounded-lg bg-purple-500/20 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform">
               <Eye className="w-2.5 h-2.5 text-purple-400" />
             </div>
-            <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Восприятие</span>
+            <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{t('secondary.perception')}</span>
           </div>
           
           <div className="text-2xl font-black text-purple-400 leading-none tracking-tighter drop-shadow-[0_0_8px_rgba(168,85,247,0.4)] relative z-10">
@@ -151,7 +153,7 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
             
             <div className="flex items-center gap-1.5 mb-2 relative z-10">
               <Compass className="w-3 h-3 text-amber-400 opacity-50 group-hover:opacity-100 transition-opacity" />
-              <span className="text-[9px] text-gray-500 uppercase font-black tracking-tighter whitespace-nowrap">Пасс. Вниман.</span>
+              <span className="text-[9px] text-gray-500 uppercase font-black tracking-tighter whitespace-nowrap">{t('secondary.passivePerception')}</span>
             </div>
             <div className="text-xl font-black text-amber-400 leading-none drop-shadow-[0_0_8px_rgba(245,158,11,0.3)] relative z-10">{10 + parseInt(getSkillModifier('perception'))}</div>
           </div>
@@ -161,7 +163,7 @@ export const SecondaryStatsStrip: React.FC<SecondaryStatsStripProps> = ({
             
             <div className="flex items-center gap-1.5 mb-2 relative z-10">
               <Brain className="w-3 h-3 text-cyan-400 opacity-50 group-hover:opacity-100 transition-opacity" />
-              <span className="text-[9px] text-gray-500 uppercase font-black tracking-tighter whitespace-nowrap">Пасс. Прониц.</span>
+              <span className="text-[9px] text-gray-500 uppercase font-black tracking-tighter whitespace-nowrap">{t('secondary.passiveInsight')}</span>
             </div>
             <div className="text-xl font-black text-cyan-400 leading-none drop-shadow-[0_0_8px_rgba(6,182,212,0.3)] relative z-10">{10 + parseInt(getSkillModifier('insight'))}</div>
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Currency } from '../types';
 import { Coins } from 'lucide-react';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface CurrencyModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
   currency,
   onSave,
 }) => {
+  const { t } = useI18n();
   const [copper, setCopper] = useState(currency.copper);
   const [silver, setSilver] = useState(currency.silver);
   const [gold, setGold] = useState(currency.gold);
@@ -93,7 +95,7 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
                 <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center">
                   <Coins className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-xl font-bold">Валюта</h2>
+                  <h2 className="text-xl font-bold">{t('navbar.currency')}</h2>
               </div>
               <button
                 onClick={onClose}
@@ -113,8 +115,8 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
                       <Coins className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <div className="text-xs text-gray-400 uppercase">Золото</div>
-                      <div className="text-xs text-gray-500">1 ЗМ = 10 СМ</div>
+                      <div className="text-xs text-gray-400 uppercase">{t('currency.gold')}</div>
+                      <div className="text-xs text-gray-500">{t('currency.goldToSilver')}</div>
                     </div>
                   </div>
                   <input
@@ -159,8 +161,8 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
                       <Coins className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <div className="text-xs text-gray-400 uppercase">Серебро</div>
-                      <div className="text-xs text-gray-500">1 СМ = 10 ММ</div>
+                      <div className="text-xs text-gray-400 uppercase">{t('currency.silver')}</div>
+                      <div className="text-xs text-gray-500">{t('currency.silverToCopper')}</div>
                     </div>
                   </div>
                   <input
@@ -205,8 +207,8 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
                       <Coins className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <div className="text-xs text-gray-400 uppercase">Медь</div>
-                      <div className="text-xs text-gray-500">10 ММ = 1 СМ</div>
+                      <div className="text-xs text-gray-400 uppercase">{t('currency.copper')}</div>
+                      <div className="text-xs text-gray-500">{t('currency.copperToSilver')}</div>
                     </div>
                   </div>
                   <input
@@ -246,43 +248,43 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
             </div>
 
             <div className="bg-dark-bg rounded-xl p-3 mb-4 border border-dark-border">
-              <div className="text-xs text-gray-400 mb-2 uppercase">Конвертация</div>
+              <div className="text-xs text-gray-400 mb-2 uppercase">{t('currency.convert')}</div>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={convertCopperToSilver}
                   disabled={copper < 10}
                   className="py-2 px-3 bg-dark-card border border-dark-border rounded-lg hover:bg-dark-hover transition-all text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  10 ММ → 1 СМ
+                  {t('currency.convertCopperToSilver')}
                 </button>
                 <button
                   onClick={convertSilverToGold}
                   disabled={silver < 10}
                   className="py-2 px-3 bg-dark-card border border-dark-border rounded-lg hover:bg-dark-hover transition-all text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  10 СМ → 1 ЗМ
+                  {t('currency.convertSilverToGold')}
                 </button>
                 <button
                   onClick={convertSilverToCopper}
                   disabled={silver < 1}
                   className="py-2 px-3 bg-dark-card border border-dark-border rounded-lg hover:bg-dark-hover transition-all text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  1 СМ → 10 ММ
+                  {t('currency.convertSilverToCopper')}
                 </button>
                 <button
                   onClick={convertGoldToSilver}
                   disabled={gold < 1}
                   className="py-2 px-3 bg-dark-card border border-dark-border rounded-lg hover:bg-dark-hover transition-all text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  1 ЗМ → 10 СМ
+                  {t('currency.convertGoldToSilver')}
                 </button>
               </div>
             </div>
 
             <div className="bg-gradient-to-r from-yellow-500/10 to-amber-600/10 border border-yellow-500/20 rounded-xl p-3 mb-4 text-center">
-              <div className="text-xs text-gray-400 mb-1">Всего в золотых</div>
+              <div className="text-xs text-gray-400 mb-1">{t('currency.totalInGold')}</div>
               <div className="text-2xl font-bold text-yellow-400">
-                {(gold + silver / 10 + copper / 100).toFixed(2)} ЗМ
+                {(gold + silver / 10 + copper / 100).toFixed(2)} {t('navbar.goldShort')}
               </div>
             </div>
 
@@ -291,13 +293,13 @@ export const CurrencyModal: React.FC<CurrencyModalProps> = ({
                 onClick={onClose}
                 className="flex-1 py-2 bg-dark-bg border border-dark-border rounded-lg hover:bg-dark-hover transition-all text-sm font-semibold"
               >
-                Отмена
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 className="flex-1 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-lg hover:shadow-lg hover:shadow-yellow-500/50 transition-all text-sm font-semibold"
               >
-                Сохранить
+                {t('common.save')}
               </button>
             </div>
           </motion.div>

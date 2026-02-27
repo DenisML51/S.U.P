@@ -116,7 +116,7 @@ export const Navbar: React.FC = () => {
               {character.name.split(' ')[0].replace(/[.,!?;:]+$/, '')}
             </h1>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider truncate flex items-center gap-1.5">
-              {character.class} • {character.level} ур.
+              {character.class} • {character.level} {t('common.levelShort')}
               {viewMode === 'hotbar' && <Activity className="w-2.5 h-2.5 text-blue-400 animate-pulse" />}
             </p>
           </button>
@@ -247,7 +247,7 @@ export const Navbar: React.FC = () => {
                 <button
                   onClick={() => setIsResourcesExpanded(!isResourcesExpanded)}
                   className={`w-12 h-12 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:bg-dark-card transition-all active:scale-95 shadow-lg group relative ${isResourcesExpanded ? 'bg-blue-500/20 border-blue-500/50' : ''}`}
-                  title={isResourcesExpanded ? "Свернуть ресурсы" : "Показать все ресурсы"}
+                  title={isResourcesExpanded ? t('navbar.collapseResources') : t('navbar.showAllResources')}
                 >
                   <ChevronLeft className={`w-6 h-6 transition-transform ${isResourcesExpanded ? 'rotate-180 text-blue-400' : 'text-gray-400 group-hover:text-white'}`} />
                   {!isResourcesExpanded && (
@@ -317,7 +317,7 @@ export const Navbar: React.FC = () => {
                     </div>
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
                       <div className="font-bold text-gray-200">{resource.name}: {resource.current}/{resource.max}</div>
-                      <div className="text-gray-500 mt-1">ЛКМ: -1 • ПКМ: просмотр</div>
+                      <div className="text-gray-500 mt-1">{t('navbar.resourceHint')}</div>
                     </div>
                   </motion.div>
                 );
@@ -342,8 +342,8 @@ export const Navbar: React.FC = () => {
                 </div>
               </div>
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
-                <div className="font-bold text-gray-200">Боеприпасы</div>
-                <div className="text-gray-500 mt-1">Клик: быстрая трата</div>
+                <div className="font-bold text-gray-200">{t('navbar.ammo')}</div>
+                <div className="text-gray-500 mt-1">{t('navbar.quickSpend')}</div>
               </div>
             </div>
           )}
@@ -364,8 +364,8 @@ export const Navbar: React.FC = () => {
                 </div>
               </div>
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
-                <div className="font-bold text-gray-200">Валюта: {(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100).toFixed(2)} ЗМ</div>
-                <div className="text-gray-500 mt-1">Клик: управление кошельком</div>
+                <div className="font-bold text-gray-200">{t('navbar.currency')}: {(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100).toFixed(2)} {t('navbar.goldShort')}</div>
+                <div className="text-gray-500 mt-1">{t('navbar.walletHint')}</div>
               </div>
             </div>
           )}
@@ -404,7 +404,7 @@ export const Navbar: React.FC = () => {
                       <div className="text-sm font-bold text-white mb-0.5 truncate">{character.name}</div>
                       <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-lg text-[9px] font-black text-blue-400 uppercase tracking-wider">
                         <Activity className="w-2.5 h-2.5" />
-                        {character.class} • {character.level} ур.
+                        {character.class} • {character.level} {t('common.levelShort')}
                       </div>
                     </div>
 
@@ -427,7 +427,7 @@ export const Navbar: React.FC = () => {
                       >
                         <div className="flex items-center gap-3">
                           <Sparkles className={`w-4 h-4 transition-colors ${isResourcesOpen ? 'text-blue-400' : 'text-gray-400 group-hover:text-blue-400'}`} />
-                          <span className="group-hover:text-white">Ресурсы</span>
+                          <span className="group-hover:text-white">{t('navbar.resources')}</span>
                         </div>
                         <ChevronLeft className={`w-4 h-4 transition-all ${isResourcesOpen ? 'text-blue-400 -translate-x-1' : 'text-gray-600'}`} />
                       </button>
@@ -443,7 +443,7 @@ export const Navbar: React.FC = () => {
                             <div className="px-4 py-3 border-b border-[#333] bg-[#111]/50 flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Управление ресурсами</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">{t('navbar.resourceManagement')}</span>
                               </div>
                             </div>
                             <div className="p-1.5 max-h-[400px] overflow-y-auto custom-scrollbar">
@@ -485,7 +485,7 @@ export const Navbar: React.FC = () => {
                               ) : (
                                 <div className="py-8 flex flex-col items-center justify-center text-gray-600 text-center">
                                   <Sparkles className="w-8 h-8 opacity-10 mb-2" />
-                                  <p className="text-[9px] font-black uppercase tracking-widest opacity-40">Нет доступных ресурсов</p>
+                                  <p className="text-[9px] font-black uppercase tracking-widest opacity-40">{t('navbar.noResources')}</p>
                                 </div>
                               )}
                             </div>
@@ -494,13 +494,13 @@ export const Navbar: React.FC = () => {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (window.confirm('Восстановить все ресурсы?')) {
+                                    if (window.confirm(t('navbar.restoreAllResourcesConfirm'))) {
                                       resetAllResources();
                                     }
                                   }}
                                   className="w-full py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg text-[9px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-600/30 hover:text-blue-300 transition-all"
                                 >
-                                  Длинный отдых
+                                  {t('navbar.longRest')}
                                 </button>
                               )}
                               <button
@@ -510,7 +510,7 @@ export const Navbar: React.FC = () => {
                                 }}
                                 className="w-full py-2 bg-[#222] border border-[#333] rounded-lg text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
                               >
-                                Свернуть
+                                {t('common.collapse')}
                               </button>
                             </div>
                           </motion.div>
@@ -535,7 +535,7 @@ export const Navbar: React.FC = () => {
                       >
                         <div className="flex items-center gap-3">
                           <HistoryLogIcon className={`w-4 h-4 transition-colors ${isHistoryOpen ? 'text-blue-400' : 'text-gray-400 group-hover:text-blue-400'}`} />
-                          <span className="group-hover:text-white">История событий</span>
+                          <span className="group-hover:text-white">{t('navbar.eventHistory')}</span>
                         </div>
                         <ChevronLeft className={`w-4 h-4 transition-all ${isHistoryOpen ? 'text-blue-400 -translate-x-1' : 'text-gray-600'}`} />
                       </button>
@@ -551,7 +551,7 @@ export const Navbar: React.FC = () => {
                             <div className="px-4 py-3 border-b border-[#333] bg-[#111]/50 flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <Clock className="w-3.5 h-3.5 text-blue-400" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Журнал сессии</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">{t('navbar.sessionLog')}</span>
                               </div>
                               <div className="px-1.5 py-0.5 bg-blue-500/10 rounded text-[8px] font-black text-blue-500 border border-blue-500/20">LIVE</div>
                             </div>
@@ -598,7 +598,7 @@ export const Navbar: React.FC = () => {
                               ) : (
                                 <div className="py-12 flex flex-col items-center justify-center text-gray-600 text-center">
                                   <HistoryLogIcon className="w-8 h-8 opacity-10 mb-2" />
-                                  <p className="text-[9px] font-black uppercase tracking-widest opacity-40">Записей нет</p>
+                                  <p className="text-[9px] font-black uppercase tracking-widest opacity-40">{t('navbar.noEntries')}</p>
                                 </div>
                               )}
                             </div>
@@ -610,7 +610,7 @@ export const Navbar: React.FC = () => {
                                 }}
                                 className="w-full py-2 bg-[#222] border border-[#333] rounded-lg text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
                               >
-                                Свернуть
+                                {t('common.collapse')}
                               </button>
                             </div>
                           </motion.div>
@@ -620,7 +620,7 @@ export const Navbar: React.FC = () => {
 
                     {isMobile && (
                       <>
-                        <div className="px-4 py-1.5 text-[10px] text-gray-500 font-bold uppercase tracking-widest">Инвентарь</div>
+                        <div className="px-4 py-1.5 text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t('navbar.inventory')}</div>
                         {totalAmmo > 0 && (
                           <button
                             onClick={() => {
@@ -633,7 +633,7 @@ export const Navbar: React.FC = () => {
                           >
                             <div className="flex items-center gap-3">
                               <Target className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
-                              <span className="group-hover:text-white">Боеприпасы</span>
+                              <span className="group-hover:text-white">{t('navbar.ammo')}</span>
                             </div>
                             <span className="text-xs font-bold text-orange-400">{totalAmmo}</span>
                           </button>
@@ -649,7 +649,7 @@ export const Navbar: React.FC = () => {
                         >
                           <div className="flex items-center gap-3">
                             <Coins className="w-4 h-4 text-yellow-500 group-hover:text-yellow-400" />
-                            <span className="group-hover:text-white">Валюта</span>
+                            <span className="group-hover:text-white">{t('navbar.currency')}</span>
                           </div>
                           <span className="text-xs font-bold text-yellow-500">
                             {Math.floor(character.currency.gold + character.currency.silver / 10 + character.currency.copper / 100)}
@@ -669,7 +669,7 @@ export const Navbar: React.FC = () => {
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#2a2a2a] text-gray-300 hover:text-white transition-all text-sm group"
                       >
                         <Sliders className="w-4 h-4 text-gray-400 group-hover:text-purple-400" />
-                        <span>Настройки</span>
+                        <span>{t('navbar.settings')}</span>
                       </button>
                     </div>
 
@@ -685,7 +685,7 @@ export const Navbar: React.FC = () => {
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#2a2a2a] text-gray-300 hover:text-white transition-all text-sm group"
                       >
                         <FileJson className="w-4 h-4 text-gray-400 group-hover:text-amber-400" />
-                        <span>Экспорт в JSON</span>
+                        <span>{t('navbar.exportJson')}</span>
                       </button>
 
                       <button
@@ -697,7 +697,7 @@ export const Navbar: React.FC = () => {
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#2a2a2a] text-gray-300 hover:text-white transition-all text-sm group"
                       >
                         <Download className="w-4 h-4 text-gray-400 group-hover:text-green-400" />
-                        <span>Экспорт в PDF</span>
+                        <span>{t('navbar.exportPdf')}</span>
                       </button>
                     </div>
 
@@ -710,7 +710,7 @@ export const Navbar: React.FC = () => {
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-red-400/80 hover:text-red-400 transition-all text-sm group"
                       >
                         <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                        <span>Выйти из персонажа</span>
+                        <span>{t('navbar.leaveCharacter')}</span>
                       </button>
                     </div>
                   </motion.div>
