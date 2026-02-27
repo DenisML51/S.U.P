@@ -10,6 +10,7 @@ import {
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useLobbyStore } from '../../../store/useLobbyStore';
+import { getCharacterApi } from '../../../api/characters';
 import { StatusBars } from './Hotbar/StatusBars';
 import { PortraitGroup } from './Hotbar/PortraitGroup';
 import { ActionTrackers } from './Hotbar/ActionTrackers';
@@ -80,6 +81,7 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
 
   const [isInCombatLocal, setIsInCombatLocal] = useState(false);
   const [initiativeLocal, setInitiativeLocal] = useState<number | null>(null);
+  const [masterControlledCharacter, setMasterControlledCharacter] = useState<Character | null>(null);
   const lastSentActionStateRef = useRef<string>('');
   const lastSentHpStateRef = useRef<string>('');
   const lastKnownRoundRef = useRef<number>(1);
@@ -91,14 +93,15 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
 
   const subclassIcon = null;
 
+  const actionSourceCharacter = masterControlledCharacter ?? character;
   const actionGroups = useMemo(() => {
-    const attacks = (character.attacks || []).map(a => ({ ...a, hotbarType: 'attack' }));
-    const abilities = (character.abilities || []).map(a => ({ ...a, hotbarType: 'ability' }));
-    const spells = (character.spells || []).filter(s => s.prepared).map(s => ({ ...s, hotbarType: 'spell' }));
-    const items = (character.inventory || []).filter(i => i.type === 'item').map(i => ({ ...i, hotbarType: 'item' }));
+    const attacks = (actionSourceCharacter.attacks || []).map(a => ({ ...a, hotbarType: 'attack' }));
+    const abilities = (actionSourceCharacter.abilities || []).map(a => ({ ...a, hotbarType: 'ability' }));
+    const spells = (actionSourceCharacter.spells || []).filter(s => s.prepared).map(s => ({ ...s, hotbarType: 'spell' }));
+    const items = (actionSourceCharacter.inventory || []).filter(i => i.type === 'item').map(i => ({ ...i, hotbarType: 'item' }));
     
     return { attacks, abilities, spells, items };
-  }, [character]);
+  }, [actionSourceCharacter]);
   const meMember = useMemo(() => {
     if (!user || !members.length) return null;
     return members.find((member) => member.userId === user.id) ?? null;
@@ -163,6 +166,12 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
     allOnlineReady &&
     onlineMemberIds.length >= 2;
   const initiative = lobby ? initiativeLocal ?? sharedInitiative : initiativeLocal;
+  const activeCombatMember = useMemo(() => {
+    if (!combatState?.activeMemberId) {
+      return null;
+    }
+    return combatState.membersCombat.find((member) => member.memberId === combatState.activeMemberId) ?? null;
+  }, [combatState?.activeMemberId, combatState?.membersCombat]);
 
   const enterCombat = () => {
     if (lobby) {
@@ -211,6 +220,42 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
     startRequestedRef.current = true;
     startSharedCombat();
   }, [canStartSharedCombat]);
+
+  useEffect(() => {
+    const shouldLoadControlledCharacter = Boolean(
+      lobby &&
+        meRole === 'MASTER' &&
+        activeCombatMember?.kind === 'master_custom' &&
+        activeCombatMember?.controlledByUserId === user?.id &&
+        activeCombatMember?.characterId
+    );
+    if (!shouldLoadControlledCharacter || !activeCombatMember?.characterId) {
+      setMasterControlledCharacter(null);
+      return;
+    }
+    let cancelled = false;
+    void getCharacterApi(activeCombatMember.characterId)
+      .then((response) => {
+        if (!cancelled && response.character) {
+          setMasterControlledCharacter(response.character);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMasterControlledCharacter(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeCombatMember?.characterId,
+    activeCombatMember?.controlledByUserId,
+    activeCombatMember?.kind,
+    lobby,
+    meRole,
+    user?.id
+  ]);
 
   useEffect(() => {
     if (!lobby || !resolvedMemberId || !meCombatState) {

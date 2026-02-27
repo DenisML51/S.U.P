@@ -123,8 +123,8 @@ export const lobbyWsRoutes = async (app) => {
         lobbySockets.set(lobbyKey, pool);
         ws.on('close', async () => {
             removeConnection(lobbyKey, ws);
-            await prisma.lobbyMember.update({
-                where: { id: membership.id },
+            await prisma.lobbyMember.updateMany({
+                where: { id: membership.id, status: { not: MemberStatus.LEFT } },
                 data: {
                     status: MemberStatus.OFFLINE,
                     lastSeenAt: new Date()

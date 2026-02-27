@@ -315,6 +315,12 @@ export const useLobbyStore = create<LobbyStoreState>((set, get) => ({
 
   applyCombatState: (payload) => {
     set((state) => ({
+      lobby: state.lobby
+        ? {
+            ...state.lobby,
+            status: payload.isInCombat ? 'IN_COMBAT' : 'WAITING'
+          }
+        : state.lobby,
       combatState: payload,
       members: state.members.map((member) => {
         const combatMember = payload.membersCombat.find((item) => item.memberId === member.id);

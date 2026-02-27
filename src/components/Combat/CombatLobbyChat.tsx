@@ -2,7 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { useLobbyStore } from '../../store/useLobbyStore';
 import { useAuthStore } from '../../store/useAuthStore';
 
-export const CombatLobbyChat: React.FC = () => {
+type CombatLobbyChatProps = {
+  variant?: 'overlay' | 'embedded';
+};
+
+export const CombatLobbyChat: React.FC<CombatLobbyChatProps> = ({ variant = 'overlay' }) => {
   const { user } = useAuthStore();
   const { lobby, meRole, messages, sendMasterMessage, sendMasterNotification } = useLobbyStore();
   const [text, setText] = useState('');
@@ -36,10 +40,15 @@ export const CombatLobbyChat: React.FC = () => {
     }
   };
 
+  const asideClass =
+    variant === 'embedded'
+      ? 'w-full rounded-2xl border border-white/10 bg-dark-bg/70 p-3 shadow-xl backdrop-blur-xl'
+      : 'fixed right-3 top-[130px] z-[130] w-[320px] rounded-2xl border border-white/10 bg-dark-bg/85 p-3 shadow-2xl backdrop-blur-xl';
+
   return (
-    <aside className="fixed right-3 top-[130px] z-[46] w-[320px] rounded-2xl border border-white/10 bg-dark-bg/85 p-3 shadow-2xl backdrop-blur-xl">
+    <aside className={asideClass}>
       <div className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-gray-400">Боевой чат</div>
-      <div className="h-[360px] space-y-2 overflow-y-auto pr-1">
+      <div className={`${variant === 'embedded' ? 'h-[420px]' : 'h-[360px]'} space-y-2 overflow-y-auto pr-1`}>
         {rows.map((row) => (
           <div key={row.id} className="rounded-xl border border-white/10 bg-black/20 px-2 py-1.5">
             <div className="mb-0.5 text-[10px] uppercase tracking-wider text-gray-500">

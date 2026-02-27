@@ -11,7 +11,11 @@ const avatarFallback = (name: string) =>
     .slice(0, 2)
     .toUpperCase();
 
-export const CombatInitiativeStrip: React.FC = () => {
+type CombatInitiativeStripProps = {
+  variant?: 'overlay' | 'embedded';
+};
+
+export const CombatInitiativeStrip: React.FC<CombatInitiativeStripProps> = ({ variant = 'overlay' }) => {
   const { lobby, combatState, members, meRole } = useLobbyStore();
   const { charactersList } = useCharacterStore();
   if (!lobby || !combatState?.isInCombat) return null;
@@ -54,7 +58,7 @@ export const CombatInitiativeStrip: React.FC = () => {
   };
 
   return (
-    <div className="fixed top-3 left-1/2 z-[47] -translate-x-1/2">
+    <div className={variant === 'embedded' ? 'w-full' : 'fixed top-3 left-1/2 z-[130] -translate-x-1/2'}>
       <div className="flex items-end gap-3.5">
         {centeredOrder.map((member, index) => {
           const isActive = member.id === currentId;

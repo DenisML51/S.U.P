@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useLobbyStore } from '../../store/useLobbyStore';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { listCharactersApi } from '../../api/characters';
+import type { CombatMemberState } from '../../types/lobby';
 
 type MasterCharacterOption = {
   id: string;
@@ -12,7 +14,11 @@ type MasterCharacterOption = {
   avatar?: string;
 };
 
-export const PlayersCombatSidebar: React.FC = () => {
+type PlayersCombatSidebarProps = {
+  variant?: 'overlay' | 'embedded';
+};
+
+export const PlayersCombatSidebar: React.FC<PlayersCombatSidebarProps> = ({ variant = 'overlay' }) => {
   const { lobby, combatState, members, meRole, sendCombatEvent } = useLobbyStore();
   const { charactersList } = useCharacterStore();
   const authUser = useAuthStore((state) => state.user);
@@ -26,6 +32,8 @@ export const PlayersCombatSidebar: React.FC = () => {
   const [currentHP, setCurrentHP] = useState('10');
   const [maxHP, setMaxHP] = useState('10');
   const [initiative, setInitiative] = useState('');
+  const [selectedCombatantId, setSelectedCombatantId] = useState<string | null>(null);
+  const [hpDelta, setHpDelta] = useState('1');
   const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
   if (!lobby) {
     return null;
@@ -55,7 +63,6 @@ export const PlayersCombatSidebar: React.FC = () => {
         spentActions: { action: 0, bonus: 0, reaction: 0 }
       }));
   }, [authUser?.id, combatMembers, members]);
-
   useEffect(() => {
     if (!isAddOpen || meRole !== 'MASTER') {
       return;
@@ -69,7 +76,6 @@ export const PlayersCombatSidebar: React.FC = () => {
         setIsLoadingCharacters(false);
       });
   }, [isAddOpen, meRole]);
-
   const handleAddCombatant = () => {
     if (meRole !== 'MASTER') {
       return;
@@ -123,9 +129,41 @@ export const PlayersCombatSidebar: React.FC = () => {
     reader.readAsDataURL(file);
     event.target.value = '';
   };
+  const handleCardHpEdit = (member: CombatMemberState) => {
+    if (meRole !== 'MASTER') {
+      return;
+    }
+    if (selectedCombatantId === member.memberId) {
+      setSelectedCombatantId(null);
+      return;
+    }
+    setSelectedCombatantId(member.memberId);
+  };
+  const applyHpDelta = (member: CombatMemberState, mode: 'damage' | 'heal') => {
+    const amount = Math.max(1, Math.floor(Number(hpDelta) || 1));
+    if (!Number.isFinite(amount)) {
+      return;
+    }
+    const current = Math.max(0, Math.floor(member.currentHP ?? 0));
+    const max = Math.max(1, Math.floor(member.maxHP ?? 1));
+    const nextCurrent = mode === 'damage'
+      ? Math.max(0, current - amount)
+      : Math.min(max, current + amount);
+    sendCombatEvent('combat.hpChanged', {
+      memberId: member.memberId,
+      currentHP: nextCurrent,
+      maxHP: max
+    });
+  };
+
+  const isEmbedded = variant === 'embedded';
+  const asideClass =
+    variant === 'embedded'
+      ? 'w-full pointer-events-auto'
+      : 'fixed left-3 top-[130px] z-[130] w-[270px] pointer-events-auto';
 
   return (
-    <aside className="fixed left-3 top-[130px] z-[46] w-[270px]">
+    <aside className={asideClass}>
       <div className="space-y-2">
         {meRole === 'MASTER' && (
           <div className="rounded-xl border border-white/10 bg-black/40 p-2">
@@ -248,8 +286,8 @@ export const PlayersCombatSidebar: React.FC = () => {
             Другие участники пока не подключены
           </div>
         )}
-        {sourceMembers.map((member: any) => {
-          const isActive = combatState?.activeMemberId === member.memberId || combatState?.activeMemberId === member.id;
+        {sourceMembers.map((member: CombatMemberState) => {
+          const isActive = combatState?.activeMemberId === member.memberId;
           const lobbyMember = member.kind === 'lobby_member'
             ? members.find((item) => item.id === member.memberId)
             : null;
@@ -267,50 +305,81 @@ export const PlayersCombatSidebar: React.FC = () => {
           const hpPct = maxHp > 0 ? Math.max(0, Math.min(100, (hp / maxHp) * 100)) : 0;
           return (
             <div
-              key={member.memberId ?? member.id}
-              className={`rounded-xl border px-2.5 py-2 text-[11px] shadow-lg backdrop-blur-xl ${
+              key={member.memberId}
+              onClick={() => handleCardHpEdit(member)}
+              className={`relative rounded-xl border px-2.5 py-2 text-[11px] shadow-lg backdrop-blur-xl ${
                 isActive ? 'border-blue-400/55 bg-[#112239]/88' : 'border-white/10 bg-black/55'
-              }`}
+              } ${meRole === 'MASTER' ? 'cursor-pointer hover:border-blue-300/40' : ''}`}
             >
-              <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
-                <div className="flex items-center gap-2">
-                  {avatar ? (
-                    <img src={avatar} className="h-8 w-8 rounded-lg object-cover border border-white/20" />
-                  ) : (
-                    <div className="h-8 w-8 rounded-lg bg-white/10 border border-white/20" />
-                  )}
-                </div>
-                <div>
+              <div className="flex items-center gap-2">
+                {avatar ? (
+                  <img src={avatar} className="h-8 w-8 rounded-lg object-cover border border-white/20" />
+                ) : (
+                  <div className="h-8 w-8 rounded-lg bg-white/10 border border-white/20" />
+                )}
+                <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold text-white">{displayName}</div>
+                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-black/45 border border-white/10">
+                    <div
+                      className={`h-full ${hpPct <= 25 ? 'bg-red-500' : hpPct <= 55 ? 'bg-amber-400' : 'bg-emerald-400'}`}
+                      style={{ width: `${hpPct}%` }}
+                    />
+                  </div>
                 </div>
-                <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-black uppercase ${
-                  isActive ? 'border-blue-400/40 bg-blue-500/20 text-blue-200' : 'border-white/15 text-gray-400'
-                }`}>
-                  {isActive ? 'Ход' : member.kind === 'master_custom' ? 'NPC' : member.role}
-                </span>
+                {meRole === 'MASTER' && member.kind === 'master_custom' && (
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      sendCombatEvent('combat.removeCustomMember', { memberId: member.memberId });
+                    }}
+                    className="rounded-md border border-red-500/25 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-200 hover:bg-red-500/20"
+                  >
+                    Удалить
+                  </button>
+                )}
               </div>
-
-              <div className="mt-1.5">
-                <div className="mb-1 flex items-center justify-between text-[10px] text-gray-300">
-                  <span>HP</span>
-                  <span>{hp} / {maxHp}</span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/45 border border-white/10">
-                  <div
-                    className={`h-full ${hpPct <= 25 ? 'bg-red-500' : hpPct <= 55 ? 'bg-amber-400' : 'bg-emerald-400'}`}
-                    style={{ width: `${hpPct}%` }}
-                  />
-                </div>
-              </div>
-              {meRole === 'MASTER' && member.kind === 'master_custom' && (
-                <button
-                  onClick={() => sendCombatEvent('combat.removeCustomMember', { memberId: member.memberId })}
-                  className="mt-2 w-full rounded-md border border-red-500/25 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-200 hover:bg-red-500/20"
-                >
-                  Удалить из боя
-                </button>
-              )}
-
+              <AnimatePresence>
+                {meRole === 'MASTER' && selectedCombatantId === member.memberId && (
+                  <motion.div
+                    onClick={(event) => event.stopPropagation()}
+                    initial={isEmbedded ? { opacity: 0, y: -6, scale: 0.98 } : { opacity: 0, x: -8, y: '-50%', scale: 0.96 }}
+                    animate={isEmbedded ? { opacity: 1, y: 0, scale: 1 } : { opacity: 1, x: 0, y: '-50%', scale: 1 }}
+                    exit={isEmbedded ? { opacity: 0, y: -6, scale: 0.98 } : { opacity: 0, x: -8, y: '-50%', scale: 0.96 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                    className={
+                      isEmbedded
+                        ? 'mt-2 rounded-xl border border-white/15 bg-[#0f1422]/95 p-2 shadow-xl'
+                        : 'absolute left-[calc(100%+8px)] top-1/2 z-[60] w-44 rounded-xl border border-white/15 bg-[#0f1422]/95 p-2 shadow-2xl'
+                    }
+                  >
+                    <div className="mb-1 text-[10px] font-black uppercase tracking-wider text-gray-400">
+                      HP управление
+                    </div>
+                    <input
+                      value={hpDelta}
+                      onChange={(event) => setHpDelta(event.target.value)}
+                      type="number"
+                      min={1}
+                      className="mb-2 w-full rounded-md border border-white/15 bg-black/30 px-2 py-1 text-xs text-white outline-none"
+                      placeholder="Значение"
+                    />
+                    <div className="grid grid-cols-2 gap-1">
+                      <button
+                        onClick={() => applyHpDelta(member, 'damage')}
+                        className="rounded-md border border-red-500/30 bg-red-500/15 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-500/25"
+                      >
+                        Урон
+                      </button>
+                      <button
+                        onClick={() => applyHpDelta(member, 'heal')}
+                        className="rounded-md border border-emerald-500/30 bg-emerald-500/15 px-2 py-1 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/25"
+                      >
+                        Лечение
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           );
         })}

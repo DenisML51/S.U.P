@@ -1,7 +1,7 @@
 import { LobbyRole, MemberStatus, MessageVisibility } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { lobbyCreateSchema, lobbyJoinSchema, lobbyLeaveSchema, masterMessageSchema, masterNotificationSchema } from '../lobby/contracts.js';
-import { buildLobbyState, promoteLeavingMemberToMasterNpc, resolveMemberHealth } from '../lobby/service.js';
+import { buildLobbyState, promoteLeavingMemberToMasterNpc, reclaimReturningMemberFromMasterNpc, resolveMemberHealth } from '../lobby/service.js';
 import { reserveUniqueLobbyKey } from '../lobby/utils.js';
 const normalizeKey = (raw) => raw.trim().toUpperCase();
 export const lobbyRoutes = async (app) => {
@@ -53,7 +53,7 @@ export const lobbyRoutes = async (app) => {
             return reply.code(404).send({ message: 'Lobby not found' });
         }
         const health = await resolveMemberHealth(userId, parsed.data.characterId);
-        await prisma.lobbyMember.upsert({
+        const member = await prisma.lobbyMember.upsert({
             where: { lobbyId_userId: { lobbyId: lobby.id, userId } },
             create: {
                 lobbyId: lobby.id,
@@ -73,6 +73,7 @@ export const lobbyRoutes = async (app) => {
                 ...(health.maxHP !== null ? { maxHP: health.maxHP } : {})
             }
         });
+        await reclaimReturningMemberFromMasterNpc(lobby.id, member.id, userId);
         const state = await buildLobbyState(lobby.key, userId);
         return reply.send(state);
     });

@@ -17,32 +17,21 @@ const parseCharacterHealth = (raw) => {
     }
 };
 export const resolveMemberHealth = async (userId, characterId) => {
-    if (characterId) {
-        const character = await prisma.character.findFirst({
-            where: { id: characterId, userId },
-            select: { id: true, encryptedPayload: true, payloadIv: true, payloadTag: true }
-        });
-        if (character) {
-            const parsed = parseCharacterHealth(character);
-            if (parsed) {
-                return { currentHP: parsed.currentHP, maxHP: parsed.maxHP, characterId: character.id };
-            }
-            return { currentHP: null, maxHP: null, characterId: character.id };
-        }
-    }
-    const latestCharacter = await prisma.character.findFirst({
-        where: { userId },
-        orderBy: { updatedAt: 'desc' },
-        select: { id: true, encryptedPayload: true, payloadIv: true, payloadTag: true }
-    });
-    if (!latestCharacter) {
+    if (!characterId) {
         return { currentHP: null, maxHP: null, characterId: null };
     }
-    const parsed = parseCharacterHealth(latestCharacter);
+    const character = await prisma.character.findFirst({
+        where: { id: characterId, userId },
+        select: { id: true, encryptedPayload: true, payloadIv: true, payloadTag: true }
+    });
+    if (!character) {
+        return { currentHP: null, maxHP: null, characterId: null };
+    }
+    const parsed = parseCharacterHealth(character);
     return {
         currentHP: parsed?.currentHP ?? null,
         maxHP: parsed?.maxHP ?? null,
-        characterId: latestCharacter.id
+        characterId: character.id
     };
 };
 const asCombatSnapshot = (snapshot) => {
@@ -209,6 +198,40 @@ export const promoteLeavingMemberToMasterNpc = async (lobbyId, leavingMemberId) 
     snapshot.turnOrder = snapshot.turnOrder.map((id) => (id === leavingMemberId ? replacementId : id));
     if (snapshot.activeMemberId === leavingMemberId) {
         snapshot.activeMemberId = replacementId;
+    }
+    snapshot.serverSequence = nextSequence(snapshot);
+    await persistCombatSnapshot(lobbyId, snapshot);
+};
+export const reclaimReturningMemberFromMasterNpc = async (lobbyId, returningMemberId, returningUserId) => {
+    const combatState = await prisma.combatState.findUnique({
+        where: { lobbyId },
+        select: { snapshot: true, isInCombat: true }
+    });
+    if (!combatState?.isInCombat) {
+        return;
+    }
+    const snapshot = asCombatSnapshot(combatState.snapshot ?? null);
+    if (!snapshot?.isInCombat) {
+        return;
+    }
+    const reclaimIndex = snapshot.membersCombat.findIndex((member) => member.kind === 'master_custom' &&
+        member.userId === returningUserId);
+    if (reclaimIndex < 0) {
+        return;
+    }
+    const reclaim = snapshot.membersCombat[reclaimIndex];
+    const restored = {
+        ...reclaim,
+        memberId: returningMemberId,
+        kind: 'lobby_member',
+        controlledByUserId: null,
+        role: LobbyRole.PLAYER
+    };
+    snapshot.membersCombat[reclaimIndex] = restored;
+    snapshot.membersCombat = snapshot.membersCombat.filter((member, idx) => idx === reclaimIndex || member.memberId !== returningMemberId);
+    snapshot.turnOrder = snapshot.turnOrder.map((id) => id === reclaim.memberId ? returningMemberId : id);
+    if (snapshot.activeMemberId === reclaim.memberId) {
+        snapshot.activeMemberId = returningMemberId;
     }
     snapshot.serverSequence = nextSequence(snapshot);
     await persistCombatSnapshot(lobbyId, snapshot);
@@ -457,7 +480,9 @@ export const applyCombatEvent = async (lobbyId, event, actor) => {
             snapshot.activeMemberId = null;
             snapshot.membersCombat = snapshot.membersCombat.map((member) => ({
                 ...member,
-                currentAction: null
+                currentAction: null,
+                initiative: null,
+                spentActions: { action: 0, bonus: 0, reaction: 0 }
             }));
             await prisma.lobbyMember.updateMany({
                 where: { lobbyId },

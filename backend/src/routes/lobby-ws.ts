@@ -153,8 +153,8 @@ export const lobbyWsRoutes: FastifyPluginAsync = async (app) => {
 
     ws.on('close', async () => {
       removeConnection(lobbyKey, ws as any);
-      await prisma.lobbyMember.update({
-        where: { id: membership.id },
+      await prisma.lobbyMember.updateMany({
+        where: { id: membership.id, status: { not: MemberStatus.LEFT } },
         data: {
           status: MemberStatus.OFFLINE,
           lastSeenAt: new Date()
