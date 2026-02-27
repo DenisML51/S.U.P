@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useCharacterStore } from './store/useCharacterStore';
 import { CharacterSheet } from './components/CharacterSheet/index';
 import { CharacterList } from './components/CharacterList';
@@ -8,10 +8,13 @@ import { DiceRoller } from './components/DiceRoller';
 import { useAuthStore } from './store/useAuthStore';
 import { LobbyEntryModal } from './components/Lobby/LobbyEntryModal';
 import { LobbyRoomPage } from './components/Lobby/LobbyRoomPage';
+import { useLobbyStore } from './store/useLobbyStore';
 
 const AppContent: React.FC = () => {
   const { user, isLoading, init } = useAuthStore();
   const { character, isLoaded, loadCharactersList, migrateOldData, updateSettings, settings } = useCharacterStore();
+  const { restoreLobbySession } = useLobbyStore();
+  const restoredLobbyUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     init();
@@ -51,6 +54,18 @@ const AppContent: React.FC = () => {
     }
   }, [settings.storagePath, isLoaded, loadCharactersList, user]);
 
+  useEffect(() => {
+    if (!user) {
+      restoredLobbyUserIdRef.current = null;
+      return;
+    }
+    if (restoredLobbyUserIdRef.current === user.id) {
+      return;
+    }
+    restoredLobbyUserIdRef.current = user.id;
+    void restoreLobbySession();
+  }, [restoreLobbySession, user]);
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center text-gray-300">Loading...</div>;
   }
@@ -69,7 +84,7 @@ const AppContent: React.FC = () => {
       </main>
 
       {character && <DiceRoller />}
-      {user && <LobbyEntryModal />}
+      {user && character && <LobbyEntryModal />}
       {user && <LobbyRoomPage />}
 
       <Toaster 

@@ -21,6 +21,7 @@ import type {
 import { useCharacterStore } from './useCharacterStore';
 
 type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'error';
+type LobbyAnchor = { top: number; left: number } | null;
 
 interface LobbyStoreState {
   lobby: LobbyStatePayload['lobby'] | null;
@@ -34,11 +35,12 @@ interface LobbyStoreState {
   lobbyKeyInput: string;
   selectedCharacterId: string;
   isLobbyModalOpen: boolean;
+  lobbyModalAnchor: LobbyAnchor;
   isLobbyPageOpen: boolean;
   socketClient: LobbySocketClient | null;
   setLobbyKeyInput: (value: string) => void;
   setSelectedCharacterId: (value: string) => void;
-  openLobbyModal: () => void;
+  openLobbyModal: (anchor?: { top: number; left: number }) => void;
   closeLobbyModal: () => void;
   openLobbyPage: () => void;
   closeLobbyPage: () => void;
@@ -55,9 +57,52 @@ interface LobbyStoreState {
   addCombatFeedEntry: (entry: Omit<CombatFeedEntry, 'id' | 'createdAt'>) => void;
   applyLobbyState: (payload: LobbyStatePayload | null) => void;
   applyCombatState: (payload: CombatState) => void;
+  restoreLobbySession: () => Promise<void>;
 }
 
 const normalizeKey = (key: string): string => key.trim().toUpperCase();
+const LOBBY_SESSION_STORAGE_KEY = 'itd_lobby_session_v1';
+
+type CachedLobbySession = {
+  key: string;
+  selectedCharacterId?: string;
+};
+
+const saveLobbySession = (session: CachedLobbySession) => {
+  try {
+    localStorage.setItem(LOBBY_SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch {
+    // ignore storage failures (private mode / quota)
+  }
+};
+
+const readLobbySession = (): CachedLobbySession | null => {
+  try {
+    const raw = localStorage.getItem(LOBBY_SESSION_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as Partial<CachedLobbySession>;
+    if (!parsed.key || typeof parsed.key !== 'string') {
+      return null;
+    }
+    return {
+      key: normalizeKey(parsed.key),
+      selectedCharacterId:
+        typeof parsed.selectedCharacterId === 'string' ? parsed.selectedCharacterId : undefined
+    };
+  } catch {
+    return null;
+  }
+};
+
+const clearLobbySession = () => {
+  try {
+    localStorage.removeItem(LOBBY_SESSION_STORAGE_KEY);
+  } catch {
+    // ignore storage failures
+  }
+};
 
 const getCharacterContext = (): { characterId?: string } => {
   const character = useCharacterStore.getState().character;
@@ -93,14 +138,15 @@ export const useLobbyStore = create<LobbyStoreState>((set, get) => ({
   lobbyKeyInput: '',
   selectedCharacterId: '',
   isLobbyModalOpen: false,
+  lobbyModalAnchor: null,
   isLobbyPageOpen: false,
   socketClient: null,
 
   setLobbyKeyInput: (value) => set({ lobbyKeyInput: value }),
   setSelectedCharacterId: (value) => set({ selectedCharacterId: value }),
-  openLobbyModal: () => set({ isLobbyModalOpen: true }),
-  closeLobbyModal: () => set({ isLobbyModalOpen: false }),
-  openLobbyPage: () => set({ isLobbyPageOpen: true, isLobbyModalOpen: false }),
+  openLobbyModal: (anchor) => set({ isLobbyModalOpen: true, lobbyModalAnchor: anchor ?? null }),
+  closeLobbyModal: () => set({ isLobbyModalOpen: false, lobbyModalAnchor: null }),
+  openLobbyPage: () => set({ isLobbyPageOpen: true, isLobbyModalOpen: false, lobbyModalAnchor: null }),
   closeLobbyPage: () => set({ isLobbyPageOpen: false }),
 
   createLobby: async () => {
@@ -146,6 +192,7 @@ export const useLobbyStore = create<LobbyStoreState>((set, get) => ({
       error: null,
       isLobbyPageOpen: false
     });
+    clearLobbySession();
   },
 
   changeLobbyCharacter: async (characterId) => {
@@ -250,14 +297,20 @@ export const useLobbyStore = create<LobbyStoreState>((set, get) => ({
     if (!payload) {
       return;
     }
+    const selectedCharacterId = get().selectedCharacterId;
     set(() => ({
       lobby: payload.lobby,
       meRole: payload.meRole,
       members: payload.members,
       messages: payload.messages,
       combatState: payload.combatState,
-      combatFeed: payload.messages.map((message) => fromMasterMessage(message)).slice(-120)
+      combatFeed: payload.messages.map((message) => fromMasterMessage(message)).slice(-120),
+      selectedCharacterId
     }));
+    saveLobbySession({
+      key: payload.lobby.key,
+      selectedCharacterId: selectedCharacterId || undefined
+    });
   },
 
   applyCombatState: (payload) => {
@@ -278,5 +331,27 @@ export const useLobbyStore = create<LobbyStoreState>((set, get) => ({
         };
       })
     }));
+  },
+
+  restoreLobbySession: async () => {
+    const { lobby } = get();
+    if (lobby) {
+      return;
+    }
+    const cached = readLobbySession();
+    if (!cached) {
+      return;
+    }
+    try {
+      const payload = await getLobbyApi(cached.key);
+      get().applyLobbyState(payload);
+      set({
+        selectedCharacterId: cached.selectedCharacterId ?? '',
+        isLobbyPageOpen: true
+      });
+      get().connectSocket();
+    } catch {
+      clearLobbySession();
+    }
   }
 }));

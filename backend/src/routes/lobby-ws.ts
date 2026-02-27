@@ -238,7 +238,6 @@ export const lobbyWsRoutes: FastifyPluginAsync = async (app) => {
             role: membership.role
           });
           emitLobbyEvent(lobbyKey, { type: 'combat.state', payload: combatState });
-          await syncStateForLobby(lobbyKey);
           ws.send(toJson({ type: 'ack', payload: { clientEventId } }));
         } catch (error) {
           ws.send(

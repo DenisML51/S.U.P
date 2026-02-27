@@ -62,8 +62,7 @@ export const Navbar: React.FC = () => {
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [isResourcesExpanded, setIsResourcesExpanded] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isLobbyMenuOpen, setIsLobbyMenuOpen] = useState(false);
-  const { lobby, openLobbyModal, openLobbyPage, leaveLobby, changeLobbyCharacter } = useLobbyStore();
+  const { lobby, openLobbyModal, openLobbyPage } = useLobbyStore();
 
   useEffect(() => {
     const handleResize = () => {
@@ -163,84 +162,19 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center gap-2">
           <div className="relative">
             <button
-              onClick={() => setIsLobbyMenuOpen((prev) => !prev)}
+              onClick={() => {
+                if (lobby) {
+                  openLobbyPage();
+                  return;
+                }
+                openLobbyModal();
+              }}
               className="w-12 h-12 bg-dark-bg/80 border border-dark-border/50 rounded-xl flex items-center justify-center hover:bg-dark-card transition-all active:scale-95 shadow-lg relative"
               title="Лобби"
             >
               <User className="w-5 h-5 text-gray-300" />
               {lobby && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-green-400 border border-dark-bg" />}
             </button>
-            <AnimatePresence>
-              {isLobbyMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-[50]" onClick={() => setIsLobbyMenuOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                    className="absolute right-0 mt-3 w-[260px] bg-[#1a1a1a] border border-[#333] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden z-[60] backdrop-blur-xl"
-                  >
-                    <div className="px-4 py-3 border-b border-[#333] text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                      Лобби
-                    </div>
-                    {!lobby ? (
-                      <div className="p-2">
-                        <button
-                          onClick={() => {
-                            openLobbyModal();
-                            setIsLobbyMenuOpen(false);
-                          }}
-                          className="w-full rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-200 hover:bg-blue-500/20"
-                        >
-                          Открыть лобби
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="p-2 space-y-1">
-                        <button
-                          onClick={() => {
-                            openLobbyPage();
-                            setIsLobbyMenuOpen(false);
-                          }}
-                          className="w-full rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-200 hover:bg-white/5 text-left"
-                        >
-                          Открыть страницу лобби
-                        </button>
-                        <button
-                          onClick={() => {
-                            openLobbyModal();
-                            setIsLobbyMenuOpen(false);
-                          }}
-                          className="w-full rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-200 hover:bg-white/5 text-left"
-                        >
-                          Сменить персонажа
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (character?.id) {
-                              void changeLobbyCharacter(character.id);
-                            }
-                            setIsLobbyMenuOpen(false);
-                          }}
-                          className="w-full rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-200 hover:bg-white/5 text-left"
-                        >
-                          Выбрать текущего персонажа
-                        </button>
-                        <button
-                          onClick={() => {
-                            void leaveLobby();
-                            setIsLobbyMenuOpen(false);
-                          }}
-                          className="w-full rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200 hover:bg-red-500/20 text-left"
-                        >
-                          Выйти из лобби
-                        </button>
-                      </div>
-                    )}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
           </div>
 
           <div className="relative">

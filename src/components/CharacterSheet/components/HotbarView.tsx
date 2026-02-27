@@ -130,12 +130,6 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
 
   const nextTurn = () => {
     if (lobby && combatState) {
-      if (meMember) {
-        sendCombatEvent('combat.actionUsed', {
-          memberId: meMember.id,
-          action: 'EndedTurn'
-        });
-      }
       sendCombatEvent('combat.nextTurn', {});
       return;
     }
