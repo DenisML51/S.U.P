@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Limb, getLimbInjuryLevel, INJURY_DESCRIPTIONS } from '../types';
+import { Limb, getLimbInjuryLevel } from '../types';
 import { useI18n } from '../i18n/I18nProvider';
-import { getLimbLabel } from '../i18n/domainLabels';
+import { getLimbInjuryDescription, getLimbLabel } from '../i18n/domainLabels';
 
 interface LimbModalProps {
   isOpen: boolean;
@@ -33,7 +33,9 @@ export const LimbModal: React.FC<LimbModalProps> = ({
   const maxHP = limb.maxHP;
   const ac = limb.ac;
   const injuryLevel = getLimbInjuryLevel(currentHP);
-  const injuryDesc = injuryLevel !== 'none' ? INJURY_DESCRIPTIONS[limbType]?.[injuryLevel] : undefined;
+  const injuryDesc = injuryLevel !== 'none'
+    ? getLimbInjuryDescription(limbType, injuryLevel, t)
+    : undefined;
 
   const handleDamage = () => {
     const amount = parseInt(damageAmount);

@@ -8,7 +8,7 @@ import { getLucideIcon } from '../utils/iconUtils';
 import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
 import { Wand2, Clock, MapPin, Sparkles, X, Minus, Plus, Shield, Target, Search, Sword, Trash2 } from 'lucide-react';
 import { useI18n } from '../i18n/I18nProvider';
-import { getDamageTypeLabel } from '../i18n/domainLabels';
+import { getDamageTypeLabel, normalizeDamageType } from '../i18n/domainLabels';
 
 interface SpellModalProps {
   isOpen: boolean;
@@ -317,7 +317,7 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                         <div className="space-y-2">
                           <CustomSelect
                             label=""
-                            value={DAMAGE_TYPES.includes(comp.type) ? comp.type : (comp.type ? 'custom' : '')}
+                            value={DAMAGE_TYPES.includes(normalizeDamageType(comp.type)) ? normalizeDamageType(comp.type) : (comp.type ? 'custom' : '')}
                             onChange={(v) => updateDamageComponent(idx, 'type', v === 'custom' ? '' : v)}
                             options={[
                               { value: '', label: t('common.noType') },
@@ -326,7 +326,7 @@ export const SpellModal: React.FC<SpellModalProps> = ({
                             ]}
                             placeholder={t('spellModal.selectType')}
                           />
-                          {(comp.type === '' || !DAMAGE_TYPES.includes(comp.type)) && (
+                          {(comp.type === '' || !DAMAGE_TYPES.includes(normalizeDamageType(comp.type))) && (
                             <input
                               type="text"
                               value={comp.type}

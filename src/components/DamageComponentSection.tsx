@@ -4,6 +4,7 @@ import { DamageComponent, DAMAGE_TYPES } from '../types';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
 import { CustomSelect } from './CustomSelect';
 import { useI18n } from '../i18n/I18nProvider';
+import { getDamageTypeLabel, normalizeDamageType } from '../i18n/domainLabels';
 
 interface DamageComponentSectionProps {
   components: DamageComponent[];
@@ -40,10 +41,10 @@ export const DamageComponentSection: React.FC<DamageComponentSectionProps> = ({
 
   const damageOptions = [
     { value: '', label: t('common.noType'), icon: <div className="w-4 h-4 rounded-full border border-gray-600" /> },
-    ...DAMAGE_TYPES.map(t => ({
-      value: t,
-      label: t,
-      icon: <div style={{ color: DAMAGE_TYPE_COLORS[t] }}>{getDamageTypeIcon(t, 14)}</div>
+    ...DAMAGE_TYPES.map((damageType) => ({
+      value: damageType,
+      label: getDamageTypeLabel(damageType, t),
+      icon: <div style={{ color: DAMAGE_TYPE_COLORS[damageType] }}>{getDamageTypeIcon(damageType, 14)}</div>
     })),
     { value: 'custom', label: t('spellModal.customType'), icon: <AlertCircle size={14} className="text-gray-500" /> }
   ];
@@ -68,7 +69,7 @@ export const DamageComponentSection: React.FC<DamageComponentSectionProps> = ({
           <div key={idx} className="flex items-center gap-2 relative group/comp animate-in slide-in-from-right-2 duration-300">
             <div className="flex-1 flex items-center gap-2 bg-dark-bg/50 border border-dark-border rounded-xl p-1 pr-2">
               <CustomSelect
-                value={DAMAGE_TYPES.includes(comp.type) ? comp.type : (comp.type ? 'custom' : '')}
+                value={DAMAGE_TYPES.includes(normalizeDamageType(comp.type)) ? normalizeDamageType(comp.type) : (comp.type ? 'custom' : '')}
                 onChange={(v) => onUpdateComponent(idx, 'type', v === 'custom' ? '' : v)}
                 options={damageOptions}
                 minimal={true}
@@ -84,7 +85,7 @@ export const DamageComponentSection: React.FC<DamageComponentSectionProps> = ({
                   className="w-full bg-transparent border-none px-1 text-lg font-black focus:outline-none transition-all"
                   style={{ color: DAMAGE_TYPE_COLORS[comp.type] || '#fff' }}
                 />
-                {(comp.type === '' || !DAMAGE_TYPES.includes(comp.type)) && (
+                {(comp.type === '' || !DAMAGE_TYPES.includes(normalizeDamageType(comp.type))) && (
                   <input
                     type="text"
                     value={comp.type}

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ATTRIBUTES_LIST, SKILLS_LIST, Character } from '../../../types';
 import { Target, Star } from 'lucide-react';
 import { useI18n } from '../../../i18n/I18nProvider';
-import { getAttributeLabel } from '../../../i18n/domainLabels';
+import { getAttributeLabel, getSkillLabel } from '../../../i18n/domainLabels';
 
 interface AttributesSectionProps {
   character: Character;
@@ -118,7 +118,7 @@ export const AttributesSection: React.FC<AttributesSectionProps> = ({
                               )}
                             </div>
                             <span className={`text-[11px] transition-colors ${skill.proficient ? 'text-gray-200 font-bold' : 'text-gray-500'}`}>
-                              {skill.name}
+                              {getSkillLabel(skill.id, skill.name, t)}
                             </span>
                           </div>
                           <span className={`text-xs font-mono ${skill.proficient ? 'text-blue-400 font-bold' : 'text-gray-600'}`}>

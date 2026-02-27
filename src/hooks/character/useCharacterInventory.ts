@@ -88,7 +88,7 @@ export const useCharacterInventory = (
           id: `attack_weapon_${itemId}`,
           name: item.name,
           damage: item.damage || '1d6',
-          damageType: item.damageType || 'Физический',
+          damageType: item.damageType || 'physical',
           hitBonus: 0,
           actionType: 'action',
           weaponId: itemId,

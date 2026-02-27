@@ -9,7 +9,7 @@ import { getLucideIcon } from '../utils/iconUtils';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../utils/damageUtils';
 import { Sword, Target, Zap, Clock, X, Minus, Plus, Trash2 } from 'lucide-react';
 import { useI18n } from '../i18n/I18nProvider';
-import { getAttributeLabel, getDamageTypeLabel } from '../i18n/domainLabels';
+import { getAttributeLabel, getDamageTypeLabel, normalizeDamageType } from '../i18n/domainLabels';
 
 interface AttackModalProps {
   isOpen: boolean;
@@ -232,7 +232,7 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                           <div className="space-y-2">
                             <CustomSelect
                               label=""
-                              value={DAMAGE_TYPES.includes(comp.type) ? comp.type : (comp.type ? 'custom' : '')}
+                              value={DAMAGE_TYPES.includes(normalizeDamageType(comp.type)) ? normalizeDamageType(comp.type) : (comp.type ? 'custom' : '')}
                               onChange={(v) => updateComponent(idx, 'type', v === 'custom' ? '' : v)}
                               options={[
                                 { value: '', label: t('common.noType') },
@@ -240,7 +240,7 @@ export const AttackModal: React.FC<AttackModalProps> = ({
                                 { value: 'custom', label: t('spellModal.customType') }
                               ]}
                             />
-                            {(comp.type === '' || !DAMAGE_TYPES.includes(comp.type)) && (
+                            {(comp.type === '' || !DAMAGE_TYPES.includes(normalizeDamageType(comp.type))) && (
                               <input
                                 type="text"
                                 value={comp.type}

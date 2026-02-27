@@ -4,6 +4,7 @@ import { Limb, Resistance, ResistanceLevel, DAMAGE_TYPES } from '../types';
 import { Trash2, Plus, ShieldCheck, ShieldAlert, ShieldX, Shield, Zap } from 'lucide-react';
 import { CustomSelect } from './CustomSelect';
 import { useI18n } from '../i18n/I18nProvider';
+import { getDamageTypeLabel, getLimbLabel, normalizeDamageType } from '../i18n/domainLabels';
 
 interface ArmorClassModalProps {
   isOpen: boolean;
@@ -106,7 +107,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
     }
   };
 
-  const damageTypeOptions = DAMAGE_TYPES.map(type => ({ value: type, label: type }));
+  const damageTypeOptions = DAMAGE_TYPES.map(type => ({ value: type, label: getDamageTypeLabel(type, t) }));
 
   return (
     <AnimatePresence>
@@ -217,7 +218,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                       {limbs.map(limb => (
                         <div key={limb.id} className="bg-dark-bg/30 rounded-xl p-3 border border-dark-border space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-bold text-gray-200">{limb.name}</span>
+                            <span className="text-sm font-bold text-gray-200">{getLimbLabel(limb.id, limb.name, t)}</span>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
@@ -296,7 +297,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                           <div key={res.id} className="bg-dark-bg/30 rounded-2xl p-4 border border-dark-border space-y-4">
                             <div className="flex gap-2">
                               <CustomSelect
-                                value={res.type}
+                                value={normalizeDamageType(res.type)}
                                 options={damageTypeOptions}
                                 onChange={(value) => updateResistance(res.id, { type: value })}
                                 className="flex-1"

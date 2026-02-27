@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Zap, Check, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ATTRIBUTES_LIST, Skill } from '../../../types';
 import { useI18n } from '../../../i18n/I18nProvider';
-import { getAttributeLabel } from '../../../i18n/domainLabels';
+import { getAttributeLabel, getSkillLabel } from '../../../i18n/domainLabels';
 
 interface SkillsStepProps {
   skills: Skill[];
@@ -113,7 +113,7 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
                               )}
                             </button>
                             
-                            <span className="text-sm font-medium">{skill.name}</span>
+                            <span className="text-sm font-medium">{getSkillLabel(skill.id, skill.name, t)}</span>
                           </div>
                           <span className="text-sm font-mono font-bold min-w-[50px] text-right text-blue-400">
                             {modStr}

@@ -8,7 +8,7 @@ import { getLucideIcon } from '../utils/iconUtils';
 import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
 import { Sparkles, Zap, Clock, X, Minus, Plus, Sword, Trash2 } from 'lucide-react';
 import { useI18n } from '../i18n/I18nProvider';
-import { getDamageTypeLabel } from '../i18n/domainLabels';
+import { getDamageTypeLabel, normalizeDamageType } from '../i18n/domainLabels';
 
 interface AbilityModalProps {
   isOpen: boolean;
@@ -251,7 +251,7 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                         <div className="space-y-2">
                           <CustomSelect
                             label=""
-                            value={DAMAGE_TYPES.includes(comp.type) ? comp.type : (comp.type ? 'custom' : '')}
+                            value={DAMAGE_TYPES.includes(normalizeDamageType(comp.type)) ? normalizeDamageType(comp.type) : (comp.type ? 'custom' : '')}
                             onChange={(v) => updateComponent(idx, 'type', v === 'custom' ? '' : v)}
                             options={[
                               { value: '', label: t('common.noType') },
@@ -259,7 +259,7 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
                               { value: 'custom', label: t('spellModal.customType') }
                             ]}
                           />
-                          {(comp.type === '' || !DAMAGE_TYPES.includes(comp.type)) && (
+                          {(comp.type === '' || !DAMAGE_TYPES.includes(normalizeDamageType(comp.type))) && (
                             <input
                               type="text"
                               value={comp.type}
