@@ -1,7 +1,7 @@
 import { LobbyRole, MemberStatus, MessageVisibility } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { lobbyCreateSchema, lobbyJoinSchema, lobbyLeaveSchema, masterMessageSchema, masterNotificationSchema } from '../lobby/contracts.js';
-import { buildLobbyState, resolveMemberHealth } from '../lobby/service.js';
+import { buildLobbyState, promoteLeavingMemberToMasterNpc, resolveMemberHealth } from '../lobby/service.js';
 import { reserveUniqueLobbyKey } from '../lobby/utils.js';
 const normalizeKey = (raw) => raw.trim().toUpperCase();
 export const lobbyRoutes = async (app) => {
@@ -105,6 +105,9 @@ export const lobbyRoutes = async (app) => {
                 currentAction: null
             }
         });
+        if (lobby.hostId !== userId) {
+            await promoteLeavingMemberToMasterNpc(lobby.id, me.id);
+        }
         if (lobby.hostId === userId) {
             await prisma.lobby.update({
                 where: { id: lobby.id },

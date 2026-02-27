@@ -38,6 +38,8 @@ export const combatEventSchema = z.object({
     'combat.updateActor',
     'combat.actionUsed',
     'combat.hpChanged',
+    'combat.addCustomMember',
+    'combat.removeCustomMember',
     'combat.end'
   ]),
   payload: z.record(z.unknown()).default({})

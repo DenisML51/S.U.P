@@ -31,6 +31,8 @@ export type CombatMemberState = {
   userId: string;
   name: string;
   role: LobbyRole;
+  kind: 'lobby_member' | 'master_custom';
+  controlledByUserId: string | null;
   avatar: string | null;
   characterId: string | null;
   initiative: number | null;
@@ -70,6 +72,8 @@ export type CombatEventType =
   | 'combat.updateActor'
   | 'combat.actionUsed'
   | 'combat.hpChanged'
+  | 'combat.addCustomMember'
+  | 'combat.removeCustomMember'
   | 'combat.end';
 
 export type CombatFeedEntry = {

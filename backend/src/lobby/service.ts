@@ -31,6 +31,8 @@ export type CombatMemberState = {
   userId: string;
   name: string;
   role: LobbyRole;
+  kind: 'lobby_member' | 'master_custom';
+  controlledByUserId: string | null;
   avatar: string | null;
   characterId: string | null;
   initiative: number | null;
@@ -223,6 +225,80 @@ const buildTurnOrder = (membersCombat: CombatMemberState[], previousOrder: strin
     })
     .map((member) => member.memberId);
 };
+const createCustomCombatMemberId = (): string =>
+  `custom_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+const toPersistedActiveMemberId = (snapshot: CombatSnapshot): string | null => {
+  if (!snapshot.activeMemberId) {
+    return null;
+  }
+  const active = snapshot.membersCombat.find((member) => member.memberId === snapshot.activeMemberId);
+  return active?.kind === 'lobby_member' ? active.memberId : null;
+};
+const persistCombatSnapshot = async (lobbyId: string, snapshot: CombatSnapshot) => {
+  const persistedActiveMemberId = toPersistedActiveMemberId(snapshot);
+  await prisma.combatState.upsert({
+    where: { lobbyId },
+    create: {
+      lobbyId,
+      round: snapshot.round,
+      activeMemberId: persistedActiveMemberId,
+      isInCombat: snapshot.isInCombat,
+      turnOrder: snapshot.turnOrder as unknown as Prisma.InputJsonValue,
+      snapshot: snapshot as unknown as Prisma.InputJsonValue
+    },
+    update: {
+      round: snapshot.round,
+      activeMemberId: persistedActiveMemberId,
+      isInCombat: snapshot.isInCombat,
+      turnOrder: snapshot.turnOrder as unknown as Prisma.InputJsonValue,
+      snapshot: snapshot as unknown as Prisma.InputJsonValue
+    }
+  });
+};
+
+export const promoteLeavingMemberToMasterNpc = async (lobbyId: string, leavingMemberId: string) => {
+  const combatState = await prisma.combatState.findUnique({
+    where: { lobbyId },
+    select: { snapshot: true, isInCombat: true }
+  });
+  if (!combatState?.isInCombat) {
+    return;
+  }
+  const snapshot = asCombatSnapshot(combatState.snapshot ?? null);
+  if (!snapshot?.isInCombat) {
+    return;
+  }
+  const leavingIndex = snapshot.membersCombat.findIndex(
+    (member) => member.memberId === leavingMemberId && member.kind === 'lobby_member'
+  );
+  if (leavingIndex < 0) {
+    return;
+  }
+  const master = await prisma.lobbyMember.findFirst({
+    where: {
+      lobbyId,
+      role: LobbyRole.MASTER,
+      status: { not: MemberStatus.LEFT }
+    },
+    select: { userId: true }
+  });
+  const leaving = snapshot.membersCombat[leavingIndex];
+  const replacementId = createCustomCombatMemberId();
+  const promoted: CombatMemberState = {
+    ...leaving,
+    memberId: replacementId,
+    kind: 'master_custom',
+    controlledByUserId: master?.userId ?? null,
+    role: LobbyRole.MASTER
+  };
+  snapshot.membersCombat[leavingIndex] = promoted;
+  snapshot.turnOrder = snapshot.turnOrder.map((id) => (id === leavingMemberId ? replacementId : id));
+  if (snapshot.activeMemberId === leavingMemberId) {
+    snapshot.activeMemberId = replacementId;
+  }
+  snapshot.serverSequence = nextSequence(snapshot);
+  await persistCombatSnapshot(lobbyId, snapshot);
+};
 
 export const applyCombatEvent = async (
   lobbyId: string,
@@ -254,6 +330,8 @@ export const applyCombatEvent = async (
     userId: member.userId,
     name: member.user.name,
     role: member.role,
+    kind: 'lobby_member',
+    controlledByUserId: null,
     avatar: member.character ? parseCharacterHealth(member.character as any)?.avatar ?? null : null,
     characterId: member.characterId,
     initiative: null,
@@ -275,10 +353,17 @@ export const applyCombatEvent = async (
     };
 
   const existingById = new Map(snapshot.membersCombat.map((member) => [member.memberId, member]));
-  snapshot.membersCombat = baseMembers.map((member) => ({
+  const lobbyMemberIds = new Set(baseMembers.map((member) => member.memberId));
+  const preservedCustomMembers = snapshot.membersCombat.filter(
+    (member) => member.kind === 'master_custom' && !lobbyMemberIds.has(member.memberId)
+  );
+  snapshot.membersCombat = [
+    ...baseMembers.map((member) => ({
     ...member,
     ...(existingById.get(member.memberId) ?? {})
-  }));
+    })),
+    ...preservedCustomMembers
+  ];
   snapshot.turnOrder = snapshot.turnOrder.filter((memberId) =>
     snapshot.membersCombat.some((member) => member.memberId === memberId)
   );
@@ -403,13 +488,77 @@ export const applyCombatEvent = async (
             maxHP: Number.isFinite(maxHp) ? maxHp : member.maxHP
           };
         });
-        await prisma.lobbyMember.updateMany({
-          where: { lobbyId, id: memberId },
-          data: {
-            ...(Number.isFinite(hp) ? { currentHP: hp } : {}),
-            ...(Number.isFinite(maxHp) ? { maxHP: maxHp } : {})
-          }
-        });
+        const target = snapshot.membersCombat.find((member) => member.memberId === memberId);
+        if (target?.kind === 'lobby_member') {
+          await prisma.lobbyMember.updateMany({
+            where: { lobbyId, id: memberId },
+            data: {
+              ...(Number.isFinite(hp) ? { currentHP: hp } : {}),
+              ...(Number.isFinite(maxHp) ? { maxHP: maxHp } : {})
+            }
+          });
+        }
+      }
+      break;
+    }
+    case 'combat.addCustomMember': {
+      if (actor?.role !== LobbyRole.MASTER) {
+        throw new Error('Only master can add combat members');
+      }
+      const nameRaw = typeof event.payload.name === 'string' ? event.payload.name.trim() : '';
+      if (!nameRaw) {
+        throw new Error('Combat member name is required');
+      }
+      const avatar =
+        typeof event.payload.avatar === 'string' && event.payload.avatar.trim()
+          ? event.payload.avatar.trim()
+          : null;
+      const hp = Number(event.payload.currentHP);
+      const maxHp = Number(event.payload.maxHP);
+      const initiativeValue = Number(event.payload.initiative);
+      const currentHP = Number.isFinite(hp) ? Math.max(0, Math.floor(hp)) : 1;
+      const safeMaxHp = Number.isFinite(maxHp) ? Math.max(1, Math.floor(maxHp)) : currentHP;
+      const initiative = Number.isFinite(initiativeValue) ? Math.floor(initiativeValue) : null;
+      const sourceCharacterId =
+        typeof event.payload.characterId === 'string' && event.payload.characterId.trim()
+          ? event.payload.characterId.trim()
+          : null;
+
+      snapshot.membersCombat.push({
+        memberId: createCustomCombatMemberId(),
+        userId: actor.userId,
+        name: nameRaw,
+        role: LobbyRole.MASTER,
+        kind: 'master_custom',
+        controlledByUserId: actor.userId,
+        avatar,
+        characterId: sourceCharacterId,
+        initiative,
+        currentHP: Math.min(currentHP, safeMaxHp),
+        maxHP: safeMaxHp,
+        currentAction: null,
+        actionLimits: { action: 1, bonus: 1, reaction: 1 },
+        spentActions: { action: 0, bonus: 0, reaction: 0 }
+      });
+      snapshot.turnOrder = buildTurnOrder(snapshot.membersCombat, snapshot.turnOrder);
+      if (!snapshot.activeMemberId || !snapshot.turnOrder.includes(snapshot.activeMemberId)) {
+        snapshot.activeMemberId = snapshot.turnOrder[0] ?? null;
+      }
+      break;
+    }
+    case 'combat.removeCustomMember': {
+      if (actor?.role !== LobbyRole.MASTER) {
+        throw new Error('Only master can remove combat members');
+      }
+      const memberId = typeof event.payload.memberId === 'string' ? event.payload.memberId : '';
+      const target = snapshot.membersCombat.find((member) => member.memberId === memberId);
+      if (!target || target.kind !== 'master_custom') {
+        throw new Error('Custom combat member not found');
+      }
+      snapshot.membersCombat = snapshot.membersCombat.filter((member) => member.memberId !== memberId);
+      snapshot.turnOrder = snapshot.turnOrder.filter((id) => id !== memberId);
+      if (snapshot.activeMemberId === memberId) {
+        snapshot.activeMemberId = snapshot.turnOrder[0] ?? null;
       }
       break;
     }
@@ -432,25 +581,7 @@ export const applyCombatEvent = async (
   }
 
   snapshot.serverSequence = nextSequence(current);
-
-  await prisma.combatState.upsert({
-    where: { lobbyId },
-    create: {
-      lobbyId,
-      round: snapshot.round,
-      activeMemberId: snapshot.activeMemberId,
-      isInCombat: snapshot.isInCombat,
-      turnOrder: snapshot.turnOrder as unknown as Prisma.InputJsonValue,
-      snapshot: snapshot as unknown as Prisma.InputJsonValue
-    },
-    update: {
-      round: snapshot.round,
-      activeMemberId: snapshot.activeMemberId,
-      isInCombat: snapshot.isInCombat,
-      turnOrder: snapshot.turnOrder as unknown as Prisma.InputJsonValue,
-      snapshot: snapshot as unknown as Prisma.InputJsonValue
-    }
-  });
+  await persistCombatSnapshot(lobbyId, snapshot);
 
   await prisma.lobby.update({
     where: { id: lobbyId },

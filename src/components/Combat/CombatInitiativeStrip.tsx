@@ -12,7 +12,7 @@ const avatarFallback = (name: string) =>
     .toUpperCase();
 
 export const CombatInitiativeStrip: React.FC = () => {
-  const { lobby, combatState, members } = useLobbyStore();
+  const { lobby, combatState, members, meRole } = useLobbyStore();
   const { charactersList } = useCharacterStore();
   if (!lobby || !combatState?.isInCombat) return null;
 
@@ -24,7 +24,8 @@ export const CombatInitiativeStrip: React.FC = () => {
       name: stateMember?.name ?? lobbyMember?.userName ?? 'Игрок',
       avatar: stateMember?.avatar ?? lobbyMember?.avatar ?? null,
       characterId: stateMember?.characterId ?? lobbyMember?.characterId ?? null,
-      initiative: stateMember?.initiative ?? null
+      initiative: stateMember?.initiative ?? null,
+      kind: stateMember?.kind ?? 'lobby_member'
     };
   });
   const currentId = combatState.activeMemberId ?? ordered[0]?.id ?? null;
@@ -58,8 +59,12 @@ export const CombatInitiativeStrip: React.FC = () => {
         {centeredOrder.map((member, index) => {
           const isActive = member.id === currentId;
           const avatar = getAvatar(member.id, member.characterId);
-          const initiativeLabel =
-            typeof member.initiative === 'number' ? `Иниц. ${member.initiative}` : `Иниц. #${index + 1}`;
+          const isHiddenNpcInitiative = member.kind === 'master_custom' && meRole !== 'MASTER';
+          const initiativeLabel = isHiddenNpcInitiative
+            ? 'Иниц. ?'
+            : typeof member.initiative === 'number'
+              ? `Иниц. ${member.initiative}`
+              : `Иниц. #${index + 1}`;
           return (
             <motion.div
               key={member.id}

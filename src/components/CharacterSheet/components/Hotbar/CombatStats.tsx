@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Target, Wind, Brain, LoaderCircle } from 'lucide-react';
+import { Shield, Target, Wind, Brain, Loader2 } from 'lucide-react';
 import { Character } from '../../../../types';
 import { useI18n } from '../../../../i18n/I18nProvider';
 
@@ -84,7 +84,7 @@ export const CombatStats: React.FC<CombatStatsProps> = ({
         }`}>
           <span className="inline-flex items-center gap-1.5">
             {isCombatReady && !canStartSharedCombat && (
-              <LoaderCircle size={12} className="animate-spin text-blue-300" />
+              <Loader2 size={12} className="animate-spin text-blue-300" />
             )}
             {initiativeValue}
           </span>

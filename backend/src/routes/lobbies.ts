@@ -8,7 +8,7 @@ import {
   masterMessageSchema,
   masterNotificationSchema
 } from '../lobby/contracts.js';
-import { buildLobbyState, resolveMemberHealth } from '../lobby/service.js';
+import { buildLobbyState, promoteLeavingMemberToMasterNpc, resolveMemberHealth } from '../lobby/service.js';
 import { reserveUniqueLobbyKey } from '../lobby/utils.js';
 
 const normalizeKey = (raw: string): string => raw.trim().toUpperCase();
@@ -124,6 +124,9 @@ export const lobbyRoutes: FastifyPluginAsync = async (app) => {
         currentAction: null
       }
     });
+    if (lobby.hostId !== userId) {
+      await promoteLeavingMemberToMasterNpc(lobby.id, me.id);
+    }
 
     if (lobby.hostId === userId) {
       await prisma.lobby.update({

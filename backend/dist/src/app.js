@@ -14,11 +14,12 @@ import { lobbyWsRoutes } from './routes/lobby-ws.js';
 import { notificationRoutes } from './routes/notifications.js';
 export const buildApp = () => {
     const app = Fastify({ logger: true });
-    const allowedOrigins = new Set([env.APP_ORIGIN, 'http://localhost:5174']);
+    const allowedOrigins = new Set([env.APP_ORIGIN]);
+    const isLocalDevOrigin = (origin) => /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
     app.register(cookie);
     app.register(cors, {
         origin: (origin, cb) => {
-            if (!origin || allowedOrigins.has(origin)) {
+            if (!origin || allowedOrigins.has(origin) || isLocalDevOrigin(origin)) {
                 cb(null, true);
                 return;
             }
