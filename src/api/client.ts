@@ -11,6 +11,10 @@ export const setAccessToken = (token: string | null) => {
   }
 };
 
+export const getAccessToken = (): string | null => accessToken;
+
+export const getApiBaseUrl = (): string => API_BASE;
+
 const tryRefresh = async (): Promise<boolean> => {
   const res = await fetch(`${API_BASE}/auth/refresh`, {
     method: 'POST',

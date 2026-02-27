@@ -5,7 +5,10 @@ import {
   RotateCcw, 
   Play, 
   X,
-  Hash
+  Hash,
+  Menu,
+  ChevronUp,
+  LogOut
 } from 'lucide-react';
 import { useCharacterStore } from '../store/useCharacterStore';
 import { toast } from 'react-hot-toast';
@@ -160,6 +163,8 @@ const DICE_TYPES: DiceConfig[] = [
 export const DiceRoller: React.FC = () => {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
+  const [isCombatMode, setIsCombatMode] = useState(false);
+  const [isCombatMenuOpen, setIsCombatMenuOpen] = useState(false);
   const [selectedDice, setSelectedDice] = useState<{id: string, style: any, type?: string}[]>([]);
   const [bonuses, setBonuses] = useState<Record<string, number>>({});
   const { logHistory, character } = useCharacterStore();
@@ -212,13 +217,27 @@ export const DiceRoller: React.FC = () => {
         setSelectedDice(finalDice);
         setBonuses(newBonuses);
         setIsOpen(true);
+        setIsCombatMenuOpen(false);
       } else {
         setIsOpen(true);
+        setIsCombatMenuOpen(false);
+      }
+    };
+
+    const handleCombatModeChanged = (e: any) => {
+      const next = Boolean(e?.detail?.isInCombat);
+      setIsCombatMode(next);
+      if (!next) {
+        setIsCombatMenuOpen(false);
       }
     };
 
     window.addEventListener('open-dice-hub' as any, handleOpenDiceHub);
-    return () => window.removeEventListener('open-dice-hub' as any, handleOpenDiceHub);
+    window.addEventListener('combat-mode-changed' as any, handleCombatModeChanged);
+    return () => {
+      window.removeEventListener('open-dice-hub' as any, handleOpenDiceHub);
+      window.removeEventListener('combat-mode-changed' as any, handleCombatModeChanged);
+    };
   }, []);
 
   const diceCounts = useMemo(() => {
@@ -338,16 +357,70 @@ export const DiceRoller: React.FC = () => {
 
   return (
     <>
+      <AnimatePresence>
+        {isCombatMode && isCombatMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.9 }}
+            className="fixed bottom-[88px] right-7 z-[102] flex flex-col items-center gap-2"
+          >
+            <button
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('combat-next-turn'));
+                setIsCombatMenuOpen(false);
+              }}
+              className="w-12 h-12 rounded-full border border-amber-500/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 flex items-center justify-center shadow-xl"
+              title={t('combat.nextTurn')}
+            >
+              <ChevronUp size={22} />
+            </button>
+            <button
+              onClick={() => {
+                setIsOpen(true);
+                setIsCombatMenuOpen(false);
+              }}
+              className="w-12 h-12 rounded-full border border-blue-500/40 bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 flex items-center justify-center shadow-xl"
+              title={t('dice.hub')}
+            >
+              <Dices size={22} />
+            </button>
+            <button
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('combat-end'));
+                setIsCombatMenuOpen(false);
+              }}
+              className="w-12 h-12 rounded-full border border-red-500/40 bg-red-500/15 text-red-300 hover:bg-red-500/25 flex items-center justify-center shadow-xl"
+              title={t('combat.end')}
+            >
+              <LogOut size={20} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (isCombatMode) {
+            setIsCombatMenuOpen((prev) => !prev);
+            return;
+          }
+          setIsOpen(!isOpen);
+        }}
         className={`fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center z-[100] transition-all shadow-2xl active:scale-90 ${
-          isOpen 
+          isOpen || isCombatMenuOpen
             ? 'bg-blue-600 text-white rotate-90 scale-110 shadow-blue-500/40' 
             : 'bg-slate-900 text-blue-400 border-2 border-blue-500/30 hover:bg-blue-500/10 hover:border-blue-500 hover:scale-110 shadow-black/50'
         }`}
       >
-        {isOpen ? <X size={28} strokeWidth={3} /> : <Dices size={28} strokeWidth={2.5} />}
-        {hasSelection && !isOpen && (
+        {isCombatMode ? (
+          <Menu size={28} strokeWidth={2.5} />
+        ) : isOpen ? (
+          <X size={28} strokeWidth={3} />
+        ) : (
+          <Dices size={28} strokeWidth={2.5} />
+        )}
+        {hasSelection && !isOpen && !isCombatMode && (
            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-slate-900 animate-bounce">
              !
            </div>

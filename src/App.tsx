@@ -6,6 +6,8 @@ import { Navbar } from './components/Navbar';
 import { Toaster } from 'react-hot-toast';
 import { DiceRoller } from './components/DiceRoller';
 import { useAuthStore } from './store/useAuthStore';
+import { LobbyEntryModal } from './components/Lobby/LobbyEntryModal';
+import { LobbyRoomPage } from './components/Lobby/LobbyRoomPage';
 
 const AppContent: React.FC = () => {
   const { user, isLoading, init } = useAuthStore();
@@ -67,6 +69,8 @@ const AppContent: React.FC = () => {
       </main>
 
       {character && <DiceRoller />}
+      {user && <LobbyEntryModal />}
+      {user && <LobbyRoomPage />}
 
       <Toaster 
         position="bottom-center"

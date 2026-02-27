@@ -239,7 +239,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const newAccess = app.createAccessToken(tokenPayload);
-    const newRefresh = jwt.sign(tokenPayload, env.JWT_REFRESH_SECRET, {
+    const refreshPayload = { sub: tokenPayload.sub, email: tokenPayload.email };
+    const newRefresh = jwt.sign(refreshPayload, env.JWT_REFRESH_SECRET, {
       expiresIn: `${env.JWT_REFRESH_TTL_DAYS}d`
     });
 

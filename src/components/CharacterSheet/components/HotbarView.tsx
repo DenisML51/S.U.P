@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { 
   Character, 
@@ -8,7 +8,8 @@ import {
   InventoryItem
 } from '../../../types';
 import { useCharacterStore } from '../../../store/useCharacterStore';
-import { CombatPanel } from './Hotbar/CombatPanel';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { useLobbyStore } from '../../../store/useLobbyStore';
 import { StatusBars } from './Hotbar/StatusBars';
 import { PortraitGroup } from './Hotbar/PortraitGroup';
 import { ActionTrackers } from './Hotbar/ActionTrackers';
@@ -17,6 +18,9 @@ import { CombatStats } from './Hotbar/CombatStats';
 import { HotbarPanels } from './Hotbar/HotbarPanels';
 import { ExperienceBar } from './Hotbar/ExperienceBar';
 import { ActionTooltip } from './Hotbar/ActionTooltip';
+import { PlayersCombatSidebar } from '../../Combat/PlayersCombatSidebar';
+import { CombatLobbyChat } from '../../Combat/CombatLobbyChat';
+import { CombatInitiativeStrip } from '../../Combat/CombatInitiativeStrip';
 
 interface HotbarViewProps {
   character: Character;
@@ -74,8 +78,15 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
     }, 150);
   };
 
-  const [isInCombat, setIsInCombat] = useState(false);
-  const [initiative, setInitiative] = useState<number | null>(null);
+  const [isInCombatLocal, setIsInCombatLocal] = useState(false);
+  const [initiativeLocal, setInitiativeLocal] = useState<number | null>(null);
+  const lastSentActionStateRef = useRef<string>('');
+  const lastSentHpStateRef = useRef<string>('');
+  const lastKnownRoundRef = useRef<number>(1);
+  const user = useAuthStore((state) => state.user);
+  const { lobby, members, meRole, combatState, sendCombatEvent } = useLobbyStore();
+  const isInCombat = lobby ? Boolean(combatState?.isInCombat) : isInCombatLocal;
+  const initiative = lobby ? initiativeLocal : initiativeLocal;
 
   const subclassIcon = null;
 
@@ -87,14 +98,47 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
     
     return { attacks, abilities, spells, items };
   }, [character]);
+  const meMember = useMemo(() => {
+    if (!user || !members.length) return null;
+    return members.find((member) => member.userId === user.id) ?? null;
+  }, [members, user]);
 
   const startCombat = () => {
     const res = handleRollInitiative();
-    setInitiative(res.total);
-    setIsInCombat(true);
+    setInitiativeLocal(res.total);
+    if (lobby) {
+      const limits = character.actionLimits || { action: 1, bonus: 1, reaction: 1 };
+      const spent = character.spentActions || { action: 0, bonus: 0, reaction: 0 };
+      if (meMember) {
+        sendCombatEvent('combat.actionUsed', {
+          memberId: meMember.id,
+          action: `A:${spent.action}/${limits.action} B:${spent.bonus}/${limits.bonus} R:${spent.reaction}/${limits.reaction}`,
+          actionState: {
+            actionLimits: limits,
+            spentActions: spent,
+            initiative: res.total
+          }
+        });
+      }
+      if (meRole === 'MASTER') {
+        sendCombatEvent('combat.start', {});
+      }
+      return;
+    }
+    setIsInCombatLocal(true);
   };
 
   const nextTurn = () => {
+    if (lobby && combatState) {
+      if (meMember) {
+        sendCombatEvent('combat.actionUsed', {
+          memberId: meMember.id,
+          action: 'EndedTurn'
+        });
+      }
+      sendCombatEvent('combat.nextTurn', {});
+      return;
+    }
     updateCharacter({
       ...character,
       spentActions: { action: 0, bonus: 0, reaction: 0 }
@@ -102,8 +146,12 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
   };
 
   const endCombat = () => {
-    setIsInCombat(false);
-    setInitiative(null);
+    setIsInCombatLocal(false);
+    setInitiativeLocal(null);
+    if (lobby) {
+      sendCombatEvent('combat.end', {});
+      return;
+    }
     nextTurn();
   };
 
@@ -133,72 +181,156 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
           if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
   };
 
+  useEffect(() => {
+    if (!lobby || !combatState?.isInCombat || !meMember) return;
+    const limits = character.actionLimits || { action: 1, bonus: 1, reaction: 1 };
+    const spent = character.spentActions || { action: 0, bonus: 0, reaction: 0 };
+    const payloadKey = JSON.stringify({ limits, spent, memberId: meMember.id, initiative: initiativeLocal });
+    if (lastSentActionStateRef.current === payloadKey) return;
+    lastSentActionStateRef.current = payloadKey;
+    sendCombatEvent('combat.actionUsed', {
+      memberId: meMember.id,
+      action: `A:${spent.action}/${limits.action} B:${spent.bonus}/${limits.bonus} R:${spent.reaction}/${limits.reaction}`,
+      actionState: {
+        actionLimits: limits,
+        spentActions: spent,
+        initiative: initiativeLocal
+      }
+    });
+  }, [
+    lobby,
+    combatState?.isInCombat,
+    meMember?.id,
+    meMember?.characterId,
+    character.spentActions?.action,
+    character.spentActions?.bonus,
+    character.spentActions?.reaction,
+    character.actionLimits?.action,
+    character.actionLimits?.bonus,
+    character.actionLimits?.reaction,
+    initiativeLocal,
+    sendCombatEvent
+  ]);
+
+  useEffect(() => {
+    if (!lobby || !combatState?.isInCombat || !meMember) return;
+    const hpPayload = {
+      memberId: meMember.id,
+      currentHP: character.currentHP,
+      maxHP: getTotalMaxHP()
+    };
+    const payloadKey = JSON.stringify(hpPayload);
+    if (lastSentHpStateRef.current === payloadKey) return;
+    lastSentHpStateRef.current = payloadKey;
+    sendCombatEvent('combat.hpChanged', hpPayload);
+  }, [
+    lobby,
+    combatState?.isInCombat,
+    meMember?.id,
+    character.currentHP,
+    character.maxHP,
+    character.maxHPBonus,
+    getTotalMaxHP,
+    sendCombatEvent
+  ]);
+
+  useEffect(() => {
+    if (!lobby || !combatState?.isInCombat) return;
+    const nextRound = combatState.round ?? 1;
+    const prevRound = lastKnownRoundRef.current;
+    if (nextRound > prevRound) {
+      updateCharacter({
+        ...character,
+        spentActions: { action: 0, bonus: 0, reaction: 0 }
+      });
+    }
+    lastKnownRoundRef.current = nextRound;
+  }, [lobby, combatState?.isInCombat, combatState?.round, character, updateCharacter]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('combat-mode-changed', { detail: { isInCombat } }));
+  }, [isInCombat]);
+
+  useEffect(() => {
+    const handleNextTurn = () => {
+      nextTurn();
+    };
+    const handleEndCombat = () => {
+      endCombat();
+    };
+    window.addEventListener('combat-next-turn', handleNextTurn as EventListener);
+    window.addEventListener('combat-end', handleEndCombat as EventListener);
+    return () => {
+      window.removeEventListener('combat-next-turn', handleNextTurn as EventListener);
+      window.removeEventListener('combat-end', handleEndCombat as EventListener);
+    };
+  }, [nextTurn, endCombat]);
+
   return (
     <>
-      <CombatPanel 
-        isInCombat={isInCombat}
-        onStartCombat={startCombat}
-        onNextTurn={nextTurn}
-        onEndCombat={endCombat}
-      />
+      {lobby && isInCombat && <PlayersCombatSidebar />}
+      {lobby && isInCombat && <CombatLobbyChat />}
+      {lobby && isInCombat && <CombatInitiativeStrip />}
 
-      <div className="fixed bottom-6 left-0 right-0 z-[40] flex flex-col items-center pointer-events-none px-4">
+      <div className="fixed bottom-6 left-0 right-0 z-[40] flex flex-col items-center pointer-events-none px-2 sm:px-4">
         
-        <div className="flex items-end gap-4 max-w-[95vw] pointer-events-auto">
+        <div className="pointer-events-auto w-full max-w-[1600px]">
+          <div className="flex flex-col items-stretch gap-3 lg:flex-row lg:items-end lg:gap-4">
           
-          <StatusBars 
-            sanity={character.sanity}
-            maxSanity={getMaxSanity()}
-            currentHP={character.currentHP}
-            maxHP={getTotalMaxHP()}
-            tempHP={character.tempHP || 0}
-            onSanityClick={() => setShowSanityModal(true)}
-            onHealthClick={() => setShowHealthModal(true)}
-          />
-
-          <PortraitGroup 
-            character={character}
-            subclassIcon={subclassIcon}
-            updateCharacter={updateCharacter}
-                    />
-
-          <div className="flex flex-col gap-3 flex-1 min-w-[800px] max-w-[1400px]">
-            <div className="flex flex-wrap items-center justify-center gap-4 mb-1 pointer-events-auto">
-              <ActionTrackers 
-                character={character}
-                updateCharacter={updateCharacter}
-              />
-
-              <ResourceGroup 
-                character={character}
-                updateResourceCount={updateResourceCount}
-              />
-
-              <CombatStats 
-                character={character}
-                initiative={initiative}
-                getModifier={getModifier}
-                onACClick={() => setShowACModal(true)}
-                onInitiativeClick={startCombat}
-                    />
-                  </div>
-                  
-            <HotbarPanels 
-              actionGroups={actionGroups}
-              hoveredItemId={hoveredItem?.id}
-              onItemClick={onItemClick}
-              onItemRightClick={onItemRightClick}
-              onItemHover={handleItemHover}
-              onItemUnhover={handleItemUnhover}
+            <StatusBars 
+              sanity={character.sanity}
+              maxSanity={getMaxSanity()}
+              currentHP={character.currentHP}
+              maxHP={getTotalMaxHP()}
+              tempHP={character.tempHP || 0}
+              onSanityClick={() => setShowSanityModal(true)}
+              onHealthClick={() => setShowHealthModal(true)}
             />
 
-            <ExperienceBar 
-              level={character.level}
-              experience={character.experience}
-              xpProgress={xpProgress}
-              canLevelUp={canLevelUp}
-              onXPClick={() => setShowExperienceModal(true)}
+            <PortraitGroup 
+              character={character}
+              subclassIcon={subclassIcon}
+              updateCharacter={updateCharacter}
             />
+
+            <div className="flex min-w-0 flex-1 flex-col gap-3 lg:max-w-[1400px]">
+              <div className="mb-1 flex flex-wrap items-center justify-center gap-4 pointer-events-auto">
+                <ActionTrackers 
+                  character={character}
+                  updateCharacter={updateCharacter}
+                />
+
+                <ResourceGroup 
+                  character={character}
+                  updateResourceCount={updateResourceCount}
+                />
+
+                <CombatStats 
+                  character={character}
+                  initiative={initiative}
+                  getModifier={getModifier}
+                  onACClick={() => setShowACModal(true)}
+                  onInitiativeClick={startCombat}
+                />
+              </div>
+              
+              <HotbarPanels 
+                actionGroups={actionGroups}
+                hoveredItemId={hoveredItem?.id}
+                onItemClick={onItemClick}
+                onItemRightClick={onItemRightClick}
+                onItemHover={handleItemHover}
+                onItemUnhover={handleItemUnhover}
+              />
+
+              <ExperienceBar 
+                level={character.level}
+                experience={character.experience}
+                xpProgress={xpProgress}
+                canLevelUp={canLevelUp}
+                onXPClick={() => setShowExperienceModal(true)}
+              />
+            </div>
           </div>
         </div>
       </div>

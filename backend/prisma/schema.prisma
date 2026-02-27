@@ -19,6 +19,31 @@ model User {
   refreshTokens   RefreshToken[]
   characters      Character[]
   notificationReads UserNotificationRead[]
+  hostedLobbies   Lobby[]                 @relation("LobbyHost")
+  lobbyMembers    LobbyMember[]
+  lobbyMessages   LobbyMessage[]
+}
+
+enum LobbyStatus {
+  WAITING
+  IN_COMBAT
+  CLOSED
+}
+
+enum LobbyRole {
+  MASTER
+  PLAYER
+}
+
+enum MemberStatus {
+  ONLINE
+  OFFLINE
+  LEFT
+}
+
+enum MessageVisibility {
+  PLAYERS_ONLY
+  ALL
 }
 
 model PendingRegistration {
@@ -79,9 +104,83 @@ model Character {
   updatedAt        DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lobbyMembers LobbyMember[]
 
   @@index([userId, updatedAt])
   @@index([userId, name])
+}
+
+model Lobby {
+  id         String        @id @default(cuid())
+  key        String        @unique
+  hostId     String
+  status     LobbyStatus   @default(WAITING)
+  settings   Json?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  host       User          @relation("LobbyHost", fields: [hostId], references: [id], onDelete: Cascade)
+  members    LobbyMember[]
+  messages   LobbyMessage[]
+  combatState CombatState?
+
+  @@index([hostId, status])
+  @@index([status, createdAt])
+}
+
+model LobbyMember {
+  id               String       @id @default(cuid())
+  lobbyId          String
+  userId           String
+  characterId      String?
+  role             LobbyRole    @default(PLAYER)
+  status           MemberStatus @default(ONLINE)
+  currentAction    String?
+  currentHP        Int?
+  maxHP            Int?
+  joinedAt         DateTime     @default(now())
+  lastSeenAt       DateTime     @default(now())
+  leftAt           DateTime?
+
+  lobby            Lobby        @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character        Character?   @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  activeInCombats  CombatState[] @relation("ActiveCombatMember")
+
+  @@unique([lobbyId, userId])
+  @@index([lobbyId, status])
+  @@index([userId])
+}
+
+model LobbyMessage {
+  id         String            @id @default(cuid())
+  lobbyId    String
+  senderId   String
+  senderRole LobbyRole
+  content    String            @db.Text
+  visibility MessageVisibility @default(PLAYERS_ONLY)
+  createdAt  DateTime          @default(now())
+
+  lobby      Lobby             @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  sender     User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([lobbyId, createdAt])
+}
+
+model CombatState {
+  id             String       @id @default(cuid())
+  lobbyId        String       @unique
+  round          Int          @default(1)
+  activeMemberId String?
+  turnOrder      Json?
+  snapshot       Json?
+  isInCombat     Boolean      @default(false)
+  updatedAt      DateTime     @updatedAt
+
+  lobby          Lobby        @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  activeMember   LobbyMember? @relation("ActiveCombatMember", fields: [activeMemberId], references: [id], onDelete: SetNull)
+
+  @@index([activeMemberId])
 }
 
 model SystemNotification {

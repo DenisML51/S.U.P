@@ -3,16 +3,18 @@ import { motion } from 'framer-motion';
 import { useCharacterStore } from '../store/useCharacterStore';
 import { CharacterCard } from './CharacterCard';
 import { CharacterCreation } from './CharacterCreation/index';
-import { Plus, Upload, User, Settings, LogOut } from 'lucide-react';
+import { Plus, Upload, User, Settings, LogOut, Users } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { useAuthStore } from '../store/useAuthStore';
 import { AuthScreen } from './AuthScreen';
 import { useI18n } from '../i18n/I18nProvider';
+import { useLobbyStore } from '../store/useLobbyStore';
 
 export const CharacterList: React.FC = () => {
   const { t } = useI18n();
   const { user, logout } = useAuthStore();
   const { charactersList, loadCharacter, deleteCharacter, importFromJSON, goToCharacterList, settings } = useCharacterStore();
+  const { openLobbyModal, openLobbyPage, lobby, members } = useLobbyStore();
   const [showCreation, setShowCreation] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -249,6 +251,23 @@ export const CharacterList: React.FC = () => {
             >
               <Settings className="w-6 h-6 mb-1 text-gray-400 group-hover:text-white" />
               <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500 group-hover:text-gray-300">{t('toolbar.options')}</span>
+            </motion.button>
+
+            <div className="w-[1px] h-10 bg-white/10 mx-1" />
+
+            <motion.button
+              whileHover={{ scale: 1.1, backgroundColor: 'rgba(59, 130, 246, 0.12)' }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => (lobby ? openLobbyPage() : openLobbyModal())}
+              className="relative flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors group"
+            >
+              <Users className="w-6 h-6 mb-1 text-blue-300 group-hover:text-blue-200" />
+              <span className="text-[10px] font-black uppercase tracking-tighter text-blue-300/70 group-hover:text-blue-200">Лобби</span>
+              {lobby && (
+                <span className="absolute top-2 right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500 text-white text-[10px] font-black flex items-center justify-center">
+                  {members.length}
+                </span>
+              )}
             </motion.button>
           </div>
         </motion.div>
