@@ -378,7 +378,7 @@ export const CharacterList: React.FC = () => {
                     return;
                   }
                   setIsSettingsOpen(false);
-                  openLobbyModal();
+                  openLobbyModal(null, 'dock');
                 }}
                 className="relative flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors group"
               >

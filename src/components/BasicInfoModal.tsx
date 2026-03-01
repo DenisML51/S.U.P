@@ -61,7 +61,7 @@ export const BasicInfoModal: React.FC<BasicInfoModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 18 }}
@@ -69,7 +69,7 @@ export const BasicInfoModal: React.FC<BasicInfoModalProps> = ({
               exit={{ opacity: 0, scale: 0.96, y: 18 }}
               transition={{ type: 'spring', stiffness: 360, damping: 30, mass: 0.85 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#171b26] to-[#10131d] shadow-[0_30px_90px_rgba(0,0,0,0.55)]"
+              className="w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#121522] to-[#080a11] shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
             >
               <div className="border-b border-white/10 px-6 py-5 md:px-8">
                 <div className="flex items-start justify-between gap-4">

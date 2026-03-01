@@ -11,6 +11,7 @@ type LobbyEntryModalProps = {
 export const LobbyEntryModal: React.FC<LobbyEntryModalProps> = ({ variant = 'floating' }) => {
   const {
     isLobbyModalOpen,
+    lobbyModalVariant,
     closeLobbyModal,
     createLobby,
     joinLobbyByKey,
@@ -105,7 +106,7 @@ export const LobbyEntryModal: React.FC<LobbyEntryModalProps> = ({ variant = 'flo
     }
   };
 
-  if (variant === 'floating' && !isLobbyModalOpen) {
+  if (!isLobbyModalOpen || lobbyModalVariant !== variant) {
     return null;
   }
 

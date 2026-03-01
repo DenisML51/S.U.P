@@ -81,7 +81,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             animate={{ opacity: 1, y: 4, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.1 }}
-            className={`absolute z-[100] w-max min-w-full mt-1 bg-dark-card border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl ${minimal ? 'left-1/2 -translate-x-1/2' : 'left-0'}`}
+            className={`absolute z-[1200] w-max min-w-full mt-1 bg-dark-card border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl ${minimal ? 'left-1/2 -translate-x-1/2' : 'left-0'}`}
           >
             <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
               {options.map((option) => (

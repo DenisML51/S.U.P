@@ -22,6 +22,7 @@ import { useCharacterStore } from './useCharacterStore';
 
 type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'error';
 type LobbyAnchor = { top: number; left: number } | null;
+type LobbyModalVariant = 'floating' | 'dock';
 
 interface LobbyStoreState {
   lobby: LobbyStatePayload['lobby'] | null;
@@ -35,12 +36,13 @@ interface LobbyStoreState {
   lobbyKeyInput: string;
   selectedCharacterId: string;
   isLobbyModalOpen: boolean;
+  lobbyModalVariant: LobbyModalVariant;
   lobbyModalAnchor: LobbyAnchor;
   isLobbyPageOpen: boolean;
   socketClient: LobbySocketClient | null;
   setLobbyKeyInput: (value: string) => void;
   setSelectedCharacterId: (value: string) => void;
-  openLobbyModal: (anchor?: { top: number; left: number }) => void;
+  openLobbyModal: (anchor?: { top: number; left: number } | null, variant?: LobbyModalVariant) => void;
   closeLobbyModal: () => void;
   openLobbyPage: () => void;
   closeLobbyPage: () => void;
@@ -138,15 +140,18 @@ export const useLobbyStore = create<LobbyStoreState>((set, get) => ({
   lobbyKeyInput: '',
   selectedCharacterId: '',
   isLobbyModalOpen: false,
+  lobbyModalVariant: 'floating',
   lobbyModalAnchor: null,
   isLobbyPageOpen: false,
   socketClient: null,
 
   setLobbyKeyInput: (value) => set({ lobbyKeyInput: value }),
   setSelectedCharacterId: (value) => set({ selectedCharacterId: value }),
-  openLobbyModal: (anchor) => set({ isLobbyModalOpen: true, lobbyModalAnchor: anchor ?? null }),
-  closeLobbyModal: () => set({ isLobbyModalOpen: false, lobbyModalAnchor: null }),
-  openLobbyPage: () => set({ isLobbyPageOpen: true, isLobbyModalOpen: false, lobbyModalAnchor: null }),
+  openLobbyModal: (anchor, variant = 'floating') =>
+    set({ isLobbyModalOpen: true, lobbyModalAnchor: anchor ?? null, lobbyModalVariant: variant }),
+  closeLobbyModal: () => set({ isLobbyModalOpen: false, lobbyModalAnchor: null, lobbyModalVariant: 'floating' }),
+  openLobbyPage: () =>
+    set({ isLobbyPageOpen: true, isLobbyModalOpen: false, lobbyModalAnchor: null, lobbyModalVariant: 'floating' }),
   closeLobbyPage: () => set({ isLobbyPageOpen: false }),
 
   createLobby: async () => {
@@ -191,6 +196,7 @@ export const useLobbyStore = create<LobbyStoreState>((set, get) => ({
       error: null,
       isLobbyPageOpen: false,
       isLobbyModalOpen: false,
+      lobbyModalVariant: 'floating',
       lobbyModalAnchor: null
     });
     try {

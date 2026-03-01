@@ -587,7 +587,7 @@ export const DiceRoller: React.FC = () => {
                       return;
                     }
                     setIsSettingsOpen(false);
-                    openLobbyModal();
+                    openLobbyModal(null, 'dock');
                   }}
                   className="relative flex h-20 w-20 flex-col items-center justify-center rounded-2xl transition-colors"
                 >
