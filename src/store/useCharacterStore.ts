@@ -42,7 +42,7 @@ interface CharacterState {
   updateResourceCount: (resourceId: string, delta: number) => void;
   logHistory: (message: string, type?: 'health' | 'sanity' | 'resource' | 'inventory' | 'exp' | 'other') => void;
   loadCharacter: (characterId: string) => Promise<void>;
-  createCharacter: (character: Character) => string;
+  createCharacter: (character: Character) => Promise<string>;
   deleteCharacter: (characterId: string) => Promise<void>;
   clearCharacter: () => void;
   exportToJSON: (characterId?: string) => void;
@@ -270,16 +270,20 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     }
   },
 
-  createCharacter: (newCharacter) => {
+  createCharacter: async (newCharacter) => {
     const { settings, charactersList } = get();
     const id = newCharacter.id || `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const characterWithId = { ...newCharacter, id };
     const normalized = normalizeCharacter(characterWithId);
-    
-    createCharacterApi(normalized).catch((e) => {
+
+    try {
+      await createCharacterApi(normalized);
+    } catch (e) {
       console.error('Failed to create character:', e);
       toast.error(tStore('log.serverSaveFailed'));
-    });
+      throw e;
+    }
+
     const newList = updateListInStorage(normalized, charactersList);
     set({ 
       character: normalized, 

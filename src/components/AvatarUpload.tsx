@@ -47,6 +47,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
         setShowCropper(true);
       });
       reader.readAsDataURL(e.target.files[0]);
+      e.target.value = '';
     }
   }
 
@@ -56,12 +57,21 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
   }
 
   async function createCroppedImage() {
-    if (completedCrop && imgRef.current) {
-      const base64 = await getCroppedImg(imgRef.current, completedCrop);
-      onAvatarChange(base64);
-      setShowCropper(false);
-      setImgSrc('');
-    }
+    if (!imgRef.current) return;
+
+    const image = imgRef.current;
+    const safeCrop = completedCrop && completedCrop.width > 0 && completedCrop.height > 0
+      ? completedCrop
+      : getDefaultSquarePixelCrop(image);
+
+    const base64 = await getCroppedImg(image, safeCrop);
+    if (!base64) return;
+
+    onAvatarChange(base64);
+    setShowCropper(false);
+    setImgSrc('');
+    setCompletedCrop(undefined);
+    setCrop(undefined);
   }
 
   return (
@@ -94,7 +104,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-dark-card border border-dark-border rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col"
+              className="bg-dark-card border border-dark-border rounded-3xl w-[min(880px,calc(100vw-32px))] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
             >
               <div className="p-6 border-b border-dark-border flex justify-between items-center bg-dark-card/50">
                 <h3 className="text-lg font-bold text-white">{t('avatar.editor')}</h3>
@@ -103,7 +113,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
                 </button>
               </div>
 
-              <div className="relative bg-black flex justify-center items-center overflow-auto max-h-[60vh] p-4">
+              <div className="relative bg-black flex justify-center items-center overflow-auto min-h-[320px] max-h-[62vh] p-4">
                 {!!imgSrc && (
                   <ReactCrop
                     crop={crop}
@@ -116,7 +126,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
                       ref={imgRef}
                       alt={t('avatar.cropAlt')}
                       src={imgSrc}
-                      style={{ maxHeight: '50vh' }}
+                      style={{ maxHeight: '56vh' }}
                       onLoad={onImageLoad}
                     />
                   </ReactCrop>
@@ -175,4 +185,11 @@ async function getCroppedImg(image: HTMLImageElement, crop: PixelCrop): Promise<
   );
 
   return canvas.toDataURL('image/jpeg');
+}
+
+function getDefaultSquarePixelCrop(image: HTMLImageElement): PixelCrop {
+  const size = Math.min(image.naturalWidth || image.width, image.naturalHeight || image.height);
+  const x = Math.max(0, Math.floor(((image.naturalWidth || image.width) - size) / 2));
+  const y = Math.max(0, Math.floor(((image.naturalHeight || image.height) - size) / 2));
+  return { unit: 'px', x, y, width: size, height: size };
 }

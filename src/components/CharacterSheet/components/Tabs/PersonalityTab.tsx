@@ -27,47 +27,44 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
   const { t } = useI18n();
   return (
     <div className="space-y-10 pb-10 text-gray-100">
-      <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-        <div className="relative bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-2xl">
-          <div className="h-2 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-50" />
-          
-          <div className="p-8">
-            <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
-              <div className="relative">
-                <AvatarUpload 
-                  currentAvatar={character.avatar} 
-                  onAvatarChange={(base64) => updatePersonalityField('avatar', base64)} 
-                />
-                <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg pointer-events-none">
-                  {t('experience.level').toUpperCase()} {character.level}
-                </div>
-              </div>
+      <div className="flex flex-col items-start gap-8 md:flex-row md:items-center">
+        <div className="relative scale-[1.28] origin-top-left md:mr-6 md:scale-[1.34]">
+          <AvatarUpload
+            currentAvatar={character.avatar}
+            onAvatarChange={(base64) => updatePersonalityField('avatar', base64)}
+          />
+        </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-4 mb-2">
-                  <h2 className="text-4xl font-black tracking-tight truncate">{character.name}</h2>
-                  <button
-                    onClick={() => setShowBasicInfoModal(true)}
-                    className="p-2 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-gray-500 hover:text-blue-400"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </button>
-                </div>
-                
-                <div className="flex flex-wrap gap-3">
-                  <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[10px] font-black uppercase tracking-widest">
-                    {character.race}
-                    {character.subrace && ` (${character.subrace})`}
-                  </div>
-                  <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-widest">
-                    {character.class}
-                    {character.subclass && ` • ${character.subclass}`}
-                  </div>
-                  <div className="px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full text-pink-400 text-[10px] font-black uppercase tracking-widest">
-                    {character.alignment || t('personality.noAlignment')}
-                  </div>
-                </div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-4 flex items-center gap-4">
+            <h2 className="truncate text-4xl font-black tracking-tight">{character.name}</h2>
+            <button
+              onClick={() => setShowBasicInfoModal(true)}
+              className="p-2 bg-dark-bg border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-gray-500 hover:text-blue-400"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="rounded-xl border border-blue-500/20 bg-blue-500/8 px-3 py-2">
+              <div className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-300/70">Раса</div>
+              <div className="mt-1 truncate text-sm font-bold text-blue-100">
+                {character.race}
+                {character.subrace && ` (${character.subrace})`}
+              </div>
+            </div>
+            <div className="rounded-xl border border-purple-500/20 bg-purple-500/8 px-3 py-2">
+              <div className="text-[9px] font-black uppercase tracking-[0.18em] text-purple-300/70">Класс</div>
+              <div className="mt-1 truncate text-sm font-bold text-purple-100">
+                {character.class}
+                {character.subclass && ` • ${character.subclass}`}
+              </div>
+            </div>
+            <div className="rounded-xl border border-pink-500/20 bg-pink-500/8 px-3 py-2">
+              <div className="text-[9px] font-black uppercase tracking-[0.18em] text-pink-300/70">Мировоззрение</div>
+              <div className="mt-1 truncate text-sm font-bold text-pink-100">
+                {character.alignment || t('personality.noAlignment')}
               </div>
             </div>
           </div>
