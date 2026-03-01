@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Dices, 
@@ -8,13 +8,19 @@ import {
   Hash,
   Menu,
   ChevronUp,
-  LogOut
+  LogOut,
+  Sliders,
+  Users,
+  Swords
 } from 'lucide-react';
 import { useCharacterStore } from '../store/useCharacterStore';
+import { useLobbyStore } from '../store/useLobbyStore';
 import { toast } from 'react-hot-toast';
 import { DAMAGE_TYPES } from '../types';
 import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
 import { useI18n } from '../i18n/I18nProvider';
+import { SettingsModal } from './SettingsModal';
+import { LobbyEntryModal } from './Lobby/LobbyEntryModal';
 
 const parseDiceFormula = (formula: string) => {
   const dice: { id: string, count: number, type?: string }[] = [];
@@ -165,9 +171,19 @@ export const DiceRoller: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCombatMode, setIsCombatMode] = useState(false);
   const [isCombatMenuOpen, setIsCombatMenuOpen] = useState(false);
+  const [isQuickDockOpen, setIsQuickDockOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedDice, setSelectedDice] = useState<{id: string, style: any, type?: string}[]>([]);
   const [bonuses, setBonuses] = useState<Record<string, number>>({});
   const { logHistory, character } = useCharacterStore();
+  const { lobby, isLobbyModalOpen, openLobbyModal, closeLobbyModal } = useLobbyStore();
+  const dockRef = useRef<HTMLDivElement>(null);
+  const lobbyPanelRef = useRef<HTMLDivElement>(null);
+  const settingsPanelRef = useRef<HTMLDivElement>(null);
+  const [dockMetrics, setDockMetrics] = useState({ width: 360, height: 96 });
+  const [lobbyPanelMetrics, setLobbyPanelMetrics] = useState({ width: 740, height: 560 });
+  const [settingsPanelMetrics, setSettingsPanelMetrics] = useState({ width: 740, height: 560 });
+  const isDockPanelOpen = isLobbyModalOpen || isSettingsOpen;
 
   const totalBonus = useMemo(() => 
     Object.values(bonuses).reduce((sum, b) => sum + b, 0),
@@ -218,9 +234,11 @@ export const DiceRoller: React.FC = () => {
         setBonuses(newBonuses);
         setIsOpen(true);
         setIsCombatMenuOpen(false);
+        setIsQuickDockOpen(false);
       } else {
         setIsOpen(true);
         setIsCombatMenuOpen(false);
+        setIsQuickDockOpen(false);
       }
     };
 
@@ -239,6 +257,41 @@ export const DiceRoller: React.FC = () => {
       window.removeEventListener('combat-mode-changed' as any, handleCombatModeChanged);
     };
   }, []);
+
+  useEffect(() => {
+    const updateDockMetrics = () => {
+      if (!dockRef.current) return;
+      const rect = dockRef.current.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setDockMetrics({ width: rect.width, height: rect.height });
+      }
+    };
+    updateDockMetrics();
+    window.addEventListener('resize', updateDockMetrics);
+    return () => window.removeEventListener('resize', updateDockMetrics);
+  }, []);
+
+  useEffect(() => {
+    if (!isLobbyModalOpen) return;
+    const measure = () => {
+      if (!lobbyPanelRef.current) return;
+      const rect = lobbyPanelRef.current.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setLobbyPanelMetrics({ width: rect.width, height: rect.height });
+      }
+    };
+    measure();
+    const id = window.setTimeout(measure, 120);
+    return () => window.clearTimeout(id);
+  }, [isLobbyModalOpen]);
+
+  useEffect(() => {
+    if (!isSettingsOpen || !settingsPanelRef.current) return;
+    const rect = settingsPanelRef.current.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setSettingsPanelMetrics({ width: rect.width, height: rect.height });
+    }
+  }, [isSettingsOpen]);
 
   const diceCounts = useMemo(() => {
     return selectedDice.reduce((acc, die) => {
@@ -352,6 +405,10 @@ export const DiceRoller: React.FC = () => {
   }, [selectedDice, bonuses, totalBonus, logHistory]);
 
   const hasSelection = selectedDice.length > 0 || totalBonus !== 0;
+  const getCollapsedScales = (panelWidth: number, panelHeight: number) => ({
+    scaleX: Math.max(0.2, Math.min(1, dockMetrics.width / Math.max(1, panelWidth))),
+    scaleY: Math.max(0.12, Math.min(1, dockMetrics.height / Math.max(1, panelHeight)))
+  });
 
   if (!character) return null;
 
@@ -399,28 +456,182 @@ export const DiceRoller: React.FC = () => {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {!isCombatMode && isQuickDockOpen && (
+          <motion.div
+            initial={{ y: 90, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 90, opacity: 0 }}
+            transition={{ delay: 0.04, type: 'spring', damping: 24 }}
+            className="fixed bottom-10 left-0 right-0 z-[101] flex justify-center pointer-events-none px-4"
+          >
+            <div className="relative pointer-events-auto overflow-visible">
+              <AnimatePresence>
+                {isDockPanelOpen && (
+                  <motion.div
+                    key="dock-backdrop"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    className="fixed inset-0 z-[95]"
+                    onClick={() => {
+                      closeLobbyModal();
+                      setIsSettingsOpen(false);
+                    }}
+                  />
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence initial={false}>
+                {isSettingsOpen && (
+                  <div className="absolute bottom-0 left-1/2 z-[105] w-[min(740px,calc(100vw-32px))] -translate-x-1/2">
+                    {(() => {
+                      const collapsed = getCollapsedScales(settingsPanelMetrics.width, settingsPanelMetrics.height);
+                      return (
+                        <motion.div
+                          key="settings-expanded"
+                          ref={settingsPanelRef}
+                          initial={{ opacity: 1, scaleX: collapsed.scaleX, scaleY: collapsed.scaleY, y: 0 }}
+                          animate={{ opacity: 1, scaleX: 1, scaleY: 1, y: 0 }}
+                          exit={{ opacity: 1, scaleX: collapsed.scaleX, scaleY: collapsed.scaleY, y: 0 }}
+                          transition={{ type: 'spring', stiffness: 360, damping: 30, mass: 0.8 }}
+                          style={{ transformOrigin: '50% 100%' }}
+                        >
+                          <SettingsModal
+                            variant="dock"
+                            isOpen={isSettingsOpen}
+                            onClose={() => setIsSettingsOpen(false)}
+                          />
+                        </motion.div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence initial={false}>
+                {isLobbyModalOpen && (
+                  <div className="absolute bottom-0 left-1/2 z-[105] w-[min(740px,calc(100vw-32px))] -translate-x-1/2">
+                    {(() => {
+                      const collapsed = getCollapsedScales(lobbyPanelMetrics.width, lobbyPanelMetrics.height);
+                      return (
+                        <motion.div
+                          key="lobby-expanded"
+                          ref={lobbyPanelRef}
+                          initial={{ opacity: 1, scaleX: collapsed.scaleX, scaleY: collapsed.scaleY, y: 0 }}
+                          animate={{ opacity: 1, scaleX: 1, scaleY: 1, y: 0 }}
+                          exit={{ opacity: 1, scaleX: collapsed.scaleX, scaleY: collapsed.scaleY, y: 0 }}
+                          transition={{ type: 'spring', stiffness: 360, damping: 30, mass: 0.8 }}
+                          style={{ transformOrigin: '50% 100%' }}
+                        >
+                          <LobbyEntryModal variant="dock" />
+                        </motion.div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </AnimatePresence>
+
+              <motion.div
+                animate={isDockPanelOpen ? { opacity: 0, y: 8 } : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                className="relative z-[110] flex items-center gap-2 rounded-3xl border border-white/10 bg-black/45 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.55)] backdrop-blur-2xl"
+                style={{ pointerEvents: isDockPanelOpen ? 'none' : 'auto' }}
+                ref={dockRef}
+              >
+                <motion.button
+                  whileHover={{ scale: 1.08, backgroundColor: 'rgba(16, 185, 129, 0.16)' }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setIsOpen(true);
+                    setIsQuickDockOpen(false);
+                  }}
+                  className="flex h-20 w-20 flex-col items-center justify-center rounded-2xl transition-colors"
+                >
+                  <Dices className="mb-1 h-6 w-6 text-emerald-300" />
+                  <span className="text-[10px] font-black uppercase tracking-tight text-emerald-200/80">
+                    Дайс хаб
+                  </span>
+                </motion.button>
+
+                <div className="mx-1 h-10 w-px bg-white/10" />
+
+                <motion.button
+                  whileHover={{ scale: 1.08, backgroundColor: 'rgba(168, 85, 247, 0.18)' }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    if (isSettingsOpen) {
+                      setIsSettingsOpen(false);
+                      return;
+                    }
+                    closeLobbyModal();
+                    setIsSettingsOpen(true);
+                  }}
+                  className="flex h-20 w-20 flex-col items-center justify-center rounded-2xl transition-colors"
+                >
+                  <Sliders className="mb-1 h-6 w-6 text-purple-300" />
+                  <span className="text-[10px] font-black uppercase tracking-tight text-purple-200/80">
+                    Опции
+                  </span>
+                </motion.button>
+
+                <div className="mx-1 h-10 w-px bg-white/10" />
+
+                <motion.button
+                  whileHover={{ scale: 1.08, backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    if (isLobbyModalOpen) {
+                      closeLobbyModal();
+                      return;
+                    }
+                    setIsSettingsOpen(false);
+                    openLobbyModal();
+                  }}
+                  className="relative flex h-20 w-20 flex-col items-center justify-center rounded-2xl transition-colors"
+                >
+                  <Users className="mb-1 h-6 w-6 text-blue-300" />
+                  <span className="text-[10px] font-black uppercase tracking-tight text-blue-200/80">
+                    Лобби
+                  </span>
+                  {lobby && (
+                    <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-green-400 shadow-[0_0_12px_rgba(74,222,128,0.7)]" />
+                  )}
+                </motion.button>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <button
         onClick={() => {
           if (isCombatMode) {
             setIsCombatMenuOpen((prev) => !prev);
             return;
           }
-          setIsOpen(!isOpen);
+          setIsQuickDockOpen((prev) => {
+            const next = !prev;
+            if (!next) {
+              closeLobbyModal();
+              setIsSettingsOpen(false);
+            }
+            return next;
+          });
         }}
         className={`fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center z-[100] transition-all shadow-2xl active:scale-90 ${
-          isOpen || isCombatMenuOpen
+          isQuickDockOpen || isCombatMenuOpen
             ? 'bg-blue-600 text-white rotate-90 scale-110 shadow-blue-500/40' 
             : 'bg-slate-900 text-blue-400 border-2 border-blue-500/30 hover:bg-blue-500/10 hover:border-blue-500 hover:scale-110 shadow-black/50'
         }`}
       >
         {isCombatMode ? (
-          <Menu size={28} strokeWidth={2.5} />
-        ) : isOpen ? (
-          <X size={28} strokeWidth={3} />
+          <Swords size={26} strokeWidth={2.5} />
         ) : (
-          <Dices size={28} strokeWidth={2.5} />
+          <Menu size={28} strokeWidth={2.5} />
         )}
-        {hasSelection && !isOpen && !isCombatMode && (
+        {hasSelection && !isQuickDockOpen && !isCombatMode && (
            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-slate-900 animate-bounce">
              !
            </div>

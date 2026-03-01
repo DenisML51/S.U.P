@@ -14,11 +14,9 @@ import {
   Coins,
   Target,
   ChevronLeft,
-  Settings,
   LogOut,
   Download,
   FileJson,
-  Sliders,
   Wand2,
   History as HistoryLogIcon,
   X,
@@ -31,7 +29,6 @@ import {
 } from 'lucide-react';
 import { getLucideIcon } from '../utils/iconUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SettingsModal } from './SettingsModal';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSystemNotificationsStore } from '../store/useSystemNotificationsStore';
 import { useI18n } from '../i18n/I18nProvider';
@@ -57,7 +54,6 @@ export const Navbar: React.FC = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [isXl, setIsXl] = useState(window.innerWidth < 1280);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [isResourcesExpanded, setIsResourcesExpanded] = useState(false);
@@ -679,22 +675,6 @@ export const Navbar: React.FC = () => {
                       </>
                     )}
 
-                    <div className="px-2">
-                      <button
-                        onClick={() => {
-                          window.dispatchEvent(new CustomEvent('open-app-settings'));
-                          setIsMenuOpen(false);
-                        }}
-                        onMouseEnter={() => setIsHistoryOpen(false)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#2a2a2a] text-gray-300 hover:text-white transition-all text-sm group"
-                      >
-                        <Sliders className="w-4 h-4 text-gray-400 group-hover:text-purple-400" />
-                        <span>{t('navbar.settings')}</span>
-                      </button>
-                    </div>
-
-                    <div className="h-[1px] bg-[#333] mx-2 my-1" />
-
                     <div className="px-2 space-y-0.5">
                       <button
                         onClick={() => {
@@ -739,7 +719,6 @@ export const Navbar: React.FC = () => {
             </AnimatePresence>
           </div>
         </div>
-        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       </div>
     </nav>
   );

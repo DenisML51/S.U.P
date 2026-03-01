@@ -13,7 +13,7 @@ import { useLobbyStore } from './store/useLobbyStore';
 const AppContent: React.FC = () => {
   const { user, isLoading, init } = useAuthStore();
   const { character, isLoaded, loadCharactersList, migrateOldData, updateSettings, settings } = useCharacterStore();
-  const { restoreLobbySession, lobby, openLobbyModal, openLobbyPage } = useLobbyStore();
+  const { restoreLobbySession } = useLobbyStore();
   const restoredLobbyUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -78,20 +78,6 @@ const AppContent: React.FC = () => {
       </div>
       
       {character && <Navbar key={character.id} />}
-      {user && !character && (
-        <button
-          onClick={() => {
-            if (lobby) {
-              openLobbyPage();
-              return;
-            }
-            openLobbyModal();
-          }}
-          className="fixed right-4 top-4 z-[120] rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-xs font-semibold text-gray-200 backdrop-blur-xl hover:bg-black/55"
-        >
-          Лобби
-        </button>
-      )}
       
       <main className={`relative z-10 ${character ? 'pt-24' : ''}`}>
         {character ? <CharacterSheet /> : <CharacterList />}

@@ -179,7 +179,6 @@ export const useLobbyStore = create<LobbyStoreState>((set, get) => ({
     if (!lobby) {
       return;
     }
-    await leaveLobbyApi(lobby.key);
     get().disconnectSocket();
     set({
       lobby: null,
@@ -190,9 +189,17 @@ export const useLobbyStore = create<LobbyStoreState>((set, get) => ({
       combatState: null,
       connectionStatus: 'idle',
       error: null,
-      isLobbyPageOpen: false
+      isLobbyPageOpen: false,
+      isLobbyModalOpen: false,
+      lobbyModalAnchor: null
     });
-    clearLobbySession();
+    try {
+      await leaveLobbyApi(lobby.key);
+    } catch (error) {
+      console.error('Failed to leave lobby:', error);
+    } finally {
+      clearLobbySession();
+    }
   },
 
   changeLobbyCharacter: async (characterId) => {
