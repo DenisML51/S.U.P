@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Check, Image as ImageIcon } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { useI18n } from '../i18n/I18nProvider';
 
 interface AvatarUploadProps {
@@ -37,6 +38,17 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [showCropper, setShowCropper] = useState(false);
+
+  useEffect(() => {
+    if (!showCropper || typeof document === 'undefined') return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [showCropper]);
 
   function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
@@ -90,74 +102,77 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({ currentAvatar, onAva
         </label>
       </div>
 
-      <AnimatePresence>
-        {showCropper && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setShowCropper(false)}
-          >
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showCropper && (
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-dark-card border border-dark-border rounded-3xl w-[min(880px,calc(100vw-32px))] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => setShowCropper(false)}
             >
-              <div className="p-6 border-b border-dark-border flex justify-between items-center bg-dark-card/50">
-                <h3 className="text-lg font-bold text-white">{t('avatar.editor')}</h3>
-                <button onClick={() => setShowCropper(false)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
-                  <X className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
-
-              <div className="relative bg-black flex justify-center items-center overflow-auto min-h-[320px] max-h-[62vh] p-4">
-                {!!imgSrc && (
-                  <ReactCrop
-                    crop={crop}
-                    onChange={(_, percentCrop) => setCrop(percentCrop)}
-                    onComplete={(c) => setCompletedCrop(c)}
-                    aspect={1}
-                    className="max-w-full"
-                  >
-                    <img
-                      ref={imgRef}
-                      alt={t('avatar.cropAlt')}
-                      src={imgSrc}
-                      style={{ maxHeight: '56vh' }}
-                      onLoad={onImageLoad}
-                    />
-                  </ReactCrop>
-                )}
-              </div>
-
-              <div className="p-6 space-y-4">
-                <p className="text-[10px] text-center text-gray-500 uppercase font-bold tracking-widest leading-relaxed">
-                  {t('avatar.hint')}
-                </p>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowCropper(false)}
-                    className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl font-bold text-gray-400 hover:text-white transition-all text-sm"
-                  >
-                    {t('common.cancel')}
-                  </button>
-                  <button
-                    onClick={createCroppedImage}
-                    className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:shadow-lg hover:shadow-blue-500/20 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-sm"
-                  >
-                    <Check className="w-4 h-4" />
-                    {t('common.apply')}
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-dark-card border border-dark-border rounded-3xl w-[min(880px,calc(100vw-32px))] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+              >
+                <div className="p-6 border-b border-dark-border flex justify-between items-center bg-dark-card/50">
+                  <h3 className="text-lg font-bold text-white">{t('avatar.editor')}</h3>
+                  <button onClick={() => setShowCropper(false)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                    <X className="w-5 h-5 text-gray-400" />
                   </button>
                 </div>
-              </div>
+
+                <div className="relative bg-black flex justify-center items-center overflow-auto min-h-[320px] max-h-[62vh] p-4">
+                  {!!imgSrc && (
+                    <ReactCrop
+                      crop={crop}
+                      onChange={(_, percentCrop) => setCrop(percentCrop)}
+                      onComplete={(c) => setCompletedCrop(c)}
+                      aspect={1}
+                      className="max-w-full"
+                    >
+                      <img
+                        ref={imgRef}
+                        alt={t('avatar.cropAlt')}
+                        src={imgSrc}
+                        style={{ maxHeight: '56vh' }}
+                        onLoad={onImageLoad}
+                      />
+                    </ReactCrop>
+                  )}
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <p className="text-[10px] text-center text-gray-500 uppercase font-bold tracking-widest leading-relaxed">
+                    {t('avatar.hint')}
+                  </p>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowCropper(false)}
+                      className="flex-1 py-3 bg-dark-bg border border-dark-border rounded-xl font-bold text-gray-400 hover:text-white transition-all text-sm"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                    <button
+                      onClick={createCroppedImage}
+                      className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:shadow-lg hover:shadow-blue-500/20 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 text-sm"
+                    >
+                      <Check className="w-4 h-4" />
+                      {t('common.apply')}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };

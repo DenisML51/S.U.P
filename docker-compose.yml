@@ -27,13 +27,36 @@ services:
       - ./backend/.env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/intothedark?schema=public
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-replace_with_at_least_32_characters_access_secret_key}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-replace_with_at_least_32_characters_refresh_secret_key}
+      EMAIL_VERIFICATION_REQUIRED: ${EMAIL_VERIFICATION_REQUIRED:-false}
     depends_on:
       postgres:
         condition: service_healthy
     ports:
       - "4000:4000"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/frontend.Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: itd-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5

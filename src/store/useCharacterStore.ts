@@ -276,23 +276,27 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     const characterWithId = { ...newCharacter, id };
     const normalized = normalizeCharacter(characterWithId);
 
+    let persistedId = id;
     try {
-      await createCharacterApi(normalized);
+      const response = await createCharacterApi(normalized);
+      persistedId = response.character.id || id;
     } catch (e) {
       console.error('Failed to create character:', e);
       toast.error(tStore('log.serverSaveFailed'));
       throw e;
     }
 
-    const newList = updateListInStorage(normalized, charactersList);
+    const persistedCharacter = persistedId === normalized.id ? normalized : { ...normalized, id: persistedId };
+
+    const newList = updateListInStorage(persistedCharacter, charactersList);
     set({ 
-      character: normalized, 
+      character: persistedCharacter, 
       charactersList: newList,
       activeTab: 'personality',
       viewMode: 'tabs'
     });
     
-    return id;
+    return persistedId;
   },
 
   deleteCharacter: async (characterId) => {
@@ -362,20 +366,26 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
           const normalized = normalizeCharacter(parsed);
           const id = normalized.id || `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const characterWithId = { ...normalized, id };
-          await createCharacterApi(characterWithId);
 
-          const newList = updateListInStorage(characterWithId, charactersList);
+          // Import should be idempotent for already-known ids: update existing or create new.
+          const response = await updateCharacterApi(id, characterWithId);
+          const persistedId = response.character.id || id;
+          const persistedCharacter = persistedId === characterWithId.id
+            ? characterWithId
+            : { ...characterWithId, id: persistedId };
+
+          const newList = updateListInStorage(persistedCharacter, charactersList);
           
           set({ 
-            character: characterWithId, 
+            character: persistedCharacter, 
             charactersList: newList,
             activeTab: 'personality',
             viewMode: 'tabs'
           });
           if (settings.notifications) {
-            toast.success(`${tStore('log.characterImported')}: ${characterWithId.name}`);
+            toast.success(`${tStore('log.characterImported')}: ${persistedCharacter.name}`);
           }
-          resolve(id);
+          resolve(persistedId);
         } catch (error) {
           reject(error);
         }

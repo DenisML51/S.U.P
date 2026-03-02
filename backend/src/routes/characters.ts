@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { decryptJson, encryptJson } from '../utils/crypto.js';
@@ -10,6 +11,8 @@ const characterPayloadSchema = z.object({
   level: z.number().int().min(1),
   data: z.record(z.any())
 });
+
+const generateCharacterId = () => `char_${randomUUID().replace(/-/g, '')}`;
 
 export const characterRoutes: FastifyPluginAsync = async (app) => {
   app.get('/characters', { preHandler: [app.authenticate] }, async (request) => {
@@ -55,11 +58,28 @@ export const characterRoutes: FastifyPluginAsync = async (app) => {
 
     const userId = (request.user as { sub: string }).sub;
     const { id, name, class: className, level, data } = parsed.data;
-    const encrypted = encryptJson(data);
+    const requestedId = id?.trim() || generateCharacterId();
+    const existingWithRequestedId = await prisma.character.findUnique({
+      where: { id: requestedId },
+      select: { userId: true }
+    });
+
+    if (existingWithRequestedId?.userId === userId) {
+      const encrypted = encryptJson({ ...data, id: requestedId });
+      const updated = await prisma.character.update({
+        where: { id: requestedId },
+        data: { name, class: className, level, ...encrypted },
+        select: { id: true, name: true, class: true, level: true, createdAt: true, updatedAt: true }
+      });
+      return reply.send({ character: updated });
+    }
+
+    const finalId = existingWithRequestedId ? generateCharacterId() : requestedId;
+    const encrypted = encryptJson({ ...data, id: finalId });
 
     const created = await prisma.character.create({
       data: {
-        ...(id ? { id } : {}),
+        id: finalId,
         userId,
         name,
         class: className,
@@ -80,16 +100,27 @@ export const characterRoutes: FastifyPluginAsync = async (app) => {
     const userId = (request.user as { sub: string }).sub;
     const { id } = request.params as { id: string };
     const { name, class: className, level, data } = parsed.data;
-    const encrypted = encryptJson(data);
     const existing = await prisma.character.findFirst({
       where: { id, userId },
       select: { id: true }
     });
 
+    let finalId = id;
+    if (!existing) {
+      const existingWithId = await prisma.character.findUnique({
+        where: { id },
+        select: { userId: true }
+      });
+      if (existingWithId && existingWithId.userId !== userId) {
+        finalId = generateCharacterId();
+      }
+    }
+    const encrypted = encryptJson({ ...data, id: finalId });
+
     if (!existing) {
       const created = await prisma.character.create({
         data: {
-          id,
+          id: finalId,
           userId,
           name,
           class: className,
