@@ -22,7 +22,7 @@ interface ActionTooltipProps {
   character: Character;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
-  updateCharacter: (character: Character) => void;
+  updateItemQuantity: (itemId: string, delta: number) => Promise<void>;
 }
 
 export const ActionTooltip: React.FC<ActionTooltipProps> = ({
@@ -31,7 +31,7 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
   character,
   onMouseEnter,
   onMouseLeave,
-  updateCharacter
+  updateItemQuantity
 }) => {
   const { t } = useI18n();
   if (!hoveredData || !hoveredRect) return null;
@@ -248,11 +248,7 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              const newInventory = character.inventory.map(i => {
-                if (i.id === item.id) return { ...i, quantity: (i.quantity || 0) - 1 };
-                return i;
-              });
-              updateCharacter({ ...character, inventory: newInventory });
+              updateItemQuantity(item.id, -1);
             }}
             className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 hover:border-blue-500/50 rounded-xl text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-blue-500/5 group/use mt-1"
           >

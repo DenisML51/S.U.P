@@ -31,6 +31,8 @@ interface HotbarViewProps {
   openItemView: (item: InventoryItem) => void;
   updateResourceCount: (resourceId: string, delta: number) => void;
   updateCharacter: (character: Character) => void;
+  updateCondition: (conditionId: string, active: boolean) => Promise<void>;
+  updateItemQuantity: (itemId: string, delta: number) => Promise<void>;
   getMaxSanity: () => number;
   getTotalMaxHP: () => number;
   xpProgress: number;
@@ -51,6 +53,8 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
   openItemView,
   updateResourceCount,
   updateCharacter,
+  updateCondition,
+  updateItemQuantity,
   getMaxSanity,
   getTotalMaxHP,
   xpProgress,
@@ -192,8 +196,8 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
     sendCombatEvent('combat.start', {});
   };
 
-  const rollInitiativeInCombat = () => {
-    const res = handleRollInitiative();
+  const rollInitiativeInCombat = async () => {
+    const res = await handleRollInitiative();
     setInitiativeLocal(res.total);
     if (!lobby || !resolvedMemberId) {
       return;
@@ -427,10 +431,10 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
               onHealthClick={() => setShowHealthModal(true)}
             />
 
-            <PortraitGroup 
+            <PortraitGroup
               character={character}
               subclassIcon={subclassIcon}
-              updateCharacter={updateCharacter}
+              updateCondition={updateCondition}
             />
 
             <div className="flex min-w-0 flex-1 flex-col gap-3 lg:max-w-[1400px]">
@@ -482,13 +486,13 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
 
       <AnimatePresence>
         {hoveredItem && (
-          <ActionTooltip 
+          <ActionTooltip
             hoveredData={hoveredItem}
             hoveredRect={hoveredRect}
             character={character}
             onMouseEnter={handleTooltipMouseEnter}
             onMouseLeave={handleItemUnhover}
-            updateCharacter={updateCharacter}
+            updateItemQuantity={updateItemQuantity}
           />
         )}
       </AnimatePresence>

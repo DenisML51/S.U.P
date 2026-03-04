@@ -9,6 +9,7 @@ import { env } from './env.js';
 import { auth } from './plugins/auth.js';
 import { authRoutes } from './routes/auth.js';
 import { characterRoutes } from './routes/characters.js';
+import { characterGameRoutes } from './routes/character/index.js';
 import { lobbyRoutes } from './routes/lobbies.js';
 import { lobbyWsRoutes } from './routes/lobby-ws.js';
 import { notificationRoutes } from './routes/notifications.js';
@@ -46,6 +47,7 @@ export const buildApp = () => {
 
   app.register(authRoutes);
   app.register(characterRoutes);
+  app.register(characterGameRoutes);
   app.register(notificationRoutes);
   app.register(lobbyRoutes);
   app.register(lobbyWsRoutes);

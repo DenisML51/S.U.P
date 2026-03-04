@@ -1,184 +1,103 @@
 import { toast } from 'react-hot-toast';
-import { Character, InventoryItem, Attack } from '../../types';
+import { Character, InventoryItem } from '../../types';
 import { useI18n } from '../../i18n/I18nProvider';
+import {
+  saveInventoryItemApi,
+  deleteInventoryItemApi,
+  patchInventoryItemApi,
+  equipItemApi,
+  unequipItemApi,
+  updateItemQuantityApi,
+} from '../../api/characters';
 
 export const useCharacterInventory = (
   character: Character | null,
-  updateCharacter: (char: Character | ((prev: Character) => Character), silent?: boolean) => void,
+  applyServerCharacter: (char: Character) => void,
   logHistory: (message: string, type?: 'health' | 'sanity' | 'resource' | 'inventory' | 'exp' | 'other') => void,
-  settings: any,
-  getModifierValue: (attrId: string) => number
+  settings: { notifications: boolean }
 ) => {
   const { t } = useI18n();
-  if (!character) return null;
+  if (!character?.id) return null;
 
-  const calculateACForState = (inventory: InventoryItem[], attributes: {[key: string]: number}) => {
-    const dexMod = Math.floor(((attributes.dexterity || 10) - 10) / 2);
-    const equippedArmor = inventory.find(item => item.type === 'armor' && item.equipped);
-    
-    let baseAC = 10;
-    let appliedDexMod = dexMod;
+  const id = character.id;
 
-    if (equippedArmor) {
-      baseAC = equippedArmor.baseAC || 10;
-      if (equippedArmor.dexModifier) {
-        appliedDexMod = (equippedArmor.maxDexModifier !== null && equippedArmor.maxDexModifier !== undefined)
-          ? Math.min(dexMod, equippedArmor.maxDexModifier)
-          : dexMod;
-      } else {
-        appliedDexMod = 0;
-      }
+  const saveItem = async (item: InventoryItem) => {
+    try {
+      const result = await saveInventoryItemApi(id, item);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to save item:', e);
     }
-
-    const hasShield = inventory.some(item => 
-      item.equipped && (item.name.toLowerCase().includes('щит') || item.name.toLowerCase().includes('shield'))
-    );
-    const shieldBonus = hasShield ? 2 : 0;
-
-    return baseAC + appliedDexMod + shieldBonus;
   };
 
-  const saveItem = (item: InventoryItem) => {
-    const existingIndex = character.inventory.findIndex(i => i.id === item.id);
-    const newInventory = existingIndex >= 0
-      ? character.inventory.map((i, idx) => idx === existingIndex ? item : i)
-      : [...character.inventory, item];
-    updateCharacter({ ...character, inventory: newInventory });
-  };
-
-  const deleteItem = (itemId: string) => {
+  const deleteItem = async (itemId: string) => {
     const item = character.inventory.find(i => i.id === itemId);
-    const newInventory = character.inventory.filter(i => i.id !== itemId);
-    updateCharacter({ ...character, inventory: newInventory });
-    if (item) logHistory(`${t('log.itemDeleted')}: ${item.name}`, 'inventory');
-  };
-
-  const equipItem = (itemId: string) => {
-    updateCharacter((prev: Character) => {
-      const item = prev.inventory.find(i => i.id === itemId);
-      if (!item) return prev;
-
-      let newAttacks = [...prev.attacks];
-      let newInventory = [...prev.inventory];
-
-      if (item.type === 'armor') {
-        newInventory = prev.inventory.map(i => ({
-          ...i,
-          equipped: i.id === itemId ? true : (i.type === 'armor' ? false : i.equipped),
-        }));
-        
-        const newLimbs = prev.limbs.map(limb => ({
-          ...limb,
-          ac: item.limbACs?.[limb.id as keyof typeof item.limbACs] || 0,
-        }));
-        
-        const newAC = calculateACForState(newInventory, prev.attributes);
-        
-        return {
-          ...prev,
-          armorClass: newAC,
-          limbs: newLimbs,
-          inventory: newInventory,
-        };
-      } else if (item.type === 'weapon') {
-        newInventory = prev.inventory.map(i => 
-          i.id === itemId ? { ...i, equipped: true } : i
-        );
-        const weaponAttack: Attack = {
-          id: `attack_weapon_${itemId}`,
-          name: item.name,
-          damage: item.damage || '1d6',
-          damageType: item.damageType || 'physical',
-          hitBonus: 0,
-          actionType: 'action',
-          weaponId: itemId,
-          usesAmmunition: item.weaponClass === 'ranged',
-          ammunitionCost: 1,
-          attribute: item.weaponClass === 'melee' ? 'strength' : 'dexterity',
-        };
-        newAttacks.push(weaponAttack);
-        return { ...prev, inventory: newInventory, attacks: newAttacks };
-      } else {
-        newInventory = prev.inventory.map(i => 
-          i.id === itemId ? { ...i, equipped: true } : i
-        );
-        return { ...prev, inventory: newInventory };
-      }
-    }, true);
-
-    const item = character?.inventory.find(i => i.id === itemId);
-    if (item) {
-      logHistory(`${t('log.itemEquipped')}: ${item.name}`, 'inventory');
-      if (settings.notifications) {
-        toast.success(`${t('log.itemEquipped')}: ${item.name}`);
-      }
+    try {
+      const result = await deleteInventoryItemApi(id, itemId);
+      applyServerCharacter(result.character);
+      if (item) logHistory(`${t('log.itemDeleted')}: ${item.name}`, 'inventory');
+    } catch (e) {
+      console.error('Failed to delete item:', e);
     }
   };
 
-  const unequipItem = (itemId: string) => {
-    updateCharacter((prev: Character) => {
-      const item = prev.inventory.find(i => i.id === itemId);
-      if (!item) return prev;
-
-      const newInventory = prev.inventory.map(i => 
-        i.id === itemId ? { ...i, equipped: false } : i
-      );
-
-      if (item.type === 'armor') {
-        const newLimbs = prev.limbs.map(limb => ({
-          ...limb,
-          ac: 0,
-        }));
-        const newAC = calculateACForState(newInventory, prev.attributes);
-        return {
-          ...prev,
-          armorClass: newAC,
-          limbs: newLimbs,
-          inventory: newInventory,
-        };
-      } else if (item.type === 'weapon') {
-        const newAttacks = prev.attacks.filter(attack => attack.weaponId !== itemId);
-        return { ...prev, inventory: newInventory, attacks: newAttacks };
-      } else {
-        return { ...prev, inventory: newInventory };
-      }
-    }, true);
-
-    const item = character?.inventory.find(i => i.id === itemId);
-    if (item) {
-      logHistory(`${t('log.itemUnequipped')}: ${item.name}`, 'inventory');
-      if (settings.notifications) {
-        toast(`${t('log.itemUnequipped')}: ${item.name}`, { icon: '📦' });
-      }
+  const patchItem = async (itemId: string, changes: Partial<InventoryItem>) => {
+    try {
+      const result = await patchInventoryItemApi(id, itemId, changes);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to patch item:', e);
     }
   };
 
-  const updateItemQuantity = (itemId: string, delta: number) => {
-    updateCharacter((prev: Character) => {
-      const item = prev.inventory.find(i => i.id === itemId);
-      if (!item) return prev;
+  const equipItem = async (itemId: string) => {
+    try {
+      const result = await equipItemApi(id, itemId);
+      applyServerCharacter(result.character);
+      const item = result.character.inventory.find(i => i.id === itemId);
+      if (item) {
+        logHistory(`${t('log.itemEquipped')}: ${item.name}`, 'inventory');
+        if (settings.notifications) toast.success(`${t('log.itemEquipped')}: ${item.name}`);
+      }
+    } catch (e) {
+      console.error('Failed to equip item:', e);
+    }
+  };
 
-      const newInventory = prev.inventory.map(i => {
-        if (i.id === itemId && (i.type === 'item' || i.type === 'ammunition')) {
-          return { ...i, quantity: Math.max(0, (i.quantity || 1) + delta) };
-        }
-        return i;
-      });
+  const unequipItem = async (itemId: string) => {
+    const itemName = character.inventory.find(i => i.id === itemId)?.name;
+    try {
+      const result = await unequipItemApi(id, itemId);
+      applyServerCharacter(result.character);
+      if (itemName) {
+        logHistory(`${t('log.itemUnequipped')}: ${itemName}`, 'inventory');
+        if (settings.notifications) toast(`${t('log.itemUnequipped')}: ${itemName}`, { icon: '📦' });
+      }
+    } catch (e) {
+      console.error('Failed to unequip item:', e);
+    }
+  };
 
-      if (delta !== 0) {
-        const message = delta > 0 
+  const updateItemQuantity = async (itemId: string, delta: number) => {
+    const item = character.inventory.find(i => i.id === itemId);
+    try {
+      const result = await updateItemQuantityApi(id, itemId, delta);
+      applyServerCharacter(result.character);
+      if (item && delta !== 0) {
+        const msg = delta > 0
           ? `${t('log.itemGained')}: ${item.name} (+${delta})`
           : `${t('log.itemSpent')}: ${item.name} (${delta})`;
-        setTimeout(() => logHistory(message, 'inventory'), 0);
+        logHistory(msg, 'inventory');
       }
-
-      return { ...prev, inventory: newInventory };
-    }, true);
+    } catch (e) {
+      console.error('Failed to update item quantity:', e);
+    }
   };
 
   return {
     saveItem,
     deleteItem,
+    patchItem,
     equipItem,
     unequipItem,
     updateItemQuantity,

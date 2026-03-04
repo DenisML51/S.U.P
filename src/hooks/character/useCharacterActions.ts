@@ -1,74 +1,147 @@
 import { Character, Attack, Ability, Trait, Resource } from '../../types';
+import {
+  saveAttackApi, patchAttackApi, deleteAttackApi,
+  saveAbilityApi, patchAbilityApi, deleteAbilityApi,
+  saveTraitApi, patchTraitApi, deleteTraitApi,
+  saveResourceApi, patchResourceApi, deleteResourceApi,
+} from '../../api/characters';
 
 export const useCharacterActions = (
   character: Character | null,
-  updateCharacter: (char: Character, silent?: boolean) => void
+  applyServerCharacter: (char: Character) => void
 ) => {
-  if (!character) return null;
+  if (!character?.id) return null;
 
-  const saveAttack = (attack: Attack) => {
-    const existingIndex = character.attacks.findIndex(a => a.id === attack.id);
-    const newAttacks = existingIndex >= 0
-      ? character.attacks.map((a, idx) => idx === existingIndex ? attack : a)
-      : [...character.attacks, attack];
-    updateCharacter({ ...character, attacks: newAttacks });
+  const id = character.id;
+
+  // ─── Attacks ────────────────────────────────────────────────────────────────
+
+  const saveAttack = async (attack: Attack) => {
+    try {
+      const result = await saveAttackApi(id, attack);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to save attack:', e);
+    }
   };
 
-  const deleteAttack = (attackId: string) => {
-    const newAttacks = character.attacks.filter(a => a.id !== attackId);
-    updateCharacter({ ...character, attacks: newAttacks });
+  const patchAttack = async (attackId: string, changes: Partial<Attack>) => {
+    try {
+      const result = await patchAttackApi(id, attackId, changes);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to patch attack:', e);
+    }
   };
 
-  const saveAbility = (ability: Ability) => {
-    const existingIndex = character.abilities.findIndex(a => a.id === ability.id);
-    const newAbilities = existingIndex >= 0
-      ? character.abilities.map((a, idx) => idx === existingIndex ? ability : a)
-      : [...character.abilities, ability];
-    updateCharacter({ ...character, abilities: newAbilities });
+  const deleteAttack = async (attackId: string) => {
+    try {
+      const result = await deleteAttackApi(id, attackId);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to delete attack:', e);
+    }
   };
 
-  const deleteAbility = (abilityId: string) => {
-    const newAbilities = character.abilities.filter(a => a.id !== abilityId);
-    updateCharacter({ ...character, abilities: newAbilities });
+  // ─── Abilities ───────────────────────────────────────────────────────────────
+
+  const saveAbility = async (ability: Ability) => {
+    try {
+      const result = await saveAbilityApi(id, ability);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to save ability:', e);
+    }
   };
 
-  const saveTrait = (trait: Trait) => {
-    const currentTraits = character.traits || [];
-    const existingIndex = currentTraits.findIndex(t => t.id === trait.id);
-    const newTraits = existingIndex >= 0
-      ? currentTraits.map((t, idx) => idx === existingIndex ? trait : t)
-      : [...currentTraits, trait];
-    updateCharacter({ ...character, traits: newTraits });
+  const patchAbility = async (abilityId: string, changes: Partial<Ability>) => {
+    try {
+      const result = await patchAbilityApi(id, abilityId, changes);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to patch ability:', e);
+    }
   };
 
-  const deleteTrait = (traitId: string) => {
-    const currentTraits = character.traits || [];
-    const newTraits = currentTraits.filter(t => t.id !== traitId);
-    updateCharacter({ ...character, traits: newTraits });
+  const deleteAbility = async (abilityId: string) => {
+    try {
+      const result = await deleteAbilityApi(id, abilityId);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to delete ability:', e);
+    }
   };
 
-  const saveResource = (resource: Resource) => {
-    const existingIndex = character.resources.findIndex(r => r.id === resource.id);
-    const newResources = existingIndex >= 0
-      ? character.resources.map((r, idx) => idx === existingIndex ? resource : r)
-      : [...character.resources, resource];
-    updateCharacter({ ...character, resources: newResources });
+  // ─── Traits ──────────────────────────────────────────────────────────────────
+
+  const saveTrait = async (trait: Trait) => {
+    try {
+      const result = await saveTraitApi(id, trait);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to save trait:', e);
+    }
   };
 
-  const deleteResource = (resourceId: string) => {
-    const newResources = character.resources.filter(r => r.id !== resourceId);
-    updateCharacter({ ...character, resources: newResources });
+  const patchTrait = async (traitId: string, changes: Partial<Trait>) => {
+    try {
+      const result = await patchTraitApi(id, traitId, changes);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to patch trait:', e);
+    }
+  };
+
+  const deleteTrait = async (traitId: string) => {
+    try {
+      const result = await deleteTraitApi(id, traitId);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to delete trait:', e);
+    }
+  };
+
+  // ─── Resources ───────────────────────────────────────────────────────────────
+
+  const saveResource = async (resource: Resource) => {
+    try {
+      const result = await saveResourceApi(id, resource);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to save resource:', e);
+    }
+  };
+
+  const patchResource = async (resourceId: string, changes: Partial<Resource>) => {
+    try {
+      const result = await patchResourceApi(id, resourceId, changes);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to patch resource:', e);
+    }
+  };
+
+  const deleteResource = async (resourceId: string) => {
+    try {
+      const result = await deleteResourceApi(id, resourceId);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to delete resource:', e);
+    }
   };
 
   return {
     saveAttack,
+    patchAttack,
     deleteAttack,
     saveAbility,
+    patchAbility,
     deleteAbility,
     saveTrait,
+    patchTrait,
     deleteTrait,
     saveResource,
+    patchResource,
     deleteResource,
   };
 };
-

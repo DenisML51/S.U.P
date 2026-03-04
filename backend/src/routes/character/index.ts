@@ -1,0 +1,30 @@
+import type { FastifyPluginAsync } from 'fastify';
+import { healthRoutes } from './health.js';
+import { attributeRoutes } from './attributes.js';
+import { experienceRoutes } from './experience.js';
+import { inventoryRoutes } from './inventory.js';
+import { attackRoutes } from './attacks.js';
+import { abilityRoutes } from './abilities.js';
+import { spellRoutes } from './spells.js';
+import { resourceRoutes } from './resources.js';
+import { traitRoutes } from './traits.js';
+import { fieldsRoutes } from './fields.js';
+import { buildRoutes } from './build.js';
+import { rollRoutes } from './roll.js';
+import { armorClassRoutes } from './armorClass.js';
+
+export const characterGameRoutes: FastifyPluginAsync = async (app) => {
+  await app.register(healthRoutes);
+  await app.register(attributeRoutes);
+  await app.register(experienceRoutes);
+  await app.register(inventoryRoutes);
+  await app.register(attackRoutes);
+  await app.register(abilityRoutes);
+  await app.register(spellRoutes);
+  await app.register(resourceRoutes);
+  await app.register(traitRoutes);
+  await app.register(fieldsRoutes);
+  await app.register(buildRoutes);
+  await app.register(rollRoutes);
+  await app.register(armorClassRoutes);
+};

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "Bash(head:*)",
+      "Bash(cd /f/Coding/project/into-the-dark/Into-the-Dark-App && npx tsc --noEmit 2>&1)",
+      "Bash(echo EXIT:$?:*)"
+    ]
+  }
+}

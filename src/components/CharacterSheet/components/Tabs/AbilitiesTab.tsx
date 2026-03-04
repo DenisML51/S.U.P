@@ -14,7 +14,6 @@ interface AbilitiesTabProps {
   openAbilityModal: (ability?: Ability) => void;
   openAbilityView: (ability: Ability) => void;
   updateResourceCount: (resourceId: string, delta: number) => void;
-  updateCharacter: (character: Character) => void;
   updateAbilitiesNotes: (notes: string) => void;
   getActionTypeLabel: (type: string) => string;
   getActionTypeColor: (type: string) => string;
@@ -26,7 +25,6 @@ export const AbilitiesTab: React.FC<AbilitiesTabProps> = ({
   openAbilityModal,
   openAbilityView,
   updateResourceCount,
-  updateCharacter,
   updateAbilitiesNotes,
   getActionTypeLabel,
   getActionTypeColor,

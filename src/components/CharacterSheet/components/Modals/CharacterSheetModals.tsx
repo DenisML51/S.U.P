@@ -26,6 +26,8 @@ import { AmmunitionModal } from '../../../AmmunitionModal';
 import { Character, Resource, Limb, InventoryItem, Attack, Ability, Trait, Currency, Spell } from '../../../../types';
 import { useI18n } from '../../../../i18n/I18nProvider';
 import { getAttributeLabel } from '../../../../i18n/domainLabels';
+import { updateCharacterFieldsApi, patchResourceApi } from '../../../../api/characters';
+import { useCharacterStore } from '../../../../store/useCharacterStore';
 
 interface CharacterSheetModalsProps {
   character: Character;
@@ -126,6 +128,7 @@ interface CharacterSheetModalsProps {
 
 export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props) => {
   const { t } = useI18n();
+  const { applyServerCharacter } = useCharacterStore();
   const {
     character,
     selectedAttribute,
@@ -195,7 +198,6 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
     showResourceViewModal,
     setShowResourceViewModal,
     openResourceModal,
-    updateCharacter,
     showTraitModal,
     closeTraitModal,
     editingTrait,
@@ -390,11 +392,11 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
             setShowResourceViewModal(false);
             setTimeout(() => openResourceModal(viewingResource), 0);
           }}
-          onUpdate={(updatedResource) => {
-            const newResources = character.resources.map(r =>
-              r.id === updatedResource.id ? updatedResource : r
-            );
-            updateCharacter({ ...character, resources: newResources });
+          onUpdate={async (updatedResource) => {
+            try {
+              const result = await patchResourceApi(character.id!, updatedResource.id, updatedResource);
+              applyServerCharacter(result.character);
+            } catch (e) { console.error('Failed to update resource:', e); }
           }}
         />
       )}
@@ -423,7 +425,18 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
         isOpen={showBasicInfoModal}
         onClose={() => setShowBasicInfoModal(false)}
         character={character}
-        onSave={(updatedCharacter) => updateCharacter(updatedCharacter)}
+        onSave={async (updatedCharacter) => {
+          try {
+            const result = await updateCharacterFieldsApi(character.id!, {
+              name: updatedCharacter.name,
+              race: updatedCharacter.race,
+              subrace: updatedCharacter.subrace,
+              class: updatedCharacter.class,
+              subclass: updatedCharacter.subclass,
+            });
+            applyServerCharacter(result.character);
+          } catch (e) { console.error('Failed to save basic info:', e); }
+        }}
       />
 
       <CurrencyModal
@@ -461,7 +474,15 @@ export const CharacterSheetModals: React.FC<CharacterSheetModalsProps> = (props)
         character={character}
         onSaveSpell={saveSpell}
         onDeleteSpell={deleteSpell}
-        onUpdateCharacter={updateCharacter}
+        onUpdateCharacter={async (updatedChar) => {
+          try {
+            const result = await updateCharacterFieldsApi(character.id!, {
+              knownSchools: updatedChar.knownSchools,
+              maxPreparedSpells: updatedChar.maxPreparedSpells,
+            });
+            applyServerCharacter(result.character);
+          } catch (e) { console.error('Failed to update grimoire settings:', e); }
+        }}
         onOpenSpellModal={openSpellModal}
       />
     </>

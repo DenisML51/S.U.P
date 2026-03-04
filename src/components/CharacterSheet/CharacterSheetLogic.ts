@@ -8,16 +8,18 @@ import { useCharacterActions } from '../../hooks/character/useCharacterActions';
 import { useCharacterUpdate } from '../../hooks/character/useCharacterUpdate';
 import { useCharacterSpells } from '../../hooks/character/useCharacterSpells';
 import { useI18n } from '../../i18n/I18nProvider';
+import { updateCharacterFieldsApi, updateArmorClassApi } from '../../api/characters';
 
 export type InventorySubTab = 'all' | 'armor' | 'weapon' | 'item' | 'ammunition';
 
 export const useCharacterSheetLogic = () => {
   const { t } = useI18n();
-  const { 
-    character, 
-    updateCharacter, 
-    activeTab, 
-    setActiveTab, 
+  const {
+    character,
+    updateCharacter,
+    applyServerCharacter,
+    activeTab,
+    setActiveTab,
     updateResourceCount,
     logHistory,
     settings,
@@ -30,10 +32,10 @@ export const useCharacterSheetLogic = () => {
 
   const stats = useCharacterStats(character);
   const modals = useCharacterModals(setActiveTab, setInventorySubTab);
-  const inventory = useCharacterInventory(character, updateCharacter, logHistory, settings, stats?.getModifierValue || ((id: string) => 0));
-  const actions = useCharacterActions(character, updateCharacter);
-  const updates = useCharacterUpdate(character, updateCharacter, logHistory, settings);
-  const spellsHook = useCharacterSpells(character, updateCharacter);
+  const inventory = useCharacterInventory(character, applyServerCharacter, logHistory, settings);
+  const actions = useCharacterActions(character, applyServerCharacter);
+  const updates = useCharacterUpdate(character, applyServerCharacter, logHistory, settings);
+  const spellsHook = useCharacterSpells(character, applyServerCharacter);
 
   if (!character || !stats || !inventory || !actions || !updates || !spellsHook) {
     return { character: null };
@@ -66,15 +68,54 @@ export const useCharacterSheetLogic = () => {
 
     updateResourceCount,
     updateAmmunitionQuantity: inventory.updateItemQuantity,
-    updateArmorClass: (newAC: number, newLimbs: any, newResistances: any[]) => 
-      updateCharacter({ ...character, armorClass: newAC, limbs: newLimbs, resistances: newResistances }),
-    updatePersonalityField: (field: any, value: any) => updateCharacter({ ...character, [field]: value }),
-    updateLanguagesAndProficiencies: (value: string) => updateCharacter({ ...character, languagesAndProficiencies: value }),
-    updateInventoryNotes: (notes: string) => updateCharacter({ ...character, inventoryNotes: notes }),
-    updateAttacksNotes: (notes: string) => updateCharacter({ ...character, attacksNotes: notes }),
-    updateEquipmentNotes: (notes: string) => updateCharacter({ ...character, equipmentNotes: notes }),
-    updateAbilitiesNotes: (notes: string) => updateCharacter({ ...character, abilitiesNotes: notes }),
-    updateSpeed: (newSpeed: number) => updateCharacter({ ...character, speed: newSpeed }),
+    updateArmorClass: async (newAC: number, newLimbs: any, newResistances: any[]) => {
+      try {
+        const result = await updateArmorClassApi(character.id!, newAC, newLimbs, newResistances);
+        applyServerCharacter(result.character);
+      } catch (e) { console.error('Failed to update armor class:', e); }
+    },
+    updatePersonalityField: async (field: any, value: any) => {
+      try {
+        const result = await updateCharacterFieldsApi(character.id!, { [field]: value });
+        applyServerCharacter(result.character);
+      } catch (e) { console.error('Failed to update field:', e); }
+    },
+    updateLanguagesAndProficiencies: async (value: string) => {
+      try {
+        const result = await updateCharacterFieldsApi(character.id!, { languagesAndProficiencies: value });
+        applyServerCharacter(result.character);
+      } catch (e) { console.error('Failed to update languagesAndProficiencies:', e); }
+    },
+    updateInventoryNotes: async (notes: string) => {
+      try {
+        const result = await updateCharacterFieldsApi(character.id!, { inventoryNotes: notes });
+        applyServerCharacter(result.character);
+      } catch (e) { console.error('Failed to update inventoryNotes:', e); }
+    },
+    updateAttacksNotes: async (notes: string) => {
+      try {
+        const result = await updateCharacterFieldsApi(character.id!, { attacksNotes: notes });
+        applyServerCharacter(result.character);
+      } catch (e) { console.error('Failed to update attacksNotes:', e); }
+    },
+    updateEquipmentNotes: async (notes: string) => {
+      try {
+        const result = await updateCharacterFieldsApi(character.id!, { equipmentNotes: notes });
+        applyServerCharacter(result.character);
+      } catch (e) { console.error('Failed to update equipmentNotes:', e); }
+    },
+    updateAbilitiesNotes: async (notes: string) => {
+      try {
+        const result = await updateCharacterFieldsApi(character.id!, { abilitiesNotes: notes });
+        applyServerCharacter(result.character);
+      } catch (e) { console.error('Failed to update abilitiesNotes:', e); }
+    },
+    updateSpeed: async (newSpeed: number) => {
+      try {
+        const result = await updateCharacterFieldsApi(character.id!, { speed: newSpeed });
+        applyServerCharacter(result.character);
+      } catch (e) { console.error('Failed to update speed:', e); }
+    },
 
     saveResource: actions.saveResource,
     deleteResource: actions.deleteResource,
@@ -89,23 +130,26 @@ export const useCharacterSheetLogic = () => {
     saveSpell: spellsHook.saveSpell,
     deleteSpell: spellsHook.deleteSpell,
     
-    handleRollInitiative: () => {
-      const result = stats.rollInitiative();
+    handleRollInitiative: async () => {
+      const result = await stats.rollInitiative();
       const bonusStr = result.bonus !== 0 ? ` + ${result.bonus} (${t('log.bonus')})` : '';
       const totalStr = `${result.total} (${result.roll} + ${result.mod >= 0 ? '+' : ''}${result.mod}${bonusStr})`;
-      
+
       toast.success(`${t('secondary.initiative')}: ${totalStr}`, {
         icon: '🎲',
         duration: 4000,
       });
 
       setTimeout(() => logHistory(`${t('log.initiativeRoll')}: ${totalStr}`, 'other'), 0);
-      
+
       return result;
     },
 
-    updateInitiativeBonus: (bonus: number) => {
-      updateCharacter({ ...character, initiativeBonus: bonus });
+    updateInitiativeBonus: async (bonus: number) => {
+      try {
+        const result = await updateCharacterFieldsApi(character.id!, { initiativeBonus: bonus });
+        applyServerCharacter(result.character);
+      } catch (e) { console.error('Failed to update initiativeBonus:', e); }
     },
 
     getLimbType: (limbId: string): 'head' | 'arm' | 'leg' | 'torso' => {

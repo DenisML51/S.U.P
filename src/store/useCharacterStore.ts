@@ -7,7 +7,9 @@ import {
   deleteCharacterApi,
   getCharacterApi,
   listCharactersApi,
-  updateCharacterApi
+  updateCharacterApi,
+  resetAllResourcesApi,
+  spendResourceApi,
 } from '../api/characters';
 
 const getLocale = (): Locale => {
@@ -39,7 +41,9 @@ interface CharacterState {
   setViewMode: (mode: ViewMode) => void;
   setIsLoaded: (isLoaded: boolean) => void;
   updateCharacter: (updater: Character | ((prev: Character) => Character), silent?: boolean) => void;
-  updateResourceCount: (resourceId: string, delta: number) => void;
+  /** Apply a server-returned character without triggering another save. */
+  applyServerCharacter: (character: Character) => void;
+  updateResourceCount: (resourceId: string, delta: number) => Promise<void>;
   logHistory: (message: string, type?: 'health' | 'sanity' | 'resource' | 'inventory' | 'exp' | 'other') => void;
   loadCharacter: (characterId: string) => Promise<void>;
   createCharacter: (character: Character) => Promise<string>;
@@ -51,7 +55,7 @@ interface CharacterState {
   loadCharactersList: () => Promise<void>;
   migrateOldData: () => void;
   updateSettings: (settings: Partial<CharacterState['settings']>) => void;
-  resetAllResources: () => void;
+  resetAllResources: () => Promise<void>;
 }
 
 const normalizeCharacter = (parsed: any): Character => {
@@ -179,6 +183,17 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   setCharacter: (character) => set({ character }),
   setCharactersList: (charactersList) => set({ charactersList }),
   setActiveTab: (activeTab) => set({ activeTab }),
+
+  applyServerCharacter: (character) => {
+    const { charactersList, character: prev } = get();
+    const normalized = normalizeCharacter(character);
+    // Preserve in-memory history entries (history is not managed server-side per-mutation)
+    const mergedHistory = prev?.history ?? [];
+    const merged = { ...normalized, history: mergedHistory };
+    set({ character: merged });
+    const newList = updateListInStorage(merged, charactersList);
+    set({ charactersList: newList });
+  },
   setViewMode: (viewMode) => {
     localStorage.setItem('trpg_view_mode', viewMode);
     set({ viewMode });
@@ -199,35 +214,31 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     set({ charactersList: newList });
   },
 
-  updateResourceCount: (resourceId, delta) => {
-    const { character, updateCharacter, logHistory, settings } = get();
-    if (!character) return;
+  updateResourceCount: async (resourceId, delta) => {
+    const { character, applyServerCharacter, logHistory, settings } = get();
+    if (!character?.id) return;
 
     const resource = character.resources.find(r => r.id === resourceId);
     if (!resource) return;
 
-    const currentVal = isNaN(Number(resource.current)) ? 0 : Number(resource.current);
-    const maxVal = isNaN(Number(resource.max)) ? 0 : Number(resource.max);
-    
-    const newCurrent = Math.min(maxVal, Math.max(0, currentVal + delta));
-    const newResources = character.resources.map(r =>
-      r.id === resourceId ? { ...r, current: newCurrent } : r
-    );
+    try {
+      const result = await spendResourceApi(character.id, resourceId, delta);
+      applyServerCharacter(result.character);
 
-    if (delta !== 0) {
-      const message = delta < 0 
-        ? `${tStore('log.resourceSpent')}: ${resource.name} (${newCurrent}/${maxVal})`
-        : `${tStore('log.resourceRestored')}: ${resource.name} (${newCurrent}/${maxVal})`;
-      
-      logHistory(message, 'resource');
-
-      if (settings.notifications) {
-        if (delta < 0) toast.error(`${resource.name}: ${newCurrent}/${maxVal}`);
-        else toast.success(`${resource.name}: ${newCurrent}/${maxVal}`);
+      const updated = result.character.resources.find(r => r.id === resourceId);
+      if (updated && delta !== 0) {
+        const message = delta < 0
+          ? `${tStore('log.resourceSpent')}: ${resource.name} (${updated.current}/${updated.max})`
+          : `${tStore('log.resourceRestored')}: ${resource.name} (${updated.current}/${updated.max})`;
+        logHistory(message, 'resource');
+        if (settings.notifications) {
+          if (delta < 0) toast.error(`${resource.name}: ${updated.current}/${updated.max}`);
+          else toast.success(`${resource.name}: ${updated.current}/${updated.max}`);
+        }
       }
+    } catch (e) {
+      console.error('Failed to update resource:', e);
     }
-
-    updateCharacter({ ...character, resources: newResources }, true);
   },
 
   logHistory: (message, type = 'other') => {
@@ -399,18 +410,18 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
     settings: { ...state.settings, ...newSettings }
   })),
 
-  resetAllResources: () => {
-    const { character, updateCharacter, logHistory } = get();
-    if (!character) return;
+  resetAllResources: async () => {
+    const { character, applyServerCharacter, logHistory } = get();
+    if (!character?.id) return;
 
-    const newResources = character.resources.map(r => ({
-      ...r,
-      current: r.max
-    }));
-
-    updateCharacter({ ...character, resources: newResources }, true);
-    logHistory(tStore('log.allResourcesRestoredLongRest'), 'resource');
-    toast.success(tStore('log.allResourcesRestored'));
+    try {
+      const result = await resetAllResourcesApi(character.id);
+      applyServerCharacter(result.character);
+      logHistory(tStore('log.allResourcesRestoredLongRest'), 'resource');
+      toast.success(tStore('log.allResourcesRestored'));
+    } catch (e) {
+      console.error('Failed to reset resources:', e);
+    }
   },
 }));
 

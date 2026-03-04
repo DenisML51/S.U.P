@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  Character,
   ATTRIBUTES_LIST,
   SKILLS_LIST,
   INITIAL_POINTS,
@@ -9,11 +8,10 @@ import {
   ATTRIBUTE_MAX,
   POINT_BUY_COSTS,
   getProficiencyBonus,
-  calculateMaxSanity,
-  getDefaultLimbs,
   Skill,
 } from '../../types';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { buildCharacterApi } from '../../api/characters';
 
 export type Step = 'identity' | 'origin' | 'coreStats' | 'proficiencies' | 'finalize';
 export type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
@@ -112,7 +110,7 @@ const STEP_ORDER: Step[] = ['identity', 'origin', 'coreStats', 'proficiencies', 
 const normalizeForLookup = (value: string) => value.trim().toLowerCase();
 
 export const useCharacterCreationLogic = (onComplete?: () => void) => {
-  const { character, createCharacter } = useCharacterStore();
+  const { character, applyServerCharacter } = useCharacterStore();
 
   const [currentStep, setCurrentStep] = useState<Step>('identity');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -127,7 +125,6 @@ export const useCharacterCreationLogic = (onComplete?: () => void) => {
   const [charClass, setCharClass] = useState(character?.class || '');
   const [subclass, setSubclass] = useState(character?.subclass || '');
   const [level] = useState(character?.level || 1);
-  const [experience] = useState(character?.experience || 0);
   const [speed, setSpeed] = useState(character?.speed || 30);
   const [attributes, setAttributes] = useState<{ [key: string]: number }>(
     character?.attributes || ATTRIBUTES_LIST.reduce((acc, attr) => ({ ...acc, [attr.id]: ATTRIBUTE_START }), {})
@@ -252,72 +249,27 @@ export const useCharacterCreationLogic = (onComplete?: () => void) => {
     setCurrentStep(STEP_ORDER[index - 1]);
   };
 
-  const buildCharacter = (): Character => {
-    const maxSanity = calculateMaxSanity(charClass, attributes.wisdom || 10, level);
-    const constitutionMod = Math.floor(((attributes.constitution || 10) - 10) / 2);
-    const initialMaxHP = 10 + constitutionMod;
-    const dexMod = Math.floor(((attributes.dexterity || 10) - 10) / 2);
-    const baseAC = 10 + dexMod;
-    const limbs = getDefaultLimbs(initialMaxHP, attributes.constitution || 10, baseAC);
-    const backstory = concept.trim() ? `Concept: ${concept.trim()}` : '';
-
-    return {
-      name: name.trim(),
-      race: race.trim(),
-      subrace: subrace.trim() || undefined,
-      class: charClass.trim(),
-      subclass: subclass.trim(),
-      level,
-      experience,
-      speed,
-      armorClass: baseAC,
-      sanity: maxSanity,
-      currentHP: initialMaxHP,
-      maxHP: initialMaxHP,
-      tempHP: 0,
-      maxHPBonus: 0,
-      limbs,
-      resistances: [],
-      inventory: [],
-      inventoryNotes: '',
-      attacksNotes: '',
-      equipmentNotes: '',
-      abilitiesNotes: '',
-      attacks: [],
-      abilities: [],
-      spells: [],
-      spellsNotes: '',
-      knownSchools: [],
-      maxPreparedSpells: {},
-      attributes,
-      attributeBonuses: {},
-      skills,
-      proficiencyBonus,
-      savingThrowProficiencies: savingThrows,
-      resources: [],
-      currency: { copper: 0, silver: 0, gold: 0 },
-      languagesAndProficiencies,
-      appearance: '',
-      backstory,
-      alignment: '',
-      alliesAndOrganizations: '',
-      personalityTraits: '',
-      ideals: '',
-      bonds: '',
-      flaws: '',
-      traits: [],
-      conditions: [],
-      avatar: avatar || undefined,
-    };
-  };
-
   const handleSave = async () => {
     if (!isFormValid || saveStatus === 'saving') return false;
     try {
       setSaveStatus('saving');
       setSaveError(null);
-      const id = await createCharacter(buildCharacter());
-      setCreatedCharacterId(id);
+      const result = await buildCharacterApi({
+        name: name.trim(),
+        race: race.trim(),
+        subrace: subrace.trim() || undefined,
+        class: charClass.trim(),
+        subclass: subclass.trim() || undefined,
+        avatar: avatar || undefined,
+        concept: concept.trim(),
+        speed,
+        attributes,
+        skills,
+        savingThrowProficiencies: savingThrows,
+        languagesAndProficiencies,
+      });
+      applyServerCharacter(result.character);
+      setCreatedCharacterId(result.character.id!);
       setSaveStatus('success');
       return true;
     } catch (error) {

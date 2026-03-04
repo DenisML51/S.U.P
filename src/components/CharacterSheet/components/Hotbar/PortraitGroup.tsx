@@ -10,13 +10,13 @@ import { getConditionDescription, getConditionName, getDamageTypeLabel, getResis
 interface PortraitGroupProps {
   character: Character;
   subclassIcon: string | null;
-  updateCharacter: (character: Character) => void;
+  updateCondition: (conditionId: string, active: boolean) => Promise<void>;
 }
 
 export const PortraitGroup: React.FC<PortraitGroupProps> = ({
   character,
   subclassIcon,
-  updateCharacter
+  updateCondition
 }) => {
   const { t } = useI18n();
   const [showConditionPicker, setShowConditionPicker] = useState(false);
@@ -34,10 +34,7 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 className="group/cond relative w-10 h-10 bg-orange-500/20 border border-orange-500/40 rounded-xl flex items-center justify-center shadow-lg cursor-pointer hover:bg-orange-500/30 transition-all"
-                onClick={() => {
-                  const newConditions = character.conditions?.filter(c => c !== condId) || [];
-                  updateCharacter({ ...character, conditions: newConditions });
-                }}
+                onClick={() => updateCondition(condId, false)}
               >
                 <Activity size={20} className="text-orange-400" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-72 p-5 rounded-3xl bg-dark-bg/95 border border-white/10 text-xs text-white/90 opacity-0 group-hover/cond:opacity-100 pointer-events-none transition-all z-[1001] shadow-2xl backdrop-blur-2xl translate-y-2 group-hover/cond:translate-y-0 border-t-white/20">
@@ -116,11 +113,7 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
                   return (
                     <button
                       key={cond.id}
-                      onClick={() => {
-                        const current = character.conditions || [];
-                        const next = isActive ? current.filter(id => id !== cond.id) : [...current, cond.id];
-                        updateCharacter({ ...character, conditions: next });
-                      }}
+                      onClick={() => updateCondition(cond.id, !isActive)}
                       className={`text-left px-3 py-2 rounded-xl text-xs transition-all border ${
                         isActive 
                           ? 'bg-orange-500/20 text-orange-400 border-orange-500/30 font-bold' 

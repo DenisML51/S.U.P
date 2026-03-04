@@ -1,52 +1,83 @@
 import { Character, Spell } from '../../types';
+import {
+  saveSpellApi,
+  patchSpellApi,
+  deleteSpellApi,
+  toggleSpellPreparedApi,
+  updateCharacterFieldsApi,
+} from '../../api/characters';
 
 export const useCharacterSpells = (
   character: Character | null,
-  updateCharacter: (char: Character, silent?: boolean) => void
+  applyServerCharacter: (char: Character) => void
 ) => {
-  if (!character) return null;
+  if (!character?.id) return null;
 
-  const saveSpell = (spell: Spell) => {
-    const currentSpells = character.spells || [];
-    const existingIndex = currentSpells.findIndex(s => s.id === spell.id);
-    const newSpells = existingIndex >= 0
-      ? currentSpells.map((s, idx) => idx === existingIndex ? spell : s)
-      : [...currentSpells, spell];
-    updateCharacter({ ...character, spells: newSpells });
+  const id = character.id;
+
+  const saveSpell = async (spell: Spell) => {
+    try {
+      const result = await saveSpellApi(id, spell);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to save spell:', e);
+    }
   };
 
-  const deleteSpell = (spellId: string) => {
-    const currentSpells = character.spells || [];
-    const newSpells = currentSpells.filter(s => s.id !== spellId);
-    updateCharacter({ ...character, spells: newSpells });
+  const patchSpell = async (spellId: string, changes: Partial<Spell>) => {
+    try {
+      const result = await patchSpellApi(id, spellId, changes);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to patch spell:', e);
+    }
   };
 
-  const toggleSpellPrepared = (spellId: string) => {
-    const currentSpells = character.spells || [];
-    const newSpells = currentSpells.map(s => 
-      s.id === spellId ? { ...s, prepared: !s.prepared } : s
-    );
-    updateCharacter({ ...character, spells: newSpells });
+  const deleteSpell = async (spellId: string) => {
+    try {
+      const result = await deleteSpellApi(id, spellId);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to delete spell:', e);
+    }
   };
 
-  const updateSpellsNotes = (notes: string) => {
-    updateCharacter({ ...character, spellsNotes: notes });
+  const toggleSpellPrepared = async (spellId: string) => {
+    try {
+      const result = await toggleSpellPreparedApi(id, spellId);
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to toggle spell prepared:', e);
+    }
   };
 
-  const updateSpellcastingDifficulty = (name: string, value: number) => {
-    updateCharacter({ 
-      ...character, 
-      spellcastingDifficultyName: name,
-      spellcastingDifficultyValue: value 
-    });
+  const updateSpellsNotes = async (notes: string) => {
+    try {
+      const result = await updateCharacterFieldsApi(id, { spellsNotes: notes });
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to update spells notes:', e);
+    }
+  };
+
+  const updateSpellcastingDifficulty = async (name: string, value: number) => {
+    try {
+      const result = await updateCharacterFieldsApi(id, {
+        spellcastingDifficultyName: name,
+        spellcastingDifficultyValue: value,
+      });
+      applyServerCharacter(result.character);
+    } catch (e) {
+      console.error('Failed to update spellcasting difficulty:', e);
+    }
   };
 
   return {
     saveSpell,
+    patchSpell,
     deleteSpell,
     toggleSpellPrepared,
     updateSpellsNotes,
     updateSpellcastingDifficulty,
   };
 };
-

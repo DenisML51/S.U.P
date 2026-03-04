@@ -270,23 +270,6 @@ export interface Character {
   };
 }
 
-export const calculateLimbMaxHP = (maxHP: number, constitution: number): number => {
-  const constitutionMod = Math.floor((constitution - 10) / 2);
-  return Math.ceil(maxHP / 2) + constitutionMod;
-};
-
-export const getDefaultLimbs = (maxHP: number, constitution: number, baseAC: number): Limb[] => {
-  const limbMaxHP = calculateLimbMaxHP(maxHP, constitution);
-  
-  return [
-    { id: 'head', name: 'Голова', currentHP: limbMaxHP, maxHP: limbMaxHP, ac: baseAC },
-    { id: 'torso', name: 'Торс', currentHP: limbMaxHP, maxHP: limbMaxHP, ac: baseAC },
-    { id: 'rightArm', name: 'Правая рука', currentHP: limbMaxHP, maxHP: limbMaxHP, ac: baseAC },
-    { id: 'leftArm', name: 'Левая рука', currentHP: limbMaxHP, maxHP: limbMaxHP, ac: baseAC },
-    { id: 'rightLeg', name: 'Правая нога', currentHP: limbMaxHP, maxHP: limbMaxHP, ac: baseAC },
-    { id: 'leftLeg', name: 'Левая нога', currentHP: limbMaxHP, maxHP: limbMaxHP, ac: baseAC },
-  ];
-};
 
 export interface Subrace {
   id: string;
@@ -387,6 +370,7 @@ export const EXPERIENCE_BY_LEVEL: { [key: number]: number } = {
   20: 355000,
 };
 
+// Display-only. Must stay in sync with game-logic/src/character/stats.ts
 export const getProficiencyBonus = (level: number): number => {
   if (level >= 17) return 6;
   if (level >= 13) return 5;
@@ -403,6 +387,7 @@ export const getSanityModifierFromWisdom = (wisdom: number): number => {
   }
 };
 
+// Display-only. Must stay in sync with game-logic/src/character/stats.ts
 export const calculateMaxSanity = (
   _classId: string,
   wisdom: number,

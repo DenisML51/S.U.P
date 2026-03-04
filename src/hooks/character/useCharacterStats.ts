@@ -1,4 +1,5 @@
 import { Character, EXPERIENCE_BY_LEVEL, calculateMaxSanity, InventoryItem } from '../../types';
+import { rollInitiativeApi } from '../../api/characters';
 
 export const useCharacterStats = (character: Character | null) => {
   if (!character) return null;
@@ -78,12 +79,9 @@ export const useCharacterStats = (character: Character | null) => {
   const initiativeValue = getModifierValue('dexterity') + initiativeBonus;
   const initiative = initiativeValue >= 0 ? `+${initiativeValue}` : `${initiativeValue}`;
 
-  const rollInitiative = () => {
-    const roll = Math.floor(Math.random() * 20) + 1;
-    const mod = getModifierValue('dexterity');
-    const total = roll + mod + initiativeBonus;
-    
-    return { roll, mod, bonus: initiativeBonus, total };
+  const rollInitiative = async () => {
+    const result = await rollInitiativeApi(character.id!);
+    return result.result;
   };
 
   return {

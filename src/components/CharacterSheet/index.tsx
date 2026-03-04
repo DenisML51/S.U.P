@@ -170,13 +170,12 @@ export const CharacterSheet: React.FC = () => {
                   )}
 
                   {activeTab === 'abilities' && (
-                    <AbilitiesTab 
+                    <AbilitiesTab
                       character={character}
                       openResourceModal={logic.openResourceModal}
                       openAbilityModal={logic.openAbilityModal}
                       openAbilityView={logic.openAbilityView}
                       updateResourceCount={logic.updateResourceCount}
-                      updateCharacter={logic.updateCharacter}
                       updateAbilitiesNotes={logic.updateAbilitiesNotes}
                       getActionTypeLabel={getActionTypeLabel}
                       getActionTypeColor={getActionTypeColor}
@@ -240,7 +239,7 @@ export const CharacterSheet: React.FC = () => {
         </div>
 
         {viewMode === 'hotbar' && (
-          <HotbarView 
+          <HotbarView
             character={character}
             openAttackView={logic.openAttackView}
             openAbilityView={logic.openAbilityView}
@@ -248,6 +247,8 @@ export const CharacterSheet: React.FC = () => {
             openItemView={logic.openItemView}
             updateResourceCount={logic.updateResourceCount}
             updateCharacter={logic.updateCharacter}
+            updateCondition={logic.updateCondition}
+            updateItemQuantity={logic.updateAmmunitionQuantity}
             getMaxSanity={logic.getMaxSanity}
             getTotalMaxHP={logic.getTotalMaxHP}
             xpProgress={logic.xpProgress}
