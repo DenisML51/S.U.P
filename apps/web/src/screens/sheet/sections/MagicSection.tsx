@@ -146,7 +146,7 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
 
   return (
     <div className="grid h-full grid-cols-[1fr_270px] gap-8">
-      <div className="flex min-h-0 flex-col gap-3">
+      <div className="flex min-h-0 min-w-0 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Круг заклинаний">
             {(['all', ...levels] as LevelFilter[]).map((option) => (
@@ -236,7 +236,7 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
         </Ledger>
       </div>
 
-      <aside className="flex min-h-0 flex-col gap-5">
+      <aside className="flex min-h-0 min-w-0 flex-col gap-5">
         <Panel className="px-5 py-4">
           <DifficultyEditor
             name={character.spellcastingDifficultyName ?? 'СЛ заклинаний'}

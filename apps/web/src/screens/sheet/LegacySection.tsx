@@ -1,10 +1,7 @@
 import React from 'react';
 import { ConditionsSection } from '../../components/CharacterSheet/components/ConditionsSection';
-import { EquipmentTab } from '../../components/CharacterSheet/components/Tabs/EquipmentTab';
 import { HealthTab } from '../../components/CharacterSheet/components/Tabs/HealthTab';
-import { InventoryTab } from '../../components/CharacterSheet/components/Tabs/InventoryTab';
 import { PersonalityTab } from '../../components/CharacterSheet/components/Tabs/PersonalityTab';
-import { getItemIcon, getItemTypeLabel } from '../../components/CharacterSheet/legacyHelpers';
 import type { SheetSection } from './SheetRail';
 import type { SheetLogic } from './sheetLogic';
 
@@ -16,32 +13,6 @@ export const LegacySection: React.FC<{ section: SheetSection; logic: SheetLogic 
   const { character } = logic;
   return (
     <div className="space-y-8 text-white">
-      {section === 'equipment' && (
-        <>
-          <EquipmentTab
-            character={character}
-            setShowAmmunitionModal={logic.setShowAmmunitionModal}
-            openItemView={logic.openItemView}
-            unequipItem={logic.unequipItem}
-            updateEquipmentNotes={logic.updateEquipmentNotes}
-            getItemIcon={getItemIcon}
-            getItemTypeLabel={getItemTypeLabel}
-          />
-          <InventoryTab
-            character={character}
-            inventorySubTab={logic.inventorySubTab}
-            setInventorySubTab={logic.setInventorySubTab}
-            openItemModal={logic.openItemModal}
-            openItemView={logic.openItemView}
-            updateItemQuantity={logic.updateItemQuantity}
-            equipItem={logic.equipItem}
-            unequipItem={logic.unequipItem}
-            updateInventoryNotes={logic.updateInventoryNotes}
-            getItemIcon={getItemIcon}
-            getItemTypeLabel={getItemTypeLabel}
-          />
-        </>
-      )}
       {section === 'body' && (
         <>
           <HealthTab

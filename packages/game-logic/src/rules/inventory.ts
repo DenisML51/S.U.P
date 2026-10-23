@@ -127,3 +127,7 @@ export function changeItemQuantity(character: Character, itemId: string, delta: 
     ),
   };
 }
+
+/** Total weight carried: each item's weight times its quantity. */
+export const carriedWeight = (character: Pick<Character, 'inventory'>): number =>
+  Math.round(character.inventory.reduce((sum, item) => sum + item.weight * itemQuantity(item), 0) * 100) / 100;

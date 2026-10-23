@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculateArmorClass,
+  carriedWeight,
   changeItemQuantity,
   equipItem,
   removeItem,
@@ -166,5 +167,14 @@ describe('changeItemQuantity', () => {
   it('does not stack weapons or armour', () => {
     const character = makeCharacter({ inventory: [bow] });
     expect(changeItemQuantity(character, 'bow', 1).inventory[0]!.quantity).toBeUndefined();
+  });
+});
+
+describe('carriedWeight', () => {
+  it('multiplies weight by quantity', () => {
+    const character = makeCharacter({
+      inventory: [item('rope', { weight: 5 }), item('arrows', { type: 'ammunition', weight: 0.05, quantity: 20 })],
+    });
+    expect(carriedWeight(character)).toBe(6);
   });
 });

@@ -9,6 +9,7 @@ import { LegacySection } from './LegacySection';
 import { SheetRail, type SheetSection } from './SheetRail';
 import type { SheetLogic } from './sheetLogic';
 import { ActionsSection } from './sections/ActionsSection';
+import { EquipmentSection } from './sections/EquipmentSection';
 import { MagicSection } from './sections/MagicSection';
 import { SkillsSection } from './sections/SkillsSection';
 
@@ -45,7 +46,8 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
         {section === 'attributes' && <SkillsSection logic={sheet} />}
         {section === 'actions' && <ActionsSection logic={sheet} />}
         {section === 'magic' && <MagicSection logic={sheet} />}
-        {!['attributes', 'actions', 'magic'].includes(section) && <LegacySection section={section} logic={sheet} />}
+        {section === 'equipment' && <EquipmentSection logic={sheet} />}
+        {['body', 'persona', 'journal'].includes(section) && <LegacySection section={section} logic={sheet} />}
       </main>
       <CharacterSheetModals {...sheet} autoAC={sheet.calculateAutoAC()} />
     </SettingScope>

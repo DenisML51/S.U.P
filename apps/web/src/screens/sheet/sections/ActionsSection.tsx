@@ -43,7 +43,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
 
   return (
     <div className="grid h-full grid-cols-2 gap-8">
-      <div className="flex min-h-0 flex-col gap-5">
+      <div className="flex min-h-0 min-w-0 flex-col gap-5">
         <Ledger title="Атаки" addLabel="Добавить атаку" onAdd={() => logic.openAttackModal()}>
           {character.attacks.map((entry) => {
             const parts = damageParts(entry);
@@ -77,7 +77,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
         <SectionNotes value={character.attacksNotes} onSave={logic.updateAttacksNotes} />
       </div>
 
-      <div className="flex min-h-0 flex-col gap-5">
+      <div className="flex min-h-0 min-w-0 flex-col gap-5">
         <Ledger title="Способности" addLabel="Добавить способность" onAdd={() => logic.openAbilityModal()}>
           {active.map((entry) => {
             const parts = damageParts(entry);
