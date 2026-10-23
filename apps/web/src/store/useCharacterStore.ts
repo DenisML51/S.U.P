@@ -24,7 +24,7 @@ import type { z } from 'zod';
 import { create } from 'zustand';
 import { loadSettings, saveSettings, type AppSettings } from '../data/settings';
 import type { Workspace } from '../data/workspace';
-import type { TabType, ViewMode } from '../types';
+import type { ViewMode } from '../types';
 
 export type CharacterUpdater = Character | ((previous: Character) => Character);
 
@@ -36,13 +36,11 @@ export interface UpdateOptions {
 interface CharacterState {
   character: Character | null;
   charactersList: CharacterPreview[];
-  activeTab: TabType;
   viewMode: ViewMode;
   /** The character list has been read from the device for the signed-in account. */
   isLoaded: boolean;
   settings: AppSettings;
 
-  setActiveTab(tab: TabType): void;
   setViewMode(mode: ViewMode): void;
   updateSettings(patch: Partial<AppSettings>): void;
 
@@ -186,12 +184,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
   return {
     character: null,
     charactersList: [],
-    activeTab: 'personality',
     viewMode: readViewMode(),
     isLoaded: false,
     settings: loadSettings(),
 
-    setActiveTab: (activeTab) => set({ activeTab }),
 
     setViewMode: (viewMode) => {
       try {
@@ -279,7 +275,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         toast.error('Персонаж не найден');
         return;
       }
-      set({ character, activeTab: 'personality', viewMode: 'tabs' });
+      set({ character, viewMode: 'tabs' });
       rememberOpen(character.id);
     },
 
@@ -291,7 +287,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       set({
         character,
         charactersList: [...get().charactersList, toCharacterPreview(character)],
-        activeTab: 'personality',
         viewMode: 'tabs',
       });
       rememberOpen(character.id);
@@ -326,7 +321,6 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       set({
         character,
         charactersList: [...get().charactersList, toCharacterPreview(character)],
-        activeTab: 'personality',
         viewMode: 'tabs',
       });
       rememberOpen(character.id);

@@ -2,14 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
-import { CharacterSheet } from './components/CharacterSheet/index';
 import { CharacterCreation } from './components/CharacterCreation/index';
-import { Navbar } from './components/Navbar';
 import { DiceRoller } from './components/DiceRoller';
 import { AuthScreen } from './screens/auth/AuthScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { HeroSelect } from './screens/select/HeroSelect';
 import { SheetScreen } from './screens/sheet/SheetScreen';
+import { CombatScreen } from './screens/combat/CombatScreen';
 import { SettingScope } from './ui/theme/SettingScope';
 import { Toasts } from './ui/Toasts';
 import { DEFAULT_SETTING } from '@itd/schema';
@@ -58,13 +57,10 @@ const App: React.FC = () => {
     screenKey = 'sheet';
   } else if (character) {
     screen = (
-      <LegacyFrame>
-        <Navbar key={character.id} />
-        <main className="relative z-10 pt-24">
-          <CharacterSheet />
-        </main>
+      <>
+        <CombatScreen onOpenSettings={() => setSettingsOpen(true)} />
         <DiceRoller />
-      </LegacyFrame>
+      </>
     );
     screenKey = 'combat';
   } else if (creating) {

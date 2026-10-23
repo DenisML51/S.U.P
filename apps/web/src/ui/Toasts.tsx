@@ -15,8 +15,8 @@ const ICON: Partial<Record<Toast['type'], React.ReactNode>> = {
 
 /**
  * Messages of the app (rolls, saves, errors) as plates in the language of the current setting.
- * They rise from the bottom edge, the stack makes room smoothly, hovering holds them, a click
- * dismisses one.
+ * They rise from the bottom edge (a screen with a bottom HUD lifts them with `--toast-offset`), the
+ * stack makes room smoothly, hovering holds them, a click dismisses one.
  */
 export const Toasts: React.FC = () => {
   const { toasts, handlers } = useToaster({ duration: 3500 });
@@ -24,7 +24,8 @@ export const Toasts: React.FC = () => {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-6 z-[200] flex flex-col-reverse items-center gap-2"
+      className="pointer-events-none fixed inset-x-0 z-[200] flex flex-col-reverse items-center gap-2"
+      style={{ bottom: 'var(--toast-offset, 1.5rem)', transition: 'bottom 300ms ease' }}
       onMouseEnter={handlers.startPause}
       onMouseLeave={handlers.endPause}
     >
