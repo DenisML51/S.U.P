@@ -82,6 +82,11 @@ export const ActionTypeSchema = z.enum(['action', 'bonus', 'reaction', 'passive'
 export const ItemTypeSchema = z.enum(['armor', 'weapon', 'ammunition', 'item']);
 export const WeaponClassSchema = z.enum(['melee', 'ranged']);
 export const ResistanceLevelSchema = z.enum(['resistance', 'vulnerability', 'immunity', 'none']);
+/** The universe a character comes from; drives the visual theme of the sheet. */
+export const SETTINGS = ['high-fantasy', 'grimdark', 'sci-fi', 'dark-fantasy'] as const;
+export const SettingSchema = z.enum(SETTINGS);
+export const DEFAULT_SETTING: z.infer<typeof SettingSchema> = 'high-fantasy';
+
 export const HistoryEntryTypeSchema = z.enum(['health', 'sanity', 'resource', 'inventory', 'exp', 'other']);
 
 export const DamageComponentSchema = passthroughObject({
@@ -245,6 +250,8 @@ export const CharacterSchema = passthroughObject({
   id: EntityIdSchema,
 
   name: text(shortString.trim().min(1)),
+  /** Absent on older sheets: they read as `DEFAULT_SETTING`. */
+  setting: text(SettingSchema.optional()),
   race: shortTextOr(),
   subrace: optionalShortText,
   class: shortTextOr(),
@@ -310,6 +317,7 @@ export type ItemType = z.infer<typeof ItemTypeSchema>;
 export type WeaponClass = z.infer<typeof WeaponClassSchema>;
 export type ResistanceLevel = z.infer<typeof ResistanceLevelSchema>;
 export type HistoryEntryType = z.infer<typeof HistoryEntryTypeSchema>;
+export type Setting = z.infer<typeof SettingSchema>;
 export type DamageComponent = z.infer<typeof DamageComponentSchema>;
 export type Skill = z.infer<typeof SkillSchema>;
 export type Resource = z.infer<typeof ResourceSchema>;

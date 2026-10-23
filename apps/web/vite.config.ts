@@ -1,12 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import Icons from 'unplugin-icons/vite';
 import path from 'node:path';
 
 /** Where `npm run dev` forwards `/api`; the API runs on 4000 by default. */
 const apiTarget = process.env.VITE_DEV_API_TARGET ?? 'http://localhost:4000';
 
 export default defineConfig({
-  plugins: [react()],
+  // Icons compile to inline React components at build time: offline and tree-shaken.
+  plugins: [react(), Icons({ compiler: 'jsx', jsx: 'react', scale: 1 })],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
