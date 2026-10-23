@@ -509,16 +509,16 @@
 
 /* Sci-fi: an inventory grid instead of a written list. Every entry is its own block, names wrap
    instead of being cut, the block lights up under the cursor. */
-[data-setting='sci-fi'] .ui-ledger__list {
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   align-content: start;
   gap: 6px;
   padding: 0.25rem 1.25rem 0.25rem;
 }
-[data-setting='sci-fi'] .ui-ledger__list > li:not(.ui-ledger__row) { grid-column: 1 / -1; }
-[data-setting='sci-fi'] .ui-ledger__row,
-[data-setting='sci-fi'] .ui-ledger__row:last-child {
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__list > li:not(.ui-ledger__row) { grid-column: 1 / -1; }
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row,
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:last-child {
   position: relative;
   padding: 0.6rem 0.7rem 0.6rem 0.5rem;
   border: 1px solid rgb(var(--c-line));
@@ -526,7 +526,7 @@
   clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
   transition: border-color 150ms, background-color 150ms, box-shadow 200ms;
 }
-[data-setting='sci-fi'] .ui-ledger__row::before {
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row::before {
   content: '';
   position: absolute;
   inset: 0 auto 0 0;
@@ -535,12 +535,12 @@
   opacity: 0;
   transition: opacity 150ms;
 }
-[data-setting='sci-fi'] .ui-ledger__row:hover {
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:hover {
   border-color: rgb(var(--c-accent) / 0.7);
   box-shadow: inset 0 0 22px rgb(var(--c-accent) / 0.12);
 }
-[data-setting='sci-fi'] .ui-ledger__row:hover::before { opacity: 1; }
-[data-setting='sci-fi'] .ui-ledger__row:hover .ui-ledger__title { text-decoration: none; color: rgb(var(--c-frame-bright)); }
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:hover::before { opacity: 1; }
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:hover .ui-ledger__title { text-decoration: none; color: rgb(var(--c-frame-bright)); }
 [data-setting='sci-fi'] .ui-ledger__title {
   white-space: normal;
   display: -webkit-box;
@@ -566,11 +566,11 @@
   color: rgb(var(--c-ink-muted));
 }
 [data-setting='sci-fi'] .ui-ledger__add:hover { border-color: rgb(var(--c-accent)); color: rgb(var(--c-frame-bright)); background: rgb(var(--c-accent) / 0.06); }
-[data-setting='sci-fi'] .ui-ledger__row[data-active] {
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row[data-active] {
   border-color: rgb(var(--c-accent) / 0.45);
   background: linear-gradient(90deg, rgb(var(--c-accent) / 0.12), rgb(var(--c-surface-2) / 0.4) 40%, rgb(var(--c-inset) / 0.6));
 }
-[data-setting='sci-fi'] .ui-ledger__row[data-active]::before { opacity: 1; box-shadow: 0 0 8px rgb(var(--c-accent)); }
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row[data-active]::before { opacity: 1; box-shadow: 0 0 8px rgb(var(--c-accent)); }
 
 /* Notes collapsed to a few lines fade out instead of being cut mid-word. */
 .ui-notes { transition: max-height 250ms ease; }

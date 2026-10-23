@@ -8,10 +8,13 @@ import {
   passiveScore,
   savingThrowModifier,
   skillModifier,
+  toggleSkillExpertise,
+  toggleSkillProficiency,
 } from '@itd/game-logic';
 import type { Character, Skill } from '@itd/schema';
+import { useCharacterStore } from '../../../store/useCharacterStore';
 import { Panel, SectionTitle, TextArea, cx } from '../../../ui/primitives';
-import type { SheetLogic } from '../sheetLogic';
+import { useSheetText } from '../useSheetText';
 import { useRolls } from '../useRolls';
 import { useSheetDialogs } from '../dialogs/context';
 
@@ -122,16 +125,17 @@ const LanguagesNote: React.FC<{ value: string; onSave: (value: string) => void }
 };
 
 /** Attributes, saves and skills: everything a check is rolled from. */
-export const SkillsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
-  const { character } = logic;
+export const SkillsSection: React.FC<{ character: Character }> = ({ character }) => {
+  const saveText = useSheetText();
+  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const roll = useRolls();
   const dialogs = useSheetDialogs();
   const skills = orderedSkills(character);
 
   const cycleProficiency = (skill: Skill) => {
-    if (!skill.proficient) logic.toggleSkillProficiency(skill.id);
-    else if (!skill.expertise) logic.toggleSkillExpertise(skill.id);
-    else logic.toggleSkillProficiency(skill.id);
+    updateCharacter((doc) =>
+      !skill.proficient || skill.expertise ? toggleSkillProficiency(doc, skill.id) : toggleSkillExpertise(doc, skill.id),
+    );
   };
 
   const columns = [skills.slice(0, 6), skills.slice(6, 12), skills.slice(12)];
@@ -190,7 +194,7 @@ export const SkillsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
         </div>
       </section>
 
-      <LanguagesNote value={character.languagesAndProficiencies} onSave={logic.updateLanguagesAndProficiencies} />
+      <LanguagesNote value={character.languagesAndProficiencies} onSave={saveText('languagesAndProficiencies')} />
     </div>
   );
 };

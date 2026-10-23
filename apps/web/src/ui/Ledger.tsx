@@ -44,8 +44,10 @@ export const Ledger: React.FC<{
   className?: string;
   /** The rows area scrolls inside the ledger when the list is long. */
   scroll?: boolean;
-}> = ({ title, aside, addLabel, onAdd, children, className, scroll = true }) => (
-  <Panel variant="paper" ornate={false} className={cx('ui-ledger flex min-h-0 flex-col', className)}>
+  /** A running log (the journal): always plain lines, never the sci-fi inventory grid. */
+  log?: boolean;
+}> = ({ title, aside, addLabel, onAdd, children, className, scroll = true, log = false }) => (
+  <Panel variant="paper" ornate={false} className={cx('ui-ledger flex min-h-0 flex-col', log && 'ui-ledger--log', className)}>
     <span className="ui-ledger__ribbon" aria-hidden />
     <header className="ui-ledger__head flex items-center gap-3 px-6 pb-2 pt-4">
       <LedgerBullet />
@@ -75,8 +77,10 @@ export const LedgerRow: React.FC<{
   dim?: boolean;
   /** A worn item, a prepared spell: marked by the setting (a lit edge in sci-fi). */
   active?: boolean;
+  /** The second line wraps instead of being cut to one line (a condition's full effect). */
+  wrapMeta?: boolean;
   onOpen?: () => void;
-}> = ({ title, meta, value, action, leading, dim, active, onOpen }) => (
+}> = ({ title, meta, value, action, leading, dim, active, wrapMeta, onOpen }) => (
   <li className={cx('ui-ledger__row group flex items-center gap-3 py-2.5', dim && 'opacity-60')} data-active={active || undefined}>
     {leading ?? (
       <span className="grid h-6 w-6 shrink-0 place-items-center opacity-80">
@@ -87,7 +91,7 @@ export const LedgerRow: React.FC<{
       <span className="ui-ledger__title ui-display block truncate text-[1.05rem] leading-tight">
         {title}
       </span>
-      {meta && <span className="ui-ledger__meta mt-0.5 block truncate text-[13px] text-paper-ink/80">{meta}</span>}
+      {meta && <span className={cx('ui-ledger__meta mt-0.5 block text-[13px] text-paper-ink/80', !wrapMeta && 'truncate')}>{meta}</span>}
     </button>
     {value !== undefined && <span className="shrink-0 text-sm tabular-nums">{value}</span>}
     {action && <div className="flex shrink-0 items-center gap-1">{action}</div>}

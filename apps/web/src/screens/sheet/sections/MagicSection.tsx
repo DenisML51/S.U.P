@@ -17,8 +17,8 @@ import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { Ledger, LedgerBullet, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
 import { Button, IconButton, Input, Panel, cx } from '../../../ui/primitives';
 import { IconMinus, IconPlus } from '../../../ui/icons';
-import { SectionNotes } from '../parts/SectionNotes';
-import type { SheetLogic } from '../sheetLogic';
+import { SectionNotes } from '../parts/EditableText';
+import { useSheetText } from '../useSheetText';
 import { useActs } from '../useActs';
 import { useSheetDialogs } from '../dialogs/context';
 import { damageParts, describeDamage } from '../parts/damage';
@@ -110,8 +110,8 @@ const DifficultyEditor: React.FC<{ name: string; value: number; onSave: (name: s
 };
 
 /** Spells: the whole spellbook, preparation for the day and casting, in one place. */
-export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
-  const { character } = logic;
+export const MagicSection: React.FC<{ character: Character }> = ({ character }) => {
+  const saveText = useSheetText();
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const { cast } = useActs();
   const dialogs = useSheetDialogs();
@@ -238,7 +238,9 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
           <DifficultyEditor
             name={character.spellcastingDifficultyName ?? 'СЛ заклинаний'}
             value={character.spellcastingDifficultyValue ?? 10}
-            onSave={logic.updateSpellcastingDifficulty}
+            onSave={(spellcastingDifficultyName, spellcastingDifficultyValue) =>
+              updateCharacter((doc) => ({ ...doc, spellcastingDifficultyName, spellcastingDifficultyValue }))
+            }
           />
         </Panel>
 
@@ -265,7 +267,7 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
         </section>
 
         <div className="mt-auto">
-          <SectionNotes value={character.spellsNotes} onSave={logic.updateSpellsNotes} />
+          <SectionNotes value={character.spellsNotes} onSave={saveText('spellsNotes')} />
         </div>
       </aside>
     </div>
