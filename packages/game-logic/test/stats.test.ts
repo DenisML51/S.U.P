@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   abilityModifier,
+  applyDamage,
+  applyHealing,
   attributeModifier,
   calculateLimbMaxHP,
   calculateMaxSanity,
@@ -172,5 +174,28 @@ describe('limbs', () => {
 
   it('classifies limbs', () => {
     expect(['head', 'torso', 'leftArm', 'rightLeg'].map(getLimbType)).toEqual(['head', 'torso', 'arm', 'leg']);
+  });
+});
+
+describe('damage and healing', () => {
+  const hurt = makeCharacter({ currentHP: 20, maxHP: 30, maxHPBonus: 5, tempHP: 6 });
+
+  it('spends temporary hit points before hit points', () => {
+    const result = applyDamage(hurt, 10);
+    expect(result).toMatchObject({ amount: 4, absorbed: 6, character: { tempHP: 0, currentHP: 16 } });
+  });
+
+  it('stops at zero hit points', () => {
+    expect(applyDamage(hurt, 100).character.currentHP).toBe(0);
+  });
+
+  it('ignores negative and fractional input', () => {
+    expect(applyDamage(hurt, -5).character).toEqual(hurt);
+    expect(applyDamage(hurt, 2.9).absorbed).toBe(2);
+  });
+
+  it('heals up to the maximum including the bonus', () => {
+    expect(applyHealing(hurt, 100)).toMatchObject({ amount: 15, character: { currentHP: 35, tempHP: 6 } });
+    expect(applyHealing(hurt, 3).character.currentHP).toBe(23);
   });
 });

@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 
 const SettingContext = createContext<Setting>(DEFAULT_SETTING);
@@ -18,3 +18,17 @@ export const SettingScope: React.FC<{ setting: Setting } & React.HTMLAttributes<
     <div data-setting={setting} {...rest} />
   </SettingContext.Provider>
 );
+
+/**
+ * Puts the setting on <html> while a screen is shown, so content rendered in portals (toasts,
+ * menus) and the page background match the screen.
+ */
+export function useDocumentSetting(setting: Setting): void {
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.setting = setting;
+    return () => {
+      delete root.dataset.setting;
+    };
+  }, [setting]);
+}

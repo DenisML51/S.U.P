@@ -9,6 +9,7 @@ import { DiceRoller } from './components/DiceRoller';
 import { AuthScreen } from './screens/auth/AuthScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { HeroSelect } from './screens/select/HeroSelect';
+import { SheetScreen } from './screens/sheet/SheetScreen';
 import { SettingScope } from './ui/theme/SettingScope';
 import { DEFAULT_SETTING } from '@itd/schema';
 
@@ -27,6 +28,7 @@ const App: React.FC = () => {
   const status = useSessionStore((s) => s.status);
   const boot = useSessionStore((s) => s.boot);
   const character = useCharacterStore((s) => s.character);
+  const viewMode = useCharacterStore((s) => s.viewMode);
   const isLoaded = useCharacterStore((s) => s.isLoaded);
   const [creating, setCreating] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -42,6 +44,13 @@ const App: React.FC = () => {
     screen = <Loading />;
   } else if (!signedIn) {
     screen = <AuthScreen />;
+  } else if (character && viewMode === 'tabs') {
+    screen = (
+      <>
+        <SheetScreen onOpenSettings={() => setSettingsOpen(true)} />
+        <DiceRoller />
+      </>
+    );
   } else if (character) {
     screen = (
       <LegacyFrame>

@@ -37,3 +37,9 @@ export function savingThrowModifier(
 
 export const initiativeModifier = (character: AttributeSource & Pick<Character, 'initiativeBonus'>): number =>
   attributeModifier(character, 'dexterity') + (character.initiativeBonus ?? 0);
+
+/** Passive value of a skill (passive Perception and the like): 10 plus the skill modifier. */
+export const passiveScore = (
+  character: AttributeSource & Pick<Character, 'skills' | 'proficiencyBonus'>,
+  skillId: string,
+): number => 10 + skillModifier(character, skillId);

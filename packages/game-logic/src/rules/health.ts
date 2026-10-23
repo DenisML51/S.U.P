@@ -54,3 +54,29 @@ export const replaceLimb = (character: Character, limb: Limb): Character => ({
   ...character,
   limbs: character.limbs.map((l) => (l.id === limb.id ? limb : l)),
 });
+
+export interface HealthChange {
+  character: Character;
+  /** Hit points actually lost (after temporary ones) or regained (after the cap). */
+  amount: number;
+  /** Temporary hit points that absorbed damage. */
+  absorbed: number;
+}
+
+/** Damage eats temporary hit points first, then hit points, which stop at zero. */
+export function applyDamage(character: Character, damage: number): HealthChange {
+  const amount = Math.max(0, Math.trunc(damage));
+  const absorbed = Math.min(character.tempHP, amount);
+  const lost = Math.min(character.currentHP, amount - absorbed);
+  return {
+    character: { ...character, tempHP: character.tempHP - absorbed, currentHP: character.currentHP - lost },
+    amount: lost,
+    absorbed,
+  };
+}
+
+/** Healing restores hit points up to the maximum, bonus included; it never adds temporary ones. */
+export function applyHealing(character: Character, healing: number): HealthChange {
+  const amount = Math.max(0, Math.min(Math.trunc(healing), totalMaxHP(character) - character.currentHP));
+  return { character: { ...character, currentHP: character.currentHP + amount }, amount, absorbed: 0 };
+}
