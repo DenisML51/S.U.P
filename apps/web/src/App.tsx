@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
-import { CharacterCreation } from './components/CharacterCreation/index';
 import { AuthScreen } from './screens/auth/AuthScreen';
 import { SettingsDialog } from './screens/settings/SettingsDialog';
 import { HeroSelect } from './screens/select/HeroSelect';
 import { SheetScreen } from './screens/sheet/SheetScreen';
 import { CombatScreen } from './screens/combat/CombatScreen';
+import { CreationScreen } from './screens/create/CreationScreen';
 import { SettingScope } from './ui/theme/SettingScope';
 import { Toasts } from './ui/Toasts';
 import { DEFAULT_SETTING } from '@itd/schema';
@@ -16,11 +16,6 @@ const Loading: React.FC = () => (
   <SettingScope setting={DEFAULT_SETTING} className="grid h-screen place-items-center bg-bg">
     <span className="ui-display animate-pulse text-2xl text-frame-bright">S.U.P.</span>
   </SettingScope>
-);
-
-/** Screens not yet moved to the design system keep their original frame. */
-const LegacyFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="relative min-h-screen bg-dark-bg text-white">{children}</div>
 );
 
 const App: React.FC = () => {
@@ -61,11 +56,7 @@ const App: React.FC = () => {
     );
     screenKey = 'combat';
   } else if (creating) {
-    screen = (
-      <LegacyFrame>
-        <CharacterCreation onComplete={() => setCreating(false)} onCancel={() => setCreating(false)} />
-      </LegacyFrame>
-    );
+    screen = <CreationScreen onDone={() => setCreating(false)} />;
     screenKey = 'create';
   } else {
     screen = <HeroSelect onCreate={() => setCreating(true)} onOpenSettings={() => setSettingsOpen(true)} />;
