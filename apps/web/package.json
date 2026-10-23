@@ -23,7 +23,6 @@
     "framer-motion": "^10.16.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-easy-crop": "^6.2.4",
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
