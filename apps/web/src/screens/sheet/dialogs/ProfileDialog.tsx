@@ -6,6 +6,7 @@ import { api, assetUrl } from '../../../data/api/client';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { SettingEmblem } from '../../../ui/art/emblems';
 import { Dialog } from '../../../ui/Dialog';
+import { ImageCropDialog, type CropFrame } from '../../../ui/ImageCropDialog';
 import { NumberField, Suggest } from '../../../ui/forms';
 import { Button, Field, Input, cx } from '../../../ui/primitives';
 import { SettingScope } from '../../../ui/theme/SettingScope';
@@ -51,21 +52,29 @@ const toDraft = (character: Character): Draft => {
   };
 };
 
-/** An image slot: the current picture, a click to upload another, a link to remove it. */
+/** An image slot: the current picture, a click to pick another and frame it, a link to remove it. */
 const ImageSlot: React.FC<{
   label: string;
   hint: string;
+  /** Shape the picture is cut to before it is saved. */
+  frame: CropFrame;
   /** Uploaded asset shown in the slot; the slot shows only its own picture, never a fallback. */
   asset?: string;
   onUploaded: (id: string | undefined) => void;
   className?: string;
-}> = ({ label, hint, asset, onUploaded, className }) => {
+}> = ({ label, hint, frame, asset, onUploaded, className }) => {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const upload = async (file: File) => {
+  const [picked, setPicked] = useState<string | null>(null);
+  const dropPicked = () => {
+    if (picked) URL.revokeObjectURL(picked);
+    setPicked(null);
+  };
+  const upload = async (image: Blob) => {
+    dropPicked();
     setBusy(true);
     try {
-      const asset = await api.assets.upload(file);
+      const asset = await api.assets.upload(image);
       onUploaded(asset.id);
     } catch {
       toast.error('Не удалось загрузить изображение');
@@ -116,8 +125,16 @@ const ImageSlot: React.FC<{
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = '';
-          if (file) void upload(file);
+          if (file) setPicked(URL.createObjectURL(file));
         }}
+      />
+      <ImageCropDialog
+        key={picked ?? ''}
+        source={picked}
+        title={label}
+        frame={frame}
+        onCancel={dropPicked}
+        onCropped={(image) => void upload(image)}
       />
     </div>
   );
@@ -204,6 +221,7 @@ export const ProfileDialog: React.FC<{ open: boolean; onClose: () => void }> = (
             <ImageSlot
               label="Полный арт"
               hint="Вертикальная картинка во весь рост: карточка героя и лист"
+              frame={{ aspect: 2 / 3, maxSide: 1600 }}
               asset={draft.images.full}
               onUploaded={(full) => set({ images: { ...draft.images, full } })}
               className="min-h-[15rem]"
@@ -211,6 +229,7 @@ export const ProfileDialog: React.FC<{ open: boolean; onClose: () => void }> = (
             <ImageSlot
               label="Портрет"
               hint="Лицо крупным планом: списки и бой"
+              frame={{ aspect: 1, maxSide: 640 }}
               asset={draft.images.portrait}
               onUploaded={(portrait) => set({ images: { ...draft.images, portrait } })}
               className="h-[8.5rem] w-[8.5rem]"

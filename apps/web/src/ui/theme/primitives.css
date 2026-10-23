@@ -1295,3 +1295,34 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-die-face--max { color: rgb(var(--c-success)); border-color: rgb(var(--c-success) / 0.6); }
 .ui-die-face--min { color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger) / 0.6); }
 .ui-die-face--dropped { opacity: 0.4; text-decoration: line-through; }
+
+/* ------------------------------------------------------------------ Image framing */
+.ui-crop { background: rgb(var(--c-bg-deep)); border: 1px solid rgb(var(--c-line)); border-radius: var(--radius); }
+.ui-crop .ui-crop__area {
+  border: 1px solid rgb(var(--c-frame-bright) / 0.9);
+  color: rgb(var(--c-bg-deep) / 0.72);
+}
+.ui-range {
+  appearance: none;
+  height: 4px;
+  background: rgb(var(--c-line));
+  border-radius: 999px;
+  accent-color: rgb(var(--c-frame-bright));
+}
+.ui-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgb(var(--c-frame-bright));
+  border: 2px solid rgb(var(--c-bg));
+  cursor: pointer;
+}
+.ui-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgb(var(--c-frame-bright));
+  border: 2px solid rgb(var(--c-bg));
+  cursor: pointer;
+}
