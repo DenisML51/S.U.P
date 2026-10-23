@@ -17,8 +17,6 @@ import { SkillsSection } from './sections/SkillsSection';
 
 const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
 
-const openDiceTray = () => window.dispatchEvent(new CustomEvent('open-dice-hub', { detail: {} }));
-
 /**
  * The character sheet: a rail of sections on the left, the hero (vitals, resources) always in view,
  * the chosen section filling the rest. Laid out for a full desktop screen without page scrolling;
@@ -46,7 +44,6 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
               onSection={setSection}
               onBack={goToCharacterList}
               onCombat={() => setViewMode('hotbar')}
-              onDice={openDiceTray}
               onSettings={onOpenSettings}
             />
           </motion.div>

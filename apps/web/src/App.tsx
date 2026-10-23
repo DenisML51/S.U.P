@@ -3,7 +3,6 @@ import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
 import { CharacterCreation } from './components/CharacterCreation/index';
-import { DiceRoller } from './components/DiceRoller';
 import { AuthScreen } from './screens/auth/AuthScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { HeroSelect } from './screens/select/HeroSelect';
@@ -51,7 +50,6 @@ const App: React.FC = () => {
     screen = (
       <>
         <SheetScreen onOpenSettings={() => setSettingsOpen(true)} />
-        <DiceRoller />
       </>
     );
     screenKey = 'sheet';
@@ -59,7 +57,6 @@ const App: React.FC = () => {
     screen = (
       <>
         <CombatScreen onOpenSettings={() => setSettingsOpen(true)} />
-        <DiceRoller />
       </>
     );
     screenKey = 'combat';
