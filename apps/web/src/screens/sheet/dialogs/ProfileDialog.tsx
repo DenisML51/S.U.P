@@ -1,15 +1,14 @@
-import React, { useRef, useState } from 'react';
-import { toast } from 'react-hot-toast';
+import React, { useState } from 'react';
 import { CLASSES, RACES } from '@itd/game-logic';
 import { SETTINGS, type Character, type CharacterImages, type Setting } from '@itd/schema';
-import { api, assetUrl } from '../../../data/api/client';
 import { useCharacterStore } from '../../../store/useCharacterStore';
-import { SettingEmblem } from '../../../ui/art/emblems';
 import { Dialog } from '../../../ui/Dialog';
 import { NumberField, Suggest } from '../../../ui/forms';
-import { Button, Field, Input, cx } from '../../../ui/primitives';
+import { Button, Field, Input } from '../../../ui/primitives';
+import { ImageSlot } from '../../../ui/ImageSlot';
+import { SettingOption } from '../../../ui/SettingOption';
 import { SettingScope } from '../../../ui/theme/SettingScope';
-import { SETTING_INFO, settingOf } from '../../../ui/theme/settings';
+import { settingOf } from '../../../ui/theme/settings';
 
 interface Named {
   id: string;
@@ -50,86 +49,6 @@ const toDraft = (character: Character): Draft => {
     images: { ...character.images },
   };
 };
-
-/** An image slot: the current picture, a click to upload another, a link to remove it. */
-const ImageSlot: React.FC<{
-  label: string;
-  hint: string;
-  /** Uploaded asset shown in the slot; the slot shows only its own picture, never a fallback. */
-  asset?: string;
-  onUploaded: (id: string | undefined) => void;
-  className?: string;
-}> = ({ label, hint, asset, onUploaded, className }) => {
-  const input = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
-  const upload = async (file: File) => {
-    setBusy(true);
-    try {
-      const asset = await api.assets.upload(file);
-      onUploaded(asset.id);
-    } catch {
-      toast.error('Не удалось загрузить изображение');
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <div className={cx('flex flex-col gap-1.5', className)}>
-      <div className="flex items-baseline justify-between">
-        <span className="ui-label !mb-0">{label}</span>
-        {asset && (
-          <button type="button" className="text-xs text-ink-faint hover:text-danger" onClick={() => onUploaded(undefined)}>
-            убрать
-          </button>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={() => input.current?.click()}
-        className="ui-image-slot group relative min-h-0 flex-1 overflow-hidden"
-        title={hint}
-        disabled={busy}
-      >
-        {asset ? (
-          <img src={assetUrl(asset)} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '50% 20%' }} />
-        ) : (
-          <span className="absolute inset-0 grid place-items-center p-3 text-center text-xs text-ink-faint">{hint}</span>
-        )}
-        <span className="ui-image-slot__veil">{busy ? 'Загрузка…' : asset ? 'Заменить' : 'Загрузить'}</span>
-      </button>
-      <input
-        ref={input}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = '';
-          if (file) void upload(file);
-        }}
-      />
-    </div>
-  );
-};
-
-/** The setting as a choice shown in its own look: its face, its emblem, its colours. */
-const SettingOption: React.FC<{ setting: Setting; selected: boolean; onSelect: () => void }> = ({ setting, selected, onSelect }) => (
-  <SettingScope setting={setting}>
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      onClick={onSelect}
-      className={cx('ui-setting-option ui-morph', selected && 'ui-setting-option--selected')}
-    >
-      <SettingEmblem size={26} className="shrink-0 text-frame-bright" />
-      <span className="min-w-0 text-left">
-        <span className="ui-display ui-title block truncate text-[1.05rem] leading-tight text-ink">{SETTING_INFO[setting].label}</span>
-        <span className="block truncate text-xs text-ink-muted">{SETTING_INFO[setting].hint}</span>
-      </span>
-    </button>
-  </SettingScope>
-);
 
 /**
  * Who the hero is: name, origin, their universe and their pictures. Picking a setting re-themes the
