@@ -59,6 +59,12 @@ describe('CharacterSchema', () => {
     expect(character.attributes.strength).toBe(15);
   });
 
+  it('accepts known settings and rejects unknown ones', () => {
+    expect(CharacterSchema.parse({ ...minimal, setting: 'sci-fi' }).setting).toBe('sci-fi');
+    expect(CharacterSchema.parse(minimal).setting).toBeUndefined();
+    expect(CharacterSchema.safeParse({ ...minimal, setting: 'steampunk' }).success).toBe(false);
+  });
+
   it('rejects a numeric field that holds text', () => {
     expect(CharacterSchema.safeParse({ ...minimal, maxHP: 'много' }).success).toBe(false);
   });
