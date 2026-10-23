@@ -17,7 +17,8 @@ export function describeOrigin(origin: Origin): { race: string; calling: string 
   const characterClass = CLASSES.find((c) => c.id === origin.class);
   const subclass = characterClass?.subclasses.find((s) => s.id === origin.subclass);
 
-  const raceName = subrace?.name ?? race?.name ?? (origin.subrace || origin.race);
+  // Content subraces are self-explanatory ('Северянин'); custom text is shown next to the race.
+  const raceName = subrace?.name ?? [race?.name ?? origin.race, origin.subrace].filter(Boolean).join(', ');
   const className = characterClass?.name ?? origin.class;
   const subclassName = subclass?.name ?? origin.subclass;
 

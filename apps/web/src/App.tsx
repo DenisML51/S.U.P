@@ -6,7 +6,7 @@ import { CharacterSheet } from './components/CharacterSheet/index';
 import { CharacterCreation } from './components/CharacterCreation/index';
 import { Navbar } from './components/Navbar';
 import { DiceRoller } from './components/DiceRoller';
-import { AuthScreen } from './components/AuthScreen';
+import { AuthScreen } from './screens/auth/AuthScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { HeroSelect } from './screens/select/HeroSelect';
 import { SettingScope } from './ui/theme/SettingScope';
