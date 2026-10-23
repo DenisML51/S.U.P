@@ -1,14 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { api, assetUrl } from '../data/api/client';
-import { ImageCropDialog, type CropFrame } from './ImageCropDialog';
+import { ImageCropDialog } from './ImageCropDialog';
 import { cx } from './primitives';
-
-/** Shape each picture is cut to: a full-length art stands, a portrait is square. */
-const FRAMES: Record<'full' | 'portrait', CropFrame> = {
-  full: { aspect: 2 / 3, maxSide: 1600 },
-  portrait: { aspect: 1, maxSide: 640 },
-};
 
 /** An image slot: the current picture, a click to pick another and frame it, a link to remove it. */
 export const ImageSlot: React.FC<{
@@ -89,7 +83,7 @@ export const ImageSlot: React.FC<{
         key={picked ?? ''}
         source={picked}
         title={label}
-        frame={FRAMES[kind]}
+        preset={kind}
         onCancel={dropPicked}
         onCropped={(image) => void upload(image)}
       />
