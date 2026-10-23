@@ -4,13 +4,22 @@ import type { ActionType, Attack, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { MarkdownField, NumberField, Segmented, Switch } from '../../../ui/forms';
-import { Button, Field, Input } from '../../../ui/primitives';
+import { Button, Field } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
 import { IconDice } from '../../../ui/icons';
 import { damageParts } from '../parts/damage';
 import { useActs } from '../useActs';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
-import { CardRule, DamageEditor, DamageFigures, FormSection, KeyFacts, MinorFacts } from './parts';
+import {
+  CardRule,
+  DamageEditor,
+  DamageFigures,
+  FormSection,
+  KeyFacts,
+  MinorFacts,
+  EntryBadge,
+  EntryNameField,
+} from './parts';
 
 export const ACTIVE_TYPES: ActionType[] = ['action', 'bonus', 'reaction'];
 
@@ -34,10 +43,16 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const acts = useActs();
-  const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(character.attacks, id, edit, blankAttack, (a) => ({
-    ...a,
-    damageComponents: damageParts(a),
-  }));
+  const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(
+    character.attacks,
+    id,
+    edit,
+    blankAttack,
+    (a) => ({
+      ...a,
+      damageComponents: damageParts(a),
+    }),
+  );
 
   const remove = () => {
     if (entry) updateCharacter((doc) => ({ ...doc, attacks: removeById(doc.attacks, entry.id) }));
@@ -73,21 +88,37 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
         onSave={save}
         onCancel={entry ? stopEditing : onClose}
       >
-        <Field label="Название">{(props) => <Input {...props} value={draft.name} onChange={(e) => set({ name: e.target.value })} />}</Field>
+        <EntryNameField kind="attack" draft={draft} set={set} />
         <div className="flex items-end gap-5">
           <Field label="Попадание">
-            {({ id }) => <NumberField id={id} signed value={draft.hitBonus} onChange={(hitBonus) => set({ hitBonus })} className="w-36" />}
+            {({ id }) => (
+              <NumberField
+                id={id}
+                signed
+                value={draft.hitBonus}
+                onChange={(hitBonus) => set({ hitBonus })}
+                className="w-36"
+              />
+            )}
           </Field>
           <FormSection label="Действие">
             <Segmented
               label="Действие"
               value={draft.actionType}
               onChange={(actionType) => set({ actionType })}
-              options={ACTIVE_TYPES.map((t) => ({ value: t, label: ACTION_TYPES[t].short, tone: ACTION_TYPES[t].token }))}
+              options={ACTIVE_TYPES.map((t) => ({
+                value: t,
+                label: ACTION_TYPES[t].short,
+                tone: ACTION_TYPES[t].token,
+              }))}
             />
           </FormSection>
           <div className="flex items-center gap-4 pb-1.5">
-            <Switch checked={!!draft.usesAmmunition} onChange={(usesAmmunition) => set({ usesAmmunition })} label="Боеприпасы" />
+            <Switch
+              checked={!!draft.usesAmmunition}
+              onChange={(usesAmmunition) => set({ usesAmmunition })}
+              label="Боеприпасы"
+            />
             {draft.usesAmmunition && (
               <NumberField
                 label="Боеприпасов за атаку"
@@ -99,9 +130,20 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
             )}
           </div>
         </div>
-        <DamageEditor required value={draft.damageComponents ?? []} onChange={(damageComponents) => set({ damageComponents })} />
+        <DamageEditor
+          required
+          value={draft.damageComponents ?? []}
+          onChange={(damageComponents) => set({ damageComponents })}
+        />
         <Field label="Описание">
-          {({ id }) => <MarkdownField id={id} value={draft.description ?? ''} onChange={(description) => set({ description })} rows={4} />}
+          {({ id }) => (
+            <MarkdownField
+              id={id}
+              value={draft.description ?? ''}
+              onChange={(description) => set({ description })}
+              rows={4}
+            />
+          )}
         </Field>
       </EntryForm>
     );
@@ -113,6 +155,7 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
 
   return (
     <EntryView
+      icon={<EntryBadge kind="attack" entry={entry} />}
       open={open}
       onClose={onClose}
       what="атаку"
@@ -121,7 +164,12 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
       eyebrow={`Атака · ${ACTION_TYPES[entry.actionType].short}`}
       onEdit={startEditing}
       primary={
-        <Button variant="primary" icon={<IconDice width={16} height={16} />} onClick={() => acts.attack(entry)} data-autofocus>
+        <Button
+          variant="primary"
+          icon={<IconDice width={16} height={16} />}
+          onClick={() => acts.attack(entry)}
+          data-autofocus
+        >
           Атаковать
         </Button>
       }

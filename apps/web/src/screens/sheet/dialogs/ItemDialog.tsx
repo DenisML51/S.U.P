@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  createEntityId,
-  isShield,
-  isStackable,
-  itemQuantity,
-  removeItem,
-  saveItem,
-} from '@itd/game-logic';
+import { createEntityId, isShield, isStackable, itemQuantity, removeItem, saveItem } from '@itd/game-logic';
 import type { Character, InventoryItem, ItemType, WeaponClass } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { MarkdownField, NumberField, Segmented, Switch } from '../../../ui/forms';
@@ -16,7 +9,16 @@ import { IconMinus, IconPlus } from '../../../ui/icons';
 import { damageParts } from '../parts/damage';
 import { useInventory } from '../useInventory';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
-import { CardRule, DamageEditor, DamageFigures, FormSection, KeyFacts, MinorFacts } from './parts';
+import {
+  CardRule,
+  DamageEditor,
+  DamageFigures,
+  FormSection,
+  KeyFacts,
+  MinorFacts,
+  EntryBadge,
+  EntryNameField,
+} from './parts';
 
 export const ITEM_TYPE_LABEL: Record<ItemType, string> = {
   item: 'предмет',
@@ -27,7 +29,8 @@ export const ITEM_TYPE_LABEL: Record<ItemType, string> = {
 
 const TYPE_OPTIONS: ItemType[] = ['item', 'weapon', 'armor', 'ammunition'];
 
-export const isEquippable = (item: InventoryItem) => item.type === 'armor' || item.type === 'weapon' || isShield(item);
+export const isEquippable = (item: InventoryItem) =>
+  item.type === 'armor' || item.type === 'weapon' || isShield(item);
 
 const blankItem = (): InventoryItem => ({
   id: createEntityId('item'),
@@ -43,7 +46,11 @@ const blankItem = (): InventoryItem => ({
 /** "КБ 14 + ЛВК (макс. 2)": what a piece of armour gives. */
 const armorValue = (item: InventoryItem) => {
   if (isShield(item)) return '+2';
-  const dex = !item.dexModifier ? '' : item.maxDexModifier == null ? ' + ЛВК' : ` + ЛВК ≤ ${item.maxDexModifier}`;
+  const dex = !item.dexModifier
+    ? ''
+    : item.maxDexModifier == null
+      ? ' + ЛВК'
+      : ` + ЛВК ≤ ${item.maxDexModifier}`;
   return `${item.baseAC ?? 10}${dex}`;
 };
 
@@ -57,13 +64,22 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const inventory = useInventory();
-  const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(character.inventory, id, edit, blankItem, (i) => ({
-    ...i,
-    damageComponents: damageParts(i),
-  }));
+  const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(
+    character.inventory,
+    id,
+    edit,
+    blankItem,
+    (i) => ({
+      ...i,
+      damageComponents: damageParts(i),
+    }),
+  );
 
   const remove = () => {
-    if (entry) updateCharacter((doc) => removeItem(doc, entry.id), { log: { message: `Удалён предмет: ${entry.name}`, type: 'inventory' } });
+    if (entry)
+      updateCharacter((doc) => removeItem(doc, entry.id), {
+        log: { message: `Удалён предмет: ${entry.name}`, type: 'inventory' },
+      });
     onClose();
   };
 
@@ -81,7 +97,10 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
         damageType: weapon ? parts[0]?.type : undefined,
         weaponClass: weapon ? (draft.weaponClass ?? 'melee') : undefined,
       };
-      updateCharacter((doc) => saveItem(doc, saved), entry ? undefined : { log: { message: `Получен предмет: ${saved.name}`, type: 'inventory' } });
+      updateCharacter(
+        (doc) => saveItem(doc, saved),
+        entry ? undefined : { log: { message: `Получен предмет: ${saved.name}`, type: 'inventory' } },
+      );
       if (entry) stopEditing();
       else onClose();
     };
@@ -98,38 +117,80 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
         onSave={save}
         onCancel={entry ? stopEditing : onClose}
       >
-        <Field label="Название">{(props) => <Input {...props} value={draft.name} onChange={(e) => set({ name: e.target.value })} />}</Field>
+        <EntryNameField kind="item" draft={draft} set={set} />
         <div className="flex items-end gap-5">
           <FormSection label="Тип">
             <Segmented
               label="Тип"
               value={draft.type}
-              onChange={(type) => set({ type, quantity: isStackable({ type }) ? (draft.quantity ?? 1) : undefined })}
+              onChange={(type) =>
+                set({ type, quantity: isStackable({ type }) ? (draft.quantity ?? 1) : undefined })
+              }
               options={TYPE_OPTIONS.map((t) => ({ value: t, label: ITEM_TYPE_LABEL[t] }))}
             />
           </FormSection>
           <Field label="Категория" className="min-w-0 flex-1">
-            {(props) => <Input {...props} value={draft.itemClass ?? ''} placeholder="Зелья, инструменты…" onChange={(e) => set({ itemClass: e.target.value || undefined })} />}
+            {(props) => (
+              <Input
+                {...props}
+                value={draft.itemClass ?? ''}
+                placeholder="Зелья, инструменты…"
+                onChange={(e) => set({ itemClass: e.target.value || undefined })}
+              />
+            )}
           </Field>
         </div>
         <div className="grid grid-cols-3 gap-4">
           {isStackable(draft) && (
             <Field label="Количество">
-              {({ id }) => <NumberField id={id} min={0} value={draft.quantity ?? 1} onChange={(quantity) => set({ quantity })} className="w-full" />}
+              {({ id }) => (
+                <NumberField
+                  id={id}
+                  min={0}
+                  value={draft.quantity ?? 1}
+                  onChange={(quantity) => set({ quantity })}
+                  className="w-full"
+                />
+              )}
             </Field>
           )}
           <Field label="Вес, фнт">
-            {({ id }) => <NumberField id={id} min={0} step={0.5} value={draft.weight} onChange={(weight) => set({ weight })} className="w-full" />}
+            {({ id }) => (
+              <NumberField
+                id={id}
+                min={0}
+                step={0.5}
+                value={draft.weight}
+                onChange={(weight) => set({ weight })}
+                className="w-full"
+              />
+            )}
           </Field>
           <Field label="Цена, зм">
-            {({ id }) => <NumberField id={id} min={0} value={draft.cost} onChange={(cost) => set({ cost })} className="w-full" />}
+            {({ id }) => (
+              <NumberField
+                id={id}
+                min={0}
+                value={draft.cost}
+                onChange={(cost) => set({ cost })}
+                className="w-full"
+              />
+            )}
           </Field>
         </div>
 
         {draft.type === 'armor' && (
           <div className="flex items-end gap-5">
             <Field label="Базовый КБ">
-              {({ id }) => <NumberField id={id} min={0} value={draft.baseAC ?? 10} onChange={(baseAC) => set({ baseAC })} className="w-32" />}
+              {({ id }) => (
+                <NumberField
+                  id={id}
+                  min={0}
+                  value={draft.baseAC ?? 10}
+                  onChange={(baseAC) => set({ baseAC })}
+                  className="w-32"
+                />
+              )}
             </Field>
             <Switch
               className="pb-2"
@@ -172,12 +233,23 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
                 ]}
               />
             </FormSection>
-            <DamageEditor required value={draft.damageComponents ?? []} onChange={(damageComponents) => set({ damageComponents })} />
+            <DamageEditor
+              required
+              value={draft.damageComponents ?? []}
+              onChange={(damageComponents) => set({ damageComponents })}
+            />
           </>
         )}
 
         <Field label="Описание">
-          {({ id }) => <MarkdownField id={id} value={draft.description} onChange={(description) => set({ description })} rows={4} />}
+          {({ id }) => (
+            <MarkdownField
+              id={id}
+              value={draft.description}
+              onChange={(description) => set({ description })}
+              rows={4}
+            />
+          )}
         </Field>
       </EntryForm>
     );
@@ -191,18 +263,23 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
   const changeQuantity = (delta: number) => inventory.changeQuantity(entry, delta);
 
   const facts = [
-    ...(entry.type === 'armor' ? [{ label: isShield(entry) ? 'Щит' : 'Класс брони', value: armorValue(entry) }] : []),
+    ...(entry.type === 'armor'
+      ? [{ label: isShield(entry) ? 'Щит' : 'Класс брони', value: armorValue(entry) }]
+      : []),
     ...(parts.length > 0 ? [{ label: 'Урон', value: <DamageFigures parts={parts} /> }] : []),
   ];
 
   return (
     <EntryView
+      icon={<EntryBadge kind="item" entry={entry} />}
       open={open}
       onClose={onClose}
       what="предмет"
       onDelete={remove}
       name={entry.name}
-      eyebrow={[entry.itemClass || ITEM_TYPE_LABEL[entry.type], entry.equipped && 'надето'].filter(Boolean).join(' · ')}
+      eyebrow={[entry.itemClass || ITEM_TYPE_LABEL[entry.type], entry.equipped && 'надето']
+        .filter(Boolean)
+        .join(' · ')}
       onEdit={startEditing}
       primary={
         isEquippable(entry) && (
@@ -214,7 +291,12 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
     >
       {stackable && (
         <div className="ui-resource-count">
-          <IconButton label="Потратить один" size={40} disabled={quantity <= 0} onClick={() => changeQuantity(-1)}>
+          <IconButton
+            label="Потратить один"
+            size={40}
+            disabled={quantity <= 0}
+            onClick={() => changeQuantity(-1)}
+          >
             <IconMinus width={18} height={18} />
           </IconButton>
           <span className="ui-display ui-numeric">{quantity}</span>
@@ -226,8 +308,13 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
       {facts.length > 0 && <KeyFacts facts={facts} />}
       <MinorFacts
         facts={[
-          entry.type === 'weapon' && (['Дальность', entry.weaponClass === 'ranged' ? 'дальний бой' : 'ближний бой'] as const),
-          entry.weight > 0 && (['Вес', `${entry.weight} фнт${stackable && quantity > 1 ? ` · всего ${Math.round(entry.weight * quantity * 100) / 100}` : ''}`] as const),
+          entry.type === 'weapon' &&
+            (['Дальность', entry.weaponClass === 'ranged' ? 'дальний бой' : 'ближний бой'] as const),
+          entry.weight > 0 &&
+            ([
+              'Вес',
+              `${entry.weight} фнт${stackable && quantity > 1 ? ` · всего ${Math.round(entry.weight * quantity * 100) / 100}` : ''}`,
+            ] as const),
           entry.cost > 0 && (['Цена', `${entry.cost} зм`] as const),
         ]}
       />

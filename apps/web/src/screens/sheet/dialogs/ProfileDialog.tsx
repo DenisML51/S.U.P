@@ -78,7 +78,11 @@ const ImageSlot: React.FC<{
       <div className="flex items-baseline justify-between">
         <span className="ui-label !mb-0">{label}</span>
         {asset && (
-          <button type="button" className="text-xs text-ink-faint hover:text-danger" onClick={() => onUploaded(undefined)}>
+          <button
+            type="button"
+            className="text-xs text-ink-faint hover:text-danger"
+            onClick={() => onUploaded(undefined)}
+          >
             убрать
           </button>
         )}
@@ -91,9 +95,16 @@ const ImageSlot: React.FC<{
         disabled={busy}
       >
         {asset ? (
-          <img src={assetUrl(asset)} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '50% 20%' }} />
+          <img
+            src={assetUrl(asset)}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ objectPosition: '50% 20%' }}
+          />
         ) : (
-          <span className="absolute inset-0 grid place-items-center p-3 text-center text-xs text-ink-faint">{hint}</span>
+          <span className="absolute inset-0 grid place-items-center p-3 text-center text-xs text-ink-faint">
+            {hint}
+          </span>
         )}
         <span className="ui-image-slot__veil">{busy ? 'Загрузка…' : asset ? 'Заменить' : 'Загрузить'}</span>
       </button>
@@ -113,7 +124,11 @@ const ImageSlot: React.FC<{
 };
 
 /** The setting as a choice shown in its own look: its face, its emblem, its colours. */
-const SettingOption: React.FC<{ setting: Setting; selected: boolean; onSelect: () => void }> = ({ setting, selected, onSelect }) => (
+const SettingOption: React.FC<{ setting: Setting; selected: boolean; onSelect: () => void }> = ({
+  setting,
+  selected,
+  onSelect,
+}) => (
   <SettingScope setting={setting}>
     <button
       type="button"
@@ -124,7 +139,9 @@ const SettingOption: React.FC<{ setting: Setting; selected: boolean; onSelect: (
     >
       <SettingEmblem size={26} className="shrink-0 text-frame-bright" />
       <span className="min-w-0 text-left">
-        <span className="ui-display ui-title block truncate text-[1.05rem] leading-tight text-ink">{SETTING_INFO[setting].label}</span>
+        <span className="ui-display ui-title block truncate text-[1.05rem] leading-tight text-ink">
+          {SETTING_INFO[setting].label}
+        </span>
         <span className="block truncate text-xs text-ink-muted">{SETTING_INFO[setting].hint}</span>
       </span>
     </button>
@@ -151,7 +168,9 @@ export const ProfileDialog: React.FC<{ open: boolean; onClose: () => void }> = (
       name: draft.name.trim() || doc.name,
       setting: draft.setting,
       race: raceId,
-      subrace: draft.subrace.trim() ? idOf(RACES.find((r) => r.id === raceId)?.subraces, draft.subrace) : undefined,
+      subrace: draft.subrace.trim()
+        ? idOf(RACES.find((r) => r.id === raceId)?.subraces, draft.subrace)
+        : undefined,
       class: classId,
       subclass: idOf(CLASSES.find((c) => c.id === classId)?.subclasses, draft.subclass),
       speed: draft.speed,
@@ -199,18 +218,41 @@ export const ProfileDialog: React.FC<{ open: boolean; onClose: () => void }> = (
           </div>
 
           <div className="space-y-4">
-            <Field label="Имя">{(props) => <Input {...props} value={draft.name} onChange={(e) => set({ name: e.target.value })} />}</Field>
+            <Field label="Имя">
+              {(props) => (
+                <Input {...props} value={draft.name} onChange={(e) => set({ name: e.target.value })} />
+              )}
+            </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Раса">
-                {({ id }) => <Suggest id={id} value={draft.race} onChange={(v) => set({ race: v })} suggestions={RACES.map((r) => r.name)} />}
+                {({ id }) => (
+                  <Suggest
+                    id={id}
+                    value={draft.race}
+                    onChange={(v) => set({ race: v })}
+                    suggestions={RACES.map((r) => r.name)}
+                  />
+                )}
               </Field>
               <Field label="Подраса">
                 {({ id }) => (
-                  <Suggest id={id} value={draft.subrace} onChange={(v) => set({ subrace: v })} suggestions={race?.subraces?.map((s) => s.name) ?? []} />
+                  <Suggest
+                    id={id}
+                    value={draft.subrace}
+                    onChange={(v) => set({ subrace: v })}
+                    suggestions={race?.subraces?.map((s) => s.name) ?? []}
+                  />
                 )}
               </Field>
               <Field label="Класс">
-                {({ id }) => <Suggest id={id} value={draft.class} onChange={(v) => set({ class: v })} suggestions={CLASSES.map((c) => c.name)} />}
+                {({ id }) => (
+                  <Suggest
+                    id={id}
+                    value={draft.class}
+                    onChange={(v) => set({ class: v })}
+                    suggestions={CLASSES.map((c) => c.name)}
+                  />
+                )}
               </Field>
               <Field label="Подкласс">
                 {({ id }) => (
@@ -223,17 +265,39 @@ export const ProfileDialog: React.FC<{ open: boolean; onClose: () => void }> = (
                 )}
               </Field>
               <Field label="Скорость, фт">
-                {({ id }) => <NumberField id={id} min={0} step={5} value={draft.speed} onChange={(speed) => set({ speed })} className="w-full" />}
+                {({ id }) => (
+                  <NumberField
+                    id={id}
+                    min={0}
+                    step={5}
+                    value={draft.speed}
+                    onChange={(speed) => set({ speed })}
+                    className="w-full"
+                  />
+                )}
               </Field>
               <Field label="Бонус к инициативе">
-                {({ id }) => <NumberField id={id} signed value={draft.initiativeBonus} onChange={(initiativeBonus) => set({ initiativeBonus })} className="w-full" />}
+                {({ id }) => (
+                  <NumberField
+                    id={id}
+                    signed
+                    value={draft.initiativeBonus}
+                    onChange={(initiativeBonus) => set({ initiativeBonus })}
+                    className="w-full"
+                  />
+                )}
               </Field>
             </div>
             <div role="radiogroup" aria-label="Сеттинг" className="space-y-1.5">
               <span className="ui-label">Сеттинг</span>
               <div className="grid grid-cols-2 gap-2">
                 {SETTINGS.map((setting) => (
-                  <SettingOption key={setting} setting={setting} selected={draft.setting === setting} onSelect={() => set({ setting })} />
+                  <SettingOption
+                    key={setting}
+                    setting={setting}
+                    selected={draft.setting === setting}
+                    onSelect={() => set({ setting })}
+                  />
                 ))}
               </div>
             </div>

@@ -1,5 +1,12 @@
 import React from 'react';
-import { SPELL_SCHOOLS, createEntityId, preparationBlocker, removeById, togglePrepared, upsertById } from '@itd/game-logic';
+import {
+  SPELL_SCHOOLS,
+  createEntityId,
+  preparationBlocker,
+  removeById,
+  togglePrepared,
+  upsertById,
+} from '@itd/game-logic';
 import type { Character, Spell } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
@@ -10,7 +17,18 @@ import { damageParts } from '../parts/damage';
 import { useActs } from '../useActs';
 import { ACTIVE_TYPES } from './AttackDialog';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
-import { CardRule, CostEditor, DamageEditor, DamageFigures, FormSection, KeyFacts, MinorFacts, costLabel } from './parts';
+import {
+  CardRule,
+  CostEditor,
+  DamageEditor,
+  DamageFigures,
+  FormSection,
+  KeyFacts,
+  MinorFacts,
+  costLabel,
+  EntryBadge,
+  EntryNameField,
+} from './parts';
 
 const levelLabel = (level: number) => (level === 0 ? 'Заговор' : `${level} круг`);
 
@@ -39,10 +57,16 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const acts = useActs();
-  const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(character.spells, id, edit, blankSpell, (s) => ({
-    ...s,
-    damageComponents: damageParts(s),
-  }));
+  const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(
+    character.spells,
+    id,
+    edit,
+    blankSpell,
+    (s) => ({
+      ...s,
+      damageComponents: damageParts(s),
+    }),
+  );
 
   const remove = () => {
     if (entry) updateCharacter((doc) => ({ ...doc, spells: removeById(doc.spells, entry.id) }));
@@ -66,9 +90,20 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
       if (entry) stopEditing();
       else onClose();
     };
-    const text = (key: 'castingTime' | 'range' | 'components' | 'duration', label: string, placeholder: string) => (
+    const text = (
+      key: 'castingTime' | 'range' | 'components' | 'duration',
+      label: string,
+      placeholder: string,
+    ) => (
       <Field label={label}>
-        {(props) => <Input {...props} value={draft[key]} placeholder={placeholder} onChange={(e) => set({ [key]: e.target.value })} />}
+        {(props) => (
+          <Input
+            {...props}
+            value={draft[key]}
+            placeholder={placeholder}
+            onChange={(e) => set({ [key]: e.target.value })}
+          />
+        )}
       </Field>
     );
     return (
@@ -87,13 +122,28 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
       >
         <div className="grid grid-cols-[1.1fr_1fr] gap-6">
           <div className="space-y-4">
-            <Field label="Название">{(props) => <Input {...props} value={draft.name} onChange={(e) => set({ name: e.target.value })} />}</Field>
+            <EntryNameField kind="spell" draft={draft} set={set} />
             <div className="grid grid-cols-[8rem_1fr] gap-3">
               <Field label={draft.level === 0 ? 'Круг · заговор' : 'Круг'}>
-                {({ id }) => <NumberField id={id} min={0} max={99} value={draft.level} onChange={(level) => set({ level })} />}
+                {({ id }) => (
+                  <NumberField
+                    id={id}
+                    min={0}
+                    max={99}
+                    value={draft.level}
+                    onChange={(level) => set({ level })}
+                  />
+                )}
               </Field>
               <Field label="Школа">
-                {({ id }) => <Suggest id={id} value={draft.school} onChange={(school) => set({ school })} suggestions={SPELL_SCHOOLS} />}
+                {({ id }) => (
+                  <Suggest
+                    id={id}
+                    value={draft.school}
+                    onChange={(school) => set({ school })}
+                    suggestions={SPELL_SCHOOLS}
+                  />
+                )}
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -108,7 +158,10 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
               cost={draft.resourceCost}
               onChange={(resourceId, resourceCost) => set({ resourceId, resourceCost })}
             />
-            <DamageEditor value={draft.damageComponents ?? []} onChange={(damageComponents) => set({ damageComponents })} />
+            <DamageEditor
+              value={draft.damageComponents ?? []}
+              onChange={(damageComponents) => set({ damageComponents })}
+            />
           </div>
           <div className="flex flex-col gap-4">
             <div className="flex items-end justify-between gap-4">
@@ -117,16 +170,34 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
                   label="Действие"
                   value={draft.actionType === 'passive' ? 'action' : draft.actionType}
                   onChange={(actionType) => set({ actionType })}
-                  options={ACTIVE_TYPES.map((t) => ({ value: t, label: ACTION_TYPES[t].short, tone: ACTION_TYPES[t].token }))}
+                  options={ACTIVE_TYPES.map((t) => ({
+                    value: t,
+                    label: ACTION_TYPES[t].short,
+                    tone: ACTION_TYPES[t].token,
+                  }))}
                 />
               </FormSection>
-              <Switch className="pb-2.5" checked={draft.prepared} onChange={(prepared) => set({ prepared })} label="Подготовлено" />
+              <Switch
+                className="pb-2.5"
+                checked={draft.prepared}
+                onChange={(prepared) => set({ prepared })}
+                label="Подготовлено"
+              />
             </div>
             <Field label="Эффект" hint="Коротко: что происходит при сотворении">
-              {({ id }) => <MarkdownField id={id} value={draft.effect} onChange={(effect) => set({ effect })} rows={3} />}
+              {({ id }) => (
+                <MarkdownField id={id} value={draft.effect} onChange={(effect) => set({ effect })} rows={3} />
+              )}
             </Field>
             <Field label="Описание">
-              {({ id }) => <MarkdownField id={id} value={draft.description} onChange={(description) => set({ description })} rows={9} />}
+              {({ id }) => (
+                <MarkdownField
+                  id={id}
+                  value={draft.description}
+                  onChange={(description) => set({ description })}
+                  rows={9}
+                />
+              )}
             </Field>
           </div>
         </div>
@@ -141,12 +212,15 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
 
   return (
     <EntryView
+      icon={<EntryBadge kind="spell" entry={entry} />}
       open={open}
       onClose={onClose}
       what="заклинание"
       onDelete={remove}
       name={entry.name}
-      eyebrow={[levelLabel(entry.level), entry.school, entry.prepared ? 'подготовлено' : 'не подготовлено'].filter(Boolean).join(' · ')}
+      eyebrow={[levelLabel(entry.level), entry.school, entry.prepared ? 'подготовлено' : 'не подготовлено']
+        .filter(Boolean)
+        .join(' · ')}
       onEdit={startEditing}
       primary={
         entry.prepared ? (

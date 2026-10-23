@@ -126,14 +126,18 @@
     inset 0 0 0 1px rgb(0 0 0 / 0.6),
     var(--shadow-panel);
 }
+/* Sci-fi plates are matte: an even dark surface and a thin lit frame, no sheen or glow, so a
+   bright art behind them never shows through as a glare. */
 [data-setting='sci-fi'] .ui-panel:not(.ui-panel--inset):not(.ui-panel--paper) {
-  background-color: rgb(var(--c-surface) / 0.86);
+  background-color: rgb(var(--c-surface) / 0.95);
   backdrop-filter: blur(6px);
   border-color: rgb(var(--c-frame) / 0.35);
 }
+[data-setting='sci-fi'] .ui-panel::before,
+[data-setting='sci-fi'] .ui-panel--paper::after { display: none; }
 [data-setting='sci-fi'] .ui-panel--paper {
-  border-color: rgb(var(--c-frame) / 0.5);
-  box-shadow: inset 0 0 0 1px rgb(var(--c-frame) / 0.15), inset 0 0 60px rgb(var(--c-accent) / 0.05);
+  border-color: rgb(var(--c-frame) / 0.45);
+  box-shadow: inset 0 1px 0 rgb(var(--c-frame) / 0.25), var(--shadow-panel);
 }
 
 /* ------------------------------------------------------------------ Corners */
@@ -226,7 +230,6 @@
   background: rgb(var(--c-accent) / 0.16);
   color: rgb(var(--c-frame-bright));
   border-color: rgb(var(--c-accent) / 0.8);
-  box-shadow: inset 0 0 18px rgb(var(--c-accent) / 0.18);
 }
 [data-setting='sci-fi'] .ui-button--primary:not(:disabled):hover { background: rgb(var(--c-accent) / 0.26); }
 
@@ -284,7 +287,6 @@
 }
 [data-setting='sci-fi'] .ui-meter__fill {
   background: rgb(var(--meter-color));
-  box-shadow: 0 0 10px rgb(var(--meter-color) / 0.6);
 }
 
 /* ------------------------------------------------------------------ Fields */
@@ -382,7 +384,7 @@
   border-color: rgb(var(--c-accent) / 0.85);
 }
 [data-setting='sci-fi'] .ui-fx {
-  box-shadow: inset 0 0 0 1px rgb(var(--c-accent) / 0.5), inset 0 0 26px rgb(var(--c-accent) / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(var(--c-accent) / 0.5);
   background: linear-gradient(90deg, transparent, rgb(var(--c-frame-bright) / 0.9), transparent) top / 40% 1px no-repeat;
 }
 [data-setting='sci-fi'] .ui-interactive:hover .ui-fx,
@@ -490,7 +492,6 @@
   top: 0;
   background: rgb(var(--c-accent));
   clip-path: none;
-  box-shadow: 0 0 8px rgb(var(--c-accent) / 0.7);
 }
 [data-setting='dark-fantasy'] .ui-ledger__ribbon { background: rgb(var(--c-accent)); }
 .ui-panel--paper .ui-icon-button { color: rgb(var(--c-paper-ink) / 0.6); }
@@ -522,7 +523,7 @@
   position: relative;
   padding: 0.6rem 0.7rem 0.6rem 0.5rem;
   border: 1px solid rgb(var(--c-line));
-  background: linear-gradient(180deg, rgb(var(--c-surface-2) / 0.55), rgb(var(--c-inset) / 0.6));
+  background: rgb(var(--c-surface-2) / 0.45);
   clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
   transition: border-color 150ms, background-color 150ms, box-shadow 200ms;
 }
@@ -537,7 +538,7 @@
 }
 [data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:hover {
   border-color: rgb(var(--c-accent) / 0.7);
-  box-shadow: inset 0 0 22px rgb(var(--c-accent) / 0.12);
+  background: rgb(var(--c-surface-2) / 0.75);
 }
 [data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:hover::before { opacity: 1; }
 [data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:hover .ui-ledger__title { text-decoration: none; color: rgb(var(--c-frame-bright)); }
@@ -568,9 +569,9 @@
 [data-setting='sci-fi'] .ui-ledger__add:hover { border-color: rgb(var(--c-accent)); color: rgb(var(--c-frame-bright)); background: rgb(var(--c-accent) / 0.06); }
 [data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row[data-active] {
   border-color: rgb(var(--c-accent) / 0.45);
-  background: linear-gradient(90deg, rgb(var(--c-accent) / 0.12), rgb(var(--c-surface-2) / 0.4) 40%, rgb(var(--c-inset) / 0.6));
+  background: rgb(var(--c-accent) / 0.08);
 }
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row[data-active]::before { opacity: 1; box-shadow: 0 0 8px rgb(var(--c-accent)); }
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row[data-active]::before { opacity: 1; }
 
 /* Notes collapsed to a few lines fade out instead of being cut mid-word. */
 .ui-notes { transition: max-height 250ms ease; }
@@ -650,11 +651,10 @@
 [data-setting='high-fantasy'] .ui-toast::after { bottom: 3px; }
 /* Sci-fi: a cut glass readout with a lit edge. */
 [data-setting='sci-fi'] .ui-toast {
-  background: rgb(var(--c-surface) / 0.85);
+  background: rgb(var(--c-surface) / 0.96);
   border-color: rgb(var(--c-accent) / 0.45);
   border-left: 2px solid rgb(var(--c-accent));
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
-  box-shadow: inset 0 0 24px rgb(var(--c-accent) / 0.1);
 }
 [data-setting='sci-fi'] .ui-toast--error { border-left-color: rgb(var(--c-danger)); }
 /* Grimdark: an iron plate with a red seal strip. */
@@ -851,7 +851,6 @@
   width: 4rem;
   height: 2px;
   background: rgb(var(--c-accent));
-  box-shadow: 0 0 10px rgb(var(--c-accent));
 }
 [data-setting='sci-fi'] .ui-dialog__eyebrow { color: rgb(var(--c-accent)); opacity: 1; }
 
@@ -874,7 +873,7 @@
 [data-setting='sci-fi'] .ui-dialog .ui-keyfacts { gap: 0.5rem; }
 [data-setting='sci-fi'] .ui-dialog .ui-keyfacts > div {
   padding: 0.45rem 0.9rem 0.55rem;
-  background: linear-gradient(90deg, rgb(var(--c-accent) / 0.1), rgb(var(--c-surface-2) / 0.35));
+  background: rgb(var(--c-surface-2) / 0.6);
   border-left: 2px solid rgb(var(--c-accent));
   clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
 }
@@ -941,63 +940,310 @@
 .ui-token:hover { transform: translateY(-1px); }
 .ui-token--spent { opacity: 0.35; }
 
-/* A slot: the action's colour on its left edge, the name, the facts under it. */
-.ui-slot {
-  --slot-tone: var(--c-frame);
+/* An icon slot: the picture on a dark well inside the setting's frame. The hotbar, the icon
+   picker and its preview share it. */
+.ui-hud-slot {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 4.2rem;
-  padding: 0.45rem 0.7rem 0.45rem 0.8rem;
-  text-align: left;
-  background: rgb(var(--c-surface-2) / 0.6);
-  border: 1px solid rgb(var(--c-line));
-  border-left: 2px solid rgb(var(--slot-tone));
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  color: rgb(var(--c-frame-bright));
+  background: radial-gradient(circle at 50% 45%, rgb(var(--c-surface-2)), rgb(var(--c-inset)) 78%);
+  border: 1px solid rgb(var(--c-frame) / 0.45);
   border-radius: var(--radius);
-  transition: border-color 150ms, background-color 150ms, box-shadow 200ms, opacity 150ms, transform 120ms;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 -10px 16px rgb(0 0 0 / 0.3);
+  transition: transform 150ms, border-color 150ms, box-shadow 200ms, opacity 150ms, filter 150ms;
 }
-.ui-slot:hover,
-.ui-slot:focus-visible { border-color: rgb(var(--c-frame-bright) / 0.8); border-left-color: rgb(var(--slot-tone)); outline: none; }
-.ui-slot:active { transform: translateY(1px); }
-.ui-slot__name {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  font-size: 0.82rem;
-  font-weight: 500;
-  line-height: 1.2;
+.ui-hud-slot--small { width: 100%; height: 2.6rem; }
+.ui-hud-slot--large { width: 3.9rem; height: 3.9rem; }
+.ui-hud-slot__icon { filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.7)); transition: transform 150ms; }
+.ui-hud-slot:hover,
+.ui-hud-slot:focus-visible,
+.ui-hud-slot[data-active] { border-color: rgb(var(--c-frame-bright)); outline: none; }
+.ui-hud-slot:not(.ui-hud-slot--small):not(.ui-hud-slot--large):hover { transform: translateY(-2px); }
+.ui-hud-slot:hover .ui-hud-slot__icon { transform: scale(1.08); }
+.ui-hud-slot:active { transform: scale(0.95); }
+.ui-hud-slot--blocked { filter: grayscale(0.9); opacity: 0.42; }
+.ui-hud-slot__level,
+.ui-hud-slot__count {
+  position: absolute;
+  font-family: var(--font-numeric);
+  font-size: 0.68rem;
+  line-height: 1;
+  color: rgb(var(--c-ink));
+  text-shadow: 0 1px 2px rgb(0 0 0), 0 0 4px rgb(0 0 0);
+}
+.ui-hud-slot__level { top: 4px; left: 5px; color: rgb(var(--c-frame-bright)); }
+.ui-hud-slot__count { bottom: 4px; right: 5px; }
+.ui-hud-slot__shape { position: absolute; bottom: 4px; right: 4px; }
+
+[data-setting='high-fantasy'] .ui-hud-slot {
+  border-radius: 7px;
+  border-color: rgb(var(--c-frame) / 0.6);
+  box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), inset 0 0 0 2px rgb(var(--c-frame) / 0.22), inset 0 -10px 16px rgb(0 0 0 / 0.3);
+}
+[data-setting='high-fantasy'] .ui-hud-slot:hover,
+[data-setting='high-fantasy'] .ui-hud-slot[data-active] {
+  box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), inset 0 0 0 2px rgb(var(--c-frame-bright) / 0.4), 0 0 14px rgb(var(--c-frame) / 0.35);
+}
+[data-setting='grimdark'] .ui-hud-slot {
+  border-width: 2px;
+  border-color: rgb(var(--c-frame) / 0.55);
+  background: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-inset)));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), inset 0 0 0 1px rgb(0 0 0 / 0.6);
+}
+[data-setting='grimdark'] .ui-hud-slot:hover,
+[data-setting='grimdark'] .ui-hud-slot[data-active] { border-color: rgb(var(--c-accent)); }
+[data-setting='sci-fi'] .ui-hud-slot {
+  background: rgb(var(--c-inset));
+  border-color: rgb(var(--c-frame) / 0.5);
+  box-shadow: none;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+}
+[data-setting='sci-fi'] .ui-hud-slot:hover,
+[data-setting='sci-fi'] .ui-hud-slot[data-active] { border-color: rgb(var(--c-accent)); background: rgb(var(--c-surface-2)); }
+[data-setting='dark-fantasy'] .ui-hud-slot { border-radius: 2px; background: rgb(var(--c-inset)); }
+[data-setting='dark-fantasy'] .ui-hud-slot:hover,
+[data-setting='dark-fantasy'] .ui-hud-slot[data-active] { box-shadow: inset 0 0 18px rgb(var(--c-accent) / 0.35); }
+
+/* A panel of the hotbar: its title over a well of icons. */
+.ui-hud-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(var(--c-ink-muted));
+  border-bottom: 1px solid rgb(var(--c-line) / 0.6);
+}
+[data-setting='grimdark'] .ui-hud-panel__head {
+  background: linear-gradient(180deg, rgb(var(--c-frame) / 0.22), rgb(var(--c-frame) / 0.08));
+  border-bottom: 2px solid rgb(var(--c-frame) / 0.5);
   color: rgb(var(--c-ink));
 }
-.ui-slot__detail {
-  margin-top: auto;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 0.7rem;
-  color: rgb(var(--c-ink-muted));
-}
-.ui-slot__corner {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.45rem;
-  font-size: 0.65rem;
-  color: rgb(var(--c-ink-faint));
-}
-.ui-slot--blocked { opacity: 0.45; }
-.ui-slot--blocked .ui-slot__detail { color: rgb(var(--c-warning)); }
+[data-setting='sci-fi'] .ui-hud-panel__head { color: rgb(var(--c-frame-bright)); border-bottom-color: rgb(var(--c-frame) / 0.35); }
+[data-setting='high-fantasy'] .ui-hud-panel__head { font-family: var(--font-display); letter-spacing: 0.12em; color: rgb(var(--c-frame-bright)); }
+[data-setting='dark-fantasy'] .ui-hud-panel__head { font-family: var(--font-display); letter-spacing: 0.1em; color: rgb(var(--c-ink)); }
 
-[data-setting='high-fantasy'] .ui-slot:hover { box-shadow: inset 0 0 18px rgb(var(--c-frame) / 0.22); }
-[data-setting='sci-fi'] .ui-slot {
-  border-left-width: 1px;
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
-  box-shadow: inset 2px 0 0 rgb(var(--slot-tone));
+/* A strip over the panels: action tokens, resources, figures. */
+.ui-hud-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 3.1rem;
+  padding: 0.35rem 0.75rem;
 }
-[data-setting='sci-fi'] .ui-slot:hover { box-shadow: inset 2px 0 0 rgb(var(--slot-tone)), inset 0 0 22px rgb(var(--c-accent) / 0.16); border-color: rgb(var(--c-accent) / 0.8); }
-[data-setting='grimdark'] .ui-slot { border-width: 1px 1px 1px 4px; background: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-surface))); }
-[data-setting='grimdark'] .ui-slot:hover { border-left-color: rgb(var(--c-accent)); }
-[data-setting='dark-fantasy'] .ui-slot:hover { box-shadow: inset 0 0 26px rgb(var(--c-accent) / 0.25); }
+
+/* A small square of the HUD: a condition, a defence, a resource. */
+.ui-hud-chip {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: rgb(var(--c-frame-bright));
+  background: rgb(var(--c-inset) / 0.9);
+  border: 1px solid rgb(var(--c-frame) / 0.4);
+  border-radius: var(--radius);
+  transition: border-color 150ms, transform 150ms, opacity 150ms;
+}
+.ui-hud-chip:hover { border-color: rgb(var(--c-frame-bright)); transform: translateY(-1px); }
+.ui-hud-chip--condition { color: rgb(var(--c-warning)); border-color: rgb(var(--c-warning) / 0.5); background: rgb(var(--c-warning) / 0.1); }
+.ui-hud-chip--resistance { color: rgb(var(--c-armor)); }
+.ui-hud-chip--vulnerability { color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger) / 0.5); }
+.ui-hud-chip--immunity { color: rgb(var(--c-success)); border-color: rgb(var(--c-success) / 0.5); }
+.ui-hud-chip--add { color: rgb(var(--c-ink-faint)); border-style: dashed; background: transparent; }
+.ui-hud-chip--empty { opacity: 0.5; }
+.ui-hud-chip__count {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.25rem;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-numeric);
+  font-size: 0.65rem;
+  line-height: 1;
+  color: rgb(var(--c-ink));
+  background: rgb(var(--c-surface-2));
+  border: 1px solid rgb(var(--c-frame) / 0.6);
+  border-radius: 999px;
+}
+.ui-hud-chip--empty .ui-hud-chip__count { color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger) / 0.6); }
+[data-setting='sci-fi'] .ui-hud-chip__count,
+[data-setting='grimdark'] .ui-hud-chip__count { border-radius: 0; }
+
+/* The portrait: the hero's face in the setting's frame; the frame tells their state. */
+.ui-hud-portrait {
+  --portrait-frame: var(--c-frame);
+  position: relative;
+  width: 11rem;
+  height: 11rem;
+  padding: 5px;
+  background: rgb(var(--c-surface));
+  border: 2px solid rgb(var(--portrait-frame) / 0.7);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-panel);
+  transition: border-color 300ms, box-shadow 300ms;
+}
+.ui-hud-portrait > button { border-radius: inherit; background: rgb(var(--c-inset)); }
+.ui-hud-portrait--shielded { --portrait-frame: var(--c-temp-hp); }
+.ui-hud-portrait--down { --portrait-frame: var(--c-danger); animation: ui-portrait-down 1.6s ease-in-out infinite; }
+@keyframes ui-portrait-down {
+  50% { box-shadow: 0 0 22px rgb(var(--c-danger) / 0.45); }
+}
+.ui-hud-portrait__temp {
+  position: absolute;
+  bottom: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.05rem 0.55rem;
+  font-family: var(--font-numeric);
+  font-size: 0.85rem;
+  color: rgb(var(--c-temp-hp));
+  background: rgb(var(--c-bg-deep));
+  border: 1px solid rgb(var(--c-temp-hp) / 0.8);
+  border-radius: 999px;
+}
+[data-setting='high-fantasy'] .ui-hud-portrait {
+  border-radius: 1.4rem;
+  box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), 0 0 0 1px rgb(var(--portrait-frame) / 0.25), var(--shadow-panel);
+}
+[data-setting='high-fantasy'] .ui-hud-portrait > button { border-radius: 1rem; }
+[data-setting='grimdark'] .ui-hud-portrait,
+[data-setting='sci-fi'] .ui-hud-portrait {
+  border: 0;
+  padding: 3px;
+  background: rgb(var(--portrait-frame) / 0.75);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+[data-setting='grimdark'] .ui-hud-portrait > button,
+[data-setting='sci-fi'] .ui-hud-portrait > button {
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+}
+[data-setting='sci-fi'] .ui-hud-portrait { background: rgb(var(--portrait-frame) / 0.55); padding: 2px; }
+[data-setting='dark-fantasy'] .ui-hud-portrait { border-radius: 2px; }
+
+/* Health and sanity as tall bars that fill from the bottom. */
+.ui-vbar {
+  position: relative;
+  width: 1.9rem;
+  height: 12.5rem;
+  margin-top: 2.2rem;
+}
+.ui-vbar__track {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), var(--shadow-panel);
+  transition: border-color 150ms, box-shadow 200ms;
+}
+.ui-vbar:hover .ui-vbar__track { border-color: rgb(var(--c-frame-bright)); }
+.ui-vbar--low .ui-vbar__track { border-color: rgb(var(--c-danger) / 0.6); box-shadow: 0 0 14px rgb(var(--c-danger) / 0.25); }
+.ui-vbar__fill,
+.ui-vbar__extra {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.ui-vbar__fill {
+  opacity: 0.85;
+  background-image: linear-gradient(90deg, rgb(0 0 0 / 0.28), transparent 45%, rgb(0 0 0 / 0.22));
+}
+.ui-vbar__extra {
+  background: repeating-linear-gradient(135deg, rgb(var(--c-temp-hp) / 0.85) 0 4px, rgb(var(--c-temp-hp) / 0.55) 4px 8px);
+}
+.ui-vbar__label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.62rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgb(var(--c-ink) / 0.75);
+  text-shadow: 0 0 4px rgb(0 0 0);
+  pointer-events: none;
+}
+.ui-vbar__value {
+  position: absolute;
+  bottom: calc(100% + 0.3rem);
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-numeric);
+  font-size: 0.85rem;
+  line-height: 1;
+  white-space: nowrap;
+  color: rgb(var(--c-ink));
+}
+[data-setting='high-fantasy'] .ui-vbar__track { border-radius: 999px; border-color: rgb(var(--c-frame) / 0.6); }
+[data-setting='grimdark'] .ui-vbar__track { border-width: 2px; }
+/* Sci-fi reads a bar as cells, like a suit's power gauge. */
+[data-setting='sci-fi'] .ui-vbar__track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent 0 9px, rgb(var(--c-inset)) 9px 11px);
+  pointer-events: none;
+}
+[data-setting='dark-fantasy'] .ui-vbar__track { border-radius: 2px; }
+
+/* Experience under the panels. */
+.ui-hud-xp {
+  position: relative;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+}
+.ui-hud-xp__fill { display: block; height: 100%; background: rgb(var(--c-xp) / 0.85); }
+button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
+
+/* Long descriptions in a hint fade out instead of growing past the screen. */
+.ui-hud-hint__text {
+  max-height: 7.5rem;
+  overflow: hidden;
+  mask-image: linear-gradient(180deg, #000 70%, transparent);
+}
+
+/* Icon picker of entry forms. */
+.ui-icon-picker {
+  padding: 0.75rem;
+  background: rgb(var(--c-inset) / 0.55);
+  border: 1px solid rgb(var(--c-line) / 0.7);
+  border-radius: var(--radius);
+}
+.ui-swatch {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid rgb(0 0 0 / 0.5);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  transition: transform 120ms, box-shadow 150ms;
+}
+.ui-swatch:hover { transform: scale(1.12); }
+.ui-swatch--auto {
+  background: linear-gradient(135deg, rgb(var(--c-frame-bright)) 0 50%, rgb(var(--c-accent)) 50% 100%);
+}
+.ui-swatch--selected { box-shadow: 0 0 0 2px rgb(var(--c-bg)), 0 0 0 3px rgb(var(--c-frame-bright)); }
+[data-setting='sci-fi'] .ui-swatch,
+[data-setting='grimdark'] .ui-swatch { border-radius: 0; }
 
 /* ------------------------------------------------------------------ Dice tray */
 .ui-die {
