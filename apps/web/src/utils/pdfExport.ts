@@ -1,3 +1,4 @@
+import { portraitSrc } from '../ui/CharacterArt';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Character } from '../types';
@@ -144,9 +145,9 @@ export const exportToPDF = async (character: Character) => {
       </div>
 
       <div style="display: flex; gap: 20px;">
-        ${character.avatar ? `
+        ${portraitSrc(character) ? `
           <div style="flex: 0 0 150px;">
-            <img src="${character.avatar}" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #2c1810; padding: 3px; background: white; border-radius: 4px;" />
+            <img src="${portraitSrc(character)}" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #2c1810; padding: 3px; background: white; border-radius: 4px;" />
           </div>
         ` : ''}
         

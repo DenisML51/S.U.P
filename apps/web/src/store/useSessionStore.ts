@@ -3,6 +3,7 @@ import Dexie from 'dexie';
 import { toast } from 'react-hot-toast';
 import { create } from 'zustand';
 import { api } from '../data/api/client';
+import { moveEmbeddedPortraits } from '../data/legacy/avatarMigration';
 import { importLegacyBrowserStorage } from '../data/legacy/browserStorageImport';
 import { databaseNameFor } from '../data/local/database';
 import { sessionManager } from '../data/session/sessionManager';
@@ -46,15 +47,15 @@ export const useSessionStore = create<SessionState>((set, get) => {
 
     const current = createWorkspace(user.id, sessionManager);
     workspace = current;
-    // Old browser-era characters are imported only once this device has the account's server
-    // state: importing into an empty local copy would race the server copies of the same sheets.
+    // Housekeeping of old data waits until this device has the account's server state:
+    // importing into an empty local copy would race the server copies of the same sheets.
     let legacyChecked = false;
     unsubscribeSync = current.sync.subscribe((sync) => {
       set({ sync });
       if (sync.state === 'unauthorized') void handleSessionLost();
       if (!legacyChecked && sync.state === 'idle' && sync.lastSyncedAt !== null) {
         legacyChecked = true;
-        void importLegacy(current, user.id);
+        void importLegacy(current, user.id).then(() => moveEmbeddedPortraits(current.repository));
       }
     });
     await useCharacterStore.getState().attachWorkspace(current);

@@ -1,3 +1,4 @@
+import { portraitSrc } from '../../../../ui/CharacterArt';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Settings, Plus, Sparkles, User, History as HistoryLogIcon, Heart, Target, Users, BookOpen, Fingerprint } from 'lucide-react';
@@ -42,7 +43,7 @@ export const PersonalityTab: React.FC<PersonalityTabProps> = ({
             <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
               <div className="relative">
                 <AvatarUpload 
-                  currentAvatar={character.avatar} 
+                  currentAvatar={portraitSrc(character)} 
                   onAvatarChange={(base64) => updatePersonalityField('avatar', base64)} 
                 />
                 <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg pointer-events-none">

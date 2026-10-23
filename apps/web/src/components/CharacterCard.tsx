@@ -1,3 +1,4 @@
+import { portraitSrc } from '../ui/CharacterArt';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { CLASSES, Resistance, CharacterPreview } from '../types';
@@ -52,8 +53,8 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
         className="group relative bg-dark-card border border-dark-border hover:border-blue-500/50 transition-all cursor-pointer overflow-hidden rounded-xl shadow-lg p-3 flex items-center gap-3"
       >
         <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center border border-blue-500/30 flex-shrink-0 overflow-hidden">
-          {character.avatar ? (
-            <img src={character.avatar} alt={character.name} className="w-full h-full object-cover" />
+          {portraitSrc(character) ? (
+            <img src={portraitSrc(character)} alt={character.name} className="w-full h-full object-cover" />
           ) : (
             <User className="w-5 h-5 text-blue-400" />
           )}
@@ -105,8 +106,8 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({ character, onClick
       <div className="p-4">
         <div className="flex items-start gap-3 mb-3">
           <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center border border-blue-500/30 flex-shrink-0 overflow-hidden">
-            {character.avatar ? (
-              <img src={character.avatar} alt={character.name} className="w-full h-full object-cover" />
+            {portraitSrc(character) ? (
+              <img src={portraitSrc(character)} alt={character.name} className="w-full h-full object-cover" />
             ) : (
               <User className="w-6 h-6 text-blue-400" />
             )}
