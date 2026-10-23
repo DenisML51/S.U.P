@@ -1,18 +1,11 @@
 import React from 'react';
 import { ConditionsSection } from '../../components/CharacterSheet/components/ConditionsSection';
-import { AbilitiesTab } from '../../components/CharacterSheet/components/Tabs/AbilitiesTab';
-import { AttacksTab } from '../../components/CharacterSheet/components/Tabs/AttacksTab';
 import { EquipmentTab } from '../../components/CharacterSheet/components/Tabs/EquipmentTab';
 import { HealthTab } from '../../components/CharacterSheet/components/Tabs/HealthTab';
 import { InventoryTab } from '../../components/CharacterSheet/components/Tabs/InventoryTab';
 import { PersonalityTab } from '../../components/CharacterSheet/components/Tabs/PersonalityTab';
 import { SpellsTab } from '../../components/CharacterSheet/components/Tabs/SpellsTab';
-import {
-  getActionTypeColor,
-  getActionTypeLabel,
-  getItemIcon,
-  getItemTypeLabel,
-} from '../../components/CharacterSheet/legacyHelpers';
+import { getItemIcon, getItemTypeLabel } from '../../components/CharacterSheet/legacyHelpers';
 import type { SheetSection } from './SheetRail';
 import type { SheetLogic } from './sheetLogic';
 
@@ -24,29 +17,6 @@ export const LegacySection: React.FC<{ section: SheetSection; logic: SheetLogic 
   const { character } = logic;
   return (
     <div className="space-y-8 text-white">
-      {section === 'actions' && (
-        <>
-          <AttacksTab
-            character={character}
-            openAttackModal={logic.openAttackModal}
-            openAttackView={logic.openAttackView}
-            updateAttacksNotes={logic.updateAttacksNotes}
-            getActionTypeLabel={getActionTypeLabel}
-            getActionTypeColor={getActionTypeColor}
-          />
-          <AbilitiesTab
-            character={character}
-            openResourceModal={logic.openResourceModal}
-            openAbilityModal={logic.openAbilityModal}
-            openAbilityView={logic.openAbilityView}
-            updateResourceCount={logic.updateResourceCount}
-            updateCharacter={logic.updateCharacter}
-            updateAbilitiesNotes={logic.updateAbilitiesNotes}
-            getActionTypeLabel={getActionTypeLabel}
-            getActionTypeColor={getActionTypeColor}
-          />
-        </>
-      )}
       {section === 'magic' && (
         <SpellsTab
           character={character}
