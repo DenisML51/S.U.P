@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   SPELL_SCHOOLS,
+  UNLIMITED_PREPARED,
   maxPrepared,
   preparationBlocker,
   preparedCount,
@@ -9,39 +10,36 @@ import {
   spellLevelName,
   toggleKnownSchool,
   togglePrepared,
-  UNLIMITED_PREPARED,
 } from '@itd/game-logic';
 import type { Character, Spell } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
-import { Button, IconButton, Input, Panel, SectionTitle, cx } from '../../../ui/primitives';
+import { Ledger, LedgerBullet, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
+import { Button, IconButton, Input, Panel, cx } from '../../../ui/primitives';
 import { IconMinus, IconPlus } from '../../../ui/icons';
-import { EntryRow, MetaLine, MetaValue } from '../parts/EntryRow';
 import { SectionNotes } from '../parts/SectionNotes';
 import type { SheetLogic } from '../sheetLogic';
 import { useRolls } from '../useRolls';
+import { damageParts, describeDamage } from '../parts/damage';
 
 type LevelFilter = 'all' | number;
 
-const PrepareToggle: React.FC<{ spell: Spell; blocker: string | null; onToggle: () => void }> = ({ spell, blocker, onToggle }) => (
+/** The ledger bullet of a spell doubles as its preparation switch: filled means prepared. */
+const PrepareMark: React.FC<{ spell: Spell; blocker: string | null; onToggle: () => void }> = ({ spell, blocker, onToggle }) => (
   <button
     type="button"
     onClick={onToggle}
     disabled={!spell.prepared && blocker !== null}
     title={spell.prepared ? 'Подготовлено — нажмите, чтобы убрать' : (blocker ?? 'Подготовить')}
     aria-label={`${spell.name}: ${spell.prepared ? 'подготовлено' : 'не подготовлено'}`}
-    className="grid h-6 w-6 shrink-0 place-items-center disabled:cursor-not-allowed disabled:opacity-40"
+    aria-pressed={spell.prepared}
+    className="grid h-6 w-6 shrink-0 place-items-center transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-40"
   >
-    <span
-      className={cx(
-        'block h-2.5 w-2.5 rotate-45 border transition-colors',
-        spell.prepared ? 'border-frame-bright bg-frame-bright' : 'border-ink-faint',
-      )}
-    />
+    <LedgerBullet filled={spell.prepared} />
   </button>
 );
 
-const LevelHeader: React.FC<{ character: Character; level: number; onLimit: (value: number) => void }> = ({
+const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (value: number) => void }> = ({
   character,
   level,
   onLimit,
@@ -50,15 +48,14 @@ const LevelHeader: React.FC<{ character: Character; level: number; onLimit: (val
   const unlimited = limit >= UNLIMITED_PREPARED;
   const slots = slotResourceFor(character, level);
   return (
-    <li className="flex items-center gap-4 pb-1 pt-4 text-xs text-ink-faint">
-      <span className="ui-display text-base text-frame-bright">{spellLevelName(level)}</span>
+    <span className="flex items-center gap-4">
       {level > 0 && (
-        <span className="flex items-center gap-1">
-          подготовлено <span className="tabular-nums text-ink-muted">{preparedCount(character, level)}</span> из
+        <span className="flex items-center gap-1" title="Сколько заклинаний этого круга можно подготовить">
+          подготовлено <span className="tabular-nums">{preparedCount(character, level)}</span> из
           <IconButton label="Уменьшить лимит" size={20} onClick={() => onLimit(unlimited ? preparedCount(character, level) : limit - 1)}>
             <IconMinus width={12} height={12} />
           </IconButton>
-          <span className="tabular-nums text-ink-muted">{unlimited ? '∞' : limit}</span>
+          <span className="tabular-nums">{unlimited ? '∞' : limit}</span>
           <IconButton label="Увеличить лимит" size={20} disabled={unlimited} onClick={() => onLimit(limit + 1)}>
             <IconPlus width={12} height={12} />
           </IconButton>
@@ -66,10 +63,10 @@ const LevelHeader: React.FC<{ character: Character; level: number; onLimit: (val
       )}
       {slots && (
         <span>
-          ячейки <span className="tabular-nums text-ink-muted">{slots.current}</span> / {slots.max}
+          ячейки <span className="tabular-nums">{slots.current}</span> / {slots.max}
         </span>
       )}
-    </li>
+    </span>
   );
 };
 
@@ -134,8 +131,7 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
 
   const cast = (spell: Spell) => {
     if (!performAction({ kind: 'spell', id: spell.id })?.ok) return;
-    const parts = spell.damageComponents?.length ? spell.damageComponents : spell.damage ? [{ damage: spell.damage, type: spell.damageType ?? '' }] : [];
-    roll.damage(spell.name, parts);
+    roll.damage(spell.name, damageParts(spell));
   };
 
   const cost = (spell: Spell) => {
@@ -149,20 +145,9 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
   };
 
   return (
-    <div className="grid h-full grid-cols-[1fr_280px] gap-10">
-      <section className="flex min-h-0 flex-col">
-        <SectionTitle
-          className="mb-3"
-          action={
-            <IconButton label="Добавить заклинание" onClick={() => logic.openSpellModal()}>
-              <IconPlus width={20} height={20} />
-            </IconButton>
-          }
-        >
-          Заклинания
-        </SectionTitle>
-
-        <div className="mb-2 flex flex-wrap items-center gap-x-5 gap-y-2">
+    <div className="grid h-full grid-cols-[1fr_270px] gap-8">
+      <div className="flex min-h-0 flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Круг заклинаний">
             {(['all', ...levels] as LevelFilter[]).map((option) => (
               <button
@@ -175,61 +160,84 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
                   level === option ? 'border-frame-bright text-ink' : 'border-transparent text-ink-faint hover:text-ink-muted',
                 )}
               >
-                {option === 'all' ? 'Все' : option === 0 ? 'Заговоры' : option}
+                {option === 'all' ? 'Все круги' : option === 0 ? 'Заговоры' : option}
               </button>
             ))}
           </nav>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-muted">
-            <input type="checkbox" checked={preparedOnly} onChange={(e) => setPreparedOnly(e.target.checked)} className="accent-[rgb(var(--c-frame-bright))]" />
+            <input
+              type="checkbox"
+              checked={preparedOnly}
+              onChange={(e) => setPreparedOnly(e.target.checked)}
+              className="accent-[rgb(var(--c-frame-bright))]"
+            />
             только подготовленные
           </label>
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск" className="ml-auto !w-48 !py-1.5" />
         </div>
 
-        <ul className="ui-scroll min-h-0 flex-1 overflow-y-auto pr-1">
+        <Ledger title="Книга заклинаний" addLabel="Добавить заклинание" onAdd={() => logic.openSpellModal()}>
           {groups.map((group) => (
             <React.Fragment key={group.level}>
-              <LevelHeader
-                character={character}
-                level={group.level}
-                onLimit={(value) => updateCharacter((doc) => setMaxPrepared(doc, group.level, value))}
-              />
-              {group.spells.map((spell) => (
-                <EntryRow
-                  key={spell.id}
-                  tone={ACTION_TYPES[spell.actionType].token}
-                  muted={!spell.prepared}
-                  leading={
-                    <PrepareToggle
-                      spell={spell}
-                      blocker={preparationBlocker(character, spell)}
-                      onToggle={() => updateCharacter((doc) => togglePrepared(doc, spell.id))}
-                    />
-                  }
-                  title={spell.name}
-                  meta={<MetaLine parts={[spell.school, spell.castingTime, spell.range, cost(spell), spell.damage && <MetaValue>{spell.damage}</MetaValue>]} />}
-                  onOpen={() => logic.openSpellView(spell)}
-                  action={
-                    spell.prepared && (
-                      <Button size="row" variant="secondary" onClick={() => cast(spell)}>
-                        Сотворить
-                      </Button>
-                    )
-                  }
-                />
-              ))}
+              <LedgerGroup
+                aside={
+                  <LevelSummary
+                    character={character}
+                    level={group.level}
+                    onLimit={(value) => updateCharacter((doc) => setMaxPrepared(doc, group.level, value))}
+                  />
+                }
+              >
+                {spellLevelName(group.level)}
+              </LedgerGroup>
+              {group.spells.map((spell) => {
+                const parts = damageParts(spell);
+                return (
+                  <LedgerRow
+                    key={spell.id}
+                    dim={!spell.prepared}
+                    leading={
+                      <PrepareMark
+                        spell={spell}
+                        blocker={preparationBlocker(character, spell)}
+                        onToggle={() => updateCharacter((doc) => togglePrepared(doc, spell.id))}
+                      />
+                    }
+                    title={spell.name}
+                    meta={
+                      <MetaLine
+                        parts={[
+                          spell.school,
+                          spell.castingTime || ACTION_TYPES[spell.actionType].short,
+                          spell.range,
+                          cost(spell),
+                          parts.length > 0 && <MetaValue>{describeDamage(parts)}</MetaValue>,
+                        ]}
+                      />
+                    }
+                    onOpen={() => logic.openSpellView(spell)}
+                    action={
+                      spell.prepared && (
+                        <Button size="row" variant="secondary" onClick={() => cast(spell)}>
+                          Сотворить
+                        </Button>
+                      )
+                    }
+                  />
+                );
+              })}
             </React.Fragment>
           ))}
           {groups.length === 0 && (
-            <li className="py-8 text-sm text-ink-faint">
+            <li className="py-6 text-sm opacity-60">
               {character.spells.length === 0 ? 'Книга заклинаний пуста' : 'Ничего не найдено'}
             </li>
           )}
-        </ul>
-      </section>
+        </Ledger>
+      </div>
 
       <aside className="flex min-h-0 flex-col gap-5">
-        <Panel ornate className="px-5 py-4">
+        <Panel className="px-5 py-4">
           <DifficultyEditor
             name={character.spellcastingDifficultyName ?? 'СЛ заклинаний'}
             value={character.spellcastingDifficultyValue ?? 10}
@@ -239,7 +247,7 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
 
         <section>
           <h3 className="mb-2 text-xs uppercase tracking-[0.16em] text-ink-muted">Изучаемые школы</h3>
-          <ul className="grid grid-cols-1 gap-1">
+          <ul className="grid gap-1">
             {SPELL_SCHOOLS.map((school) => (
               <li key={school}>
                 <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-muted hover:text-ink">

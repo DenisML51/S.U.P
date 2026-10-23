@@ -9,6 +9,9 @@
   font-weight: var(--display-weight);
   letter-spacing: var(--display-tracking);
   font-variant-numeric: lining-nums;
+  /* Display faces differ a lot in x-height (Cormorant is small, Unbounded is huge); equalising it
+     keeps one font-size meaning one visual size in every setting. */
+  font-size-adjust: ex-height 0.5;
 }
 /* Section titles and buttons: grimdark carves them in capitals. */
 .ui-title,
@@ -406,4 +409,76 @@
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
+}
+
+/* ------------------------------------------------------------------ Ledger (lists on paper) */
+.ui-ledger__row { border-bottom: 1px solid rgb(var(--c-paper-muted) / 0.35); }
+.ui-ledger__row:last-child { border-bottom: 0; }
+.ui-ledger__add {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 1rem 0.9rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  color: rgb(var(--c-paper-ink) / 0.75);
+  background: rgb(var(--c-paper-muted) / 0.14);
+  border: 1px solid rgb(var(--c-paper-muted) / 0.25);
+  border-radius: var(--radius);
+  transition: background-color 150ms, color 150ms;
+}
+.ui-ledger__add:hover { background: rgb(var(--c-paper-muted) / 0.24); color: rgb(var(--c-paper-ink)); }
+
+/* Buttons on paper take the ink of the page. */
+.ui-panel--paper .ui-button--secondary {
+  background: transparent;
+  color: rgb(var(--c-paper-ink));
+  border-color: rgb(var(--c-paper-muted) / 0.6);
+}
+.ui-panel--paper .ui-button--secondary:not(:disabled):hover {
+  background: rgb(var(--c-paper-muted) / 0.15);
+  color: rgb(var(--c-paper-ink));
+  border-color: rgb(var(--c-paper-ink) / 0.6);
+}
+.ui-panel--paper .ui-input {
+  background: rgb(var(--c-paper-muted) / 0.12);
+  color: rgb(var(--c-paper-ink));
+  border-color: rgb(var(--c-paper-muted) / 0.45);
+}
+.ui-panel--paper .ui-input::placeholder { color: rgb(var(--c-paper-ink) / 0.45); }
+
+/* The ribbon: a cloth bookmark in fantasy, a purity seal in grimdark, a status tab in sci-fi. */
+.ui-ledger__ribbon {
+  position: absolute;
+  top: -1px;
+  right: 1.5rem;
+  width: 22px;
+  height: 46px;
+  z-index: 1;
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.15), transparent 30%, transparent 70%, rgb(0 0 0 / 0.2)), rgb(var(--c-hp));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.3);
+}
+[data-setting='grimdark'] .ui-ledger__ribbon {
+  width: 28px;
+  height: 56px;
+  background:
+    radial-gradient(circle at 50% 22%, rgb(var(--c-accent)) 0 9px, rgb(0 0 0 / 0.25) 9.5px 10.5px, transparent 11px),
+    repeating-linear-gradient(180deg, rgb(var(--c-paper)) 0 3px, rgb(var(--c-paper-muted)) 3px 4px);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 75% 90%, 50% 100%, 25% 90%, 0 100%);
+}
+[data-setting='sci-fi'] .ui-ledger__ribbon {
+  width: 36px;
+  height: 4px;
+  top: 0;
+  background: rgb(var(--c-accent));
+  clip-path: none;
+  box-shadow: 0 0 8px rgb(var(--c-accent) / 0.7);
+}
+[data-setting='dark-fantasy'] .ui-ledger__ribbon { background: rgb(var(--c-accent)); }
+.ui-panel--paper .ui-icon-button { color: rgb(var(--c-paper-ink) / 0.6); }
+.ui-panel--paper .ui-icon-button:not(:disabled):hover {
+  color: rgb(var(--c-paper-ink));
+  background: rgb(var(--c-paper-muted) / 0.15);
+  border-color: rgb(var(--c-paper-muted) / 0.5);
 }
