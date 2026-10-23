@@ -1,0 +1,36 @@
+{
+  "name": "@itd/api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Into the Dark API: accounts, character storage and sync, realtime notifications.",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/main.ts",
+    "build": "tsup",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "cli": "tsx src/cli/index.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.3.1",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/websocket": "^11.2.0",
+    "@itd/schema": "*",
+    "@node-rs/argon2": "^2.0.2",
+    "drizzle-orm": "^0.45.4",
+    "fastify": "^5.6.2",
+    "fastify-type-provider-zod": "^7.0.0",
+    "jose": "^6.2.2",
+    "postgres": "^3.4.9",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.2",
+    "drizzle-kit": "^0.31.11",
+    "tsup": "^8.5.1"
+  }
+}

@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+.git
+.idea
+.vscode
+.env
+.env.*
+!.env.example
+data
+release
+docs
+# Leftovers of the desktop/backend era that are not part of this tree
+backend
+frontend
