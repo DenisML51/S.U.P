@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import type { Setting } from '@itd/schema';
 import { useSetting, SettingScope } from './theme/SettingScope';
 import { Button, IconButton, Panel, Rule, cx } from './primitives';
 import { IconClose } from './icons';
@@ -22,6 +23,8 @@ interface DialogProps {
       the size of the new one. */
   swapKey?: string;
   width?: 'sm' | 'md' | 'lg' | 'xl';
+  /** The setting to wear when the dialog is opened outside any screen's scope (app settings). */
+  setting?: Setting;
   /** Paper suits reading (descriptions); plate suits forms. */
   variant?: 'plate' | 'paper';
   className?: string;
@@ -77,9 +80,11 @@ export const Dialog: React.FC<DialogProps> = ({
   swapKey = 'main',
   width = 'md',
   variant = 'plate',
+  setting: ownSetting,
   className,
 }) => {
-  const setting = useSetting();
+  const scopeSetting = useSetting();
+  const setting = ownSetting ?? scopeSetting;
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
 
@@ -195,12 +200,14 @@ export const ConfirmDialog: React.FC<{
   message: React.ReactNode;
   confirmLabel: string;
   danger?: boolean;
+  setting?: Setting;
   onConfirm: () => void;
   onCancel: () => void;
-}> = ({ open, title, message, confirmLabel, danger = false, onConfirm, onCancel }) => (
+}> = ({ open, title, message, confirmLabel, danger = false, setting, onConfirm, onCancel }) => (
   <Dialog
     open={open}
     onClose={onCancel}
+    setting={setting}
     title={title}
     width="sm"
     footer={

@@ -4,7 +4,7 @@ import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
 import { CharacterCreation } from './components/CharacterCreation/index';
 import { AuthScreen } from './screens/auth/AuthScreen';
-import { SettingsModal } from './components/SettingsModal';
+import { SettingsDialog } from './screens/settings/SettingsDialog';
 import { HeroSelect } from './screens/select/HeroSelect';
 import { SheetScreen } from './screens/sheet/SheetScreen';
 import { CombatScreen } from './screens/combat/CombatScreen';
@@ -86,7 +86,7 @@ const App: React.FC = () => {
           {screen}
         </motion.div>
       </AnimatePresence>
-      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <Toasts />
     </MotionConfig>
   );
