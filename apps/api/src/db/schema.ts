@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   bigint,
+  customType,
   foreignKey,
   index,
   integer,
@@ -97,6 +98,29 @@ export const characterRevisions = pgTable(
       foreignColumns: [characters.userId, characters.id],
     }).onDelete('cascade'),
   ],
+);
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
+
+/**
+ * Uploaded images (character art). Stored in Postgres so one backup covers everything; served by id
+ * with immutable caching. Unreferenced assets are collected by `AssetsService.collectGarbage`.
+ */
+export const assets = pgTable(
+  'assets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    contentType: text('content_type').notNull(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    size: integer('size').notNull(),
+    bytes: bytea('bytes').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('assets_user_id_idx').on(t.userId)],
 );
 
 export type UserRow = typeof users.$inferSelect;

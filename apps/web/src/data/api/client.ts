@@ -43,7 +43,10 @@ export const isUnauthorized = (error: unknown): boolean => error instanceof ApiE
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  /** JSON body. */
   body?: unknown;
+  /** Binary body sent as is, with its own content type (uploads). */
+  file?: Blob;
   /** Attach the access token and refresh it once on 401. */
   authenticated?: boolean;
 }
@@ -81,14 +84,15 @@ export class ApiClient {
       'x-itd-client': 'web',
       'x-client-session': CLIENT_SESSION_ID,
     };
-    if (options.body !== undefined) headers['content-type'] = 'application/json';
+    if (options.file) headers['content-type'] = options.file.type || 'application/octet-stream';
+    else if (options.body !== undefined) headers['content-type'] = 'application/json';
     if (token) headers.authorization = `Bearer ${token}`;
 
     try {
       return await fetch(`${API_BASE}${path}`, {
         method: options.method ?? 'GET',
         headers,
-        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        body: options.file ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
         credentials: 'same-origin',
       });
     } catch (error) {
@@ -114,6 +118,16 @@ export const apiClient = new ApiClient();
 const encode = encodeURIComponent;
 
 /** Typed endpoints of the API. */
+export interface UploadedAsset {
+  id: string;
+  url: string;
+  width: number;
+  height: number;
+}
+
+/** URL of an uploaded image; immutable, so browsers keep it cached for offline use. */
+export const assetUrl = (id: string): string => `${API_BASE}/assets/${encodeURIComponent(id)}`;
+
 export const api = {
   auth: {
     config: () => apiClient.request<{ registrationEnabled: boolean }>('/auth/config', { authenticated: false }),
@@ -129,6 +143,9 @@ export const api = {
     update: (displayName: string) => apiClient.request<UserDto>('/me', { method: 'PATCH', body: { displayName } }),
     changePassword: (body: ChangePasswordRequest) =>
       apiClient.request<AuthResponse>('/me/password', { method: 'POST', body }),
+  },
+  assets: {
+    upload: (file: Blob) => apiClient.request<UploadedAsset>('/assets', { method: 'POST', file }),
   },
   characters: {
     pull: (since: string) => apiClient.request<SyncResponse>(`/characters?since=${encode(since)}`),

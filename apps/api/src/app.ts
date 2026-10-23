@@ -9,6 +9,8 @@ import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fas
 import type { Config } from './config';
 import type { DatabaseConnection } from './db/client';
 import { registerErrorHandler } from './lib/errors';
+import { assetRoutes } from './modules/assets/assets.routes';
+import { AssetsService } from './modules/assets/assets.service';
 import { authRoutes } from './modules/auth/auth.routes';
 import { AuthService } from './modules/auth/auth.service';
 import { AccessTokenSigner } from './modules/auth/crypto';
@@ -23,6 +25,7 @@ const BODY_LIMIT_BYTES = 6 * 1024 * 1024;
 
 export interface AppServices {
   auth: AuthService;
+  assets: AssetsService;
   characters: CharactersService;
   /** Sockets of this process. */
   hub: RealtimeHub;
@@ -42,6 +45,7 @@ export function createServices(config: Config, { db, sql }: DatabaseConnection):
       registrationEnabled: config.REGISTRATION_ENABLED,
     }),
     characters: new CharactersService(db, notifier),
+    assets: new AssetsService(db),
   };
 }
 
@@ -99,6 +103,7 @@ export async function buildApp(
 
       await api.register(authRoutes, { auth: services.auth, hub: services.hub, cookieSecure: config.COOKIE_SECURE });
       await api.register(characterRoutes, { auth: services.auth, characters: services.characters });
+      await api.register(assetRoutes, { auth: services.auth, assets: services.assets });
       await api.register(realtimeRoutes, { auth: services.auth, hub: services.hub });
     },
     { prefix: '/api' },

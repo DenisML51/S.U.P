@@ -245,6 +245,15 @@ export const ActionCountersSchema = passthroughObject({
 const numberMap = (maxKeyLength: number) =>
   text(z.record(z.string().max(maxKeyLength), numeric(num)).default({}));
 
+/** Uploaded artwork, referenced by asset id (see the API's /assets). */
+export const AssetIdSchema = z.uuid();
+export const CharacterImagesSchema = passthroughObject({
+  /** Full-height art for the hero screens. */
+  full: text(AssetIdSchema.optional()),
+  /** Square-ish portrait for lists, the sheet header and combat. */
+  portrait: text(AssetIdSchema.optional()),
+});
+
 export const CharacterSchema = passthroughObject({
   schemaVersion: z.literal(CHARACTER_SCHEMA_VERSION),
   id: EntityIdSchema,
@@ -306,6 +315,8 @@ export const CharacterSchema = passthroughObject({
   bonds: longTextOr(),
   flaws: longTextOr(),
 
+  images: text(CharacterImagesSchema.optional()),
+  /** Legacy embedded portrait (data URL) from before uploaded images; read when `images.portrait` is absent. */
   avatar: text(z.string().max(LIMITS.avatar).optional()),
   history: text(z.array(HistoryEntrySchema).max(LIMITS.history).default([])),
   actionLimits: text(ActionCountersSchema.optional()),
@@ -332,6 +343,7 @@ export type Spell = z.infer<typeof SpellSchema>;
 export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 export type Resistance = z.infer<typeof ResistanceSchema>;
 export type ActionCounters = z.infer<typeof ActionCountersSchema>;
+export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
 export type Character = z.infer<typeof CharacterSchema>;
 
 /** A character before it has an identity: what the creation wizard produces. */

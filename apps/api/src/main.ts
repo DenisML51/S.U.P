@@ -1,21 +1,33 @@
-import { buildApp } from './app';
+import { buildApp, createServices } from './app';
 import { loadConfig } from './config';
 import { connectDatabase, runMigrations } from './db/client';
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
+const ASSET_GC_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 async function main() {
   const config = loadConfig();
   const database = connectDatabase(config.DATABASE_URL, config.DATABASE_POOL_SIZE);
   await runMigrations(database.db);
 
-  const app = await buildApp(config, database);
+  const services = createServices(config, database);
+  const app = await buildApp(config, database, services);
+
+  const collectAssets = () =>
+    services.assets
+      .collectGarbage()
+      .then((removed) => removed > 0 && app.log.info({ removed }, 'unused images removed'))
+      .catch((error: unknown) => app.log.error({ err: error }, 'image cleanup failed'));
+  const assetTimer = setInterval(collectAssets, ASSET_GC_INTERVAL_MS);
+  assetTimer.unref();
+  void collectAssets();
 
   let shuttingDown = false;
   const shutdown = async (signal: string) => {
     if (shuttingDown) return;
     shuttingDown = true;
     app.log.info({ signal }, 'shutting down');
+    clearInterval(assetTimer);
     const timer = setTimeout(() => {
       app.log.error('shutdown timed out, exiting');
       process.exit(1);

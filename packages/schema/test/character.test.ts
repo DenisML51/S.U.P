@@ -65,6 +65,12 @@ describe('CharacterSchema', () => {
     expect(CharacterSchema.safeParse({ ...minimal, setting: 'steampunk' }).success).toBe(false);
   });
 
+  it('references uploaded art by asset id', () => {
+    const id = 'a3bb189e-8bf9-4888-9912-ace4e6543002';
+    expect(CharacterSchema.parse({ ...minimal, images: { portrait: id } }).images).toEqual({ portrait: id });
+    expect(CharacterSchema.safeParse({ ...minimal, images: { full: 'not-an-id' } }).success).toBe(false);
+  });
+
   it('rejects a numeric field that holds text', () => {
     expect(CharacterSchema.safeParse({ ...minimal, maxHP: 'много' }).success).toBe(false);
   });
@@ -128,11 +134,15 @@ describe('toCharacterPreview', () => {
     expect(toCharacterPreview(character)).toEqual({
       id: character.id,
       name: 'Лиара',
+      setting: undefined,
+      race: '',
+      subrace: undefined,
       class: '',
       subclass: '',
       level: 18,
       currentHP: 168,
       maxHP: 290,
+      images: undefined,
       avatar: undefined,
       resistances: [],
     });

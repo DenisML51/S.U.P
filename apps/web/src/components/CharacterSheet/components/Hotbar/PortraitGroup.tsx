@@ -1,3 +1,4 @@
+import { portraitSrc } from '../../../../ui/CharacterArt';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, ShieldCheck, ShieldAlert, ShieldX, User, Plus, X, Heart } from 'lucide-react';
@@ -150,8 +151,8 @@ export const PortraitGroup: React.FC<PortraitGroupProps> = ({
         } pointer-events-none`} />
         <div className="w-44 h-44 rounded-[2.5rem] overflow-hidden border border-white/10 relative bg-dark-card shadow-2xl">
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent pointer-events-none" />
-          {character.avatar ? (
-            <img src={character.avatar} alt={character.name} className="w-full h-full object-cover transition-transform duration-700 group-hover/avatar:scale-110" />
+          {portraitSrc(character) ? (
+            <img src={portraitSrc(character)} alt={character.name} className="w-full h-full object-cover transition-transform duration-700 group-hover/avatar:scale-110" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <User size={64} className="text-gray-700" />
