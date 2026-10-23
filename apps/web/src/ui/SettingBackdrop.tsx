@@ -1,30 +1,22 @@
 import React from 'react';
 import type { Setting } from '@itd/schema';
+import { FRAME_OUTER, VineFrameCorner } from './art/highFantasy';
 import { SETTING_LIST } from './theme/settings';
 import { SettingScope } from './theme/SettingScope';
 import { cx } from './primitives';
 
-/** Gilt filigree in the four corners. */
-const HighFantasyFrame: React.FC = () => {
-  const corner = (
-    <svg width="120" height="120" viewBox="0 0 180 180" fill="none" stroke="rgb(var(--c-frame))">
-      <path d="M14 170V40C14 26 26 14 40 14h130" strokeWidth="1" />
-      <path d="M24 130V48c0-13 11-24 24-24h82" strokeWidth="0.75" opacity="0.6" />
-      <path d="M14 76c20 0 34 14 34 34M76 14c0 20 14 34 34 34" strokeWidth="0.75" opacity="0.7" />
-      <path d="M40 40l9-4 4 9-9 4z" fill="rgb(var(--c-frame-bright))" stroke="none" />
-      <circle cx="110" cy="48" r="2" fill="rgb(var(--c-frame))" stroke="none" />
-      <circle cx="48" cy="110" r="2" fill="rgb(var(--c-frame))" stroke="none" />
-    </svg>
-  );
-  return (
-    <>
-      <div className="absolute left-0 top-0">{corner}</div>
-      <div className="absolute right-0 top-0 -scale-x-100">{corner}</div>
-      <div className="absolute bottom-0 left-0 -scale-y-100">{corner}</div>
-      <div className="absolute bottom-0 right-0 -scale-100">{corner}</div>
-    </>
-  );
-};
+/** Quiet vine flourishes in the screen corners; the content stays the focus. */
+const HighFantasyFrame: React.FC = () => (
+  <div className="absolute inset-0 text-frame">
+    {(['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map(
+      (position) => (
+        <div key={position} className={`absolute ${position}`} style={{ margin: FRAME_OUTER }}>
+          <VineFrameCorner />
+        </div>
+      ),
+    )}
+  </div>
+);
 
 /** Heavy riveted bars across top and bottom, a red edge on the left. */
 const GrimdarkFrame: React.FC = () => (
@@ -47,11 +39,11 @@ const SciFiFrame: React.FC = () => (
     <div className="absolute bottom-6 left-6 h-16 w-16 border-b border-l border-frame" />
     <div className="absolute bottom-6 right-6 h-16 w-16 border-b border-r border-frame" />
     <div
-      className="absolute inset-y-24 right-8 w-3 opacity-50"
+      className="absolute inset-y-24 right-8 w-3 opacity-30"
       style={{ background: 'repeating-linear-gradient(180deg, rgb(var(--c-frame)) 0 1px, transparent 1px 12px)' }}
     />
     <div
-      className="absolute inset-0 opacity-[0.04]"
+      className="absolute inset-0 opacity-[0.025]"
       style={{ background: 'repeating-linear-gradient(0deg, rgb(var(--c-frame-bright)) 0 1px, transparent 1px 4px)' }}
     />
   </>
@@ -85,7 +77,8 @@ export const SettingBackdrop: React.FC<{ setting: Setting; className?: string }>
           key={id}
           setting={id}
           className="absolute inset-0 transition-opacity duration-700"
-          style={{ opacity: id === setting ? 1 : 0 }}
+          // Atmosphere, not decoration: the frame stays well behind the content.
+          style={{ opacity: id === setting ? 0.45 : 0 }}
         >
           <Frame />
         </SettingScope>

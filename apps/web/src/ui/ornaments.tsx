@@ -1,21 +1,15 @@
 import React from 'react';
 import type { Setting } from '@itd/schema';
+import { StarRule, VineCorner } from './art/highFantasy';
 import { useSetting } from './theme/SettingScope';
 
 /**
  * Small line ornaments drawn in `currentColor`. Each setting has its own vocabulary:
- * gilt flourishes, riveted brackets, HUD corners, thorns.
+ * Tolkien-style vines, riveted brackets, HUD corners, thorns.
  */
 
 const CORNERS: Record<Setting, React.ReactNode> = {
-  'high-fantasy': (
-    <>
-      <path d="M1 23V7C1 3.7 3.7 1 7 1h16" fill="none" stroke="currentColor" strokeWidth="1" />
-      <path d="M4.5 19V9c0-2.5 2-4.5 4.5-4.5h10" fill="none" stroke="currentColor" strokeWidth="0.75" opacity="0.55" />
-      <path d="M7 7l3-1.4 1.4 3L8.4 10z" fill="currentColor" />
-      <path d="M1 23c1.5-1 2-2.5 2-4M23 1c-1 1.5-2.5 2-4 2" fill="none" stroke="currentColor" strokeWidth="0.75" />
-    </>
-  ),
+  'high-fantasy': <VineCorner />,
   grimdark: (
     <>
       <path d="M1 24V1h23" fill="none" stroke="currentColor" strokeWidth="2.5" />
@@ -37,13 +31,21 @@ const CORNERS: Record<Setting, React.ReactNode> = {
   ),
 };
 
+/** The vine is drawn on a finer grid than the other corners. */
+const VIEWBOX: Record<Setting, string> = {
+  'high-fantasy': '0 0 32 32',
+  grimdark: '0 0 24 24',
+  'sci-fi': '0 0 24 24',
+  'dark-fantasy': '0 0 24 24',
+};
+
 export const Corners: React.FC<{ setting?: Setting }> = ({ setting }) => {
   const current = useSetting();
   const art = CORNERS[setting ?? current];
   return (
     <>
       {(['tl', 'tr', 'bl', 'br'] as const).map((position) => (
-        <svg key={position} className={`ui-corner ui-corner--${position}`} viewBox="0 0 24 24" aria-hidden>
+        <svg key={position} className={`ui-corner ui-corner--${position}`} viewBox={VIEWBOX[setting ?? current]} aria-hidden>
           {art}
         </svg>
       ))}
@@ -52,15 +54,7 @@ export const Corners: React.FC<{ setting?: Setting }> = ({ setting }) => {
 };
 
 const RULE_MARKS: Record<Setting, React.ReactNode> = {
-  'high-fantasy': (
-    <svg width="34" height="10" viewBox="0 0 34 10" aria-hidden>
-      <path d="M17 1l4 4-4 4-4-4z" fill="none" stroke="currentColor" />
-      <circle cx="17" cy="5" r="1.2" fill="currentColor" />
-      <path d="M2 5h8M24 5h8" stroke="currentColor" strokeWidth="0.75" />
-      <circle cx="11" cy="5" r="0.9" fill="currentColor" />
-      <circle cx="23" cy="5" r="0.9" fill="currentColor" />
-    </svg>
-  ),
+  'high-fantasy': <StarRule />,
   grimdark: (
     <svg width="30" height="10" viewBox="0 0 30 10" aria-hidden>
       <path d="M2 2l13 6 13-6" fill="none" stroke="currentColor" strokeWidth="1.5" />

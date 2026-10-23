@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Setting } from '@itd/schema';
+import { StarRule, VineCorner, VineFrameCorner } from '../ui/art/highFantasy';
 import { SETTING_LIST } from '../ui/theme/settings';
 import { SettingScope } from '../ui/theme/SettingScope';
 import { Button, Field, IconButton, Input, Meter, Panel, Rule, SectionTitle, Tag } from '../ui/primitives';
@@ -109,8 +110,26 @@ const Sample: React.FC<{ setting: Setting; label: string }> = ({ setting, label 
   </SettingScope>
 );
 
+/** Ornaments at a size where their drawing can be judged. */
+const OrnamentSpecimen: React.FC = () => (
+  <SettingScope setting="high-fantasy" className="col-span-2 bg-bg p-10">
+    <div className="flex items-center gap-16 text-frame">
+    <svg width="180" height="180" viewBox="0 0 32 32">
+      <VineCorner />
+    </svg>
+    <div style={{ transform: 'scale(3)', transformOrigin: 'left center', width: 260 }}>
+      <StarRule />
+    </div>
+    <div style={{ transform: 'scale(2)', transformOrigin: 'left top', width: 260, height: 260 }}>
+      <VineFrameCorner />
+    </div>
+    </div>
+  </SettingScope>
+);
+
 export const UiKit = () => (
   <div className="grid grid-cols-2">
+    <OrnamentSpecimen />
     {SETTING_LIST.map((s) => (
       <Sample key={s.id} setting={s.id} label={s.label} />
     ))}
