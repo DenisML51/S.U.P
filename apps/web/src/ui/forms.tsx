@@ -327,8 +327,9 @@ export const Suggest: React.FC<{
   placeholder?: string;
   id?: string;
   label?: string;
+  autoFocus?: boolean;
   className?: string;
-}> = ({ value, onChange, suggestions, placeholder, id, label, className }) => {
+}> = ({ value, onChange, suggestions, placeholder, id, label, autoFocus, className }) => {
   const [open, setOpen] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const query = value.trim().toLowerCase();
@@ -348,6 +349,7 @@ export const Suggest: React.FC<{
         className={cx('ui-input', className)}
         value={value}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         autoComplete="off"
         onFocus={() => setOpen(true)}
         onChange={(e) => {

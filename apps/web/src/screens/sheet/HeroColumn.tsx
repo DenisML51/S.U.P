@@ -13,7 +13,7 @@ import { SettingEmblem } from '../../ui/art/emblems';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { IconButton, Meter, Panel, cx, type MeterTone } from '../../ui/primitives';
-import { IconCondition, IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../ui/icons';
+import { IconCondition, IconEdit, IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../ui/icons';
 import { useSheetDialogs } from './dialogs/context';
 import { useVitals } from './useVitals';
 import type { SheetLogic } from './sheetLogic';
@@ -187,12 +187,20 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
       <div className="relative h-[210px] shrink-0 overflow-hidden">
         <CharacterArt source={character} kind="full" className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 px-5 pb-3">
-          <h1 className="ui-display text-[1.7rem] leading-tight text-ink">{character.name}</h1>
-          <p className="truncate text-sm text-ink-muted" title={[origin.race, origin.calling].join(' · ')}>
-            {[origin.race, origin.calling].filter(Boolean).join(' · ')}
-          </p>
-        </div>
+        <button
+          type="button"
+          onClick={() => dialogs.open({ kind: 'profile' })}
+          className="group absolute inset-0 text-left"
+          title="Профиль героя: имя, происхождение, сеттинг, изображения"
+        >
+          <IconEdit width={16} height={16} className="absolute right-4 top-4 text-ink opacity-0 transition-opacity group-hover:opacity-70" />
+          <span className="absolute inset-x-5 bottom-3">
+            <span className="ui-display block text-[1.7rem] leading-tight text-ink" role="heading" aria-level={1}>
+              {character.name}
+            </span>
+            <span className="block truncate text-sm text-ink-muted">{[origin.race, origin.calling].filter(Boolean).join(' · ')}</span>
+          </span>
+        </button>
       </div>
 
       <div className="ui-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-3">
@@ -241,7 +249,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
         )}
 
         <div className="grid grid-cols-4 divide-x divide-line/70 border-y border-line/70">
-          <StatCell label="Класс брони" value={character.armorClass} onClick={() => logic.setShowACModal(true)} hint="Защита и сопротивления" />
+          <StatCell label="Класс брони" value={character.armorClass} onClick={() => dialogs.open({ kind: 'armor' })} hint="Защита и сопротивления" />
           <StatCell
             label="Инициатива"
             value={formatModifier(initiativeModifier(character))}

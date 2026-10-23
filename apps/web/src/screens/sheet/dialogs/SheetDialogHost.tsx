@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { AbilityDialog } from './AbilityDialog';
 import { AttackDialog } from './AttackDialog';
 import { ItemDialog } from './ItemDialog';
+import { ProfileDialog } from './ProfileDialog';
 import { ResourceDialog } from './ResourceDialog';
 import { SpellDialog } from './SpellDialog';
+import { ArmorDialog, AttributeDialog } from './StatDialogs';
 import { TraitDialog } from './TraitDialog';
 import { CurrencyDialog, ExperienceDialog, HealthDialog, SanityDialog } from './VitalDialogs';
 import { useSheetDialogs, type SheetDialog } from './context';
@@ -42,6 +44,12 @@ export const SheetDialogHost: React.FC = () => {
       return <ExperienceDialog key={key} open={open} onClose={close} />;
     case 'currency':
       return <CurrencyDialog key={key} open={open} onClose={close} />;
+    case 'attribute':
+      return <AttributeDialog key={key} open={open} id={current.id} onClose={close} />;
+    case 'armor':
+      return <ArmorDialog key={key} open={open} onClose={close} />;
+    case 'profile':
+      return <ProfileDialog key={key} open={open} onClose={close} />;
     default:
       return null;
   }

@@ -29,24 +29,18 @@ export function useVitals() {
   const damage = (value: number) => {
     const preview = applyDamage(character, value);
     const absorbed = preview.absorbed ? ` (${preview.absorbed} поглощено временными)` : '';
-    updateCharacter((doc) => applyDamage(doc, value).character, {
-      silent: true,
-      log: { message: `Получен урон: ${value}${absorbed} — ${preview.character.currentHP}/${max}`, type: 'health' },
+    updateCharacter((doc) => applyDamage(doc, value).character, { log: { message: `Получен урон: ${value}${absorbed} — ${preview.character.currentHP}/${max}`, type: 'health' },
     });
   };
 
   const heal = (value: number) => {
     const preview = applyHealing(character, value);
-    updateCharacter((doc) => applyHealing(doc, value).character, {
-      silent: true,
-      log: { message: `Лечение: +${preview.amount} — ${preview.character.currentHP}/${max}`, type: 'health' },
+    updateCharacter((doc) => applyHealing(doc, value).character, { log: { message: `Лечение: +${preview.amount} — ${preview.character.currentHP}/${max}`, type: 'health' },
     });
   };
 
   const addTemp = (value: number) =>
-    updateCharacter((doc) => grantTempHP(doc, value), {
-      silent: true,
-      log: { message: `Временные хиты: ${Math.max(character.tempHP, value)}`, type: 'health' },
+    updateCharacter((doc) => grantTempHP(doc, value), { log: { message: `Временные хиты: ${Math.max(character.tempHP, value)}`, type: 'health' },
     });
 
   const healFully = () => heal(max - character.currentHP);
@@ -55,15 +49,13 @@ export function useVitals() {
     updateCharacter((doc) => {
       const next = { ...doc, [field]: Math.max(field === 'maxHPBonus' ? -Infinity : 0, value) };
       return { ...next, currentHP: Math.min(next.currentHP, totalMaxHP(next)) };
-    }, { silent: true });
+    });
 
   const changeSanity = (delta: number) => {
     const maxSanity = maxSanityOf(character);
     const sanity = clampSanity(character.sanity + delta, maxSanity);
     if (sanity === character.sanity) return;
-    updateCharacter((doc) => ({ ...doc, sanity: clampSanity(doc.sanity + delta, maxSanity) }), {
-      silent: true,
-      log: {
+    updateCharacter((doc) => ({ ...doc, sanity: clampSanity(doc.sanity + delta, maxSanity) }), { log: {
         message: delta < 0 ? `Потеря рассудка: ${sanity - character.sanity} — ${sanity}/${maxSanity}` : `Рассудок восстановлен: +${sanity - character.sanity} — ${sanity}/${maxSanity}`,
         type: 'sanity',
       },
@@ -72,17 +64,13 @@ export function useVitals() {
 
   const addExperience = (delta: number) => {
     const experience = Math.max(0, character.experience + delta);
-    updateCharacter((doc) => setExperience(doc, Math.max(0, doc.experience + delta), doc.level), {
-      silent: true,
-      log: { message: delta > 0 ? `Опыт: +${delta} (${experience})` : `Опыт: ${delta} (${experience})`, type: 'exp' },
+    updateCharacter((doc) => setExperience(doc, Math.max(0, doc.experience + delta), doc.level), { log: { message: delta > 0 ? `Опыт: +${delta} (${experience})` : `Опыт: ${delta} (${experience})`, type: 'exp' },
     });
   };
 
   const setLevel = (level: number) => {
     if (level === character.level) return;
-    updateCharacter((doc) => setExperience(doc, doc.experience, level), {
-      silent: true,
-      log: { message: level > character.level ? `Уровень повышен до ${level}` : `Уровень изменён: ${level}`, type: 'exp' },
+    updateCharacter((doc) => setExperience(doc, doc.experience, level), { log: { message: level > character.level ? `Уровень повышен до ${level}` : `Уровень изменён: ${level}`, type: 'exp' },
     });
     if (level > character.level) toast.success(`Новый уровень: ${level}`);
   };
@@ -90,9 +78,7 @@ export function useVitals() {
   const canLevelUp = experienceProgress(character.level, character.experience).canLevelUp;
 
   const receive = (amount: number, coin: Coin) =>
-    updateCharacter((doc) => ({ ...doc, currency: receiveCoins(doc.currency, amount, coin) }), {
-      silent: true,
-      log: { message: `Получено: ${amount} ${COIN_NAME[coin]}`, type: 'inventory' },
+    updateCharacter((doc) => ({ ...doc, currency: receiveCoins(doc.currency, amount, coin) }), { log: { message: `Получено: ${amount} ${COIN_NAME[coin]}`, type: 'inventory' },
     });
 
   /** Pays with change-making; refuses with a message when the purse is short. */
@@ -102,15 +88,13 @@ export function useVitals() {
       toast.error(`Не хватает денег: нужно ${amount} ${COIN_NAME[coin]}`);
       return false;
     }
-    updateCharacter((doc) => ({ ...doc, currency: spendCoins(doc.currency, amount, coin) ?? doc.currency }), {
-      silent: true,
-      log: { message: `Потрачено: ${amount} ${COIN_NAME[coin]}`, type: 'inventory' },
+    updateCharacter((doc) => ({ ...doc, currency: spendCoins(doc.currency, amount, coin) ?? doc.currency }), { log: { message: `Потрачено: ${amount} ${COIN_NAME[coin]}`, type: 'inventory' },
     });
     return true;
   };
 
   const setCoins = (coin: Coin, value: number) =>
-    updateCharacter((doc) => ({ ...doc, currency: { ...doc.currency, [coin]: Math.max(0, Math.trunc(value)) } }), { silent: true });
+    updateCharacter((doc) => ({ ...doc, currency: { ...doc.currency, [coin]: Math.max(0, Math.trunc(value)) } }));
 
   return {
     damage,

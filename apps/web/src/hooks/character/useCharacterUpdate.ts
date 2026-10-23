@@ -14,7 +14,7 @@ import type { CharacterUpdater, UpdateOptions } from '../../store/useCharacterSt
 import type { Character, Currency, Limb } from '../../types';
 import type { AppSettings } from '../../data/settings';
 
-type UpdateCharacter = (updater: CharacterUpdater, options?: boolean | UpdateOptions) => void;
+type UpdateCharacter = (updater: CharacterUpdater, options?: UpdateOptions) => void;
 
 /** Finite number or a fallback: form inputs can hand over NaN. */
 const finite = (value: number, fallback: number) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
@@ -46,7 +46,7 @@ export const useCharacterUpdate = (
             type: 'health' as const,
           };
 
-    updateCharacter((prev) => setHealth(prev, health), { silent: true, log });
+    updateCharacter((prev) => setHealth(prev, health), { log });
     if (settings.notifications && diff !== 0) {
       if (diff > 0) toast.success(`Здоровье: +${diff} (${health.currentHP}/${total})`);
       else toast.error(`Здоровье: ${diff} (${health.currentHP}/${total})`);
@@ -60,9 +60,7 @@ export const useCharacterUpdate = (
     const message =
       diff > 0 ? `Рассудок восстановлен: +${diff} (${sanity}/${max})` : `Потеря рассудка: ${diff} (${sanity}/${max})`;
 
-    updateCharacter((prev) => ({ ...prev, sanity }), {
-      silent: true,
-      log: diff === 0 ? undefined : { message, type: 'sanity' },
+    updateCharacter((prev) => ({ ...prev, sanity }), { log: diff === 0 ? undefined : { message, type: 'sanity' },
     });
     if (settings.notifications && diff !== 0) {
       if (diff < 0) toast.error(message);
@@ -78,7 +76,7 @@ export const useCharacterUpdate = (
         ? { message: `Опыт обновлен: ${newExperience}`, type: 'exp' as const }
         : undefined;
 
-    updateCharacter((prev) => setExperience(prev, newExperience, newLevel), { silent: true, log });
+    updateCharacter((prev) => setExperience(prev, newExperience, newLevel), { log });
     if (settings.notifications) {
       if (leveledUp) toast.success(`Уровень повышен! Теперь вы ${newLevel} уровня`, { duration: 5000, icon: '🎉' });
       else toast.success(`Опыт обновлен: ${newExperience}`);

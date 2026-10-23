@@ -189,14 +189,10 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
   const quantity = itemQuantity(entry);
   const parts = entry.type === 'weapon' ? damageParts(entry) : [];
   const toggleEquip = () =>
-    updateCharacter((doc) => (entry.equipped ? unequipItem(doc, entry.id) : equipItem(doc, entry.id)), {
-      silent: true,
-      log: { message: `${entry.equipped ? 'Снято' : 'Экипировано'}: ${entry.name}`, type: 'inventory' },
+    updateCharacter((doc) => (entry.equipped ? unequipItem(doc, entry.id) : equipItem(doc, entry.id)), { log: { message: `${entry.equipped ? 'Снято' : 'Экипировано'}: ${entry.name}`, type: 'inventory' },
     });
   const changeQuantity = (delta: number) =>
-    updateCharacter((doc) => changeItemQuantity(doc, entry.id, delta), {
-      silent: true,
-      log: { message: delta > 0 ? `Получено: ${entry.name} (+${delta})` : `Потрачено: ${entry.name} (${delta})`, type: 'inventory' },
+    updateCharacter((doc) => changeItemQuantity(doc, entry.id, delta), { log: { message: delta > 0 ? `Получено: ${entry.name} (+${delta})` : `Потрачено: ${entry.name} (${delta})`, type: 'inventory' },
     });
 
   const facts = [

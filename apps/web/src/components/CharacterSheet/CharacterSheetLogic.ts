@@ -110,7 +110,7 @@ export const useCharacterSheetLogic = () => {
         duration: 4000,
       });
 
-      updateCharacter((prev) => prev, { silent: true, log: { message: `Бросок инициативы: ${totalStr}`, type: 'other' } });
+      updateCharacter((prev) => prev, { log: { message: `Бросок инициативы: ${totalStr}`, type: 'other' } });
       
       return result;
     },

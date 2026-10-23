@@ -886,3 +886,45 @@
   border-right: 2px solid rgb(var(--c-frame) / 0.8);
 }
 [data-setting='grimdark'] .ui-dialog .ui-keyfacts > div:last-child { flex: 0 1 auto; min-width: 0; }
+.ui-segmented--compact .ui-segmented__option { padding: 0 0.55rem; font-size: 0.8rem; }
+
+/* ------------------------------------------------------------------ Profile */
+.ui-image-slot {
+  display: block;
+  width: 100%;
+  background: rgb(var(--c-inset));
+  border: 1px dashed rgb(var(--c-frame) / 0.45);
+  border-radius: var(--radius);
+  transition: border-color 150ms;
+}
+.ui-image-slot:hover { border-color: rgb(var(--c-frame-bright)); border-style: solid; }
+.ui-image-slot__veil {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  text-align: center;
+  color: rgb(var(--c-ink));
+  background: linear-gradient(0deg, rgb(var(--c-bg-deep) / 0.9), transparent);
+  opacity: 0;
+  transition: opacity 150ms;
+}
+.ui-image-slot:hover .ui-image-slot__veil,
+.ui-image-slot:disabled .ui-image-slot__veil { opacity: 1; }
+
+.ui-setting-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: rgb(var(--c-surface));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  transition: border-color 150ms, box-shadow 200ms;
+}
+.ui-setting-option:hover { border-color: rgb(var(--c-frame) / 0.7); }
+.ui-setting-option--selected {
+  border-color: rgb(var(--c-frame-bright));
+  box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.4), inset 0 0 24px rgb(var(--c-accent) / 0.12);
+}
