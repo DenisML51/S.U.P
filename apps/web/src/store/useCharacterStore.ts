@@ -73,6 +73,24 @@ interface CharacterState {
 }
 
 const VIEW_MODE_KEY = 'trpg_view_mode';
+/** The sheet open in this tab, so a page reload returns to it instead of the hero list. */
+const OPEN_CHARACTER_KEY = 'itd.openCharacterId';
+
+const rememberOpen = (id: string | null) => {
+  try {
+    if (id) sessionStorage.setItem(OPEN_CHARACTER_KEY, id);
+    else sessionStorage.removeItem(OPEN_CHARACTER_KEY);
+  } catch {
+    // Not remembered; a reload shows the hero list.
+  }
+};
+const readOpen = (): string | null => {
+  try {
+    return sessionStorage.getItem(OPEN_CHARACTER_KEY);
+  } catch {
+    return null;
+  }
+};
 
 const readViewMode = (): ViewMode => {
   try {
@@ -270,7 +288,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         return;
       }
       set({ character, activeTab: 'personality', viewMode: 'tabs' });
-      notify(`Загружен: ${character.name}`);
+      rememberOpen(character.id);
     },
 
     createCharacter: async (draft) => {
@@ -284,6 +302,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         activeTab: 'personality',
         viewMode: 'tabs',
       });
+      rememberOpen(character.id);
       return character.id;
     },
 
@@ -293,6 +312,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         charactersList: get().charactersList.filter((c) => c.id !== characterId),
         character: get().character?.id === characterId ? null : get().character,
       });
+      if (readOpen() === characterId) rememberOpen(null);
     },
 
     importFromJSON: async (file) => {
@@ -317,6 +337,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         activeTab: 'personality',
         viewMode: 'tabs',
       });
+      rememberOpen(character.id);
       notify(`Персонаж ${character.name} импортирован`);
       return character.id;
     },
@@ -327,7 +348,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       if (character) downloadJson(character, `${character.name || 'character'}.json`);
     },
 
-    goToCharacterList: () => set({ character: null }),
+    goToCharacterList: () => {
+      rememberOpen(null);
+      set({ character: null });
+    },
 
     reloadList: async () => {
       const characters = (await workspace?.repository.list()) ?? [];
@@ -346,6 +370,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         if (change.source !== 'local') void onRepositoryChange(change.ids);
       });
       await get().reloadList();
+
+      const open = readOpen();
+      const character = open ? await next.repository.get(open) : undefined;
+      if (character && workspace === next) set({ character, viewMode: 'tabs' });
     },
   };
 });
