@@ -138,6 +138,8 @@
 .ui-corner--bl { bottom: -1px; left: -1px; transform: scaleY(-1); }
 .ui-corner--br { bottom: -1px; right: -1px; transform: scale(-1, -1); }
 .ui-panel--paper .ui-corner { color: rgb(var(--c-paper-muted)); }
+/* The vine corner is drawn on the panel border: its box starts exactly on the border pixel. */
+[data-setting='high-fantasy'] .ui-corner { width: 32px; height: 32px; }
 
 /* ------------------------------------------------------------------ Buttons */
 .ui-button {
@@ -348,7 +350,7 @@
   transition: opacity 250ms, width 250ms, height 250ms;
 }
 [data-setting='high-fantasy'] .ui-interactive:hover .ui-corner,
-[data-setting='high-fantasy'] .ui-interactive[data-active='true'] .ui-corner { opacity: 1; width: 30px; height: 30px; }
+[data-setting='high-fantasy'] .ui-interactive[data-active='true'] .ui-corner { opacity: 1; width: 40px; height: 40px; }
 [data-setting='high-fantasy'] .ui-interactive:hover,
 [data-setting='high-fantasy'] .ui-interactive[data-active='true'] { border-color: rgb(var(--c-frame-bright) / 0.8); }
 [data-setting='high-fantasy'] .ui-fx {
