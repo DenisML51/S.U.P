@@ -70,7 +70,8 @@ export const Rule: React.FC<{ className?: string }> = ({ className }) => (
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
+  /** `row`: compact action inside a list entry, set in the body face. */
+  size?: 'row' | 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
 };
 

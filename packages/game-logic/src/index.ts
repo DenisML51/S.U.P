@@ -20,3 +20,4 @@ export * from './rules/progression';
 export * from './rules/resources';
 export * from './rules/sanity';
 export * from './rules/sheet';
+export * from './rules/spells';

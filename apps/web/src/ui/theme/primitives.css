@@ -394,3 +394,16 @@
 .ui-morph {
   transition: color 600ms ease, background-color 600ms ease, border-color 600ms ease;
 }
+
+/* Row actions ("Атака", "Сотворить"): small and quiet in every setting. Display faces are kept
+   for primary buttons; in a list they would shout over the content. */
+.ui-button--row,
+[data-setting] .ui-button--row {
+  height: 1.75rem;
+  padding: 0 0.7rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}

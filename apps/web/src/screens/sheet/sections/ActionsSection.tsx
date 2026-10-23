@@ -85,7 +85,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
                 }
                 onOpen={() => logic.openAttackView(entry)}
                 action={
-                  <Button size="sm" variant="secondary" icon={<IconDice width={16} height={16} />} onClick={() => attack(entry)}>
+                  <Button size="row" variant="secondary" icon={<IconDice width={14} height={14} />} onClick={() => attack(entry)}>
                     Атака
                   </Button>
                 }
@@ -135,7 +135,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
                 }
                 onOpen={() => logic.openAbilityView(entry)}
                 action={
-                  <Button size="sm" variant="secondary" onClick={() => activate(entry)}>
+                  <Button size="row" variant="secondary" onClick={() => activate(entry)}>
                     Использовать
                   </Button>
                 }

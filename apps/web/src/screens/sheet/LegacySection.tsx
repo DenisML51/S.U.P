@@ -4,7 +4,6 @@ import { EquipmentTab } from '../../components/CharacterSheet/components/Tabs/Eq
 import { HealthTab } from '../../components/CharacterSheet/components/Tabs/HealthTab';
 import { InventoryTab } from '../../components/CharacterSheet/components/Tabs/InventoryTab';
 import { PersonalityTab } from '../../components/CharacterSheet/components/Tabs/PersonalityTab';
-import { SpellsTab } from '../../components/CharacterSheet/components/Tabs/SpellsTab';
 import { getItemIcon, getItemTypeLabel } from '../../components/CharacterSheet/legacyHelpers';
 import type { SheetSection } from './SheetRail';
 import type { SheetLogic } from './sheetLogic';
@@ -17,17 +16,6 @@ export const LegacySection: React.FC<{ section: SheetSection; logic: SheetLogic 
   const { character } = logic;
   return (
     <div className="space-y-8 text-white">
-      {section === 'magic' && (
-        <SpellsTab
-          character={character}
-          openSpellView={logic.openSpellView}
-          toggleSpellPrepared={logic.toggleSpellPrepared}
-          updateResourceCount={logic.updateResourceCount}
-          updateSpellsNotes={logic.updateSpellsNotes}
-          updateSpellcastingDifficulty={logic.updateSpellcastingDifficulty}
-          openGrimmoire={logic.openGrimmoire}
-        />
-      )}
       {section === 'equipment' && (
         <>
           <EquipmentTab
