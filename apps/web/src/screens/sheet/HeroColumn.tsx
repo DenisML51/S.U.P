@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import {
   CONDITIONS,
-  applyDamage,
-  applyHealing,
   experienceProgress,
   formatModifier,
   initiativeModifier,
@@ -15,7 +13,9 @@ import { SettingEmblem } from '../../ui/art/emblems';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { IconButton, Meter, Panel, cx, type MeterTone } from '../../ui/primitives';
-import { IconCondition, IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../ui/icons';
+import { IconCondition, IconEdit, IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../ui/icons';
+import { useSheetDialogs } from './dialogs/context';
+import { useVitals } from './useVitals';
 import type { SheetLogic } from './sheetLogic';
 
 // ------------------------------------------------------------------------------------------------
@@ -47,25 +47,16 @@ const StatusBar: React.FC<{
   </button>
 );
 
-const QuickHealth: React.FC<{ character: Character }> = ({ character }) => {
-  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
+const QuickHealth: React.FC = () => {
+  const vitals = useVitals();
   const [amount, setAmount] = useState('');
   const value = Number(amount);
   const valid = amount.trim() !== '' && Number.isFinite(value) && value > 0;
-  const max = totalMaxHP(character);
 
   const apply = (kind: 'damage' | 'heal') => {
     if (!valid) return;
-    const preview = kind === 'damage' ? applyDamage(character, value) : applyHealing(character, value);
-    const after = preview.character.currentHP;
-    const message =
-      kind === 'damage'
-        ? `Получен урон: ${value}${preview.absorbed ? ` (${preview.absorbed} поглощено временными)` : ''} — ${after}/${max}`
-        : `Лечение: +${preview.amount} — ${after}/${max}`;
-    updateCharacter((doc) => (kind === 'damage' ? applyDamage(doc, value) : applyHealing(doc, value)).character, {
-      silent: true,
-      log: { message, type: 'health' },
-    });
+    if (kind === 'damage') vitals.damage(value);
+    else vitals.heal(value);
     setAmount('');
   };
 
@@ -186,6 +177,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
   const { character } = logic;
   const updateResourceCount = useCharacterStore((s) => s.updateResourceCount);
   const resetAllResources = useCharacterStore((s) => s.resetAllResources);
+  const dialogs = useSheetDialogs();
   const origin = describeOrigin(character);
   const conditions = character.conditions.map((id) => CONDITIONS.find((c) => c.id === id)?.name ?? id);
 
@@ -195,12 +187,20 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
       <div className="relative h-[210px] shrink-0 overflow-hidden">
         <CharacterArt source={character} kind="full" className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 px-5 pb-3">
-          <h1 className="ui-display text-[1.7rem] leading-tight text-ink">{character.name}</h1>
-          <p className="truncate text-sm text-ink-muted" title={[origin.race, origin.calling].join(' · ')}>
-            {[origin.race, origin.calling].filter(Boolean).join(' · ')}
-          </p>
-        </div>
+        <button
+          type="button"
+          onClick={() => dialogs.open({ kind: 'profile' })}
+          className="group absolute inset-0 text-left"
+          title="Профиль героя: имя, происхождение, сеттинг, изображения"
+        >
+          <IconEdit width={16} height={16} className="absolute right-4 top-4 text-ink opacity-0 transition-opacity group-hover:opacity-70" />
+          <span className="absolute inset-x-5 bottom-3">
+            <span className="ui-display block text-[1.7rem] leading-tight text-ink" role="heading" aria-level={1}>
+              {character.name}
+            </span>
+            <span className="block truncate text-sm text-ink-muted">{[origin.race, origin.calling].filter(Boolean).join(' · ')}</span>
+          </span>
+        </button>
       </div>
 
       <div className="ui-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-3">
@@ -214,7 +214,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
                 max={totalMaxHP(character)}
                 extra={character.tempHP}
                 tone="hp"
-                onClick={() => logic.setShowHealthModal(true)}
+                onClick={() => dialogs.open({ kind: 'health' })}
               />
               <StatusBar
                 icon={<IconSanity width={20} height={20} />}
@@ -222,13 +222,13 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
                 value={character.sanity}
                 max={maxSanityOf(character)}
                 tone="sanity"
-                onClick={() => logic.setShowSanityModal(true)}
+                onClick={() => dialogs.open({ kind: 'sanity' })}
               />
             </div>
-            <LevelPlate character={character} onClick={() => logic.setShowExperienceModal(true)} />
+            <LevelPlate character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
           </div>
-          <ExperienceLine character={character} onClick={() => logic.setShowExperienceModal(true)} />
-          <QuickHealth character={character} />
+          <ExperienceLine character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
+          <QuickHealth />
         </Panel>
 
         {conditions.length > 0 && (
@@ -249,7 +249,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
         )}
 
         <div className="grid grid-cols-4 divide-x divide-line/70 border-y border-line/70">
-          <StatCell label="Класс брони" value={character.armorClass} onClick={() => logic.setShowACModal(true)} hint="Защита и сопротивления" />
+          <StatCell label="Класс брони" value={character.armorClass} onClick={() => dialogs.open({ kind: 'armor' })} hint="Защита и сопротивления" />
           <StatCell
             label="Инициатива"
             value={formatModifier(initiativeModifier(character))}
@@ -267,7 +267,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
               <IconButton label="Длинный отдых: восстановить все ресурсы" size={28} onClick={resetAllResources}>
                 <IconRest width={18} height={18} />
               </IconButton>
-              <IconButton label="Добавить ресурс" size={28} onClick={() => logic.openResourceModal()}>
+              <IconButton label="Добавить ресурс" size={28} onClick={() => dialogs.open({ kind: 'resource' })}>
                 <IconPlus width={16} height={16} />
               </IconButton>
             </div>
@@ -279,7 +279,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
                   key={resource.id}
                   resource={resource}
                   onChange={(delta) => updateResourceCount(resource.id, delta)}
-                  onOpen={() => logic.openResourceView(resource)}
+                  onOpen={() => dialogs.open({ kind: 'resource', id: resource.id })}
                 />
               ))}
             </ul>

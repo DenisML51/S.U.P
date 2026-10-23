@@ -36,7 +36,7 @@ export function useRolls() {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
 
   const log = (message: string) =>
-    updateCharacter((doc) => doc, { silent: true, log: { message, type: 'other' } });
+    updateCharacter((doc) => doc, { log: { message, type: 'other' } });
 
   /** A d20 check, save or attack roll with a modifier. */
   const check = (label: string, modifier: number) => {

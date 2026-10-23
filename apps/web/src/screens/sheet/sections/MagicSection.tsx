@@ -19,7 +19,8 @@ import { Button, IconButton, Input, Panel, cx } from '../../../ui/primitives';
 import { IconMinus, IconPlus } from '../../../ui/icons';
 import { SectionNotes } from '../parts/SectionNotes';
 import type { SheetLogic } from '../sheetLogic';
-import { useRolls } from '../useRolls';
+import { useActs } from '../useActs';
+import { useSheetDialogs } from '../dialogs/context';
 import { damageParts, describeDamage } from '../parts/damage';
 
 type LevelFilter = 'all' | number;
@@ -112,8 +113,8 @@ const DifficultyEditor: React.FC<{ name: string; value: number; onSave: (name: s
 export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
   const { character } = logic;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
-  const performAction = useCharacterStore((s) => s.performAction);
-  const roll = useRolls();
+  const { cast } = useActs();
+  const dialogs = useSheetDialogs();
   const [level, setLevel] = useState<LevelFilter>('all');
   const [preparedOnly, setPreparedOnly] = useState(false);
   const [query, setQuery] = useState('');
@@ -128,11 +129,6 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
   const groups = levels
     .map((lvl) => ({ level: lvl, spells: visible.filter((s) => s.level === lvl) }))
     .filter((group) => group.spells.length > 0);
-
-  const cast = (spell: Spell) => {
-    if (!performAction({ kind: 'spell', id: spell.id })?.ok) return;
-    roll.damage(spell.name, damageParts(spell));
-  };
 
   const cost = (spell: Spell) => {
     if (!spell.resourceId) return null;
@@ -173,10 +169,10 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
             />
             только подготовленные
           </label>
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск" className="ml-auto !w-48 !py-1.5" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск" className="ml-auto !w-48" />
         </div>
 
-        <Ledger title="Книга заклинаний" addLabel="Добавить заклинание" onAdd={() => logic.openSpellModal()}>
+        <Ledger title="Книга заклинаний" addLabel="Добавить заклинание" onAdd={() => dialogs.open({ kind: 'spell' })}>
           {groups.map((group) => (
             <React.Fragment key={group.level}>
               <LedgerGroup
@@ -216,7 +212,7 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
                         ]}
                       />
                     }
-                    onOpen={() => logic.openSpellView(spell)}
+                    onOpen={() => dialogs.open({ kind: 'spell', id: spell.id })}
                     action={
                       spell.prepared && (
                         <Button size="row" variant="secondary" onClick={() => cast(spell)}>

@@ -29,8 +29,6 @@ import type { TabType, ViewMode } from '../types';
 export type CharacterUpdater = Character | ((previous: Character) => Character);
 
 export interface UpdateOptions {
-  /** Suppress the "saved" notification. */
-  silent?: boolean;
   /** History entry recorded in the same write as the change. */
   log?: HistoryEvent;
 }
@@ -51,9 +49,8 @@ interface CharacterState {
   /**
    * Changes the open character. A function receives the latest stored version, which is the safe
    * form; an object is treated as a patch of the fields that differ from the character on screen.
-   * The second argument is `silent` (legacy form) or options.
    */
-  updateCharacter(updater: CharacterUpdater, options?: boolean | UpdateOptions): void;
+  updateCharacter(updater: CharacterUpdater, options?: UpdateOptions): void;
   logHistory(message: string, type?: HistoryEntryType): void;
   updateResourceCount(resourceId: string, delta: number): void;
   resetAllResources(): void;
@@ -212,7 +209,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     },
 
     updateCharacter: (updater, options) => {
-      const { silent = false, log } = typeof options === 'boolean' ? { silent: options } : (options ?? {});
+      const log = options?.log;
       const current = get().character;
       if (!current) return;
 
@@ -230,11 +227,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
       set({ character: parsed.data, charactersList: replacePreview(parsed.data) });
       enqueueWrite(current.id, change);
-      if (!silent) notify('Персонаж сохранен');
     },
 
     logHistory: (message, type = 'other') => {
-      get().updateCharacter((doc) => doc, { silent: true, log: { message, type } });
+      get().updateCharacter((doc) => doc, { log: { message, type } });
     },
 
     updateResourceCount: (resourceId, delta) => {
@@ -248,17 +244,13 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
           ? `Потрачен ресурс: ${resource.name} (${resource.current}/${resource.max})`
           : `Восстановлен ресурс: ${resource.name} (${resource.current}/${resource.max})`;
 
-      get().updateCharacter((doc) => changeResource(doc, resourceId, delta)?.character ?? doc, {
-        silent: true,
-        log: { message, type: 'resource' },
+      get().updateCharacter((doc) => changeResource(doc, resourceId, delta)?.character ?? doc, { log: { message, type: 'resource' },
       });
       notify(`${resource.name}: ${resource.current}/${resource.max}`, delta < 0 ? 'error' : 'success');
     },
 
     resetAllResources: () => {
-      get().updateCharacter(restoreAllResources, {
-        silent: true,
-        log: { message: 'Все ресурсы восстановлены (Длинный отдых)', type: 'resource' },
+      get().updateCharacter(restoreAllResources, { log: { message: 'Все ресурсы восстановлены (Длинный отдых)', type: 'resource' },
       });
       toast.success('Все ресурсы восстановлены');
     },
@@ -276,7 +268,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
           const applied = performGameAction(doc, request);
           return applied.ok ? applied.character : doc;
         },
-        { silent: true, log: { message: result.message, type: 'other' } },
+        { log: { message: result.message, type: 'other' } },
       );
       return result;
     },

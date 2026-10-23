@@ -1,8 +1,8 @@
-import React, { useEffect, useId, useRef } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSetting, SettingScope } from './theme/SettingScope';
-import { Button, IconButton, Panel, cx } from './primitives';
+import { Button, IconButton, Panel, Rule, cx } from './primitives';
 import { IconClose } from './icons';
 
 interface DialogProps {
@@ -11,16 +11,53 @@ interface DialogProps {
   title: React.ReactNode;
   /** Short line under the title. */
   subtitle?: React.ReactNode;
+  /** Small label above the title: what kind of thing this is ("Атака · основное"). */
+  eyebrow?: React.ReactNode;
   children?: React.ReactNode;
   /** Buttons row; right-aligned. */
   footer?: React.ReactNode;
+  /** Left end of the buttons row, apart from the main actions ("Удалить"). */
+  footerStart?: React.ReactNode;
+  /** Changing it swaps the content (viewing → editing): the old content fades, the window glides to
+      the size of the new one. */
+  swapKey?: string;
   width?: 'sm' | 'md' | 'lg' | 'xl';
   /** Paper suits reading (descriptions); plate suits forms. */
   variant?: 'plate' | 'paper';
   className?: string;
 }
 
-const WIDTHS = { sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-3xl', xl: 'max-w-5xl' } as const;
+const WIDTHS = { sm: 448, md: 576, lg: 768, xl: 1024 } as const;
+
+/** Focus the element marked for it, else the first field (or, on opening, the first button). */
+const focusInto = (panel: HTMLElement | null, orButton: boolean) =>
+  (
+    panel?.querySelector<HTMLElement>('[data-autofocus]') ??
+    panel?.querySelector<HTMLElement>(orButton ? 'input, textarea, select, button' : 'input, textarea, select')
+  )?.focus();
+
+const RESIZE = { duration: 0.28, ease: [0.22, 1, 0.36, 1] } as const;
+
+/**
+ * Height of the current content, kept up to date as it changes. Content that is on its way out
+ * (marked with an older swap key) is ignored: it reflows as the window widens and would make the
+ * height dip before the new content arrives.
+ */
+function useHeight(swapKey: string): [(node: HTMLElement | null) => void, number | undefined] {
+  const [node, setNode] = useState<HTMLElement | null>(null);
+  const [height, setHeight] = useState<number>();
+  const current = useRef(swapKey);
+  current.current = swapKey;
+  useEffect(() => {
+    if (!node) return;
+    const observer = new ResizeObserver(() => {
+      if (node.dataset.swap === current.current) setHeight(node.offsetHeight);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [node]);
+  return [setNode, height];
+}
 
 /**
  * Modal dialog in the current setting. Closes on Escape and on a click outside; focus moves into
@@ -32,8 +69,11 @@ export const Dialog: React.FC<DialogProps> = ({
   onClose,
   title,
   subtitle,
+  eyebrow,
   children,
   footer,
+  footerStart,
+  swapKey = 'main',
   width = 'md',
   variant = 'plate',
   className,
@@ -52,15 +92,15 @@ export const Dialog: React.FC<DialogProps> = ({
       }
     };
     window.addEventListener('keydown', onKey);
-    requestAnimationFrame(() => {
-      const target = panelRef.current?.querySelector<HTMLElement>('[data-autofocus], input, textarea, select, button');
-      target?.focus();
-    });
+    requestAnimationFrame(() => focusInto(panelRef.current, true));
     return () => {
       window.removeEventListener('keydown', onKey);
       previous?.focus?.();
     };
   }, [open, onClose]);
+
+  const [measure, contentHeight] = useHeight(swapKey);
+  const focusFirstField = () => focusInto(panelRef.current, false);
 
   return createPortal(
     <AnimatePresence>
@@ -73,12 +113,15 @@ export const Dialog: React.FC<DialogProps> = ({
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
+          {/* The window keeps its frame while the content changes; width and height follow the
+              content, so the switch to a larger form and back reads as one window resizing. */}
           <motion.div
-            className={cx('relative w-full', WIDTHS[width])}
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="relative"
+            style={{ maxWidth: '100%' }}
+            initial={{ opacity: 0, y: 12, scale: 0.98, width: WIDTHS[width] }}
+            animate={{ opacity: 1, y: 0, scale: 1, width: WIDTHS[width] }}
+            exit={{ opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.15 } }}
+            transition={{ ...RESIZE, opacity: { duration: 0.2 } }}
           >
             <Panel
               ref={panelRef}
@@ -88,21 +131,53 @@ export const Dialog: React.FC<DialogProps> = ({
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
-              className={cx('flex max-h-[86vh] flex-col', className)}
+              className={cx('ui-dialog transition-colors', className)}
             >
-              <header className="flex items-start gap-4 px-6 pt-5 pb-4">
-                <div className="min-w-0 flex-1">
-                  <h2 id={titleId} className="ui-display ui-title text-2xl leading-tight">
-                    {title}
-                  </h2>
-                  {subtitle && <p className="mt-1 text-sm opacity-70">{subtitle}</p>}
-                </div>
-                <IconButton label="Закрыть" onClick={onClose} size={32}>
-                  <IconClose width={18} height={18} />
-                </IconButton>
-              </header>
-              {children && <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 pb-5">{children}</div>}
-              {footer && <footer className="flex justify-end gap-3 border-t border-line/60 px-6 py-4">{footer}</footer>}
+              <span className="ui-dialog__frame" aria-hidden />
+              <motion.div
+                className="overflow-hidden"
+                initial={false}
+                animate={{ height: contentHeight ?? 'auto' }}
+                transition={RESIZE}
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={swapKey}
+                    ref={measure}
+                    data-swap={swapKey}
+                    className="flex max-h-[86vh] flex-col"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1, transition: { duration: 0.18, delay: 0.06 } }}
+                    exit={{ opacity: 0, transition: { duration: 0.1 } }}
+                    onAnimationComplete={(definition) => {
+                      if ((definition as { opacity?: number }).opacity === 1) focusFirstField();
+                    }}
+                  >
+                    <header className="ui-dialog__head relative pb-4 pl-6 pr-14 pt-5">
+                      <div className="min-w-0">
+                        {eyebrow && (
+                          <div className="ui-dialog__eyebrow mb-1.5 text-[11px] uppercase tracking-[0.18em] opacity-70">{eyebrow}</div>
+                        )}
+                        <h2 id={titleId} className="ui-dialog__title ui-display ui-title text-2xl leading-tight">
+                          {title}
+                        </h2>
+                        {subtitle && <p className="mt-1 text-sm opacity-70">{subtitle}</p>}
+                      </div>
+                      <Rule className="ui-dialog__rule mt-3" />
+                    </header>
+                    {children && <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 pb-5">{children}</div>}
+                    {(footer || footerStart) && (
+                      <footer className="ui-dialog__foot flex items-center gap-3 px-6 py-4">
+                        {footerStart}
+                        <div className="ml-auto flex gap-3">{footer}</div>
+                      </footer>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </motion.div>
+              <IconButton label="Закрыть" onClick={onClose} size={32} className="!absolute right-4 top-4 z-[2]">
+                <IconClose width={18} height={18} />
+              </IconButton>
             </Panel>
           </motion.div>
         </SettingScope>

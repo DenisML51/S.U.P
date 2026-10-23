@@ -8,6 +8,8 @@ import { plainText } from '../../../ui/text';
 import { SectionNotes } from '../parts/SectionNotes';
 import { damageParts, describeDamage } from '../parts/damage';
 import type { SheetLogic } from '../sheetLogic';
+import { useSheetDialogs } from '../dialogs/context';
+import { ITEM_TYPE_LABEL, isEquippable } from '../dialogs/ItemDialog';
 
 type Filter = 'all' | ItemType;
 
@@ -18,15 +20,6 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'ammunition', label: 'Боеприпасы' },
   { id: 'item', label: 'Предметы' },
 ];
-
-const TYPE_LABEL: Record<ItemType, string> = {
-  weapon: 'оружие',
-  armor: 'броня',
-  ammunition: 'боеприпас',
-  item: 'предмет',
-};
-
-const isEquippable = (item: InventoryItem) => item.type === 'armor' || item.type === 'weapon' || isShield(item);
 
 /** Bullet that wears or takes off an item: filled while equipped. */
 const EquipMark: React.FC<{ item: InventoryItem; onToggle: () => void }> = ({ item, onToggle }) => (
@@ -45,7 +38,7 @@ const EquipMark: React.FC<{ item: InventoryItem; onToggle: () => void }> = ({ it
 const describeItem = (item: InventoryItem) => {
   const damage = damageParts(item);
   return [
-    item.itemClass || TYPE_LABEL[item.type],
+    item.itemClass || ITEM_TYPE_LABEL[item.type],
     item.type === 'armor' && item.baseAC !== undefined && (
       <>
         КБ <MetaValue>{item.baseAC}</MetaValue>
@@ -77,6 +70,7 @@ const WornSlot: React.FC<{ label: string; items: InventoryItem[]; onOpen: (item:
 export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
   const { character } = logic;
   const [filter, setFilter] = useState<Filter>('all');
+  const dialogs = useSheetDialogs();
   const items = character.inventory.filter((item) => filter === 'all' || item.type === filter);
   const worn = character.inventory.filter((item) => item.equipped);
 
@@ -106,7 +100,7 @@ export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => 
           title="Снаряжение и вещи"
           aside={<span className="tabular-nums">вес {carriedWeight(character)} фнт</span>}
           addLabel="Добавить предмет"
-          onAdd={() => logic.openItemModal()}
+          onAdd={() => dialogs.open({ kind: 'item' })}
         >
           {items.map((item) => {
             const stackable = isStackable(item);
@@ -118,7 +112,7 @@ export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => 
                 active={item.equipped}
                 title={item.name}
                 meta={<MetaLine parts={describeItem(item)} />}
-                onOpen={() => logic.openItemView(item)}
+                onOpen={() => dialogs.open({ kind: 'item', id: item.id })}
                 value={
                   stackable && (
                     <span className="flex items-center gap-1">
@@ -149,13 +143,13 @@ export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => 
               КБ <span className="tabular-nums text-ink-muted">{calculateArmorClass(character)}</span>
             </span>
           </div>
-          <WornSlot label="Броня" items={worn.filter((i) => i.type === 'armor' && !isShield(i))} onOpen={logic.openItemView} />
-          <WornSlot label="Щит" items={worn.filter(isShield)} onOpen={logic.openItemView} />
-          <WornSlot label="Оружие" items={worn.filter((i) => i.type === 'weapon')} onOpen={logic.openItemView} />
+          <WornSlot label="Броня" items={worn.filter((i) => i.type === 'armor' && !isShield(i))} onOpen={(item) => dialogs.open({ kind: 'item', id: item.id })} />
+          <WornSlot label="Щит" items={worn.filter(isShield)} onOpen={(item) => dialogs.open({ kind: 'item', id: item.id })} />
+          <WornSlot label="Оружие" items={worn.filter((i) => i.type === 'weapon')} onOpen={(item) => dialogs.open({ kind: 'item', id: item.id })} />
         </Panel>
 
         <Panel className="px-5 py-4">
-          <button type="button" onClick={() => logic.setShowCurrencyModal(true)} className="group w-full text-left" title="Кошелёк: пополнить, потратить, разменять">
+          <button type="button" onClick={() => dialogs.open({ kind: 'currency' })} className="group w-full text-left" title="Кошелёк: пополнить, потратить, разменять">
             <div className="mb-2 flex items-center justify-between">
               <h3 className="ui-display text-lg text-frame-bright">Кошелёк</h3>
               <IconCoins width={20} height={20} className="text-ink-faint group-hover:text-frame-bright" />

@@ -13,6 +13,7 @@ import type { Character, Skill } from '@itd/schema';
 import { Panel, SectionTitle, TextArea, cx } from '../../../ui/primitives';
 import type { SheetLogic } from '../sheetLogic';
 import { useRolls } from '../useRolls';
+import { useSheetDialogs } from '../dialogs/context';
 
 /** Skills of the sheet in the canonical order, falling back to the list a new sheet starts with. */
 const orderedSkills = (character: Character): Skill[] =>
@@ -124,6 +125,7 @@ const LanguagesNote: React.FC<{ value: string; onSave: (value: string) => void }
 export const SkillsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
   const { character } = logic;
   const roll = useRolls();
+  const dialogs = useSheetDialogs();
   const skills = orderedSkills(character);
 
   const cycleProficiency = (skill: Skill) => {
@@ -144,7 +146,7 @@ export const SkillsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
               key={attribute.id}
               character={character}
               attribute={attribute}
-              onEdit={() => logic.setSelectedAttribute(attribute.id)}
+              onEdit={() => dialogs.open({ kind: 'attribute', id: attribute.id })}
               onCheck={() => roll.check(`Проверка: ${attribute.name}`, attributeModifier(character, attribute.id))}
               onSave={() => roll.check(`Спасбросок: ${attribute.name}`, savingThrowModifier(character, attribute.id))}
             />

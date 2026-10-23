@@ -80,3 +80,9 @@ export function applyHealing(character: Character, healing: number): HealthChang
   const amount = Math.max(0, Math.min(Math.trunc(healing), totalMaxHP(character) - character.currentHP));
   return { character: { ...character, currentHP: character.currentHP + amount }, amount, absorbed: 0 };
 }
+
+/** Temporary hit points do not stack: the larger of the old and the new amount stays. */
+export const grantTempHP = (character: Character, amount: number): Character => ({
+  ...character,
+  tempHP: Math.max(character.tempHP, Math.max(0, Math.trunc(amount))),
+});

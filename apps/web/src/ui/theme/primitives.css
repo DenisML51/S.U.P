@@ -299,6 +299,9 @@
   transition: border-color 120ms, box-shadow 120ms;
 }
 .ui-input::placeholder { color: rgb(var(--c-ink-faint)); }
+/* One height for every single-line control, so fields in a row line up. */
+/* :where keeps it overridable by a size utility (the compact field of the health row). */
+:where(input, button).ui-input { height: var(--control-height); padding-top: 0; padding-bottom: 0; }
 .ui-input:hover { border-color: rgb(var(--c-frame) / 0.5); }
 .ui-input:focus {
   outline: none;
@@ -663,3 +666,265 @@
 }
 /* Dark fantasy: worn, dark at the edges. */
 [data-setting='dark-fantasy'] .ui-toast { box-shadow: inset 0 0 26px rgb(0 0 0 / 0.7), 0 14px 30px -12px rgb(0 0 0 / 0.8); }
+
+/* ------------------------------------------------------------------ Form controls */
+.ui-segmented {
+  display: inline-flex;
+  height: var(--control-height);
+  padding: 2px;
+  gap: 2px;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+}
+.ui-segmented__option {
+  --segment-tone: var(--c-frame-bright);
+  flex: 1;
+  padding: 0 0.8rem;
+  font-size: 0.85rem;
+  color: rgb(var(--c-ink-muted));
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  white-space: nowrap;
+  transition: color 120ms, background-color 120ms, border-color 120ms;
+}
+.ui-segmented__option:hover { color: rgb(var(--c-ink)); }
+.ui-segmented__option[aria-checked='true'] {
+  color: rgb(var(--segment-tone));
+  background: rgb(var(--segment-tone) / 0.12);
+  border-color: rgb(var(--segment-tone) / 0.5);
+}
+.ui-segmented__option:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 1px; }
+[data-setting='sci-fi'] .ui-segmented__option[aria-checked='true'] { box-shadow: inset 0 -2px 0 rgb(var(--segment-tone)); }
+[data-setting='grimdark'] .ui-segmented__option { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.75rem; }
+
+.ui-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.1rem;
+  height: 1.15rem;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 999px;
+  transition: background-color 150ms, border-color 150ms;
+}
+.ui-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.15rem - 6px);
+  height: calc(1.15rem - 6px);
+  background: rgb(var(--c-ink-faint));
+  border-radius: 999px;
+  transition: transform 150ms ease, background-color 150ms;
+}
+[aria-checked='true'] > .ui-switch { background: rgb(var(--c-accent) / 0.25); border-color: rgb(var(--c-accent) / 0.8); }
+[aria-checked='true'] > .ui-switch::after { transform: translateX(0.95rem); background: rgb(var(--c-frame-bright)); }
+[data-setting='grimdark'] .ui-switch,
+[data-setting='grimdark'] .ui-switch::after,
+[data-setting='sci-fi'] .ui-switch,
+[data-setting='sci-fi'] .ui-switch::after { border-radius: 0; }
+
+.ui-number {
+  display: inline-flex;
+  align-items: stretch;
+  height: var(--control-height);
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  transition: border-color 120ms;
+}
+.ui-number:focus-within { border-color: rgb(var(--c-frame-bright)); }
+.ui-number input {
+  width: 3.5rem;
+  min-width: 0;
+  flex: 1;
+  text-align: center;
+  background: transparent;
+  color: rgb(var(--c-ink));
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.ui-number button {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  color: rgb(var(--c-ink-faint));
+  transition: color 120ms, background-color 120ms;
+}
+.ui-number button:not(:disabled):hover { color: rgb(var(--c-frame-bright)); background: rgb(var(--c-surface-2)); }
+.ui-number button:disabled { opacity: 0.35; }
+
+.ui-popover {
+  position: fixed;
+  z-index: 300;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: 4px;
+  background: rgb(var(--c-surface));
+  border: 1px solid rgb(var(--c-frame) / 0.5);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 36px -12px rgb(0 0 0 / 0.85);
+}
+.ui-popover__option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.9rem;
+  color: rgb(var(--c-ink-muted));
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.ui-popover__option[data-active] { background: rgb(var(--c-surface-2)); color: rgb(var(--c-ink)); }
+.ui-popover__option[aria-selected='true'] { color: rgb(var(--c-frame-bright)); }
+[data-setting='sci-fi'] .ui-popover__option[data-active] { box-shadow: inset 2px 0 0 rgb(var(--c-accent)); }
+
+/* ------------------------------------------------------------------ Dialog content */
+/* Key figures of a card: what a player looks for first, large and side by side. */
+.ui-keyfacts {
+  display: flex;
+  gap: 0.75rem 2.25rem;
+}
+.ui-keyfacts dt {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.ui-keyfacts dd {
+  margin-top: 0.15rem;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+.ui-dialog__foot { border-top: 1px solid rgb(var(--c-line) / 0.6); }
+.ui-panel--paper .ui-dialog__foot { border-top-color: rgb(var(--c-paper-muted) / 0.35); }
+.ui-keyfacts > div:last-child { flex: 1; min-width: 0; }
+.ui-panel--paper .ui-rule { color: rgb(var(--c-paper-muted)); }
+.ui-panel--paper .ui-rule::before,
+.ui-panel--paper .ui-rule::after { background: linear-gradient(90deg, transparent, rgb(var(--c-paper-muted) / 0.7), transparent); }
+
+/* ------------------------------------------------------------------ Dialog chrome per setting */
+/* Body and footer line up with the header's text, which leaves room for the close button. */
+.ui-dialog__frame { display: none; }
+.ui-dialog__rule { display: none; }
+
+/* High fantasy: a card from an illuminated book. A second gilt frame inside the edge, large vine
+   corners, the title centred in gold above a starred rule. */
+[data-setting='high-fantasy'] .ui-dialog__frame {
+  display: block;
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgb(var(--c-frame) / 0.3);
+  pointer-events: none;
+}
+[data-setting='high-fantasy'] .ui-dialog .ui-corner { width: 46px; height: 46px; }
+[data-setting='high-fantasy'] .ui-dialog__head { text-align: center; padding-top: 1.9rem; padding-left: 3.5rem; }
+[data-setting='high-fantasy'] .ui-dialog__title { color: rgb(var(--c-frame-bright)); }
+[data-setting='high-fantasy'] .ui-dialog__eyebrow { color: rgb(var(--c-frame)); opacity: 1; }
+[data-setting='high-fantasy'] .ui-dialog__rule { display: flex; }
+[data-setting='high-fantasy'] .ui-dialog__foot { border-top-color: rgb(var(--c-frame) / 0.25); }
+
+/* Grimdark: the heading is stamped on an iron band, as on the ledgers. */
+[data-setting='grimdark'] .ui-dialog__head {
+  margin-bottom: 1rem;
+  padding-top: 1.1rem;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.02) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-bg)));
+  border-bottom: 2px solid rgb(var(--c-frame) / 0.75);
+}
+[data-setting='grimdark'] .ui-dialog__eyebrow { color: rgb(var(--c-accent)); opacity: 1; font-weight: 600; }
+
+/* Sci-fi: a terminal window. A rule under the header with a lit segment, the label in signal blue. */
+[data-setting='sci-fi'] .ui-dialog__head {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgb(var(--c-frame) / 0.3);
+}
+[data-setting='sci-fi'] .ui-dialog__head::after {
+  content: '';
+  position: absolute;
+  left: 1.5rem;
+  bottom: -1px;
+  width: 4rem;
+  height: 2px;
+  background: rgb(var(--c-accent));
+  box-shadow: 0 0 10px rgb(var(--c-accent));
+}
+[data-setting='sci-fi'] .ui-dialog__eyebrow { color: rgb(var(--c-accent)); opacity: 1; }
+
+/* Dark fantasy: a title in old blood under a thin thorned rule, darkness pooling at the edges. */
+[data-setting='dark-fantasy'] .ui-dialog__title { color: rgb(var(--c-accent)); }
+[data-setting='dark-fantasy'] .ui-dialog__rule { display: flex; opacity: 0.6; }
+[data-setting='dark-fantasy'] .ui-dialog { box-shadow: inset 0 0 80px rgb(0 0 0 / 0.75), var(--shadow-panel); }
+[data-setting='high-fantasy'] .ui-dialog .ui-keyfacts { justify-content: center; column-gap: 3rem; }
+[data-setting='high-fantasy'] .ui-dialog .ui-keyfacts > div:last-child { flex: 0 1 auto; min-width: 0; }
+[data-setting='high-fantasy'] .ui-dialog .ui-minorfacts { justify-content: center; }
+/* The amount on a resource card, with its steppers either side. */
+.ui-resource-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+.ui-resource-count > span { font-size: 2.6rem; line-height: 1; }
+/* Sci-fi: key figures are readouts, each in its own lit cell. */
+[data-setting='sci-fi'] .ui-dialog .ui-keyfacts { gap: 0.5rem; }
+[data-setting='sci-fi'] .ui-dialog .ui-keyfacts > div {
+  padding: 0.45rem 0.9rem 0.55rem;
+  background: linear-gradient(90deg, rgb(var(--c-accent) / 0.1), rgb(var(--c-surface-2) / 0.35));
+  border-left: 2px solid rgb(var(--c-accent));
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+}
+[data-setting='sci-fi'] .ui-dialog .ui-keyfacts dt { color: rgb(var(--c-frame-bright)); opacity: 0.8; }
+/* Grimdark: figures stamped between bronze brackets. */
+[data-setting='grimdark'] .ui-dialog .ui-keyfacts > div {
+  padding: 0.2rem 0.8rem;
+  border-left: 2px solid rgb(var(--c-frame) / 0.8);
+  border-right: 2px solid rgb(var(--c-frame) / 0.8);
+}
+[data-setting='grimdark'] .ui-dialog .ui-keyfacts > div:last-child { flex: 0 1 auto; min-width: 0; }
+.ui-segmented--compact .ui-segmented__option { padding: 0 0.55rem; font-size: 0.8rem; }
+
+/* ------------------------------------------------------------------ Profile */
+.ui-image-slot {
+  display: block;
+  width: 100%;
+  background: rgb(var(--c-inset));
+  border: 1px dashed rgb(var(--c-frame) / 0.45);
+  border-radius: var(--radius);
+  transition: border-color 150ms;
+}
+.ui-image-slot:hover { border-color: rgb(var(--c-frame-bright)); border-style: solid; }
+.ui-image-slot__veil {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  text-align: center;
+  color: rgb(var(--c-ink));
+  background: linear-gradient(0deg, rgb(var(--c-bg-deep) / 0.9), transparent);
+  opacity: 0;
+  transition: opacity 150ms;
+}
+.ui-image-slot:hover .ui-image-slot__veil,
+.ui-image-slot:disabled .ui-image-slot__veil { opacity: 1; }
+
+.ui-setting-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: rgb(var(--c-surface));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  transition: border-color 150ms, box-shadow 200ms;
+}
+.ui-setting-option:hover { border-color: rgb(var(--c-frame) / 0.7); }
+.ui-setting-option--selected {
+  border-color: rgb(var(--c-frame-bright));
+  box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.4), inset 0 0 24px rgb(var(--c-accent) / 0.12);
+}
