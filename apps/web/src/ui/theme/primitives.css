@@ -1261,14 +1261,15 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-die:hover { color: rgb(var(--c-ink)); border-color: rgb(var(--c-frame) / 0.7); }
 .ui-die:active { transform: translateY(1px); }
 .ui-die--in { color: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame-bright) / 0.8); background: rgb(var(--c-accent) / 0.1); }
+/* How many of a die are in the pool; sits inside the die so no scrolling edge can cut it. */
 .ui-die__count {
   position: absolute;
-  top: -0.45rem;
-  right: -0.45rem;
-  min-width: 1.25rem;
+  top: 0.25rem;
+  right: 0.25rem;
+  min-width: 1.15rem;
   padding: 0 0.3rem;
-  font-size: 0.7rem;
-  line-height: 1.25rem;
+  font-size: 0.68rem;
+  line-height: 1.15rem;
   text-align: center;
   color: rgb(var(--c-accent-ink));
   background: rgb(var(--c-accent));
@@ -1277,7 +1278,7 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 [data-setting='sci-fi'] .ui-die,
 [data-setting='grimdark'] .ui-die { clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
 [data-setting='sci-fi'] .ui-die__count,
-[data-setting='grimdark'] .ui-die__count { border-radius: 0; top: 0; right: 0; }
+[data-setting='grimdark'] .ui-die__count { border-radius: 0; }
 
 .ui-die-face {
   display: grid;
