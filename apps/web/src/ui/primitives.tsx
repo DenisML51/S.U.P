@@ -13,16 +13,25 @@ type PanelProps = React.HTMLAttributes<HTMLElement> & {
   variant?: PanelVariant;
   /** Corner ornaments; on by default for plates. */
   ornate?: boolean;
+  /** Clickable surface with the setting's hover effect. */
+  interactive?: boolean;
+  /** Persistent "selected" look, the same as hover. */
+  active?: boolean;
   as?: 'div' | 'section' | 'article' | 'aside' | 'header' | 'nav' | 'button';
 };
 
 export const Panel = forwardRef<HTMLElement, PanelProps>(
-  ({ variant = 'plate', ornate = variant === 'plate', as: Component = 'div', className, children, ...rest }, ref) => (
+  (
+    { variant = 'plate', ornate = variant === 'plate', interactive, active, as: Component = 'div', className, children, ...rest },
+    ref,
+  ) => (
     <Component
       ref={ref as never}
-      className={cx('ui-panel', variant !== 'plate' && `ui-panel--${variant}`, className)}
+      className={cx('ui-panel', variant !== 'plate' && `ui-panel--${variant}`, interactive && 'ui-interactive', className)}
+      data-active={active || undefined}
       {...rest}
     >
+      {interactive && <span className="ui-fx" aria-hidden />}
       {ornate && <Corners />}
       {children}
     </Component>
