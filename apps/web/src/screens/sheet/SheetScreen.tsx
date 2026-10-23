@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCharacterSheetLogic } from '../../components/CharacterSheet/CharacterSheetLogic';
-import { CharacterSheetModals } from '../../components/CharacterSheet/components/Modals/CharacterSheetModals';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { settingOf } from '../../ui/theme/settings';
 import { SheetDialogsProvider } from './dialogs/context';
 import { SheetDialogHost } from './dialogs/SheetDialogHost';
 import { HeroColumn } from './HeroColumn';
-import { LegacySection } from './LegacySection';
 import { SheetRail, type SheetSection } from './SheetRail';
-import type { SheetLogic } from './sheetLogic';
 import { ActionsSection } from './sections/ActionsSection';
+import { BodySection } from './sections/BodySection';
 import { EquipmentSection } from './sections/EquipmentSection';
+import { JournalSection } from './sections/JournalSection';
 import { MagicSection } from './sections/MagicSection';
+import { PersonaSection } from './sections/PersonaSection';
 import { SkillsSection } from './sections/SkillsSection';
 
 const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
@@ -26,15 +25,14 @@ const openDiceTray = () => window.dispatchEvent(new CustomEvent('open-dice-hub',
  * only long lists scroll inside their panels.
  */
 export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
-  const logic = useCharacterSheetLogic();
+  const character = useCharacterStore((s) => s.character);
   const goToCharacterList = useCharacterStore((s) => s.goToCharacterList);
   const setViewMode = useCharacterStore((s) => s.setViewMode);
   const [section, setSection] = useState<SheetSection>('attributes');
-  const setting = settingOf(logic.character);
+  const setting = settingOf(character);
   useDocumentSetting(setting);
 
-  if (!logic.character) return null;
-  const sheet = logic as SheetLogic;
+  if (!character) return null;
 
   return (
     <SheetDialogsProvider>
@@ -58,7 +56,7 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
             animate={{ x: 0, opacity: 1 }}
             transition={{ ...ENTER, delay: 0.06 }}
           >
-            <HeroColumn logic={sheet} onShowConditions={() => setSection('body')} />
+            <HeroColumn character={character} onShowConditions={() => setSection('body')} />
           </motion.div>
           <motion.main
             className="ui-scroll min-w-0 flex-1 overflow-y-auto px-10 py-8"
@@ -75,17 +73,18 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
               >
-                {section === 'attributes' && <SkillsSection logic={sheet} />}
-                {section === 'actions' && <ActionsSection logic={sheet} />}
-                {section === 'magic' && <MagicSection logic={sheet} />}
-                {section === 'equipment' && <EquipmentSection logic={sheet} />}
-                {['body', 'persona', 'journal'].includes(section) && <LegacySection section={section} logic={sheet} />}
+                {section === 'attributes' && <SkillsSection character={character} />}
+                {section === 'actions' && <ActionsSection character={character} />}
+                {section === 'magic' && <MagicSection character={character} />}
+                {section === 'equipment' && <EquipmentSection character={character} />}
+                {section === 'body' && <BodySection character={character} />}
+                {section === 'persona' && <PersonaSection character={character} />}
+                {section === 'journal' && <JournalSection character={character} />}
               </motion.div>
             </AnimatePresence>
           </motion.main>
         </motion.div>
-        <CharacterSheetModals {...sheet} autoAC={sheet.calculateAutoAC()} />
-        <SheetDialogHost />
+          <SheetDialogHost />
       </SettingScope>
     </SheetDialogsProvider>
   );

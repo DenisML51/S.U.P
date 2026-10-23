@@ -10,7 +10,7 @@ export type EntryKind = 'attack' | 'ability' | 'spell' | 'item' | 'trait' | 'res
 export type SheetDialog =
   | { kind: EntryKind; id?: string; edit?: boolean }
   | { kind: 'health' | 'sanity' | 'experience' | 'currency' | 'armor' | 'profile' }
-  | { kind: 'attribute'; id: string };
+  | { kind: 'attribute' | 'limb'; id: string };
 
 interface SheetDialogs {
   dialog: SheetDialog | null;

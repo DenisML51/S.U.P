@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { calculateArmorClass, carriedWeight, isShield, isStackable, itemQuantity } from '@itd/game-logic';
-import type { InventoryItem, ItemType } from '@itd/schema';
+import type { Character, InventoryItem, ItemType } from '@itd/schema';
 import { Ledger, LedgerBullet, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
 import { IconButton, Panel, cx } from '../../../ui/primitives';
 import { IconCoins, IconMinus, IconPlus } from '../../../ui/icons';
 import { plainText } from '../../../ui/text';
-import { SectionNotes } from '../parts/SectionNotes';
+import { SectionNotes } from '../parts/EditableText';
 import { damageParts, describeDamage } from '../parts/damage';
-import type { SheetLogic } from '../sheetLogic';
+import { useInventory } from '../useInventory';
+import { useSheetText } from '../useSheetText';
 import { useSheetDialogs } from '../dialogs/context';
 import { ITEM_TYPE_LABEL, isEquippable } from '../dialogs/ItemDialog';
 
@@ -67,14 +68,14 @@ const WornSlot: React.FC<{ label: string; items: InventoryItem[]; onOpen: (item:
 );
 
 /** Everything the hero carries: what is worn, what is in the pack, and the purse. */
-export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
-  const { character } = logic;
+export const EquipmentSection: React.FC<{ character: Character }> = ({ character }) => {
+  const saveText = useSheetText();
   const [filter, setFilter] = useState<Filter>('all');
   const dialogs = useSheetDialogs();
   const items = character.inventory.filter((item) => filter === 'all' || item.type === filter);
   const worn = character.inventory.filter((item) => item.equipped);
 
-  const toggleEquip = (item: InventoryItem) => (item.equipped ? logic.unequipItem(item.id) : logic.equipItem(item.id));
+  const { toggleEquip, changeQuantity } = useInventory();
 
   return (
     <div className="grid h-full grid-cols-[1fr_290px] gap-8">
@@ -116,11 +117,11 @@ export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => 
                 value={
                   stackable && (
                     <span className="flex items-center gap-1">
-                      <IconButton label={`Убрать: ${item.name}`} size={22} onClick={() => logic.updateItemQuantity(item.id, -1)} disabled={itemQuantity(item) <= 0}>
+                      <IconButton label={`Убрать: ${item.name}`} size={22} onClick={() => changeQuantity(item, -1)} disabled={itemQuantity(item) <= 0}>
                         <IconMinus width={12} height={12} />
                       </IconButton>
                       <span className="w-7 text-center">{itemQuantity(item)}</span>
-                      <IconButton label={`Добавить: ${item.name}`} size={22} onClick={() => logic.updateItemQuantity(item.id, 1)}>
+                      <IconButton label={`Добавить: ${item.name}`} size={22} onClick={() => changeQuantity(item, 1)}>
                         <IconPlus width={12} height={12} />
                       </IconButton>
                     </span>
@@ -132,7 +133,7 @@ export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => 
           {items.length === 0 && <li className="py-4 text-sm opacity-60">Здесь пока пусто</li>}
         </Ledger>
 
-        <SectionNotes value={character.inventoryNotes} onSave={logic.updateInventoryNotes} />
+        <SectionNotes value={character.inventoryNotes} onSave={saveText('inventoryNotes')} />
       </div>
 
       <aside className="flex min-h-0 min-w-0 flex-col gap-5">
@@ -172,7 +173,7 @@ export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => 
         </Panel>
 
         <div className="mt-auto">
-          <SectionNotes title="О снаряжении" value={character.equipmentNotes} onSave={logic.updateEquipmentNotes} />
+          <SectionNotes title="О снаряжении" value={character.equipmentNotes} onSave={saveText('equipmentNotes')} />
         </div>
       </aside>
     </div>

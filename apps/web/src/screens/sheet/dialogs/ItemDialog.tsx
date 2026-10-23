@@ -1,14 +1,11 @@
 import React from 'react';
 import {
-  changeItemQuantity,
   createEntityId,
-  equipItem,
   isShield,
   isStackable,
   itemQuantity,
   removeItem,
   saveItem,
-  unequipItem,
 } from '@itd/game-logic';
 import type { Character, InventoryItem, ItemType, WeaponClass } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
@@ -17,6 +14,7 @@ import { Button, Field, IconButton, Input } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
 import { IconMinus, IconPlus } from '../../../ui/icons';
 import { damageParts } from '../parts/damage';
+import { useInventory } from '../useInventory';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
 import { CardRule, DamageEditor, DamageFigures, FormSection, KeyFacts, MinorFacts } from './parts';
 
@@ -58,6 +56,7 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
 }) => {
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
+  const inventory = useInventory();
   const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(character.inventory, id, edit, blankItem, (i) => ({
     ...i,
     damageComponents: damageParts(i),
@@ -188,12 +187,8 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
   const stackable = isStackable(entry);
   const quantity = itemQuantity(entry);
   const parts = entry.type === 'weapon' ? damageParts(entry) : [];
-  const toggleEquip = () =>
-    updateCharacter((doc) => (entry.equipped ? unequipItem(doc, entry.id) : equipItem(doc, entry.id)), { log: { message: `${entry.equipped ? 'Снято' : 'Экипировано'}: ${entry.name}`, type: 'inventory' },
-    });
-  const changeQuantity = (delta: number) =>
-    updateCharacter((doc) => changeItemQuantity(doc, entry.id, delta), { log: { message: delta > 0 ? `Получено: ${entry.name} (+${delta})` : `Потрачено: ${entry.name} (${delta})`, type: 'inventory' },
-    });
+  const toggleEquip = () => inventory.toggleEquip(entry);
+  const changeQuantity = (delta: number) => inventory.changeQuantity(entry, delta);
 
   const facts = [
     ...(entry.type === 'armor' ? [{ label: isShield(entry) ? 'Щит' : 'Класс брони', value: armorValue(entry) }] : []),

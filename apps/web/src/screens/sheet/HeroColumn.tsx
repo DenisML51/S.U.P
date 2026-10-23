@@ -16,7 +16,7 @@ import { IconButton, Meter, Panel, cx, type MeterTone } from '../../ui/primitive
 import { IconCondition, IconEdit, IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../ui/icons';
 import { useSheetDialogs } from './dialogs/context';
 import { useVitals } from './useVitals';
-import type { SheetLogic } from './sheetLogic';
+import { useRolls } from './useRolls';
 
 // ------------------------------------------------------------------------------------------------
 // Status cluster: health and sanity bars, the level plate, quick damage and healing.
@@ -173,8 +173,8 @@ const ResourceRow: React.FC<{ resource: Resource; onChange: (delta: number) => v
  * Left column of the sheet, visible in every section: who the hero is and what changes from minute
  * to minute at the table — health, sanity, the core numbers, resources, conditions.
  */
-export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => void }> = ({ logic, onShowConditions }) => {
-  const { character } = logic;
+export const HeroColumn: React.FC<{ character: Character; onShowConditions: () => void }> = ({ character, onShowConditions }) => {
+  const roll = useRolls();
   const updateResourceCount = useCharacterStore((s) => s.updateResourceCount);
   const resetAllResources = useCharacterStore((s) => s.resetAllResources);
   const dialogs = useSheetDialogs();
@@ -253,7 +253,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
           <StatCell
             label="Инициатива"
             value={formatModifier(initiativeModifier(character))}
-            onClick={() => logic.handleRollInitiative()}
+            onClick={() => roll.check('Инициатива', initiativeModifier(character))}
             hint="Бросить инициативу"
           />
           <StatCell label="Скорость" value={character.speed} />

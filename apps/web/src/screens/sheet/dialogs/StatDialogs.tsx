@@ -2,18 +2,22 @@ import React, { useState } from 'react';
 import {
   ATTRIBUTES_LIST,
   DAMAGE_TYPES,
+  INJURY_DESCRIPTIONS,
   SKILLS_LIST,
   attributeModifier,
   attributeScore,
   calculateArmorClass,
   createEntityId,
   formatModifier,
+  getLimbInjuryLevel,
+  getLimbType,
+  replaceLimb,
   savingThrowModifier,
   setAttribute,
   skillModifier,
   toggleSavingThrowProficiency,
 } from '@itd/game-logic';
-import type { Character, Resistance, ResistanceLevel } from '@itd/schema';
+import type { Character, Limb, Resistance, ResistanceLevel } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { Dialog } from '../../../ui/Dialog';
 import { NumberField, Segmented, Suggest, Switch } from '../../../ui/forms';
@@ -180,6 +184,55 @@ export const ArmorDialog: React.FC<Props> = ({ open, onClose }) => {
           </div>
         ))}
       </FormSection>
+    </Dialog>
+  );
+};
+
+/** A limb: its hit points (down to −10, when it is lost) and its own armour. */
+export const LimbDialog: React.FC<Props & { id: string }> = ({ open, onClose, id }) => {
+  const character = useCharacterStore((s) => s.character) as Character;
+  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
+  const limb = character.limbs.find((l) => l.id === id);
+  if (!limb) return null;
+  const level = getLimbInjuryLevel(limb.currentHP);
+  const set = (patch: Partial<Limb>) => updateCharacter((doc) => replaceLimb(doc, { ...limb, ...patch }));
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      eyebrow="Часть тела"
+      title={limb.name}
+      width="md"
+      footerStart={
+        <Button variant="ghost" size="sm" disabled={limb.currentHP >= limb.maxHP} onClick={() => set({ currentHP: limb.maxHP })}>
+          Залечить полностью
+        </Button>
+      }
+      footer={
+        <Button variant="primary" onClick={onClose}>
+          Готово
+        </Button>
+      }
+    >
+      <div className="grid grid-cols-3 gap-4">
+        <Field label="Сейчас">
+          {({ id: fieldId }) => (
+            <NumberField id={fieldId} min={-10} max={limb.maxHP} value={limb.currentHP} onChange={(currentHP) => set({ currentHP })} className="w-full" />
+          )}
+        </Field>
+        <Field label="Максимум">
+          {({ id: fieldId }) => <NumberField id={fieldId} min={1} value={limb.maxHP} onChange={(maxHP) => set({ maxHP })} className="w-full" />}
+        </Field>
+        <Field label="Защита (ЗК)">
+          {({ id: fieldId }) => <NumberField id={fieldId} min={0} value={limb.ac} onChange={(ac) => set({ ac })} className="w-full" />}
+        </Field>
+      </div>
+      <p className="mt-4 text-sm text-ink-muted">
+        {level === 'none'
+          ? 'Ниже нуля начинается ранение, на −5 оно тяжёлое, на −10 часть тела потеряна.'
+          : INJURY_DESCRIPTIONS[getLimbType(limb.id)][level]}
+      </p>
     </Dialog>
   );
 };

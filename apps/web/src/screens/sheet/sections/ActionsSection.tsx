@@ -6,8 +6,8 @@ import { Ledger, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui
 import { Button } from '../../../ui/primitives';
 import { IconDice } from '../../../ui/icons';
 import { damageParts, describeDamage } from '../parts/damage';
-import { SectionNotes } from '../parts/SectionNotes';
-import type { SheetLogic } from '../sheetLogic';
+import { SectionNotes } from '../parts/EditableText';
+import { useSheetText } from '../useSheetText';
 import { useActs } from '../useActs';
 import { useSheetDialogs } from '../dialogs/context';
 import { plainText } from '../../../ui/text';
@@ -15,8 +15,8 @@ import { plainText } from '../../../ui/text';
 const resourceName = (character: Character, id?: string) => character.resources.find((r) => r.id === id)?.name;
 
 /** Attacks and abilities: what the hero does on their turn, one click from the roll. */
-export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
-  const { character } = logic;
+export const ActionsSection: React.FC<{ character: Character }> = ({ character }) => {
+  const saveText = useSheetText();
   const { attack, activate } = useActs();
   const dialogs = useSheetDialogs();
 
@@ -56,7 +56,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
           })}
           {character.attacks.length === 0 && <li className="py-4 text-sm opacity-60">Атак пока нет</li>}
         </Ledger>
-        <SectionNotes value={character.attacksNotes} onSave={logic.updateAttacksNotes} />
+        <SectionNotes value={character.attacksNotes} onSave={saveText('attacksNotes')} />
       </div>
 
       <div className="flex min-h-0 min-w-0 flex-col gap-5">
@@ -96,7 +96,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
           ))}
           {character.abilities.length === 0 && <li className="py-4 text-sm opacity-60">Способностей пока нет</li>}
         </Ledger>
-        <SectionNotes value={character.abilitiesNotes} onSave={logic.updateAbilitiesNotes} />
+        <SectionNotes value={character.abilitiesNotes} onSave={saveText('abilitiesNotes')} />
       </div>
     </div>
   );
