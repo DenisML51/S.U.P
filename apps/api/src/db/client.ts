@@ -10,17 +10,16 @@ export type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 export interface DatabaseConnection {
   db: Database;
+  /** The underlying driver, for what the ORM does not cover (LISTEN/NOTIFY). */
+  sql: postgres.Sql;
   close: () => Promise<void>;
 }
 
 export function connectDatabase(url: string, poolSize = 10): DatabaseConnection {
-  const client = postgres(url, {
-    max: poolSize,
-    // bigint columns are read as strings by postgres.js; drizzle maps them to bigint.
-    onnotice: () => {},
-  });
+  const client = postgres(url, { max: poolSize, onnotice: () => {} });
   return {
     db: drizzle(client, { schema, casing: 'snake_case' }),
+    sql: client,
     close: () => client.end({ timeout: 5 }),
   };
 }

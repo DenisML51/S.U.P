@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { getLimbType } from '@itd/game-logic';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { RACES, CLASSES, Race, Class, Subrace, Subclass } from '../../types';
+import { RACES, CLASSES, Limb, Resistance } from '../../types';
 import { useCharacterStats } from '../../hooks/character/useCharacterStats';
 import { useCharacterModals } from '../../hooks/character/useCharacterModals';
 import { useCharacterInventory } from '../../hooks/character/useCharacterInventory';
@@ -18,7 +19,6 @@ export const useCharacterSheetLogic = () => {
     activeTab, 
     setActiveTab, 
     updateResourceCount,
-    logHistory,
     settings,
     viewMode,
     setViewMode,
@@ -29,19 +29,20 @@ export const useCharacterSheetLogic = () => {
 
   const stats = useCharacterStats(character);
   const modals = useCharacterModals(setActiveTab, setInventorySubTab);
-  const inventory = useCharacterInventory(character, updateCharacter, logHistory, settings, stats?.getModifierValue || ((id: string) => 0));
+  const inventory = useCharacterInventory(character, updateCharacter, settings);
   const actions = useCharacterActions(character, updateCharacter);
-  const updates = useCharacterUpdate(character, updateCharacter, logHistory, settings);
+  const updates = useCharacterUpdate(character, updateCharacter, settings);
   const spellsHook = useCharacterSpells(character, updateCharacter);
 
   if (!character || !stats || !inventory || !actions || !updates || !spellsHook) {
     return { character: null };
   }
 
-  const race = useMemo(() => RACES.find((r: Race) => r.id === character.race), [character.race]);
-  const selectedSubrace = useMemo(() => race?.subraces?.find((sr: Subrace) => sr.id === character.subrace), [race, character.subrace]);
-  const charClass = useMemo(() => CLASSES.find((c: Class) => c.id === character.class), [character.class]);
-  const selectedSubclass = useMemo(() => charClass?.subclasses.find((sc: Subclass) => sc.id === character.subclass), [charClass, character.subclass]);
+  // Plain lookups, not hooks: this code runs after an early return.
+  const race = RACES.find((r) => r.id === character.race);
+  const selectedSubrace = race?.subraces?.find((sr) => sr.id === character.subrace);
+  const charClass = CLASSES.find((c) => c.id === character.class);
+  const selectedSubclass = charClass?.subclasses.find((sc) => sc.id === character.subclass);
 
   return {
     character,
@@ -75,15 +76,16 @@ export const useCharacterSheetLogic = () => {
 
     updateResourceCount,
     updateAmmunitionQuantity: inventory.updateItemQuantity,
-    updateArmorClass: (newAC: number, newLimbs: any, newResistances: any[]) => 
-      updateCharacter({ ...character, armorClass: newAC, limbs: newLimbs, resistances: newResistances }),
-    updatePersonalityField: (field: any, value: any) => updateCharacter({ ...character, [field]: value }),
-    updateLanguagesAndProficiencies: (value: string) => updateCharacter({ ...character, languagesAndProficiencies: value }),
-    updateInventoryNotes: (notes: string) => updateCharacter({ ...character, inventoryNotes: notes }),
-    updateAttacksNotes: (notes: string) => updateCharacter({ ...character, attacksNotes: notes }),
-    updateEquipmentNotes: (notes: string) => updateCharacter({ ...character, equipmentNotes: notes }),
-    updateAbilitiesNotes: (notes: string) => updateCharacter({ ...character, abilitiesNotes: notes }),
-    updateSpeed: (newSpeed: number) => updateCharacter({ ...character, speed: newSpeed }),
+    updateArmorClass: (newAC: number, newLimbs: Limb[], newResistances: Resistance[]) =>
+      updateCharacter((prev) => ({ ...prev, armorClass: newAC, limbs: newLimbs, resistances: newResistances })),
+    updatePersonalityField: (field: string, value: unknown) => updateCharacter((prev) => ({ ...prev, [field]: value })),
+    updateLanguagesAndProficiencies: (value: string) =>
+      updateCharacter((prev) => ({ ...prev, languagesAndProficiencies: value })),
+    updateInventoryNotes: (notes: string) => updateCharacter((prev) => ({ ...prev, inventoryNotes: notes })),
+    updateAttacksNotes: (notes: string) => updateCharacter((prev) => ({ ...prev, attacksNotes: notes })),
+    updateEquipmentNotes: (notes: string) => updateCharacter((prev) => ({ ...prev, equipmentNotes: notes })),
+    updateAbilitiesNotes: (notes: string) => updateCharacter((prev) => ({ ...prev, abilitiesNotes: notes })),
+    updateSpeed: (newSpeed: number) => updateCharacter((prev) => ({ ...prev, speed: newSpeed })),
 
     saveResource: actions.saveResource,
     deleteResource: actions.deleteResource,
@@ -108,21 +110,14 @@ export const useCharacterSheetLogic = () => {
         duration: 4000,
       });
 
-      setTimeout(() => logHistory(`Бросок инициативы: ${totalStr}`, 'other'), 0);
+      updateCharacter((prev) => prev, { silent: true, log: { message: `Бросок инициативы: ${totalStr}`, type: 'other' } });
       
       return result;
     },
 
-    updateInitiativeBonus: (bonus: number) => {
-      updateCharacter({ ...character, initiativeBonus: bonus });
-    },
+    updateInitiativeBonus: (bonus: number) => updateCharacter((prev) => ({ ...prev, initiativeBonus: bonus })),
 
-    getLimbType: (limbId: string): 'head' | 'arm' | 'leg' | 'torso' => {
-      if (limbId === 'head') return 'head';
-      if (limbId === 'torso') return 'torso';
-      if (limbId.includes('Arm')) return 'arm';
-      return 'leg';
-    },
+    getLimbType,
     
     openResourceModal: (resource?: any) => {
       modals.setEditingResource(resource);

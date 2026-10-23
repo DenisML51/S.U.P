@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ability, Resource, DAMAGE_TYPES, DamageComponent } from '../types';
+import { Ability, Resource, DAMAGE_TYPES, DamageComponent, createEntityId } from '../types';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CustomSelect } from './CustomSelect';
 import { IconPicker } from './IconPicker';
@@ -70,7 +70,7 @@ export const AbilityModal: React.FC<AbilityModalProps> = ({
     if (!name.trim()) return;
     
     const newAbility: Ability = {
-      id: ability?.id || `ability_${Date.now()}`,
+      id: ability?.id || createEntityId('ability'),
       name,
       description,
       actionType: actionType as 'action' | 'bonus' | 'reaction',

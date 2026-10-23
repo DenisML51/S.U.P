@@ -1,7 +1,10 @@
 import type { WsServerMessage } from '@itd/schema';
 import { describe, expect, it } from 'vitest';
 import type WebSocket from 'ws';
-import { makeCharacter, registerUser, useTestApp } from './helpers';
+import { createServices } from '../src/app';
+import { connectDatabase } from '../src/db/client';
+import { TEST_DATABASE_URL } from './env';
+import { makeCharacter, registerUser, testConfig, useTestApp } from './helpers';
 
 const ctx = useTestApp();
 
@@ -59,6 +62,27 @@ describe('realtime notifications', () => {
 
     ownerSocket.terminate();
     strangerSocket.terminate();
+  });
+
+  it('delivers changes written by another process, such as the CLI', async () => {
+    const app = await ctx.app();
+    const player = await registerUser(app);
+    const socket = await app.injectWS('/api/ws');
+    const messages = listen(socket);
+    socket.send(JSON.stringify({ type: 'auth', token: player.accessToken }));
+    await messages.next((m) => m.type === 'ready');
+
+    const otherProcess = connectDatabase(TEST_DATABASE_URL, 1);
+    try {
+      const { characters } = createServices(testConfig(), otherProcess);
+      const hero = makeCharacter();
+      await characters.put(player.user.id, hero.id, { baseRevision: null, data: hero }, null);
+
+      expect(await messages.next((m) => m.type === 'characters.changed')).toMatchObject({ originSessionId: null });
+    } finally {
+      await otherProcess.close();
+      socket.terminate();
+    }
   });
 
   it('answers pings', async () => {

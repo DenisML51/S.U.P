@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, ShieldCheck, ShieldAlert, ShieldX, User, Plus, X, Heart } from 'lucide-react';
 import { Character } from '../../../../types';
-import { CONDITIONS } from '../../../../constants/conditions';
+import { CONDITIONS } from '../../../../types';
 import { DAMAGE_TYPE_COLORS, getDamageTypeIcon } from '../../../../utils/damageUtils';
 
 interface PortraitGroupProps {

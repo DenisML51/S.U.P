@@ -1,106 +1,40 @@
-import { Character, EXPERIENCE_BY_LEVEL, calculateMaxSanity, InventoryItem } from '../../types';
+import {
+  attributeModifier,
+  calculateArmorClass,
+  experienceProgress,
+  formatModifier,
+  initiativeModifier,
+  isDying,
+  isInsane,
+  maxSanityOf,
+  rollInitiative,
+  savingThrowModifier,
+  skillModifier,
+  totalMaxHP,
+} from '@itd/game-logic';
+import type { Character } from '../../types';
 
+/** Derived numbers of the sheet, formatted for display. All rules live in @itd/game-logic. */
 export const useCharacterStats = (character: Character | null) => {
   if (!character) return null;
 
-  const getModifierValue = (attrId: string) => {
-    const value = character.attributes[attrId] || 10;
-    const bonus = character.attributeBonuses?.[attrId] || 0;
-    return Math.floor((value - 10) / 2) + bonus;
-  };
-
-  const getModifier = (attrId: string) => {
-    const total = getModifierValue(attrId);
-    return total >= 0 ? `+${total}` : `${total}`;
-  };
-
-  const getSkillModifier = (skillId: string) => {
-    const skill = character.skills.find(s => s.id === skillId);
-    if (!skill) return '+0';
-    
-    const baseModifier = getModifierValue(skill.attribute);
-    const profBonus = skill.proficient ? character.proficiencyBonus : 0;
-    const expertiseBonus = skill.expertise ? character.proficiencyBonus : 0;
-    const total = baseModifier + profBonus + expertiseBonus;
-    
-    return total >= 0 ? `+${total}` : `${total}`;
-  };
-
-  const getSavingThrowModifier = (attrId: string) => {
-    const baseModifier = getModifierValue(attrId);
-    const isProficient = character.savingThrowProficiencies?.includes(attrId);
-    const total = baseModifier + (isProficient ? character.proficiencyBonus : 0);
-    return total >= 0 ? `+${total}` : `${total}`;
-  };
-
-  const getMaxSanity = () => {
-    return calculateMaxSanity(
-      character.class,
-      character.attributes.wisdom || 10,
-      character.level
-    );
-  };
-
-  const currentLevelXP = EXPERIENCE_BY_LEVEL[character.level] || 0;
-  const nextLevelXP = EXPERIENCE_BY_LEVEL[character.level + 1] || EXPERIENCE_BY_LEVEL[20];
-  const xpInCurrentLevel = character.experience - currentLevelXP;
-  const xpNeededForLevel = nextLevelXP - currentLevelXP;
-  const xpProgress = (xpInCurrentLevel / xpNeededForLevel) * 100;
-  const canLevelUp = character.experience >= nextLevelXP && character.level < 20;
-
-  const calculateAutoAC = () => {
-    const dexMod = getModifierValue('dexterity');
-    const equippedArmor = character.inventory.find(item => item.type === 'armor' && item.equipped);
-    
-    let baseAC = 10;
-    let appliedDexMod = dexMod;
-
-    if (equippedArmor) {
-      baseAC = equippedArmor.baseAC || 10;
-      if (equippedArmor.dexModifier) {
-        appliedDexMod = (equippedArmor.maxDexModifier !== null && equippedArmor.maxDexModifier !== undefined)
-          ? Math.min(dexMod, equippedArmor.maxDexModifier)
-          : dexMod;
-      } else {
-        appliedDexMod = 0;
-      }
-    }
-
-    const hasShield = character.inventory.some(item =>
-      item.equipped && (item.name.toLowerCase().includes('щит') || item.name.toLowerCase().includes('shield'))
-    );
-    const shieldBonus = hasShield ? 2 : 0;
-
-    return baseAC + appliedDexMod + shieldBonus;
-  };
-
-  const initiativeBonus = character.initiativeBonus || 0;
-  const initiativeValue = getModifierValue('dexterity') + initiativeBonus;
-  const initiative = initiativeValue >= 0 ? `+${initiativeValue}` : `${initiativeValue}`;
-
-  const rollInitiative = () => {
-    const roll = Math.floor(Math.random() * 20) + 1;
-    const mod = getModifierValue('dexterity');
-    const total = roll + mod + initiativeBonus;
-    
-    return { roll, mod, bonus: initiativeBonus, total };
-  };
+  const progress = experienceProgress(character.level, character.experience);
+  const initiativeBonus = character.initiativeBonus ?? 0;
 
   return {
-    getModifier,
-    getModifierValue,
-    getSkillModifier,
-    getSavingThrowModifier,
-    getMaxSanity,
-    xpProgress,
-    canLevelUp,
-    calculateAutoAC,
-    initiative,
+    getModifier: (attrId: string) => formatModifier(attributeModifier(character, attrId)),
+    getModifierValue: (attrId: string) => attributeModifier(character, attrId),
+    getSkillModifier: (skillId: string) => formatModifier(skillModifier(character, skillId)),
+    getSavingThrowModifier: (attrId: string) => formatModifier(savingThrowModifier(character, attrId)),
+    getMaxSanity: () => maxSanityOf(character),
+    xpProgress: progress.progress,
+    canLevelUp: progress.canLevelUp,
+    calculateAutoAC: () => calculateArmorClass(character),
+    initiative: formatModifier(initiativeModifier(character)),
     initiativeBonus,
-    rollInitiative,
-    getTotalMaxHP: () => character.maxHP + character.maxHPBonus,
-    isDying: character.currentHP <= 0,
-    isInsane: character.sanity <= 0,
+    rollInitiative: () => rollInitiative(character),
+    getTotalMaxHP: () => totalMaxHP(character),
+    isDying: isDying(character),
+    isInsane: isInsane(character),
   };
 };
-

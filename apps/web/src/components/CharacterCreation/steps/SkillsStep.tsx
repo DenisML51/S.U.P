@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Check, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { ATTRIBUTES_LIST, Skill, Race, Class, Subclass, Subrace } from '../../../types';
+import { ATTRIBUTES_LIST, Skill, Race, Class, Subclass, Subrace, formatModifier, skillModifier } from '../../../types';
 
 interface SkillsStepProps {
   skills: Skill[];
@@ -74,12 +74,9 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
                   </div>
                   <div className="space-y-2">
                     {attrSkills.map((skill) => {
-                      const attrValue = attributes[skill.attribute] || 10;
-                      const modifier = Math.floor((attrValue - 10) / 2);
-                      const skillModifier = modifier + 
-                        (skill.proficient ? proficiencyBonus : 0) + 
-                        (skill.expertise ? proficiencyBonus : 0);
-                      const modStr = skillModifier >= 0 ? `+${skillModifier}` : `${skillModifier}`;
+                      const modStr = formatModifier(
+                        skillModifier({ attributes, attributeBonuses: {}, skills: [skill], proficiencyBonus }, skill.id),
+                      );
                       
                       return (
                         <div

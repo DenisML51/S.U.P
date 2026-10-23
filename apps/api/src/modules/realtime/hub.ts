@@ -11,9 +11,8 @@ export interface RealtimeConnection {
 }
 
 /**
- * In-process registry of authenticated sockets per user. A single API instance is enough for this
- * project; running several replicas would put a pub/sub (e.g. Postgres LISTEN/NOTIFY) behind the
- * same interface.
+ * Registry of this process's authenticated sockets per user. Changes reach it through Postgres
+ * (see pgNotifier), so writes from other API replicas or the CLI are delivered too.
  */
 export class RealtimeHub implements ChangeNotifier {
   private readonly connections = new Map<string, Set<RealtimeConnection>>();

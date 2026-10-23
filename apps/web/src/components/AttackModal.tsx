@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Attack, DAMAGE_TYPES, DamageComponent } from '../types';
+import { Attack, DAMAGE_TYPES, DamageComponent, createEntityId } from '../types';
 import { ATTRIBUTES_LIST } from '../types';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CustomSelect } from './CustomSelect';
@@ -71,7 +71,7 @@ export const AttackModal: React.FC<AttackModalProps> = ({
     if (!name.trim()) return;
     
     const newAttack: Attack = {
-      id: attack?.id || `attack_${Date.now()}`,
+      id: attack?.id || createEntityId('attack'),
       name,
       description,
       damage: components[0]?.damage || '',

@@ -148,6 +148,22 @@ export interface CharacterRevisionSummaryDto {
   level: number;
 }
 
+export interface CharacterRevisionDto {
+  revision: number;
+  savedAt: string;
+  /** The document as it was; pass through `migrateCharacter` before use. */
+  data: unknown;
+}
+
+/** An entry of the trash: a deleted character that can still be restored. */
+export interface DeletedCharacterDto {
+  id: string;
+  name: string;
+  level: number;
+  revision: number;
+  deletedAt: string;
+}
+
 // ---------------------------------------------------------------------------------------------
 // Realtime
 // ---------------------------------------------------------------------------------------------

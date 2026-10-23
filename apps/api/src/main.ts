@@ -9,7 +9,7 @@ async function main() {
   const database = connectDatabase(config.DATABASE_URL, config.DATABASE_POOL_SIZE);
   await runMigrations(database.db);
 
-  const app = await buildApp(config, database.db);
+  const app = await buildApp(config, database);
 
   let shuttingDown = false;
   const shutdown = async (signal: string) => {

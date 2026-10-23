@@ -1,8 +1,11 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Character } from '../types';
-import { RACES, CLASSES, ATTRIBUTES_LIST, SKILLS_LIST, calculateMaxSanity } from '../types';
-import { CONDITIONS } from '../constants/conditions';
+import {
+  RACES, CLASSES, ATTRIBUTES_LIST, SKILLS_LIST,
+  attributeModifier, formatModifier, initiativeModifier, maxSanityOf, skillModifier,
+} from '../types';
+import { CONDITIONS } from '../types';
 
 const loadFonts = async () => {
   const fontId = 'medieval-fonts-link';
@@ -155,7 +158,7 @@ export const exportToPDF = async (character: Character) => {
             </div>
             <div class="stat-box">
               <div class="stat-label">Рассудок</div>
-              <div class="stat-value" style="color: #00008b;">${character.sanity || 0} / ${calculateMaxSanity(character.class, character.attributes.wisdom || 10, character.level || 1)}</div>
+              <div class="stat-value" style="color: #00008b;">${character.sanity || 0} / ${maxSanityOf(character)}</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">КБ</div>
@@ -170,7 +173,7 @@ export const exportToPDF = async (character: Character) => {
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
             <div class="stat-box">
               <div class="stat-label">Инициатива</div>
-              <div class="stat-value">${Math.floor(((character.attributes.dexterity || 10) - 10) / 2) >= 0 ? '+' : ''}${Math.floor(((character.attributes.dexterity || 10) - 10) / 2)}</div>
+              <div class="stat-value">${formatModifier(initiativeModifier(character))}</div>
             </div>
             <div class="stat-box">
               <div class="stat-label">Скорость</div>
@@ -189,10 +192,8 @@ export const exportToPDF = async (character: Character) => {
           ${sectionTitle('Характеристики')}
           <div style="display: flex; flex-direction: column; gap: 8px;">
             ${ATTRIBUTES_LIST.map(attr => {
-              const value = character.attributes[attr.id] || 10;
-              const bonus = character.attributeBonuses?.[attr.id] || 0;
-              const modifier = Math.floor((value - 10) / 2) + bonus;
-              const modifierStr = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+              const value = character.attributes[attr.id] ?? 10;
+              const modifierStr = formatModifier(attributeModifier(character, attr.id));
               return `
                 <div style="display: flex; align-items: center; background: rgba(44, 24, 16, 0.05); padding: 5px 10px; border-radius: 4px; border: 1px solid rgba(44, 24, 16, 0.1);">
                   <div style="flex: 1;">
@@ -210,12 +211,9 @@ export const exportToPDF = async (character: Character) => {
             <div style="font-size: 12px; display: flex; flex-direction: column; gap: 3px;">
               ${SKILLS_LIST.map(skillInfo => {
                 const skill = (character.skills || []).find(s => s.id === skillInfo.id);
-                const attrValue = character.attributes[skillInfo.attribute] || 10;
-                const baseModifier = Math.floor((attrValue - 10) / 2);
-                const profBonus = skill?.proficient ? (character.proficiencyBonus || 2) : 0;
-                const expertiseBonus = skill?.expertise ? (character.proficiencyBonus || 2) : 0;
-                const total = baseModifier + profBonus + expertiseBonus;
-                const modStr = total >= 0 ? `+${total}` : `${total}`;
+                const modStr = formatModifier(
+                  skill ? skillModifier(character, skill.id) : attributeModifier(character, skillInfo.attribute),
+                );
                 
                 return `
                   <div style="display: flex; justify-content: space-between; align-items: center; padding: 2px 0; border-bottom: 1px solid rgba(44, 24, 16, 0.05);">

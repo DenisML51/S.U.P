@@ -32,7 +32,9 @@ import { getLucideIcon } from '../utils/iconUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SettingsModal } from './SettingsModal';
 
-import { exportToPDF } from '../utils/pdfExport';
+// Loaded on demand: html2canvas and jsPDF are a large share of the bundle.
+const exportToPDF = async (...args: Parameters<typeof import('../utils/pdfExport').exportToPDF>) =>
+  (await import('../utils/pdfExport')).exportToPDF(...args);
 
 const tabs: { id: TabType; label: string; icon: any }[] = [
   { id: 'stats', label: 'Статы', icon: BarChart2 },

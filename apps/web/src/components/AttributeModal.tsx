@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { abilityModifier, formatModifier } from '../types';
 
 interface AttributeModalProps {
   isOpen: boolean;
@@ -51,17 +52,10 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
     }
   };
 
-  const getTempModifier = (value: number, bonus: number = 0) => {
-    const baseMod = Math.floor((value - 10) / 2);
-    const total = baseMod + bonus;
-    return total >= 0 ? `+${total}` : `${total}`;
-  };
+  const getTempModifier = (value: number, bonus: number = 0) => formatModifier(abilityModifier(value) + bonus);
 
-  const getTempSavingThrow = (value: number, bonus: number, isProficient: boolean) => {
-    const baseMod = Math.floor((value - 10) / 2);
-    const total = baseMod + bonus + (isProficient ? proficiencyBonus : 0);
-    return total >= 0 ? `+${total}` : `${total}`;
-  };
+  const getTempSavingThrow = (value: number, bonus: number, isProficient: boolean) =>
+    formatModifier(abilityModifier(value) + bonus + (isProficient ? proficiencyBonus : 0));
 
   return (
     <AnimatePresence>
@@ -107,7 +101,7 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                   <div className="text-center min-w-[100px]">
                     <div className="text-5xl font-bold mb-2">{tempValue}</div>
                     <div className="text-sm text-gray-400">
-                      Базовый: {Math.floor((tempValue - 10) / 2) >= 0 ? `+${Math.floor((tempValue - 10) / 2)}` : Math.floor((tempValue - 10) / 2)}
+                      Базовый: {formatModifier(abilityModifier(tempValue))}
                     </div>
                   </div>
                   
@@ -157,7 +151,7 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                   <div className="text-3xl font-bold text-blue-400">{getTempModifier(tempValue, tempBonus)}</div>
                   {tempBonus !== 0 && (
                     <div className="text-xs text-gray-400 mt-1">
-                      {Math.floor((tempValue - 10) / 2) >= 0 ? `+${Math.floor((tempValue - 10) / 2)}` : Math.floor((tempValue - 10) / 2)} 
+                      {formatModifier(abilityModifier(tempValue))} 
                       {tempBonus >= 0 ? ` +${tempBonus}` : ` ${tempBonus}`}
                     </div>
                   )}
@@ -172,7 +166,7 @@ export const AttributeModal: React.FC<AttributeModalProps> = ({
                   </div>
                   {(isProficient || tempBonus !== 0) && (
                     <div className="text-xs text-gray-400 mt-1">
-                      {Math.floor((tempValue - 10) / 2) >= 0 ? `+${Math.floor((tempValue - 10) / 2)}` : Math.floor((tempValue - 10) / 2)}
+                      {formatModifier(abilityModifier(tempValue))}
                       {tempBonus !== 0 && (tempBonus >= 0 ? ` +${tempBonus}` : ` ${tempBonus}`)}
                       {isProficient && ` +${proficiencyBonus}`}
                     </div>

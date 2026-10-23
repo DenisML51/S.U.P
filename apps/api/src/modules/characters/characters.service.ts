@@ -4,7 +4,9 @@ import {
   ErrorCode,
   type Character,
   type CharacterRecordDto,
+  type CharacterRevisionDto,
   type CharacterRevisionSummaryDto,
+  type DeletedCharacterDto,
   type SyncResponse,
 } from '@itd/schema';
 import { and, asc, desc, eq, gt, isNotNull, sql } from 'drizzle-orm';
@@ -18,20 +20,6 @@ const SYNC_PAGE_SIZE = 200;
 const SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000;
 /** ...and this many of the latest restore points survive. */
 const SNAPSHOTS_KEPT = 50;
-
-export interface DeletedCharacterDto {
-  id: string;
-  name: string;
-  level: number;
-  revision: number;
-  deletedAt: string;
-}
-
-export interface CharacterRevisionDto {
-  revision: number;
-  savedAt: string;
-  data: unknown;
-}
 
 const toRecordDto = (row: CharacterRow): CharacterRecordDto => ({
   id: row.id,

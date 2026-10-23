@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CONDITIONS, Condition } from '../../../constants/conditions';
+import { CONDITIONS, Condition } from '../../../types';
 import { Plus, X, Info } from 'lucide-react';
 
 interface ConditionsSectionProps {

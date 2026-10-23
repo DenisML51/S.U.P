@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Spell, Resource, DAMAGE_TYPES, DamageComponent } from '../types';
+import { Spell, Resource, DAMAGE_TYPES, DamageComponent, createEntityId } from '../types';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CustomSelect } from './CustomSelect';
 import { IconPicker } from './IconPicker';
@@ -84,7 +84,7 @@ export const SpellModal: React.FC<SpellModalProps> = ({
     if (!name.trim()) return;
     
     const newSpell: Spell = {
-      id: spell?.id || `spell_${Date.now()}`,
+      id: spell?.id || createEntityId('spell'),
       name,
       level,
       school,

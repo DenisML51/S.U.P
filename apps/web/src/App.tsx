@@ -1,63 +1,57 @@
 import React, { useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
+import { Loader2 } from 'lucide-react';
 import { useCharacterStore } from './store/useCharacterStore';
+import { useSessionStore } from './store/useSessionStore';
 import { CharacterSheet } from './components/CharacterSheet/index';
 import { CharacterList } from './components/CharacterList';
 import { Navbar } from './components/Navbar';
-import { Toaster } from 'react-hot-toast';
 import { DiceRoller } from './components/DiceRoller';
+import { AuthScreen } from './components/AuthScreen';
+
+const Loading: React.FC = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+  </div>
+);
 
 const AppContent: React.FC = () => {
-  const { character, isLoaded, loadCharactersList, migrateOldData, updateSettings, settings } = useCharacterStore();
+  const status = useSessionStore((s) => s.status);
+  const boot = useSessionStore((s) => s.boot);
+  const character = useCharacterStore((s) => s.character);
+  const isLoaded = useCharacterStore((s) => s.isLoaded);
 
   useEffect(() => {
-    const initialize = async () => {
-      if (!isLoaded) {
-        migrateOldData();
-        await loadCharactersList();
-      }
-    };
-    initialize();
+    void boot();
+  }, [boot]);
 
-    const handleSettingsUpdate = (e: any) => {
-      const s = e.detail;
-      updateSettings({
-        storagePath: s.storagePath,
-        autoSave: s.autoSave,
-        compactCards: s.compactCards,
-        notifications: s.showNotifications,
-      });
-    };
-    window.addEventListener('app-settings-updated', handleSettingsUpdate);
+  const signedIn = status === 'authenticated';
+  const showSheet = signedIn && character;
 
-    if (localStorage.getItem('trpg_fullscreen') === 'true' && window.electronAPI) {
-      window.electronAPI.setFullScreen(true);
-    }
-
-    return () => window.removeEventListener('app-settings-updated', handleSettingsUpdate);
-  }, [isLoaded, loadCharactersList, migrateOldData, updateSettings]);
-
-  useEffect(() => {
-    if (isLoaded) {
-      loadCharactersList();
-    }
-  }, [settings.storagePath, isLoaded, loadCharactersList]);
-  
   return (
     <div className="relative min-h-screen bg-dark-bg text-white">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
-      
-      {character && <Navbar key={character.id} />}
-      
-      <main className={`relative z-10 ${character ? 'pt-24' : ''}`}>
-        {character ? <CharacterSheet /> : <CharacterList />}
+
+      {showSheet && <Navbar key={character.id} />}
+
+      <main className={`relative z-10 ${showSheet ? 'pt-24' : ''}`}>
+        {status === 'booting' || (signedIn && !isLoaded) ? (
+          <Loading />
+        ) : !signedIn ? (
+          <AuthScreen />
+        ) : showSheet ? (
+          <CharacterSheet />
+        ) : (
+          <CharacterList />
+        )}
       </main>
 
-      {character && <DiceRoller />}
+      {showSheet && <DiceRoller />}
 
-      <Toaster 
+      <Toaster
         position="bottom-center"
         toastOptions={{
           style: {
@@ -73,10 +67,6 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
-  return (
-      <AppContent />
-  );
-};
+const App: React.FC = () => <AppContent />;
 
 export default App;

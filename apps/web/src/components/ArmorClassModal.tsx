@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Limb, Resistance, ResistanceLevel, DAMAGE_TYPES } from '../types';
+import { Limb, Resistance, ResistanceLevel, DAMAGE_TYPES, createEntityId, calculateLimbMaxHP } from '../types';
 import { Trash2, Plus, ShieldCheck, ShieldAlert, ShieldX, Shield, Zap } from 'lucide-react';
 import { CustomSelect } from './CustomSelect';
 
@@ -40,8 +40,8 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
   const handleSave = () => {
     const updatedLimbs = limbs.map(limb => ({
       ...limb,
-      ac: limbACs[limb.id] || limb.ac,
-      maxHP: limbMaxHPs[limb.id] || limb.maxHP,
+      ac: limbACs[limb.id] ?? limb.ac,
+      maxHP: limbMaxHPs[limb.id] ?? limb.maxHP,
     }));
     onUpdate(baseAC, updatedLimbs, localResistances);
     onClose();
@@ -55,10 +55,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
     setLimbACs(newLimbACs);
   };
 
-  const calculateSuggestedMaxHP = () => {
-    const conMod = Math.floor((constitution - 10) / 2);
-    return Math.ceil(maxHP / 2) + conMod;
-  };
+  const calculateSuggestedMaxHP = () => calculateLimbMaxHP(maxHP, constitution);
 
   const applySuggestedMaxHP = () => {
     const suggested = calculateSuggestedMaxHP();
@@ -71,7 +68,7 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
 
   const addResistance = () => {
     const newResistance: Resistance = {
-      id: `res_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      id: createEntityId('res'),
       type: DAMAGE_TYPES[0],
       level: 'resistance'
     };
@@ -222,19 +219,19 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                               <div className="text-[9px] text-gray-500 uppercase font-black">КБ</div>
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => setLimbACs({ ...limbACs, [limb.id]: Math.max(0, (limbACs[limb.id] || limb.ac) - 1) })}
+                                  onClick={() => setLimbACs({ ...limbACs, [limb.id]: Math.max(0, (limbACs[limb.id] ?? limb.ac) - 1) })}
                                   className="w-7 h-7 rounded bg-dark-card border border-dark-border hover:bg-dark-hover transition-all text-xs font-bold"
                                 >
                                   −
                                 </button>
                                 <input
                                   type="number"
-                                  value={limbACs[limb.id] || limb.ac}
+                                  value={limbACs[limb.id] ?? limb.ac}
                                   onChange={(e) => setLimbACs({ ...limbACs, [limb.id]: Math.max(0, parseInt(e.target.value) || 0) })}
                                   className="w-full bg-dark-card border border-dark-border rounded px-1 py-1 text-center font-black text-sm text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 />
                                 <button
-                                  onClick={() => setLimbACs({ ...limbACs, [limb.id]: (limbACs[limb.id] || limb.ac) + 1 })}
+                                  onClick={() => setLimbACs({ ...limbACs, [limb.id]: (limbACs[limb.id] ?? limb.ac) + 1 })}
                                   className="w-7 h-7 rounded bg-dark-card border border-dark-border hover:bg-dark-hover transition-all text-xs font-bold"
                                 >
                                   +
@@ -245,19 +242,19 @@ export const ArmorClassModal: React.FC<ArmorClassModalProps> = ({
                               <div className="text-[9px] text-gray-500 uppercase font-black">Макс. ЗК</div>
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => setLimbMaxHPs({ ...limbMaxHPs, [limb.id]: Math.max(1, (limbMaxHPs[limb.id] || limb.maxHP) - 1) })}
+                                  onClick={() => setLimbMaxHPs({ ...limbMaxHPs, [limb.id]: Math.max(1, (limbMaxHPs[limb.id] ?? limb.maxHP) - 1) })}
                                   className="w-7 h-7 rounded bg-dark-card border border-dark-border hover:bg-dark-hover transition-all text-xs font-bold"
                                 >
                                   −
                                 </button>
                                 <input
                                   type="number"
-                                  value={limbMaxHPs[limb.id] || limb.maxHP}
+                                  value={limbMaxHPs[limb.id] ?? limb.maxHP}
                                   onChange={(e) => setLimbMaxHPs({ ...limbMaxHPs, [limb.id]: Math.max(1, parseInt(e.target.value) || 1) })}
                                   className="w-full bg-dark-card border border-dark-border rounded px-1 py-1 text-center font-black text-sm text-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
                                 />
                                 <button
-                                  onClick={() => setLimbMaxHPs({ ...limbMaxHPs, [limb.id]: (limbMaxHPs[limb.id] || limb.maxHP) + 1 })}
+                                  onClick={() => setLimbMaxHPs({ ...limbMaxHPs, [limb.id]: (limbMaxHPs[limb.id] ?? limb.maxHP) + 1 })}
                                   className="w-7 h-7 rounded bg-dark-card border border-dark-border hover:bg-dark-hover transition-all text-xs font-bold"
                                 >
                                   +

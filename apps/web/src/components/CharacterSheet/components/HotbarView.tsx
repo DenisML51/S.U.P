@@ -6,7 +6,8 @@ import {
   Ability, 
   Spell, 
   InventoryItem, 
-  CLASSES
+  CLASSES,
+  resetTurn
 } from '../../../types';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { CombatPanel } from './Hotbar/CombatPanel';
@@ -98,10 +99,7 @@ export const HotbarView: React.FC<HotbarViewProps> = ({
   };
 
   const nextTurn = () => {
-    updateCharacter({
-      ...character,
-      spentActions: { action: 0, bonus: 0, reaction: 0 }
-    });
+    updateCharacter(resetTurn(character));
   };
 
   const endCombat = () => {

@@ -1,52 +1,23 @@
-import { Character, Spell } from '../../types';
+import { removeById, upsertById } from '@itd/game-logic';
+import type { CharacterUpdater } from '../../store/useCharacterStore';
+import type { Character, Spell } from '../../types';
 
 export const useCharacterSpells = (
   character: Character | null,
-  updateCharacter: (char: Character, silent?: boolean) => void
+  updateCharacter: (updater: CharacterUpdater) => void,
 ) => {
   if (!character) return null;
 
-  const saveSpell = (spell: Spell) => {
-    const currentSpells = character.spells || [];
-    const existingIndex = currentSpells.findIndex(s => s.id === spell.id);
-    const newSpells = existingIndex >= 0
-      ? currentSpells.map((s, idx) => idx === existingIndex ? spell : s)
-      : [...currentSpells, spell];
-    updateCharacter({ ...character, spells: newSpells });
-  };
-
-  const deleteSpell = (spellId: string) => {
-    const currentSpells = character.spells || [];
-    const newSpells = currentSpells.filter(s => s.id !== spellId);
-    updateCharacter({ ...character, spells: newSpells });
-  };
-
-  const toggleSpellPrepared = (spellId: string) => {
-    const currentSpells = character.spells || [];
-    const newSpells = currentSpells.map(s => 
-      s.id === spellId ? { ...s, prepared: !s.prepared } : s
-    );
-    updateCharacter({ ...character, spells: newSpells });
-  };
-
-  const updateSpellsNotes = (notes: string) => {
-    updateCharacter({ ...character, spellsNotes: notes });
-  };
-
-  const updateSpellcastingDifficulty = (name: string, value: number) => {
-    updateCharacter({ 
-      ...character, 
-      spellcastingDifficultyName: name,
-      spellcastingDifficultyValue: value 
-    });
-  };
-
   return {
-    saveSpell,
-    deleteSpell,
-    toggleSpellPrepared,
-    updateSpellsNotes,
-    updateSpellcastingDifficulty,
+    saveSpell: (spell: Spell) => updateCharacter((prev) => ({ ...prev, spells: upsertById(prev.spells, spell) })),
+    deleteSpell: (spellId: string) => updateCharacter((prev) => ({ ...prev, spells: removeById(prev.spells, spellId) })),
+    toggleSpellPrepared: (spellId: string) =>
+      updateCharacter((prev) => ({
+        ...prev,
+        spells: prev.spells.map((s) => (s.id === spellId ? { ...s, prepared: !s.prepared } : s)),
+      })),
+    updateSpellsNotes: (notes: string) => updateCharacter((prev) => ({ ...prev, spellsNotes: notes })),
+    updateSpellcastingDifficulty: (name: string, value: number) =>
+      updateCharacter((prev) => ({ ...prev, spellcastingDifficultyName: name, spellcastingDifficultyValue: value })),
   };
 };
-

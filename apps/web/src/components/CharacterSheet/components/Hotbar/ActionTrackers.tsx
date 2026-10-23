@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Circle, Triangle, Zap, Minus, Plus } from 'lucide-react';
-import { Character } from '../../../../types';
+import { Character, actionLimitsOf, setActionLimit, setSpentActions, spentActionsOf } from '../../../../types';
 
 interface ActionTrackersProps {
   character: Character;
@@ -14,8 +14,8 @@ export const ActionTrackers: React.FC<ActionTrackersProps> = ({
 }) => {
   const [editingActionId, setEditingActionId] = useState<string | null>(null);
 
-  const actionLimits = character.actionLimits || { action: 1, bonus: 1, reaction: 1 };
-  const spentActions = character.spentActions || { action: 0, bonus: 0, reaction: 0 };
+  const actionLimits = actionLimitsOf(character);
+  const spentActions = spentActionsOf(character);
 
   const toggleAction = (id: 'action' | 'bonus' | 'reaction', index: number) => {
     const currentSpent = spentActions[id];
@@ -26,21 +26,11 @@ export const ActionTrackers: React.FC<ActionTrackersProps> = ({
       newSpent = index + 1;
     }
 
-    updateCharacter({
-      ...character,
-      spentActions: { ...spentActions, [id]: newSpent }
-    });
+    updateCharacter(setSpentActions(character, id, newSpent));
   };
 
   const updateActionLimit = (id: 'action' | 'bonus' | 'reaction', limit: number) => {
-    const newLimits = { ...actionLimits, [id]: Math.max(1, limit) };
-    const newSpent = { ...spentActions, [id]: Math.min(spentActions[id], newLimits[id]) };
-    
-    updateCharacter({
-      ...character,
-      actionLimits: newLimits,
-      spentActions: newSpent
-    });
+    updateCharacter(setActionLimit(character, id, limit));
   };
 
   const actions = [

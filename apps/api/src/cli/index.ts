@@ -11,7 +11,7 @@ import {
 import { eq } from 'drizzle-orm';
 import { createServices } from '../app';
 import { loadConfig } from '../config';
-import { connectDatabase, runMigrations, type Database } from '../db/client';
+import { connectDatabase, runMigrations, type DatabaseConnection } from '../db/client';
 import { users } from '../db/schema';
 import { AppError } from '../lib/errors';
 
@@ -25,7 +25,7 @@ const USAGE = `Использование:
       Файл может содержать одного персонажа или массив персонажей.
       Существующие персонажи пропускаются, если не указан --overwrite.`;
 
-async function createUser(db: Database, args: string[]) {
+async function createUser(database: DatabaseConnection, args: string[]) {
   const { values } = parseArgs({
     args,
     options: { email: { type: 'string' }, name: { type: 'string' }, password: { type: 'string' } },
@@ -34,7 +34,7 @@ async function createUser(db: Database, args: string[]) {
   const displayName = DisplayNameSchema.parse(values.name);
   const password = PasswordSchema.parse(values.password ?? process.env.ITD_PASSWORD);
 
-  const { auth } = createServices(loadConfig(), db);
+  const { auth } = createServices(loadConfig(), database);
   const user = await auth.createUser({ email, password, displayName });
   console.log(`Создан пользователь ${user.email} (${user.id})`);
 }
@@ -46,7 +46,8 @@ async function collectJsonFiles(target: string): Promise<string[]> {
   return entries.filter((name) => name.toLowerCase().endsWith('.json')).map((name) => path.join(target, name));
 }
 
-async function importCharacters(db: Database, args: string[]) {
+async function importCharacters(database: DatabaseConnection, args: string[]) {
+  const { db } = database;
   const { values, positionals } = parseArgs({
     args,
     allowPositionals: true,
@@ -58,7 +59,7 @@ async function importCharacters(db: Database, args: string[]) {
   const [user] = await db.select().from(users).where(eq(users.email, email));
   if (!user) throw new Error(`Пользователь ${email} не найден. Сначала создайте его.`);
 
-  const { characters } = createServices(loadConfig(), db);
+  const { characters } = createServices(loadConfig(), database);
   const files = (await Promise.all(positionals.map(collectJsonFiles))).flat();
   let imported = 0;
   let skipped = 0;
@@ -90,7 +91,7 @@ async function importCharacters(db: Database, args: string[]) {
   if (failed > 0) process.exitCode = 1;
 }
 
-const COMMANDS: Record<string, (db: Database, args: string[]) => Promise<void>> = {
+const COMMANDS: Record<string, (database: DatabaseConnection, args: string[]) => Promise<void>> = {
   'create-user': createUser,
   'import-characters': importCharacters,
 };
@@ -108,7 +109,7 @@ async function main() {
   const database = connectDatabase(config.DATABASE_URL, 2);
   try {
     await runMigrations(database.db);
-    await run(database.db, args);
+    await run(database, args);
   } finally {
     await database.close();
   }

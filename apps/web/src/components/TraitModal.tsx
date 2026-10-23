@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trait } from '../types';
+import { Trait, createEntityId } from '../types';
 import { X, Sparkles, Plus } from 'lucide-react';
 import { MarkdownEditor } from './MarkdownEditor';
 
@@ -36,7 +36,7 @@ export const TraitModal: React.FC<TraitModalProps> = ({
     if (!name.trim()) return;
 
     const newTrait: Trait = {
-      id: trait?.id || `trait_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: trait?.id || createEntityId('trait'),
       name: name.trim(),
       description: description.trim(),
     };

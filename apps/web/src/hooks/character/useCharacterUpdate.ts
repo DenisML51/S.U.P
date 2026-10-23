@@ -1,153 +1,108 @@
 import { toast } from 'react-hot-toast';
-import { Character, Currency, Skill, Limb, getProficiencyBonus } from '../../types';
+import {
+  clampSanity,
+  replaceLimb,
+  setAttribute,
+  setCondition,
+  setExperience,
+  setHealth,
+  toggleSavingThrowProficiency,
+  toggleSkillExpertise,
+  toggleSkillProficiency,
+} from '@itd/game-logic';
+import type { CharacterUpdater, UpdateOptions } from '../../store/useCharacterStore';
+import type { Character, Currency, Limb } from '../../types';
+import type { AppSettings } from '../../data/settings';
+
+type UpdateCharacter = (updater: CharacterUpdater, options?: boolean | UpdateOptions) => void;
+
+/** Finite number or a fallback: form inputs can hand over NaN. */
+const finite = (value: number, fallback: number) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
 
 export const useCharacterUpdate = (
   character: Character | null,
-  updateCharacter: (char: Character | ((prev: Character) => Character), silent?: boolean) => void,
-  logHistory: (message: string, type?: 'health' | 'sanity' | 'resource' | 'inventory' | 'exp' | 'other') => void,
-  settings: any
+  updateCharacter: UpdateCharacter,
+  settings: Pick<AppSettings, 'notifications'>,
 ) => {
   if (!character) return null;
 
   const updateHealth = (current: number, max: number, temp: number, bonus: number) => {
-    const nextHP = isNaN(Number(current)) ? 0 : Number(current);
-    const nextMax = isNaN(Number(max)) ? 10 : Number(max);
-    const nextTemp = isNaN(Number(temp)) ? 0 : Number(temp);
-    const nextBonus = isNaN(Number(bonus)) ? 0 : Number(bonus);
-    
-    const currentHP = isNaN(Number(character?.currentHP)) ? 0 : Number(character?.currentHP);
-    const diff = nextHP - currentHP;
-    
-    if (diff !== 0) {
-      const message = diff > 0 
-        ? `Получено лечение: +${diff} HP (${nextHP}/${nextMax + nextBonus})`
-        : `Получен урон: ${diff} HP (${nextHP}/${nextMax + nextBonus})`;
-      logHistory(message, 'health');
-    }
+    const health = {
+      currentHP: finite(current, 0),
+      maxHP: finite(max, 10),
+      tempHP: finite(temp, 0),
+      maxHPBonus: finite(bonus, 0),
+    };
+    const diff = health.currentHP - character.currentHP;
+    const total = health.maxHP + health.maxHPBonus;
+    const log =
+      diff === 0
+        ? undefined
+        : {
+            message:
+              diff > 0
+                ? `Получено лечение: +${diff} HP (${health.currentHP}/${total})`
+                : `Получен урон: ${diff} HP (${health.currentHP}/${total})`,
+            type: 'health' as const,
+          };
 
+    updateCharacter((prev) => setHealth(prev, health), { silent: true, log });
     if (settings.notifications && diff !== 0) {
-      if (diff > 0) toast.success(`Здоровье: +${diff} (${nextHP}/${nextMax + nextBonus})`);
-      else toast.error(`Здоровье: ${diff} (${nextHP}/${nextMax + nextBonus})`);
+      if (diff > 0) toast.success(`Здоровье: +${diff} (${health.currentHP}/${total})`);
+      else toast.error(`Здоровье: ${diff} (${health.currentHP}/${total})`);
     }
-
-    updateCharacter((prev: Character) => ({
-      ...prev,
-      currentHP: nextHP,
-      maxHP: nextMax,
-      tempHP: nextTemp,
-      maxHPBonus: nextBonus,
-    }), true);
   };
 
   const updateSanity = (newSanity: number, maxSanity: number) => {
-    const nextSanity = isNaN(Number(newSanity)) ? 0 : Number(newSanity);
-    const maxVal = isNaN(Number(maxSanity)) ? 100 : Number(maxSanity);
-    const clampedSanity = Math.min(maxVal, Math.max(0, nextSanity));
-    
-    const currentSanity = isNaN(Number(character?.sanity)) ? 0 : Number(character?.sanity);
-    const diff = clampedSanity - currentSanity;
+    const max = finite(maxSanity, 100);
+    const sanity = clampSanity(finite(newSanity, 0), max);
+    const diff = sanity - character.sanity;
+    const message =
+      diff > 0 ? `Рассудок восстановлен: +${diff} (${sanity}/${max})` : `Потеря рассудка: ${diff} (${sanity}/${max})`;
 
-    if (diff !== 0) {
-      const message = diff > 0 
-        ? `Рассудок восстановлен: +${diff} (${clampedSanity}/${maxVal})`
-        : `Потеря рассудка: ${diff} (${clampedSanity}/${maxVal})`;
-      logHistory(message, 'sanity');
-    }
-
+    updateCharacter((prev) => ({ ...prev, sanity }), {
+      silent: true,
+      log: diff === 0 ? undefined : { message, type: 'sanity' },
+    });
     if (settings.notifications && diff !== 0) {
-      if (diff < 0) toast.error(`Потеря рассудка: ${diff} (${clampedSanity}/${maxVal})`);
-      else toast.success(`Рассудок восстановлен: +${diff} (${clampedSanity}/${maxVal})`);
+      if (diff < 0) toast.error(message);
+      else toast.success(message);
     }
-
-    updateCharacter((prev: Character) => ({ ...prev, sanity: clampedSanity }), true);
   };
 
   const saveExperience = (newExperience: number, newLevel: number) => {
-    const oldLevel = character?.level || 1;
-    const oldExp = character?.experience || 0;
-    const newProfBonus = getProficiencyBonus(newLevel);
+    const leveledUp = newLevel > character.level;
+    const log = leveledUp
+      ? { message: `Уровень повышен до ${newLevel}!`, type: 'exp' as const }
+      : newExperience !== character.experience
+        ? { message: `Опыт обновлен: ${newExperience}`, type: 'exp' as const }
+        : undefined;
 
-    if (newLevel > oldLevel) {
-      logHistory(`Уровень повышен до ${newLevel}!`, 'exp');
-    } else if (newExperience !== oldExp) {
-      logHistory(`Опыт обновлен: ${newExperience}`, 'exp');
-    }
-
+    updateCharacter((prev) => setExperience(prev, newExperience, newLevel), { silent: true, log });
     if (settings.notifications) {
-      if (newLevel > oldLevel) {
-        toast.success(`Уровень повышен! Теперь вы ${newLevel} уровня`, { duration: 5000, icon: '🎉' });
-      } else {
-        toast.success(`Опыт обновлен: ${newExperience}`);
-      }
+      if (leveledUp) toast.success(`Уровень повышен! Теперь вы ${newLevel} уровня`, { duration: 5000, icon: '🎉' });
+      else toast.success(`Опыт обновлен: ${newExperience}`);
     }
-
-    updateCharacter((prev: Character) => ({
-      ...prev,
-      experience: newExperience,
-      level: newLevel,
-      proficiencyBonus: newProfBonus,
-    }), true);
-  };
-
-  const updateAttributeValue = (attrId: string, newValue: number, newBonus: number) => {
-    updateCharacter({
-      ...character,
-      attributes: { ...character.attributes, [attrId]: newValue },
-      attributeBonuses: { ...character.attributeBonuses, [attrId]: newBonus },
-    });
-  };
-
-  const toggleSkillProficiency = (skillId: string) => {
-    const updatedSkills = character.skills.map((skill: Skill) =>
-      skill.id === skillId ? { ...skill, proficient: !skill.proficient, expertise: false } : skill
-    );
-    updateCharacter({ ...character, skills: updatedSkills });
-  };
-
-  const toggleSkillExpertise = (skillId: string) => {
-    const updatedSkills = character.skills.map((skill: Skill) =>
-      skill.id === skillId ? { ...skill, expertise: !skill.expertise } : skill
-    );
-    updateCharacter({ ...character, skills: updatedSkills });
-  };
-
-  const toggleSavingThrowProficiency = (attrId: string) => {
-    const current = character.savingThrowProficiencies || [];
-    const newProficiencies = current.includes(attrId)
-      ? current.filter(id => id !== attrId)
-      : [...current, attrId];
-    updateCharacter({ ...character, savingThrowProficiencies: newProficiencies });
-  };
-
-  const updateLimb = (updatedLimb: Limb) => {
-    const newLimbs = character.limbs.map(l => l.id === updatedLimb.id ? updatedLimb : l);
-    updateCharacter({ ...character, limbs: newLimbs });
   };
 
   const updateCurrency = (currency: Currency) => {
-    updateCharacter({ ...character, currency });
+    updateCharacter((prev) => ({ ...prev, currency }));
     if (settings.notifications) toast.success('Кошелек обновлен');
-  };
-
-  const updateCondition = (conditionId: string, active: boolean) => {
-    const current = character.conditions || [];
-    const next = active 
-      ? [...new Set([...current, conditionId])]
-      : current.filter(id => id !== conditionId);
-    updateCharacter({ ...character, conditions: next });
   };
 
   return {
     updateHealth,
     updateSanity,
     saveExperience,
-    updateAttributeValue,
-    toggleSkillProficiency,
-    toggleSkillExpertise,
-    toggleSavingThrowProficiency,
-    updateLimb,
+    updateAttributeValue: (attrId: string, value: number, bonus: number) =>
+      updateCharacter((prev) => setAttribute(prev, attrId, value, bonus)),
+    toggleSkillProficiency: (skillId: string) => updateCharacter((prev) => toggleSkillProficiency(prev, skillId)),
+    toggleSkillExpertise: (skillId: string) => updateCharacter((prev) => toggleSkillExpertise(prev, skillId)),
+    toggleSavingThrowProficiency: (attrId: string) =>
+      updateCharacter((prev) => toggleSavingThrowProficiency(prev, attrId)),
+    updateLimb: (limb: Limb) => updateCharacter((prev) => replaceLimb(prev, limb)),
     updateCurrency,
-    updateCondition,
+    updateCondition: (conditionId: string, active: boolean) =>
+      updateCharacter((prev) => setCondition(prev, conditionId, active)),
   };
 };
-

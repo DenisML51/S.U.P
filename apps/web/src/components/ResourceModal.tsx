@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Resource } from '../types';
+import { Resource, createEntityId } from '../types';
 import { getLucideIcon } from '../utils/iconUtils';
 import { MarkdownEditor } from './MarkdownEditor';
 import { CustomSelect } from './CustomSelect';
@@ -53,7 +53,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
     if (!name.trim()) return;
     
     const newResource: Resource = {
-      id: resource?.id || `resource_${Date.now()}`,
+      id: resource?.id || createEntityId('resource'),
       name,
       iconName,
       current: Math.min(current, max),

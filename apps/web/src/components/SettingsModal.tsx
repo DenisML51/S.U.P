@@ -1,69 +1,84 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, X, FolderOpen, Save, Trash2, Bell, Eye, EyeOff, Monitor } from 'lucide-react';
+import { Settings, X, Bell, Eye, EyeOff, Monitor, Cloud, CloudOff, RefreshCw, LogOut, AlertTriangle, UserCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-
-interface AppSettings {
-  storagePath: string | null;
-  autoSave: boolean;
-  compactCards: boolean;
-  showNotifications: boolean;
-  fullscreen: boolean;
-}
+import { useCharacterStore } from '../store/useCharacterStore';
+import { useSessionStore } from '../store/useSessionStore';
+import { applyFullscreen, type AppSettings } from '../data/settings';
+import type { SyncStatus } from '../data/sync/syncEngine';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const syncLabel = (sync: SyncStatus, offline: boolean): { text: string; tone: string } => {
+  if (offline || sync.state === 'offline') return { text: 'Нет связи — изменения сохраняются на устройстве', tone: 'text-orange-400' };
+  if (sync.state === 'syncing') return { text: 'Синхронизация…', tone: 'text-blue-400' };
+  if (sync.state === 'error') return { text: sync.lastError ?? 'Ошибка синхронизации', tone: 'text-red-400' };
+  if (sync.state === 'unauthorized') return { text: 'Сессия истекла', tone: 'text-red-400' };
+  if (sync.pending > 0) return { text: `Ожидают отправки: ${sync.pending}`, tone: 'text-orange-400' };
+  return { text: 'Все изменения сохранены на сервере', tone: 'text-green-400' };
+};
+
+const formatTime = (timestamp: number | null) =>
+  timestamp ? new Date(timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '—';
+
+const Toggle: React.FC<{
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  icon: React.ReactNode;
+  label: string;
+  /** Full class names (Tailwind only generates classes it can see literally). */
+  accent: { on: string; hover: string };
+}> = ({ checked, onChange, icon, label, accent }) => (
+  <label className={`p-4 bg-dark-bg/50 border border-dark-border rounded-2xl flex items-center justify-between cursor-pointer ${accent.hover} transition-all`}>
+    <div className="flex items-center gap-3">
+      {icon}
+      <span className="text-xs font-bold text-gray-300">{label}</span>
+    </div>
+    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="hidden" />
+    <div className={`w-10 h-6 rounded-full relative transition-all ${checked ? accent.on : 'bg-gray-700'}`}>
+      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${checked ? 'left-5' : 'left-1'}`} />
+    </div>
+  </label>
+);
+
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-  const [settings, setSettings] = useState<AppSettings>({
-    storagePath: localStorage.getItem('trpg_storage_path'),
-    autoSave: localStorage.getItem('trpg_auto_save') !== 'false',
-    compactCards: localStorage.getItem('trpg_compact_cards') === 'true',
-    showNotifications: localStorage.getItem('trpg_notifications') !== 'false',
-    fullscreen: localStorage.getItem('trpg_fullscreen') === 'true',
-  });
+  const settings = useCharacterStore((s) => s.settings);
+  const updateSettings = useCharacterStore((s) => s.updateSettings);
+  const { user, sync, offline, syncNow, logout } = useSessionStore();
+  const [signingOut, setSigningOut] = useState(false);
 
-  const handleSelectPath = async () => {
+  const setSetting = (patch: Partial<AppSettings>) => {
+    updateSettings(patch);
+    if (patch.fullscreen !== undefined) void applyFullscreen(patch.fullscreen);
+  };
+
+  const handleLogout = async () => {
+    setSigningOut(true);
     try {
-      if (window.electronAPI) {
-        const path = await window.electronAPI.selectDirectory();
-        if (path) {
-          updateSettings({ storagePath: path });
-          if (settings.showNotifications) {
-            toast.success(`Путь изменен: ${path}`);
-          }
-        }
-      } else {
-        toast.error('Функция доступна только в Electron-версии приложения');
+      const { unsynced } = await logout();
+      if (unsynced > 0) {
+        const confirmed = window.confirm(
+          `${unsynced} изменений ещё не отправлены на сервер (нет связи). При выходе они будут потеряны. Всё равно выйти?`,
+        );
+        if (confirmed) await logout({ force: true });
+        else return;
       }
-    } catch (error) {
-      console.error('Failed to select directory:', error);
-      toast.error('Ошибка при выборе папки');
+      onClose();
+    } finally {
+      setSigningOut(false);
     }
   };
 
-  const updateSettings = (newSettings: Partial<AppSettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
-    
-    if (updated.storagePath) localStorage.setItem('trpg_storage_path', updated.storagePath);
-    else localStorage.removeItem('trpg_storage_path');
-    
-    localStorage.setItem('trpg_auto_save', String(updated.autoSave));
-    localStorage.setItem('trpg_compact_cards', String(updated.compactCards));
-    localStorage.setItem('trpg_notifications', String(updated.showNotifications));
-    localStorage.setItem('trpg_fullscreen', String(updated.fullscreen));
-
-    if (newSettings.hasOwnProperty('fullscreen') && window.electronAPI) {
-      window.electronAPI.setFullScreen(updated.fullscreen);
-    }
-
-    window.dispatchEvent(new CustomEvent('app-settings-updated', {
-      detail: updated
-    }));
+  const handleSync = async () => {
+    await syncNow();
+    const { sync: after } = useSessionStore.getState();
+    if (after.state === 'idle' && after.pending === 0) toast.success('Синхронизировано');
   };
+
+  const status = syncLabel(sync, offline);
 
   return (
     <AnimatePresence>
@@ -100,58 +115,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             <div className="p-8 space-y-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
               <section className="space-y-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <FolderOpen className="w-4 h-4 text-blue-400" />
-                  <h4 className="text-sm font-black uppercase tracking-widest text-gray-400">Хранилище</h4>
+                  {offline || sync.state === 'offline' ? (
+                    <CloudOff className="w-4 h-4 text-orange-400" />
+                  ) : (
+                    <Cloud className="w-4 h-4 text-blue-400" />
+                  )}
+                  <h4 className="text-sm font-black uppercase tracking-widest text-gray-400">Аккаунт и синхронизация</h4>
                 </div>
-                
+
                 <div className="p-6 bg-dark-bg/50 border border-dark-border rounded-2xl space-y-4 transition-all hover:border-blue-500/30">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Путь к папке персонажей</label>
-                    <div className="flex gap-2">
-                      <div className="flex-1 bg-dark-bg border border-dark-border rounded-xl px-4 py-2 text-sm text-gray-300 truncate flex items-center">
-                        {settings.storagePath || 'По умолчанию (Local Storage)'}
-                      </div>
-                      <button
-                        onClick={handleSelectPath}
-                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-xs transition-all shadow-lg shadow-blue-500/20"
-                      >
-                        Выбрать
-                      </button>
-                      {settings.storagePath && (
-                        <button
-                          onClick={() => updateSettings({ storagePath: null })}
-                          className="p-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl hover:bg-red-500/20 transition-all"
-                          title="Сбросить"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
+                  <div className="flex items-center gap-3">
+                    <UserCircle className="w-8 h-8 text-gray-500" />
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-white truncate">{user?.displayName}</div>
+                      <div className="text-[11px] text-gray-500 truncate">{user?.email}</div>
                     </div>
-                    <p className="text-[10px] text-gray-500 mt-2 italic">
-                      Если путь не выбран, данные хранятся во внутреннем кэше браузера.
-                    </p>
                   </div>
 
-                  <label className="flex items-center justify-between cursor-pointer group">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all ${settings.autoSave ? 'bg-green-500/20 border-green-500/30' : 'bg-dark-bg border-dark-border'}`}>
-                        <Save className={`w-4 h-4 ${settings.autoSave ? 'text-green-400' : 'text-gray-600'}`} />
-                      </div>
-                      <div>
-                        <span className={`text-sm font-bold ${settings.autoSave ? 'text-green-400' : 'text-gray-400'}`}>Автосохранение</span>
-                        <p className="text-[10px] text-gray-500">Сохранять изменения мгновенно</p>
-                      </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className={`text-xs font-bold ${status.tone}`}>{status.text}</div>
+                      <div className="text-[10px] text-gray-500 mt-1">Последняя синхронизация: {formatTime(sync.lastSyncedAt)}</div>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.autoSave}
-                      onChange={(e) => updateSettings({ autoSave: e.target.checked })}
-                      className="hidden"
-                    />
-                    <div className={`w-10 h-6 rounded-full relative transition-all ${settings.autoSave ? 'bg-green-500' : 'bg-gray-700'}`}>
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.autoSave ? 'left-5' : 'left-1'}`} />
+                    <button
+                      onClick={handleSync}
+                      disabled={sync.state === 'syncing'}
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white rounded-xl font-bold text-xs transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${sync.state === 'syncing' ? 'animate-spin' : ''}`} />
+                      Синхронизировать
+                    </button>
+                  </div>
+
+                  {sync.rejected.length > 0 && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl space-y-1">
+                      <div className="flex items-center gap-2 text-xs font-bold text-red-400">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        Сервер не принял изменения (сохранены только на устройстве):
+                      </div>
+                      {sync.rejected.map((r) => (
+                        <div key={r.id} className="text-[11px] text-gray-400">
+                          {r.name}: {r.reason}
+                        </div>
+                      ))}
                     </div>
-                  </label>
+                  )}
+
+                  <button
+                    onClick={handleLogout}
+                    disabled={signingOut}
+                    className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-60 text-red-400 rounded-xl font-bold text-xs transition-all border border-red-500/20 flex items-center justify-center gap-2"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    Выйти из аккаунта
+                  </button>
                 </div>
               </section>
 
@@ -162,76 +179,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <label className="p-4 bg-dark-bg/50 border border-dark-border rounded-2xl flex items-center justify-between cursor-pointer hover:border-purple-500/30 transition-all">
-                    <div className="flex items-center gap-3">
-                      {settings.compactCards ? <EyeOff className="w-4 h-4 text-purple-400" /> : <Eye className="w-4 h-4 text-purple-400" />}
-                      <span className="text-xs font-bold text-gray-300">Компактные карточки</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.compactCards}
-                      onChange={(e) => updateSettings({ compactCards: e.target.checked })}
-                      className="hidden"
-                    />
-                    <div className={`w-10 h-6 rounded-full relative transition-all ${settings.compactCards ? 'bg-purple-500' : 'bg-gray-700'}`}>
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.compactCards ? 'left-5' : 'left-1'}`} />
-                    </div>
-                  </label>
-
-                  <label className="p-4 bg-dark-bg/50 border border-dark-border rounded-2xl flex items-center justify-between cursor-pointer hover:border-blue-500/30 transition-all">
-                    <div className="flex items-center gap-3">
-                      <Bell className="w-4 h-4 text-blue-400" />
-                      <span className="text-xs font-bold text-gray-300">Уведомления</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.showNotifications}
-                      onChange={(e) => updateSettings({ showNotifications: e.target.checked })}
-                      className="hidden"
-                    />
-                    <div className={`w-10 h-6 rounded-full relative transition-all ${settings.showNotifications ? 'bg-blue-500' : 'bg-gray-700'}`}>
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.showNotifications ? 'left-5' : 'left-1'}`} />
-                    </div>
-                  </label>
-
-                  <label className="p-4 bg-dark-bg/50 border border-dark-border rounded-2xl flex items-center justify-between cursor-pointer hover:border-orange-500/30 transition-all">
-                    <div className="flex items-center gap-3">
-                      <Monitor className="w-4 h-4 text-orange-400" />
-                      <span className="text-xs font-bold text-gray-300">Полноэкранный режим</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.fullscreen}
-                      onChange={(e) => updateSettings({ fullscreen: e.target.checked })}
-                      className="hidden"
-                    />
-                    <div className={`w-10 h-6 rounded-full relative transition-all ${settings.fullscreen ? 'bg-orange-500' : 'bg-gray-700'}`}>
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.fullscreen ? 'left-5' : 'left-1'}`} />
-                    </div>
-                  </label>
+                  <Toggle
+                    checked={settings.compactCards}
+                    onChange={(compactCards) => setSetting({ compactCards })}
+                    icon={settings.compactCards ? <EyeOff className="w-4 h-4 text-purple-400" /> : <Eye className="w-4 h-4 text-purple-400" />}
+                    label="Компактные карточки"
+                    accent={{ on: 'bg-purple-500', hover: 'hover:border-purple-500/30' }}
+                  />
+                  <Toggle
+                    checked={settings.notifications}
+                    onChange={(notifications) => setSetting({ notifications })}
+                    icon={<Bell className="w-4 h-4 text-blue-400" />}
+                    label="Уведомления"
+                    accent={{ on: 'bg-blue-500', hover: 'hover:border-blue-500/30' }}
+                  />
+                  <Toggle
+                    checked={settings.fullscreen}
+                    onChange={(fullscreen) => setSetting({ fullscreen })}
+                    icon={<Monitor className="w-4 h-4 text-orange-400" />}
+                    label="Полноэкранный режим"
+                    accent={{ on: 'bg-orange-500', hover: 'hover:border-orange-500/30' }}
+                  />
                 </div>
               </section>
-
-              {window.electronAPI && (
-                <section className="space-y-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Trash2 className="w-4 h-4 text-red-400" />
-                    <h4 className="text-sm font-black uppercase tracking-widest text-gray-400">Система</h4>
-                  </div>
-                  <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
-                    <button
-                      onClick={() => {
-                        if (confirm('Вы уверены, что хотите выйти из приложения?')) {
-                          window.electronAPI.closeApp();
-                        }
-                      }}
-                      className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl font-bold text-xs transition-all border border-red-500/20"
-                    >
-                      Закрыть приложение
-                    </button>
-                  </div>
-                </section>
-              )}
             </div>
 
             <div className="p-6 bg-dark-card/50 border-t border-dark-border">
@@ -248,4 +218,3 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     </AnimatePresence>
   );
 };
-

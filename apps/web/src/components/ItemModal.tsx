@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Sword, Box, Zap, X, Check, Info, Plus, Minus, Search, ChevronRight, Edit2, Crosshair, Disc } from 'lucide-react';
-import { InventoryItem, ItemType, WeaponClass } from '../types';
+import { InventoryItem, ItemType, WeaponClass, createEntityId } from '../types';
 import { MarkdownEditor } from './MarkdownEditor';
 import { IconPicker } from './IconPicker';
 import { getLucideIcon } from '../utils/iconUtils';
@@ -89,7 +89,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
     if (!name.trim()) return;
     
     const newItem: InventoryItem = {
-      id: item?.id || `item_${Date.now()}`,
+      id: item?.id || createEntityId('item'),
       name,
       type,
       equipped: item?.equipped || false,

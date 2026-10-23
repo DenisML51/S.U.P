@@ -7,7 +7,7 @@ import { sql } from 'drizzle-orm';
 import Fastify from 'fastify';
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
 import type { Config } from './config';
-import type { Database } from './db/client';
+import type { DatabaseConnection } from './db/client';
 import { registerErrorHandler } from './lib/errors';
 import { authRoutes } from './modules/auth/auth.routes';
 import { AuthService } from './modules/auth/auth.service';
@@ -15,6 +15,7 @@ import { AccessTokenSigner } from './modules/auth/crypto';
 import { characterRoutes } from './modules/characters/characters.routes';
 import { CharactersService } from './modules/characters/characters.service';
 import { RealtimeHub } from './modules/realtime/hub';
+import { PostgresChangeNotifier } from './modules/realtime/pgNotifier';
 import { realtimeRoutes } from './modules/realtime/realtime.routes';
 
 /** Character documents embed avatars as data URLs; the schema caps one at ~4 MB. */
@@ -23,23 +24,33 @@ const BODY_LIMIT_BYTES = 6 * 1024 * 1024;
 export interface AppServices {
   auth: AuthService;
   characters: CharactersService;
+  /** Sockets of this process. */
   hub: RealtimeHub;
+  /** Cross-process change bus; the app forwards it into `hub`. */
+  notifier: PostgresChangeNotifier;
 }
 
-export function createServices(config: Config, db: Database): AppServices {
+export function createServices(config: Config, { db, sql }: DatabaseConnection): AppServices {
   const hub = new RealtimeHub();
+  const notifier = new PostgresChangeNotifier(sql, (error) => console.error('change notification failed', error));
   const signer = new AccessTokenSigner(config.JWT_SECRET, config.ACCESS_TOKEN_TTL_SECONDS);
   return {
     hub,
+    notifier,
     auth: new AuthService(db, signer, {
       refreshTokenTtlDays: config.REFRESH_TOKEN_TTL_DAYS,
       registrationEnabled: config.REGISTRATION_ENABLED,
     }),
-    characters: new CharactersService(db, hub),
+    characters: new CharactersService(db, notifier),
   };
 }
 
-export async function buildApp(config: Config, db: Database, services = createServices(config, db)) {
+export async function buildApp(
+  config: Config,
+  database: DatabaseConnection,
+  services = createServices(config, database),
+) {
+  const { db } = database;
   const app = Fastify({
     logger:
       config.LOG_LEVEL === 'silent'
@@ -67,12 +78,17 @@ export async function buildApp(config: Config, db: Database, services = createSe
     await app.register(cors, { origin: config.CORS_ORIGINS, credentials: true });
   }
 
-  app.addHook('onClose', async () => services.hub.closeAll());
+  const stopForwarding = await services.notifier.forwardTo(services.hub);
+  app.addHook('onClose', async () => {
+    await stopForwarding();
+    services.hub.closeAll();
+  });
 
   await app.register(
     async (api) => {
-      api.get('/health', async () => ({ status: 'ok' }));
-      api.get('/health/ready', async (_request, reply) => {
+      // Probed every few seconds by Docker: keep them out of the request log.
+      api.get('/health', { logLevel: 'warn' }, async () => ({ status: 'ok' }));
+      api.get('/health/ready', { logLevel: 'warn' }, async (_request, reply) => {
         try {
           await db.execute(sql`select 1`);
           return { status: 'ready' };

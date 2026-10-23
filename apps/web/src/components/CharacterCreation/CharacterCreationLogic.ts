@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { 
-  Character, RACES, CLASSES, ATTRIBUTES_LIST, SKILLS_LIST, 
-  INITIAL_POINTS, ATTRIBUTE_START, ATTRIBUTE_MIN, ATTRIBUTE_MAX, 
-  POINT_BUY_COSTS, getProficiencyBonus, calculateMaxSanity, 
-  getDefaultLimbs, Race, Class, Subrace, Skill
+import { toast } from 'react-hot-toast';
+import {
+  RACES, CLASSES, Skill,
+  abilityModifier, buildNewCharacter, canDecrement as canDecrementScore, canIncrement as canIncrementScore,
+  formatModifier, getProficiencyBonus, pointBuyCost, pointsUsed as pointsUsedFor, pointsRemaining as pointsRemainingFor,
+  startingAttributes, startingSkills,
 } from '../../types';
 import { useCharacterStore } from '../../store/useCharacterStore';
 
@@ -25,14 +26,8 @@ export const useCharacterCreationLogic = (onComplete?: () => void) => {
   const [level] = useState(character?.level || 1);
   const [experience] = useState(character?.experience || 0);
   const [speed, setSpeed] = useState(character?.speed || 30);
-  const [attributes, setAttributes] = useState<{ [key: string]: number }>(
-    character?.attributes || 
-    ATTRIBUTES_LIST.reduce((acc, attr) => ({ ...acc, [attr.id]: ATTRIBUTE_START }), {})
-  );
-  const [skills, setSkills] = useState<Skill[]>(
-    (character?.skills && Array.isArray(character.skills)) ? character.skills : 
-    SKILLS_LIST.map(skill => ({ ...skill, proficient: false, expertise: false }))
-  );
+  const [attributes, setAttributes] = useState<{ [key: string]: number }>(character?.attributes || startingAttributes());
+  const [skills, setSkills] = useState<Skill[]>(character?.skills ?? startingSkills());
   const [savingThrows, setSavingThrows] = useState<string[]>(
     character?.savingThrowProficiencies || []
   );
@@ -41,26 +36,11 @@ export const useCharacterCreationLogic = (onComplete?: () => void) => {
   );
   const proficiencyBonus = getProficiencyBonus(level);
   
-  const calculatePointsUsed = () => {
-    return Object.values(attributes).reduce((total, value) => {
-      return total + POINT_BUY_COSTS[value];
-    }, 0);
-  };
-  
-  const pointsUsed = calculatePointsUsed();
-  const pointsRemaining = INITIAL_POINTS - pointsUsed;
-  
-  const canIncrement = (attrId: string) => {
-    const currentValue = attributes[attrId];
-    if (currentValue >= ATTRIBUTE_MAX) return false;
-    const nextValue = currentValue + 1;
-    const costDiff = POINT_BUY_COSTS[nextValue] - POINT_BUY_COSTS[currentValue];
-    return pointsRemaining >= costDiff;
-  };
-  
-  const canDecrement = (attrId: string) => {
-    return attributes[attrId] > ATTRIBUTE_MIN;
-  };
+  const pointsUsed = pointsUsedFor(attributes);
+  const pointsRemaining = pointsRemainingFor(attributes);
+
+  const canIncrement = (attrId: string) => canIncrementScore(attributes, attrId);
+  const canDecrement = (attrId: string) => canDecrementScore(attributes, attrId);
   
   const incrementAttribute = (attrId: string) => {
     if (canIncrement(attrId)) {
@@ -74,14 +54,8 @@ export const useCharacterCreationLogic = (onComplete?: () => void) => {
     }
   };
   
-  const getModifier = (value: number) => {
-    const mod = Math.floor((value - 10) / 2);
-    return mod >= 0 ? `+${mod}` : `${mod}`;
-  };
-
-  const getCost = (value: number) => {
-    return POINT_BUY_COSTS[value];
-  };
+  const getModifier = (value: number) => formatModifier(abilityModifier(value));
+  const getCost = pointBuyCost;
   
   const toggleSkillProficiency = (skillId: string) => {
     setSkills(skills.map(skill => 
@@ -99,8 +73,8 @@ export const useCharacterCreationLogic = (onComplete?: () => void) => {
     ));
   };
 
-  const selectedClass = CLASSES.find((c: Class) => c.id === charClass);
-  const selectedRace = RACES.find((r: Race) => r.id === race);
+  const selectedClass = CLASSES.find((c) => c.id === charClass);
+  const selectedRace = RACES.find((r) => r.id === race);
   
   const toggleSavingThrow = (attrId: string) => {
     if (savingThrows.includes(attrId)) {
@@ -110,68 +84,31 @@ export const useCharacterCreationLogic = (onComplete?: () => void) => {
     }
   };
 
-  const handleSave = () => {
-    const maxSanity = calculateMaxSanity(charClass, attributes.wisdom || 10, level);
-    const constitutionMod = Math.floor(((attributes.constitution || 10) - 10) / 2);
-    const initialMaxHP = 10 + constitutionMod;
-    const dexMod = Math.floor(((attributes.dexterity || 10) - 10) / 2);
-    const baseAC = 10 + dexMod;
-    const limbs = getDefaultLimbs(initialMaxHP, attributes.constitution || 10, baseAC);
-    
-    const newCharacter: Character = {
+  const handleSave = async () => {
+    const draft = buildNewCharacter({
       name,
       race,
-      subrace: subrace || undefined,
+      subrace,
       class: charClass,
       subclass,
       level,
       experience,
       speed,
-      armorClass: baseAC,
-      sanity: maxSanity,
-      currentHP: initialMaxHP,
-      maxHP: initialMaxHP,
-      tempHP: 0,
-      maxHPBonus: 0,
-      limbs,
-      resistances: [],
-      inventory: [],
-      inventoryNotes: '',
-      attacksNotes: '',
-      equipmentNotes: '',
-      abilitiesNotes: '',
-      attacks: [],
-      abilities: [],
-      spells: [],
-      spellsNotes: '',
-      knownSchools: [],
-      maxPreparedSpells: {},
       attributes,
-      attributeBonuses: {},
       skills,
-      proficiencyBonus,
       savingThrowProficiencies: savingThrows,
-      resources: [],
-      currency: { copper: 0, silver: 0, gold: 0 },
       languagesAndProficiencies,
-      appearance: '',
-      backstory: '',
-      alignment: '',
-      alliesAndOrganizations: '',
-      personalityTraits: '',
-      ideals: '',
-      bonds: '',
-      flaws: '',
-      traits: [],
-      conditions: [],
-    };
-    createCharacter(newCharacter);
-    if (onComplete) {
-      onComplete();
+    });
+    try {
+      await createCharacter(draft);
+      onComplete?.();
+    } catch (error) {
+      console.error('Failed to create character', error);
+      toast.error('Не удалось создать персонажа');
     }
   };
-  
-  const selectedSubrace = selectedRace?.subraces?.find((sr: Subrace) => sr.id === subrace);
+
+  const selectedSubrace = selectedRace?.subraces?.find((sr) => sr.id === subrace);
   const isBasicValid = name.trim() !== '' && race !== '' && charClass !== '';
   const isAttributesValid = pointsRemaining === 0;
   const isFormValid = isBasicValid && isAttributesValid;

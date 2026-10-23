@@ -9,50 +9,8 @@ import {
 } from 'lucide-react';
 import { useCharacterStore } from '../store/useCharacterStore';
 import { toast } from 'react-hot-toast';
-import { DAMAGE_TYPES } from '../types';
+import { parseDiceFormula, rollDie } from '../types';
 import { DAMAGE_TYPE_COLORS } from '../utils/damageUtils';
-
-const parseDiceFormula = (formula: string) => {
-  const dice: { id: string, count: number, type?: string }[] = [];
-  let bonus = 0;
-
-  const parts = formula.toLowerCase().split(/\s*\+\s*|\s+и\s+/);
-
-  parts.forEach(part => {
-    const trimmed = part.trim();
-    if (!trimmed) return;
-
-    if (trimmed.includes('d')) {
-      const diceMatch = trimmed.match(/(\d*)d(\d+)(.*)/);
-      if (diceMatch) {
-        const count = diceMatch[1] === '' ? 1 : parseInt(diceMatch[1]);
-        const sides = parseInt(diceMatch[2]);
-        const rest = diceMatch[3].trim();
-        
-        let foundType = undefined;
-        if (rest) {
-          foundType = DAMAGE_TYPES.find(t => 
-            rest.toLowerCase().includes(t.toLowerCase()) || 
-            t.toLowerCase().includes(rest.toLowerCase())
-          );
-        }
-
-        if (!isNaN(sides)) {
-          dice.push({ 
-            id: `d${sides}`, 
-            count: isNaN(count) ? 1 : count, 
-            type: foundType 
-          });
-        }
-      }
-    } else {
-      const val = parseInt(trimmed);
-      if (!isNaN(val)) bonus += val;
-    }
-  });
-
-  return { dice, bonus };
-};
 
 const getRandomDiceStyles = (index: number) => {
   const colCount = 6;
@@ -255,7 +213,7 @@ export const DiceRoller: React.FC = () => {
       const config = DICE_TYPES.find(d => d.id === die.id);
       if (!config) return;
       
-      const r = Math.floor(Math.random() * config.sides) + 1;
+      const r = rollDie(config.sides);
       const type = die.type || '';
       
       totalsByType[type] = (totalsByType[type] || 0) + r;

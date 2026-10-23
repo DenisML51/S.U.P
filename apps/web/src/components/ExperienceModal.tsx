@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUp } from 'lucide-react';
-import { EXPERIENCE_BY_LEVEL } from '../types';
+import { experienceProgress } from '../types';
 
 interface ExperienceModalProps {
   isOpen: boolean;
@@ -23,12 +23,9 @@ export const ExperienceModal: React.FC<ExperienceModalProps> = ({
   const [addAmount, setAddAmount] = useState('');
   const [removeAmount, setRemoveAmount] = useState('');
 
-  const currentLevelXP = EXPERIENCE_BY_LEVEL[tempLevel];
-  const nextLevelXP = EXPERIENCE_BY_LEVEL[tempLevel + 1] || EXPERIENCE_BY_LEVEL[20];
+  const { currentLevelXP, nextLevelXP, progress: xpProgress, canLevelUp } = experienceProgress(tempLevel, tempExperience);
   const xpInCurrentLevel = tempExperience - currentLevelXP;
   const xpNeededForLevel = nextLevelXP - currentLevelXP;
-  const xpProgress = (xpInCurrentLevel / xpNeededForLevel) * 100;
-  const canLevelUp = tempExperience >= nextLevelXP && tempLevel < 20;
 
   const handleSave = () => {
     onUpdate(tempExperience, tempLevel);

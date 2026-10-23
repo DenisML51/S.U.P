@@ -25,8 +25,8 @@ export const testConfig = (overrides: Record<string, string> = {}) =>
 export function useTestApp(overrides: Record<string, string> = {}) {
   const connection = connectDatabase(TEST_DATABASE_URL, 4);
   const config = testConfig(overrides);
-  const services = createServices(config, connection.db);
-  const appPromise = buildApp(config, connection.db, services);
+  const services = createServices(config, connection);
+  const appPromise = buildApp(config, connection, services);
 
   beforeEach(async () => {
     await connection.db.execute(sql`truncate table users, refresh_tokens, characters, character_revisions cascade`);
