@@ -65,20 +65,30 @@
   background-color: rgb(var(--c-paper));
   color: rgb(var(--c-paper-ink));
   border-color: rgb(var(--c-paper-muted) / 0.6);
-  /* Darkened, slightly burnt edges. */
+  /* Gently darkened edges. */
   box-shadow:
-    inset 0 0 28px rgb(var(--c-paper-muted) / 0.55),
-    inset 0 0 90px rgb(var(--c-paper-muted) / 0.25),
+    inset 0 0 0 1px rgb(0 0 0 / 0.25),
+    inset 0 0 48px rgb(var(--c-paper-muted) / 0.55),
     var(--shadow-panel);
 }
+/* Paper: a calm, even sheet with soft light and age variation and a fine grain, so long text
+   stays easy to read. No blotchy noise: it tiles visibly and reads as torn paper. */
 .ui-panel--paper::before {
-  background-image: var(--paper-texture), var(--grain);
-  opacity: 0.6;
-  mix-blend-mode: multiply;
+  background-image:
+    radial-gradient(ellipse 70% 55% at 30% 18%, rgb(255 240 210 / 0.12), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 88% 92%, rgb(var(--c-paper-muted) / 0.3), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 70% 30%, rgb(var(--c-paper-muted) / 0.1), transparent 70%),
+    var(--paper-texture);
+  opacity: 1;
+  mix-blend-mode: normal;
 }
 .ui-panel--paper::after {
-  display: none;
+  display: block;
+  background-image: var(--grain);
+  opacity: 0.18;
+  mix-blend-mode: multiply;
 }
+
 
 /* Inset: wells for values and inputs. */
 .ui-panel--inset {
@@ -128,6 +138,11 @@
 }
 
 /* ------------------------------------------------------------------ Corners */
+.ui-corner,
+.ui-fx {
+  /* Overlays never take part in sibling spacing (space-y-* on a panel). */
+  margin: 0 !important;
+}
 .ui-corner {
   position: absolute;
   width: 24px;

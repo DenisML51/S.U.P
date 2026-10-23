@@ -144,8 +144,8 @@ export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => 
         <Panel className="space-y-3 px-5 py-4">
           <div className="flex items-baseline justify-between">
             <h3 className="ui-display text-lg text-frame-bright">Снаряжено</h3>
-            <span className="text-xs text-ink-faint">
-              КБ по снаряжению <span className="tabular-nums text-ink-muted">{calculateArmorClass(character)}</span>
+            <span className="text-xs text-ink-faint" title="Класс брони по надетому снаряжению">
+              КБ <span className="tabular-nums text-ink-muted">{calculateArmorClass(character)}</span>
             </span>
           </div>
           <WornSlot label="Броня" items={worn.filter((i) => i.type === 'armor' && !isShield(i))} onOpen={logic.openItemView} />
@@ -177,7 +177,7 @@ export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => 
         </Panel>
 
         <div className="mt-auto">
-          <SectionNotes title="Заметки о снаряжении" value={character.equipmentNotes} onSave={logic.updateEquipmentNotes} />
+          <SectionNotes title="О снаряжении" value={character.equipmentNotes} onSave={logic.updateEquipmentNotes} />
         </div>
       </aside>
     </div>

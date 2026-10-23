@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCharacterSheetLogic } from '../../components/CharacterSheet/CharacterSheetLogic';
 import { CharacterSheetModals } from '../../components/CharacterSheet/components/Modals/CharacterSheetModals';
 import { useCharacterStore } from '../../store/useCharacterStore';
@@ -25,6 +26,7 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
   const goToCharacterList = useCharacterStore((s) => s.goToCharacterList);
   const setViewMode = useCharacterStore((s) => s.setViewMode);
   const [section, setSection] = useState<SheetSection>('attributes');
+  const reduceMotion = useReducedMotion();
   const setting = settingOf(logic.character);
   useDocumentSetting(setting);
 
@@ -43,11 +45,22 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
       />
       <HeroColumn logic={sheet} onShowConditions={() => setSection('body')} />
       <main className="ui-scroll min-w-0 flex-1 overflow-y-auto px-10 py-8">
-        {section === 'attributes' && <SkillsSection logic={sheet} />}
-        {section === 'actions' && <ActionsSection logic={sheet} />}
-        {section === 'magic' && <MagicSection logic={sheet} />}
-        {section === 'equipment' && <EquipmentSection logic={sheet} />}
-        {['body', 'persona', 'journal'].includes(section) && <LegacySection section={section} logic={sheet} />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={section}
+            className="h-full"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+          >
+            {section === 'attributes' && <SkillsSection logic={sheet} />}
+            {section === 'actions' && <ActionsSection logic={sheet} />}
+            {section === 'magic' && <MagicSection logic={sheet} />}
+            {section === 'equipment' && <EquipmentSection logic={sheet} />}
+            {['body', 'persona', 'journal'].includes(section) && <LegacySection section={section} logic={sheet} />}
+          </motion.div>
+        </AnimatePresence>
       </main>
       <CharacterSheetModals {...sheet} autoAC={sheet.calculateAutoAC()} />
     </SettingScope>

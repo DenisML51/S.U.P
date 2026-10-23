@@ -77,7 +77,7 @@ export const LedgerRow: React.FC<{
 }> = ({ title, meta, value, action, leading, dim, onOpen }) => (
   <li className={cx('ui-ledger__row group flex items-center gap-3 py-2.5', dim && 'opacity-60')}>
     {leading ?? (
-      <span className="opacity-80">
+      <span className="grid h-6 w-6 shrink-0 place-items-center opacity-80">
         <LedgerBullet filled={!dim} />
       </span>
     )}
@@ -85,7 +85,7 @@ export const LedgerRow: React.FC<{
       <span className="ui-display block truncate text-[1.05rem] leading-tight group-hover:underline group-hover:decoration-1 group-hover:underline-offset-4">
         {title}
       </span>
-      {meta && <span className="mt-0.5 block truncate text-[13px] text-paper-ink/70">{meta}</span>}
+      {meta && <span className="mt-0.5 block truncate text-[13px] text-paper-ink/80">{meta}</span>}
     </button>
     {value !== undefined && <span className="shrink-0 text-sm tabular-nums">{value}</span>}
     {action && <div className="flex shrink-0 items-center gap-1">{action}</div>}
