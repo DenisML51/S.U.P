@@ -5,13 +5,13 @@
   "type": "module",
   "description": "Into the Dark API: accounts, character storage and sync, realtime notifications.",
   "scripts": {
-    "dev": "tsx watch --clear-screen=false src/main.ts",
+    "dev": "tsx watch --env-file=../../.env --clear-screen=false src/main.ts",
     "build": "tsup",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "cli": "tsx src/cli/index.ts"
+    "cli": "tsx --env-file=../../.env src/cli/index.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

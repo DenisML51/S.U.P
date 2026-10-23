@@ -44,10 +44,10 @@ export const ActionTooltip: React.FC<ActionTooltipProps> = ({
     item = character.attacks.find(a => a.id === hoveredData.id) || hoveredData;
   }
 
-  let title = item.name;
+  const title = item.name;
   let subtitle = '';
-  let description = item.description || '';
-  let effect = item.effect || '';
+  const description = item.description || '';
+  const effect = item.effect || '';
   let color = item.color || '#3b82f6';
   let details: { label: string; value: string; icon?: any; customRender?: React.ReactNode }[] = [];
 

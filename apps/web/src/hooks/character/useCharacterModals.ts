@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Resource, Limb, InventoryItem, Attack, Ability, Trait, Spell } from '../../types';
+import type { InventorySubTab } from '../../components/CharacterSheet/CharacterSheetLogic';
+import type { Resource, Limb, InventoryItem, Attack, Ability, Trait, Spell, TabType } from '../../types';
 
-export const useCharacterModals = (setActiveTab: (tab: any) => void, setInventorySubTab: (tab: any) => void) => {
+/** Payload of the `open-character-modal` window event other components dispatch. */
+interface OpenCharacterModalDetail {
+  type: 'currency' | 'resource' | 'ammunition' | 'inventory';
+  data?: unknown;
+}
+
+export const useCharacterModals = (
+  setActiveTab: (tab: TabType) => void,
+  setInventorySubTab: (tab: InventorySubTab) => void,
+) => {
   const [showHealthModal, setShowHealthModal] = useState(false);
   const [showSanityModal, setShowSanityModal] = useState(false);
   const [showExperienceModal, setShowExperienceModal] = useState(false);
@@ -38,11 +48,11 @@ export const useCharacterModals = (setActiveTab: (tab: any) => void, setInventor
   const [showGrimmoireModal, setShowGrimmoireModal] = useState(false);
 
   useEffect(() => {
-    const handleOpenModal = (e: any) => {
-      const { type, data } = e.detail;
+    const handleOpenModal = (event: Event) => {
+      const { type, data } = (event as CustomEvent<OpenCharacterModalDetail>).detail;
       if (type === 'currency') setShowCurrencyModal(true);
       if (type === 'resource') {
-        setViewingResource(data);
+        setViewingResource(data as Resource);
         setShowResourceViewModal(true);
       }
       if (type === 'ammunition') {

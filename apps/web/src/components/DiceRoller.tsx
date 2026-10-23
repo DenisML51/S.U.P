@@ -128,8 +128,8 @@ export const DiceRoller: React.FC = () => {
     const handleOpenDiceHub = (e: any) => {
       const { formula, components } = e.detail || {};
       
-      let finalDice: {id: string, style: any, type?: string}[] = [];
-      let newBonuses: Record<string, number> = {};
+      const finalDice: {id: string, style: any, type?: string}[] = [];
+      const newBonuses: Record<string, number> = {};
 
       if (components && Array.isArray(components)) {
         components.forEach((comp: any) => {

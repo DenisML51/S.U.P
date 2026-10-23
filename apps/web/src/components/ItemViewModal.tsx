@@ -24,9 +24,10 @@ export const ItemViewModal: React.FC<ItemViewModalProps> = ({
     }
     switch (item.type) {
       case 'armor': return (props: any) => <Shield {...props} style={{ ...props.style, color: item.color || props.style?.color }} />;
-      case 'weapon': 
+      case 'weapon': {
         const WeaponIcon = item.weaponClass === 'ranged' ? Crosshair : Sword;
         return (props: any) => <WeaponIcon {...props} style={{ ...props.style, color: item.color || props.style?.color }} />;
+      }
       case 'ammunition': return (props: any) => <Disc {...props} style={{ ...props.style, color: item.color || props.style?.color }} />;
       default: return (props: any) => <Box {...props} style={{ ...props.style, color: item.color || props.style?.color }} />;
     }

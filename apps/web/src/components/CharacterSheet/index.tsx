@@ -29,25 +29,27 @@ export const CharacterSheet: React.FC = () => {
     return () => window.removeEventListener('open-app-settings', handleOpenSettings);
   }, []);
 
+  // Hooks must run before the early return below.
+  const hotbarActive = !!logic.character && logic.viewMode === 'hotbar';
+  useEffect(() => {
+    if (!hotbarActive) return;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    const preventDefault = (e: TouchEvent) => e.preventDefault();
+    document.addEventListener('touchmove', preventDefault, { passive: false });
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.removeEventListener('touchmove', preventDefault);
+    };
+  }, [hotbarActive]);
+
   if (!logic.character) {
     return null;
   }
 
   const { character, activeTab, viewMode } = logic;
 
-  useEffect(() => {
-    if (viewMode === 'hotbar') {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-      const preventDefault = (e: TouchEvent) => e.preventDefault();
-      document.addEventListener('touchmove', preventDefault, { passive: false });
-      return () => {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-        document.removeEventListener('touchmove', preventDefault);
-      };
-    }
-  }, [viewMode]);
 
   const getItemIcon = (item: InventoryItem) => {
     if (item.iconName) {
@@ -55,9 +57,10 @@ export const CharacterSheet: React.FC = () => {
     }
     switch (item.type) {
       case 'armor': return (props: any) => <Shield {...props} style={{ ...props.style, color: item.color || props.style?.color }} />;
-      case 'weapon': 
+      case 'weapon': {
         const WeaponIcon = item.weaponClass === 'ranged' ? Crosshair : Sword;
         return (props: any) => <WeaponIcon {...props} style={{ ...props.style, color: item.color || props.style?.color }} />;
+      }
       case 'ammunition': return (props: any) => <Disc {...props} style={{ ...props.style, color: item.color || props.style?.color }} />;
       default: return (props: any) => <Box {...props} style={{ ...props.style, color: item.color || props.style?.color }} />;
     }

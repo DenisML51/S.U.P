@@ -9,22 +9,29 @@
     "apps/api"
   ],
   "scripts": {
-    "dev": "npm run dev -w @itd/web",
-    "build": "npm run build -w @itd/web",
+    "dev": "concurrently -k -n api,web -c cyan,magenta \"npm run dev -w @itd/api\" \"npm run dev -w @itd/web\"",
+    "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "db:up": "docker compose up -d postgres",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "cli": "npm run cli -w @itd/api --"
   },
   "engines": {
     "node": ">=22.6"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/node": "^22.19.0",
+    "concurrently": "^9.2.5",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^16.5.0",
     "prettier": "^3.9.10",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.0",
     "vitest": "^5.0.5"
   }
 }
