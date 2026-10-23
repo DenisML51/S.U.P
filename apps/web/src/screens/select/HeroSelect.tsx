@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion';
 import { DEFAULT_SETTING, type CharacterPreview } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { useSessionStore } from '../../store/useSessionStore';
 import { CharacterArt, fullArtSrc } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { ConfirmDialog } from '../../ui/Dialog';
@@ -244,8 +243,9 @@ const Carousel: React.FC<{
             y: '-50%',
             scale: isFocused ? 1 : 0.8 - (distance - 1) * 0.08,
             rotateY: offset === 0 ? 0 : offset > 0 ? -22 : 22,
-            opacity: distance > 2 ? 0 : isFocused ? 1 : 0.55 - (distance - 1) * 0.2,
-            filter: isFocused ? 'brightness(1)' : 'brightness(0.55) saturate(0.6)',
+            // Cards stay opaque so the one behind never shows through; depth is shown by darkening.
+            opacity: distance > 2 ? 0 : 1,
+            filter: isFocused ? 'brightness(1) saturate(1)' : `brightness(${distance === 1 ? 0.38 : 0.22}) saturate(0.55)`,
           }}
           transition={{ type: 'spring', stiffness: 220, damping: 30 }}
         >
