@@ -1,0 +1,17 @@
+{
+  "name": "@itd/game-logic",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Game rules and static content of the SUP system. Pure functions over @itd/schema documents.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@itd/schema": "*"
+  }
+}

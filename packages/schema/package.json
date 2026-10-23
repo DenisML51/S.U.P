@@ -1,0 +1,17 @@
+{
+  "name": "@itd/schema",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Character document schema, versioned migrations and sync merge rules shared by web and api.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  }
+}

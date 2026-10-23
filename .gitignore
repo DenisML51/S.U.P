@@ -1,30 +1,30 @@
 node_modules/
-/.pnp
-.pnp.js
+dist/
+coverage/
+*.tsbuildinfo
 
-/coverage
+# Environment
+.env
+.env.*
+!.env.example
 
-/dist
+# Legacy desktop build artifacts
 /release
 /build
 
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Local data (legacy exports, dumps)
+/data
 
+# Logs
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
 *.log
 *.log.*
 
+# Editors / OS
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
+.DS_Store
 Thumbs.db
