@@ -11,6 +11,7 @@ export * from './rules/actions';
 export * from './rules/armor';
 export * from './rules/collections';
 export * from './rules/creation';
+export * from './rules/currency';
 export * from './rules/dice';
 export * from './rules/health';
 export * from './rules/history';

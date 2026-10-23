@@ -3,6 +3,7 @@ import {
   abilityModifier,
   applyDamage,
   applyHealing,
+  grantTempHP,
   attributeModifier,
   calculateLimbMaxHP,
   calculateMaxSanity,
@@ -197,5 +198,10 @@ describe('damage and healing', () => {
   it('heals up to the maximum including the bonus', () => {
     expect(applyHealing(hurt, 100)).toMatchObject({ amount: 15, character: { currentHP: 35, tempHP: 6 } });
     expect(applyHealing(hurt, 3).character.currentHP).toBe(23);
+  });
+
+  it('keeps the larger amount of temporary hit points instead of stacking them', () => {
+    expect(grantTempHP(hurt, 4).tempHP).toBe(6);
+    expect(grantTempHP(hurt, 9).tempHP).toBe(9);
   });
 });

@@ -1,7 +1,6 @@
 import React from 'react';
 import { formatModifier } from '@itd/game-logic';
-import type { Ability, Attack, Character } from '@itd/schema';
-import { useCharacterStore } from '../../../store/useCharacterStore';
+import type { Character } from '@itd/schema';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { Ledger, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
 import { Button } from '../../../ui/primitives';
@@ -9,7 +8,8 @@ import { IconDice } from '../../../ui/icons';
 import { damageParts, describeDamage } from '../parts/damage';
 import { SectionNotes } from '../parts/SectionNotes';
 import type { SheetLogic } from '../sheetLogic';
-import { useRolls } from '../useRolls';
+import { useActs } from '../useActs';
+import { useSheetDialogs } from '../dialogs/context';
 import { plainText } from '../../../ui/text';
 
 const resourceName = (character: Character, id?: string) => character.resources.find((r) => r.id === id)?.name;
@@ -17,26 +17,8 @@ const resourceName = (character: Character, id?: string) => character.resources.
 /** Attacks and abilities: what the hero does on their turn, one click from the roll. */
 export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
   const { character } = logic;
-  const performAction = useCharacterStore((s) => s.performAction);
-  const logHistory = useCharacterStore((s) => s.logHistory);
-  const roll = useRolls();
-
-  const attack = (entry: Attack) => {
-    // Pays the ammunition the attack needs; refuses (with a message) when there is none.
-    if (entry.usesAmmunition && !performAction({ kind: 'attack', id: entry.id })?.ok) return;
-    roll.check(`${entry.name}: попадание`, entry.hitBonus);
-    roll.damage(`${entry.name}: урон`, damageParts(entry));
-  };
-
-  const activate = (entry: Ability) => {
-    // A cost is paid (and logged) by performAction; a free ability is only logged.
-    if (entry.resourceId) {
-      if (!performAction({ kind: 'ability', id: entry.id })?.ok) return;
-    } else {
-      logHistory(`Способность: ${entry.name}`);
-    }
-    roll.damage(entry.name, damageParts(entry));
-  };
+  const { attack, activate } = useActs();
+  const dialogs = useSheetDialogs();
 
   const passive = character.abilities.filter((a) => a.actionType === 'passive');
   const active = character.abilities.filter((a) => a.actionType !== 'passive');
@@ -44,7 +26,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
   return (
     <div className="grid h-full grid-cols-2 gap-8">
       <div className="flex min-h-0 min-w-0 flex-col gap-5">
-        <Ledger title="Атаки" addLabel="Добавить атаку" onAdd={() => logic.openAttackModal()}>
+        <Ledger title="Атаки" addLabel="Добавить атаку" onAdd={() => dialogs.open({ kind: 'attack' })}>
           {character.attacks.map((entry) => {
             const parts = damageParts(entry);
             return (
@@ -63,7 +45,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
                     ]}
                   />
                 }
-                onOpen={() => logic.openAttackView(entry)}
+                onOpen={() => dialogs.open({ kind: 'attack', id: entry.id })}
                 action={
                   <Button size="row" variant="secondary" icon={<IconDice width={14} height={14} />} onClick={() => attack(entry)}>
                     Атака
@@ -78,7 +60,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
       </div>
 
       <div className="flex min-h-0 min-w-0 flex-col gap-5">
-        <Ledger title="Способности" addLabel="Добавить способность" onAdd={() => logic.openAbilityModal()}>
+        <Ledger title="Способности" addLabel="Добавить способность" onAdd={() => dialogs.open({ kind: 'ability' })}>
           {active.map((entry) => {
             const parts = damageParts(entry);
             return (
@@ -99,7 +81,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
                     ]}
                   />
                 }
-                onOpen={() => logic.openAbilityView(entry)}
+                onOpen={() => dialogs.open({ kind: 'ability', id: entry.id })}
                 action={
                   <Button size="row" variant="secondary" onClick={() => activate(entry)}>
                     Использовать
@@ -110,7 +92,7 @@ export const ActionsSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
           })}
           {passive.length > 0 && <LedgerGroup>Действуют всегда</LedgerGroup>}
           {passive.map((entry) => (
-            <LedgerRow key={entry.id} title={entry.name} meta={plainText(entry.effect || entry.description)} onOpen={() => logic.openAbilityView(entry)} />
+            <LedgerRow key={entry.id} title={entry.name} meta={plainText(entry.effect || entry.description)} onOpen={() => dialogs.open({ kind: 'ability', id: entry.id })} />
           ))}
           {character.abilities.length === 0 && <li className="py-4 text-sm opacity-60">Способностей пока нет</li>}
         </Ledger>

@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import {
   CONDITIONS,
-  applyDamage,
-  applyHealing,
   experienceProgress,
   formatModifier,
   initiativeModifier,
@@ -16,6 +14,8 @@ import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { IconButton, Meter, Panel, cx, type MeterTone } from '../../ui/primitives';
 import { IconCondition, IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../ui/icons';
+import { useSheetDialogs } from './dialogs/context';
+import { useVitals } from './useVitals';
 import type { SheetLogic } from './sheetLogic';
 
 // ------------------------------------------------------------------------------------------------
@@ -47,25 +47,16 @@ const StatusBar: React.FC<{
   </button>
 );
 
-const QuickHealth: React.FC<{ character: Character }> = ({ character }) => {
-  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
+const QuickHealth: React.FC = () => {
+  const vitals = useVitals();
   const [amount, setAmount] = useState('');
   const value = Number(amount);
   const valid = amount.trim() !== '' && Number.isFinite(value) && value > 0;
-  const max = totalMaxHP(character);
 
   const apply = (kind: 'damage' | 'heal') => {
     if (!valid) return;
-    const preview = kind === 'damage' ? applyDamage(character, value) : applyHealing(character, value);
-    const after = preview.character.currentHP;
-    const message =
-      kind === 'damage'
-        ? `Получен урон: ${value}${preview.absorbed ? ` (${preview.absorbed} поглощено временными)` : ''} — ${after}/${max}`
-        : `Лечение: +${preview.amount} — ${after}/${max}`;
-    updateCharacter((doc) => (kind === 'damage' ? applyDamage(doc, value) : applyHealing(doc, value)).character, {
-      silent: true,
-      log: { message, type: 'health' },
-    });
+    if (kind === 'damage') vitals.damage(value);
+    else vitals.heal(value);
     setAmount('');
   };
 
@@ -186,6 +177,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
   const { character } = logic;
   const updateResourceCount = useCharacterStore((s) => s.updateResourceCount);
   const resetAllResources = useCharacterStore((s) => s.resetAllResources);
+  const dialogs = useSheetDialogs();
   const origin = describeOrigin(character);
   const conditions = character.conditions.map((id) => CONDITIONS.find((c) => c.id === id)?.name ?? id);
 
@@ -214,7 +206,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
                 max={totalMaxHP(character)}
                 extra={character.tempHP}
                 tone="hp"
-                onClick={() => logic.setShowHealthModal(true)}
+                onClick={() => dialogs.open({ kind: 'health' })}
               />
               <StatusBar
                 icon={<IconSanity width={20} height={20} />}
@@ -222,13 +214,13 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
                 value={character.sanity}
                 max={maxSanityOf(character)}
                 tone="sanity"
-                onClick={() => logic.setShowSanityModal(true)}
+                onClick={() => dialogs.open({ kind: 'sanity' })}
               />
             </div>
-            <LevelPlate character={character} onClick={() => logic.setShowExperienceModal(true)} />
+            <LevelPlate character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
           </div>
-          <ExperienceLine character={character} onClick={() => logic.setShowExperienceModal(true)} />
-          <QuickHealth character={character} />
+          <ExperienceLine character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
+          <QuickHealth />
         </Panel>
 
         {conditions.length > 0 && (
@@ -267,7 +259,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
               <IconButton label="Длинный отдых: восстановить все ресурсы" size={28} onClick={resetAllResources}>
                 <IconRest width={18} height={18} />
               </IconButton>
-              <IconButton label="Добавить ресурс" size={28} onClick={() => logic.openResourceModal()}>
+              <IconButton label="Добавить ресурс" size={28} onClick={() => dialogs.open({ kind: 'resource' })}>
                 <IconPlus width={16} height={16} />
               </IconButton>
             </div>
@@ -279,7 +271,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
                   key={resource.id}
                   resource={resource}
                   onChange={(delta) => updateResourceCount(resource.id, delta)}
-                  onOpen={() => logic.openResourceView(resource)}
+                  onOpen={() => dialogs.open({ kind: 'resource', id: resource.id })}
                 />
               ))}
             </ul>
