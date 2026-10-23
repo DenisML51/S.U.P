@@ -106,3 +106,37 @@ export function rollInitiative(
   const bonus = character.initiativeBonus ?? 0;
   return { roll, mod, bonus, total: roll + mod + bonus };
 }
+
+export type D20Mode = 'normal' | 'advantage' | 'disadvantage';
+
+export interface D20Roll {
+  /** Every d20 thrown: one, or two with advantage or disadvantage. */
+  dice: number[];
+  /** The die that counts. */
+  kept: number;
+}
+
+/** A d20 the way the table rolls it: with advantage the higher of two, with disadvantage the lower. */
+export function rollD20(mode: D20Mode = 'normal', random: RandomSource = Math.random): D20Roll {
+  if (mode === 'normal') {
+    const value = rollDie(20, random);
+    return { dice: [value], kept: value };
+  }
+  const dice = [rollDie(20, random), rollDie(20, random)];
+  return { dice, kept: mode === 'advantage' ? Math.max(...dice) : Math.min(...dice) };
+}
+
+/** Builds a formula from dice counts and a bonus: `{ 6: 2, 8: 1 }, 3` → `2d6 + 1d8 + 3`. */
+export function formatDice(counts: Record<number, number>, bonus = 0): string {
+  const dice = Object.entries(counts)
+    .map(([sides, count]) => [Number(sides), count] as const)
+    .filter(([, count]) => count > 0)
+    .sort(([a], [b]) => b - a)
+    .map(([sides, count]) => `${count}d${sides}`);
+  const parts = [...dice, ...(bonus ? [`${Math.abs(bonus)}`] : [])];
+  return parts.reduce((text, part, index) => {
+    if (index === 0) return bonus < 0 && dice.length === 0 ? `-${part}` : part;
+    const isBonus = index === dice.length;
+    return `${text} ${isBonus && bonus < 0 ? '-' : '+'} ${part}`;
+  }, '');
+}

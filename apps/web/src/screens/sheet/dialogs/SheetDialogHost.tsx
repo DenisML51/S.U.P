@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AbilityDialog } from './AbilityDialog';
 import { AttackDialog } from './AttackDialog';
+import { DiceDialog } from './DiceDialog';
 import { ItemDialog } from './ItemDialog';
 import { ProfileDialog } from './ProfileDialog';
 import { ResourceDialog } from './ResourceDialog';
@@ -52,6 +53,8 @@ export const SheetDialogHost: React.FC = () => {
       return <ProfileDialog key={key} open={open} onClose={close} />;
     case 'limb':
       return <LimbDialog key={key} open={open} id={current.id} onClose={close} />;
+    case 'dice':
+      return <DiceDialog key={key} open={open} onClose={close} />;
     default:
       return null;
   }

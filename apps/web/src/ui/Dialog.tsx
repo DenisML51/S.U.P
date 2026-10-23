@@ -61,7 +61,8 @@ function useHeight(swapKey: string): [(node: HTMLElement | null) => void, number
 
 /**
  * Modal dialog in the current setting. Closes on Escape and on a click outside; focus moves into
- * the dialog and returns where it was on close. Rendered in a portal so ancestors' overflow and
+ * the dialog and returns where it was on close. It hangs from a fixed point near the top, so when
+ * its content changes it grows downward and the buttons stay under the cursor. Rendered in a portal so ancestors' overflow and
  * transforms never clip it.
  */
 export const Dialog: React.FC<DialogProps> = ({
@@ -105,7 +106,7 @@ export const Dialog: React.FC<DialogProps> = ({
   return createPortal(
     <AnimatePresence>
       {open && (
-        <SettingScope setting={setting} className="fixed inset-0 z-[200] grid place-items-center p-6">
+        <SettingScope setting={setting} className="fixed inset-0 z-[200] flex items-start justify-center px-6 pt-[9vh]">
           <motion.div
             className="absolute inset-0 bg-bg-deep/80"
             initial={{ opacity: 0 }}

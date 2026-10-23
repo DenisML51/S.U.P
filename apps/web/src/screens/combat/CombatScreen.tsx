@@ -112,7 +112,6 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
     updateCharacter((doc) => resetTurn(doc), { log: { message: 'Бой окончен', type: 'other' } });
     setCombat(IDLE);
   };
-  const openDice = () => window.dispatchEvent(new CustomEvent('open-dice-hub', { detail: {} }));
 
   return (
     <>
@@ -152,7 +151,7 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
           )}
         </div>
         <div className="ml-auto flex gap-1">
-          <IconButton label="Кубики" onClick={openDice}>
+          <IconButton label="Кубики" onClick={() => dialogs.open({ kind: 'dice' })}>
             <IconDice width={20} height={20} />
           </IconButton>
           <IconButton label="Настройки" onClick={onOpenSettings}>

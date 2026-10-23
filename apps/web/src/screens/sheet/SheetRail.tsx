@@ -1,5 +1,6 @@
 import React from 'react';
 import { cx } from '../../ui/primitives';
+import { useSheetDialogs } from './dialogs/context';
 import {
   IconArmor,
   IconAttacks,
@@ -58,19 +59,21 @@ export const SheetRail: React.FC<{
   onSection: (section: SheetSection) => void;
   onBack: () => void;
   onCombat: () => void;
-  onDice: () => void;
   onSettings: () => void;
-}> = ({ section, onSection, onBack, onCombat, onDice, onSettings }) => (
-  <nav className="flex h-full w-[76px] shrink-0 flex-col border-r border-line/70 bg-bg-deep/60 py-3" aria-label="Разделы листа">
-    <RailButton label="Герои" Icon={IconPrev} onClick={onBack} hint="К выбору героя" />
-    <div className="mx-4 my-2 h-px bg-line/70" aria-hidden />
-    <div className="flex flex-1 flex-col">
-      {SHEET_SECTIONS.map(({ id, label, Icon }) => (
-        <RailButton key={id} label={label} Icon={Icon} active={section === id} onClick={() => onSection(id)} />
-      ))}
-    </div>
-    <RailButton label="Бой" Icon={IconCombat} onClick={onCombat} hint="Боевой режим" />
-    <RailButton label="Кубики" Icon={IconDice} onClick={onDice} />
-    <RailButton label="Опции" Icon={IconSettings} onClick={onSettings} hint="Настройки" />
-  </nav>
-);
+}> = ({ section, onSection, onBack, onCombat, onSettings }) => {
+  const dialogs = useSheetDialogs();
+  return (
+    <nav className="flex h-full w-[76px] shrink-0 flex-col border-r border-line/70 bg-bg-deep/60 py-3" aria-label="Разделы листа">
+      <RailButton label="Герои" Icon={IconPrev} onClick={onBack} hint="К выбору героя" />
+      <div className="mx-4 my-2 h-px bg-line/70" aria-hidden />
+      <div className="flex flex-1 flex-col">
+        {SHEET_SECTIONS.map(({ id, label, Icon }) => (
+          <RailButton key={id} label={label} Icon={Icon} active={section === id} onClick={() => onSection(id)} />
+        ))}
+      </div>
+      <RailButton label="Бой" Icon={IconCombat} onClick={onCombat} hint="Боевой режим" />
+      <RailButton label="Кубики" Icon={IconDice} onClick={() => dialogs.open({ kind: 'dice' })} />
+      <RailButton label="Опции" Icon={IconSettings} onClick={onSettings} hint="Настройки" />
+    </nav>
+  );
+};
