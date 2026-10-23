@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Character, HistoryEntry, HistoryEntryType } from '@itd/schema';
 import { Ledger, LedgerGroup } from '../../../ui/Ledger';
 import { cx } from '../../../ui/primitives';
+import { foldRepeats } from '../parts/history';
 
 type Filter = 'all' | HistoryEntryType;
 
@@ -35,27 +36,16 @@ const dayTitle = (timestamp: number) => {
   return day.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: day.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
 };
 
-interface Line {
-  entry: HistoryEntry;
-  /** The same message repeated in a row ("Получено: стрела (+1)" clicked five times) reads as one line. */
-  count: number;
-}
-
 /** Entries grouped by day, newest first, with repeats folded. */
 const byDay = (entries: HistoryEntry[]) => {
-  const groups: { key: string; title: string; lines: Line[] }[] = [];
+  const groups: { key: string; title: string; entries: HistoryEntry[] }[] = [];
   for (const entry of [...entries].sort((a, b) => b.timestamp - a.timestamp)) {
     const key = dayKey(entry.timestamp);
-    let group = groups[groups.length - 1];
-    if (group?.key !== key) {
-      group = { key, title: dayTitle(entry.timestamp), lines: [] };
-      groups.push(group);
-    }
-    const previous = group.lines[group.lines.length - 1];
-    if (previous && previous.entry.message === entry.message && previous.entry.type === entry.type) previous.count += 1;
-    else group.lines.push({ entry, count: 1 });
+    const last = groups[groups.length - 1];
+    if (last?.key === key) last.entries.push(entry);
+    else groups.push({ key, title: dayTitle(entry.timestamp), entries: [entry] });
   }
-  return groups;
+  return groups.map((group) => ({ ...group, lines: foldRepeats(group.entries) }));
 };
 
 /** The hero's chronicle: every roll, wound and find, as it happened at the table. */
