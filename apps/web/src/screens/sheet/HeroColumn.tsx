@@ -11,6 +11,7 @@ import {
 } from '@itd/game-logic';
 import type { Character, Resource } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { SettingEmblem } from '../../ui/art/emblems';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { IconButton, Meter, Panel, cx, type MeterTone } from '../../ui/primitives';
@@ -78,23 +79,24 @@ const QuickHealth: React.FC<{ character: Character }> = ({ character }) => {
       title="Введите число: Enter — урон"
     >
       <input
-        className="ui-input w-16 py-1 text-center tabular-nums"
+        className="ui-input h-8 w-16 px-2 py-0 text-center text-sm tabular-nums"
         inputMode="numeric"
         placeholder="0"
         aria-label="Количество здоровья"
         value={amount}
         onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
       />
-      <button type="submit" disabled={!valid} className="ui-button ui-button--danger ui-button--row flex-1">
+      <button type="submit" disabled={!valid} className="ui-button ui-button--danger ui-button--row !h-8 flex-1">
         Урон
       </button>
-      <button type="button" disabled={!valid} onClick={() => apply('heal')} className="ui-button ui-button--secondary ui-button--row flex-1">
+      <button type="button" disabled={!valid} onClick={() => apply('heal')} className="ui-button ui-button--secondary ui-button--row !h-8 flex-1">
         Лечение
       </button>
     </form>
   );
 };
 
+/** Level in a framed plate under the setting's emblem, as in the reference status cluster. */
 const LevelPlate: React.FC<{ character: Character; onClick: () => void }> = ({ character, onClick }) => {
   const progress = experienceProgress(character.level, character.experience);
   return (
@@ -103,15 +105,30 @@ const LevelPlate: React.FC<{ character: Character; onClick: () => void }> = ({ c
       onClick={onClick}
       title="Опыт и уровень"
       className={cx(
-        'flex w-[68px] shrink-0 flex-col items-center justify-center border px-1 py-2 transition-colors hover:border-frame-bright',
-        progress.canLevelUp ? 'border-xp' : 'border-frame/45',
+        'flex w-[70px] shrink-0 flex-col items-center border px-1 pb-2 pt-2.5 transition-colors hover:border-frame-bright',
+        progress.canLevelUp ? 'border-xp' : 'border-frame/50',
       )}
-      style={{ borderRadius: 'var(--radius)', background: 'rgb(var(--c-inset) / 0.6)' }}
+      style={{ borderRadius: 'var(--radius)', background: 'rgb(var(--c-inset) / 0.65)' }}
     >
-      <span className="text-[10px] uppercase tracking-[0.2em] text-ink-faint">ур.</span>
-      <span className="ui-display ui-numeric text-[2rem] leading-none text-frame-bright">{character.level}</span>
-      <Meter value={progress.progress} max={100} tone="xp" height={3} className="mt-2 w-full" label="Опыт" />
-      {progress.canLevelUp && <span className="mt-1 text-[10px] leading-none text-xp">повысить</span>}
+      <SettingEmblem size={26} className="text-frame" />
+      <span className="mt-2 w-full border-t border-frame/30 pt-1.5 text-center text-[10px] uppercase tracking-[0.22em] text-ink-faint">ур.</span>
+      <span className="ui-display ui-numeric text-[2.1rem] leading-none text-frame-bright">{character.level}</span>
+    </button>
+  );
+};
+
+/** Experience as its own line under the cluster: label, bar, numbers. */
+const ExperienceLine: React.FC<{ character: Character; onClick: () => void }> = ({ character, onClick }) => {
+  const progress = experienceProgress(character.level, character.experience);
+  const format = (value: number) => value.toLocaleString('ru-RU');
+  return (
+    <button type="button" onClick={onClick} className="flex w-full items-center gap-3 text-xs" title="Опыт и уровень">
+      <span className="uppercase tracking-[0.16em] text-ink-faint">Опыт</span>
+      <Meter value={progress.progress} max={100} tone="xp" height={4} className="flex-1" label="Опыт" />
+      <span className="tabular-nums text-ink-muted">
+        {progress.isMaxLevel ? format(character.experience) : `${format(character.experience)} / ${format(progress.nextLevelXP)}`}
+      </span>
+      {progress.canLevelUp && <span className="text-xp">новый уровень</span>}
     </button>
   );
 };
@@ -210,6 +227,7 @@ export const HeroColumn: React.FC<{ logic: SheetLogic; onShowConditions: () => v
             </div>
             <LevelPlate character={character} onClick={() => logic.setShowExperienceModal(true)} />
           </div>
+          <ExperienceLine character={character} onClick={() => logic.setShowExperienceModal(true)} />
           <QuickHealth character={character} />
         </Panel>
 

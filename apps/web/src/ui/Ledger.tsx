@@ -47,12 +47,12 @@ export const Ledger: React.FC<{
 }> = ({ title, aside, addLabel, onAdd, children, className, scroll = true }) => (
   <Panel variant="paper" ornate={false} className={cx('ui-ledger flex min-h-0 flex-col', className)}>
     <span className="ui-ledger__ribbon" aria-hidden />
-    <header className="flex items-center gap-3 px-6 pb-2 pt-4">
+    <header className="ui-ledger__head flex items-center gap-3 px-6 pb-2 pt-4">
       <LedgerBullet />
       <h2 className="ui-display ui-title text-[1.35rem] leading-none">{title}</h2>
       {aside && <div className="ml-auto mr-10 flex items-center gap-3 text-xs">{aside}</div>}
     </header>
-    <ul className={cx('min-h-0 px-6', scroll && 'ui-scroll flex-1 overflow-y-auto')}>{children}</ul>
+    <ul className={cx('ui-ledger__list min-h-0 px-6', scroll && 'ui-scroll flex-1 overflow-y-auto')}>{children}</ul>
     {onAdd && (
       <button type="button" onClick={onAdd} className="ui-ledger__add">
         <IconPlus width={14} height={14} />
@@ -73,19 +73,21 @@ export const LedgerRow: React.FC<{
   leading?: React.ReactNode;
   /** Outlined star: inactive entries (unprepared spells, items in the pack). */
   dim?: boolean;
+  /** A worn item, a prepared spell: marked by the setting (a lit edge in sci-fi). */
+  active?: boolean;
   onOpen?: () => void;
-}> = ({ title, meta, value, action, leading, dim, onOpen }) => (
-  <li className={cx('ui-ledger__row group flex items-center gap-3 py-2.5', dim && 'opacity-60')}>
+}> = ({ title, meta, value, action, leading, dim, active, onOpen }) => (
+  <li className={cx('ui-ledger__row group flex items-center gap-3 py-2.5', dim && 'opacity-60')} data-active={active || undefined}>
     {leading ?? (
-      <span className="opacity-80">
+      <span className="grid h-6 w-6 shrink-0 place-items-center opacity-80">
         <LedgerBullet filled={!dim} />
       </span>
     )}
     <button type="button" onClick={onOpen} disabled={!onOpen} className="min-w-0 flex-1 text-left">
-      <span className="ui-display block truncate text-[1.05rem] leading-tight group-hover:underline group-hover:decoration-1 group-hover:underline-offset-4">
+      <span className="ui-ledger__title ui-display block truncate text-[1.05rem] leading-tight">
         {title}
       </span>
-      {meta && <span className="mt-0.5 block truncate text-[13px] text-paper-ink/70">{meta}</span>}
+      {meta && <span className="ui-ledger__meta mt-0.5 block truncate text-[13px] text-paper-ink/80">{meta}</span>}
     </button>
     {value !== undefined && <span className="shrink-0 text-sm tabular-nums">{value}</span>}
     {action && <div className="flex shrink-0 items-center gap-1">{action}</div>}
@@ -94,7 +96,7 @@ export const LedgerRow: React.FC<{
 
 /** A label inside a Ledger, splitting rows into groups ("Заговоры", "Действуют всегда"). */
 export const LedgerGroup: React.FC<{ children: React.ReactNode; aside?: React.ReactNode }> = ({ children, aside }) => (
-  <li className="flex items-center gap-4 pb-1 pt-4 text-xs uppercase tracking-[0.14em] opacity-70">
+  <li className="ui-ledger__group flex items-center gap-4 pb-1 pt-4 text-xs uppercase tracking-[0.14em] opacity-70">
     <span>{children}</span>
     {aside && <span className="ml-auto normal-case tracking-normal">{aside}</span>}
   </li>

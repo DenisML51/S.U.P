@@ -7,8 +7,6 @@
 :root {
   --font-body: 'Golos Text', system-ui, sans-serif;
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  /* Blotchy, isotropic: aged paper rather than wood grain. */
-  --fibers: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006' numOctaves='4' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
 }
 
 /* ------------------------------------------------------------------ High fantasy */
@@ -33,9 +31,9 @@
   --c-ink-faint: 112 116 104;
   --c-accent: 212 184 122;
   --c-accent-ink: 24 22 14;
-  --c-paper: 221 207 172;
-  --c-paper-ink: 40 33 22;
-  --c-paper-muted: 112 96 68;
+  --c-paper: 188 173 140;
+  --c-paper-ink: 28 21 13;
+  --c-paper-muted: 104 86 58;
 
   --c-hp: 172 64 52;
   --c-temp-hp: 212 184 122;
@@ -55,7 +53,6 @@
   --chamfer: 0px;
   --panel-texture: var(--grain);
   --panel-texture-opacity: 0.3;
-  --paper-texture: var(--fibers);
   --shadow-panel: 0 18px 40px -18px rgb(0 0 0 / 0.75);
 }
 
@@ -81,7 +78,7 @@
   --c-ink-faint: 104 98 89;
   --c-accent: 158 35 30;
   --c-accent-ink: 240 228 210;
-  --c-paper: 186 176 152;
+  --c-paper: 168 158 136;
   --c-paper-ink: 30 24 20;
   --c-paper-muted: 98 86 72;
 
@@ -103,7 +100,6 @@
   --chamfer: 6px;
   --panel-texture: var(--grain);
   --panel-texture-opacity: 0.5;
-  --paper-texture: var(--grain);
   --shadow-panel: 0 20px 44px -16px rgb(0 0 0 / 0.85);
 }
 
@@ -150,7 +146,6 @@
   --chamfer: 10px;
   --panel-texture: none;
   --panel-texture-opacity: 0;
-  --paper-texture: none;
   --shadow-panel: 0 0 0 1px rgb(62 128 168 / 0.08), 0 20px 40px -20px rgb(0 0 0 / 0.9);
 }
 
@@ -175,9 +170,9 @@
   --c-ink-faint: 98 90 82;
   --c-accent: 150 52 46;
   --c-accent-ink: 236 226 212;
-  --c-paper: 142 128 106;
-  --c-paper-ink: 26 21 18;
-  --c-paper-muted: 76 64 54;
+  --c-paper: 148 136 114;
+  --c-paper-ink: 22 18 15;
+  --c-paper-muted: 86 72 60;
 
   --c-hp: 140 38 36;
   --c-temp-hp: 166 134 106;
@@ -197,7 +192,6 @@
   --chamfer: 0px;
   --panel-texture: var(--grain);
   --panel-texture-opacity: 0.6;
-  --paper-texture: var(--fibers);
   --shadow-panel: 0 18px 40px -18px rgb(0 0 0 / 0.9);
 }
 
