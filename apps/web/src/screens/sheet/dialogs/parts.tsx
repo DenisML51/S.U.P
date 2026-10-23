@@ -3,7 +3,9 @@ import { DAMAGE_TYPES } from '@itd/game-logic';
 import type { Character, DamageComponent, Resource } from '@itd/schema';
 import { ConfirmDialog } from '../../../ui/Dialog';
 import { NumberField, Select, Suggest } from '../../../ui/forms';
-import { Button, IconButton, Rule, cx } from '../../../ui/primitives';
+import { GameIcon, type IconKind } from '../../../ui/GameIcon';
+import { IconNameField } from '../../../ui/IconPicker';
+import { Button, Field, IconButton, Input, Rule, cx } from '../../../ui/primitives';
 import { IconClose, IconPlus } from '../../../ui/icons';
 
 /** The figures a card leads with ("Попадание +14", "Урон 3d10+10 рубящий"), large and side by side. */
@@ -27,7 +29,9 @@ export const DamageFigures: React.FC<{ parts: DamageComponent[] }> = ({ parts })
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <span>{part.damage}</span>
           {part.type && (
-            <span className="font-[family-name:var(--font-body)] text-sm font-normal normal-case tracking-normal opacity-75">{part.type.toLowerCase()}</span>
+            <span className="font-[family-name:var(--font-body)] text-sm font-normal normal-case tracking-normal opacity-75">
+              {part.type.toLowerCase()}
+            </span>
           )}
         </span>
       </span>
@@ -39,8 +43,12 @@ export const DamageFigures: React.FC<{ parts: DamageComponent[] }> = ({ parts })
 export const CardRule: React.FC = () => <Rule className="my-4 opacity-70" />;
 
 /** Secondary facts as "label value" pairs on one wrapping line. */
-export const MinorFacts: React.FC<{ facts: (readonly [string, React.ReactNode] | false | null | undefined)[] }> = ({ facts }) => {
-  const shown = facts.filter((f): f is readonly [string, React.ReactNode] => !!f && f[1] !== '' && f[1] !== undefined);
+export const MinorFacts: React.FC<{
+  facts: (readonly [string, React.ReactNode] | false | null | undefined)[];
+}> = ({ facts }) => {
+  const shown = facts.filter(
+    (f): f is readonly [string, React.ReactNode] => !!f && f[1] !== '' && f[1] !== undefined,
+  );
   if (shown.length === 0) return null;
   return (
     <dl className="ui-minorfacts mt-3 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
@@ -55,11 +63,20 @@ export const MinorFacts: React.FC<{ facts: (readonly [string, React.ReactNode] |
 };
 
 /** "Удалить" with a confirmation naming what goes away. */
-export const DeleteButton: React.FC<{ what: string; name: string; onDelete: () => void }> = ({ what, name, onDelete }) => {
+export const DeleteButton: React.FC<{ what: string; name: string; onDelete: () => void }> = ({
+  what,
+  name,
+  onDelete,
+}) => {
   const [asking, setAsking] = useState(false);
   return (
     <>
-      <Button variant="ghost" size="row" className="!text-danger/80 hover:!text-danger" onClick={() => setAsking(true)}>
+      <Button
+        variant="ghost"
+        size="row"
+        className="!text-danger/80 hover:!text-danger"
+        onClick={() => setAsking(true)}
+      >
         Удалить
       </Button>
       <ConfirmDialog
@@ -83,12 +100,12 @@ export const DeleteButton: React.FC<{ what: string; name: string; onDelete: () =
 };
 
 /** A labelled block of a form. */
-export const FormSection: React.FC<{ label: string; aside?: React.ReactNode; children: React.ReactNode; className?: string }> = ({
-  label,
-  aside,
-  children,
-  className,
-}) => (
+export const FormSection: React.FC<{
+  label: string;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}> = ({ label, aside, children, className }) => (
   <section className={cx('space-y-[0.35rem]', className)}>
     <div className="flex items-center justify-between">
       <h3 className="ui-label !mb-0">{label}</h3>
@@ -96,6 +113,29 @@ export const FormSection: React.FC<{ label: string; aside?: React.ReactNode; chi
     </div>
     {children}
   </section>
+);
+
+/** The entry's name with its combat-bar icon and colour beside it. */
+export const EntryNameField: React.FC<{
+  kind: IconKind;
+  draft: { name: string; iconName?: string; color?: string };
+  set: (patch: { name?: string; iconName?: string; color?: string }) => void;
+}> = ({ kind, draft, set }) => (
+  <IconNameField kind={kind} iconName={draft.iconName} color={draft.color} onChange={set}>
+    <Field label="Название">
+      {(props) => <Input {...props} value={draft.name} onChange={(e) => set({ name: e.target.value })} />}
+    </Field>
+  </IconNameField>
+);
+
+/** The entry's icon framed as a combat-bar slot, for the head of its card. */
+export const EntryBadge: React.FC<{ kind: IconKind; entry: { iconName?: string; color?: string } }> = ({
+  kind,
+  entry,
+}) => (
+  <span className="ui-hud-slot ui-hud-slot--large shrink-0">
+    <GameIcon name={entry.iconName} kind={kind} size={34} color={entry.color} className="ui-hud-slot__icon" />
+  </span>
 );
 
 /** Damage as a list of "formula + type" rows: "3d10+10 рубящий", "2d6 некротический". */
@@ -178,10 +218,21 @@ export const CostEditor: React.FC<{
       <Select
         value={resourceId ?? ''}
         onChange={(id) => onChange(id || undefined, id ? (cost ?? 1) : undefined)}
-        options={[{ value: '', label: 'Бесплатно' }, ...resources.map((r) => ({ value: r.id, label: r.name, hint: `${r.current}/${r.max}` }))]}
+        options={[
+          { value: '', label: 'Бесплатно' },
+          ...resources.map((r) => ({ value: r.id, label: r.name, hint: `${r.current}/${r.max}` })),
+        ]}
         className="min-w-0 flex-1"
       />
-      {resourceId && <NumberField label="Сколько" min={1} value={cost ?? 1} onChange={(value) => onChange(resourceId, value)} className="w-28" />}
+      {resourceId && (
+        <NumberField
+          label="Сколько"
+          min={1}
+          value={cost ?? 1}
+          onChange={(value) => onChange(resourceId, value)}
+          className="w-28"
+        />
+      )}
     </div>
   </FormSection>
 );

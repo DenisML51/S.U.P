@@ -56,10 +56,18 @@ export const AttributeDialog: React.FC<Props & { id: string }> = ({ open, onClos
       width="md"
       footer={
         <>
-          <Button variant="secondary" icon={<IconDice width={16} height={16} />} onClick={() => roll.check(`Спасбросок: ${definition.name}`, save)}>
+          <Button
+            variant="secondary"
+            icon={<IconDice width={16} height={16} />}
+            onClick={() => roll.check(`Спасбросок: ${definition.name}`, save)}
+          >
             Спасбросок
           </Button>
-          <Button variant="primary" icon={<IconDice width={16} height={16} />} onClick={() => roll.check(`Проверка: ${definition.name}`, modifier)}>
+          <Button
+            variant="primary"
+            icon={<IconDice width={16} height={16} />}
+            onClick={() => roll.check(`Проверка: ${definition.name}`, modifier)}
+          >
             Проверка
           </Button>
         </>
@@ -71,16 +79,31 @@ export const AttributeDialog: React.FC<Props & { id: string }> = ({ open, onClos
           { label: 'Спасбросок', value: formatModifier(save) },
         ]}
       />
-      <MinorFacts facts={skills.map((s) => [s.name, formatModifier(skillModifier(character, s.id))] as const)} />
+      <MinorFacts
+        facts={skills.map((s) => [s.name, formatModifier(skillModifier(character, s.id))] as const)}
+      />
       <div className="mt-6 grid grid-cols-2 gap-4">
         <Field label="Значение">
           {({ id: fieldId }) => (
-            <NumberField id={fieldId} min={1} max={30} value={score} onChange={(v) => updateCharacter((doc) => setAttribute(doc, id, v, bonus))} className="w-full" />
+            <NumberField
+              id={fieldId}
+              min={1}
+              max={30}
+              value={score}
+              onChange={(v) => updateCharacter((doc) => setAttribute(doc, id, v, bonus))}
+              className="w-full"
+            />
           )}
         </Field>
         <Field label="Бонус" hint="От предметов, заклинаний, даров">
           {({ id: fieldId }) => (
-            <NumberField id={fieldId} signed value={bonus} onChange={(v) => updateCharacter((doc) => setAttribute(doc, id, score, v))} className="w-full" />
+            <NumberField
+              id={fieldId}
+              signed
+              value={bonus}
+              onChange={(v) => updateCharacter((doc) => setAttribute(doc, id, score, v))}
+              className="w-full"
+            />
           )}
         </Field>
       </div>
@@ -111,7 +134,8 @@ export const ArmorDialog: React.FC<Props> = ({ open, onClose }) => {
   const setResistances = (resistances: Resistance[]) => updateCharacter((doc) => ({ ...doc, resistances }));
   // Rows left without a damage type mean nothing; they go when the dialog closes.
   const finish = () => {
-    if (character.resistances.some((r) => !r.type.trim())) setResistances(character.resistances.filter((r) => r.type.trim()));
+    if (character.resistances.some((r) => !r.type.trim()))
+      setResistances(character.resistances.filter((r) => r.type.trim()));
     onClose();
   };
   const patch = (index: number, change: Partial<Resistance>) =>
@@ -132,11 +156,23 @@ export const ArmorDialog: React.FC<Props> = ({ open, onClose }) => {
       <div className="flex items-end gap-4">
         <Field label="Класс брони">
           {({ id }) => (
-            <NumberField id={id} min={0} value={character.armorClass} onChange={(armorClass) => updateCharacter((doc) => ({ ...doc, armorClass }))} className="w-40" />
+            <NumberField
+              id={id}
+              min={0}
+              value={character.armorClass}
+              onChange={(armorClass) => updateCharacter((doc) => ({ ...doc, armorClass }))}
+              className="w-40"
+            />
           )}
         </Field>
         {fromGear !== character.armorClass && (
-          <Button size="sm" variant="ghost" className="mb-1" onClick={() => updateCharacter((doc) => ({ ...doc, armorClass: fromGear }))} title="Броня, щит и ловкость">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="mb-1"
+            onClick={() => updateCharacter((doc) => ({ ...doc, armorClass: fromGear }))}
+            title="Броня, щит и ловкость"
+          >
             По снаряжению: {fromGear}
           </Button>
         )}
@@ -159,7 +195,9 @@ export const ArmorDialog: React.FC<Props> = ({ open, onClose }) => {
           </button>
         }
       >
-        {character.resistances.length === 0 && <p className="text-sm text-ink-faint">Урон любого типа проходит полностью.</p>}
+        {character.resistances.length === 0 && (
+          <p className="text-sm text-ink-faint">Урон любого типа проходит полностью.</p>
+        )}
         {character.resistances.map((resistance, index) => (
           <div key={resistance.id} className="flex items-center gap-2">
             <Suggest
@@ -178,7 +216,11 @@ export const ArmorDialog: React.FC<Props> = ({ open, onClose }) => {
               options={LEVELS}
               className="ui-segmented--compact"
             />
-            <IconButton label="Убрать" size={32} onClick={() => setResistances(character.resistances.filter((_, i) => i !== index))}>
+            <IconButton
+              label="Убрать"
+              size={32}
+              onClick={() => setResistances(character.resistances.filter((_, i) => i !== index))}
+            >
               <IconClose width={14} height={14} />
             </IconButton>
           </div>
@@ -205,7 +247,12 @@ export const LimbDialog: React.FC<Props & { id: string }> = ({ open, onClose, id
       title={limb.name}
       width="md"
       footerStart={
-        <Button variant="ghost" size="sm" disabled={limb.currentHP >= limb.maxHP} onClick={() => set({ currentHP: limb.maxHP })}>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={limb.currentHP >= limb.maxHP}
+          onClick={() => set({ currentHP: limb.maxHP })}
+        >
           Залечить полностью
         </Button>
       }
@@ -218,14 +265,37 @@ export const LimbDialog: React.FC<Props & { id: string }> = ({ open, onClose, id
       <div className="grid grid-cols-3 gap-4">
         <Field label="Сейчас">
           {({ id: fieldId }) => (
-            <NumberField id={fieldId} min={-10} max={limb.maxHP} value={limb.currentHP} onChange={(currentHP) => set({ currentHP })} className="w-full" />
+            <NumberField
+              id={fieldId}
+              min={-10}
+              max={limb.maxHP}
+              value={limb.currentHP}
+              onChange={(currentHP) => set({ currentHP })}
+              className="w-full"
+            />
           )}
         </Field>
         <Field label="Максимум">
-          {({ id: fieldId }) => <NumberField id={fieldId} min={1} value={limb.maxHP} onChange={(maxHP) => set({ maxHP })} className="w-full" />}
+          {({ id: fieldId }) => (
+            <NumberField
+              id={fieldId}
+              min={1}
+              value={limb.maxHP}
+              onChange={(maxHP) => set({ maxHP })}
+              className="w-full"
+            />
+          )}
         </Field>
         <Field label="Защита (ЗК)">
-          {({ id: fieldId }) => <NumberField id={fieldId} min={0} value={limb.ac} onChange={(ac) => set({ ac })} className="w-full" />}
+          {({ id: fieldId }) => (
+            <NumberField
+              id={fieldId}
+              min={0}
+              value={limb.ac}
+              onChange={(ac) => set({ ac })}
+              className="w-full"
+            />
+          )}
         </Field>
       </div>
       <p className="mt-4 text-sm text-ink-muted">

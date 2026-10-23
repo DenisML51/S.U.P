@@ -14,6 +14,8 @@ interface DialogProps {
   subtitle?: React.ReactNode;
   /** Small label above the title: what kind of thing this is ("Атака · основное"). */
   eyebrow?: React.ReactNode;
+  /** A picture before the title, e.g. the icon of an attack. */
+  icon?: React.ReactNode;
   children?: React.ReactNode;
   /** Buttons row; right-aligned. */
   footer?: React.ReactNode;
@@ -36,7 +38,9 @@ const WIDTHS = { sm: 448, md: 576, lg: 768, xl: 1024 } as const;
 const focusInto = (panel: HTMLElement | null, orButton: boolean) =>
   (
     panel?.querySelector<HTMLElement>('[data-autofocus]') ??
-    panel?.querySelector<HTMLElement>(orButton ? 'input, textarea, select, button' : 'input, textarea, select')
+    panel?.querySelector<HTMLElement>(
+      orButton ? 'input, textarea, select, button' : 'input, textarea, select',
+    )
   )?.focus();
 
 const RESIZE = { duration: 0.28, ease: [0.22, 1, 0.36, 1] } as const;
@@ -74,6 +78,7 @@ export const Dialog: React.FC<DialogProps> = ({
   title,
   subtitle,
   eyebrow,
+  icon,
   children,
   footer,
   footerStart,
@@ -111,7 +116,10 @@ export const Dialog: React.FC<DialogProps> = ({
   return createPortal(
     <AnimatePresence>
       {open && (
-        <SettingScope setting={setting} className="fixed inset-0 z-[200] flex items-start justify-center px-6 pt-[9vh]">
+        <SettingScope
+          setting={setting}
+          className="fixed inset-0 z-[200] flex items-start justify-center px-6 pt-[9vh]"
+        >
           <motion.div
             className="absolute inset-0 bg-bg-deep/80"
             initial={{ opacity: 0 }}
@@ -160,18 +168,28 @@ export const Dialog: React.FC<DialogProps> = ({
                     }}
                   >
                     <header className="ui-dialog__head relative pb-4 pl-6 pr-14 pt-5">
-                      <div className="min-w-0">
-                        {eyebrow && (
-                          <div className="ui-dialog__eyebrow mb-1.5 text-[11px] uppercase tracking-[0.18em] opacity-70">{eyebrow}</div>
-                        )}
-                        <h2 id={titleId} className="ui-dialog__title ui-display ui-title text-2xl leading-tight">
-                          {title}
-                        </h2>
-                        {subtitle && <p className="mt-1 text-sm opacity-70">{subtitle}</p>}
+                      <div className={cx('min-w-0', !!icon && 'flex items-center gap-4')}>
+                        {icon}
+                        <div className="min-w-0 flex-1">
+                          {eyebrow && (
+                            <div className="ui-dialog__eyebrow mb-1.5 text-[11px] uppercase tracking-[0.18em] opacity-70">
+                              {eyebrow}
+                            </div>
+                          )}
+                          <h2
+                            id={titleId}
+                            className="ui-dialog__title ui-display ui-title text-2xl leading-tight"
+                          >
+                            {title}
+                          </h2>
+                          {subtitle && <p className="mt-1 text-sm opacity-70">{subtitle}</p>}
+                        </div>
                       </div>
                       <Rule className="ui-dialog__rule mt-3" />
                     </header>
-                    {children && <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 pb-5">{children}</div>}
+                    {children && (
+                      <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 pb-5">{children}</div>
+                    )}
                     {(footer || footerStart) && (
                       <footer className="ui-dialog__foot flex items-center gap-3 px-6 py-4">
                         {footerStart}
@@ -181,7 +199,12 @@ export const Dialog: React.FC<DialogProps> = ({
                   </motion.div>
                 </AnimatePresence>
               </motion.div>
-              <IconButton label="Закрыть" onClick={onClose} size={32} className="!absolute right-4 top-4 z-[2]">
+              <IconButton
+                label="Закрыть"
+                onClick={onClose}
+                size={32}
+                className="!absolute right-4 top-4 z-[2]"
+              >
                 <IconClose width={18} height={18} />
               </IconButton>
             </Panel>

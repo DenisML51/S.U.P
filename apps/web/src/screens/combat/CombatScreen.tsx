@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { CONDITIONS, formatModifier, initiativeModifier, resetTurn } from '@itd/game-logic';
+import { AnimatePresence, motion } from 'framer-motion';
+import { initiativeModifier, resetTurn } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { CharacterArt } from '../../ui/CharacterArt';
-import { Button, IconButton, Panel, cx } from '../../ui/primitives';
+import { Button, IconButton } from '../../ui/primitives';
 import { IconDice, IconPrev, IconSettings } from '../../ui/icons';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { settingOf } from '../../ui/theme/settings';
 import { SheetDialogsProvider, useSheetDialogs } from '../sheet/dialogs/context';
 import { SheetDialogHost } from '../sheet/dialogs/SheetDialogHost';
 import { foldRepeats } from '../sheet/parts/history';
-import { ResourceList, StatusCluster } from '../sheet/parts/StatusCluster';
 import { useRolls } from '../sheet/useRolls';
-import { ActionBar } from './ActionBar';
+import { Hotbar } from './Hotbar';
+import { ActionTokens, CombatStats, ExperienceBar, Portrait, ResourceStrip, VitalBars } from './HudParts';
 
 interface CombatState {
   inCombat: boolean;
@@ -65,29 +65,6 @@ const CombatLog: React.FC<{ character: Character }> = ({ character }) => {
   );
 };
 
-const Stat: React.FC<{ label: string; value: React.ReactNode; onClick?: () => void; hint?: string }> = ({
-  label,
-  value,
-  onClick,
-  hint,
-}) => {
-  const Tag = onClick ? 'button' : 'div';
-  return (
-    <Tag
-      type={onClick ? 'button' : undefined}
-      onClick={onClick}
-      title={hint}
-      className={cx(
-        'flex flex-col items-center py-1.5',
-        onClick && 'transition-colors hover:text-frame-bright',
-      )}
-    >
-      <span className="ui-display ui-numeric text-xl leading-none">{value}</span>
-      <span className="mt-1 text-[11px] text-ink-faint">{label}</span>
-    </Tag>
-  );
-};
-
 const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> = ({
   character,
   onOpenSettings,
@@ -97,14 +74,13 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
   const dialogs = useSheetDialogs();
   const roll = useRolls();
   const [combat, setCombat] = useCombatState(character.id);
-  const conditions = character.conditions.map((id) => CONDITIONS.find((c) => c.id === id)?.name ?? id);
 
   const start = () => {
     const initiative = roll.check('Инициатива', initiativeModifier(character));
     updateCharacter((doc) => resetTurn(doc), { log: { message: 'Бой начался', type: 'other' } });
     setCombat({ inCombat: true, round: 1, initiative });
   };
-  const endTurn = () => {
+  const nextTurn = () => {
     updateCharacter((doc) => resetTurn(doc));
     setCombat({ ...combat, round: combat.round + 1 });
   };
@@ -133,22 +109,44 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
           <div className="ui-display truncate text-xl leading-tight text-ink">{character.name}</div>
           <div className="text-xs text-ink-faint">{character.level} уровень</div>
         </div>
-        <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-4">
-          {combat.inCombat ? (
-            <>
-              <span className="ui-display text-lg text-frame-bright">Раунд {combat.round}</span>
-              {combat.initiative !== null && (
-                <span className="text-sm text-ink-muted">инициатива {combat.initiative}</span>
-              )}
-              <Button variant="ghost" size="sm" onClick={finish}>
-                Завершить бой
-              </Button>
-            </>
-          ) : (
-            <Button variant="primary" size="md" onClick={start} icon={<IconDice width={18} height={18} />}>
-              Начать бой
-            </Button>
-          )}
+        <div className="absolute left-1/2 top-4 -translate-x-1/2">
+          <AnimatePresence mode="wait" initial={false}>
+            {combat.inCombat ? (
+              <motion.div
+                key="fight"
+                className="flex items-center gap-3"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span className="ui-display text-lg text-frame-bright">Раунд {combat.round}</span>
+                <Button variant="primary" size="md" onClick={nextTurn}>
+                  Следующий ход
+                </Button>
+                <Button variant="ghost" size="sm" onClick={finish}>
+                  Выйти из боя
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="calm"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={start}
+                  icon={<IconDice width={18} height={18} />}
+                >
+                  Начать бой · инициатива
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         <div className="ml-auto flex gap-1">
           <IconButton label="Кубики" onClick={() => dialogs.open({ kind: 'dice' })}>
@@ -170,41 +168,26 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
       </motion.aside>
 
       <motion.div
-        className="absolute inset-x-0 bottom-0 z-10 grid grid-cols-[330px_minmax(0,1fr)_300px] items-end gap-5 px-6 pb-5"
+        className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-center gap-4 px-6 pb-5"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...ENTER, delay: 0.05 }}
       >
-        <div className="space-y-2">
-          {conditions.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setViewMode('tabs')}
-              className="block text-left text-sm text-warning"
-              title="Состояния — во вкладке «Тело»"
-            >
-              {conditions.join(' · ')}
-            </button>
-          )}
-          <StatusCluster character={character} className="bg-surface/90" />
-        </div>
-        <ActionBar character={character} inCombat={combat.inCombat} onEndTurn={endTurn} />
-        <Panel ornate={false} className="space-y-2 px-4 py-3">
-          <div className="grid grid-cols-4 divide-x divide-line/60">
-            <Stat
-              label="КБ"
-              value={character.armorClass}
-              onClick={() => dialogs.open({ kind: 'armor' })}
-              hint="Защита"
+        <VitalBars character={character} />
+        <Portrait character={character} />
+        <div className="flex min-w-0 max-w-[76rem] flex-1 flex-col gap-2.5">
+          <div className="flex flex-wrap items-stretch justify-center gap-3">
+            <ActionTokens character={character} />
+            <ResourceStrip character={character} />
+            <CombatStats
+              character={character}
+              initiative={combat.inCombat ? combat.initiative : null}
+              onInitiative={start}
             />
-            <Stat label="Иниц." value={formatModifier(initiativeModifier(character))} />
-            <Stat label="Скор." value={character.speed} />
-            <Stat label="СЛ" value={character.spellcastingDifficultyValue ?? '—'} />
           </div>
-          <div className="ui-scroll max-h-[11rem] overflow-y-auto pr-1">
-            <ResourceList character={character} />
-          </div>
-        </Panel>
+          <Hotbar character={character} inCombat={combat.inCombat} />
+          <ExperienceBar character={character} />
+        </div>
       </motion.div>
     </>
   );
@@ -222,7 +205,7 @@ export const CombatScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenS
   // Messages rise above the combat bar instead of covering it.
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty('--toast-offset', '17rem');
+    root.style.setProperty('--toast-offset', '22rem');
     return () => {
       root.style.removeProperty('--toast-offset');
     };

@@ -4,12 +4,22 @@ import type { Ability, ActionType, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { MarkdownField, Segmented } from '../../../ui/forms';
-import { Button, Field, Input } from '../../../ui/primitives';
+import { Button, Field } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
 import { damageParts } from '../parts/damage';
 import { useActs } from '../useActs';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
-import { CardRule, CostEditor, DamageEditor, DamageFigures, FormSection, KeyFacts, costLabel } from './parts';
+import {
+  CardRule,
+  CostEditor,
+  DamageEditor,
+  DamageFigures,
+  FormSection,
+  KeyFacts,
+  costLabel,
+  EntryBadge,
+  EntryNameField,
+} from './parts';
 
 const ALL_TYPES: ActionType[] = ['action', 'bonus', 'reaction', 'passive'];
 
@@ -31,10 +41,16 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const acts = useActs();
-  const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(character.abilities, id, edit, blankAbility, (a) => ({
-    ...a,
-    damageComponents: damageParts(a),
-  }));
+  const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(
+    character.abilities,
+    id,
+    edit,
+    blankAbility,
+    (a) => ({
+      ...a,
+      damageComponents: damageParts(a),
+    }),
+  );
 
   const remove = () => {
     if (entry) updateCharacter((doc) => ({ ...doc, abilities: removeById(doc.abilities, entry.id) }));
@@ -71,14 +87,18 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
         onSave={save}
         onCancel={entry ? stopEditing : onClose}
       >
-        <Field label="Название">{(props) => <Input {...props} value={draft.name} onChange={(e) => set({ name: e.target.value })} />}</Field>
+        <EntryNameField kind="ability" draft={draft} set={set} />
         <div className="flex items-end gap-5">
           <FormSection label="Действие">
             <Segmented
               label="Действие"
               value={draft.actionType}
               onChange={(actionType) => set({ actionType })}
-              options={ALL_TYPES.map((t) => ({ value: t, label: ACTION_TYPES[t].short, tone: ACTION_TYPES[t].token }))}
+              options={ALL_TYPES.map((t) => ({
+                value: t,
+                label: ACTION_TYPES[t].short,
+                tone: ACTION_TYPES[t].token,
+              }))}
             />
           </FormSection>
           {draft.actionType !== 'passive' && (
@@ -91,13 +111,25 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
           )}
         </div>
         {draft.actionType !== 'passive' && (
-          <DamageEditor value={draft.damageComponents ?? []} onChange={(damageComponents) => set({ damageComponents })} />
+          <DamageEditor
+            value={draft.damageComponents ?? []}
+            onChange={(damageComponents) => set({ damageComponents })}
+          />
         )}
         <Field label="Эффект" hint="Коротко: что происходит при использовании">
-          {({ id }) => <MarkdownField id={id} value={draft.effect} onChange={(effect) => set({ effect })} rows={2} />}
+          {({ id }) => (
+            <MarkdownField id={id} value={draft.effect} onChange={(effect) => set({ effect })} rows={2} />
+          )}
         </Field>
         <Field label="Описание">
-          {({ id }) => <MarkdownField id={id} value={draft.description} onChange={(description) => set({ description })} rows={4} />}
+          {({ id }) => (
+            <MarkdownField
+              id={id}
+              value={draft.description}
+              onChange={(description) => set({ description })}
+              rows={4}
+            />
+          )}
         </Field>
       </EntryForm>
     );
@@ -110,12 +142,15 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
 
   return (
     <EntryView
+      icon={<EntryBadge kind="ability" entry={entry} />}
       open={open}
       onClose={onClose}
       what="способность"
       onDelete={remove}
       name={entry.name}
-      eyebrow={passive ? 'Способность · действует всегда' : `Способность · ${ACTION_TYPES[entry.actionType].short}`}
+      eyebrow={
+        passive ? 'Способность · действует всегда' : `Способность · ${ACTION_TYPES[entry.actionType].short}`
+      }
       onEdit={startEditing}
       primary={
         !passive && (
@@ -133,7 +168,9 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
           ]}
         />
       )}
-      {entry.effect.trim() && <Prose className={cost || parts.length > 0 ? 'mt-4' : undefined}>{entry.effect}</Prose>}
+      {entry.effect.trim() && (
+        <Prose className={cost || parts.length > 0 ? 'mt-4' : undefined}>{entry.effect}</Prose>
+      )}
       {entry.description.trim() && (
         <>
           <CardRule />

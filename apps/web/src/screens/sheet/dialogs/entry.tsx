@@ -38,23 +38,30 @@ export const EntryView: React.FC<
   Common & {
     name: string;
     eyebrow: React.ReactNode;
+    /** The entry's icon, as on the combat bar. */
+    icon?: React.ReactNode;
     onEdit: () => void;
     /** The main thing to do with the entry: "Атаковать", "Использовать", "Сотворить". */
     primary?: React.ReactNode;
     children?: React.ReactNode;
   }
-> = ({ open, onClose, what, onDelete, name, eyebrow, onEdit, primary, children }) => (
+> = ({ open, onClose, what, onDelete, name, eyebrow, icon, onEdit, primary, children }) => (
   <Dialog
     open={open}
     onClose={onClose}
     swapKey="view"
     width="md"
     eyebrow={eyebrow}
+    icon={icon}
     title={name}
     footerStart={onDelete && <DeleteButton what={what} name={name} onDelete={onDelete} />}
     footer={
       <>
-        <Button variant={primary ? 'secondary' : 'primary'} onClick={onEdit} data-autofocus={primary ? undefined : true}>
+        <Button
+          variant={primary ? 'secondary' : 'primary'}
+          onClick={onEdit}
+          data-autofocus={primary ? undefined : true}
+        >
           Изменить
         </Button>
         {primary}
@@ -77,7 +84,20 @@ export const EntryForm: React.FC<
     width?: 'md' | 'lg' | 'xl';
     children: React.ReactNode;
   }
-> = ({ open, onClose, what, onDelete, isNew, name, eyebrow, canSave, onSave, onCancel, width = 'lg', children }) => (
+> = ({
+  open,
+  onClose,
+  what,
+  onDelete,
+  isNew,
+  name,
+  eyebrow,
+  canSave,
+  onSave,
+  onCancel,
+  width = 'lg',
+  children,
+}) => (
   <Dialog
     open={open}
     onClose={onClose}

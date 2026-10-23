@@ -18,7 +18,12 @@ export const TraitDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
 }) => {
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
-  const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(character.traits, id, edit, blankTrait);
+  const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(
+    character.traits,
+    id,
+    edit,
+    blankTrait,
+  );
 
   const remove = () => {
     if (entry) updateCharacter((doc) => ({ ...doc, traits: removeById(doc.traits, entry.id) }));
@@ -27,7 +32,10 @@ export const TraitDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
 
   if (draft) {
     const save = () => {
-      updateCharacter((doc) => ({ ...doc, traits: upsertById(doc.traits, { ...draft, name: draft.name.trim() }) }));
+      updateCharacter((doc) => ({
+        ...doc,
+        traits: upsertById(doc.traits, { ...draft, name: draft.name.trim() }),
+      }));
       if (entry) stopEditing();
       else onClose();
     };
@@ -46,10 +54,23 @@ export const TraitDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
         width="md"
       >
         <Field label="Название">
-          {(props) => <Input {...props} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />}
+          {(props) => (
+            <Input
+              {...props}
+              value={draft.name}
+              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+            />
+          )}
         </Field>
         <Field label="Описание">
-          {({ id }) => <MarkdownField id={id} value={draft.description} onChange={(description) => setDraft({ ...draft, description })} rows={7} />}
+          {({ id }) => (
+            <MarkdownField
+              id={id}
+              value={draft.description}
+              onChange={(description) => setDraft({ ...draft, description })}
+              rows={7}
+            />
+          )}
         </Field>
       </EntryForm>
     );
@@ -57,8 +78,20 @@ export const TraitDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
 
   if (!entry) return null;
   return (
-    <EntryView open={open} onClose={onClose} what="черту" onDelete={remove} name={entry.name} eyebrow="Черта" onEdit={startEditing}>
-      {entry.description.trim() ? <Prose>{entry.description}</Prose> : <p className="text-sm opacity-60">Без описания</p>}
+    <EntryView
+      open={open}
+      onClose={onClose}
+      what="черту"
+      onDelete={remove}
+      name={entry.name}
+      eyebrow="Черта"
+      onEdit={startEditing}
+    >
+      {entry.description.trim() ? (
+        <Prose>{entry.description}</Prose>
+      ) : (
+        <p className="text-sm opacity-60">Без описания</p>
+      )}
     </EntryView>
   );
 };
