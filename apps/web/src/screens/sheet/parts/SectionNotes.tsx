@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Panel, TextArea } from '../../../ui/primitives';
+import React, { useLayoutEffect, useRef, useState } from 'react';
+import { Panel, TextArea, cx } from '../../../ui/primitives';
+import { Prose } from '../../../ui/Prose';
 
 /**
  * Free-text notes of a section on paper. Collapsed to one line when long; edited in place and
@@ -14,6 +15,19 @@ export const SectionNotes: React.FC<{ title?: string; value: string; onSave: (va
   const [draft, setDraft] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const editing = draft !== null;
+  const textRef = useRef<HTMLButtonElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  // Collapsing only makes sense for notes longer than the collapsed height.
+  useLayoutEffect(() => {
+    const node = textRef.current;
+    if (!node || expanded) return;
+    const measure = () => setOverflowing(node.scrollHeight > node.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [value, expanded, editing]);
 
   return (
     <Panel variant="paper" ornate={false} className="px-5 py-3">
@@ -39,12 +53,14 @@ export const SectionNotes: React.FC<{ title?: string; value: string; onSave: (va
         />
       ) : value ? (
         <button
+          ref={textRef}
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className={`mt-1 block w-full whitespace-pre-line text-left text-sm leading-relaxed ${expanded ? '' : 'line-clamp-2'}`}
-          title={expanded ? 'Свернуть' : 'Развернуть'}
+          disabled={!overflowing && !expanded}
+          className={cx('ui-notes mt-1 block w-full cursor-default text-left', !expanded && 'ui-notes--collapsed', overflowing && !expanded && 'ui-notes--faded', (overflowing || expanded) && 'cursor-pointer')}
+          title={overflowing || expanded ? (expanded ? 'Свернуть' : 'Развернуть') : undefined}
         >
-          {value}
+          <Prose>{value}</Prose>
         </button>
       ) : (
         <p className="mt-1 text-sm opacity-60">{placeholder}</p>

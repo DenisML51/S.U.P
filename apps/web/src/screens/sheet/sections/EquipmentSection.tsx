@@ -115,6 +115,7 @@ export const EquipmentSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => 
                 key={item.id}
                 leading={isEquippable(item) ? <EquipMark item={item} onToggle={() => toggleEquip(item)} /> : undefined}
                 dim={stackable && itemQuantity(item) === 0}
+                active={item.equipped}
                 title={item.name}
                 meta={<MetaLine parts={describeItem(item)} />}
                 onOpen={() => logic.openItemView(item)}

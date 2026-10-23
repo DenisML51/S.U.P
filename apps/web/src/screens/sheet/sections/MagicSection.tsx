@@ -196,6 +196,7 @@ export const MagicSection: React.FC<{ logic: SheetLogic }> = ({ logic }) => {
                   <LedgerRow
                     key={spell.id}
                     dim={!spell.prepared}
+                    active={spell.prepared}
                     leading={
                       <PrepareMark
                         spell={spell}
