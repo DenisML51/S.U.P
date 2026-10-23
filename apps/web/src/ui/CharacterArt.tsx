@@ -20,9 +20,12 @@ export const portraitSrc = (source: ArtSource): string | undefined =>
 export const fullArtSrc = (source: ArtSource): string | undefined =>
   source.images?.full ? assetUrl(source.images.full) : portraitSrc(source);
 
+/** No picture yet: the initial as a faint watermark, sized to the box, so overlaid text stays readable. */
 const Initial: React.FC<{ name: string; className?: string }> = ({ name, className }) => (
-  <div className={cx('grid place-items-center bg-inset text-ink-faint ui-display select-none', className)}>
-    <span className="text-[2.5em] leading-none">{name.trim().charAt(0).toUpperCase() || '?'}</span>
+  <div className={cx('grid select-none place-items-center overflow-hidden bg-inset', className)} style={{ containerType: 'size' }} aria-hidden>
+    <span className="ui-display leading-none text-frame/20" style={{ fontSize: 'min(60cqw, 60cqh)' }}>
+      {name.trim().charAt(0).toUpperCase() || '?'}
+    </span>
   </div>
 );
 
