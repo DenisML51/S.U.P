@@ -9,9 +9,9 @@ const RollToast: React.FC<{ label: string; total: number; detail: string; tone?:
   detail,
   tone,
 }) => (
-  <div className="flex min-w-[220px] items-center gap-4">
+  <div className="flex min-w-[220px] items-center gap-3">
     <span
-      className="ui-display ui-numeric text-3xl leading-none"
+      className="ui-display ui-numeric w-12 shrink-0 text-center text-3xl leading-none"
       style={{ color: `rgb(var(--c-${tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : 'frame-bright'}))` }}
     >
       {total}

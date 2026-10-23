@@ -42,3 +42,5 @@ export { default as IconPrev } from '~icons/ph/caret-left-light';
 export { default as IconNext } from '~icons/ph/caret-right-light';
 export { default as IconPlus } from '~icons/ph/plus-light';
 export { default as IconMinus } from '~icons/ph/minus-light';
+export { default as IconCheck } from '~icons/ph/check-light';
+export { default as IconWarning } from '~icons/ph/warning-light';

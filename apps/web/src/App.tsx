@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Toaster } from 'react-hot-toast';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
 import { CharacterSheet } from './components/CharacterSheet/index';
@@ -11,6 +11,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { HeroSelect } from './screens/select/HeroSelect';
 import { SheetScreen } from './screens/sheet/SheetScreen';
 import { SettingScope } from './ui/theme/SettingScope';
+import { Toasts } from './ui/Toasts';
 import { DEFAULT_SETTING } from '@itd/schema';
 
 const Loading: React.FC = () => (
@@ -40,10 +41,13 @@ const App: React.FC = () => {
   const signedIn = status === 'authenticated';
 
   let screen: React.ReactNode;
+  let screenKey: string;
   if (status === 'booting' || (signedIn && !isLoaded)) {
     screen = <Loading />;
+    screenKey = 'loading';
   } else if (!signedIn) {
     screen = <AuthScreen />;
+    screenKey = 'auth';
   } else if (character && viewMode === 'tabs') {
     screen = (
       <>
@@ -51,6 +55,7 @@ const App: React.FC = () => {
         <DiceRoller />
       </>
     );
+    screenKey = 'sheet';
   } else if (character) {
     screen = (
       <LegacyFrame>
@@ -61,33 +66,36 @@ const App: React.FC = () => {
         <DiceRoller />
       </LegacyFrame>
     );
+    screenKey = 'combat';
   } else if (creating) {
     screen = (
       <LegacyFrame>
         <CharacterCreation onComplete={() => setCreating(false)} onCancel={() => setCreating(false)} />
       </LegacyFrame>
     );
+    screenKey = 'create';
   } else {
     screen = <HeroSelect onCreate={() => setCreating(true)} onOpenSettings={() => setSettingsOpen(true)} />;
+    screenKey = 'select';
   }
 
   return (
-    <>
-      {screen}
+    <MotionConfig reducedMotion="user">
+      {/* One screen at a time: the old one plays its exit (cards fly apart, the sheet folds away)
+          before the next one assembles itself. */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={screenKey}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: 0.25 } }}
+          exit={{ opacity: 0, transition: { duration: 0.3, delay: 0.1 } }}
+        >
+          {screen}
+        </motion.div>
+      </AnimatePresence>
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <Toaster
-        position="bottom-center"
-        toastOptions={{
-          style: {
-            background: 'rgb(var(--c-surface-2))',
-            color: 'rgb(var(--c-ink))',
-            border: '1px solid rgb(var(--c-frame) / 0.5)',
-            borderRadius: 'var(--radius)',
-            fontSize: '14px',
-          },
-        }}
-      />
-    </>
+      <Toasts />
+    </MotionConfig>
   );
 };
 

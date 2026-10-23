@@ -130,7 +130,12 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
       <SettingBackdrop setting={setting} />
 
       <div className="relative z-10 flex h-full flex-col">
-        <header className="flex items-center justify-between px-24 pt-10">
+        <motion.header
+          className="flex items-center justify-between px-24 pt-10"
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.15 } }}
+          exit={{ opacity: 0, y: -12, transition: { duration: 0.25 } }}
+        >
           <Wordmark setting={setting} />
           <div className="flex items-center gap-3">
             <SyncBadge />
@@ -138,7 +143,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
               <IconSettings width={22} height={22} />
             </IconButton>
           </div>
-        </header>
+        </motion.header>
 
         <main className="relative flex min-h-0 flex-1 items-center justify-center">
           <Carousel slots={slots} index={focusIndex} onFocus={setIndex} onPlay={play} onCreate={onCreate} />
@@ -156,7 +161,12 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
           </IconButton>
         </main>
 
-        <footer className="flex items-center justify-between gap-6 px-24 pb-10">
+        <motion.footer
+          className="flex items-center justify-between gap-6 px-24 pb-10"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.2 } }}
+          exit={{ opacity: 0, y: 12, transition: { duration: 0.25 } }}
+        >
           <div className="flex w-64 gap-2">
             <Button variant="ghost" size="sm" icon={<IconImport width={16} height={16} />} onClick={() => fileInput.current?.click()}>
               Импорт
@@ -189,7 +199,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
               </>
             )}
           </div>
-        </footer>
+        </motion.footer>
       </div>
 
       <ConfirmDialog
@@ -225,39 +235,54 @@ const Carousel: React.FC<{
   onPlay: (hero: CharacterPreview) => void;
   onCreate: () => void;
 }> = ({ slots, index, onFocus, onPlay, onCreate }) => (
-  <div className="relative h-full w-full" style={{ perspective: 1600 }}>
+  <div className="relative h-full w-full">
     {slots.map((slot, i) => {
       const offset = i - index;
       const distance = Math.abs(offset);
       if (distance > 3) return null;
       const isFocused = offset === 0;
       return (
+        // A full-screen layer per card, scaled from the screen centre: on arrival the cards gather
+        // in from the edges one after another; on leaving the chosen card comes towards the viewer
+        // while the others are thrown apart.
         <motion.div
           key={slot.kind === 'hero' ? slot.hero.id : 'new'}
-          className="absolute left-1/2 top-1/2"
-          style={{ height: CARD_HEIGHT, aspectRatio: '0.66', zIndex: 10 - distance }}
-          initial={false}
-          animate={{
-            // Neighbours sit just past the focused card; farther ones overlap each other more.
-            x: `calc(-50% + ${Math.sign(offset) * (distance === 0 ? 0 : 74 + (distance - 1) * 46)}%)`,
-            y: '-50%',
-            scale: isFocused ? 1 : 0.8 - (distance - 1) * 0.08,
-            rotateY: offset === 0 ? 0 : offset > 0 ? -22 : 22,
-            // Cards stay opaque so the one behind never shows through; depth is shown by darkening.
-            opacity: distance > 2 ? 0 : 1,
-            filter: isFocused ? 'brightness(1) saturate(1)' : `brightness(${distance === 1 ? 0.38 : 0.22}) saturate(0.55)`,
-          }}
-          transition={{ type: 'spring', stiffness: 220, damping: 30 }}
+          className="pointer-events-none absolute inset-0"
+          style={{ perspective: 1600, zIndex: 10 - distance }}
+          initial={{ opacity: 0, scale: 1.25 }}
+          animate={{ opacity: 1, scale: 1, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1], delay: 0.05 + distance * 0.07 } }}
+          exit={
+            isFocused
+              ? { opacity: 0, scale: 1.12, transition: { duration: 0.4, ease: [0.4, 0, 1, 1] } }
+              : { opacity: 0, scale: 1.35, transition: { duration: 0.35, ease: [0.4, 0, 1, 1] } }
+          }
         >
-          {slot.kind === 'hero' ? (
-            <HeroCard
-              hero={slot.hero}
-              focused={isFocused}
-              onClick={() => (isFocused ? onPlay(slot.hero) : onFocus(i))}
-            />
-          ) : (
-            <NewHeroCard focused={isFocused} onClick={() => (isFocused ? onCreate() : onFocus(i))} />
-          )}
+          <motion.div
+            className="pointer-events-auto absolute left-1/2 top-1/2"
+            style={{ height: CARD_HEIGHT, aspectRatio: '0.66' }}
+            initial={false}
+            animate={{
+              // Neighbours sit just past the focused card; farther ones overlap each other more.
+              x: `calc(-50% + ${Math.sign(offset) * (distance === 0 ? 0 : 74 + (distance - 1) * 46)}%)`,
+              y: '-50%',
+              scale: isFocused ? 1 : 0.8 - (distance - 1) * 0.08,
+              rotateY: offset === 0 ? 0 : offset > 0 ? -22 : 22,
+              // Cards stay opaque so the one behind never shows through; depth is shown by darkening.
+              opacity: distance > 2 ? 0 : 1,
+              filter: isFocused ? 'brightness(1) saturate(1)' : `brightness(${distance === 1 ? 0.38 : 0.22}) saturate(0.55)`,
+            }}
+            transition={{ type: 'spring', stiffness: 220, damping: 30 }}
+          >
+            {slot.kind === 'hero' ? (
+              <HeroCard
+                hero={slot.hero}
+                focused={isFocused}
+                onClick={() => (isFocused ? onPlay(slot.hero) : onFocus(i))}
+              />
+            ) : (
+              <NewHeroCard focused={isFocused} onClick={() => (isFocused ? onCreate() : onFocus(i))} />
+            )}
+          </motion.div>
         </motion.div>
       );
     })}
