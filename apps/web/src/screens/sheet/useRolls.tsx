@@ -59,5 +59,22 @@ export function useRolls() {
     return roll.total;
   };
 
-  return { check, formula };
+  /**
+   * Damage of an attack or effect: one roll per component, totalled, with each component's type
+   * kept in the breakdown ("7 дробящий + 3 электричество").
+   */
+  const damage = (label: string, components: { damage: string; type?: string }[]) => {
+    const parts = components
+      .filter((c) => c.damage.trim())
+      .map((c) => ({ ...c, roll: rollFormula(c.damage) }))
+      .filter((c) => c.roll.rolls.length > 0 || c.roll.bonus !== 0);
+    if (parts.length === 0) return null;
+    const total = parts.reduce((sum, p) => sum + p.roll.total, 0);
+    const detail = parts.map((p) => `${p.roll.total}${p.type ? ` ${p.type.toLowerCase()}` : ''}`).join(' + ');
+    toast(<RollToast label={label} total={total} detail={detail} />, { duration: 6000 });
+    log(`${label}: ${total} (${detail})`);
+    return total;
+  };
+
+  return { check, formula, damage };
 }

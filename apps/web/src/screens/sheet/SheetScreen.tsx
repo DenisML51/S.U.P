@@ -8,6 +8,7 @@ import { HeroColumn } from './HeroColumn';
 import { LegacySection } from './LegacySection';
 import { SheetRail, type SheetSection } from './SheetRail';
 import type { SheetLogic } from './sheetLogic';
+import { ActionsSection } from './sections/ActionsSection';
 import { SkillsSection } from './sections/SkillsSection';
 
 const openDiceTray = () => window.dispatchEvent(new CustomEvent('open-dice-hub', { detail: {} }));
@@ -40,7 +41,9 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
       />
       <HeroColumn logic={sheet} onShowConditions={() => setSection('body')} />
       <main className="ui-scroll min-w-0 flex-1 overflow-y-auto px-10 py-8">
-        {section === 'attributes' ? <SkillsSection logic={sheet} /> : <LegacySection section={section} logic={sheet} />}
+        {section === 'attributes' && <SkillsSection logic={sheet} />}
+        {section === 'actions' && <ActionsSection logic={sheet} />}
+        {section !== 'attributes' && section !== 'actions' && <LegacySection section={section} logic={sheet} />}
       </main>
       <CharacterSheetModals {...sheet} autoAC={sheet.calculateAutoAC()} />
     </SettingScope>
