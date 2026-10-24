@@ -16,6 +16,8 @@
     "@fontsource/golos-text": "^5.3.0",
     "@fontsource/old-standard-tt": "^5.3.0",
     "@fontsource/oswald": "^5.3.0",
+    "@fontsource/poiret-one": "^5.3.0",
+    "@fontsource/pt-mono": "^5.3.0",
     "@fontsource/tektur": "^5.3.0",
     "@itd/game-logic": "*",
     "@itd/schema": "*",

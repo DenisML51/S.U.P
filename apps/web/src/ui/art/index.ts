@@ -3,6 +3,7 @@ import { DARK_FANTASY_ART } from './darkFantasy';
 import { HIGH_FANTASY_ART } from './highFantasy';
 import { SCI_FI_ART } from './sciFi';
 import { CYBERPUNK_ART } from './cyberpunk';
+import { LOVECRAFT_ART } from './lovecraft';
 import type { SettingArt } from './types';
 
 export const SETTING_ART: Record<Setting, SettingArt> = {
@@ -10,6 +11,7 @@ export const SETTING_ART: Record<Setting, SettingArt> = {
   'sci-fi': SCI_FI_ART,
   'dark-fantasy': DARK_FANTASY_ART,
   cyberpunk: CYBERPUNK_ART,
+  lovecraft: LOVECRAFT_ART,
 };
 
 export type { SettingArt };

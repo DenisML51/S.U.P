@@ -1,0 +1,754 @@
+/* ================================================================== Lovecraft
+ * "The night carriage": New England in the 1920s, the Arkham line after dark. Green leather in
+ * mahogany frames with brass inlay, brass caps on the corners like an old folio's, Art Deco fans and
+ * stepped corners; Poiret One for the poster type, a typewriter for everything filed and stamped.
+ * The command is a railway ticket, the chosen thing is marked in brass, a list is a page of a folio
+ * with a pointing hand in the margin. One colour does not belong: the sickly green of a book that
+ * glows, kept for what is uncanny.
+ */
+
+[data-setting='lovecraft'] {
+  /* The setting's own display face; the service's type may stand in for --font-display, never for it. */
+  --setting-display: 'Poiret One', 'Segoe UI', sans-serif;
+  --font-display: var(--setting-display);
+  /* What is typed, filed and stamped. */
+  --font-typed: 'PT Mono', 'Courier New', monospace;
+  /* The light a world card is lit by: the banker's lamp. */
+  --world-light: rgb(var(--c-eldritch) / 0.22);
+  --font-numeric: 'Poiret One', 'Segoe UI', sans-serif;
+  --display-tracking: 0.06em;
+  --display-weight: 400;
+
+  --c-bg: 7 11 10;
+  --c-bg-deep: 3 6 5;
+  --c-surface: 12 20 17;
+  --c-surface-2: 19 30 26;
+  --c-inset: 5 9 8;
+  --c-line: 36 46 40;
+  --c-frame: 116 102 74;
+  --c-frame-bright: 164 150 114;
+  --c-ink: 194 190 174;
+  --c-ink-muted: 130 130 116;
+  --c-ink-faint: 86 90 80;
+  --c-accent: 164 150 114;
+  --c-accent-ink: 30 20 10;
+  --c-paper: 140 132 110;
+  --c-paper-ink: 22 20 16;
+  --c-paper-muted: 80 72 56;
+
+  /* Mahogany of the panelling and frames. */
+  --c-wood: 60 31 21;
+  --c-wood-dark: 28 15 10;
+  /* The sickly green of what glows where nothing should. */
+  --c-eldritch: 106 148 106;
+  /* Ink on a folio's margin. */
+  --c-pen: 32 92 64;
+
+  --c-hp: 132 56 48;
+  --c-temp-hp: 164 150 114;
+  --c-sanity: 96 132 98;
+  --c-xp: 164 150 114;
+  --c-armor: 168 168 156;
+  --c-success: 104 140 100;
+  --c-danger: 150 62 50;
+  --c-warning: 214 156 70;
+
+  --c-act-action: 164 150 114;
+  --c-act-bonus: 104 140 100;
+  --c-act-reaction: 160 106 76;
+  --c-act-passive: 140 150 160;
+
+  --radius: 1px;
+  --chamfer: 0px;
+  --panel-texture: var(--grain);
+  --panel-texture-opacity: 0.35;
+  --shadow-panel: 0 18px 40px -18px rgb(0 0 0 / 0.9);
+
+  --brass: linear-gradient(180deg, rgb(172 156 118), rgb(124 106 74) 45%, rgb(74 62 42));
+  --mahogany: linear-gradient(180deg, rgb(84 44 30), rgb(56 28 18) 50%, rgb(36 18 11));
+  /* A hand pointing from the margin (game-icons.net "pointing", CC BY 3.0). */
+  --manicule: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20512%20512%27%3E%3Cpath%20fill%3D%22%23000%22%20d%3D%22M18.465%2020.182v192.9c38.45%2080.782%2055.772%20134.822%20150.726%20221.098l.167.15l.16.158c3.06%203.06%205.89%203.828%2010.14%203.455c4.247-.373%209.65-2.494%2014.738-5.912c9.313-6.256%2016.457-17.503%2017.67-22.266l-56.06-56.065l13.214-13.216l62.94%2062.944c1.316%201.316%202.67%201.804%206.508%201.115s9.267-3.1%2014.61-6.78c10.098-6.954%2019.75-18.663%2022.835-26.454l-56.02-56.02l13.216-13.216l63.667%2063.67c19.495-3.225%2035.412-16.64%2041.65-32.52l.756.296l-71.514-71.516l13.214-13.215L447.81%20415.52c7.58%207.58%2014.7%209.95%2021.032%209.853c6.33-.096%2012.216-2.88%2016.62-7.41c8.805-9.06%2012.096-23.49-2.255-37.84L259.97%20156.88l13.214-13.214l33.08%2033.08c46.988-3.724%2084.773-17.932%20102.148-33.6c8.914-8.04%2012.147-15.414%2011.424-22.306c-.644-6.142-5.172-13.675-15.865-21.79c-52.33%2022.22-109.035%2019.23-162.685%202.538c-54.338-16.908-105.852-47.735-148.47-81.406h-74.35z%22%2F%3E%3C%2Fsvg%3E");
+  /* Foxing: the brown spots of old paper, scattered over a tile large enough not to repeat visibly. */
+  --foxing:
+    radial-gradient(circle at 18% 27%, rgb(140 100 50 / 0.22) 0 3px, transparent 6px),
+    radial-gradient(circle at 71% 14%, rgb(140 100 50 / 0.16) 0 2px, transparent 5px),
+    radial-gradient(circle at 44% 63%, rgb(140 100 50 / 0.14) 0 4px, transparent 9px),
+    radial-gradient(circle at 86% 78%, rgb(140 100 50 / 0.2) 0 2px, transparent 4px),
+    radial-gradient(circle at 9% 88%, rgb(140 100 50 / 0.15) 0 3px, transparent 7px);
+  /* The stepped corners of a deco plate. */
+  --step: 3px;
+  --deco-shape: polygon(var(--step) 0, calc(100% - var(--step)) 0, calc(100% - var(--step)) var(--step), 100% var(--step), 100% calc(100% - var(--step)), calc(100% - var(--step)) calc(100% - var(--step)), calc(100% - var(--step)) 100%, var(--step) 100%, var(--step) calc(100% - var(--step)), 0 calc(100% - var(--step)), 0 var(--step), var(--step) var(--step));
+
+  /* ---------------------------------------------------------------- Panels */
+  /* Green leather in a mahogany frame: a brass edge, a band of wood, a brass hairline inside. */
+  .ui-panel:not(.ui-panel--inset):not(.ui-panel--paper) {
+    border-color: rgb(var(--c-frame) / 0.75);
+    background-color: rgb(var(--c-surface) / 0.97);
+    /* Leather worn by hands: lighter where it was touched, darker blotches where it was not. */
+    background-image:
+      radial-gradient(120% 80% at 50% 0%, rgb(var(--c-surface-2) / 0.75), transparent 70%),
+      radial-gradient(30% 22% at 82% 88%, rgb(0 0 0 / 0.28), transparent 70%),
+      radial-gradient(22% 18% at 12% 70%, rgb(0 0 0 / 0.2), transparent 70%);
+    box-shadow:
+      inset 0 0 0 3px rgb(var(--c-wood)),
+      inset 0 0 0 4px rgb(var(--c-frame) / 0.45),
+      inset 0 0 36px rgb(0 0 0 / 0.38),
+      var(--shadow-panel);
+  }
+  .ui-corner { color: rgb(var(--c-frame-bright)); width: 18px; height: 18px; }
+  .ui-crest {
+    width: var(--crest-width, 120px);
+    height: calc(var(--crest-width, 120px) / 5);
+    transform: translate(-50%, -83%);
+    filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.7));
+  }
+  .ui-details { --crest-width: 150px; }
+
+  /* A folio's page: yellowed vellum, darker at the edges, laid in a thin mahogany edge. */
+  .ui-panel--paper {
+    border-color: rgb(var(--c-wood));
+    background-color: rgb(var(--c-paper));
+    /* Foxed with age: brown spots, a water stain at a corner, the edges browned. */
+    background-image:
+      var(--foxing),
+      radial-gradient(ellipse 34% 26% at 92% 6%, rgb(var(--c-paper-muted) / 0.32), transparent 70%),
+      radial-gradient(ellipse 70% 55% at 30% 20%, rgb(255 246 220 / 0.16), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 85% 95%, rgb(var(--c-paper-muted) / 0.34), transparent 70%);
+    box-shadow:
+      inset 0 0 0 1px rgb(var(--c-paper-muted) / 0.35),
+      inset 0 0 90px rgb(var(--c-paper-ink) / 0.55),
+      0 18px 30px -18px rgb(0 0 0 / 0.9);
+  }
+  .ui-panel--paper .ui-corner { color: rgb(var(--c-frame)); }
+
+  /* Hover: the banker's lamp is brought near — a green-gold light pools under the hand. */
+  .ui-fx { box-shadow: inset 0 -26px 36px -22px rgb(var(--c-eldritch) / 0.22); background: none; }
+  .ui-interactive:hover,
+  .ui-interactive[data-active='true'] { border-color: rgb(var(--c-frame-bright) / 0.85); }
+
+  /* ---------------------------------------------------------------- Type and rules */
+  .ui-section-title { color: rgb(var(--c-frame-bright)); font-size: 1.55rem; letter-spacing: 0.08em; }
+  /* Tiered deco rules. */
+  .ui-rule::before,
+  .ui-rule::after,
+  .ui-rule--left::after {
+    height: 5px;
+    background: none;
+    border-top: 1px solid rgb(var(--c-frame) / 0.7);
+    border-bottom: 1px solid rgb(var(--c-frame) / 0.3);
+  }
+  .ui-label { font-family: var(--font-typed); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--c-frame)); }
+
+  /* ---------------------------------------------------------------- Buttons */
+  /* Mahogany plates with stepped deco corners, brass edge, the name engraved in brass. The rim is
+     the button's background, the plate laid 1px inside it. */
+  .ui-button {
+    --rim: var(--brass);
+    --fill: var(--mahogany);
+    isolation: isolate;
+    border: 0;
+    font-family: var(--setting-display);
+    font-size: 0.86em;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    background: var(--rim);
+    clip-path: var(--deco-shape);
+    color: rgb(var(--c-frame-bright));
+    text-shadow: 0 1px 1px rgb(0 0 0 / 0.85);
+    transition: filter 200ms, color 200ms, letter-spacing 300ms;
+  }
+  .ui-button::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    clip-path: var(--deco-shape);
+    background: var(--fill);
+  }
+  .ui-button:not(:disabled):hover { color: rgb(var(--c-ink)); filter: brightness(1.12) drop-shadow(0 0 6px rgb(var(--c-eldritch) / 0.35)); }
+  .ui-button:not(:disabled):active { filter: brightness(0.9); }
+  .ui-button:focus-visible { outline: none; filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright))); }
+  .ui-button:disabled { opacity: 0.45; }
+
+  /* The command is a railway ticket: cream card, typed, a notch bitten out of each side and a
+     perforation near the stub. Hovered, the conductor punches it. */
+  .ui-button--primary {
+    clip-path: none;
+    background:
+      radial-gradient(circle at 0 50%, transparent 5px, rgb(var(--c-paper)) 5.5px) left / 51% 100% no-repeat,
+      radial-gradient(circle at 100% 50%, transparent 5px, rgb(var(--c-paper)) 5.5px) right / 51% 100% no-repeat;
+    color: rgb(var(--c-paper-ink));
+    padding-left: 1.6rem;
+    padding-right: 1.6rem;
+    font-family: var(--font-typed);
+    font-size: 0.8em;
+    letter-spacing: 0.14em;
+    text-shadow: none;
+    box-shadow: none;
+    filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.55));
+  }
+  .ui-button--primary::before {
+    inset: 4px auto 4px 14px;
+    width: 0;
+    clip-path: none;
+    background: none;
+    border-left: 1px dashed rgb(var(--c-paper-muted) / 0.8);
+  }
+  .ui-button--primary::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgb(var(--c-bg-deep));
+    box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.8);
+    transform: translateY(-50%) scale(0);
+    transition: transform 160ms cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .ui-button--primary:not(:disabled):hover { color: rgb(var(--c-paper-ink)); filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.6)) drop-shadow(0 0 8px rgb(var(--c-eldritch) / 0.25)); }
+  .ui-button--primary:not(:disabled):hover::after { transform: translateY(-50%) scale(1); }
+  .ui-button--secondary:not(:disabled):hover { border-color: transparent; background: var(--rim); }
+  .ui-button--danger {
+    --rim: linear-gradient(180deg, rgb(210 120 96), rgb(110 34 26));
+    --fill: linear-gradient(180deg, rgb(92 26 20), rgb(52 14 10));
+    color: rgb(240 190 170);
+  }
+  .ui-button--ghost {
+    --rim: none;
+    clip-path: none;
+    background: none;
+    color: rgb(var(--c-frame));
+    text-shadow: none;
+  }
+  .ui-button--ghost::before {
+    inset: auto 0.6rem 0.4rem;
+    height: 1px;
+    clip-path: none;
+    background: rgb(var(--c-frame-bright));
+    transform: scaleX(0);
+    transition: transform 250ms ease;
+  }
+  .ui-button--ghost:not(:disabled):hover { color: rgb(var(--c-frame-bright)); background: none; filter: none; }
+  .ui-button--ghost:not(:disabled):hover::before { transform: scaleX(1); }
+  .ui-button--row { --step: 2px; font-family: var(--font-typed); font-size: 0.7rem; letter-spacing: 0.1em; }
+  .ui-panel--paper :is(.ui-button--secondary, .ui-button--row) {
+    --rim: rgb(var(--c-paper-ink) / 0.55);
+    --fill: rgb(var(--c-paper));
+    color: rgb(var(--c-paper-ink));
+    text-shadow: none;
+  }
+  .ui-panel--paper :is(.ui-button--secondary, .ui-button--row):not(:disabled):hover { --fill: rgb(var(--c-pen)); color: rgb(var(--c-paper)); filter: none; }
+
+  /* Icon buttons are brass studs. */
+  .ui-icon-button { color: rgb(var(--c-frame)); }
+  .ui-icon-button:not(:disabled):hover { color: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame) / 0.5); background: radial-gradient(circle at 50% 120%, rgb(var(--c-eldritch) / 0.2), rgb(var(--c-surface-2)) 70%); }
+  .ui-icon-button[aria-pressed='true'] { color: rgb(var(--c-accent-ink)); border-color: rgb(var(--c-frame-bright)); background: var(--brass); }
+
+  /* ---------------------------------------------------------------- Tabs */
+  /* Labels of a card catalogue: typed capitals; the open drawer's label sits in a brass holder. */
+  .ui-tabs { gap: 0.4rem; border-bottom-color: rgb(var(--c-frame) / 0.35); }
+  .ui-tabs__tab {
+    padding: 0.35rem 0.8rem;
+    font-family: var(--font-typed);
+    font-size: 0.74rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgb(var(--c-ink-faint));
+    border: 1px solid transparent;
+    transition: color 150ms, background-color 150ms, border-color 150ms;
+  }
+  .ui-tabs__tab:hover { color: rgb(var(--c-frame-bright)); }
+  .ui-tabs__tab[aria-selected='true'] {
+    color: rgb(var(--c-paper-ink));
+    background: rgb(var(--c-paper));
+    border-color: rgb(var(--c-frame-bright));
+    box-shadow: 0 0 0 2px rgb(var(--c-wood-dark)), 0 0 0 3px rgb(var(--c-frame) / 0.7);
+  }
+  .ui-tabs__tab::after { display: none; }
+  .ui-tabs__count { font-family: var(--font-typed); font-size: 0.68rem; color: inherit; opacity: 0.6; }
+
+  /* ---------------------------------------------------------------- Lists on a folio's page */
+  /* A green silk bookmark; typed entries over fine rules; the entry open beside the list is pointed
+     out by a hand in the margin and underlined in green ink; what is worn or prepared is ticked. */
+  .ui-ledger__ribbon { background: linear-gradient(90deg, rgb(0 0 0 / 0.25), transparent 30%, transparent 70%, rgb(0 0 0 / 0.3)), rgb(30 72 50); }
+  .ui-ledger__head { border-bottom: 1px solid rgb(var(--c-paper-muted) / 0.5); }
+  .ui-ledger__head h2 { color: rgb(var(--c-paper-ink)); letter-spacing: 0.08em; }
+  .ui-ledger__head > svg { color: rgb(var(--c-pen)); }
+  .ui-ledger__row { border-bottom: 1px solid rgb(var(--c-paper-muted) / 0.28); transition: background-color 200ms; }
+  .ui-ledger__row:last-child { border-bottom: 0; }
+  .ui-ledger__row:hover { background-color: rgb(var(--c-paper-ink) / 0.05); }
+  .ui-ledger__title { font-family: var(--font-typed); font-size: 0.95rem; letter-spacing: 0; color: rgb(var(--c-paper-ink)); }
+  .ui-ledger__meta { color: rgb(var(--c-paper-muted)); }
+  .ui-ledger__bullet { color: rgb(var(--c-paper-muted)); }
+  .ui-ledger__row[data-active] .ui-ledger__bullet { color: rgb(var(--c-pen)); }
+  .ui-ledger__row[data-selected] { background-color: rgb(var(--c-paper-ink) / 0.07); }
+  .ui-ledger__row[data-selected] .ui-ledger__title {
+    text-decoration: underline;
+    text-decoration-color: rgb(var(--c-pen));
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 4px;
+  }
+  /* The manicule: a hand in the margin pointing at the entry. */
+  .ui-ledger__row { position: relative; }
+  .ui-ledger__row[data-selected]::before {
+    position: absolute;
+    left: -0.2rem;
+    top: 50%;
+    margin-top: -11px;
+    content: '';
+    width: 22px;
+    height: 22px;
+    background: rgb(var(--c-pen));
+    mask: var(--manicule) center / contain no-repeat;
+    transform: rotate(-45deg);
+  }
+  .ui-ledger__group { font-family: var(--font-typed); letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.72rem; color: rgb(var(--c-paper-muted)); }
+  .ui-ledger__add { font-family: var(--font-typed); color: rgb(var(--c-paper-muted)); }
+  .ui-ledger__add:hover { color: rgb(var(--c-pen)); }
+
+  /* ---------------------------------------------------------------- Details pane */
+  /* A card from the university library's catalogue: typed heading, the name in poster type, the
+     figures as typed lines with dotted leaders. */
+  .ui-details__head { padding-top: 1.9rem; }
+  .ui-details__eyebrow { font-family: var(--font-typed); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--c-frame)); }
+  .ui-details__title { font-size: 1.75rem; letter-spacing: 0.06em; color: rgb(var(--c-ink)); }
+  .ui-details__facts { display: flex; flex-direction: column; gap: 0; background: none; border: 0; border-block: 1px solid rgb(var(--c-frame) / 0.3); padding: 0.3rem 0; }
+  .ui-details__fact {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.2rem 0.2rem;
+    background: none;
+    text-align: left;
+  }
+  .ui-details__fact::after { content: ''; order: 1; flex: 1; border-bottom: 1px dotted rgb(var(--c-frame) / 0.55); transform: translateY(-3px); }
+  .ui-details__fact dt { font-family: var(--font-typed); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgb(var(--c-ink-muted)); }
+  .ui-details__fact dd { order: 2; margin: 0; font-family: var(--font-typed); font-size: 0.9rem; }
+  .ui-details__foot { border-top-color: rgb(var(--c-frame) / 0.3); }
+  .ui-damage-block {
+    background: radial-gradient(120% 140% at 0% 100%, rgb(var(--c-eldritch) / 0.08), transparent 60%), rgb(var(--c-inset));
+    border-color: rgb(var(--c-frame) / 0.35);
+    border-left: 3px solid rgb(var(--c-frame));
+  }
+
+  /* ---------------------------------------------------------------- Figures */
+  .ui-stat__label { font-family: var(--font-typed); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--c-frame)); }
+  .ui-stat:hover .ui-stat__label { color: rgb(var(--c-frame-bright)); }
+  /* Gauges are brass-rimmed channels; sanity glows with the wrong colour. */
+  .ui-meter { border-color: rgb(var(--c-frame) / 0.5); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7); }
+  .ui-meter__fill { background: linear-gradient(180deg, rgb(255 255 255 / 0.14), transparent 45%, rgb(0 0 0 / 0.3)), rgb(var(--meter-color)); }
+  .ui-meter[data-tone='sanity'] .ui-meter__fill,
+  .ui-vbar[data-tone='sanity'] .ui-vbar__fill { box-shadow: 0 0 8px rgb(var(--c-eldritch) / 0.6); animation: lc-wrong-colour 9s ease-in-out infinite; }
+  .ui-prof-mark { transform: rotate(45deg) scale(0.85); }
+  .ui-prof-mark.bg-frame-bright { background: var(--brass); }
+
+  /* ---------------------------------------------------------------- Level and experience */
+  .ui-level { --cut: 4px; }
+  .ui-level__emblem,
+  .ui-level__plate {
+    border: 0;
+    background: var(--mahogany);
+    box-shadow: inset 0 0 0 1px rgb(var(--c-frame) / 0.8), inset 0 0 0 3px rgb(var(--c-wood-dark)), inset 0 0 0 4px rgb(var(--c-frame) / 0.35);
+    clip-path: var(--deco-shape);
+  }
+  .ui-level__emblem { color: rgb(var(--c-frame-bright)); }
+  .ui-level__unit { font-family: var(--font-typed); font-size: 0.6rem; letter-spacing: 0.16em; color: rgb(var(--c-frame)); }
+  .ui-level__number { color: rgb(var(--c-ink)); }
+  .ui-level:hover .ui-level__emblem { color: rgb(var(--c-eldritch)); filter: drop-shadow(0 0 4px rgb(var(--c-eldritch) / 0.6)); }
+  .ui-xp__label { font-family: var(--font-typed); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--c-frame)); }
+  .ui-xp__track { height: 6px; border-color: rgb(var(--c-frame) / 0.5); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7); }
+  .ui-xp__fill { background: var(--brass); }
+  .ui-xp__value { font-family: var(--font-typed); font-size: 0.78rem; color: rgb(var(--c-ink)); }
+  .ui-hud-xp { height: 6px; border-color: rgb(var(--c-frame) / 0.5); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7); }
+  .ui-hud-xp__fill { background: var(--brass); }
+
+  /* ---------------------------------------------------------------- Rail and hero column */
+  /* A mahogany pillar with a brass rail; the open section is a brass plate under the lamp. */
+  .ui-rail {
+    background: linear-gradient(90deg, rgb(16 9 6), rgb(var(--c-wood-dark)) 55%, rgb(14 8 5));
+    border-right: 0;
+    box-shadow: inset -1px 0 0 rgb(var(--c-frame) / 0.7), inset -3px 0 0 rgb(var(--c-wood-dark)), inset -4px 0 0 rgb(var(--c-frame) / 0.3);
+  }
+  .ui-rail__item { color: rgb(var(--c-frame) / 0.9); }
+  .ui-rail__label { font-family: var(--font-typed); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .ui-rail__item:not([aria-current]):hover { color: rgb(var(--c-frame-bright)); }
+  .ui-rail__item[aria-current='page'] {
+    color: rgb(var(--c-ink));
+    background: radial-gradient(70% 60% at 50% 95%, rgb(var(--c-eldritch) / 0.22), transparent 75%);
+  }
+  .ui-rail__item[aria-current='page'] .ui-rail__mark { width: 3px; background: var(--brass); }
+  .ui-rail__divider { background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.6), transparent); }
+  .ui-hero-column { background: linear-gradient(180deg, rgb(var(--c-surface) / 0.7), rgb(var(--c-bg) / 0.5)); border-right-color: rgb(var(--c-frame) / 0.35); }
+
+  /* ---------------------------------------------------------------- Fields and controls */
+  /* Forms are typed on a line. */
+  .ui-input { font-family: var(--font-typed); background: rgb(var(--c-inset)); border-color: rgb(var(--c-frame) / 0.3); }
+  /* On a folio's page a field is a ruled line to write on. */
+  .ui-panel--paper .ui-input {
+    color: rgb(var(--c-paper-ink));
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid rgb(var(--c-paper-muted) / 0.7);
+    border-radius: 0;
+  }
+  .ui-panel--paper .ui-input::placeholder { color: rgb(var(--c-paper-muted)); }
+  .ui-input:focus { border-color: rgb(var(--c-frame-bright)); box-shadow: inset 0 -2px 0 rgb(var(--c-frame-bright)), 0 6px 16px -8px rgb(var(--c-eldritch) / 0.4); }
+  .ui-segmented { border-color: rgb(var(--c-frame) / 0.45); }
+  .ui-segmented__option { font-family: var(--font-typed); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .ui-segmented__option[aria-checked='true'] { color: rgb(var(--c-accent-ink)); background: var(--brass); border-color: rgb(var(--c-frame-bright)); }
+  [aria-checked='true'] > .ui-switch { background: rgb(var(--c-pen)); border-color: rgb(var(--c-frame)); }
+  [aria-checked='true'] > .ui-switch::after { background: var(--brass); }
+  .ui-switch,
+  .ui-switch::after { border-radius: 2px; }
+  .ui-popover__option[data-active] { box-shadow: inset 2px 0 0 rgb(var(--c-frame-bright)); }
+
+  .ui-keyfield {
+    --step: 2px;
+    padding: 1px;
+    background: var(--brass);
+    clip-path: var(--deco-shape);
+  }
+  .ui-keyfield > .ui-input { height: calc(2rem - 2px) !important; border: 0; clip-path: var(--deco-shape); background: rgb(var(--c-inset)); box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.7); }
+  .ui-keyfield > .ui-input:focus { box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.7), inset 0 -8px 12px -8px rgb(var(--c-eldritch) / 0.45); }
+  .ui-number { border-color: rgb(var(--c-frame) / 0.45); box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.6); }
+  .ui-number input { font-family: var(--font-typed); }
+  .ui-number button { color: rgb(var(--c-frame)); }
+  .ui-number button:not(:disabled):hover { color: rgb(var(--c-ink)); background: radial-gradient(circle at 50% 120%, rgb(var(--c-eldritch) / 0.25), transparent 70%); }
+
+  /* ---------------------------------------------------------------- Toasts */
+  /* A telegram: a strip of cream paper, typed capitals. */
+  .ui-toast {
+    color: rgb(var(--c-paper-ink));
+    font-family: var(--font-typed);
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: rgb(var(--c-paper));
+    border: 0;
+    border-radius: 0;
+    box-shadow: inset 0 0 24px rgb(var(--c-paper-muted) / 0.45), 0 14px 30px -12px rgb(0 0 0 / 0.85);
+  }
+  .ui-toast::before {
+    content: 'Телеграмма';
+    align-self: stretch;
+    display: grid;
+    place-items: center;
+    padding-right: 0.7rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    color: rgb(var(--c-paper-muted));
+    border-right: 1px dashed rgb(var(--c-paper-muted) / 0.7);
+  }
+  .ui-toast button { color: rgb(var(--c-pen)); }
+  .ui-toast--error { box-shadow: inset 4px 0 0 rgb(var(--c-danger)), inset 0 0 24px rgb(var(--c-paper-muted) / 0.45), 0 14px 30px -12px rgb(0 0 0 / 0.85); }
+
+  /* ---------------------------------------------------------------- Dialogs */
+  /* A compartment door: leather in the frame, the title on a brass plate. */
+  .ui-dialog { box-shadow: inset 0 0 0 3px rgb(var(--c-wood)), inset 0 0 0 4px rgb(var(--c-frame) / 0.45), inset 0 0 80px rgb(0 0 0 / 0.6), var(--shadow-panel); }
+  /* The plate hangs in the middle of the door, the line above it and the note below centred too. */
+  .ui-dialog__head { padding: 1.6rem 3.5rem 1rem; text-align: center; }
+  .ui-dialog__head > div { justify-content: center; }
+  .ui-dialog__title {
+    display: table;
+    margin-inline: auto;
+    padding: 0.3rem 1.3rem 0.35rem;
+    font-size: 1.45rem;
+    letter-spacing: 0.06em;
+    /* Engraved deep into a polished plate: dark letters, a lit lower edge to each stroke. */
+    color: rgb(26 18 8);
+    -webkit-text-stroke: 0.35px rgb(26 18 8);
+    text-shadow: 0 1px 0 rgb(255 244 210 / 0.55);
+    background: linear-gradient(180deg, rgb(214 196 150), rgb(170 146 100) 50%, rgb(128 106 68));
+    clip-path: var(--deco-shape);
+    box-shadow: inset 0 0 0 1px rgb(80 58 28 / 0.7), inset 0 0 0 3px rgb(255 240 200 / 0.18);
+  }
+  .ui-dialog__eyebrow { font-family: var(--font-typed); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--c-frame)); opacity: 1; }
+  .ui-dialog__rule { display: flex; opacity: 0.75; }
+  .ui-dialog__foot { border-top-color: rgb(var(--c-frame) / 0.3); }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts dt { font-family: var(--font-typed); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.66rem; }
+  .ui-keyfacts dd { font-family: var(--font-typed); }
+
+  .ui-chip { font-family: var(--font-typed); font-size: 0.72rem; letter-spacing: 0.06em; }
+  .ui-chip[aria-pressed='true'] { color: rgb(var(--c-ink)); background: rgb(var(--c-frame) / 0.12); box-shadow: inset 3px 0 0 rgb(var(--c-frame-bright)); }
+
+  /* ---------------------------------------------------------------- Choices */
+  .ui-tag { border-radius: 1px; font-family: var(--font-typed); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .ui-option { color: rgb(var(--c-ink-muted)); }
+  .ui-option:not(:disabled):hover { color: rgb(var(--c-ink)); border-color: rgb(var(--c-frame) / 0.7); }
+  /* The chosen option is set in brass under the lamp. */
+  .ui-option[aria-pressed='true'] {
+    color: rgb(var(--c-frame-bright));
+    background: radial-gradient(100% 120% at 50% 130%, rgb(var(--c-eldritch) / 0.16), transparent 70%), rgb(var(--c-frame) / 0.12);
+    border-color: rgb(var(--c-frame-bright));
+    box-shadow: inset 0 0 0 1px rgb(var(--c-wood-dark)), inset 0 0 0 2px rgb(var(--c-frame) / 0.4);
+  }
+  .ui-steps__label { font-family: var(--font-typed); font-size: 0.82rem; letter-spacing: 0.04em; }
+  .ui-steps__mark { border-radius: 0; transform: rotate(45deg) scale(0.8); }
+  .ui-steps__mark > * { transform: rotate(-45deg); }
+  .ui-steps__item[aria-current='step'] .ui-steps__mark { background: var(--brass); border-color: rgb(var(--c-frame-bright)); color: rgb(var(--c-accent-ink)); }
+  .ui-origin[aria-pressed='true'] { background: rgb(var(--c-frame) / 0.12); border-color: rgb(var(--c-frame-bright)); }
+  .ui-origin[aria-pressed='true'] .ui-origin__icon { color: rgb(var(--c-frame-bright)); }
+
+  /* ---------------------------------------------------------------- Combat */
+  .ui-hud-slot,
+  .ui-hud-slot--tile { border-radius: 2px; }
+  .ui-hud-slot:not(.ui-hud-slot--tile) {
+    background: rgb(var(--c-inset));
+    border-color: rgb(var(--c-frame) / 0.6);
+    box-shadow: inset 0 0 0 2px rgb(var(--c-wood-dark)), inset 0 0 0 3px rgb(var(--c-frame) / 0.25);
+  }
+  .ui-hud-slot:hover,
+  .ui-hud-slot[data-active] { border-color: rgb(var(--c-frame-bright)); box-shadow: inset 0 0 16px rgb(var(--c-eldritch) / 0.25), 0 6px 14px -6px rgb(var(--c-eldritch) / 0.4); }
+  .ui-hud-panel__head { font-family: var(--font-typed); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--c-frame-bright)); }
+  .ui-hud-portrait { border-radius: 1px; border-color: rgb(var(--c-frame)); }
+
+  /* ---------------------------------------------------------------- Hero cards (hero select) */
+  /* An old photograph in a cream mount: drained to sepia until it is looked at, when the colour
+     seeps back into it. */
+  &.ui-hero-card > .ui-panel {
+    border-color: rgb(var(--c-paper) / 0.85);
+    box-shadow: inset 0 0 0 5px rgb(var(--c-paper) / 0.9), inset 0 0 0 6px rgb(var(--c-paper-muted) / 0.7), 0 20px 40px -14px rgb(0 0 0 / 0.9);
+  }
+  &.ui-hero-card img { filter: grayscale(1) sepia(0.45) contrast(1.05) brightness(0.92); transition: filter 1.4s ease; }
+  &.ui-hero-card[data-focused] img { filter: grayscale(0.15) sepia(0.15); }
+
+  /* The ticket tucked against the focused card. */
+  .lc-ticket {
+    position: absolute;
+    top: -16px;
+    left: -26px;
+    z-index: 3;
+    display: grid;
+    gap: 2px;
+    padding: 0.45rem 0.9rem 0.45rem 1.1rem;
+    font-family: var(--font-typed);
+    text-transform: uppercase;
+    color: rgb(var(--c-paper-ink));
+    background:
+      radial-gradient(circle at 0 50%, transparent 5px, rgb(var(--c-paper)) 5.5px) left / 51% 100% no-repeat,
+      radial-gradient(circle at 100% 50%, transparent 5px, rgb(var(--c-paper)) 5.5px) right / 51% 100% no-repeat;
+    filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.6));
+    pointer-events: none;
+    opacity: 0;
+    transform: rotate(-7deg) translateY(-6px);
+    transition: opacity 400ms, transform 500ms cubic-bezier(0.2, 1.3, 0.4, 1);
+  }
+  &.ui-hero-card[data-focused] .lc-ticket { opacity: 1; transform: rotate(-7deg); }
+  .lc-ticket__line { font-size: 0.68rem; letter-spacing: 0.12em; }
+  .lc-ticket__seat { font-size: 0.6rem; letter-spacing: 0.1em; color: rgb(var(--c-paper-muted)); }
+  .lc-ticket::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgb(var(--c-bg-deep));
+    transform: translateY(-50%);
+  }
+
+  /* ---------------------------------------------------------------- Atmosphere (backdrop) */
+  /* A sickly light breathing from under the seal, a cold green fog along the floor. */
+  .lc-glow {
+    background:
+      radial-gradient(20% 24% at 85% 74%, rgb(var(--c-eldritch) / 0.12), transparent 70%),
+      radial-gradient(90% 70% at 50% 0%, rgb(var(--c-surface-2) / 0.55), transparent 70%);
+    animation: lc-breathe 8s ease-in-out infinite;
+  }
+  /* The chart's figures are typed, as a surveyor's office would print them. */
+  .lc-chart__soundings,
+  .lc-chart__note { font-family: var(--font-typed); }
+  .lc-chart__soundings { opacity: 0.7; }
+  /* The mark breathes a sickly green, faintly, as if something under it were awake. */
+  .lc-chart__mark { animation: lc-mark 6s ease-in-out infinite; }
+  /* The kraken in the margins is engraved in the same line as the chart, a little darker. */
+  .lc-kraken {
+    opacity: 0.32;
+    pointer-events: none;
+    /* The arms rise out of the dark of the corner and fade into the fog before they end. */
+    mask-image: radial-gradient(circle at 0% 100%, #000 25%, rgb(0 0 0 / 0.5) 55%, transparent 85%);
+  }
+  /* Haze hanging in the air in slow layers, drifting against each other. */
+  .lc-haze {
+    background:
+      radial-gradient(55% 16% at 28% 42%, rgb(150 176 158 / calc(0.09 * var(--haze, 1))), transparent 70%),
+      radial-gradient(45% 13% at 72% 58%, rgb(140 168 150 / calc(0.08 * var(--haze, 1))), transparent 70%),
+      radial-gradient(60% 18% at 50% 30%, rgb(130 160 140 / calc(0.06 * var(--haze, 1))), transparent 70%);
+    filter: blur(14px);
+    animation: lc-haze 34s ease-in-out infinite alternate;
+  }
+  .lc-fog {
+    background:
+      radial-gradient(40% 60% at 25% 70%, rgb(120 150 130 / 0.24), transparent 70%),
+      radial-gradient(35% 55% at 72% 80%, rgb(110 140 120 / 0.2), transparent 70%),
+      radial-gradient(50% 50% at 50% 100%, rgb(100 130 110 / 0.26), transparent 75%);
+    filter: blur(10px);
+    animation: lc-fog 46s ease-in-out infinite alternate;
+  }
+}
+
+/* ------------------------------------------------------------------ The film */
+/* The whole screen is a reel of old film: grain that never holds still, dust and a hair now and
+   then, a scratch running down the frame, the exposure trembling. Laid over everything, it takes
+   no clicks. The sheet, combat and creation put the setting on <html>; hero select on its root. */
+html[data-setting='lovecraft'] body::after,
+[data-setting='lovecraft'].ui-service::after {
+  content: '';
+  position: fixed;
+  inset: -100px;
+  z-index: 9999;
+  pointer-events: none;
+  background-image:
+    var(--lc-dust),
+    var(--lc-grain);
+  background-size: 640px 640px, 200px 200px;
+  opacity: 0.07;
+  animation: lc-grain 0.6s steps(6) infinite, lc-exposure 4.3s steps(1) infinite;
+}
+[data-setting='lovecraft'].ui-service::after { position: absolute; }
+html[data-setting='lovecraft'] body::before,
+[data-setting='lovecraft'].ui-service::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent calc(var(--lc-scratch, 31%) - 0.5px), rgb(230 220 190 / 0.22) var(--lc-scratch, 31%), transparent calc(var(--lc-scratch, 31%) + 1px)),
+    radial-gradient(ellipse 75% 70% at 50% 50%, transparent 60%, rgb(0 0 0 / 0.35));
+  animation: lc-scratch 7s steps(1) infinite;
+}
+[data-setting='lovecraft'].ui-service::before { position: absolute; }
+:root {
+  /* Film grain: grey noise, light and dark specks alike, so it shows on the darkest frame. */
+  --lc-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncG type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncB type='linear' slope='2.2' intercept='-.6'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  /* Dust and hairs on the film, scattered over a large tile so the pattern never shows. */
+  --lc-dust: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640'%3E%3Cg fill='%23fff' opacity='.9'%3E%3Ccircle cx='83' cy='122' r='1.6'/%3E%3Ccircle cx='412' cy='61' r='1.1'/%3E%3Ccircle cx='530' cy='388' r='2'/%3E%3Ccircle cx='211' cy='503' r='1.3'/%3E%3Ccircle cx='604' cy='590' r='1'/%3E%3Ccircle cx='320' cy='300' r='0.9'/%3E%3C/g%3E%3Cg fill='none' stroke='%23000' stroke-width='1.1' opacity='.8'%3E%3Cpath d='M140 380c8-10 4-22 14-30s6-18 2-24'/%3E%3Cpath d='M470 180c-6 6-2 14-10 18'/%3E%3C/g%3E%3Cg fill='%23000' opacity='.7'%3E%3Ccircle cx='260' cy='90' r='1.4'/%3E%3Ccircle cx='560' cy='250' r='1.2'/%3E%3Ccircle cx='40' cy='460' r='1.8'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+@keyframes lc-grain {
+  0% { transform: translate(0, 0); }
+  17% { transform: translate(-37px, 21px); }
+  33% { transform: translate(29px, -44px); }
+  50% { transform: translate(-12px, 58px); }
+  67% { transform: translate(51px, 9px); }
+  83% { transform: translate(-60px, -30px); }
+}
+@keyframes lc-exposure {
+  0%, 100% { opacity: 0.07; }
+  23% { opacity: 0.1; }
+  24% { opacity: 0.05; }
+  61% { opacity: 0.085; }
+  62% { opacity: 0.06; }
+}
+@keyframes lc-scratch {
+  0%, 100% { --lc-scratch: 31%; opacity: 0; }
+  12% { --lc-scratch: 31%; opacity: 1; }
+  15% { --lc-scratch: 31.4%; opacity: 0.6; }
+  18% { opacity: 0; }
+  57% { --lc-scratch: 74%; opacity: 0.8; }
+  60% { --lc-scratch: 74.3%; opacity: 0; }
+}
+@property --lc-scratch {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 31%;
+}
+@keyframes lc-breathe {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+@keyframes lc-mark {
+  0%, 100% { color: inherit; filter: none; }
+  50% { color: rgb(106 148 106); filter: drop-shadow(0 0 6px rgb(106 148 106)); }
+}
+@keyframes lc-haze {
+  from { transform: translate(-5%, 1%); }
+  to { transform: translate(5%, -2%); }
+}
+@keyframes lc-fog {
+  from { transform: translateX(-4%); }
+  to { transform: translateX(4%); }
+}
+/* The wrong colour: the green drifts towards hues it should not have. */
+@keyframes lc-wrong-colour {
+  0%, 100% { filter: hue-rotate(0deg); }
+  50% { filter: hue-rotate(-40deg) saturate(1.3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='lovecraft'] :is(.lc-glow, .lc-chart__mark, .lc-haze, .lc-fog, .ui-meter__fill, .ui-vbar__fill) { animation: none; }
+  html[data-setting='lovecraft'] body::after,
+  html[data-setting='lovecraft'] body::before,
+  [data-setting='lovecraft'].ui-service::after,
+  [data-setting='lovecraft'].ui-service::before { animation: none; }
+}
+
+/* ------------------------------------------------------------------ Level ready */
+/* Light moves through the bar as through deep water; above its middle an eye opens, looks one way
+   and the other, and closes. */
+[data-setting='lovecraft'] {
+  .ui-xp[data-ready] { animation: lc-plaque-lamp 3.4s ease-in-out infinite; }
+  .lc-caustic { animation: lc-caustic 3.4s ease-in-out infinite; }
+  .lc-caustic--late { animation-delay: 1.5s; }
+  .lc-eye { filter: drop-shadow(0 0 4px rgb(var(--c-eldritch) / 0.7)); }
+  .lc-eye > path:first-child { transform-box: fill-box; transform-origin: center; animation: lc-lid 6s ease-in-out infinite; }
+  .lc-eye__pupil { animation: lc-look 6s ease-in-out infinite; }
+}
+@keyframes lc-plaque-lamp {
+  50% { box-shadow: inset 0 -14px 20px -12px rgb(150 214 120 / 0.3), 0 14px 30px -12px rgb(0 0 0 / 0.8); }
+}
+@keyframes lc-caustic {
+  from { transform: translateX(0); }
+  to { transform: translateX(352px); }
+}
+@keyframes lc-lid {
+  0%, 8%, 92%, 100% { transform: scaleY(0.08); }
+  20%, 80% { transform: scaleY(1); }
+  50% { transform: scaleY(0.9); }
+  51% { transform: scaleY(0.1); }
+  53% { transform: scaleY(1); }
+}
+@keyframes lc-look {
+  0%, 25% { transform: translateX(0); opacity: 0; }
+  20% { opacity: 1; }
+  35% { transform: translateX(-5px); opacity: 1; }
+  60% { transform: translateX(5px); }
+  78% { transform: translateX(0); opacity: 1; }
+  90%, 100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='lovecraft'] :is(.lc-caustic, .lc-eye > path, .lc-eye__pupil, .ui-xp[data-ready]) { animation: none; }
+}
+
+/* ------------------------------------------------------------------ World card */
+/* An ex-libris over a sea chart in the haze. At rest only the tips of something show at the bottom
+   of the chart; chosen or looked at, the arms rise slowly out of the deep, the haze thickens and the
+   emblem takes on a sickly glow, as if the book had woken. */
+[data-setting='lovecraft'] {
+  & > .ui-world { border-color: rgb(var(--c-frame) / 0.7); box-shadow: inset 0 0 0 3px rgb(var(--c-wood)), inset 0 0 0 4px rgb(var(--c-frame) / 0.4), inset 0 0 80px rgb(0 0 0 / 0.7), var(--shadow-panel); }
+  & > .ui-world .ui-world__name { font-size: 1.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: rgb(var(--c-frame-bright)); }
+  & > .ui-world .ui-world__emblem { color: rgb(var(--c-frame)); transition: color 1.2s, filter 2s; }
+  & > .ui-world { gap: 4.2rem; }
+  /* A cut-out of the chart: no ornament on its corners. */
+  & > .ui-world :is(.ui-corner, .lc-screen-corner) { display: none; }
+  & > .ui-world .ui-world__sigil { width: 170px; height: 210px; }
+  & > .ui-world .lc-haze { --haze: 2.6; }
+  & > .ui-world .lc-kraken {
+    width: 200%;
+    left: -38%;
+    bottom: 0;
+    opacity: 0.5;
+    mask-image: radial-gradient(circle at 20% 100%, #000 40%, rgb(0 0 0 / 0.7) 62%, transparent 85%);
+    transform: translateY(48%);
+    transition: transform 3.2s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 2s;
+  }
+  .lc-sigil { color: rgb(var(--c-frame)); opacity: 0.55; transition: opacity 700ms, color 700ms; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) { transform: none; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .lc-sigil { opacity: 1; color: rgb(var(--c-frame-bright)); }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .lc-kraken { transform: translateY(14%); opacity: 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .lc-haze { --haze: 4; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { color: rgb(var(--c-eldritch)); filter: drop-shadow(0 0 14px rgb(var(--c-eldritch) / 0.55)); }
+}

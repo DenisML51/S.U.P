@@ -12,6 +12,8 @@ import '@fontsource/old-standard-tt/700.css';
 import '@fontsource/oswald/400.css';
 import '@fontsource/oswald/500.css';
 import '@fontsource/oswald/600.css';
+import '@fontsource/poiret-one/400.css';
+import '@fontsource/pt-mono/400.css';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 
 export interface SettingInfo {
@@ -29,6 +31,7 @@ export const SETTING_INFO: Record<Setting, SettingInfo> = {
   'sci-fi': { id: 'sci-fi', label: 'Sci-Fi' },
   'dark-fantasy': { id: 'dark-fantasy', label: 'Dark Fantasy' },
   cyberpunk: { id: 'cyberpunk', label: 'Cyberpunk' },
+  lovecraft: { id: 'lovecraft', label: 'Lovecraft' },
 };
 
 export const SETTING_LIST = Object.values(SETTING_INFO);

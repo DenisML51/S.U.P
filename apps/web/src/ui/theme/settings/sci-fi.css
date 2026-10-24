@@ -557,8 +557,8 @@
 /* A display coming online: on hover targeting brackets fly in to the corners and lock, a scan grid
    sweeps down the card once, the emblem flickers on like a hologram and the name spreads out. */
 [data-setting='sci-fi'] {
-  .ui-world { border-color: rgb(var(--c-line)); }
-  .ui-world::before {
+  & > .ui-world { border-color: rgb(var(--c-line)); }
+  & > .ui-world::before {
     content: '';
     position: absolute;
     inset: -24px;
@@ -577,7 +577,7 @@
       linear-gradient(var(--bracket), var(--bracket)) bottom right / 2px 22px no-repeat;
     transition: inset 350ms cubic-bezier(0.2, 1.4, 0.4, 1), opacity 200ms;
   }
-  .ui-world::after {
+  & > .ui-world::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -589,12 +589,12 @@
       repeating-linear-gradient(90deg, rgb(var(--c-accent) / 0.08) 0 1px, transparent 1px 24px),
       repeating-linear-gradient(0deg, rgb(var(--c-accent) / 0.08) 0 1px, transparent 1px 24px);
   }
-  .ui-world__name { font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
-  .ui-world:hover { border-color: rgb(var(--c-accent) / 0.7); transform: none; }
-  .ui-world:hover::before { inset: 10px; opacity: 1; }
-  .ui-world:hover::after { opacity: 1; animation: sf-world-scan 900ms ease-out forwards; }
-  .ui-world:hover .ui-world__emblem { color: rgb(var(--c-accent)); animation: sf-world-flicker 600ms steps(1) both; }
-  .ui-world:hover .ui-world__name { letter-spacing: 0.16em; }
+  & > .ui-world .ui-world__name { font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) { border-color: rgb(var(--c-accent) / 0.7); transform: none; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::before { inset: 10px; opacity: 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { opacity: 1; animation: sf-world-scan 900ms ease-out forwards; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { color: rgb(var(--c-accent)); animation: sf-world-flicker 600ms steps(1) both; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__name { letter-spacing: 0.16em; }
 }
 
 @keyframes sf-world-scan {
@@ -610,6 +610,6 @@
   70%, 100% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='sci-fi'] .ui-world:hover :is(.ui-world__emblem),
-  [data-setting='sci-fi'] .ui-world:hover::after { animation: none; }
+  [data-setting='sci-fi'] > :is(.ui-world:hover, .ui-world[aria-pressed='true']) :is(.ui-world__emblem),
+  [data-setting='sci-fi'] > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { animation: none; }
 }
