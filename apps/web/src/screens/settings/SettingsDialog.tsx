@@ -121,7 +121,7 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
             checked={settings.notifications}
             onChange={(notifications) => set({ notifications })}
             label="Уведомления"
-            hint="Сообщения о тратах ресурсов и импорте героев"
+            hint="Сообщения об изменениях с кнопкой «Отменить», о тратах ресурсов и импорте героев"
           />
           <Switch
             checked={settings.fullscreen}

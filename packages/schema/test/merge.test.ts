@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HISTORY_LIMIT, deepEqual, mergeCharacters, type InventoryItem } from '../src';
+import { HISTORY_LIMIT, deepEqual, mergeCharacters, revertCharacter, type InventoryItem } from '../src';
 import { makeCharacter } from './fixtures';
 
 const item = (id: string, patch: Partial<InventoryItem> = {}): InventoryItem => ({
@@ -151,5 +151,29 @@ describe('mergeCharacters', () => {
     expect(merged.avatar).toBeUndefined();
     expect('avatar' in merged).toBe(false);
     expect(merged.sanity).toBe(1);
+  });
+});
+
+describe('revertCharacter', () => {
+  const before = makeCharacter({ currentHP: 20, sanity: 50, history: [entry('old', 1)] });
+  const after = { ...before, currentHP: 12, sanity: 45, history: [entry('hit', 2), entry('old', 1)] };
+
+  it('takes the character back to how it was before the edits', () => {
+    const reverted = revertCharacter(before, after, after, new Set(['hit']));
+    expect(reverted).toMatchObject({ currentHP: 20, sanity: 50 });
+    expect(reverted.history.map((e) => e.id)).toEqual(['old']);
+  });
+
+  it('keeps what changed since on another device', () => {
+    const current = { ...after, sanity: 30, level: 2, history: [entry('remote', 3), ...after.history] };
+    const reverted = revertCharacter(before, after, current, new Set(['hit']));
+    // Hit points go back; sanity, edited by both, keeps the other device's value; the level stays.
+    expect(reverted).toMatchObject({ currentHP: 20, sanity: 30, level: 2 });
+    expect(reverted.history.map((e) => e.id)).toEqual(['remote', 'old']);
+  });
+
+  it('removes a field the edits added', () => {
+    const concentrating = { ...before, concentratingOn: { kind: 'spell' as const, id: 's', name: 'Щит', startedAt: 1 } };
+    expect('concentratingOn' in revertCharacter(before, concentrating, concentrating)).toBe(false);
   });
 });

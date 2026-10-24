@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { Character, HistoryEntry, HistoryEntryType } from '@itd/schema';
+import { useCharacterStore } from '../../../store/useCharacterStore';
 import { Ledger, LedgerGroup } from '../../../ui/Ledger';
 import { cx } from '../../../ui/primitives';
 import { foldRepeats } from '../parts/history';
@@ -51,6 +52,9 @@ const byDay = (entries: HistoryEntry[]) => {
 /** The hero's chronicle: every roll, wound and find, as it happened at the table. */
 export const JournalSection: React.FC<{ character: Character }> = ({ character }) => {
   const [filter, setFilter] = useState<Filter>('all');
+  const undo = useCharacterStore((s) => s.undo);
+  const undoIds = useCharacterStore((s) => s.undoable);
+  const undoable = useMemo(() => new Set(undoIds), [undoIds]);
   const entries = character.history.filter((e) => filter === 'all' || e.type === filter);
   const groups = byDay(entries);
 
@@ -76,16 +80,26 @@ export const JournalSection: React.FC<{ character: Character }> = ({ character }
         {groups.map((group) => (
           <React.Fragment key={group.key}>
             <LedgerGroup>{group.title}</LedgerGroup>
-            {group.lines.map(({ entry, count }) => (
-              <li key={entry.id} className="ui-ledger__row flex items-baseline gap-4 py-2 text-sm">
+            {group.lines.map(({ entry, last, count }) => (
+              <li key={entry.id} className="ui-ledger__row group flex items-baseline gap-4 py-2 text-sm">
                 <span className="w-11 shrink-0 tabular-nums opacity-60">
                   {new Date(entry.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 <span className="mt-[0.45em] h-1.5 w-1.5 shrink-0 rotate-45" style={{ background: `rgb(${TONE[entry.type]})` }} aria-hidden />
-                <span className="min-w-0">
+                <span className="min-w-0 flex-1">
                   {entry.message}
                   {count > 1 && <span className="ml-2 tabular-nums opacity-60">×{count}</span>}
                 </span>
+                {undoable.has(last.id) && (
+                  <button
+                    type="button"
+                    onClick={() => undo(last.id)}
+                    title="Отменить эту запись и всё, что было после неё"
+                    className="shrink-0 text-xs opacity-0 transition-opacity hover:underline focus-visible:opacity-100 group-hover:opacity-70"
+                  >
+                    отменить до сюда
+                  </button>
+                )}
               </li>
             ))}
           </React.Fragment>
