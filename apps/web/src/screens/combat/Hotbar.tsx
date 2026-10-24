@@ -70,7 +70,7 @@ const SlotHint: React.FC<{ slot: Slot }> = ({ slot }) => (
       </dl>
     )}
     {(slot.effect?.trim() || slot.description.trim()) && (
-      <div className="ui-hud-hint__text mt-3 border-t border-line/60 pt-3 text-sm text-ink-muted">
+      <div className="ui-hud-hint__text ui-scroll mt-3 border-t border-line/60 pt-3 text-sm text-ink-muted">
         <Prose>{slot.effect?.trim() || slot.description}</Prose>
       </div>
     )}

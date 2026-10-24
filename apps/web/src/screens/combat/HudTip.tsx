@@ -83,7 +83,7 @@ export const HudTip: React.FC<{
           transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
         >
           <Panel ornate={false} className={cx('px-4 py-3 shadow-2xl', className)}>
-            <div className="ui-scroll max-h-[min(60vh,32rem)] overflow-y-auto">{children}</div>
+            {children}
           </Panel>
         </motion.div>
       )}

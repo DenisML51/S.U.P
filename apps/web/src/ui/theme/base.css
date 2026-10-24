@@ -948,10 +948,12 @@
 button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 
 /* Long descriptions in a hint fade out instead of growing past the screen. */
+/* A long description scrolls inside the hint; the hint stays open while the cursor is on it. */
 .ui-hud-hint__text {
-  max-height: 7.5rem;
-  overflow: hidden;
-  mask-image: linear-gradient(180deg, #000 70%, transparent);
+  max-height: min(40vh, 18rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
 }
 
 /* Icon picker of entry forms. */
