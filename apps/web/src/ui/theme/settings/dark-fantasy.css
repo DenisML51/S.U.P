@@ -596,3 +596,30 @@
 @media (prefers-reduced-motion: reduce) {
   [data-setting='dark-fantasy'] > .ui-world :is(.ui-world__emblem, .df-sigil__ring, .df-sigil__rune) { animation: none; }
 }
+
+/* ------------------------------------------------------------------ World flourish */
+/* A candle is snuffed: the dark closes in from the edges, a blood-red glow wells up from below,
+   and the dark draws back. */
+.ui-flourish--dark-fantasy {
+  &::before {
+    inset: 0;
+    opacity: 1;
+    box-shadow: inset 0 0 0 0 rgb(0 0 0 / 0.95);
+    animation: df-flourish-dark 1.2s ease-in-out forwards;
+  }
+  &::after {
+    inset: 0;
+    background: radial-gradient(70% 45% at 50% 110%, rgb(150 22 18 / 0.45), transparent 70%);
+    animation: df-flourish-blood 1.2s ease-in-out forwards;
+  }
+  & > i { display: none; }
+}
+@keyframes df-flourish-dark {
+  0% { box-shadow: inset 0 0 0 0 rgb(0 0 0 / 0.95); }
+  45% { box-shadow: inset 0 0 40vmax 22vmax rgb(0 0 0 / 0.95); }
+  100% { box-shadow: inset 0 0 0 0 rgb(0 0 0 / 0.95); }
+}
+@keyframes df-flourish-blood {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}

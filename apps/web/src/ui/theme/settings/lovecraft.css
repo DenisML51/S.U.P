@@ -752,3 +752,31 @@ html[data-setting='lovecraft'] body::before,
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .lc-haze { --haze: 4; }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { color: rgb(var(--c-eldritch)); filter: drop-shadow(0 0 14px rgb(var(--c-eldritch) / 0.55)); }
 }
+
+/* ------------------------------------------------------------------ World flourish */
+/* Lightning over the sea: two cold flashes, one after the other, then the thunder shakes the
+   screen. */
+[data-flourish='lovecraft'] { animation: lc-thunder 0.6s ease-out 0.35s 1; }
+.ui-flourish--lovecraft {
+  &::before {
+    inset: 0;
+    background: radial-gradient(120% 90% at 60% 0%, rgb(220 236 226 / 0.85), rgb(170 200 186 / 0.35) 55%, rgb(120 160 140 / 0.12));
+    animation: lc-lightning 0.75s linear forwards;
+  }
+  & > i { display: none; }
+}
+@keyframes lc-lightning {
+  0% { opacity: 0; }
+  6% { opacity: 0.9; }
+  12% { opacity: 0.08; }
+  20% { opacity: 0.7; }
+  32% { opacity: 0.25; }
+  100% { opacity: 0; }
+}
+@keyframes lc-thunder {
+  0%, 100% { transform: none; }
+  15% { transform: translate(-3px, 2px); }
+  30% { transform: translate(3px, -1px); }
+  45% { transform: translate(-2px, 1px); }
+  60% { transform: translate(1px, 0); }
+}

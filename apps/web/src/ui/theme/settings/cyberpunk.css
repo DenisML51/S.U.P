@@ -663,3 +663,34 @@
   [data-setting='cyberpunk'] > :is(.ui-world:hover, .ui-world[aria-pressed='true']) :is(.cp-sigil__ring, .cp-sigil__seg),
   [data-setting='cyberpunk'] > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { animation: none; }
 }
+
+/* ------------------------------------------------------------------ World flourish */
+/* The feed tears: the whole screen jumps and splits into red and cyan for a moment, bands of noise
+   flash across it. */
+[data-flourish='cyberpunk'] { animation: cp-screen-glitch 0.45s steps(1) 1; }
+.ui-flourish--cyberpunk {
+  & > i {
+    left: 0;
+    right: 0;
+    height: 6vh;
+    mix-blend-mode: screen;
+    animation: cp-flourish-band 0.45s steps(1) forwards;
+  }
+  & > i:nth-child(1) { top: 18%; background: rgb(255 98 88 / 0.35); }
+  & > i:nth-child(2) { top: 52%; height: 3vh; background: rgb(86 240 250 / 0.35); animation-delay: 0.08s; }
+  & > i:nth-child(3) { top: 77%; height: 9vh; background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.18) 0 1px, transparent 1px 3px); animation-delay: 0.15s; }
+}
+@keyframes cp-screen-glitch {
+  0% { transform: translate(0); filter: none; }
+  15% { transform: translate(-6px, 2px); filter: drop-shadow(5px 0 rgb(255 60 60 / 0.8)) drop-shadow(-5px 0 rgb(60 240 255 / 0.8)); }
+  30% { transform: translate(5px, -2px); clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%, 0 38%, 100% 38%, 100% 100%, 0 100%); }
+  45% { transform: translate(-3px, 0); filter: drop-shadow(-4px 0 rgb(255 60 60 / 0.8)) drop-shadow(4px 0 rgb(60 240 255 / 0.8)); clip-path: none; }
+  60% { transform: translate(2px, 1px); filter: none; }
+  80%, 100% { transform: none; filter: none; }
+}
+@keyframes cp-flourish-band {
+  0% { opacity: 1; transform: translateX(-4%); }
+  30% { opacity: 0; }
+  45% { opacity: 1; transform: translateX(5%); }
+  70%, 100% { opacity: 0; transform: none; }
+}

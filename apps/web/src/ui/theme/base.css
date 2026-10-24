@@ -1631,3 +1631,26 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   0%, 30% { box-shadow: 0 0 0 2px rgb(var(--c-frame-bright) / 0.8), 0 0 18px rgb(var(--c-frame-bright) / 0.4); }
   100% { box-shadow: 0 0 0 2px transparent; }
 }
+
+/* ------------------------------------------------------------------ World flourish */
+/* A setting's flourish over the whole screen when its world is chosen (see Flourish.tsx): a fixed
+   layer that takes no clicks; each setting animates its ::before, ::after and three spans. */
+.ui-flourish {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ui-flourish::before,
+.ui-flourish::after,
+.ui-flourish > i {
+  content: '';
+  position: absolute;
+  display: block;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-flourish { display: none; }
+  [data-flourish] { animation: none !important; }
+}

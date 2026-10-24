@@ -10,7 +10,8 @@ import { SETTING_INFO } from '../../ui/theme/settings';
  * (the star atlas, the instrument grid, the fog and the cathedral window), its emblem and name
  * stand over it. Hovering wakes the world in the setting's manner.
  */
-export const WorldCard: React.FC<{ setting: Setting; selected: boolean; onSelect: () => void }> = ({
+/** Chosen by a click; the card passes its centre on the screen, where the setting's flourish starts. */
+export const WorldCard: React.FC<{ setting: Setting; selected: boolean; onSelect: (origin: { x: number; y: number }) => void }> = ({
   setting,
   selected,
   onSelect,
@@ -18,7 +19,15 @@ export const WorldCard: React.FC<{ setting: Setting; selected: boolean; onSelect
   const { Backdrop, WorldSigil } = SETTING_ART[setting];
   return (
     <SettingScope setting={setting} className="h-full">
-      <button type="button" className="ui-world" aria-pressed={selected} onClick={onSelect}>
+      <button
+        type="button"
+        className="ui-world"
+        aria-pressed={selected}
+        onClick={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          onSelect({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+        }}
+      >
         <span className="ui-world__scene" aria-hidden>
           <Backdrop />
         </span>
