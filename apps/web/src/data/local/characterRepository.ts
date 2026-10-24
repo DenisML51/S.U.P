@@ -5,6 +5,7 @@ import {
   type Character,
   type CharacterRecordDto,
 } from '@itd/schema';
+import { upgradeCharacter } from '@itd/game-logic';
 import type { CharacterDatabase, StoredCharacter } from './database';
 
 export type ChangeSource = 'local' | 'remote' | 'other-tab';
@@ -17,13 +18,14 @@ export interface RepositoryChange {
 type Listener = (change: RepositoryChange) => void;
 
 /**
- * Stored documents were valid when written, but the schema may have moved on since (a retired
- * setting, a new default). Reads pass them through the schema so the UI always sees the current
- * shape; a document that no longer parses is shown as stored rather than hidden.
+ * Stored documents were valid when written, but the schema and the rules may have moved on since
+ * (a retired setting, a new default, a value the rules now bound). Reads and edits pass them through
+ * both, so the UI and every edit see the current shape; a document that no longer parses is shown
+ * as stored rather than hidden.
  */
-const normalize = (doc: Character): Character => {
+export const normalizeCharacter = (doc: Character): Character => {
   const parsed = CharacterSchema.safeParse(doc);
-  return parsed.success ? parsed.data : doc;
+  return parsed.success ? upgradeCharacter(parsed.data) : doc;
 };
 
 /**
@@ -66,12 +68,12 @@ export class CharacterRepository {
   /** Characters that are not deleted, oldest first (the order they were created in). */
   async list(): Promise<Character[]> {
     const rows = await this.db.characters.orderBy('createdAt').toArray();
-    return rows.filter((row) => !row.deleted).map((row) => normalize(row.doc));
+    return rows.filter((row) => !row.deleted).map((row) => normalizeCharacter(row.doc));
   }
 
   async get(id: string): Promise<Character | undefined> {
     const row = await this.db.characters.get(id);
-    return row && !row.deleted ? normalize(row.doc) : undefined;
+    return row && !row.deleted ? normalizeCharacter(row.doc) : undefined;
   }
 
   async has(id: string): Promise<boolean> {
@@ -108,7 +110,7 @@ export class CharacterRepository {
     const result = await this.db.transaction('rw', this.db.characters, async () => {
       const row = await this.db.characters.get(id);
       if (!row || row.deleted) return undefined;
-      const doc = CharacterSchema.parse(edit(row.doc));
+      const doc = CharacterSchema.parse(edit(normalizeCharacter(row.doc)));
       await this.db.characters.update(id, {
         doc,
         dirty: 1,

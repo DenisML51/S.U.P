@@ -8,6 +8,7 @@ import {
 } from '@itd/game-logic';
 import type { ActionType, Character, InventoryItem } from '@itd/schema';
 import { ACTION_TYPES } from '../../ui/actionTypes';
+import { itemClassName } from '../../ui/characterLabels';
 import type { GameIconId, IconKind } from '../../ui/GameIcon';
 import { damageFact as damageLine, damageParts, hitLabel, spellDamageParts } from '../sheet/parts/damage';
 import type { EntryKind } from '../sheet/dialogs/context';
@@ -165,7 +166,7 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
     name: item.name,
     iconName: item.iconName,
     color: item.color,
-    subtitle: item.itemClass || 'Расходуемое',
+    subtitle: itemClassName(item.itemClass) || 'Расходуемое',
     facts: facts(['Осталось', `${itemQuantity(item)} шт.`], damageFact(item)),
     count: itemQuantity(item),
     blocked: itemQuantity(item) <= 0 ? 'Закончилось' : null,

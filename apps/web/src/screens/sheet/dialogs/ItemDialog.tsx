@@ -2,6 +2,7 @@ import React from 'react';
 import { createEntityId, isShield, isStackable, itemQuantity, removeItem, saveItem } from '@itd/game-logic';
 import type { Character, InventoryItem, ItemType, WeaponClass } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
+import { ITEM_TYPE_LABEL, itemClassName, itemKindLabel } from '../../../ui/characterLabels';
 import { MarkdownField, NumberField, Segmented, Switch } from '../../../ui/forms';
 import { Button, Field, IconButton, Input } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
@@ -19,13 +20,6 @@ import {
   EntryBadge,
   EntryNameField,
 } from './parts';
-
-export const ITEM_TYPE_LABEL: Record<ItemType, string> = {
-  item: 'предмет',
-  weapon: 'оружие',
-  armor: 'броня',
-  ammunition: 'боеприпасы',
-};
 
 const TYPE_OPTIONS: ItemType[] = ['item', 'weapon', 'armor', 'ammunition'];
 
@@ -133,7 +127,7 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
             {(props) => (
               <Input
                 {...props}
-                value={draft.itemClass ?? ''}
+                value={itemClassName(draft.itemClass)}
                 placeholder="Зелья, инструменты…"
                 onChange={(e) => set({ itemClass: e.target.value || undefined })}
               />
@@ -277,7 +271,7 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
       what="предмет"
       onDelete={remove}
       name={entry.name}
-      eyebrow={[entry.itemClass || ITEM_TYPE_LABEL[entry.type], entry.equipped && 'надето']
+      eyebrow={[itemKindLabel(entry), entry.equipped && 'надето']
         .filter(Boolean)
         .join(' · ')}
       onEdit={startEditing}
