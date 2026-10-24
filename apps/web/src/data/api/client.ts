@@ -1,15 +1,26 @@
 import type {
+  AddCombatantsRequest,
   AuthResponse,
   ChangePasswordRequest,
   CharacterRecordDto,
   CharacterRevisionDto,
   CharacterRevisionSummaryDto,
+  CreateNpcRequest,
+  CreatePartyRequest,
   DeletedCharacterDto,
   ErrorCode,
   ErrorResponse,
+  InvitePreviewDto,
   LoginRequest,
+  PartyDto,
+  PartyListItemDto,
+  PartyMessageDto,
+  PartyMessagesDto,
   RegisterRequest,
+  StartCombatRequest,
   SyncResponse,
+  UpdateNpcRequest,
+  UpdatePartyRequest,
   UserDto,
 } from '@itd/schema';
 
@@ -163,5 +174,58 @@ export const api = {
       apiClient.request<CharacterRevisionSummaryDto[]>(`/characters/${encode(id)}/revisions`),
     revision: (id: string, revision: number) =>
       apiClient.request<CharacterRevisionDto>(`/characters/${encode(id)}/revisions/${revision}`),
+  },
+  parties: {
+    list: () => apiClient.request<PartyListItemDto[]>('/parties'),
+    get: (id: string) => apiClient.request<PartyDto>(`/parties/${encode(id)}`),
+    create: (body: CreatePartyRequest) => apiClient.request<{ id: string }>('/parties', { method: 'POST', body }),
+    update: (id: string, body: UpdatePartyRequest) =>
+      apiClient.request<void>(`/parties/${encode(id)}`, { method: 'PATCH', body }),
+    remove: (id: string) => apiClient.request<void>(`/parties/${encode(id)}`, { method: 'DELETE' }),
+    startSession: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/session`, { method: 'POST' }),
+    endSession: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/session`, { method: 'DELETE' }),
+    regenerateInvite: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/invite`, { method: 'POST' }),
+    removeMember: (id: string, userId: string) =>
+      apiClient.request<void>(`/parties/${encode(id)}/members/${encode(userId)}`, { method: 'DELETE' }),
+    addHero: (id: string, characterId: string) =>
+      apiClient.request<{ id: string }>(`/parties/${encode(id)}/heroes`, { method: 'POST', body: { characterId } }),
+    setHeroHidden: (id: string, heroId: string, hidden: boolean) =>
+      apiClient.request<void>(`/parties/${encode(id)}/heroes/${encode(heroId)}`, { method: 'PATCH', body: { hidden } }),
+    removeHero: (id: string, heroId: string) =>
+      apiClient.request<void>(`/parties/${encode(id)}/heroes/${encode(heroId)}`, { method: 'DELETE' }),
+    createNpc: (id: string, body: CreateNpcRequest) =>
+      apiClient.request<{ id: string }>(`/parties/${encode(id)}/npcs`, { method: 'POST', body }),
+    updateNpc: (id: string, npcId: string, body: UpdateNpcRequest) =>
+      apiClient.request<void>(`/parties/${encode(id)}/npcs/${encode(npcId)}`, { method: 'PATCH', body }),
+    removeNpc: (id: string, npcId: string) =>
+      apiClient.request<void>(`/parties/${encode(id)}/npcs/${encode(npcId)}`, { method: 'DELETE' }),
+  },
+  messages: {
+    list: (id: string, before?: string) =>
+      apiClient.request<PartyMessagesDto>(`/parties/${encode(id)}/messages${before ? `?before=${encode(before)}` : ''}`),
+    send: (id: string, body: string, recipientId: string | null) =>
+      apiClient.request<PartyMessageDto>(`/parties/${encode(id)}/messages`, { method: 'POST', body: { body, recipientId } }),
+  },
+  invites: {
+    preview: (code: string) => apiClient.request<InvitePreviewDto>(`/invites/${encode(code)}`),
+    accept: (code: string) => apiClient.request<{ partyId: string }>(`/invites/${encode(code)}/accept`, { method: 'POST' }),
+  },
+  combat: {
+    start: (id: string, body: StartCombatRequest) =>
+      apiClient.request<void>(`/parties/${encode(id)}/combat`, { method: 'POST', body }),
+    end: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/combat`, { method: 'DELETE' }),
+    add: (id: string, body: AddCombatantsRequest) =>
+      apiClient.request<void>(`/parties/${encode(id)}/combat/combatants`, { method: 'POST', body }),
+    remove: (id: string, combatantId: string) =>
+      apiClient.request<void>(`/parties/${encode(id)}/combat/combatants/${encode(combatantId)}`, { method: 'DELETE' }),
+    setInitiative: (id: string, combatantId: string, value: number) =>
+      apiClient.request<void>(`/parties/${encode(id)}/combat/combatants/${encode(combatantId)}/initiative`, {
+        method: 'PUT',
+        body: { value },
+      }),
+    rollNpcs: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/combat/roll-npcs`, { method: 'POST' }),
+    begin: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/combat/begin`, { method: 'POST' }),
+    next: (id: string, from: string | null) =>
+      apiClient.request<void>(`/parties/${encode(id)}/combat/next`, { method: 'POST', body: { from } }),
   },
 };

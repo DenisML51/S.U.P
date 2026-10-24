@@ -3,6 +3,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { initiativeModifier, resetTurn } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { useParty, usePartyOfCharacter } from '../../store/usePartyStore';
+import { useSessionStore } from '../../store/useSessionStore';
+import { CombatChat } from '../party/CombatChat';
+import { PartyCombatBar } from '../party/PartyCombatBar';
+import { useTurnLock } from '../party/useTurnLock';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { Button, IconButton } from '../../ui/primitives';
 import { IconDice, IconPrev, IconSettings } from '../../ui/icons';
@@ -76,6 +81,18 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
   const dialogs = useSheetDialogs();
   const roll = useRolls();
   const [combat, setCombat] = useCombatState(character.id);
+  const userId = useSessionStore((s) => s.user?.id);
+  // A hero at a party's table fights the party's fight: the master starts it and the turns are shared.
+  const party = useParty(usePartyOfCharacter(character.id)?.id);
+  const partyFight = party?.combat ?? null;
+  const partyInitiative = partyFight?.combatants.find(
+    (c) =>
+      c.kind === 'hero' &&
+      party?.heroes.some((hero) => hero.id === c.refId && hero.characterId === character.id),
+  )?.initiative;
+  const inCombat = party ? partyFight !== null : combat.inCombat;
+  useTurnLock(character.id);
+  const locked = useCharacterStore((s) => s.turnLock) !== null;
 
   const start = () => {
     const initiative = roll.check('Инициатива', initiativeModifier(character));
@@ -111,44 +128,54 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
           <div className="ui-display truncate text-xl leading-tight text-ink">{character.name}</div>
           <div className="text-xs text-ink-faint">{character.level} уровень</div>
         </div>
-        <div className="absolute left-1/2 top-4 -translate-x-1/2">
-          <AnimatePresence mode="wait" initial={false}>
-            {combat.inCombat ? (
-              <motion.div
-                key="fight"
-                className="flex items-center gap-3"
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2 }}
-              >
-                <span className="ui-display text-lg text-frame-bright">Раунд {combat.round}</span>
-                <Button variant="primary" size="md" onClick={nextTurn}>
-                  Следующий ход
-                </Button>
-                <Button variant="ghost" size="sm" onClick={finish}>
-                  Выйти из боя
-                </Button>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="calm"
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={start}
-                  icon={<IconDice width={18} height={18} />}
+        <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2">
+          {party ? (
+            <PartyCombatBar
+              party={party}
+              characterId={character.id}
+              onMyTurn={() =>
+                updateCharacter((doc) => resetTurn(doc), { log: { message: 'Ваш ход', type: 'other' }, undoable: false })
+              }
+            />
+          ) : (
+            <AnimatePresence mode="wait" initial={false}>
+              {combat.inCombat ? (
+                <motion.div
+                  key="fight"
+                  className="flex items-center gap-3"
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  Начать бой · инициатива
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <span className="ui-display text-lg text-frame-bright">Раунд {combat.round}</span>
+                  <Button variant="primary" size="md" onClick={nextTurn}>
+                    Следующий ход
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={finish}>
+                    Выйти из боя
+                  </Button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="calm"
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={start}
+                    icon={<IconDice width={18} height={18} />}
+                  >
+                    Начать бой · инициатива
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
         </div>
         <div className="ml-auto flex gap-1">
           <IconButton label="Кубики" onClick={() => dialogs.open({ kind: 'dice' })}>
@@ -169,6 +196,18 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
         <CombatLog character={character} />
       </motion.aside>
 
+      {/* The table's talk, folded to its last lines, opens without leaving the fight. */}
+      {party && (
+        <motion.div
+          className="absolute left-6 top-20 z-20 w-[24rem]"
+          initial={{ opacity: 0, x: -16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ ...ENTER, delay: 0.1 }}
+        >
+          <CombatChat party={party} userId={userId} />
+        </motion.div>
+      )}
+
       <motion.div
         className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-center gap-4 px-6 pb-5"
         initial={{ opacity: 0, y: 24 }}
@@ -183,11 +222,13 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
             <ResourceStrip character={character} />
             <CombatStats
               character={character}
-              initiative={combat.inCombat ? combat.initiative : null}
-              onInitiative={start}
+              initiative={party ? (partyInitiative ?? null) : combat.inCombat ? combat.initiative : null}
+              onInitiative={party ? undefined : start}
             />
           </div>
-          <Hotbar character={character} inCombat={combat.inCombat} />
+          <div className={locked ? 'ui-turn-locked' : undefined}>
+            <Hotbar character={character} inCombat={inCombat} />
+          </div>
           <ExperienceBar character={character} />
         </div>
       </motion.div>

@@ -15,6 +15,48 @@
       "when": 1792783921566,
       "tag": "0001_assets",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792849049491,
+      "tag": "0002_parties",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792850570110,
+      "tag": "0003_npc_disposition",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792851115366,
+      "tag": "0004_party_lore",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792852682847,
+      "tag": "0005_party_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792853737660,
+      "tag": "0006_party_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792857106541,
+      "tag": "0007_master_hero_reveal",
+      "breakpoints": true
     }
   ]
 }

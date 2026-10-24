@@ -29,7 +29,7 @@ export function useTestApp(overrides: Record<string, string> = {}) {
   const appPromise = buildApp(config, connection, services);
 
   beforeEach(async () => {
-    await connection.db.execute(sql`truncate table users, refresh_tokens, characters, character_revisions, assets cascade`);
+    await connection.db.execute(sql`truncate table users, refresh_tokens, characters, character_revisions, assets, parties, party_messages cascade`);
   });
 
   afterAll(async () => {

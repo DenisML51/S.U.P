@@ -9,7 +9,8 @@ import {
   type DeletedCharacterDto,
   type SyncResponse,
 } from '@itd/schema';
-import { and, asc, desc, eq, gt, isNotNull, sql } from 'drizzle-orm';
+import { summarizeCharacter } from '@itd/game-logic';
+import { and, asc, desc, eq, gt, isNotNull, isNull, sql } from 'drizzle-orm';
 import type { Database, Transaction } from '../../db/client';
 import { characterRevisions, characters, users, type CharacterRow } from '../../db/schema';
 import { AppError, notFound, unauthorized, validationError } from '../../lib/errors';
@@ -20,6 +21,12 @@ const SYNC_PAGE_SIZE = 200;
 const SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000;
 /** ...and this many of the latest restore points survive. */
 const SNAPSHOTS_KEPT = 50;
+const BACKFILL_BATCH = 100;
+
+/** Told about a character's change once it is committed (parties refresh their views). */
+export interface CharacterChangeListener {
+  characterChanged(userId: string, characterId: string, change: 'saved' | 'deleted' | 'restored'): void;
+}
 
 const toRecordDto = (row: CharacterRow): CharacterRecordDto => ({
   id: row.id,
@@ -57,6 +64,7 @@ export class CharactersService {
   constructor(
     private readonly db: Database,
     private readonly notifier: ChangeNotifier,
+    private readonly listeners: readonly CharacterChangeListener[] = [],
   ) {}
 
   /** Every change (including deletions) after `since`, oldest first. */
@@ -109,6 +117,7 @@ export class CharactersService {
         name: document.name,
         level: document.level,
         data: document,
+        summary: summarizeCharacter(document),
         updatedAt: new Date(),
         deletedAt: null,
       };
@@ -124,7 +133,8 @@ export class CharactersService {
       return { row: row!, cursor };
     });
 
-    this.notifier.publish(userId, { type: 'characters.changed', cursor: cursor.toString(), originSessionId });
+    this.notifier.publish([userId], { type: 'characters.changed', cursor: cursor.toString(), originSessionId });
+    this.announce(userId, id, 'saved');
     return toRecordDto(row);
   }
 
@@ -134,7 +144,7 @@ export class CharactersService {
     baseRevision: number,
     originSessionId: string | null,
   ): Promise<CharacterRecordDto> {
-    return this.changeDeletion(userId, id, originSessionId, (current) => {
+    return this.changeDeletion(userId, id, originSessionId, 'deleted', (current) => {
       if (current.deletedAt) return null;
       if (current.revision !== baseRevision) throw conflict(current);
       return new Date();
@@ -143,7 +153,9 @@ export class CharactersService {
 
   /** Brings a deleted character back from the trash. */
   async restore(userId: string, id: string, originSessionId: string | null): Promise<CharacterRecordDto> {
-    return this.changeDeletion(userId, id, originSessionId, (current) => (current.deletedAt ? undefined : null));
+    return this.changeDeletion(userId, id, originSessionId, 'restored', (current) =>
+      current.deletedAt ? undefined : null,
+    );
   }
 
   async listDeleted(userId: string): Promise<DeletedCharacterDto[]> {
@@ -191,6 +203,43 @@ export class CharactersService {
     return { revision: row.revision, savedAt: row.savedAt.toISOString(), data: row.data };
   }
 
+  /**
+   * Fills `summary` for rows saved before it existed. Idempotent; run at startup. Rows whose document
+   * no longer passes the schema keep an empty summary and are skipped.
+   */
+  async backfillSummaries(): Promise<number> {
+    let filled = 0;
+    let after: { userId: string; id: string } | null = null;
+    for (;;) {
+      const rows: { userId: string; id: string; data: unknown }[] = await this.db
+        .select({ userId: characters.userId, id: characters.id, data: characters.data })
+        .from(characters)
+        .where(
+          and(
+            isNull(characters.summary),
+            after ? sql`(${characters.userId}, ${characters.id}) > (${after.userId}, ${after.id})` : undefined,
+          ),
+        )
+        .orderBy(asc(characters.userId), asc(characters.id))
+        .limit(BACKFILL_BATCH);
+      for (const row of rows) {
+        const parsed = CharacterSchema.safeParse(row.data);
+        if (!parsed.success) continue;
+        await this.db
+          .update(characters)
+          .set({ summary: summarizeCharacter(parsed.data) })
+          .where(and(eq(characters.userId, row.userId), eq(characters.id, row.id)));
+        filled += 1;
+      }
+      if (rows.length < BACKFILL_BATCH) return filled;
+      after = rows.at(-1)!;
+    }
+  }
+
+  private announce(userId: string, id: string, change: 'saved' | 'deleted' | 'restored') {
+    for (const listener of this.listeners) listener.characterChanged(userId, id, change);
+  }
+
   private async findOrThrow(userId: string, id: string): Promise<CharacterRow> {
     const [row] = await this.db
       .select()
@@ -208,6 +257,7 @@ export class CharactersService {
     userId: string,
     id: string,
     originSessionId: string | null,
+    change: 'deleted' | 'restored',
     decide: (current: CharacterRow) => Date | undefined | null,
   ): Promise<CharacterRecordDto> {
     const outcome = await this.db.transaction(async (tx) => {
@@ -231,11 +281,12 @@ export class CharactersService {
     });
 
     if (outcome.cursor !== null) {
-      this.notifier.publish(userId, {
+      this.notifier.publish([userId], {
         type: 'characters.changed',
         cursor: outcome.cursor.toString(),
         originSessionId,
       });
+      this.announce(userId, id, change);
     }
     return toRecordDto(outcome.row);
   }

@@ -1,7 +1,7 @@
 {
   "name": "@itd/api",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Into the Dark API: accounts, character storage and sync, realtime notifications.",
   "scripts": {
@@ -19,6 +19,7 @@
     "@fastify/helmet": "^13.0.2",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/websocket": "^11.2.0",
+    "@itd/game-logic": "*",
     "@itd/schema": "*",
     "@node-rs/argon2": "^2.0.2",
     "drizzle-orm": "^0.45.4",

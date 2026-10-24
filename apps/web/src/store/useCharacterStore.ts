@@ -71,6 +71,13 @@ interface CharacterState {
   settings: AppSettings;
   /** Ids of the open character's edits that can still be undone, oldest first. */
   undoable: string[];
+  /**
+   * Set while a party's fight goes on and it is not this hero's turn: why the hero cannot act. Using
+   * attacks, abilities, spells and resources, resting and editing entries wait for the hero's turn;
+   * reactions, reading the sheet, rolls and hit point changes (being hit) do not.
+   */
+  turnLock: string | null;
+  setTurnLock(lock: string | null): void;
 
   setViewMode(mode: ViewMode): void;
   updateSettings(patch: Partial<AppSettings>): void;
@@ -92,7 +99,8 @@ interface CharacterState {
   /** Uses an attack, ability or spell, paying its costs. Returns why it failed, if it did. */
   performAction(request: PerformActionRequest): PerformActionResult | null;
 
-  loadCharacter(characterId: string): Promise<void>;
+  /** Opens a character, on its sheet unless another view is asked for (a party's fight opens combat). */
+  loadCharacter(characterId: string, view?: ViewMode): Promise<void>;
   createCharacter(draft: CharacterDraft): Promise<string>;
   deleteCharacter(characterId: string): Promise<void>;
   importFromJSON(file: File): Promise<string>;
@@ -121,6 +129,14 @@ const readOpen = (): string | null => {
     return sessionStorage.getItem(OPEN_CHARACTER_KEY);
   } catch {
     return null;
+  }
+};
+
+const writeViewMode = (viewMode: ViewMode) => {
+  try {
+    localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  } catch {
+    // Preference not persisted.
   }
 };
 
@@ -183,6 +199,19 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     if (!deepEqual(rebuilt, character)) get().updateCharacter(() => rebuilt);
   };
 
+  /** The entry a request uses is a reaction (an attack, ability or spell taken with the reaction). */
+  const isReaction = (character: Character, request: PerformActionRequest): boolean => {
+    const entries = request.kind === 'attack' ? character.attacks : request.kind === 'ability' ? character.abilities : character.spells;
+    return entries.find((entry) => entry.id === request.id)?.actionType === 'reaction';
+  };
+
+  /** Refuses an action out of the hero's turn in a party's fight, saying why. */
+  const refuseOffTurn = (): boolean => {
+    const lock = get().turnLock;
+    if (lock) toast.error(lock, { id: 'turn-lock' });
+    return lock !== null;
+  };
+
   const replacePreview = (doc: Character) =>
     get().charactersList.map((preview) => (preview.id === doc.id ? toCharacterPreview(doc) : preview));
 
@@ -239,14 +268,14 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     isLoaded: false,
     settings: loadSettings(),
     undoable: [],
+    turnLock: null,
 
+    setTurnLock: (turnLock) => {
+      if (get().turnLock !== turnLock) set({ turnLock });
+    },
 
     setViewMode: (viewMode) => {
-      try {
-        localStorage.setItem(VIEW_MODE_KEY, viewMode);
-      } catch {
-        // Preference not persisted.
-      }
+      writeViewMode(viewMode);
       set({ viewMode });
     },
 
@@ -312,6 +341,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     },
 
     updateResourceCount: (resourceId, delta) => {
+      if (refuseOffTurn()) return;
       const current = get().character;
       const preview = current && changeResource(current, resourceId, delta);
       if (!preview || preview.applied === 0) return;
@@ -327,6 +357,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     },
 
     rest: (kind, options = {}) => {
+      if (refuseOffTurn()) return null;
       const current = get().character;
       if (!current) return null;
       // Dice are rolled once here: the edit runs again on the stored copy and must heal the same.
@@ -345,6 +376,8 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     performAction: (request) => {
       const current = get().character;
       if (!current) return null;
+      // A reaction answers someone else's turn: it is the one thing a hero may do out of their own.
+      if (!isReaction(current, request) && refuseOffTurn()) return null;
       const result = performGameAction(current, request);
       if (!result.ok) {
         toast.error(result.message);
@@ -360,13 +393,14 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       return result;
     },
 
-    loadCharacter: async (characterId) => {
+    loadCharacter: async (characterId, view = 'tabs') => {
       const character = await workspace?.repository.get(characterId);
       if (!character) {
         toast.error('Персонаж не найден');
         return;
       }
-      set({ character, viewMode: 'tabs', undoable: undoIds(character.id) });
+      writeViewMode(view);
+      set({ character, viewMode: view, undoable: undoIds(character.id) });
       rememberOpen(character.id);
       refreshPreset(character);
     },
@@ -454,8 +488,9 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
       const open = readOpen();
       const character = open ? await next.repository.get(open) : undefined;
+      // A reload returns to the hero as it was left: on its sheet or in its fight.
       if (character && workspace === next) {
-        set({ character, viewMode: 'tabs', undoable: [] });
+        set({ character, viewMode: readViewMode(), undoable: [] });
         refreshPreset(character);
       }
     },

@@ -1,14 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { api, assetUrl } from '../data/api/client';
-import { ImageCropDialog } from './ImageCropDialog';
+import { ImageCropDialog, type CropPreset } from './ImageCropDialog';
 import { cx } from './primitives';
 
 /** An image slot: the current picture, a click to pick another and frame it, a link to remove it. */
 export const ImageSlot: React.FC<{
   label: string;
   hint: string;
-  kind: 'full' | 'portrait';
+  kind: CropPreset;
   /** Uploaded asset shown in the slot; the slot shows only its own picture, never a fallback. */
   asset?: string;
   onUploaded: (id: string | undefined) => void;

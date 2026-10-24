@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EntityIdSchema } from './character';
+import type { PartyMessageDto } from './party';
 
 /**
  * HTTP and WebSocket contracts between the web client and the API. Request schemas are validated
@@ -12,6 +13,8 @@ export const ErrorCode = {
   forbidden: 'forbidden',
   notFound: 'not_found',
   conflict: 'conflict',
+  /** A party's session is not running: its table is closed to players until the master starts one. */
+  sessionClosed: 'session_closed',
   emailTaken: 'email_taken',
   invalidCredentials: 'invalid_credentials',
   rateLimited: 'rate_limited',
@@ -178,4 +181,8 @@ export type WsServerMessage =
   | { type: 'ready'; userId: string }
   | { type: 'pong' }
   | { type: 'characters.changed'; cursor: string; originSessionId: string | null }
+  /** Something in a party changed (or the viewer left it): fetch it again. */
+  | { type: 'party.changed'; partyId: string }
+  /** A message for this user at a party's table (public, or private to them). */
+  | { type: 'party.message'; partyId: string; message: PartyMessageDto }
   | { type: 'error'; error: ErrorCode; message: string };
