@@ -1,13 +1,14 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { findBackground, findClass, findSubclass, pointsRemaining } from '@itd/game-logic';
-import { SETTINGS, DEFAULT_SETTING, type Setting } from '@itd/schema';
+import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 import { Button, Panel, cx } from '../../ui/primitives';
 import { IconCheck, IconDice, IconPrev, IconQuill } from '../../ui/icons';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
 import { Flourish } from '../../ui/Flourish';
-import { WorldCard } from './WorldCard';
+import { SettingBackdrop } from '../../ui/SettingBackdrop';
+import { WorldCarousel } from './WorldCarousel';
 import { HeroSummary } from './HeroSummary';
 import { TrainingChoice } from './parts';
 import { OriginStep, PointBuyStep } from './custom/steps';
@@ -72,8 +73,8 @@ const METHOD_NAMES = { pointBuy: 'Покупка очков', roll: 'Бросо�
 /**
  * Creating a hero, laid out like a game's character creator: the steps down the left with what was
  * chosen on each, the step's panel in the middle (a grid of emblems, then what the pick gives and
- * asks), the hero as it stands on the right. The world comes first, still in the service's own
- * type; once it is chosen the whole screen takes that setting's look.
+ * asks), the hero as it stands on the right. The world comes first, the screen wearing the look of
+ * the world in front of the carousel; once one is chosen the whole screen keeps its look.
  */
 export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const [setting, setSetting] = useDraftState<Setting>('setting', DEFAULT_SETTING);
@@ -82,7 +83,11 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
   const [index, setIndex] = useDraftState('step', 0);
   const dnd = useDndCreation(setting, onDone);
   const custom = useCreation(setting, onDone);
-  useDocumentSetting(setting);
+  /** The world in front of the world carousel: on the world step the screen wears its look. */
+  const [inFront, setInFront] = React.useState<Setting | null>(null);
+  const previewing = index === 0 && inFront !== null;
+  const shown = previewing ? inFront : setting;
+  useDocumentSetting(shown);
   /** The flourish of the world just chosen, while it plays. */
   const [flourish, setFlourish] = React.useState<{ setting: Setting; x: number; y: number; key: number } | null>(null);
   const endFlourish = React.useCallback(() => setFlourish(null), []);
@@ -92,24 +97,19 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
       id: 'world',
       label: 'Мир',
       value: worldChosen ? SETTING_INFO[setting].label : undefined,
-      question: 'В каком мире начнётся история?',
+      question: 'Куда отправимся?',
       issues: worldChosen ? [] : ['Мир'],
       stage: true,
       content: (
-        <div className="mx-auto grid h-[28rem] w-full max-w-7xl grid-cols-5 gap-4">
-          {SETTINGS.map((id) => (
-            <WorldCard
-              key={id}
-              setting={id}
-              selected={worldChosen && setting === id}
-              onSelect={(origin) => {
-                if (!(worldChosen && setting === id)) setFlourish({ setting: id, ...origin, key: Date.now() });
-                setSetting(id);
-                setWorldChosen(true);
-              }}
-            />
-          ))}
-        </div>
+        <WorldCarousel
+          chosen={worldChosen ? setting : null}
+          onFocus={setInFront}
+          onChoose={(id, origin) => {
+            if (!(worldChosen && setting === id)) setFlourish({ setting: id, ...origin, key: Date.now() });
+            setSetting(id);
+            setWorldChosen(true);
+          }}
+        />
       ),
     },
     {
@@ -224,11 +224,15 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
 
   return (
     <SettingScope
-      setting={setting}
-      className={cx('ui-morph flex h-screen overflow-clip bg-bg', !worldChosen && 'ui-service')}
+      setting={shown}
+      className={cx('ui-morph relative flex h-screen overflow-clip bg-bg', !worldChosen && !previewing && 'ui-service')}
       data-flourish={flourish?.setting}
     >
       {flourish && <Flourish key={flourish.key} setting={flourish.setting} x={flourish.x} y={flourish.y} onEnd={endFlourish} />}
+      {/* The atmosphere of the world in front, behind the world step only. */}
+      <div className="pointer-events-none absolute inset-0 transition-opacity duration-700" style={{ opacity: index === 0 ? 1 : 0 }}>
+        <SettingBackdrop setting={shown} strength={0.6} />
+      </div>
       {/* The steps appear once the world is behind: choosing a world is a stage of its own. */}
       <AnimatePresence initial={false}>
         {index > 0 && (
@@ -238,7 +242,7 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
             animate={{ width: 240, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="flex shrink-0 flex-col overflow-hidden border-r border-line/50"
+            className="relative flex shrink-0 flex-col overflow-hidden border-r border-line/50"
           >
             <div className="flex min-h-0 w-60 flex-1 flex-col px-4 py-6">
               {backToHeroes}
@@ -270,11 +274,11 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
         )}
       </AnimatePresence>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative flex min-w-0 flex-1 flex-col">
         {step.stage ? (
           // A stage step (the world, the path): its question on top, its choices centred in the room left.
           <main className="relative flex min-h-0 flex-1 flex-col px-10 pt-8">
-            {index === 0 && <div className="absolute left-4 top-6">{backToHeroes}</div>}
+            {index === 0 && <div className="absolute left-24 top-8">{backToHeroes}</div>}
             <h2 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">{step.question}</h2>
             <div className="flex min-h-0 flex-1 items-center">{content}</div>
           </main>

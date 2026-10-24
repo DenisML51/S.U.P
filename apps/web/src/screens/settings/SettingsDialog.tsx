@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { DEFAULT_SETTING, SETTINGS, type Setting } from '@itd/schema';
 import { applyFullscreen, type AppSettings } from '../../data/settings';
 import type { SyncStatus } from '../../data/sync/syncEngine';
 import { useCharacterStore } from '../../store/useCharacterStore';
@@ -21,12 +20,6 @@ const syncLine = (sync: SyncStatus, offline: boolean): { text: string; tone: str
 
 const time = (timestamp: number | null) =>
   timestamp ? new Date(timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '—';
-
-/** The screen's own setting, so the dialog matches whatever it is opened over. */
-const screenSetting = (): Setting => {
-  const value = document.documentElement.dataset.setting;
-  return SETTINGS.includes(value as Setting) ? (value as Setting) : DEFAULT_SETTING;
-};
 
 /** Account, sync and the few preferences of this device. */
 export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
@@ -64,8 +57,7 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
       <Dialog
         open={open}
         onClose={onClose}
-        setting={open ? screenSetting() : undefined}
-        service
+        setting="service"
         title="Настройки"
         width="md"
         footer={
@@ -138,7 +130,7 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
         message={`${unsynced} изменений ещё не отправлены на сервер. После выхода они пропадут с этого устройства.`}
         confirmLabel="Выйти"
         danger
-        setting={unsynced > 0 ? screenSetting() : undefined}
+        setting="service"
         onCancel={() => setUnsynced(0)}
         onConfirm={() => {
           setUnsynced(0);

@@ -38,3 +38,10 @@ export const SETTING_LIST = Object.values(SETTING_INFO);
 
 export const settingOf = (character: { setting?: Setting } | null | undefined): Setting =>
   character?.setting ?? DEFAULT_SETTING;
+
+/**
+ * What a part of the screen wears: a character's setting, or the service's own theme for everything
+ * that belongs to no world (account, hero select chrome, app settings).
+ */
+export type Theme = Setting | 'service';
+
