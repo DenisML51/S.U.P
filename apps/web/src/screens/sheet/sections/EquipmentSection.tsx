@@ -30,7 +30,7 @@ const EquipMark: React.FC<{ item: InventoryItem; onToggle: () => void }> = ({ it
     title={item.equipped ? 'Снять' : 'Надеть'}
     aria-pressed={item.equipped}
     aria-label={`${item.name}: ${item.equipped ? 'надето' : 'не надето'}`}
-    className="grid h-6 w-6 shrink-0 place-items-center transition-transform hover:scale-110"
+    className="ui-ledger__bullet grid h-6 w-6 shrink-0 place-items-center transition-transform hover:scale-110"
   >
     <LedgerBullet filled={item.equipped} />
   </button>

@@ -51,7 +51,7 @@ export const SectionTitle: React.FC<{
   className?: string;
 }> = ({ children, action, className }) => (
   <div className={cx('flex items-center gap-4', className)}>
-    <h2 className="ui-display ui-title text-[1.35rem] leading-none text-frame-bright">{children}</h2>
+    <h2 className="ui-display ui-title ui-section-title text-[1.35rem] leading-none text-frame-bright">{children}</h2>
     <div className="ui-rule ui-rule--left flex-1" aria-hidden />
     {action}
   </div>

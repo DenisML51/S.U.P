@@ -5,7 +5,7 @@ import { useSetting } from './theme/SettingScope';
 
 /**
  * Small line ornaments drawn in `currentColor`. Each setting has its own vocabulary:
- * Tolkien-style vines, riveted brackets, HUD corners, thorns.
+ * Tolkien-style vines, riveted brackets, thorns; sci-fi panes stay bare.
  */
 
 const CORNERS: Record<Setting, React.ReactNode> = {
@@ -17,12 +17,8 @@ const CORNERS: Record<Setting, React.ReactNode> = {
       <path d="M1 14h4M14 1v4" stroke="currentColor" strokeWidth="2" />
     </>
   ),
-  'sci-fi': (
-    <>
-      <path d="M1 14V1h13" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M5 5h4" stroke="currentColor" strokeWidth="1" opacity="0.7" />
-    </>
-  ),
+  // A terminal pane has no ornament: its structure is in the rules and the type.
+  'sci-fi': null,
   'dark-fantasy': (
     <>
       <path d="M1 20V1h19" fill="none" stroke="currentColor" strokeWidth="1" />
@@ -42,6 +38,7 @@ const VIEWBOX: Record<Setting, string> = {
 export const Corners: React.FC<{ setting?: Setting }> = ({ setting }) => {
   const current = useSetting();
   const art = CORNERS[setting ?? current];
+  if (!art) return null;
   return (
     <>
       {(['tl', 'tr', 'bl', 'br'] as const).map((position) => (

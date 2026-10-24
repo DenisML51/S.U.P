@@ -83,7 +83,7 @@ export const LedgerRow: React.FC<{
 }> = ({ title, meta, value, action, leading, dim, active, wrapMeta, onOpen }) => (
   <li className={cx('ui-ledger__row group flex items-center gap-3 py-2.5', dim && 'opacity-60')} data-active={active || undefined}>
     {leading ?? (
-      <span className="grid h-6 w-6 shrink-0 place-items-center opacity-80">
+      <span className="ui-ledger__bullet grid h-6 w-6 shrink-0 place-items-center opacity-80">
         <LedgerBullet filled={!dim} />
       </span>
     )}

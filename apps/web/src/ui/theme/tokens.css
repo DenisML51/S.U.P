@@ -105,49 +105,51 @@
 }
 
 /* ------------------------------------------------------------------ Sci-fi */
-/* Ship interface: deep navy glass, cold blue lines, warm orange for alerts. */
+/* A ship's data terminal: matte graphite, hairline rules, one signal blue. Selection is a solid
+   block of colour, not a glow; warm orange is kept for alerts. */
 [data-setting='sci-fi'] {
-  --font-display: 'Unbounded', 'Segoe UI', sans-serif;
-  --font-numeric: 'Unbounded', 'Segoe UI', sans-serif;
-  --display-tracking: 0.02em;
+  --font-display: 'Tektur', 'Segoe UI', sans-serif;
+  --font-numeric: 'Tektur', 'Segoe UI', sans-serif;
+  --display-tracking: 0.03em;
   --display-weight: 500;
+  --title-transform: uppercase;
 
-  --c-bg: 8 12 17;
-  --c-bg-deep: 3 6 9;
-  --c-surface: 13 21 30;
-  --c-surface-2: 19 31 44;
-  --c-inset: 6 10 15;
-  --c-line: 33 54 73;
-  --c-frame: 62 128 168;
-  --c-frame-bright: 120 196 236;
-  --c-ink: 214 230 240;
-  --c-ink-muted: 128 152 170;
-  --c-ink-faint: 78 100 118;
-  --c-accent: 92 182 232;
-  --c-accent-ink: 4 14 22;
-  --c-paper: 18 30 42;
-  --c-paper-ink: 206 224 236;
-  --c-paper-muted: 120 146 166;
+  --c-bg: 9 11 14;
+  --c-bg-deep: 4 5 7;
+  --c-surface: 14 17 21;
+  --c-surface-2: 21 25 31;
+  --c-inset: 7 9 11;
+  --c-line: 37 43 51;
+  --c-frame: 66 80 96;
+  --c-frame-bright: 150 196 236;
+  --c-ink: 222 229 236;
+  --c-ink-muted: 136 148 160;
+  --c-ink-faint: 86 96 108;
+  --c-accent: 62 152 240;
+  --c-accent-ink: 2 9 18;
+  --c-paper: 14 17 21;
+  --c-paper-ink: 222 229 236;
+  --c-paper-muted: 104 118 134;
 
-  --c-hp: 226 96 60;
-  --c-temp-hp: 92 182 232;
-  --c-sanity: 160 130 220;
-  --c-xp: 232 168 70;
-  --c-armor: 92 182 232;
-  --c-success: 86 196 150;
-  --c-danger: 232 92 72;
-  --c-warning: 236 150 60;
+  --c-hp: 232 104 66;
+  --c-temp-hp: 62 152 240;
+  --c-sanity: 148 128 226;
+  --c-xp: 62 152 240;
+  --c-armor: 150 196 236;
+  --c-success: 84 190 146;
+  --c-danger: 236 96 70;
+  --c-warning: 238 140 58;
 
-  --c-act-action: 92 182 232;
-  --c-act-bonus: 86 196 150;
-  --c-act-reaction: 236 128 62;
-  --c-act-passive: 140 150 176;
+  --c-act-action: 62 152 240;
+  --c-act-bonus: 84 190 146;
+  --c-act-reaction: 238 140 58;
+  --c-act-passive: 136 148 160;
 
   --radius: 0px;
-  --chamfer: 10px;
+  --chamfer: 0px;
   --panel-texture: none;
   --panel-texture-opacity: 0;
-  --shadow-panel: 0 0 0 1px rgb(62 128 168 / 0.08), 0 20px 40px -20px rgb(0 0 0 / 0.9);
+  --shadow-panel: 0 16px 32px -20px rgb(0 0 0 / 0.9);
 }
 
 /* ------------------------------------------------------------------ Dark fantasy */

@@ -40,12 +40,12 @@ const RailButton: React.FC<{
     title={hint ?? label}
     aria-current={active ? 'page' : undefined}
     className={cx(
-      'group relative flex w-full flex-col items-center gap-1 py-2.5 transition-colors',
+      'ui-rail__item group relative flex w-full flex-col items-center gap-1 py-2.5 transition-colors',
       active ? 'text-frame-bright' : 'text-ink-faint hover:text-ink-muted',
     )}
   >
     <span
-      className={cx('absolute left-0 top-2 bottom-2 w-[2px] transition-colors', active ? 'bg-frame-bright' : 'bg-transparent')}
+      className={cx('ui-rail__mark absolute left-0 top-2 bottom-2 w-[2px] transition-colors', active ? 'bg-frame-bright' : 'bg-transparent')}
       aria-hidden
     />
     <Icon width={24} height={24} />
