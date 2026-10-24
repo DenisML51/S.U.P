@@ -65,6 +65,10 @@ describe('CharacterSchema', () => {
     expect(CharacterSchema.safeParse({ ...minimal, setting: 'steampunk' }).success).toBe(false);
   });
 
+  it('reads the retired grimdark setting as dark fantasy', () => {
+    expect(CharacterSchema.parse({ ...minimal, setting: 'grimdark' }).setting).toBe('dark-fantasy');
+  });
+
   it('references uploaded art by asset id', () => {
     const id = 'a3bb189e-8bf9-4888-9912-ace4e6543002';
     expect(CharacterSchema.parse({ ...minimal, images: { portrait: id } }).images).toEqual({ portrait: id });

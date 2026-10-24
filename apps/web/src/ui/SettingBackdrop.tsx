@@ -25,19 +25,6 @@ const HighFantasyFrame: React.FC = () => (
   </div>
 );
 
-/** Heavy riveted bars across top and bottom, a red edge on the left. */
-const GrimdarkFrame: React.FC = () => (
-  <>
-    <div className="absolute inset-x-0 top-0 h-[10px] border-b-2 border-frame/60 bg-gradient-to-b from-surface-2 to-surface" />
-    <div className="absolute inset-x-0 bottom-0 h-[10px] border-t-2 border-frame/60 bg-gradient-to-t from-surface-2 to-surface" />
-    <div
-      className="absolute inset-x-0 top-[3px] h-[4px]"
-      style={{ background: 'radial-gradient(circle, rgb(var(--c-frame-bright)) 1.5px, transparent 2px) 0 0 / 48px 4px repeat-x' }}
-    />
-    <div className="absolute inset-y-0 left-0 w-[3px] bg-accent/70" />
-  </>
-);
-
 /** HUD brackets, a measuring scale and faint scanlines. */
 const SciFiFrame: React.FC = () => (
   <>
@@ -68,13 +55,12 @@ const DarkFantasyFrame: React.FC = () => (
 
 const FRAMES: Record<Setting, React.FC> = {
   'high-fantasy': HighFantasyFrame,
-  grimdark: GrimdarkFrame,
   'sci-fi': SciFiFrame,
   'dark-fantasy': DarkFantasyFrame,
 };
 
 /**
- * Screen-edge decoration of each setting. All four are mounted at once and cross-fade, so moving
+ * Screen-edge decoration of each setting. All of them are mounted at once and cross-fade, so moving
  * between characters of different settings morphs the frame instead of swapping it.
  */
 export const SettingBackdrop: React.FC<{ setting: Setting; className?: string }> = ({ setting, className }) => (

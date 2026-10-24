@@ -9,10 +9,6 @@ const BULLETS: Record<Setting, (filled: boolean) => React.ReactNode> = {
   'high-fantasy': (filled) => (
     <path d="M7 0.8 8.4 5.6 13.2 7 8.4 8.4 7 13.2 5.6 8.4 0.8 7 5.6 5.6Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
   ),
-  // Cross pattée, the seal of an imperial order.
-  grimdark: (filled) => (
-    <path d="M5.2 1h3.6L8 5.2 13 4.6v4.8L8 8.8 8.8 13H5.2L6 8.8 1 9.4V4.6l5 .6Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
-  ),
   // Interface chevron.
   'sci-fi': (filled) => (
     <path d="M3 2.5 9.5 7 3 11.5 5.5 7Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />

@@ -4,7 +4,6 @@ import '@fontsource/golos-text/600.css';
 import '@fontsource/cormorant-sc/500.css';
 import '@fontsource/cormorant-sc/600.css';
 import '@fontsource/cormorant-garamond/600.css';
-import '@fontsource/forum/400.css';
 import '@fontsource/tektur/400.css';
 import '@fontsource/tektur/500.css';
 import '@fontsource/tektur/600.css';
@@ -29,11 +28,6 @@ export const SETTING_INFO: Record<Setting, SettingInfo> = {
     id: 'high-fantasy',
     label: 'Высокое фэнтези',
     hint: 'Королевства, магия, эпос',
-  },
-  grimdark: {
-    id: 'grimdark',
-    label: 'Готический гримдарк',
-    hint: 'Империи, война без конца, вера и сталь',
   },
   'sci-fi': {
     id: 'sci-fi',
