@@ -567,10 +567,12 @@
 }
 
 /* A tear through the picture: shifted aside with red and cyan ghosts, then back. */
+/* Colour only: the thing must not move or change its outline, or it slips out from under the
+   cursor, the hover ends, it slips back and the glitch starts over — forever. */
 @keyframes cp-glitch {
-  0% { transform: translateX(0); filter: drop-shadow(-2px 0 rgb(255 98 88 / 0.8)) drop-shadow(2px 0 rgb(86 240 250 / 0.8)); }
-  50% { transform: translateX(-2px); clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%, 0 55%, 100% 55%, 100% 100%, 0 100%); }
-  100% { transform: none; filter: none; }
+  0% { filter: drop-shadow(-3px 0 rgb(255 98 88 / 0.85)) drop-shadow(3px 0 rgb(86 240 250 / 0.85)); }
+  50% { filter: drop-shadow(2px 0 rgb(255 98 88 / 0.85)) drop-shadow(-2px 0 rgb(86 240 250 / 0.85)) brightness(1.2); }
+  100% { filter: none; }
 }
 @keyframes cp-turn { to { transform: rotate(360deg); } }
 @keyframes cp-blink { 50% { opacity: 0; } }
