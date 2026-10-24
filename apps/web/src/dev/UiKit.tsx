@@ -12,7 +12,7 @@ import { GameIcon, tileStyle } from '../ui/GameIcon';
 import { Rail, RailButton, RailDivider } from '../ui/Rail';
 import { SettingBackdrop } from '../ui/SettingBackdrop';
 import { Toasts } from '../ui/Toasts';
-import { SettingEmblem } from '../ui/ornaments';
+import { LevelReady, SettingEmblem } from '../ui/ornaments';
 import {
   IconArmor,
   IconAttacks,
@@ -404,6 +404,24 @@ const ComponentsSample: React.FC = () => {
             <span className="ui-hud-chip__count">2</span>
           </span>
           <span className="ui-hud-chip ui-hud-chip--add">+</span>
+        </div>
+      </Board>
+
+      <Board title="Новый уровень">
+        {/* The experience plaque of the status cluster in its "ready" state. */}
+        <div className="ui-status pt-2">
+          <span className="ui-xp" data-ready>
+            <span className="ui-xp__label">Новый уровень</span>
+            <span className="ui-xp__value ui-numeric">
+              14 200<span className="ui-xp__of"> / 14 000</span>
+            </span>
+            <span className="ui-xp__rail" aria-hidden>
+              <span className="ui-xp__track">
+                <span className="ui-xp__fill" style={{ width: '100%' }} />
+              </span>
+              <LevelReady />
+            </span>
+          </span>
         </div>
       </Board>
 

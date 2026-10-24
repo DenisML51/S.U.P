@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { experienceProgress, maxSanityOf, totalMaxHP } from '@itd/game-logic';
 import type { Character, Resource } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
-import { SettingEmblem } from '../../../ui/ornaments';
+import { LevelReady, SettingEmblem } from '../../../ui/ornaments';
 import { IconButton, Meter, Panel, cx, type MeterTone } from '../../../ui/primitives';
 import { IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../../ui/icons';
 import { useSheetDialogs } from '../dialogs/context';
@@ -137,8 +137,11 @@ const ExperienceLine: React.FC<{ character: Character; onClick: () => void }> = 
           {progress.isMaxLevel ? ' · макс.' : ` / ${format(progress.nextLevelXP)}`}
         </span>
       </span>
-      <span className="ui-xp__track" aria-hidden>
-        <span className="ui-xp__fill" style={{ width: `${progress.progress}%` }} />
+      <span className="ui-xp__rail" aria-hidden>
+        <span className="ui-xp__track">
+          <span className="ui-xp__fill" style={{ width: `${progress.progress}%` }} />
+        </span>
+        {progress.canLevelUp && <LevelReady />}
       </span>
     </button>
   );

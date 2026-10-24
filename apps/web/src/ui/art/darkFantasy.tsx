@@ -1,4 +1,5 @@
 import React from 'react';
+import GiCandleSkull from '~icons/game-icons/candle-skull';
 import type { SettingArt } from './types';
 
 /**
@@ -79,6 +80,65 @@ const Backdrop: React.FC = () => (
   </div>
 );
 
+const READY_W = 272;
+const READY_H = 36;
+
+/** Rune strokes that burn into view over the bar, one after another, in the gap between the
+    plaque's label and its figures. */
+const RUNES = ['M0 0V9M0 2 4 0M0 5 4 3', 'M2 0V9M0 3 4 6M0 6 4 3', 'M0 0V9M0 0 4 4 0 9'];
+
+/** Where drops of blood gather under the bar and fall. */
+const DRIPS = [{ x: 52, delay: 0.3 }, { x: 131, delay: 1.4 }, { x: 207, delay: 0.9 }];
+
+/**
+ * The level is ready: the blood in the bar seethes — a dark wave rolls along it, drops gather and
+ * fall from its underside — and runes burn into view above it, glowing like embers.
+ */
+const LevelReady: React.FC = () => {
+  const mid = READY_H / 2;
+  const wave = Array.from({ length: 41 }, (_, i) => {
+    const x = i * 13.6 - 272;
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${(mid - 2 + Math.sin((i * 2 * Math.PI) / 5) * 1.6).toFixed(1)}`;
+  }).join('');
+  return (
+    <svg viewBox={`0 0 ${READY_W} ${READY_H}`} preserveAspectRatio="none" fill="none" aria-hidden className="df-ready">
+      <defs>
+        <clipPath id="df-ready-bar">
+          <rect x="6" y={mid - 4} width={READY_W - 12} height="8" />
+        </clipPath>
+        <linearGradient id="df-ready-blood" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="rgb(190 40 30)" />
+          <stop offset="1" stopColor="rgb(70 6 6)" />
+        </linearGradient>
+      </defs>
+      <g clipPath="url(#df-ready-bar)">
+        <path className="df-wave" d={`${wave}V${mid + 6}H-272Z`} fill="url(#df-ready-blood)" />
+      </g>
+      {DRIPS.map(({ x, delay }) => (
+        <path
+          key={x}
+          className="df-drip"
+          style={{ animationDelay: `${delay}s` }}
+          d={`M${x} ${mid + 3}c-1.4 2.6-2 3.6-2 4.6a2 2 0 0 0 4 0c0-1-0.6-2-2-4.6Z`}
+          fill="rgb(150 22 18)"
+        />
+      ))}
+      {RUNES.map((d, i) => (
+        <path
+          key={d}
+          className="df-rune"
+          style={{ animationDelay: `${i * 0.9}s` }}
+          transform={`translate(${124 + i * 22} 1)`}
+          d={d}
+          stroke="rgb(var(--c-candle))"
+          strokeWidth="1"
+          strokeLinecap="round"
+        />
+      ))}
+    </svg>
+  );
+};
+
 export const DARK_FANTASY_ART: SettingArt = {
   corner: { viewBox: '0 0 24 24', art: <GothicCorner /> },
   crest: { viewBox: '0 0 120 24', art: <ArchCrest /> },
@@ -87,12 +147,8 @@ export const DARK_FANTASY_ART: SettingArt = {
   bullet: (filled) => (
     <path d="M7 0.5 8 4.5 11.5 5.5 8 6.5 7 13.5 6 6.5 2.5 5.5 6 4.5Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
   ),
-  // A crown of thorns around a low flame.
-  emblem: (
-    <>
-      <path d="M5 21C9 25 23 25 27 21M7 19l-2-4M11 22l-1.5-4.5M16 23v-5M21 22l1.5-4.5M25 19l2-4" stroke="currentColor" strokeWidth="1.2" fill="none" />
-      <path d="M16 6C18.5 10 19 12.5 16 16 13 12.5 13.5 10 16 6Z" fill="currentColor" />
-    </>
-  ),
+  // A skull with a candle on it: memento mori.
+  Emblem: GiCandleSkull,
   Backdrop,
+  LevelReady,
 };

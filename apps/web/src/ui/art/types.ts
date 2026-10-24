@@ -13,8 +13,10 @@ export interface SettingArt {
   ruleMark: React.ReactNode;
   /** List bullet on a 14×14 grid; outlined when the entry is inactive. */
   bullet: (filled: boolean) => React.ReactNode;
-  /** Small heraldic mark of the setting on a 32×32 grid. */
-  emblem: React.ReactNode;
+  /** The setting's heraldic mark: a solid game picture, drawn in `currentColor`. */
+  Emblem: React.FC<React.SVGProps<SVGSVGElement>>;
   /** Screen atmosphere behind the content. */
   Backdrop: React.FC;
+  /** Laid over the experience bar when a new level can be taken: the setting's own marvel. */
+  LevelReady: React.FC;
 }

@@ -1,4 +1,5 @@
 import React from 'react';
+import GiRingedPlanet from '~icons/game-icons/ringed-planet';
 import type { SettingArt } from './types';
 
 /**
@@ -49,6 +50,57 @@ const Backdrop: React.FC = () => (
   </div>
 );
 
+const READY_W = 272;
+const READY_H = 36;
+
+/** Short arcs that crackle off the bar, each at its own place and moment. */
+const ARCS = [
+  { x: 38, up: true, delay: 0.2 },
+  { x: 96, up: false, delay: 1.1 },
+  { x: 141, up: true, delay: 0.7 },
+  { x: 199, up: false, delay: 1.6 },
+  { x: 236, up: true, delay: 0.4 },
+];
+
+/**
+ * The level is ready: the bar is charged. A train of chevrons runs along it, the readout's corners
+ * lock on, and short arcs crackle off the bar now and then.
+ */
+const LevelReady: React.FC = () => {
+  const mid = READY_H / 2;
+  return (
+    <svg viewBox={`0 0 ${READY_W} ${READY_H}`} preserveAspectRatio="none" fill="none" aria-hidden className="sf-ready">
+      <defs>
+        <clipPath id="sf-ready-bar">
+          <rect x="6" y={mid - 4} width={READY_W - 12} height="8" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#sf-ready-bar)">
+        <g className="sf-chevrons">
+          {Array.from({ length: 40 }, (_, i) => (
+            <path key={i} d={`M${i * 14 - 280} ${mid - 3}l4 3-4 3`} stroke="rgb(var(--c-ink))" strokeWidth="1.6" />
+          ))}
+        </g>
+      </g>
+      <path className="sf-lock" d={`M2 ${mid - 9}V${mid - 13}H8M${READY_W - 8} ${mid - 13}H${READY_W - 2}V${mid - 9}M2 ${mid + 9}V${mid + 13}H8M${READY_W - 8} ${mid + 13}H${READY_W - 2}V${mid + 9}`} stroke="rgb(var(--c-accent))" strokeWidth="1.5" />
+      {ARCS.map(({ x, up, delay }) => {
+        const dir = up ? -1 : 1;
+        const y0 = mid + dir * 4;
+        return (
+          <polyline
+            key={x}
+            className="sf-arc"
+            style={{ animationDelay: `${delay}s` }}
+            points={`${x},${y0} ${x + 3},${y0 + dir * 4} ${x - 1},${y0 + dir * 7} ${x + 4},${y0 + dir * 11}`}
+            stroke="rgb(var(--c-frame-bright))"
+            strokeWidth="1.2"
+          />
+        );
+      })}
+    </svg>
+  );
+};
+
 export const SCI_FI_ART: SettingArt = {
   ruleMark: (
     <svg width="34" height="6" viewBox="0 0 34 6" aria-hidden>
@@ -59,13 +111,8 @@ export const SCI_FI_ART: SettingArt = {
   bullet: (filled) => (
     <path d="M3 2.5 9.5 7 3 11.5 5.5 7Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
   ),
-  // A hexagonal node with an inner ring.
-  emblem: (
-    <>
-      <path d="M16 3 27.3 9.5V22.5L16 29 4.7 22.5V9.5Z" fill="none" stroke="currentColor" strokeWidth="1.4" />
-      <circle cx="16" cy="16" r="5" fill="none" stroke="currentColor" strokeWidth="1.4" />
-      <circle cx="16" cy="16" r="1.6" fill="currentColor" />
-    </>
-  ),
+  // A ringed world, the far frontier.
+  Emblem: GiRingedPlanet,
   Backdrop,
+  LevelReady,
 };

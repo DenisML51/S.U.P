@@ -514,3 +514,28 @@
 @media (prefers-reduced-motion: reduce) {
   [data-setting='sci-fi'].ui-hero-card .ui-fx { animation: none; }
 }
+
+/* ------------------------------------------------------------------ Level ready */
+/* The bar is charged: chevrons run along it, the readout's corners lock on, arcs crackle off it. */
+[data-setting='sci-fi'] {
+  .ui-xp[data-ready] { border-color: rgb(var(--c-accent) / 0.8); animation: sf-plaque-charge 1.6s steps(2) infinite; }
+  .sf-chevrons { opacity: 0.75; animation: sf-chevrons 0.8s linear infinite; }
+  .sf-lock { animation: sf-lock 1.4s steps(2) infinite; }
+  .sf-arc { opacity: 0; filter: drop-shadow(0 0 3px rgb(var(--c-accent))); animation: sf-arc 2.4s steps(1) infinite; }
+}
+
+@keyframes sf-plaque-charge {
+  50% { box-shadow: inset 0 0 0 1px rgb(var(--c-accent) / 0.35), 0 14px 30px -12px rgb(0 0 0 / 0.8); }
+}
+@keyframes sf-chevrons { to { transform: translateX(14px); } }
+@keyframes sf-lock { 50% { opacity: 0.25; } }
+@keyframes sf-arc {
+  0% { opacity: 0; }
+  4% { opacity: 1; }
+  7% { opacity: 0; }
+  9% { opacity: 1; }
+  13% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='sci-fi'] :is(.sf-chevrons, .sf-lock, .sf-arc, .ui-xp[data-ready]) { animation: none; }
+}

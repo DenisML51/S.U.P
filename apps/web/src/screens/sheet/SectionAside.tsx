@@ -48,7 +48,7 @@ export const SectionAside: React.FC<{ width?: number; children?: React.ReactNode
         {selected ? (
           <motion.div
             key={`${selected.kind}:${selected.id}`}
-            className="h-full pt-3"
+            className="h-full pt-5"
             style={{ width: CARD_WIDTH }}
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}

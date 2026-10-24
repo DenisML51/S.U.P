@@ -45,8 +45,17 @@ export const LedgerBullet: React.FC<{ filled?: boolean }> = ({ filled = true }) 
 );
 
 /** Small heraldic mark of the setting. */
-export const SettingEmblem: React.FC<{ size?: number; className?: string }> = ({ size = 28, className }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden className={className}>
-    {useArt().emblem}
-  </svg>
-);
+export const SettingEmblem: React.FC<{ size?: number; className?: string }> = ({ size = 28, className }) => {
+  const { Emblem } = useArt();
+  return <Emblem width={size} height={size} aria-hidden className={className} />;
+};
+
+/** The setting's marvel over the experience bar when a new level can be taken. */
+export const LevelReady: React.FC = () => {
+  const { LevelReady: Effect } = useArt();
+  return (
+    <span className="ui-level-ready">
+      <Effect />
+    </span>
+  );
+};

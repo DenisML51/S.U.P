@@ -1,4 +1,5 @@
 import React from 'react';
+import GiDragonHead from '~icons/game-icons/dragon-head';
 import type { SettingArt } from './types';
 
 /**
@@ -187,6 +188,65 @@ const Backdrop: React.FC = () => (
   </div>
 );
 
+/** Width and height of the level-up overlay; the bar runs along its middle. */
+const READY_W = 272;
+const READY_H = 36;
+
+/** A stem winding along the bar: a sine of the given phase, as a smooth path. */
+const vinePath = (phase: number): string => {
+  const mid = READY_H / 2;
+  const points = Array.from({ length: 69 }, (_, i) => {
+    const x = 4 + i * 3.9;
+    return [x, mid + Math.sin(x / 9 + phase) * 7 * Math.min(1, x / 40, (READY_W - x) / 40)] as const;
+  });
+  return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
+};
+
+/** Leaves on the crests of the two stems, each opening in turn as the vine grows past it. */
+const VINE_LEAVES = Array.from({ length: 9 }, (_, i) => {
+  const x = 22 + i * 28.3;
+  const up = i % 2 === 0;
+  return { x, y: READY_H / 2 + (up ? -7 : 7), angle: up ? -40 : 40, delay: 0.25 + (x / READY_W) * 1.5 };
+});
+
+/** Motes of light rising off the vine. */
+const MOTES = [18, 54, 83, 121, 150, 187, 214, 248].map((x, i) => ({ x, delay: (i * 0.37) % 2.4 }));
+
+/**
+ * The level is ready: two golden vines grow along the experience bar and wind round it, leaves
+ * open on them one after another, a glint of magic runs along the stems and motes of light drift up.
+ */
+const LevelReady: React.FC = () => (
+  <svg viewBox={`0 0 ${READY_W} ${READY_H}`} preserveAspectRatio="none" fill="none" aria-hidden className="hf-ready">
+    <defs>
+      <linearGradient id="hf-vine-gold" x1="0" x2="1">
+        <stop offset="0" stopColor="rgb(var(--c-frame))" />
+        <stop offset="0.5" stopColor="rgb(var(--c-frame-bright))" />
+        <stop offset="1" stopColor="rgb(var(--c-frame))" />
+      </linearGradient>
+    </defs>
+    {[0, Math.PI].map((phase) => (
+      <g key={phase}>
+        <path className="hf-vine" d={vinePath(phase)} pathLength={100} stroke="url(#hf-vine-gold)" strokeWidth="1.3" />
+        <path className="hf-vine-glint" d={vinePath(phase)} pathLength={100} strokeWidth="2.4" />
+      </g>
+    ))}
+    {VINE_LEAVES.map(({ x, y, angle, delay }) => (
+      <g key={x} transform={`translate(${x} ${y}) rotate(${angle})`}>
+        <path
+          className="hf-leaf"
+          style={{ animationDelay: `${delay}s` }}
+          d="M0 0C2.2-2.2 5.8-2.2 8 0 5.8 2.2 2.2 2.2 0 0Z"
+          fill="rgb(var(--c-frame-bright))"
+        />
+      </g>
+    ))}
+    {MOTES.map(({ x, delay }) => (
+      <circle key={x} className="hf-mote" style={{ animationDelay: `${delay}s` }} cx={x} cy={READY_H / 2} r="1.2" fill="rgb(255 236 180)" />
+    ))}
+  </svg>
+);
+
 export const HIGH_FANTASY_ART: SettingArt = {
   corner: { viewBox: '0 0 32 32', art: <VineCorner /> },
   crest: { viewBox: '0 0 120 24', art: <StarCrest /> },
@@ -195,13 +255,8 @@ export const HIGH_FANTASY_ART: SettingArt = {
   bullet: (filled) => (
     <path d="M7 0.8 8.4 5.6 13.2 7 8.4 8.4 7 13.2 5.6 8.4 0.8 7 5.6 5.6Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
   ),
-  // A sprig with two leaves under the eight-pointed star.
-  emblem: (
-    <>
-      <path d={starPath(16, 9, 6, 2.4)} fill="currentColor" />
-      <path d="M16 30V17" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M16 24C11 24 8 21 7.5 17.5 11.5 17.5 15 20 16 24ZM16 21C21 21 24 18 24.5 14.5 20.5 14.5 17 17 16 21Z" fill="currentColor" />
-    </>
-  ),
+  // A dragon, the heart of the old tales.
+  Emblem: GiDragonHead,
   Backdrop,
+  LevelReady,
 };
