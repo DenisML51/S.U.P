@@ -9,7 +9,7 @@ import { experienceForLevel } from '../rules/progression';
 import { maxSanityOf } from '../rules/sanity';
 import { applyBuild, findBackground, findClass, spellcastingOf, type OpenChoice } from './build';
 import { DND } from './content';
-import { DND_ICONS } from './content/icons';
+import { DND_ICONS, armorIcon, gearIcon } from './content/icons';
 import type { KitOption } from './types';
 
 /** A starting kit option of the build's class or background, by its id. */
@@ -65,6 +65,7 @@ export function kitItems(kit: KitOption): InventoryItem[] {
           baseAC: armor.category === 'shield' ? undefined : armor.baseAC,
           dexModifier: armor.dexModifier,
           maxDexModifier: armor.maxDex,
+          iconName: armorIcon(armor),
           description: [
             armor.strength && `Требуется Сила ${armor.strength}.`,
             armor.stealthDisadvantage && 'Помеха на проверки Ловкости (Скрытность).',
@@ -87,6 +88,7 @@ export function kitItems(kit: KitOption): InventoryItem[] {
         cost: gear.cost,
         // Only what gets used up is counted (and shows on the hotbar as a consumable).
         quantity: gear.kind === 'ammunition' || CONSUMABLE_GEAR.has(ref) || quantity > 1 ? quantity : undefined,
+        iconName: gearIcon(gear),
         description: [gear.description, gear.contents && `Содержит: ${gear.contents.join(', ')}.`].filter(Boolean).join('\n\n'),
       },
     ];

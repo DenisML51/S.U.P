@@ -1,3 +1,5 @@
+import type { ArmorDef, GearDef } from '../types';
+
 /**
  * Pictures (game-icons ids) of species, backgrounds, classes, subclasses and weapons, for the choosing
  * grids of the creation screen, the hero summary and the items and attacks made from the tables.
@@ -88,3 +90,60 @@ export const DND_ICONS: Record<'species' | 'backgrounds' | 'classes' | 'subclass
     pistol: 'pistol-gun',
   },
 };
+
+/** Pictures of particular pieces of gear; the rest take the picture of their kind. */
+const GEAR_ICONS: Record<string, string> = {
+  arrows: 'bow-arrow',
+  bolts: 'crossbow',
+  'firearm-bullets': 'revolver',
+  'sling-bullets': 'thrown-daggers',
+  needles: 'thrown-daggers',
+  'holy-symbol': 'holy-symbol',
+  'arcane-focus': 'crystal-ball',
+  'druidic-focus': 'wizard-staff',
+  'component-pouch': 'swap-bag',
+  backpack: 'light-backpack',
+  book: 'book-cover',
+  'book-prayers': 'book-cover',
+  'book-philosophy': 'book-cover',
+  'book-history': 'book-cover',
+  candle: 'torch',
+  'healers-kit': 'medical-pack',
+  'holy-water': 'holy-water',
+  'hooded-lantern': 'lantern',
+  lamp: 'lantern',
+  ink: 'scroll-quill',
+  'ink-pen': 'scroll-quill',
+  oil: 'bubbling-flask',
+  flask: 'bubbling-flask',
+  paper: 'scroll-unfurled',
+  parchment: 'scroll-unfurled',
+  rations: 'meat',
+  rope: 'rope-coil',
+  torch: 'torch',
+  tinderbox: 'campfire',
+  'gaming-set': 'rolling-dices',
+  'dice-set': 'rolling-dices',
+  'musical-instrument': 'lyre',
+  lyre: 'lyre',
+  lute: 'lyre',
+  horn: 'hunting-horn',
+  'herbalism-kit': 'magic-potion',
+  'alchemists-supplies': 'bubbling-flask',
+  'poisoners-kit': 'poison-bottle',
+  'thieves-tools': 'key',
+};
+
+const GEAR_KIND_ICONS: Record<GearDef['kind'], string> = {
+  ammunition: 'bow-arrow',
+  focus: 'crystal-ball',
+  gear: 'swap-bag',
+  pack: 'light-backpack',
+  tool: 'gear-hammer',
+};
+
+/** The picture of an item made from a gear entry of the tables. */
+export const gearIcon = (gear: GearDef): string => GEAR_ICONS[gear.id] ?? GEAR_KIND_ICONS[gear.kind];
+
+/** The picture of an item made from an armour entry: a shield, or body armour. */
+export const armorIcon = (armor: ArmorDef): string => (armor.category === 'shield' ? 'checked-shield' : 'chest-armor');

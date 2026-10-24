@@ -11,6 +11,7 @@ import {
   findClass,
   findFeat,
   formatModifier,
+  kitItems,
   pointsRemaining,
   preparedSpellsChoice,
   rollAbilityScores,
@@ -22,7 +23,7 @@ import { GameIcon } from '../../../ui/GameIcon';
 import { ImageSlot } from '../../../ui/ImageSlot';
 import { NumberField, Segmented } from '../../../ui/forms';
 import { Button, IconButton, Panel, cx } from '../../../ui/primitives';
-import { IconDice, IconMinus, IconPlus } from '../../../ui/icons';
+import { IconCoins, IconDice, IconMinus, IconPlus } from '../../../ui/icons';
 import { ChoiceField } from '../../progression/ChoiceField';
 import { CLASS_SOURCES, LevelPlanView, planIssues } from '../../progression/LevelPlanView';
 import type { DndCreation } from './useDndCreation';
@@ -374,7 +375,7 @@ export const ProgressionStep: React.FC<{ creation: DndCreation }> = ({ creation 
           {Array.from({ length: build.level }, (_, i) => i + 1).map((l) => {
             const open = planIssues(build, l, CLASS_SOURCES).length;
             return (
-              <button key={l} type="button" className="ui-option flex-row items-center justify-between py-1.5" aria-pressed={l === level} onClick={() => setShown(l)}>
+              <button key={l} type="button" className="ui-option flex-row items-center justify-between py-1.5" aria-pressed={!spellsShown && l === level} onClick={() => setShown(l)}>
                 <span className="text-sm">Уровень {l}</span>
                 <span className={cx('text-xs', open ? 'text-warning' : 'text-success')}>{open ? `выбрать: ${open}` : '✓'}</span>
               </button>
@@ -408,9 +409,7 @@ export const ProgressionStep: React.FC<{ creation: DndCreation }> = ({ creation 
 // Equipment
 // ------------------------------------------------------------------------------------------------
 
-const itemName = (ref: string) =>
-  DND.weapons.find((w) => w.id === ref)?.name ?? DND.armor.find((a) => a.id === ref)?.name ?? DND.gear.find((g) => g.id === ref)?.name ?? ref;
-
+/** One starting kit to choose: its items as pictures with names, and its gold. */
 const KitChoice: React.FC<{ title: string; kits: KitOption[]; selected?: string; onSelect: (id: string) => void }> = ({
   title,
   kits,
@@ -418,18 +417,45 @@ const KitChoice: React.FC<{ title: string; kits: KitOption[]; selected?: string;
   onSelect,
 }) => (
   <section>
-    <h4 className="ui-display mb-2 text-[1.15rem] text-ink">{title}</h4>
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(16rem,1fr))] gap-2">
-      {kits.map((kit) => (
-        <button key={kit.id} type="button" className="ui-option" aria-pressed={selected === kit.id} onClick={() => onSelect(kit.id)}>
-          <span className="ui-display text-[1.02rem]">Вариант {kit.label}</span>
-          <span className="mt-1 text-[13px] leading-snug text-ink-muted">
-            {[...kit.items.map((item) => (item.quantity && item.quantity > 1 ? `${itemName(item.ref)} ×${item.quantity}` : itemName(item.ref))), kit.gold > 0 && `${kit.gold} зм`]
-              .filter(Boolean)
-              .join(', ')}
-          </span>
-        </button>
-      ))}
+    <h4 className="ui-display mb-3 text-[1.15rem] text-ink">{title}</h4>
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] gap-3">
+      {kits.map((kit) => {
+        const items = kitItems(kit);
+        return (
+          <button key={kit.id} type="button" className="ui-option gap-3 p-4" aria-pressed={selected === kit.id} onClick={() => onSelect(kit.id)}>
+            <span className="flex w-full items-baseline justify-between">
+              <span className="ui-display text-[1.05rem]">Вариант {kit.label}</span>
+              {kit.gold > 0 && items.length > 0 && (
+                <span className="flex items-center gap-1 text-sm text-xp">
+                  <IconCoins width={14} height={14} /> {kit.gold} зм
+                </span>
+              )}
+            </span>
+            {items.length > 0 ? (
+              <span className="grid w-full grid-cols-2 gap-x-4 gap-y-2">
+                {items.map((item) => (
+                  <span key={item.id} className="flex min-w-0 items-center gap-2">
+                    <span className="ui-hud-slot ui-hud-slot--tile !h-8 !w-8 shrink-0" data-kind={item.type === 'weapon' ? 'attack' : 'item'}>
+                      <GameIcon name={item.iconName} kind="item" size={20} className="ui-hud-slot__icon" />
+                    </span>
+                    <span className="truncate text-[13px] leading-tight">
+                      {item.name}
+                      {item.quantity && item.quantity > 1 && <span className="ui-option__meta"> ×{item.quantity}</span>}
+                    </span>
+                  </span>
+                ))}
+              </span>
+            ) : (
+              // Gold instead of gear: the purse is the whole kit.
+              <span className="flex items-center gap-3 py-2">
+                <IconCoins width={30} height={30} className="text-xp" />
+                <span className="ui-display ui-numeric text-[1.8rem] leading-none">{kit.gold} зм</span>
+                <span className="ui-option__meta">купить всё самому</span>
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   </section>
 );
