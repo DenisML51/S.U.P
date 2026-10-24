@@ -5,7 +5,7 @@ import { useSetting } from './theme/SettingScope';
 
 /**
  * Small line ornaments drawn in `currentColor`. Each setting has its own vocabulary:
- * Tolkien-style vines, riveted brackets, thorns; sci-fi panes stay bare.
+ * Tolkien-style vines, riveted brackets, engraved Victorian corners; sci-fi panes stay bare.
  */
 
 const CORNERS: Record<Setting, React.ReactNode> = {
@@ -19,10 +19,12 @@ const CORNERS: Record<Setting, React.ReactNode> = {
   ),
   // A terminal pane has no ornament: its structure is in the rules and the type.
   'sci-fi': null,
+  // An engraved Victorian corner: a double rule with a small lozenge where the rules meet.
   'dark-fantasy': (
     <>
-      <path d="M1 20V1h19" fill="none" stroke="currentColor" strokeWidth="1" />
-      <path d="M1 1l7 7M8 8l-2 4M8 8l4-2" fill="none" stroke="currentColor" strokeWidth="0.9" />
+      <path d="M1 18V1h17" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M5 12V5h7" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.7" />
+      <path d="M5 2.2 7.8 5 5 7.8 2.2 5Z" fill="currentColor" />
     </>
   ),
 };
