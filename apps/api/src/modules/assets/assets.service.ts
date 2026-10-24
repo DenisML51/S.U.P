@@ -71,7 +71,7 @@ export class AssetsService {
   }
 
   /**
-   * Deletes uploads no character and no restore point refers to. Referenced ids are read from the
+   * Deletes uploads no character, restore point, party cover or NPC refers to. Referenced ids are read from the
    * documents themselves, so the documents stay the single source of truth.
    */
   async collectGarbage(): Promise<number> {
@@ -88,6 +88,8 @@ export class AssetsService {
           WHERE r.user_id = a.user_id
             AND a.id::text IN (r.data->'images'->>'full', r.data->'images'->>'portrait')
         )
+        AND NOT EXISTS (SELECT 1 FROM parties p WHERE p.cover_asset_id = a.id)
+        AND NOT EXISTS (SELECT 1 FROM party_npcs n WHERE n.portrait_asset_id = a.id)
     `);
     return result.count ?? 0;
   }

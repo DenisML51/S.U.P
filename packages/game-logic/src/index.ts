@@ -25,6 +25,7 @@ export * from './rules/sanity';
 export * from './rules/scaling';
 export * from './rules/sheet';
 export * from './rules/spells';
+export * from './rules/summary';
 export * from './rules/upgrade';
 
 // D&D 2024 presets

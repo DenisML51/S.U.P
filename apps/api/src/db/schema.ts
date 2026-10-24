@@ -1,6 +1,9 @@
 import { sql } from 'drizzle-orm';
+import type { CharacterSummary } from '@itd/schema';
 import {
+  type AnyPgColumn,
   bigint,
+  check,
   customType,
   foreignKey,
   index,
@@ -71,6 +74,8 @@ export const characters = pgTable(
     name: text('name').notNull(),
     level: integer('level').notNull(),
     data: jsonb('data').notNull(),
+    /** Derived from `data` on every write (see `summarizeCharacter`): what party views read instead of whole sheets. */
+    summary: jsonb('summary').$type<CharacterSummary>(),
     createdAt: createdAt(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     /** Soft delete: the row stays as a tombstone so other devices learn about the deletion. */
@@ -123,6 +128,128 @@ export const assets = pgTable(
   (t) => [index('assets_user_id_idx').on(t.userId)],
 );
 
+// ---------------------------------------------------------------------------------------------
+// Parties
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * A master's table. Every change to a party, its heroes, NPCs or fight runs while holding this row's
+ * lock, so concurrent clicks from several devices apply one after another.
+ */
+export const parties = pgTable(
+  'parties',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    masterId: uuid('master_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    setting: text('setting').notNull(),
+    coverAssetId: uuid('cover_asset_id').references(() => assets.id, { onDelete: 'set null' }),
+    inviteCode: text('invite_code').notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('parties_invite_code_key').on(t.inviteCode), index('parties_master_id_idx').on(t.masterId)],
+);
+
+export const partyMembers = pgTable(
+  'party_members',
+  {
+    partyId: uuid('party_id')
+      .notNull()
+      .references(() => parties.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    role: text('role', { enum: ['master', 'player'] }).notNull(),
+    joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.partyId, t.userId] }), index('party_members_user_id_idx').on(t.userId)],
+);
+
+/** A member's character at the table. A character sits at one table at a time. */
+export const partyHeroes = pgTable(
+  'party_heroes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    partyId: uuid('party_id').notNull(),
+    userId: uuid('user_id').notNull(),
+    characterId: text('character_id').notNull(),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('party_heroes_character_key').on(t.userId, t.characterId),
+    index('party_heroes_party_id_idx').on(t.partyId),
+    // Leaving the table takes the member's heroes with them; so does deleting the character for good.
+    foreignKey({
+      name: 'party_heroes_member_fk',
+      columns: [t.partyId, t.userId],
+      foreignColumns: [partyMembers.partyId, partyMembers.userId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'party_heroes_character_fk',
+      columns: [t.userId, t.characterId],
+      foreignColumns: [characters.userId, characters.id],
+    }).onDelete('cascade'),
+  ],
+);
+
+export const partyNpcs = pgTable(
+  'party_npcs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    partyId: uuid('party_id')
+      .notNull()
+      .references(() => parties.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    portraitAssetId: uuid('portrait_asset_id').references(() => assets.id, { onDelete: 'set null' }),
+    maxHp: integer('max_hp').notNull(),
+    currentHp: integer('current_hp').notNull(),
+    armorClass: integer('armor_class').notNull(),
+    initiativeBonus: integer('initiative_bonus').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('party_npcs_party_id_idx').on(t.partyId)],
+);
+
+/** The party's fight, while one goes on. */
+export const partyCombats = pgTable('party_combats', {
+  partyId: uuid('party_id')
+    .primaryKey()
+    .references(() => parties.id, { onDelete: 'cascade' }),
+  phase: text('phase', { enum: ['initiative', 'active'] }).notNull(),
+  round: integer('round').notNull().default(0),
+  currentCombatantId: uuid('current_combatant_id').references((): AnyPgColumn => partyCombatants.id, {
+    onDelete: 'set null',
+  }),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One side of the fight: a party hero or an NPC, gone with them. */
+export const partyCombatants = pgTable(
+  'party_combatants',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    partyId: uuid('party_id')
+      .notNull()
+      .references(() => partyCombats.partyId, { onDelete: 'cascade' }),
+    heroId: uuid('hero_id').references(() => partyHeroes.id, { onDelete: 'cascade' }),
+    npcId: uuid('npc_id').references(() => partyNpcs.id, { onDelete: 'cascade' }),
+    initiative: integer('initiative'),
+    joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('party_combatants_party_id_idx').on(t.partyId),
+    uniqueIndex('party_combatants_hero_key').on(t.heroId),
+    uniqueIndex('party_combatants_npc_key').on(t.npcId),
+    check('party_combatants_one_side', sql`(${t.heroId} IS NULL) <> (${t.npcId} IS NULL)`),
+  ],
+);
+
 export type UserRow = typeof users.$inferSelect;
 export type RefreshTokenRow = typeof refreshTokens.$inferSelect;
 export type CharacterRow = typeof characters.$inferSelect;
+export type PartyRow = typeof parties.$inferSelect;
+export type PartyNpcRow = typeof partyNpcs.$inferSelect;

@@ -178,4 +178,6 @@ export type WsServerMessage =
   | { type: 'ready'; userId: string }
   | { type: 'pong' }
   | { type: 'characters.changed'; cursor: string; originSessionId: string | null }
+  /** Something in a party changed (or the viewer left it): fetch it again. */
+  | { type: 'party.changed'; partyId: string }
   | { type: 'error'; error: ErrorCode; message: string };

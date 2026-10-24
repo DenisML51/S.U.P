@@ -18,6 +18,8 @@ export class AppError extends Error {
 export const unauthorized = (message = 'Требуется вход') => new AppError(401, ErrorCode.unauthorized, message);
 export const forbidden = (message = 'Доступ запрещён') => new AppError(403, ErrorCode.forbidden, message);
 export const notFound = (message = 'Не найдено') => new AppError(404, ErrorCode.notFound, message);
+/** The request is valid but clashes with the current state ("already in another party", "no seats left"). */
+export const conflictError = (message: string) => new AppError(409, ErrorCode.conflict, message);
 export const validationError = (message: string, details?: Record<string, unknown>) =>
   new AppError(400, ErrorCode.validation, message, details);
 
