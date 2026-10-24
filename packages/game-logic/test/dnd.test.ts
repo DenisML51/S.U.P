@@ -240,3 +240,14 @@ describe('armour class from features', () => {
     expect(unarmoured.armorClass).toBe(11);
   });
 });
+
+describe('where an entry comes from', () => {
+  it('names the species, the class level and the feat a grant comes from', async () => {
+    const { describeGrant } = await import('../src');
+    const b = build({ choices: { 'class:fighter.fighting-style/style': ['defense'] } });
+    expect(describeGrant(b, 'class:fighter.second-wind')).toBe('Воин, 1 уровень');
+    expect(describeGrant(b, 'background:savage-attacker')).toBe('Черта «Неистово атакующий» · Предыстория «Солдат»');
+    expect(describeGrant(b, 'class:fighter.fighting-style/style:defense')).toBe('Черта «Оборона» · Воин, 1 уровень');
+    expect(describeGrant(b, 'species:human.resourceful')).toBe('Вид «Человек»');
+  });
+});
