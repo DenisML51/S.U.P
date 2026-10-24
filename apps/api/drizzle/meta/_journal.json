@@ -22,6 +22,20 @@
       "when": 1792849049491,
       "tag": "0002_parties",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792850570110,
+      "tag": "0003_npc_disposition",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792851115366,
+      "tag": "0004_party_lore",
+      "breakpoints": true
     }
   ]
 }

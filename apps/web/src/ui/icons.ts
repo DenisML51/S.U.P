@@ -46,4 +46,5 @@ export { default as IconNext } from '~icons/ph/caret-right-bold';
 export { default as IconPlus } from '~icons/ph/plus-bold';
 export { default as IconMinus } from '~icons/ph/minus-bold';
 export { default as IconCheck } from '~icons/ph/check-bold';
+export { default as IconCopy } from '~icons/ph/copy-bold';
 export { default as IconWarning } from '~icons/ph/warning-fill';

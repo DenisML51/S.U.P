@@ -10,6 +10,8 @@ export interface RealtimeHandlers {
   onCharactersChanged: () => void;
   /** (Re)connected: changes may have been missed while disconnected. */
   onConnected: () => void;
+  /** A party the user sits at changed, or the user left it. */
+  onPartyChanged: (partyId: string) => void;
 }
 
 const socketUrl = (): string => {
@@ -86,6 +88,8 @@ export class RealtimeClient {
         this.handlers.onConnected();
       } else if (message.type === 'characters.changed' && message.originSessionId !== CLIENT_SESSION_ID) {
         this.handlers.onCharactersChanged();
+      } else if (message.type === 'party.changed') {
+        this.handlers.onPartyChanged(message.partyId);
       }
     };
 

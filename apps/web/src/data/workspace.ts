@@ -13,6 +13,11 @@ export interface Workspace {
   userId: string;
   repository: CharacterRepository;
   sync: SyncEngine;
+  /**
+   * Party changes pushed by the server (`null`: reconnected, anything may have changed). Parties live
+   * on the server only; this is how their views stay fresh.
+   */
+  onPartyChanged(listener: (partyId: string | null) => void): () => void;
   /** Starts background sync. `online: false` keeps working locally until the server is reachable. */
   start(online: boolean): void;
   dispose(): void;
@@ -21,9 +26,15 @@ export interface Workspace {
 export function createWorkspace(userId: string, session: SessionManager): Workspace {
   const repository = new CharacterRepository(openCharacterDatabase(userId), `itd-characters-${userId}`);
   const sync = new SyncEngine(repository, api.characters, `itd-sync-${userId}`);
+  const partyListeners = new Set<(partyId: string | null) => void>();
+  const emitParty = (partyId: string | null) => partyListeners.forEach((listener) => listener(partyId));
   const realtime = new RealtimeClient(() => session.ensureAccessToken(), {
     onCharactersChanged: () => void sync.sync(),
-    onConnected: () => void sync.sync(),
+    onConnected: () => {
+      void sync.sync();
+      emitParty(null);
+    },
+    onPartyChanged: emitParty,
   });
 
   const unsubscribe = repository.subscribe((change) => {
@@ -41,6 +52,10 @@ export function createWorkspace(userId: string, session: SessionManager): Worksp
     userId,
     repository,
     sync,
+    onPartyChanged(listener) {
+      partyListeners.add(listener);
+      return () => partyListeners.delete(listener);
+    },
     start(online) {
       window.addEventListener('online', onOnline);
       document.addEventListener('visibilitychange', onVisible);
@@ -51,6 +66,7 @@ export function createWorkspace(userId: string, session: SessionManager): Worksp
       window.removeEventListener('online', onOnline);
       document.removeEventListener('visibilitychange', onVisible);
       unsubscribe();
+      partyListeners.clear();
       realtime.stop();
       sync.stop();
       repository.close();

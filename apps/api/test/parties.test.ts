@@ -81,8 +81,12 @@ describe('parties', () => {
     expect(asMaster.heroes.every((hero) => hero.vitals !== null)).toBe(true);
     expect(asMaster.heroes.find((h) => h.characterId === playerHero.id)?.vitals).toMatchObject({ currentHP: 18, maxHP: 22 });
 
+    const lore = '## Пролог\nТуман над гаванью.';
+    expect((await call(app, master, 'PATCH', `/parties/${partyId}`, { lore })).statusCode).toBe(204);
     const asPlayer = await view(app, player, partyId);
     expect(asPlayer.role).toBe('player');
+    expect(asPlayer.lore).toBe(lore);
+    expect((await call(app, player, 'PATCH', `/parties/${partyId}`, { lore: 'чужая правка' })).statusCode).toBe(403);
     expect(asPlayer.inviteCode).toBeNull();
     expect(asPlayer.npcs).toBeNull();
     expect(asPlayer.heroes.find((h) => h.characterId === masterHero.id)?.vitals).toBeNull();
@@ -134,6 +138,13 @@ describe('parties', () => {
 
     expect((await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${npcId}`, { currentHP: 9 })).statusCode).toBe(204);
     expect((await view(app, master, partyId)).npcs).toMatchObject([{ name: 'Гуль', currentHP: 9, maxHP: 22, armorClass: 13 }]);
+
+    // Sides are seen by the whole table once the NPC fights; its numbers are not.
+    const ally = await call(app, master, 'POST', `/parties/${partyId}/npcs`, { ...npc, name: 'Проводник', disposition: 'friendly' });
+    const allyId = ally.json<{ id: string }>().id;
+    await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [npcId, allyId] });
+    const sides = (await view(app, player, partyId)).combat!.combatants.map((c) => [c.name, c.hostile, c.vitals]);
+    expect(sides).toEqual(expect.arrayContaining([['Гуль', true, null], ['Проводник', false, null]]));
   });
 
   it('runs a fight: initiative, turn order, turns passed once', async () => {

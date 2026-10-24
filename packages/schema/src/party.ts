@@ -69,10 +69,13 @@ export const formatInviteCode = (code: string): string => `${code.slice(0, 4)}-$
 
 const PartyNameSchema = z.string().trim().min(1, 'Назовите партию').max(80, 'Название не длиннее 80 символов');
 const DescriptionSchema = z.string().trim().max(2000, 'Описание не длиннее 2000 символов');
+/** The party's chronicle: the long story in Markdown, read by everyone at the table. */
+const LoreSchema = z.string().trim().max(50_000, 'Летопись не длиннее 50 000 символов');
 
 export const CreatePartyRequestSchema = z.object({
   name: PartyNameSchema,
   description: DescriptionSchema.default(''),
+  lore: LoreSchema.default(''),
   setting: SettingSchema,
   coverAssetId: AssetIdSchema.nullable().default(null),
 });
@@ -82,6 +85,7 @@ export const UpdatePartyRequestSchema = z
   .object({
     name: PartyNameSchema,
     description: DescriptionSchema,
+    lore: LoreSchema,
     setting: SettingSchema,
     coverAssetId: AssetIdSchema.nullable(),
   })
@@ -100,6 +104,11 @@ export type AddPartyHeroRequest = z.input<typeof AddPartyHeroRequestSchema>;
 
 const hp = z.number().int().min(-9999).max(9999);
 
+/** Which side an NPC stands on: against the heroes, or with them. */
+export const NPC_DISPOSITIONS = ['hostile', 'friendly'] as const;
+export const NpcDispositionSchema = z.enum(NPC_DISPOSITIONS);
+export type NpcDisposition = z.infer<typeof NpcDispositionSchema>;
+
 const NpcFieldsSchema = z.object({
   name: z.string().trim().min(1, 'Назовите НПС').max(80),
   portraitAssetId: AssetIdSchema.nullable(),
@@ -107,11 +116,13 @@ const NpcFieldsSchema = z.object({
   currentHP: hp,
   armorClass: z.number().int().min(0).max(99),
   initiativeBonus: z.number().int().min(-20).max(30),
+  disposition: NpcDispositionSchema,
 });
 
 /** A quick NPC; it starts unhurt unless current hit points are given. */
 export const CreateNpcRequestSchema = NpcFieldsSchema.partial({ currentHP: true }).extend({
   portraitAssetId: AssetIdSchema.nullable().default(null),
+  disposition: NpcDispositionSchema.default('hostile'),
 });
 export type CreateNpcRequest = z.input<typeof CreateNpcRequestSchema>;
 
@@ -200,6 +211,7 @@ export interface PartyNpcDto {
   maxHP: number;
   armorClass: number;
   initiativeBonus: number;
+  disposition: NpcDisposition;
 }
 
 export interface CombatantDto {
@@ -210,6 +222,8 @@ export interface CombatantDto {
   name: string;
   portrait: string | null;
   setting?: Setting;
+  /** An NPC against the heroes; heroes and friendly NPCs are `false`. Everyone at the table sees the sides. */
+  hostile: boolean;
   /** `null` until rolled. */
   initiative: number | null;
   /** The viewer acts for it: rolls its initiative, ends its turn. */
@@ -234,6 +248,8 @@ export interface PartyDto {
   id: string;
   name: string;
   description: string;
+  /** Markdown. */
+  lore: string;
   setting: Setting;
   coverAssetId: string | null;
   role: PartyRole;

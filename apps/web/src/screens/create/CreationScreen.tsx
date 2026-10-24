@@ -76,11 +76,15 @@ const METHOD_NAMES = { pointBuy: 'Покупка очков', roll: 'Бросо�
  * asks), the hero as it stands on the right. The world comes first, the screen wearing the look of
  * the world in front of the carousel; once one is chosen the whole screen keeps its look.
  */
-export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => {
-  const [setting, setSetting] = useDraftState<Setting>('setting', DEFAULT_SETTING);
-  const [worldChosen, setWorldChosen] = useDraftState('worldChosen', false);
+export const CreationScreen: React.FC<{
+  /** A world set in advance (a hero made for a party): the world step is already taken. */
+  world?: Setting;
+  onDone: () => void;
+}> = ({ world, onDone }) => {
+  const [setting, setSetting] = useDraftState<Setting>('setting', world ?? DEFAULT_SETTING);
+  const [worldChosen, setWorldChosen] = useDraftState('worldChosen', world !== undefined);
   const [path, setPath] = useDraftState<Path | null>('path', null);
-  const [index, setIndex] = useDraftState('step', 0);
+  const [index, setIndex] = useDraftState('step', world ? 1 : 0);
   const dnd = useDndCreation(setting, onDone);
   const custom = useCreation(setting, onDone);
   /** The world in front of the world carousel: on the world step the screen wears its look. */

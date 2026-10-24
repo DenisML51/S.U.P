@@ -101,6 +101,7 @@ const npcDto = (row: PartyNpcRow): PartyNpcDto => ({
   maxHP: row.maxHp,
   armorClass: row.armorClass,
   initiativeBonus: row.initiativeBonus,
+  disposition: row.disposition,
 });
 
 /** Read side of parties: every view is tailored to who is looking. */
@@ -198,6 +199,7 @@ export class PartyQueries {
           id: party.id,
           name: party.name,
           description: party.description,
+          lore: party.lore,
           setting: party.setting as Setting,
           coverAssetId: party.coverAssetId,
           role,
@@ -289,6 +291,7 @@ function combatantDto(
       name: hero.name,
       portrait: summary.portrait ?? null,
       setting: summary.setting,
+      hostile: false,
       initiative: entry.initiative,
       controlled: isMaster || own,
       vitals:
@@ -305,6 +308,7 @@ function combatantDto(
     refId: npc.id,
     name: npc.name,
     portrait: npc.portraitAssetId,
+    hostile: npc.disposition === 'hostile',
     initiative: entry.initiative,
     controlled: isMaster,
     vitals: isMaster ? { currentHP: npc.currentHp, maxHP: npc.maxHp, tempHP: 0, armorClass: npc.armorClass } : null,

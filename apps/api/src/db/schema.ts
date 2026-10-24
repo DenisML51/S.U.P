@@ -145,6 +145,8 @@ export const parties = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     description: text('description').notNull().default(''),
+    /** The party's chronicle, Markdown. */
+    lore: text('lore').notNull().default(''),
     setting: text('setting').notNull(),
     coverAssetId: uuid('cover_asset_id').references(() => assets.id, { onDelete: 'set null' }),
     inviteCode: text('invite_code').notNull(),
@@ -209,6 +211,7 @@ export const partyNpcs = pgTable(
     currentHp: integer('current_hp').notNull(),
     armorClass: integer('armor_class').notNull(),
     initiativeBonus: integer('initiative_bonus').notNull(),
+    disposition: text('disposition', { enum: ['hostile', 'friendly'] }).notNull().default('hostile'),
     createdAt: createdAt(),
   },
   (t) => [index('party_npcs_party_id_idx').on(t.partyId)],

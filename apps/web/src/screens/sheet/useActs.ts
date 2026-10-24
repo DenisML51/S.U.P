@@ -1,5 +1,6 @@
 import type { Ability, Attack, Spell } from '@itd/schema';
 import { castableSlots, spellAttackBonusFor } from '@itd/game-logic';
+import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { damageParts, spellDamageParts } from './parts/damage';
 import { useConcentrationPrompt } from './Concentration';
@@ -20,6 +21,12 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
   const askSlot = useSlotPrompt((s) => s.ask);
   const askReplace = useConcentrationPrompt((s) => s.askReplace);
   const roll = useRolls();
+  const turnLock = useCharacterStore((s) => s.turnLock);
+  /** Out of the hero's turn in a party's fight nothing is done, wherever it is asked from. */
+  const onTurn = (run: () => void) => {
+    if (turnLock) toast.error(turnLock, { id: 'turn-lock' });
+    else run();
+  };
 
   const attack = (entry: Attack) => {
     if ((entry.usesAmmunition || inCombat) && !performAction({ kind: 'attack', id: entry.id, trackActionEconomy: inCombat })?.ok) return;
@@ -62,8 +69,8 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     else castWith(spell, slots[0]);
   };
 
-  const activate = (entry: Ability) => concentrating(entry, () => use(entry));
-  const cast = (spell: Spell) => concentrating(spell, () => castFrom(spell));
+  const activate = (entry: Ability) => onTurn(() => concentrating(entry, () => use(entry)));
+  const cast = (spell: Spell) => onTurn(() => concentrating(spell, () => castFrom(spell)));
 
-  return { attack, activate, cast };
+  return { attack: (entry: Attack) => onTurn(() => attack(entry)), activate, cast };
 }

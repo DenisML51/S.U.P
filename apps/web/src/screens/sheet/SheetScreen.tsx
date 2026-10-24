@@ -4,6 +4,7 @@ import { useCharacterStore } from '../../store/useCharacterStore';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { settingOf } from '../../ui/theme/settings';
 import { SheetDialogsProvider } from './dialogs/context';
+import { useTurnLock } from '../party/useTurnLock';
 import { SheetDialogHost } from './dialogs/SheetDialogHost';
 import { ConcentrationPrompt } from './Concentration';
 import { SlotPrompt } from './SlotPrompt';
@@ -31,6 +32,7 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
   const [section, setSection] = useState<SheetSection>('attributes');
   const setting = settingOf(character);
   useDocumentSetting(setting);
+  useTurnLock(character?.id);
 
   if (!character) return null;
 

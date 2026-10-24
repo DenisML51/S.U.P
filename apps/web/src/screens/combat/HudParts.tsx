@@ -475,7 +475,8 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
 export const CombatStats: React.FC<{
   character: Character;
   initiative: number | null;
-  onInitiative: () => void;
+  /** Rolls initiative and starts a fight; absent when the fight is a party's, started by its master. */
+  onInitiative?: () => void;
 }> = ({ character, initiative, onInitiative }) => {
   const dialogs = useSheetDialogs();
   const stats: { label: string; value: React.ReactNode; onClick?: () => void; hint: string }[] = [
@@ -489,7 +490,7 @@ export const CombatStats: React.FC<{
       label: 'Иниц.',
       value: initiative ?? formatModifier(initiativeModifier(character)),
       onClick: onInitiative,
-      hint: initiative === null ? 'Бросить инициативу и начать бой' : 'Выпавшая инициатива',
+      hint: initiative !== null ? 'Выпавшая инициатива' : onInitiative ? 'Бросить инициативу и начать бой' : 'Модификатор инициативы',
     },
     { label: 'Мастер.', value: formatModifier(character.proficiencyBonus), hint: 'Бонус мастерства' },
     { label: 'Скор.', value: character.speed, hint: 'Скорость, фт' },

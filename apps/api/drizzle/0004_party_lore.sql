@@ -1,0 +1,1 @@
+ALTER TABLE "parties" ADD COLUMN "lore" text DEFAULT '' NOT NULL;

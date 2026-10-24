@@ -223,6 +223,7 @@ export class PartiesService implements CharacterChangeListener {
           currentHp: input.currentHP ?? input.maxHP,
           armorClass: input.armorClass,
           initiativeBonus: input.initiativeBonus,
+          disposition: input.disposition,
         })
         .returning({ id: partyNpcs.id });
       return npc!;
@@ -241,6 +242,7 @@ export class PartiesService implements CharacterChangeListener {
           currentHp: input.currentHP,
           armorClass: input.armorClass,
           initiativeBonus: input.initiativeBonus,
+          disposition: input.disposition,
         })
         .where(and(eq(partyNpcs.id, npcId), eq(partyNpcs.partyId, partyId)))
         .returning({ id: partyNpcs.id });
