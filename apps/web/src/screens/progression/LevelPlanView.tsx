@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   abilityModifier,
   averageHitPoints,
   buildScores,
+  describeGrant,
   findClass,
   levelPlan,
   rollDie,
@@ -11,11 +12,12 @@ import {
   type SourceKind,
 } from '@itd/game-logic';
 import type { Build } from '@itd/schema';
-import { Prose } from '../../ui/Prose';
+import type { IconKind } from '../../ui/GameIcon';
 import { Segmented } from '../../ui/forms';
 import { Button, cx } from '../../ui/primitives';
 import { IconDice } from '../../ui/icons';
 import { ChoiceField } from './ChoiceField';
+import { EntryCardButton, EntryDetails, type EntryInfo } from './EntryDetails';
 
 /** Where on the plan a source belongs: creation shows species and background on their own steps. */
 export const CLASS_SOURCES: SourceKind[] = ['class', 'subclass', 'feat', 'option', 'maneuver'];
@@ -41,12 +43,20 @@ export function planIssues(build: Build, level: number, sources?: SourceKind[]):
   return issues;
 }
 
-const FeatureCard: React.FC<{ granted: GrantedFeature }> = ({ granted }) => (
-  <div className="ui-option cursor-default hover:!border-line">
-    <span className="ui-display text-[1.02rem] leading-tight">{granted.feature.name}</span>
-    <Prose className="mt-1 text-[13px] leading-snug text-ink-muted">{granted.feature.description}</Prose>
-  </div>
-);
+/** A gained feature as the card and details show it. */
+const featureEntry = ({ key, feature }: GrantedFeature): EntryInfo => ({
+  id: key,
+  name: feature.name,
+  iconName: feature.iconName,
+  color: feature.color,
+  description: feature.description,
+  actionType: feature.action,
+  damage: feature.damage,
+  damageType: feature.damageType,
+});
+
+/** Features used in play look like abilities; passive traits like the sheet's features. */
+const featureKind = ({ feature }: GrantedFeature): IconKind => (feature.action && feature.action !== 'passive' ? 'ability' : 'item');
 
 /** Hit points of a level: the fixed average or a roll of the hit die, as the player decides. */
 const HitPointsField: React.FC<{ build: Build; level: number; hitDie: number; onChange: (build: Build) => void }> = ({
@@ -105,6 +115,7 @@ export const LevelPlanView: React.FC<{
   sources?: SourceKind[];
   className?: string;
 }> = ({ build, level, onChange, sources, className }) => {
+  const [open, setOpen] = useState<GrantedFeature | null>(null);
   const plan = levelPlan(build, level);
   const classDef = findClass(build.class);
   const features = plan.features.filter((f) => !f.feature.hidden && f.feature.description && inSources(sources, f.key, f.source));
@@ -145,11 +156,22 @@ export const LevelPlanView: React.FC<{
       {features.length > 0 && (
         <section>
           <h4 className="ui-display mb-2 text-[1.05rem] leading-tight text-ink">Вы получаете</h4>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2">
             {features.map((granted) => (
-              <FeatureCard key={granted.key} granted={granted} />
+              <EntryCardButton
+                key={granted.key}
+                entry={featureEntry(granted)}
+                kind={featureKind(granted)}
+                source={describeGrant(build, granted.key)}
+                onOpen={() => setOpen(granted)}
+              />
             ))}
           </div>
+          <EntryDetails
+            open={open && { entry: featureEntry(open), kind: featureKind(open) }}
+            source={open ? describeGrant(build, open.key) : undefined}
+            onClose={() => setOpen(null)}
+          />
         </section>
       )}
 
