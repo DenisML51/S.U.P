@@ -59,7 +59,7 @@ export const JournalSection: React.FC<{ character: Character }> = ({ character }
   const groups = byDay(entries);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <nav className="flex gap-4" aria-label="Тип записей">
         {FILTERS.map((option) => (
           <button
@@ -76,7 +76,7 @@ export const JournalSection: React.FC<{ character: Character }> = ({ character }
           </button>
         ))}
       </nav>
-      <Ledger log title="Журнал" aside={<span>{`записей: ${entries.length}`}</span>}>
+      <Ledger log scroll={false} title="Журнал" aside={<span>{`записей: ${entries.length}`}</span>}>
         {groups.map((group) => (
           <React.Fragment key={group.key}>
             <LedgerGroup>{group.title}</LedgerGroup>

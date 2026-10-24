@@ -104,9 +104,22 @@
   }
   .ui-details { --crest-width: 150px; }
 
-  /* A folio's page: yellowed vellum, darker at the edges, laid in a thin mahogany edge. */
+  /* A folio's page: yellowed vellum, darker at the edges, laid in a thin mahogany edge. It lies on
+     an investigator's heap of loose papers, not parchment: a typed sheet, a carbon copy with its
+     lines showing, a telegram form gone yellow, an old sheet browned through. The page itself is
+     drawn by ::before, so the papers (below it) show only where they stick out. */
+  .ui-panel--paper:not(.ui-dialog) { margin-inline: 12px 8px; }
   .ui-panel--paper {
-    border-color: rgb(var(--c-wood));
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+  .ui-panel--paper::before {
+    inset: -1px;
+    z-index: -1;
+    opacity: 1;
+    mix-blend-mode: normal;
+    border: 1px solid rgb(var(--c-wood));
     background-color: rgb(var(--c-paper));
     /* Foxed with age: brown spots, a water stain at a corner, the edges browned. */
     background-image:
@@ -119,6 +132,26 @@
       inset 0 0 90px rgb(var(--c-paper-ink) / 0.55),
       0 18px 30px -18px rgb(0 0 0 / 0.9);
   }
+  .ui-leaf {
+    display: block;
+    position: absolute;
+    inset: -1px;
+    z-index: -2;
+    pointer-events: none;
+    background: var(--sheet-marks, none), var(--leaf);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.25), inset 0 0 46px rgb(var(--c-paper-ink) / 0.45);
+  }
+  /* A typed sheet, whiter and cooler than the folio. */
+  .ui-leaf--1 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 78%, rgb(176 176 166)); }
+  /* A carbon copy: blue-grey, the typed lines showing through. */
+  .ui-leaf--2 {
+    --leaf: color-mix(in srgb, rgb(var(--c-paper)) 40%, rgb(92 106 124));
+    --sheet-marks: repeating-linear-gradient(180deg, transparent 0 14px, rgb(30 40 60 / 0.22) 14px 15px);
+  }
+  /* A telegram form gone yellow. */
+  .ui-leaf--3 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 66%, rgb(160 132 64)); }
+  /* An old sheet browned through. */
+  .ui-leaf--4 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 52%, rgb(var(--c-paper-muted))); }
   .ui-panel--paper .ui-corner { color: rgb(var(--c-frame)); }
 
   /* Hover: the banker's lamp is brought near — a green-gold light pools under the hand. */

@@ -64,9 +64,11 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
             transition={{ ...ENTER, delay: 0.14 }}
           >
             <AnimatePresence mode="wait" initial={false}>
+              {/* The scroller reaches a little past the section on every side, so the leaves heaped
+                  under a page stick out of it uncut. */}
               <motion.div
                 key={section}
-                className="ui-scroll h-full overflow-y-auto pb-3"
+                className="ui-scroll ui-scroll--bare -m-4 h-[calc(100%+2rem)] overflow-y-auto p-4 pb-7"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}

@@ -200,13 +200,16 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
           title="Книга заклинаний"
           aside={
             <>
+              {/* Only the prepared: the mark a prepared spell carries in the book. */}
               <button
                 type="button"
-                className="ui-chip"
+                className="ui-chip ui-chip--icon"
                 aria-pressed={preparedOnly}
+                aria-label="Только подготовленные"
+                title="Только подготовленные"
                 onClick={() => setPreparedOnly(!preparedOnly)}
               >
-                подготовленные
+                <LedgerBullet filled={preparedOnly} />
               </button>
               <Input
                 value={query}

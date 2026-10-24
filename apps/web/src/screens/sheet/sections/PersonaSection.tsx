@@ -34,12 +34,10 @@ export const PersonaSection: React.FC<{ character: Character }> = ({ character }
 
   return (
     <div className="flex h-full gap-8">
-      <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] gap-8">
-        <Panel
-          variant="paper"
-          ornate={false}
-          className="ui-scroll max-h-full min-h-0 space-y-6 self-start overflow-y-auto px-7 py-6"
-        >
+      {/* The pages grow down with their text; only a very long story scrolls the pages as a whole.
+          The scroller keeps a margin round them, so the leaves heaped under each page are not cut. */}
+      <div className="ui-scroll ui-scroll--bare -m-4 grid min-h-0 min-w-0 flex-1 grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-start gap-8 overflow-y-auto p-4">
+        <Panel variant="paper" ornate={false} className="space-y-6 px-7 py-6">
           <EditableText
             title="Предыстория"
             value={character.backstory}
@@ -56,12 +54,12 @@ export const PersonaSection: React.FC<{ character: Character }> = ({ character }
           />
         </Panel>
 
-        <div className="flex min-h-0 min-w-0 flex-col gap-5">
+        <div className="flex min-w-0 flex-col gap-6">
           <Ledger
             title="Черты"
             addLabel="Добавить черту"
             onAdd={() => dialogs.open({ kind: 'trait' })}
-            className="max-h-[45%]"
+            scroll={false}
           >
             {character.traits.map((trait) => (
               <LedgerRow
@@ -77,11 +75,7 @@ export const PersonaSection: React.FC<{ character: Character }> = ({ character }
             )}
           </Ledger>
 
-          <Panel
-            variant="paper"
-            ornate={false}
-            className="ui-scroll min-h-0 space-y-4 overflow-y-auto px-6 py-5"
-          >
+          <Panel variant="paper" ornate={false} className="space-y-4 px-6 py-5">
             {CHARACTER_FIELDS.map(({ field, title, placeholder }) => (
               <EditableText
                 key={field}
