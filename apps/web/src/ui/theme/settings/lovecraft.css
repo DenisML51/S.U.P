@@ -361,7 +361,8 @@
     align-self: end;
     width: 30px;
     height: 30px;
-    margin-bottom: -10px;
+    /* Its centre on the tube's axis: the tube (9px) stands on the scale (6px) at the row's foot. */
+    margin-bottom: -4.5px;
     border-radius: 999px;
     color: rgb(var(--c-bg-deep) / 0.8);
     background: radial-gradient(circle at 36% 30%, rgb(255 255 255 / 0.35), transparent 35%), rgb(var(--meter-color, var(--c-frame)));
