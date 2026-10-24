@@ -289,6 +289,22 @@ const WorldSigil: React.FC = () => (
   </svg>
 );
 
+/**
+ * The level on a data shard: a black chip with a cut corner and a red hairline, gold contacts along
+ * its foot, a yellow label strip and the number burnt in large.
+ */
+const StatusLevel: NonNullable<SettingArt['StatusLevel']> = ({ level }) => (
+  <span className="cp-shard">
+    <svg className="ui-level__art" viewBox="0 0 60 84" preserveAspectRatio="none" aria-hidden>
+      <path className="cp-shard__body" d="M1 1H45L59 15V75H1Z" />
+      <path className="cp-shard__pins" d="M8 76h5v7h-5ZM17 76h5v7h-5ZM26 76h5v7h-5ZM35 76h5v7h-5ZM44 76h5v7h-5Z" />
+      <path className="cp-shard__notch" d="M1 46h4v10H1Z" />
+    </svg>
+    <span className="cp-shard__tag">LVL</span>
+    <span className="cp-shard__level ui-numeric">{String(level).padStart(2, '0')}</span>
+  </span>
+);
+
 export const CYBERPUNK_ART: SettingArt = {
   ruleMark: (
     <svg width="40" height="8" viewBox="0 0 40 8" aria-hidden>
@@ -306,4 +322,5 @@ export const CYBERPUNK_ART: SettingArt = {
   LevelReady,
   WorldSigil,
   HeroReadout,
+  StatusLevel,
 };

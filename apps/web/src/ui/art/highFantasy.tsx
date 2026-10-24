@@ -335,6 +335,26 @@ const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ level }) => (
   </div>
 );
 
+/** A heater shield's outline, with the slight arch of its top edge. */
+const SHIELD = 'M3 5Q32 -1 61 5V40C61 60 45 72 32 78 19 72 3 60 3 40Z';
+
+/**
+ * The level on a knight's heater shield: a field of night-sky enamel in a gilt rim, a gold chief
+ * with the laurel crown, the number blazoned on the field.
+ */
+const StatusLevel: NonNullable<SettingArt['StatusLevel']> = ({ level }) => (
+  <span className="hf-shield">
+    <svg className="ui-level__art" viewBox="0 0 64 80" aria-hidden>
+      <path className="hf-shield__body" d={SHIELD} />
+      <path className="hf-shield__chief" d="M3 5Q32 -1 61 5V24H3Z" />
+      <path className="hf-shield__rim" d={SHIELD} />
+      <path className="hf-shield__inner" d="M7.5 28H56.5V40C56.5 56.5 43 66.5 32 72 21 66.5 7.5 56.5 7.5 40Z" />
+    </svg>
+    <GiLaurelCrown className="hf-shield__emblem" aria-hidden />
+    <span className="hf-shield__level ui-numeric">{level}</span>
+  </span>
+);
+
 export const HIGH_FANTASY_ART: SettingArt = {
   corner: { viewBox: '0 0 32 32', art: <VineCorner /> },
   crest: { viewBox: '0 0 120 24', art: <StarCrest /> },
@@ -349,4 +369,5 @@ export const HIGH_FANTASY_ART: SettingArt = {
   LevelReady,
   Flourish,
   HeroReadout,
+  StatusLevel,
 };

@@ -337,22 +337,71 @@
   .ui-prof-mark.bg-frame-bright { background: rgb(var(--c-danger)); border-color: rgb(var(--c-danger)); }
   .ui-prof-mark.outline { outline-color: rgb(var(--c-frame-bright) / 0.7); border-radius: 999px; }
 
-  /* ---------------------------------------------------------------- Level and experience */
-  /* The emblem on an iron tile, the level on a brass-rimmed plate with its corners cut; the bar
-     an iron channel filling with brass. */
-  .ui-level { --cut: 6px; }
-  .ui-level__emblem,
-  .ui-level__plate {
-    border: 0;
-    background: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-inset)));
-    box-shadow: inset 0 0 0 1px rgb(var(--c-frame) / 0.7), inset 0 0 0 4px rgb(var(--c-inset)), inset 0 0 0 5px rgb(var(--c-frame) / 0.25);
-    clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
+  /* ---------------------------------------------------------------- Vitals */
+  /* The hunter's vitals as in the old dreams of blood: a thin line of blood in an iron channel
+     with an ember at its edge, brass rivets at its ends; the name in small capitals with its first
+     letter rubricated, the picture on an iron lozenge in brass. */
+  .ui-status__bars { gap: 0.95rem; }
+  .ui-vital { --vital-gap: 0.75rem; }
+  .ui-vital__icon { position: relative; width: 30px; height: 30px; background: var(--brass); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+  .ui-vital__icon::before { content: ''; position: absolute; inset: 1.5px; background: radial-gradient(circle at 50% 40%, rgb(var(--c-surface-2)), rgb(var(--c-inset))); clip-path: inherit; }
+  .ui-vital__icon svg { position: relative; width: 15px; height: 15px; }
+  .ui-vital[data-tone='hp'] .ui-vital__icon { color: rgb(196 58 48); }
+  .ui-vital__label { font-family: var(--setting-display); font-size: 0.95rem; letter-spacing: 0.04em; text-transform: none; font-variant: small-caps; color: rgb(var(--c-ink-muted)); }
+  .ui-vital__label::first-letter { color: rgb(196 58 48); }
+  .ui-vital:hover .ui-vital__label { color: rgb(var(--c-ink)); }
+  .ui-vital__current { font-size: 1.4rem; }
+  .ui-vital__max { font-style: italic; color: rgb(var(--c-frame)); }
+  .ui-vital__gauge { padding-inline: 6px; }
+  .ui-vital .ui-meter { height: 6px; border-color: rgb(var(--c-frame) / 0.35); background: rgb(0 0 0 / 0.55); box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.9); }
+  .ui-vital .ui-meter--ticks::after { display: none; }
+  .ui-vital .ui-meter__fill { background: linear-gradient(180deg, rgb(255 255 255 / 0.1), transparent 50%, rgb(0 0 0 / 0.4)), rgb(var(--meter-color)); }
+  .ui-vital[data-tone='hp'] .ui-meter__fill { background: linear-gradient(180deg, rgb(255 120 100 / 0.25), transparent 50%, rgb(0 0 0 / 0.45)), rgb(150 24 20); }
+  /* The ember at the blood's edge, where the line is still warm. */
+  .ui-vital .ui-meter__fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 10px;
+    background: linear-gradient(90deg, transparent, rgb(var(--c-candle) / 0.85));
   }
-  .ui-level__emblem { color: rgb(var(--c-frame)); }
-  .ui-level__unit { font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: none; font-variant: small-caps; color: rgb(var(--c-frame)); }
-  .ui-level__number { color: rgb(var(--c-ink)); }
-  .ui-level:hover .ui-level__emblem { color: rgb(var(--c-danger)); }
-  .ui-level[data-ready] .ui-level__plate { animation: none; box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright)), inset 0 0 0 4px rgb(var(--c-inset)), inset 0 -16px 22px -10px rgb(var(--c-candle) / 0.45); }
+  .ui-vital__gauge::before,
+  .ui-vital__gauge::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 30%, rgb(var(--c-frame-bright)), rgb(var(--c-frame)) 50%, rgb(60 44 26));
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
+    transform: translateY(-50%);
+  }
+  .ui-vital__gauge::before { left: 0; }
+  .ui-vital__gauge::after { right: 0; }
+
+  /* ---------------------------------------------------------------- Level and experience */
+  /* The level is struck into a hunter's badge: a serrated disc of dark brass hung from a ribbon of
+     the order's blood and gold. Experience is an iron channel filling with brass. */
+  .ui-level { top: 0.35rem; height: 5.6rem; filter: drop-shadow(0 4px 5px rgb(0 0 0 / 0.75)); }
+  .ui-level:hover { filter: drop-shadow(0 4px 5px rgb(0 0 0 / 0.75)) drop-shadow(0 6px 10px rgb(var(--c-candle) / 0.4)); }
+  .df-badge__ribbon { fill: rgb(108 18 16); }
+  .df-badge__stripe { fill: rgb(var(--c-frame)); }
+  .df-badge__edge { fill: rgb(var(--c-frame)); stroke: rgb(var(--c-frame-bright) / 0.7); stroke-width: 0.6; stroke-linejoin: round; }
+  .df-badge__ring { fill: none; stroke: rgb(60 44 26); stroke-width: 1.4; }
+  .df-badge__face { fill: rgb(var(--c-inset)); stroke: rgb(var(--c-frame-bright) / 0.55); stroke-width: 0.7; }
+  .df-badge__level {
+    position: absolute;
+    top: 65%;
+    left: 50%;
+    font-size: 1.45rem;
+    line-height: 1;
+    color: rgb(var(--c-frame-bright));
+    text-shadow: 0 -1px 0 rgb(0 0 0 / 0.9);
+    transform: translate(-50%, -50%);
+  }
   .ui-xp__label { font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.06em; text-transform: none; font-variant: small-caps; color: rgb(var(--c-frame)); }
   .ui-xp__track { height: 7px; border-color: rgb(var(--c-frame) / 0.45); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7); }
   .ui-xp__fill { background: var(--brass); }

@@ -3,14 +3,17 @@ import { experienceProgress, maxSanityOf, totalMaxHP } from '@itd/game-logic';
 import type { Character, Resource } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { GameIcon, tileStyle } from '../../../ui/GameIcon';
-import { LevelReady, SettingEmblem } from '../../../ui/ornaments';
+import { LevelReady, useSettingArt } from '../../../ui/ornaments';
 import { Button, IconButton, Meter, Panel, cx, type MeterTone } from '../../../ui/primitives';
 import { IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../../ui/icons';
 import { ConcentrationBadge } from '../Concentration';
 import { useSheetDialogs } from '../dialogs/context';
 import { useVitals } from '../useVitals';
 
-/** A bar as in the reference status cluster: icon on the left, the value above the bar's right end. */
+/**
+ * One of the vitals: its picture, name and figures over the gauge. The setting decides what the
+ * gauge is (a vial, a suit readout, a thermometer) through the classes below.
+ */
 const StatusBar: React.FC<{
   icon: React.ReactNode;
   label: string;
@@ -20,23 +23,17 @@ const StatusBar: React.FC<{
   tone: MeterTone;
   onClick: () => void;
 }> = ({ icon, label, value, max, extra = 0, tone, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    title={label}
-    className="group flex w-full items-end gap-3 text-left"
-  >
-    <span className="mb-[1px] shrink-0" style={{ color: `rgb(var(--c-${tone}))` }}>
-      {icon}
+  <button type="button" onClick={onClick} title={label} className="ui-vital" data-tone={tone}>
+    <span className="ui-vital__icon">{icon}</span>
+    <span className="ui-vital__label">{label}</span>
+    <span className="ui-vital__value ui-numeric">
+      <span className="ui-vital__current">{value}</span>
+      <span className="ui-vital__max">/{max}</span>
     </span>
-    <span className="flex-1">
-      <span className="mb-1 flex justify-end text-sm tabular-nums">
-        <span className="text-ink">{value}</span>
-        <span className="text-ink-faint">&nbsp;/ {max}</span>
-        {extra > 0 && <span className="ml-1.5 text-temp-hp">+{extra}</span>}
-      </span>
-      <Meter value={value} max={max} extra={extra} tone={tone} height={7} ticks />
+    <span className="ui-vital__gauge">
+      <Meter value={value} max={max} extra={extra} tone={tone} height={8} ticks label={label} />
     </span>
+    {extra > 0 && <span className="ui-vital__extra ui-numeric">+{extra}</span>}
   </button>
 );
 
@@ -93,12 +90,12 @@ const QuickHealth: React.FC = () => {
 };
 
 /**
- * The level, as in the reference status cluster: the setting's emblem over a plate with the
- * number, set into the vitals panel's corner (hung from its top edge where the setting likes).
- * Lit when the experience suffices for the next level.
+ * The level set into the vitals panel's corner: the setting's own token of rank (a shield, a hunter's
+ * badge, a data shard, a pocket watch). Lit when the experience suffices for the next level.
  */
 const LevelPlate: React.FC<{ character: Character; onClick: () => void }> = ({ character, onClick }) => {
   const progress = experienceProgress(character.level, character.experience);
+  const { StatusLevel } = useSettingArt();
   return (
     <button
       type="button"
@@ -107,15 +104,7 @@ const LevelPlate: React.FC<{ character: Character; onClick: () => void }> = ({ c
       className="ui-level"
       data-ready={progress.canLevelUp || undefined}
     >
-      <span className="ui-level__sheet">
-        <span className="ui-level__emblem">
-          <SettingEmblem size={30} />
-        </span>
-        <span className="ui-level__plate">
-          <span className="ui-level__unit">ур.</span>
-          <span className="ui-level__number ui-display ui-numeric">{character.level}</span>
-        </span>
-      </span>
+      <StatusLevel level={character.level} />
     </button>
   );
 };
@@ -203,7 +192,7 @@ export const StatusCluster: React.FC<{ character: Character; className?: string 
     <div className={cx('ui-status', className)}>
       <Panel className="ui-status__panel space-y-2.5 px-4 py-3">
         <LevelPlate character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
-        <div className="ui-status__bars space-y-2.5">
+        <div className="ui-status__bars">
           <StatusBar
             icon={<IconHealth width={20} height={20} />}
             label="Здоровье"
