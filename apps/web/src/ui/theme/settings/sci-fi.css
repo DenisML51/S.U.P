@@ -330,6 +330,15 @@
   }
   .ui-xp__value { font-family: var(--font-numeric); font-size: 0.75rem; }
 
+  /* The combat screen's experience bar is counted in cells. */
+  .ui-hud-xp { height: 8px; border-color: rgb(var(--c-line) / 0.8); }
+  .ui-hud-xp::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(2% - 2px), rgb(var(--c-inset)) calc(2% - 2px) 2%);
+  }
+
   /* ---------------------------------------------------------------- Rail and hero column */
   .ui-rail { background: rgb(var(--c-bg-deep) / 0.85); border-right-color: rgb(var(--c-line)); }
   .ui-rail__item { font-family: var(--font-display); letter-spacing: 0.06em; }

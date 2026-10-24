@@ -358,6 +358,10 @@
   .ui-xp__fill { background: var(--brass); }
   .ui-xp__value { font-family: var(--font-numeric); font-size: 0.92rem; color: rgb(var(--c-ink)); }
 
+  /* The combat screen's experience bar is an iron channel filling with brass. */
+  .ui-hud-xp { height: 7px; border-color: rgb(var(--c-frame) / 0.45); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7); }
+  .ui-hud-xp__fill { background: var(--brass); }
+
   /* ---------------------------------------------------------------- Rail and hero column */
   /* Old leather down the edge, a brass rule beside it; the open section is marked in blood and lit
      by a candle. */
@@ -446,7 +450,8 @@
   /* ---------------------------------------------------------------- Combat */
   .ui-hud-slot,
   .ui-hud-slot--tile { border-radius: 3px; }
-  .ui-hud-slot {
+  /* Empty keys are iron wells; a key with a picture keeps the colour of its tile. */
+  .ui-hud-slot:not(.ui-hud-slot--tile) {
     background: rgb(var(--c-inset));
     border-color: rgb(var(--c-frame) / 0.6);
     box-shadow: inset 0 0 0 2px rgb(var(--c-inset)), inset 0 0 0 3px rgb(var(--c-frame) / 0.25);

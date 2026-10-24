@@ -151,7 +151,7 @@ export const Hotbar: React.FC<{ character: Character; inCombat: boolean }> = ({ 
   return (
     <div className="grid grid-cols-4 gap-3">
       {SLOT_GROUPS.map((group) => (
-        <Panel key={group.id} ornate={false} className="ui-hud-panel flex min-w-0 flex-col">
+        <Panel key={group.id} className="ui-hud-panel flex min-w-0 flex-col">
           <header className="ui-hud-panel__head">
             <CatalogIcon id={group.icon} size={16} className="text-frame-bright" />
             <span>{group.label}</span>

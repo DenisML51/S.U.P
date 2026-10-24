@@ -453,6 +453,16 @@
   }
   .ui-xp__value { font-family: var(--font-numeric); font-size: 0.98rem; color: rgb(var(--c-ink)); }
 
+  /* The combat screen's experience bar is the same gilt ruler. */
+  .ui-hud-xp { height: 7px; border-radius: 999px; border-color: rgb(var(--c-frame) / 0.5); }
+  .ui-hud-xp__fill { border-radius: 999px; background: var(--gilt); }
+  .ui-hud-xp::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(5% - 1px), rgb(var(--c-bg-deep) / 0.6) calc(5% - 1px) 5%);
+  }
+
   /* ---------------------------------------------------------------- Rail and hero column */
   .ui-rail {
     background: linear-gradient(90deg, rgb(var(--c-bg-deep) / 0.9), rgb(var(--c-bg) / 0.75));

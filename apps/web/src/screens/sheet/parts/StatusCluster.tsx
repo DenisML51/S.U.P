@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { experienceProgress, maxSanityOf, totalMaxHP } from '@itd/game-logic';
 import type { Character, Resource } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
+import { GameIcon, tileStyle } from '../../../ui/GameIcon';
 import { LevelReady, SettingEmblem } from '../../../ui/ornaments';
 import { Button, IconButton, Meter, Panel, cx, type MeterTone } from '../../../ui/primitives';
 import { IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../../ui/icons';
@@ -154,12 +155,17 @@ const ResourceRow: React.FC<{
   onOpen: () => void;
 }> = ({ resource, onChange, onOpen }) => (
   <li className="flex items-center gap-2 py-1">
+    {/* The picture always shows; a long name is cut to one line and given whole in the tooltip. */}
     <button
       type="button"
       onClick={onOpen}
-      className="min-w-0 flex-1 truncate text-left text-sm text-ink-muted hover:text-ink"
+      title={resource.name}
+      className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm text-ink-muted hover:text-ink"
     >
-      {resource.name}
+      <span className="ui-hud-slot ui-hud-slot--tile !h-6 !w-6 shrink-0" data-kind="ability" style={tileStyle(resource.color)}>
+        <GameIcon name={resource.iconName} kind="resource" size={15} className="ui-hud-slot__icon" />
+      </span>
+      <span className="truncate">{resource.name}</span>
     </button>
     <IconButton
       label={`Потратить: ${resource.name}`}

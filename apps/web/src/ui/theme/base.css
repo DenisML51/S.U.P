@@ -1430,26 +1430,27 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
    under it. The bars leave room for the level. */
 .ui-status { display: flex; flex-direction: column; }
 .ui-status__panel { z-index: 1; }
-.ui-status__bars { padding-right: 5.2rem; }
+/* The bars stand as tall as the level beside them, so the row under them never runs into it. */
+.ui-status__bars { min-height: 5.9rem; padding-right: 5.2rem; }
 
 /* ------------------------------------------------------------------ Level and experience */
 /* The level beside the bars: the setting's emblem in a tile over a plate with the number. */
 .ui-level {
   position: absolute;
   top: 0.75rem;
-  right: 1rem;
+  right: 0.75rem;
   z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 3px;
-  width: 4.5rem;
+  width: 4.2rem;
 }
 /* What the setting may shape as one piece (a pennant); otherwise its parts stand on their own. */
 .ui-level__sheet { display: contents; }
 .ui-level__emblem {
   display: grid;
   place-items: center;
-  height: 3rem;
+  height: 2.3rem;
   color: rgb(var(--c-frame));
   background: rgb(var(--c-inset));
   border: 1px solid rgb(var(--c-frame) / 0.45);
@@ -1460,14 +1461,15 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0.35rem 0 0.45rem;
+  padding: 0.2rem 0 0.3rem;
   background: rgb(var(--c-inset));
   border: 1px solid rgb(var(--c-frame) / 0.6);
   border-radius: var(--radius);
   transition: box-shadow 300ms, border-color 200ms;
 }
 .ui-level__unit { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
-.ui-level__number { font-size: 2rem; line-height: 1; color: rgb(var(--c-frame-bright)); }
+.ui-level__number { font-size: 1.75rem; line-height: 1; color: rgb(var(--c-frame-bright)); }
+.ui-level__emblem svg { width: 22px; height: 22px; }
 .ui-level:hover .ui-level__emblem { color: rgb(var(--c-frame-bright)); }
 .ui-level:hover .ui-level__plate { border-color: rgb(var(--c-frame-bright)); }
 .ui-level[data-ready] .ui-level__plate { animation: ui-level-ready 2.2s ease-in-out infinite; border-color: rgb(var(--c-xp)); }
@@ -1605,3 +1607,7 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-world[aria-pressed='true'] .ui-world__scene { opacity: 1; }
 .ui-world[aria-pressed='true'] .ui-world__name { color: rgb(var(--c-frame-bright)); }
 .ui-world:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 4px; }
+
+/* ------------------------------------------------------------------ Combat HUD ornament */
+/* The HUD's panels are small: their corner pieces are drawn smaller to keep the pictures clear. */
+.ui-panel:is(.ui-hud-panel, .ui-hud-strip) > .ui-corner { width: 20px; height: 20px; }
