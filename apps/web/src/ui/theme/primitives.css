@@ -1486,3 +1486,13 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 /* Sci-fi keeps its tiles matte: one flat tone, no light from above. */
 [data-setting='sci-fi'] .ui-hud-slot--tile { background: color-mix(in srgb, var(--tile-color) 34%, rgb(var(--c-inset))); }
 [data-setting='sci-fi'] .ui-hud-slot--tile .ui-hud-slot__icon { filter: none; }
+
+/* ------------------------------------------------------------------ High fantasy details */
+/* Section rules are an astronomer's scale: a gilt line with fine graduations beneath it. */
+[data-setting='high-fantasy'] .ui-rule--left::after {
+  height: 6px;
+  background:
+    linear-gradient(90deg, rgb(var(--c-frame) / 0.7), rgb(var(--c-frame) / 0.15)) top / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, rgb(var(--c-frame) / 0.45) 0 1px, transparent 1px 8px) bottom / 100% 4px no-repeat;
+  mask-image: linear-gradient(90deg, #000 40%, transparent);
+}

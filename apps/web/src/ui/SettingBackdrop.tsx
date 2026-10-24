@@ -5,9 +5,16 @@ import { SETTING_LIST } from './theme/settings';
 import { SettingScope } from './theme/SettingScope';
 import { cx } from './primitives';
 
-/** Quiet vine flourishes in the screen corners; the content stays the focus. */
+/** A faint field of stars, as on an atlas of the sky. Three scattered layers, so it never tiles. */
+const STARS =
+  'radial-gradient(circle at 20% 30%, rgb(var(--c-frame-bright) / 0.7) 0 1px, transparent 1.5px) 0 0 / 173px 197px,' +
+  'radial-gradient(circle at 70% 60%, rgb(var(--c-ink) / 0.45) 0 0.8px, transparent 1.3px) 0 0 / 89px 113px,' +
+  'radial-gradient(circle at 40% 80%, rgb(var(--c-frame-bright) / 0.5) 0 1.4px, transparent 2px) 0 0 / 311px 277px';
+
+/** Quiet vine flourishes in the screen corners over a field of stars; the content stays the focus. */
 const HighFantasyFrame: React.FC = () => (
   <div className="absolute inset-0 text-frame">
+    <div className="absolute inset-0 opacity-60" style={{ background: STARS }} />
     {(['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map(
       (position) => (
         <div key={position} className={`absolute ${position}`} style={{ margin: FRAME_OUTER }}>
