@@ -6,7 +6,7 @@ import { NumberField, Select, Suggest } from '../../../ui/forms';
 import { GameIcon, tileStyle, type IconKind } from '../../../ui/GameIcon';
 import { IconNameField } from '../../../ui/IconPicker';
 import { Button, Field, IconButton, Input, Rule, cx } from '../../../ui/primitives';
-import { IconClose, IconPlus } from '../../../ui/icons';
+import { IconClose, IconPlus, IconTrash } from '../../../ui/icons';
 
 /** The figures a card leads with ("Попадание +14", "Урон 3d10+10 рубящий"), large and side by side. */
 export const KeyFacts: React.FC<{ facts: { label: string; value: React.ReactNode }[] }> = ({ facts }) => (
@@ -62,23 +62,35 @@ export const MinorFacts: React.FC<{
   );
 };
 
-/** "Удалить" with a confirmation naming what goes away. */
-export const DeleteButton: React.FC<{ what: string; name: string; onDelete: () => void }> = ({
-  what,
-  name,
-  onDelete,
-}) => {
+/** "Удалить" with a confirmation naming what goes away; `compact` shows it as a bin icon. */
+export const DeleteButton: React.FC<{
+  what: string;
+  name: string;
+  onDelete: () => void;
+  compact?: boolean;
+}> = ({ what, name, onDelete, compact }) => {
   const [asking, setAsking] = useState(false);
   return (
     <>
-      <Button
-        variant="ghost"
-        size="row"
-        className="!text-danger/80 hover:!text-danger"
-        onClick={() => setAsking(true)}
-      >
-        Удалить
-      </Button>
+      {compact ? (
+        <IconButton
+          label={`Удалить ${what}`}
+          size={30}
+          className="hover:!text-danger"
+          onClick={() => setAsking(true)}
+        >
+          <IconTrash width={15} height={15} />
+        </IconButton>
+      ) : (
+        <Button
+          variant="ghost"
+          size="row"
+          className="!text-danger/80 hover:!text-danger"
+          onClick={() => setAsking(true)}
+        >
+          Удалить
+        </Button>
+      )}
       <ConfirmDialog
         open={asking}
         title={`Удалить ${what}?`}
@@ -129,11 +141,15 @@ export const EntryNameField: React.FC<{
 );
 
 /** The entry's icon framed as a combat-bar slot, for the head of its card. */
-export const EntryBadge: React.FC<{ kind: IconKind; entry: { iconName?: string; color?: string; damageType?: string } }> = ({
-  kind,
-  entry,
-}) => (
-  <span className="ui-hud-slot ui-hud-slot--large ui-hud-slot--tile shrink-0" style={tileStyle(kind === 'spell' ? spellColor(entry) : entry.color)} data-kind={kind}>
+export const EntryBadge: React.FC<{
+  kind: IconKind;
+  entry: { iconName?: string; color?: string; damageType?: string };
+}> = ({ kind, entry }) => (
+  <span
+    className="ui-hud-slot ui-hud-slot--large ui-hud-slot--tile shrink-0"
+    style={tileStyle(kind === 'spell' ? spellColor(entry) : entry.color)}
+    data-kind={kind}
+  >
     <GameIcon name={entry.iconName} kind={kind} size={40} className="ui-hud-slot__icon" />
   </span>
 );

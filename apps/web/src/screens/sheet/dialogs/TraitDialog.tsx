@@ -36,7 +36,7 @@ export const TraitDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
         ...doc,
         traits: upsertById(doc.traits, { ...draft, name: draft.name.trim() }),
       }));
-      if (entry) stopEditing();
+      if (entry && !edit) stopEditing();
       else onClose();
     };
     return (
@@ -50,7 +50,7 @@ export const TraitDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
         eyebrow={entry ? 'Черта · правка' : 'Новая черта'}
         canSave={!!draft.name.trim()}
         onSave={save}
-        onCancel={entry ? stopEditing : onClose}
+        onCancel={entry && !edit ? stopEditing : onClose}
         width="md"
       >
         <Field label="Название">

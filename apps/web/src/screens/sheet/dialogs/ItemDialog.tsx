@@ -101,7 +101,7 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
         (doc) => saveItem(doc, saved),
         entry ? undefined : { log: { message: `Получен предмет: ${saved.name}`, type: 'inventory' } },
       );
-      if (entry) stopEditing();
+      if (entry && !edit) stopEditing();
       else onClose();
     };
     return (
@@ -115,7 +115,7 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
         eyebrow={entry ? 'Предмет · правка' : 'Новый предмет'}
         canSave={!!draft.name.trim()}
         onSave={save}
-        onCancel={entry ? stopEditing : onClose}
+        onCancel={entry && !edit ? stopEditing : onClose}
       >
         <EntryNameField kind="item" draft={draft} set={set} />
         <div className="flex items-end gap-5">

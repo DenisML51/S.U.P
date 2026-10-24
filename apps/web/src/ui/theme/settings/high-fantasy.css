@@ -59,28 +59,66 @@
 
 [data-setting='high-fantasy'] {
   /* ---------------------------------------------------------------- Panels */
-  /* Lacquer under a double gilt rule: the outer rule on the edge, a fainter one 4px inside. */
+  /* Even lacquer under a double gilt rule: the outer rule on the edge, a fainter one 4px inside.
+     No glow or gradient on the surface: the gold carries the look, the dark stays calm to read on. */
   .ui-panel:not(.ui-panel--paper):not(.ui-panel--inset) {
     background-color: rgb(var(--c-surface));
     border-color: rgb(var(--c-frame) / 0.55);
     box-shadow:
       inset 0 0 0 3px rgb(var(--c-surface)),
       inset 0 0 0 4px rgb(var(--c-frame) / 0.2),
-      inset 0 40px 60px -40px rgb(var(--c-surface-2)),
       var(--shadow-panel);
   }
-  .ui-panel::before {
-    background-image: radial-gradient(120% 80% at 50% 0%, rgb(var(--c-surface-2) / 0.7), transparent 70%);
-  }
+  .ui-panel:not(.ui-panel--paper)::before { background-image: none; }
 
-  /* Parchment keeps a gilt-brown rule a few pixels inside its edge, as a page of a bound book. */
+  /* The page keeps a gilt-brown rule a few pixels inside its edge, as a page of a bound book. */
   .ui-panel--paper {
-    border-color: rgb(var(--c-frame) / 0.7);
-    box-shadow:
-      inset 0 0 0 4px rgb(var(--c-paper)),
-      inset 0 0 0 5px rgb(var(--c-paper-muted) / 0.45),
-      inset 0 0 56px rgb(var(--c-paper-muted) / 0.5),
-      var(--shadow-panel);
+    --page-rule: rgb(var(--c-frame) / 0.7);
+    --page-shading: inset 0 0 0 4px rgb(var(--c-paper)), inset 0 0 0 5px rgb(var(--c-paper-muted) / 0.45), inset 0 0 56px rgb(var(--c-paper-muted) / 0.5);
+  }
+  /* Paper is a stack, not a single sheet (the reference's tracked goals): two older leaves lie askew
+     under the page, each turned its own way, their edges worn uneven. The page's own fill, rule and
+     shading are drawn by ::before, so the leaves (below it) show only where they stick out. */
+  /* Room for the leaves on the left; below them the sheet section keeps a padding. */
+  .ui-panel--paper:not(.ui-dialog) { margin-left: 9px; }
+  .ui-panel--paper {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+  .ui-panel--paper::before {
+    inset: -1px;
+    z-index: -1;
+    opacity: 1;
+    mix-blend-mode: normal;
+    border: 1px solid var(--page-rule);
+    background:
+      radial-gradient(ellipse 70% 55% at 30% 18%, rgb(255 240 210 / 0.12), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 88% 92%, rgb(var(--c-paper-muted) / 0.3), transparent 70%),
+      rgb(var(--c-paper));
+    box-shadow: var(--page-shading), 0 18px 30px -18px rgb(0 0 0 / 0.85);
+  }
+  .ui-leaf {
+    display: block;
+    position: absolute;
+    inset: -1px;
+    z-index: -2;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 40% at 30% 20%, rgb(255 240 210 / 0.08), transparent 70%),
+      var(--leaf);
+    box-shadow: inset 0 0 0 1px rgb(var(--c-paper-muted) / 0.6), inset 0 0 40px rgb(var(--c-paper-muted) / 0.6);
+  }
+  .ui-leaf--under {
+    --leaf: color-mix(in srgb, rgb(var(--c-paper)) 66%, rgb(var(--c-paper-muted)));
+    transform: translate(-8px, 7px) rotate(-0.6deg);
+    clip-path: polygon(0.6% 1.4%, 17% 0.2%, 38% 1.1%, 61% 0%, 84% 0.9%, 99.2% 0.3%, 100% 18%, 99.1% 41%, 100% 66%, 99.4% 98.6%, 79% 100%, 55% 98.9%, 31% 100%, 9% 99.1%, 0% 99.6%, 0.9% 74%, 0% 47%, 0.7% 22%);
+    filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.6));
+  }
+  .ui-leaf--between {
+    --leaf: color-mix(in srgb, rgb(var(--c-paper)) 82%, rgb(var(--c-paper-muted)));
+    transform: translate(-4px, 3px) rotate(0.35deg);
+    clip-path: polygon(0% 0.8%, 23% 0%, 46% 0.9%, 72% 0.1%, 100% 0.7%, 99.3% 26%, 100% 52%, 99.4% 79%, 100% 100%, 74% 99.2%, 49% 100%, 26% 99.3%, 0.5% 100%, 0% 76%, 0.8% 51%, 0% 27%);
   }
 
   /* The vine corner is drawn on the panel border: its box starts exactly on the border pixel. */
@@ -320,6 +358,97 @@
   .ui-meter__fill,
   .ui-meter__extra { inset: 1px auto 1px 1px; border-radius: 999px; }
 
+  /* ---------------------------------------------------------------- Level and experience */
+  /* The level hangs from the panel's top edge as a small parchment pennant (the reference status
+     cluster's banner): a red tab where it is pinned, a ruled border, the emblem and the number in
+     ink, a pointed tail. Experience runs under the bars on a gilt ruler. */
+  .ui-level {
+    --tail: 11px;
+    /* A bookmark laid over the panel's top right corner: it covers the corner ornament and both
+       rules, hanging past the top edge and standing out past the right one. */
+    top: -7px;
+    right: -9px;
+    width: 4.2rem;
+    filter: drop-shadow(0 6px 6px rgb(0 0 0 / 0.55));
+    transition: transform 250ms ease;
+    transform-origin: top center;
+  }
+  .ui-level__sheet {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 0.7rem 0 calc(var(--tail) + 0.15rem);
+    color: rgb(var(--c-paper-ink));
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 20%, rgb(255 244 214 / 0.18), transparent 70%),
+      linear-gradient(180deg, rgb(var(--c-paper)), color-mix(in srgb, rgb(var(--c-paper)) 82%, rgb(var(--c-paper-muted))));
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--tail)), 50% 100%, 0 calc(100% - var(--tail)));
+  }
+  /* The ruled border inside the pennant, following its tail. */
+  .ui-level__sheet::before {
+    content: '';
+    position: absolute;
+    inset: 4px 4px 5px;
+    border: 1px solid rgb(var(--c-paper-muted) / 0.55);
+    border-bottom: 0;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--tail) + 3px), 50% 100%, 0 calc(100% - var(--tail) + 3px));
+    background:
+      linear-gradient(to bottom right, transparent calc(50% - 0.6px), rgb(var(--c-paper-muted) / 0.55) 50%, transparent calc(50% + 0.6px)) left bottom / 50% calc(var(--tail) - 2px) no-repeat,
+      linear-gradient(to bottom left, transparent calc(50% - 0.6px), rgb(var(--c-paper-muted) / 0.55) 50%, transparent calc(50% + 0.6px)) right bottom / 50% calc(var(--tail) - 2px) no-repeat;
+    pointer-events: none;
+  }
+  /* The red tab it hangs by. */
+  .ui-level__sheet::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 14px;
+    height: 9px;
+    background: linear-gradient(90deg, rgb(0 0 0 / 0.2), transparent 40%, rgb(0 0 0 / 0.25)), rgb(var(--c-hp));
+    transform: translateX(-50%);
+  }
+  .ui-level:hover { transform: rotate(-1.5deg); }
+  .ui-level__emblem,
+  .ui-level__plate { border: 0; background: none; box-shadow: none; }
+  .ui-level__emblem { height: 1.5rem; color: rgb(var(--c-paper-ink) / 0.75); }
+  .ui-level__emblem svg { width: 22px; height: 22px; }
+  .ui-level__plate { position: relative; padding: 0.15rem 0 0; }
+  /* A short rule with a dot between the emblem and the number. */
+  .ui-level__plate::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 22%;
+    right: 22%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(var(--c-paper-muted)), transparent);
+  }
+  .ui-level__unit { margin-top: 0.1rem; font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: none; color: rgb(var(--c-paper-muted)); }
+  .ui-level__number { font-size: 1.95rem; color: rgb(var(--c-paper-ink)); }
+  .ui-level:hover .ui-level__emblem { color: rgb(var(--c-paper-ink)); }
+  .ui-level[data-ready] { animation: hf-pennant-ready 2.4s ease-in-out infinite; }
+  .ui-level[data-ready] .ui-level__plate { animation: none; }
+  /* The experience plaque: dark lacquer in a gilt rule, its top tucked under the panel. */
+  .ui-xp {
+    margin-inline: 0.9rem;
+    padding-top: 0.55rem;
+    background: linear-gradient(180deg, rgb(var(--c-inset)), rgb(var(--c-surface)));
+    border-color: rgb(var(--c-frame) / 0.55);
+    box-shadow: inset 0 0 0 3px rgb(var(--c-surface)), inset 0 0 0 4px rgb(var(--c-frame) / 0.15), 0 10px 18px -10px rgb(0 0 0 / 0.8);
+  }
+  .ui-xp__label { font-family: var(--font-display); font-size: 0.85rem; letter-spacing: 0.08em; text-transform: none; color: rgb(var(--c-frame)); }
+  .ui-xp__track { height: 7px; border-radius: 999px; border-color: rgb(var(--c-frame) / 0.5); }
+  .ui-xp__fill { border-radius: 999px; background: var(--gilt); }
+  /* Graduations every tenth, as on the atlas's rulers. */
+  .ui-xp__track::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgb(var(--c-bg-deep) / 0.65) calc(10% - 1px) 10%);
+  }
+  .ui-xp__value { font-family: var(--font-numeric); font-size: 0.98rem; color: rgb(var(--c-ink)); }
+
   /* ---------------------------------------------------------------- Rail and hero column */
   .ui-rail {
     background: linear-gradient(90deg, rgb(var(--c-bg-deep) / 0.9), rgb(var(--c-bg) / 0.75));
@@ -360,6 +489,23 @@
   [aria-checked='true'] > .ui-switch { background: rgb(var(--c-enamel)); border-color: rgb(var(--c-frame)); }
   [aria-checked='true'] > .ui-switch::after { background: var(--gilt); }
 
+  /* A number field among buttons is a cartouche too: a gilt rim, a dark well inside. */
+  .ui-keyfield {
+    --tip: 0.55em;
+    --shape: polygon(var(--tip) 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, var(--tip) 100%, 0 50%);
+    padding: 1px;
+    background: linear-gradient(180deg, rgb(var(--c-frame) / 0.85), rgb(var(--c-frame) / 0.4));
+    clip-path: var(--shape);
+  }
+  .ui-keyfield:focus-within { background: var(--gilt); }
+  .ui-keyfield > .ui-input { height: calc(2rem - 2px) !important; border: 0; border-radius: 0; clip-path: var(--shape); background: rgb(var(--c-inset)); box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.6); font-family: var(--font-numeric); font-size: 1rem; font-variant-numeric: lining-nums; }
+  .ui-keyfield > .ui-input:focus { box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.6); }
+  /* Steppers: a dark well in a gilt rule, the arrows in gold. */
+  .ui-number { border-color: rgb(var(--c-frame) / 0.4); box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.5); }
+  .ui-number input { font-family: var(--font-numeric); font-size: 1.1rem; }
+  .ui-number button { color: rgb(var(--c-frame)); }
+  .ui-number button:not(:disabled):hover { color: rgb(var(--c-frame-bright)); background: rgb(var(--c-frame) / 0.12); }
+
   /* ---------------------------------------------------------------- Toasts */
   /* A plaque: gilt hairlines above and below. */
   .ui-toast { border-color: rgb(var(--c-frame) / 0.6); }
@@ -391,9 +537,9 @@
   .ui-dialog__eyebrow { font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.14em; text-transform: none; color: rgb(var(--c-frame)); opacity: 1; }
   .ui-dialog__rule { display: flex; }
   .ui-dialog__foot { border-top-color: rgb(var(--c-frame) / 0.25); }
-  .ui-dialog .ui-keyfacts { justify-content: center; column-gap: 3rem; }
-  .ui-dialog .ui-keyfacts > div:last-child { flex: 0 1 auto; min-width: 0; }
-  .ui-dialog .ui-minorfacts { justify-content: center; }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts { justify-content: center; column-gap: 3rem; }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts > div:last-child { flex: 0 1 auto; min-width: 0; }
+  :is(.ui-dialog, .ui-details) .ui-minorfacts { justify-content: center; }
 
   /* ---------------------------------------------------------------- Tags */
   /* Small enamel pills, their colour set in a dark ground. */
@@ -403,6 +549,9 @@
     background: linear-gradient(180deg, rgb(var(--tag-tone) / 0.2), rgb(var(--tag-tone) / 0.06));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
   }
+
+  .ui-chip { border-radius: 999px; font-family: var(--font-display); font-size: 0.9rem; }
+  .ui-chip[aria-pressed='true'] { background: linear-gradient(180deg, rgb(var(--c-enamel) / 0.6), rgb(var(--c-enamel-deep) / 0.7)); }
 
   /* ---------------------------------------------------------------- Choices */
   .ui-option[aria-pressed='true'] {
@@ -440,6 +589,10 @@
 
   /* ---------------------------------------------------------------- Atmosphere */
   .ui-astrolabe { animation: hf-astrolabe 240s linear infinite; }
+}
+
+@keyframes hf-pennant-ready {
+  50% { filter: drop-shadow(0 6px 6px rgb(0 0 0 / 0.55)) drop-shadow(0 0 9px rgb(var(--c-frame-bright) / 0.75)); }
 }
 
 @keyframes hf-astrolabe {

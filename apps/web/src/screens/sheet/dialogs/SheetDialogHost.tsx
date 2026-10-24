@@ -10,7 +10,28 @@ import { SpellDialog } from './SpellDialog';
 import { ArmorDialog, AttributeDialog, LimbDialog } from './StatDialogs';
 import { TraitDialog } from './TraitDialog';
 import { CurrencyDialog, ExperienceDialog, HealthDialog, SanityDialog } from './VitalDialogs';
-import { useSheetDialogs, type SheetDialog } from './context';
+import { useSheetDialogs, type EntryKind, type SheetDialog } from './context';
+
+/** The card of one entry, by its kind: shown as a dialog or, inside a pane scope, as the pane. */
+export const EntryCard: React.FC<{ kind: EntryKind; open: boolean; id?: string; edit?: boolean; onClose: () => void }> = ({
+  kind,
+  ...props
+}) => {
+  switch (kind) {
+    case 'attack':
+      return <AttackDialog {...props} />;
+    case 'ability':
+      return <AbilityDialog {...props} />;
+    case 'spell':
+      return <SpellDialog {...props} />;
+    case 'resource':
+      return <ResourceDialog {...props} />;
+    case 'trait':
+      return <TraitDialog {...props} />;
+    case 'item':
+      return <ItemDialog {...props} />;
+  }
+};
 
 /**
  * Renders the open sheet dialog. The last dialog stays mounted while it plays its closing
@@ -27,17 +48,12 @@ export const SheetDialogHost: React.FC = () => {
   const key = String(shown.serial);
   switch (current.kind) {
     case 'attack':
-      return <AttackDialog key={key} open={open} id={current.id} edit={current.edit} onClose={close} />;
     case 'ability':
-      return <AbilityDialog key={key} open={open} id={current.id} edit={current.edit} onClose={close} />;
     case 'spell':
-      return <SpellDialog key={key} open={open} id={current.id} edit={current.edit} onClose={close} />;
     case 'resource':
-      return <ResourceDialog key={key} open={open} id={current.id} edit={current.edit} onClose={close} />;
     case 'trait':
-      return <TraitDialog key={key} open={open} id={current.id} edit={current.edit} onClose={close} />;
     case 'item':
-      return <ItemDialog key={key} open={open} id={current.id} edit={current.edit} onClose={close} />;
+      return <EntryCard key={key} kind={current.kind} open={open} id={current.id} edit={current.edit} onClose={close} />;
     case 'health':
       return <HealthDialog key={key} open={open} onClose={close} />;
     case 'sanity':

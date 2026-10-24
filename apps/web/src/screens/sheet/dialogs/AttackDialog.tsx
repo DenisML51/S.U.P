@@ -71,7 +71,7 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
         ammunitionCost: draft.usesAmmunition ? (draft.ammunitionCost ?? 1) : undefined,
       };
       updateCharacter((doc) => ({ ...doc, attacks: upsertById(doc.attacks, saved) }));
-      if (entry) stopEditing();
+      if (entry && !edit) stopEditing();
       else onClose();
     };
     return (
@@ -85,7 +85,7 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
         eyebrow={entry ? 'Атака · правка' : 'Новая атака'}
         canSave={!!draft.name.trim()}
         onSave={save}
-        onCancel={entry ? stopEditing : onClose}
+        onCancel={entry && !edit ? stopEditing : onClose}
       >
         <EntryNameField kind="attack" draft={draft} set={set} />
         <div className="flex items-end gap-5">

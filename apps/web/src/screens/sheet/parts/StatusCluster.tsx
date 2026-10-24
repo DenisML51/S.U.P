@@ -18,7 +18,12 @@ const StatusBar: React.FC<{
   tone: MeterTone;
   onClick: () => void;
 }> = ({ icon, label, value, max, extra = 0, tone, onClick }) => (
-  <button type="button" onClick={onClick} title={label} className="group flex w-full items-end gap-3 text-left">
+  <button
+    type="button"
+    onClick={onClick}
+    title={label}
+    className="group flex w-full items-end gap-3 text-left"
+  >
     <span className="mb-[1px] shrink-0" style={{ color: `rgb(var(--c-${tone}))` }}>
       {icon}
     </span>
@@ -55,25 +60,41 @@ const QuickHealth: React.FC = () => {
       }}
       title="Введите число: Enter — урон"
     >
-      <input
-        className="ui-input h-8 w-16 px-2 py-0 text-center text-sm tabular-nums"
-        inputMode="numeric"
-        placeholder="0"
-        aria-label="Количество здоровья"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
-      />
-      <button type="submit" disabled={!valid} className="ui-button ui-button--danger ui-button--row !h-8 flex-1">
+      {/* The amount sits among the buttons and takes their silhouette. */}
+      <span className="ui-keyfield w-16 shrink-0">
+        <input
+          className="ui-input h-8 px-2 py-0 text-center text-sm tabular-nums"
+          inputMode="numeric"
+          placeholder="0"
+          aria-label="Количество здоровья"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
+        />
+      </span>
+      <button
+        type="submit"
+        disabled={!valid}
+        className="ui-button ui-button--danger ui-button--row !h-8 min-w-0 flex-1"
+      >
         Урон
       </button>
-      <button type="button" disabled={!valid} onClick={() => apply('heal')} className="ui-button ui-button--secondary ui-button--row !h-8 flex-1">
+      <button
+        type="button"
+        disabled={!valid}
+        onClick={() => apply('heal')}
+        className="ui-button ui-button--secondary ui-button--row !h-8 min-w-0 flex-1"
+      >
         Лечение
       </button>
     </form>
   );
 };
 
-/** Level in a framed plate under the setting's emblem, as in the reference status cluster. */
+/**
+ * The level, as in the reference status cluster: the setting's emblem over a plate with the
+ * number, set into the vitals panel's corner (hung from its top edge where the setting likes).
+ * Lit when the experience suffices for the next level.
+ */
 const LevelPlate: React.FC<{ character: Character; onClick: () => void }> = ({ character, onClick }) => {
   const progress = experienceProgress(character.level, character.experience);
   return (
@@ -81,67 +102,98 @@ const LevelPlate: React.FC<{ character: Character; onClick: () => void }> = ({ c
       type="button"
       onClick={onClick}
       title="Опыт и уровень"
-      className={cx(
-        'flex w-[70px] shrink-0 flex-col items-center border px-1 pb-2 pt-2.5 transition-colors hover:border-frame-bright',
-        progress.canLevelUp ? 'border-xp' : 'border-frame/50',
-      )}
-      style={{ borderRadius: 'var(--radius)', background: 'rgb(var(--c-inset) / 0.65)' }}
+      className="ui-level"
+      data-ready={progress.canLevelUp || undefined}
     >
-      <SettingEmblem size={26} className="text-frame" />
-      <span className="mt-2 w-full border-t border-frame/30 pt-1.5 text-center text-[10px] uppercase tracking-[0.22em] text-ink-faint">ур.</span>
-      <span className="ui-display ui-numeric text-[2.1rem] leading-none text-frame-bright">{character.level}</span>
+      <span className="ui-level__sheet">
+        <span className="ui-level__emblem">
+          <SettingEmblem size={30} />
+        </span>
+        <span className="ui-level__plate">
+          <span className="ui-level__unit">ур.</span>
+          <span className="ui-level__number ui-display ui-numeric">{character.level}</span>
+        </span>
+      </span>
     </button>
   );
 };
 
-/** Experience as its own line under the cluster: label, bar, numbers. */
+/** Experience on a plaque fixed under the vitals: the label and the figures over a graduated bar. */
 const ExperienceLine: React.FC<{ character: Character; onClick: () => void }> = ({ character, onClick }) => {
   const progress = experienceProgress(character.level, character.experience);
   const format = (value: number) => value.toLocaleString('ru-RU');
   return (
-    <button type="button" onClick={onClick} className="flex w-full items-center gap-3 text-xs" title="Опыт и уровень">
-      <span className="uppercase tracking-[0.16em] text-ink-faint">Опыт</span>
-      <Meter value={progress.progress} max={100} tone="xp" height={4} className="flex-1" label="Опыт" />
-      <span className="tabular-nums text-ink-muted">
-        {progress.isMaxLevel ? format(character.experience) : `${format(character.experience)} / ${format(progress.nextLevelXP)}`}
+    <button
+      type="button"
+      onClick={onClick}
+      className="ui-xp"
+      title="Опыт и уровень"
+      data-ready={progress.canLevelUp || undefined}
+    >
+      <span className="ui-xp__label">{progress.canLevelUp ? 'Новый уровень' : 'Опыт'}</span>
+      <span className="ui-xp__value ui-numeric">
+        {format(character.experience)}
+        <span className="ui-xp__of">
+          {progress.isMaxLevel ? ' · макс.' : ` / ${format(progress.nextLevelXP)}`}
+        </span>
       </span>
-      {progress.canLevelUp && <span className="text-xp">новый уровень</span>}
+      <span className="ui-xp__track" aria-hidden>
+        <span className="ui-xp__fill" style={{ width: `${progress.progress}%` }} />
+      </span>
     </button>
   );
 };
 
-const ResourceRow: React.FC<{ resource: Resource; onChange: (delta: number) => void; onOpen: () => void }> = ({
-  resource,
-  onChange,
-  onOpen,
-}) => (
+const ResourceRow: React.FC<{
+  resource: Resource;
+  onChange: (delta: number) => void;
+  onOpen: () => void;
+}> = ({ resource, onChange, onOpen }) => (
   <li className="flex items-center gap-2 py-1">
-    <button type="button" onClick={onOpen} className="min-w-0 flex-1 truncate text-left text-sm text-ink-muted hover:text-ink">
+    <button
+      type="button"
+      onClick={onOpen}
+      className="min-w-0 flex-1 truncate text-left text-sm text-ink-muted hover:text-ink"
+    >
       {resource.name}
     </button>
-    <IconButton label={`Потратить: ${resource.name}`} size={24} onClick={() => onChange(-1)} disabled={resource.current <= 0}>
+    <IconButton
+      label={`Потратить: ${resource.name}`}
+      size={24}
+      onClick={() => onChange(-1)}
+      disabled={resource.current <= 0}
+    >
       <IconMinus width={14} height={14} />
     </IconButton>
     <span className="w-14 text-center text-sm tabular-nums">
       <span className="text-ink">{resource.current}</span>
       <span className="text-ink-faint">/{resource.max}</span>
     </span>
-    <IconButton label={`Восстановить: ${resource.name}`} size={24} onClick={() => onChange(1)} disabled={resource.current >= resource.max}>
+    <IconButton
+      label={`Восстановить: ${resource.name}`}
+      size={24}
+      onClick={() => onChange(1)}
+      disabled={resource.current >= resource.max}
+    >
       <IconPlus width={14} height={14} />
     </IconButton>
   </li>
 );
 
 /**
- * The status cluster of the reference sheets: health and sanity bars, the level plate, experience
- * and quick damage or healing. Shared by the sheet and the combat screen.
+ * The status cluster of the reference sheets: a panel of health and sanity with the level set into
+ * its corner and quick damage or healing, experience on a plaque fixed under it.
  */
-export const StatusCluster: React.FC<{ character: Character; className?: string }> = ({ character, className }) => {
+export const StatusCluster: React.FC<{ character: Character; className?: string }> = ({
+  character,
+  className,
+}) => {
   const dialogs = useSheetDialogs();
   return (
-    <Panel className={cx('space-y-3 px-4 py-3', className)}>
-      <div className="flex gap-3">
-        <div className="flex-1 space-y-2.5">
+    <div className={cx('ui-status', className)}>
+      <Panel className="ui-status__panel space-y-2.5 px-4 py-3">
+        <LevelPlate character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
+        <div className="ui-status__bars space-y-2.5">
           <StatusBar
             icon={<IconHealth width={20} height={20} />}
             label="Здоровье"
@@ -160,11 +212,10 @@ export const StatusCluster: React.FC<{ character: Character; className?: string 
             onClick={() => dialogs.open({ kind: 'sanity' })}
           />
         </div>
-        <LevelPlate character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
-      </div>
+        <QuickHealth />
+      </Panel>
       <ExperienceLine character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
-      <QuickHealth />
-    </Panel>
+    </div>
   );
 };
 

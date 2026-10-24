@@ -99,11 +99,14 @@ export const EditableText: React.FC<{
 };
 
 /** Notes of a sheet section on their own sheet of paper, folded when long. */
-export const SectionNotes: React.FC<{ title?: string; value: string; onSave: (value: string) => void; placeholder?: string }> = ({
-  title = 'Заметки',
-  ...rest
-}) => (
-  <Panel variant="paper" ornate={false} className="px-5 py-3">
+export const SectionNotes: React.FC<{
+  title?: string;
+  value: string;
+  onSave: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}> = ({ title = 'Заметки', className, ...rest }) => (
+  <Panel variant="paper" ornate={false} className={cx('px-5 py-3', className)}>
     <EditableText title={title} collapsible {...rest} />
   </Panel>
 );

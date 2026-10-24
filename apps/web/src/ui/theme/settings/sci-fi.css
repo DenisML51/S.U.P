@@ -305,6 +305,27 @@
   .ui-meter--ticks::after { background-image: repeating-linear-gradient(90deg, transparent 0 calc(5% - 2px), rgb(var(--c-inset)) calc(5% - 2px) 5%); }
   .ui-prof-mark { transform: none; }
 
+  /* ---------------------------------------------------------------- Level and experience */
+  /* The level is a readout: the emblem in a plain cell, the number under a code line with a blue
+     tick; experience counted in cells. */
+  .ui-level__emblem,
+  .ui-level__plate { border-color: rgb(var(--c-line)); background: rgb(var(--c-surface-2) / 0.6); }
+  .ui-level__emblem { color: rgb(var(--c-ink-muted)); }
+  .ui-level__plate { position: relative; }
+  .ui-level__plate::before { content: ''; position: absolute; top: -1px; left: -1px; width: 12px; height: 2px; background: rgb(var(--c-accent)); }
+  .ui-level__unit { font-family: var(--font-display); font-size: 0.58rem; letter-spacing: 0.2em; }
+  .ui-level__number { font-size: 1.8rem; color: rgb(var(--c-ink)); }
+  .ui-level:hover .ui-level__plate { border-color: rgb(var(--c-accent)); }
+  .ui-xp__label,
+  .ui-xp__track { height: 8px; border-color: rgb(var(--c-line) / 0.8); }
+  .ui-xp__track::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(5% - 2px), rgb(var(--c-inset)) calc(5% - 2px) 5%);
+  }
+  .ui-xp__value { font-family: var(--font-numeric); font-size: 0.75rem; }
+
   /* ---------------------------------------------------------------- Rail and hero column */
   .ui-rail { background: rgb(var(--c-bg-deep) / 0.85); border-right-color: rgb(var(--c-line)); }
   .ui-rail__item { font-family: var(--font-display); letter-spacing: 0.06em; }
@@ -331,6 +352,20 @@
   .ui-popover__option[data-active] { box-shadow: inset 2px 0 0 rgb(var(--c-accent)); }
   .ui-swatch { border-radius: 0; }
 
+  /* A number field among buttons keeps their cut corner. */
+  .ui-keyfield {
+    --shape: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+    padding: 1px;
+    background: rgb(var(--c-frame) / 0.9);
+    clip-path: var(--shape);
+  }
+  .ui-keyfield:focus-within { background: rgb(var(--c-accent)); }
+  .ui-keyfield > .ui-input { height: calc(2rem - 2px) !important; border: 0; clip-path: var(--shape); font-family: var(--font-numeric); }
+  .ui-keyfield > .ui-input:focus { box-shadow: none; }
+  .ui-number { border-color: rgb(var(--c-line)); }
+  .ui-number input { font-family: var(--font-numeric); }
+  .ui-number button:not(:disabled):hover { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); }
+
   /* ---------------------------------------------------------------- Toasts */
   /* A readout with a lit edge. */
   .ui-toast {
@@ -347,14 +382,17 @@
   .ui-dialog__title { font-size: 1.35rem; letter-spacing: 0.06em; }
   .ui-dialog__eyebrow { color: rgb(var(--c-accent)); opacity: 1; }
   /* Key figures are readouts, each in its own lit cell. */
-  .ui-dialog .ui-keyfacts { gap: 0.5rem; }
-  .ui-dialog .ui-keyfacts > div {
+  :is(.ui-dialog, .ui-details) .ui-keyfacts { gap: 0.5rem; }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts > div {
     padding: 0.45rem 0.9rem 0.55rem;
     background: rgb(var(--c-surface-2));
     border-left: 3px solid rgb(var(--c-accent));
   }
-  .ui-dialog .ui-keyfacts dt { color: rgb(var(--c-ink-muted)); opacity: 1; }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts dt { color: rgb(var(--c-ink-muted)); opacity: 1; }
   .ui-keyfacts dd { font-family: var(--font-numeric); }
+
+  .ui-chip { font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  .ui-chip[aria-pressed='true'] { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
 
   /* ---------------------------------------------------------------- Choices */
   .ui-option[aria-pressed='true'] {

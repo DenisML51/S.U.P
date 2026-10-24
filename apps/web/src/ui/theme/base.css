@@ -108,7 +108,8 @@
 
 /* ------------------------------------------------------------------ Corners */
 .ui-corner,
-.ui-fx {
+.ui-fx,
+.ui-leaf {
   /* Overlays never take part in sibling spacing (space-y-* on a panel). */
   margin: 0 !important;
 }
@@ -1366,6 +1367,10 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-tabs__tab:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 2px; }
 .ui-tabs__count { font-size: 0.72rem; color: rgb(var(--c-ink-faint)); font-variant-numeric: tabular-nums; }
 
+/* ------------------------------------------------------------------ Ledger stack */
+/* Older leaves under a ledger's page: hidden unless the setting keeps its records on paper. */
+.ui-leaf { display: none; }
+
 /* ------------------------------------------------------------------ Ledger row states */
 .ui-ledger__row--dim { opacity: 0.6; }
 .ui-ledger__row[data-selected] { background: rgb(var(--c-paper-muted) / 0.16); }
@@ -1412,3 +1417,117 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   border: 1px solid rgb(var(--tag-tone) / 0.45);
   border-radius: var(--radius);
 }
+
+/* ------------------------------------------------------------------ Status cluster */
+/* The vitals panel with the level set into its top right corner, experience on a plaque fixed
+   under it. The bars leave room for the level. */
+.ui-status { display: flex; flex-direction: column; }
+.ui-status__panel { z-index: 1; }
+.ui-status__bars { padding-right: 5.2rem; }
+
+/* ------------------------------------------------------------------ Level and experience */
+/* The level beside the bars: the setting's emblem in a tile over a plate with the number. */
+.ui-level {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 4.5rem;
+}
+/* What the setting may shape as one piece (a pennant); otherwise its parts stand on their own. */
+.ui-level__sheet { display: contents; }
+.ui-level__emblem {
+  display: grid;
+  place-items: center;
+  height: 3rem;
+  color: rgb(var(--c-frame));
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  border-radius: var(--radius);
+  transition: color 200ms, border-color 200ms;
+}
+.ui-level__plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.35rem 0 0.45rem;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-frame) / 0.6);
+  border-radius: var(--radius);
+  transition: box-shadow 300ms, border-color 200ms;
+}
+.ui-level__unit { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
+.ui-level__number { font-size: 2rem; line-height: 1; color: rgb(var(--c-frame-bright)); }
+.ui-level:hover .ui-level__emblem { color: rgb(var(--c-frame-bright)); }
+.ui-level:hover .ui-level__plate { border-color: rgb(var(--c-frame-bright)); }
+.ui-level[data-ready] .ui-level__plate { animation: ui-level-ready 2.2s ease-in-out infinite; border-color: rgb(var(--c-xp)); }
+@keyframes ui-level-ready {
+  50% { box-shadow: 0 0 18px rgb(var(--c-xp) / 0.55); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-level[data-ready] .ui-level__plate { animation: none; box-shadow: 0 0 14px rgb(var(--c-xp) / 0.5); }
+}
+
+/* Experience on a plaque fixed under the vitals panel: the label, a graduated bar, the figures. */
+.ui-xp {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 0.35rem 0.6rem;
+  margin: -1px 0.6rem 0;
+  padding: 0.45rem 0.75rem 0.5rem;
+  text-align: left;
+  background: rgb(var(--c-surface));
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow-panel);
+}
+.ui-xp__label { font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
+.ui-xp__track {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 6px;
+  overflow: hidden;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+}
+.ui-xp__fill { position: absolute; inset: 0 auto 0 0; background: rgb(var(--c-xp)); transition: width 400ms ease-out; }
+.ui-xp__value { justify-self: end; font-size: 0.8rem; color: rgb(var(--c-ink-muted)); white-space: nowrap; }
+.ui-xp__of { color: rgb(var(--c-ink-faint)); }
+.ui-xp[data-ready] .ui-xp__label { color: rgb(var(--c-xp)); }
+.ui-xp:hover .ui-xp__track { border-color: rgb(var(--c-xp) / 0.6); }
+
+/* ------------------------------------------------------------------ Key field */
+/* A number field standing in a row of buttons: the setting gives it the buttons' silhouette. */
+.ui-keyfield { position: relative; display: inline-flex; }
+.ui-keyfield > .ui-input { width: 100%; }
+
+/* ------------------------------------------------------------------ Sheet sections */
+/* Side-by-side lists stack when the section gives up room to an entry's card. */
+.ui-section-list { container: section-list / inline-size; }
+@container section-list (max-width: 760px) {
+  .ui-section-list .ui-section__columns { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; align-content: start; }
+}
+
+/* ------------------------------------------------------------------ Chips */
+/* A small on/off choice among several (studied schools). */
+.ui-chip {
+  white-space: nowrap;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  color: rgb(var(--c-ink-faint));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  transition: color 120ms, border-color 120ms, background-color 120ms;
+}
+.ui-chip:hover { color: rgb(var(--c-ink-muted)); border-color: rgb(var(--c-frame) / 0.6); }
+.ui-chip[aria-pressed='true'] { color: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame-bright) / 0.7); background: rgb(var(--c-frame) / 0.12); }
+/* On paper a chip is written in the page's ink. */
+.ui-panel--paper .ui-chip { color: rgb(var(--c-paper-ink) / 0.6); border-color: rgb(var(--c-paper-muted) / 0.6); background: none; }
+.ui-panel--paper .ui-chip:hover { color: rgb(var(--c-paper-ink)); }
+.ui-panel--paper .ui-chip[aria-pressed='true'] { color: rgb(var(--c-paper-ink)); border-color: rgb(var(--c-paper-ink) / 0.7); background: rgb(var(--c-paper-muted) / 0.2); }

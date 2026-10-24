@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { DetailsPane } from '../../../ui/DetailsPane';
 import { Dialog } from '../../../ui/Dialog';
 import { Button } from '../../../ui/primitives';
+import { useEntryPresentation } from './context';
 import { DeleteButton } from './parts';
 
 /**
@@ -33,7 +35,10 @@ interface Common {
   onDelete?: () => void;
 }
 
-/** The reading side of a card: figures and text, "Изменить" and the entry's own action. */
+/**
+ * The reading side of a card: figures and text, "Изменить" and the entry's own action. Shown as a
+ * dialog, or as the details pane beside the list when the sheet has room for one.
+ */
 export const EntryView: React.FC<
   Common & {
     name: string;
@@ -45,32 +50,57 @@ export const EntryView: React.FC<
     primary?: React.ReactNode;
     children?: React.ReactNode;
   }
-> = ({ open, onClose, what, onDelete, name, eyebrow, icon, onEdit, primary, children }) => (
-  <Dialog
-    open={open}
-    onClose={onClose}
-    swapKey="view"
-    width="md"
-    eyebrow={eyebrow}
-    icon={icon}
-    title={name}
-    footerStart={onDelete && <DeleteButton what={what} name={name} onDelete={onDelete} />}
-    footer={
-      <>
-        <Button
-          variant={primary ? 'secondary' : 'primary'}
-          onClick={onEdit}
-          data-autofocus={primary ? undefined : true}
-        >
-          Изменить
-        </Button>
-        {primary}
-      </>
-    }
-  >
-    {children}
-  </Dialog>
-);
+> = ({ open, onClose, what, onDelete, name, eyebrow, icon, onEdit, primary, children }) => {
+  const presentation = useEntryPresentation();
+  if (presentation.mode === 'pane') {
+    return (
+      <DetailsPane
+        className="h-full"
+        eyebrow={eyebrow}
+        title={name}
+        icon={icon}
+        onClose={onClose}
+        tools={onDelete && <DeleteButton compact what={what} name={name} onDelete={onDelete} />}
+        actions={
+          <>
+            {primary}
+            <Button variant={primary ? 'secondary' : 'primary'} onClick={presentation.edit}>
+              Изменить
+            </Button>
+          </>
+        }
+      >
+        {children}
+      </DetailsPane>
+    );
+  }
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      swapKey="view"
+      width="md"
+      eyebrow={eyebrow}
+      icon={icon}
+      title={name}
+      footerStart={onDelete && <DeleteButton what={what} name={name} onDelete={onDelete} />}
+      footer={
+        <>
+          <Button
+            variant={primary ? 'secondary' : 'primary'}
+            onClick={onEdit}
+            data-autofocus={primary ? undefined : true}
+          >
+            Изменить
+          </Button>
+          {primary}
+        </>
+      }
+    >
+      {children}
+    </Dialog>
+  );
+};
 
 /** The editing side of a card: a form, saved as a whole or dropped. */
 export const EntryForm: React.FC<

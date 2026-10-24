@@ -34,6 +34,13 @@ export const Panel = forwardRef<HTMLElement, PanelProps>(
       {...rest}
     >
       {interactive && <span className="ui-fx" aria-hidden />}
+      {/* Paper lies on older leaves; settings that keep records on parchment show the stack. */}
+      {variant === 'paper' && (
+        <>
+          <span className="ui-leaf ui-leaf--under" aria-hidden />
+          <span className="ui-leaf ui-leaf--between" aria-hidden />
+        </>
+      )}
       {ornate && <Corners />}
       {crest && <Crest />}
       {children}

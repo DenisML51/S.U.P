@@ -51,7 +51,7 @@ export const ResourceDialog: React.FC<{
         current: Math.min(max, Math.max(0, draft.current)),
       };
       updateCharacter((doc) => ({ ...doc, resources: upsertById(doc.resources, saved) }));
-      if (entry) stopEditing();
+      if (entry && !edit) stopEditing();
       else onClose();
     };
     const slots = draft.spellSlotLevel !== undefined;
@@ -66,7 +66,7 @@ export const ResourceDialog: React.FC<{
         eyebrow={entry ? 'Ресурс · правка' : 'Новый ресурс'}
         canSave={!!draft.name.trim()}
         onSave={save}
-        onCancel={entry ? stopEditing : onClose}
+        onCancel={entry && !edit ? stopEditing : onClose}
         width="md"
       >
         <EntryNameField kind="resource" draft={draft} set={set} />

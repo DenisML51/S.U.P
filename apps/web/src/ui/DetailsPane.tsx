@@ -22,11 +22,18 @@ export const DetailsPane: React.FC<{
   facts?: DetailsFact[];
   /** Buttons along the bottom edge. */
   actions?: React.ReactNode;
+  /** Small tools in the top right corner, before the close button (delete). */
+  tools?: React.ReactNode;
   onClose?: () => void;
   children?: React.ReactNode;
   className?: string;
-}> = ({ title, eyebrow, icon, facts, actions, onClose, children, className }) => (
-  <Panel as="aside" crest className={cx('ui-details flex min-h-0 flex-col', className)} aria-label="Подробности">
+}> = ({ title, eyebrow, icon, facts, actions, tools, onClose, children, className }) => (
+  <Panel
+    as="aside"
+    crest
+    className={cx('ui-details flex min-h-0 flex-col', className)}
+    aria-label="Подробности"
+  >
     <header className="ui-details__head relative px-6 pb-3 pt-7">
       <div className="flex items-center gap-4">
         {icon}
@@ -36,10 +43,15 @@ export const DetailsPane: React.FC<{
         </div>
       </div>
       <Rule className="ui-details__rule mt-4" />
-      {onClose && (
-        <IconButton label="Закрыть" onClick={onClose} size={30} className="!absolute right-3 top-3">
-          <IconClose width={16} height={16} />
-        </IconButton>
+      {(tools || onClose) && (
+        <div className="absolute right-3 top-3 flex items-center gap-1">
+          {tools}
+          {onClose && (
+            <IconButton label="Закрыть" onClick={onClose} size={30}>
+              <IconClose width={16} height={16} />
+            </IconButton>
+          )}
+        </div>
       )}
     </header>
     {facts && facts.length > 0 && (
@@ -52,7 +64,11 @@ export const DetailsPane: React.FC<{
         ))}
       </dl>
     )}
-    {children && <div className="ui-details__body ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-4">{children}</div>}
-    {actions && <footer className="ui-details__foot flex flex-wrap items-center gap-2 px-6 py-4">{actions}</footer>}
+    {children && (
+      <div className="ui-details__body ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-4">{children}</div>
+    )}
+    {actions && (
+      <footer className="ui-details__foot flex flex-wrap items-center gap-2 px-6 py-4">{actions}</footer>
+    )}
   </Panel>
 );

@@ -67,12 +67,52 @@
   }
   /* Records are aged vellum in the same rim, darkening towards the edges. */
   .ui-panel--paper {
-    border-color: rgb(var(--c-frame) / 0.8);
-    box-shadow:
-      inset 0 0 0 3px rgb(var(--c-paper)),
-      inset 0 0 0 4px rgb(var(--c-paper-muted) / 0.55),
-      inset 0 0 70px rgb(var(--c-paper-ink) / 0.5),
-      var(--shadow-panel);
+    --page-rule: rgb(var(--c-frame) / 0.8);
+    --page-shading: inset 0 0 0 3px rgb(var(--c-paper)), inset 0 0 0 4px rgb(var(--c-paper-muted) / 0.55), inset 0 0 70px rgb(var(--c-paper-ink) / 0.5);
+  }
+  /* Paper is a stack, not a single sheet (the reference's tracked goals): two older leaves lie askew
+     under the page, each turned its own way, their edges worn uneven. The page's own fill, rule and
+     shading are drawn by ::before, so the leaves (below it) show only where they stick out. */
+  /* Room for the leaves on the left; below them the sheet section keeps a padding. */
+  .ui-panel--paper:not(.ui-dialog) { margin-left: 9px; }
+  .ui-panel--paper {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+  .ui-panel--paper::before {
+    inset: -1px;
+    z-index: -1;
+    opacity: 1;
+    mix-blend-mode: normal;
+    border: 1px solid var(--page-rule);
+    background:
+      radial-gradient(ellipse 70% 55% at 30% 18%, rgb(255 240 210 / 0.12), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 88% 92%, rgb(var(--c-paper-muted) / 0.3), transparent 70%),
+      rgb(var(--c-paper));
+    box-shadow: var(--page-shading), 0 18px 30px -18px rgb(0 0 0 / 0.85);
+  }
+  .ui-leaf {
+    display: block;
+    position: absolute;
+    inset: -1px;
+    z-index: -2;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 40% at 30% 20%, rgb(255 240 210 / 0.08), transparent 70%),
+      var(--leaf);
+    box-shadow: inset 0 0 0 1px rgb(var(--c-paper-muted) / 0.6), inset 0 0 40px rgb(var(--c-paper-muted) / 0.6);
+  }
+  .ui-leaf--under {
+    --leaf: color-mix(in srgb, rgb(var(--c-paper)) 62%, rgb(var(--c-paper-muted)));
+    transform: translate(-8px, 7px) rotate(-0.6deg);
+    clip-path: polygon(0.6% 1.4%, 17% 0.2%, 38% 1.1%, 61% 0%, 84% 0.9%, 99.2% 0.3%, 100% 18%, 99.1% 41%, 100% 66%, 99.4% 98.6%, 79% 100%, 55% 98.9%, 31% 100%, 9% 99.1%, 0% 99.6%, 0.9% 74%, 0% 47%, 0.7% 22%);
+    filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.6));
+  }
+  .ui-leaf--between {
+    --leaf: color-mix(in srgb, rgb(var(--c-paper)) 78%, rgb(var(--c-paper-muted)));
+    transform: translate(-4px, 3px) rotate(0.35deg);
+    clip-path: polygon(0% 0.8%, 23% 0%, 46% 0.9%, 72% 0.1%, 100% 0.7%, 99.3% 26%, 100% 52%, 99.4% 79%, 100% 100%, 74% 99.2%, 49% 100%, 26% 99.3%, 0.5% 100%, 0% 76%, 0.8% 51%, 0% 27%);
   }
   .ui-corner { color: rgb(var(--c-frame-bright)); }
   /* The arch stands on the edge: its base line (y = 20 of 24) lies on the border. */
@@ -293,6 +333,27 @@
   .ui-prof-mark.bg-frame-bright { background: rgb(var(--c-danger)); border-color: rgb(var(--c-danger)); }
   .ui-prof-mark.outline { outline-color: rgb(var(--c-frame-bright) / 0.7); border-radius: 999px; }
 
+  /* ---------------------------------------------------------------- Level and experience */
+  /* The emblem on an iron tile, the level on a brass-rimmed plate with its corners cut; the bar
+     an iron channel filling with brass. */
+  .ui-level { --cut: 6px; }
+  .ui-level__emblem,
+  .ui-level__plate {
+    border: 0;
+    background: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-inset)));
+    box-shadow: inset 0 0 0 1px rgb(var(--c-frame) / 0.7), inset 0 0 0 4px rgb(var(--c-inset)), inset 0 0 0 5px rgb(var(--c-frame) / 0.25);
+    clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
+  }
+  .ui-level__emblem { color: rgb(var(--c-frame)); }
+  .ui-level__unit { font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: none; font-variant: small-caps; color: rgb(var(--c-frame)); }
+  .ui-level__number { color: rgb(var(--c-ink)); }
+  .ui-level:hover .ui-level__emblem { color: rgb(var(--c-danger)); }
+  .ui-level[data-ready] .ui-level__plate { animation: none; box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright)), inset 0 0 0 4px rgb(var(--c-inset)), inset 0 -16px 22px -10px rgb(var(--c-candle) / 0.45); }
+  .ui-xp__label { font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.06em; text-transform: none; font-variant: small-caps; color: rgb(var(--c-frame)); }
+  .ui-xp__track { height: 7px; border-color: rgb(var(--c-frame) / 0.45); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7); }
+  .ui-xp__fill { background: var(--brass); }
+  .ui-xp__value { font-family: var(--font-numeric); font-size: 0.92rem; color: rgb(var(--c-ink)); }
+
   /* ---------------------------------------------------------------- Rail and hero column */
   /* Old leather down the edge, a brass rule beside it; the open section is marked in blood and lit
      by a candle. */
@@ -325,6 +386,21 @@
   .ui-switch,
   .ui-switch::after { border-radius: 2px; }
 
+  /* A number field among buttons is an iron plate too, its corners cut, the well sunk in it. */
+  .ui-keyfield {
+    --cut: 4px;
+    --shape: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
+    padding: 1px;
+    background: var(--brass);
+    clip-path: var(--shape);
+  }
+  .ui-keyfield > .ui-input { height: calc(2rem - 2px) !important; border: 0; clip-path: var(--shape); background: rgb(var(--c-inset)); box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.75); font-family: var(--font-numeric); font-size: 1rem; }
+  .ui-keyfield > .ui-input:focus { box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.75), inset 0 -8px 12px -8px rgb(var(--c-candle) / 0.5); }
+  .ui-number { border-color: rgb(var(--c-frame) / 0.4); box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.6); }
+  .ui-number input { font-family: var(--font-numeric); font-size: 1.05rem; }
+  .ui-number button { color: rgb(var(--c-frame)); }
+  .ui-number button:not(:disabled):hover { color: rgb(var(--c-ink)); background: radial-gradient(circle at 50% 120%, rgb(var(--c-candle) / 0.25), transparent 70%); }
+
   /* ---------------------------------------------------------------- Toasts */
   /* A note pinned under a wax seal, worn dark at the edges. */
   .ui-toast {
@@ -338,6 +414,9 @@
   .ui-dialog__eyebrow { font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.08em; text-transform: none; font-variant: small-caps; color: rgb(var(--c-frame)); opacity: 1; }
   .ui-dialog__rule { display: flex; opacity: 0.7; }
   .ui-dialog__foot { border-top-color: rgb(var(--c-frame) / 0.25); }
+
+  .ui-chip { font-family: var(--font-display); font-variant: small-caps; font-size: 0.9rem; }
+  .ui-chip[aria-pressed='true'] { color: rgb(var(--c-ink)); background: rgb(var(--c-frame) / 0.1); box-shadow: inset 3px 0 0 rgb(var(--c-accent)); }
 
   /* ---------------------------------------------------------------- Choices */
   .ui-tag {
