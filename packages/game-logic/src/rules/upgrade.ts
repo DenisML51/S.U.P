@@ -1,4 +1,5 @@
 import type { Character } from '@itd/schema';
+import { deriveArmorClassBonuses } from './armor';
 import { clampLimbHP } from './health';
 import { boundSanity } from './sanity';
 
@@ -10,5 +11,6 @@ import { boundSanity } from './sanity';
  * of a stored document, before any edit. Running it again changes nothing.
  */
 export function upgradeCharacter(character: Character): Character {
-  return boundSanity({ ...character, limbs: character.limbs.map(clampLimbHP) });
+  const derived = deriveArmorClassBonuses(character);
+  return boundSanity({ ...derived, limbs: derived.limbs.map(clampLimbHP) });
 }

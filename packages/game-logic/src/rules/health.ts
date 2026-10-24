@@ -4,7 +4,7 @@ import { abilityModifier } from './abilities';
 
 export const LIMB_IDS = ['head', 'torso', 'rightArm', 'leftArm', 'rightLeg', 'leftLeg'] as const;
 
-const LIMB_NAMES: Record<(typeof LIMB_IDS)[number], string> = {
+export const LIMB_NAMES: Record<(typeof LIMB_IDS)[number], string> = {
   head: 'Голова',
   torso: 'Торс',
   rightArm: 'Правая рука',
@@ -17,9 +17,10 @@ const LIMB_NAMES: Record<(typeof LIMB_IDS)[number], string> = {
 export const calculateLimbMaxHP = (maxHP: number, constitution: number): number =>
   Math.ceil(maxHP / 2) + abilityModifier(constitution);
 
-export function getDefaultLimbs(maxHP: number, constitution: number, armorClass: number): Limb[] {
+/** Limbs of a new hero: full health and no armour-class modifier of their own. */
+export function getDefaultLimbs(maxHP: number, constitution: number): Limb[] {
   const limbMaxHP = calculateLimbMaxHP(maxHP, constitution);
-  return LIMB_IDS.map((id) => ({ id, name: LIMB_NAMES[id], currentHP: limbMaxHP, maxHP: limbMaxHP, ac: armorClass }));
+  return LIMB_IDS.map((id) => ({ id, name: LIMB_NAMES[id], currentHP: limbMaxHP, maxHP: limbMaxHP, ac: 0, acBonus: 0 }));
 }
 
 /** Hit points of a lost limb: wounds never take it lower. */

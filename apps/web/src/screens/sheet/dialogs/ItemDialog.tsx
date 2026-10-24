@@ -1,6 +1,15 @@
 import React from 'react';
-import { createEntityId, isShield, isStackable, itemQuantity, removeItem, saveItem } from '@itd/game-logic';
-import type { Character, InventoryItem, ItemType, WeaponClass } from '@itd/schema';
+import {
+  LIMB_IDS,
+  LIMB_NAMES,
+  createEntityId,
+  isShield,
+  isStackable,
+  itemQuantity,
+  removeItem,
+  saveItem,
+} from '@itd/game-logic';
+import type { Character, InventoryItem, ItemType, LimbArmor, WeaponClass } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ITEM_TYPE_LABEL, itemClassName, itemKindLabel } from '../../../ui/characterLabels';
 import { MarkdownField, NumberField, Segmented, Switch } from '../../../ui/forms';
@@ -25,6 +34,9 @@ const TYPE_OPTIONS: ItemType[] = ['item', 'weapon', 'armor', 'ammunition'];
 
 export const isEquippable = (item: InventoryItem) =>
   item.type === 'armor' || item.type === 'weapon' || isShield(item);
+
+/** Armour that covers no limb: each one counts as unarmoured. */
+const NO_LIMB_ARMOR: LimbArmor = { head: 0, torso: 0, rightArm: 0, leftArm: 0, rightLeg: 0, leftLeg: 0 };
 
 const blankItem = (): InventoryItem => ({
   id: createEntityId('item'),
@@ -212,6 +224,25 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
               </>
             )}
           </div>
+        )}
+        {draft.type === 'armor' && !isShield(draft) && (
+          <FormSection label="КБ конечностей" aside={<span className="text-xs text-ink-faint">0 — не закрыта: 10 + ЛВК</span>}>
+            <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+              {LIMB_IDS.map((limb) => (
+                <Field key={limb} label={LIMB_NAMES[limb]}>
+                  {({ id }) => (
+                    <NumberField
+                      id={id}
+                      min={0}
+                      value={draft.limbACs?.[limb] ?? 0}
+                      onChange={(value) => set({ limbACs: { ...NO_LIMB_ARMOR, ...draft.limbACs, [limb]: value } })}
+                      className="w-full"
+                    />
+                  )}
+                </Field>
+              ))}
+            </div>
+          </FormSection>
         )}
 
         {draft.type === 'weapon' && (

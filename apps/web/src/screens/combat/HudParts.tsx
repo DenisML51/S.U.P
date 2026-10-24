@@ -5,6 +5,7 @@ import {
   ACTION_SLOTS,
   CONDITIONS,
   actionLimitsOf,
+  armorClassOf,
   experienceProgress,
   formatModifier,
   initiativeModifier,
@@ -467,7 +468,7 @@ export const CombatStats: React.FC<{
   const stats: { label: string; value: React.ReactNode; onClick?: () => void; hint: string }[] = [
     {
       label: 'КБ',
-      value: character.armorClass,
+      value: armorClassOf(character),
       onClick: () => dialogs.open({ kind: 'armor' }),
       hint: 'Класс брони: нажмите, чтобы изменить',
     },

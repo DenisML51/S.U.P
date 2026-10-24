@@ -2,7 +2,6 @@ import type { Ability, Build, Character, CharacterDraft, InventoryItem, Resistan
 import { ATTRIBUTES_LIST, SKILLS_LIST } from '../content/attributes';
 import { spellColor } from '../content/combat';
 import { abilityModifier } from '../rules/abilities';
-import { calculateArmorClass } from '../rules/armor';
 import { DND } from './content';
 import { proficiencyForLevel, resolveAmount } from './helpers';
 import type {
@@ -593,6 +592,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
     armorClassBonus: {
       always: ofType('armorClass').filter((e) => !e.armored).reduce((sum, e) => sum + e.amount, 0),
       armored: ofType('armorClass').filter((e) => e.armored).reduce((sum, e) => sum + e.amount, 0),
+      manual: character.armorClassBonus?.manual,
     },
     resistances,
     resources: [...resources, ...character.resources.filter((r) => !r.grant && !resources.some((g) => g.id === r.id))],
@@ -607,8 +607,8 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
     attacks: character.attacks.map((attack) => weaponAttackFor(attack, character.inventory, scores, proficiency)),
     build,
   };
-  // Armour class follows the worn gear and the bonuses just written.
-  return { character: { ...result, armorClass: calculateArmorClass(result) }, missing: [...new Set(missing)] };
+
+  return { character: result, missing: [...new Set(missing)] };
 }
 
 /** Attack and damage bonus of a preset weapon: proficiency plus Strength, Dexterity for finesse or ranged. */

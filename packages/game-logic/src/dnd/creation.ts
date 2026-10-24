@@ -1,6 +1,6 @@
 import type { Build, Character, CharacterDraft, InventoryItem } from '@itd/schema';
 import { attributeScore } from '../rules/abilities';
-import { calculateArmorClass, isShield } from '../rules/armor';
+import { isShield } from '../rules/armor';
 import { buildNewCharacter, startingAttributes, startingSkills } from '../rules/creation';
 import { getDefaultLimbs } from '../rules/health';
 import { equipItem } from '../rules/inventory';
@@ -112,8 +112,7 @@ export function createDndHero({ name, build, classKitId, backgroundKitId }: DndH
     ...built,
     currentHP: built.maxHP,
     experience: experienceForLevel(build.level),
-    armorClass: calculateArmorClass(built),
-    limbs: getDefaultLimbs(built.maxHP, attributeScore(built, 'constitution'), calculateArmorClass(built)),
+    limbs: getDefaultLimbs(built.maxHP, attributeScore(built, 'constitution')),
     inventory,
     currency: { ...built.currency, gold: built.currency.gold + gold },
   };
