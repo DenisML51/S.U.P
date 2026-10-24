@@ -177,3 +177,24 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 .ui-card-name {
   font-size: clamp(1rem, calc(var(--card-w, 15rem) * 0.105), 1.35rem);
 }
+
+/* ---------------------------------------------------------------- Table talk */
+.ui-chat__line {
+  border-radius: calc(var(--radius) * 0.5);
+  background: rgb(var(--c-inset) / 0.55);
+  border-left: 2px solid transparent;
+}
+.ui-chat__line--master {
+  border-left-color: rgb(var(--c-frame) / 0.7);
+}
+/* A private word: tinted in the accent, so it is never taken for something the table heard. */
+.ui-chat__line--private {
+  background: rgb(var(--c-accent) / 0.1);
+  border-left-color: rgb(var(--c-accent) / 0.8);
+}
+.ui-chat__compose {
+  border-top: 1px solid rgb(var(--c-line) / 0.6);
+}
+.ui-chat__input--private {
+  border-color: rgb(var(--c-accent) / 0.7);
+}

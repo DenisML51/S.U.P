@@ -36,6 +36,13 @@
       "when": 1792851115366,
       "tag": "0004_party_lore",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792852682847,
+      "tag": "0005_party_messages",
+      "breakpoints": true
     }
   ]
 }

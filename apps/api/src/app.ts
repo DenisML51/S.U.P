@@ -17,6 +17,7 @@ import { AccessTokenSigner } from './modules/auth/crypto';
 import { characterRoutes } from './modules/characters/characters.routes';
 import { CharactersService } from './modules/characters/characters.service';
 import { CombatService } from './modules/parties/combat.service';
+import { MessagesService } from './modules/parties/messages.service';
 import { PartyAccess } from './modules/parties/partyAccess';
 import { PartyQueries } from './modules/parties/parties.queries';
 import { partyRoutes } from './modules/parties/parties.routes';
@@ -35,6 +36,7 @@ export interface AppServices {
   parties: PartiesService;
   combat: CombatService;
   partyQueries: PartyQueries;
+  messages: MessagesService;
   /** Sockets of this process. */
   hub: RealtimeHub;
   /** Cross-process change bus; the app forwards it into `hub`. */
@@ -59,6 +61,7 @@ export function createServices(config: Config, { db, sql }: DatabaseConnection):
     parties,
     combat,
     partyQueries: new PartyQueries(db),
+    messages: new MessagesService(db, notifier),
     assets: new AssetsService(db),
   };
 }
@@ -122,6 +125,7 @@ export async function buildApp(
         parties: services.parties,
         combat: services.combat,
         queries: services.partyQueries,
+        messages: services.messages,
       });
       await api.register(assetRoutes, { auth: services.auth, assets: services.assets });
       await api.register(realtimeRoutes, { auth: services.auth, hub: services.hub });

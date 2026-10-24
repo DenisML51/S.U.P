@@ -225,7 +225,9 @@ export const usePartyStore = create<PartyState>((set, get) => {
       set({ list: null, parties: {}, gone: {}, failed: {} });
       if (!workspace) return;
 
-      detach = workspace.onPartyChanged((partyId) => {
+      detach = workspace.onPartyEvent((event) => {
+        if (event.type !== 'changed') return;
+        const { partyId } = event;
         void get().refreshList();
         const ids = partyId === null ? [...watchers.keys()] : [partyId];
         for (const id of ids) if (watchers.has(id) || get().parties[id]) void fetchParty(id);

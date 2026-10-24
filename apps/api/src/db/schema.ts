@@ -251,6 +251,24 @@ export const partyCombatants = pgTable(
   ],
 );
 
+/** Table talk: to everyone (`recipient_id` null) or private between the master and one player. */
+export const partyMessages = pgTable(
+  'party_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    partyId: uuid('party_id')
+      .notNull()
+      .references(() => parties.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    recipientId: uuid('recipient_id').references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('party_messages_party_created_idx').on(t.partyId, t.createdAt, t.id)],
+);
+
 export type UserRow = typeof users.$inferSelect;
 export type RefreshTokenRow = typeof refreshTokens.$inferSelect;
 export type CharacterRow = typeof characters.$inferSelect;

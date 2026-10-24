@@ -1,8 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { formatInviteCode, PARTY_LIMITS, type PartyDto, type PartyHeroDto, type PartyNpcDto } from '@itd/schema';
+import {
+  formatInviteCode,
+  PARTY_LIMITS,
+  type PartyDto,
+  type PartyHeroDto,
+  type PartyNpcDto,
+} from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { useChatStore } from '../../store/useChatStore';
 import { useNavStore } from '../../store/useNavStore';
 import { useParty, usePartyStore } from '../../store/usePartyStore';
 import { useSessionStore } from '../../store/useSessionStore';
@@ -19,11 +26,12 @@ import {
   IconSettings,
   IconSync,
 } from '../../ui/icons';
-import { Button, IconButton, Panel, SectionTitle, cx } from '../../ui/primitives';
+import { Button, IconButton, Panel, Tabs, cx } from '../../ui/primitives';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
 import { clearDraft } from '../create/useDraftState';
+import { ChatPanel } from './ChatPanel';
 import { HeroPickDialog } from './HeroPickDialog';
 import { InitiativeDialog } from './InitiativeDialog';
 import { InitiativeStrip } from './InitiativeStrip';
@@ -42,7 +50,10 @@ const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
  * A party's table, in the party's world: the cover and story on top, the heroes at the table, the
  * fight when one goes on. The master also keeps the invite code, the NPCs and the seats here.
  */
-export const PartyScreen: React.FC<{ partyId: string; onOpenSettings: () => void }> = ({ partyId, onOpenSettings }) => {
+export const PartyScreen: React.FC<{ partyId: string; onOpenSettings: () => void }> = ({
+  partyId,
+  onOpenSettings,
+}) => {
   const party = useParty(partyId);
   const gone = usePartyStore((s) => s.gone[partyId]);
   const failed = usePartyStore((s) => s.failed[partyId]);
@@ -93,7 +104,11 @@ type Overlay =
   | { kind: 'new-code' }
   | { kind: 'end-combat' };
 
-const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () => void }> = ({ party, onOpenSettings, onHome }) => {
+const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () => void }> = ({
+  party,
+  onOpenSettings,
+  onHome,
+}) => {
   const userId = useSessionStore((s) => s.user?.id);
   const store = usePartyStore.getState();
   const loadCharacter = useCharacterStore((s) => s.loadCharacter);
@@ -136,11 +151,15 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
             Главная
           </Button>
           <span className="text-[11px] uppercase tracking-[0.22em] text-ink-faint">
-            {SETTING_INFO[party.setting].label} · {isMaster ? 'вы мастер' : `мастер ${party.members[0]?.displayName ?? ''}`}
+            {SETTING_INFO[party.setting].label} ·{' '}
+            {isMaster ? 'вы мастер' : `мастер ${party.members[0]?.displayName ?? ''}`}
           </span>
           <div className="ml-auto flex gap-1">
             {isMaster ? (
-              <IconButton label="Настройки партии" onClick={() => go({ screen: 'party-form', partyId: party.id })}>
+              <IconButton
+                label="Настройки партии"
+                onClick={() => go({ screen: 'party-form', partyId: party.id })}
+              >
                 <IconEdit width={20} height={20} />
               </IconButton>
             ) : (
@@ -168,7 +187,11 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
               action={
                 isMaster &&
                 !party.combat && (
-                  <Button variant="primary" icon={<IconCombat width={18} height={18} />} onClick={() => setOverlay({ kind: 'combat' })}>
+                  <Button
+                    variant="primary"
+                    icon={<IconCombat width={18} height={18} />}
+                    onClick={() => setOverlay({ kind: 'combat' })}
+                  >
                     Начать бой
                   </Button>
                 )
@@ -183,7 +206,12 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                   exit={{ opacity: 0, height: 0 }}
                   transition={ENTER}
                 >
-                  <CombatPanel party={party} combat={combat} onAdd={() => setOverlay({ kind: 'combat' })} onEnd={() => setOverlay({ kind: 'end-combat' })} />
+                  <CombatPanel
+                    party={party}
+                    combat={combat}
+                    onAdd={() => setOverlay({ kind: 'combat' })}
+                    onEnd={() => setOverlay({ kind: 'end-combat' })}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -208,15 +236,24 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
             animate={{ opacity: 1, x: 0, transition: { ...ENTER, delay: 0.16 } }}
             exit={{ opacity: 0, x: 16, transition: { duration: 0.2 } }}
           >
-            {isMaster && party.inviteCode && <InvitePanel code={party.inviteCode} onRenew={() => setOverlay({ kind: 'new-code' })} />}
-            <SeatsPanel party={party} userId={userId} onKick={(member) => setOverlay({ kind: 'kick', ...member })} />
+            {isMaster && party.inviteCode && (
+              <InvitePanel code={party.inviteCode} onRenew={() => setOverlay({ kind: 'new-code' })} />
+            )}
+            <TalkPanel
+              party={party}
+              userId={userId}
+              onKick={(member) => setOverlay({ kind: 'kick', ...member })}
+            />
             {/* A player's own hero waits in the corner: the way into its sheet and its fight. */}
             {!isMaster && (
-              <div className="mt-auto flex min-h-0 flex-1 flex-col justify-end">
+              <div className="flex h-[17rem] shrink-0 flex-col">
                 <MyHero
                   hero={myHeroes[0]}
                   inCombat={party.combat !== null}
-                  onOpen={(view) => myHeroes[0] && void loadCharacter(myHeroes[0].characterId, view === 'combat' ? 'hotbar' : 'tabs')}
+                  onOpen={(view) =>
+                    myHeroes[0] &&
+                    void loadCharacter(myHeroes[0].characterId, view === 'combat' ? 'hotbar' : 'tabs')
+                  }
                   onBring={() => setOverlay({ kind: 'pick-hero' })}
                 />
               </div>
@@ -243,7 +280,9 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         onCreate={createHero}
       />
       {overlay?.kind === 'combat' && <StartCombatDialog open party={party} onClose={close} />}
-      {overlay?.kind === 'npc' && <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} onClose={close} />}
+      {overlay?.kind === 'npc' && (
+        <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} onClose={close} />
+      )}
       <LoreDialog
         open={overlay?.kind === 'lore'}
         party={party}
@@ -265,7 +304,8 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         message={
           overlay?.kind === 'remove-hero' && (
             <>
-              <span className="text-ink">{overlay.hero.name}</span> покинет стол; лист героя останется у владельца.
+              <span className="text-ink">{overlay.hero.name}</span> покинет стол; лист героя останется у
+              владельца.
             </>
           )
         }
@@ -280,7 +320,13 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
       <ConfirmDialog
         open={overlay?.kind === 'kick'}
         title="Убрать игрока из-за стола?"
-        message={overlay?.kind === 'kick' && <><span className="text-ink">{overlay.name}</span> и его герой покинут партию.</>}
+        message={
+          overlay?.kind === 'kick' && (
+            <>
+              <span className="text-ink">{overlay.name}</span> и его герой покинут партию.
+            </>
+          )
+        }
         confirmLabel="Убрать"
         danger
         onCancel={close}
@@ -318,12 +364,12 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
 // ------------------------------------------------------------------------------------------------
 
 /** The cover with the party's name and story; it folds down to a strip while a fight goes on. */
-const Banner: React.FC<{ party: PartyDto; compact: boolean; onOpen: () => void; action?: React.ReactNode }> = ({
-  party,
-  compact,
-  onOpen,
-  action,
-}) => (
+const Banner: React.FC<{
+  party: PartyDto;
+  compact: boolean;
+  onOpen: () => void;
+  action?: React.ReactNode;
+}> = ({ party, compact, onOpen, action }) => (
   <Panel crest className="ui-party-banner group shrink-0 overflow-hidden p-0">
     <motion.div
       className="relative flex"
@@ -331,13 +377,30 @@ const Banner: React.FC<{ party: PartyDto; compact: boolean; onOpen: () => void; 
       animate={{ height: compact ? 96 : 'min(32vh, 300px)' }}
       transition={ENTER}
     >
-      <PartyCover assetId={party.coverAssetId} setting={party.setting} className="!absolute inset-0 !rounded-none" />
+      <PartyCover
+        assetId={party.coverAssetId}
+        setting={party.setting}
+        className="!absolute inset-0 !rounded-none"
+      />
       <div className="absolute inset-0 bg-gradient-to-r from-bg-deep via-bg-deep/80 via-50% to-bg-deep/10" />
       <div className="absolute inset-0 bg-gradient-to-t from-bg-deep/90 via-transparent via-60% to-transparent" />
       {/* The whole cover opens the chronicle; the text over it lets clicks through. */}
-      <button type="button" onClick={onOpen} className="absolute inset-0 cursor-pointer" aria-label="Открыть летопись партии" title="Летопись" />
+      <button
+        type="button"
+        onClick={onOpen}
+        className="absolute inset-0 cursor-pointer"
+        aria-label="Открыть летопись партии"
+        title="Летопись"
+      />
       <div className="pointer-events-none relative flex max-w-[44rem] flex-col justify-end gap-2 px-8 py-6">
-        <h1 className={cx('ui-display ui-title leading-[1.05] text-ink transition-all', compact ? 'text-[2rem]' : 'text-[2.8rem]')}>{party.name}</h1>
+        <h1
+          className={cx(
+            'ui-display ui-title leading-[1.05] text-ink transition-all',
+            compact ? 'text-[2rem]' : 'text-[2.8rem]',
+          )}
+        >
+          {party.name}
+        </h1>
         {!compact && party.description && (
           <p className="line-clamp-3 whitespace-pre-line pr-2 text-[15px] leading-relaxed text-ink-muted">
             {party.description}
@@ -379,7 +442,12 @@ const InvitePanel: React.FC<{ code: string; onRenew: () => void }> = ({ code, on
           </IconButton>
         </div>
       </div>
-      <button type="button" onClick={() => void copy()} className="ui-invite-code ui-numeric mt-1 block w-full select-all text-left text-[1.7rem] text-frame-bright" title="Скопировать">
+      <button
+        type="button"
+        onClick={() => void copy()}
+        className="ui-invite-code ui-numeric mt-1 block w-full select-all text-left text-[1.7rem] text-frame-bright"
+        title="Скопировать"
+      >
         {shown}
       </button>
       <p className="mt-1 text-xs text-ink-faint">Игроки вводят его на главной, в блоке «Партии»</p>
@@ -423,7 +491,12 @@ const CombatPanel: React.FC<{
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {seat.isMaster && rolling && npcsWaiting && (
-            <Button variant="secondary" size="sm" icon={<IconInitiative width={15} height={15} />} onClick={() => void store.rollNpcInitiative(party.id)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<IconInitiative width={15} height={15} />}
+              onClick={() => void store.rollNpcInitiative(party.id)}
+            >
               Бросить за НПС
             </Button>
           )}
@@ -438,7 +511,11 @@ const CombatPanel: React.FC<{
             </Button>
           )}
           {seat.canPassTurn && (
-            <Button variant="primary" size="sm" onClick={() => void store.nextTurn(party.id, fight.currentCombatantId)}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => void store.nextTurn(party.id, fight.currentCombatantId)}
+            >
               {seat.myTurn ? 'Завершить ход' : 'Следующий ход'}
             </Button>
           )}
@@ -461,46 +538,76 @@ const CombatPanel: React.FC<{
 
 // ------------------------------------------------------------------------------------------------
 
+/** The table's talk and its seats, side by side on tabs. */
+const TalkPanel: React.FC<{
+  party: PartyDto;
+  userId: string | undefined;
+  onKick: (member: { userId: string; name: string }) => void;
+}> = ({ party, userId, onKick }) => {
+  const [tab, setTab] = useState<'chat' | 'seats'>('chat');
+  const unread = useChatStore((s) => s.unread[party.id] ?? 0);
+  return (
+    <Panel className="flex min-h-0 flex-1 flex-col px-5 pb-4 pt-4">
+      <Tabs
+        label="Стол"
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: 'chat', label: 'Чат', count: unread > 0 ? unread : undefined },
+          { id: 'seats', label: 'За столом', count: party.members.length },
+        ]}
+      />
+      <div className="mt-3 flex min-h-0 flex-1 flex-col">
+        {tab === 'chat' ? (
+          <ChatPanel party={party} userId={userId} />
+        ) : (
+          <Seats party={party} userId={userId} onKick={onKick} />
+        )}
+      </div>
+    </Panel>
+  );
+};
+
 /** Who sits at the table; the master can ask a player to leave. */
-const SeatsPanel: React.FC<{
+const Seats: React.FC<{
   party: PartyDto;
   userId: string | undefined;
   onKick: (member: { userId: string; name: string }) => void;
 }> = ({ party, userId, onKick }) => {
   const isMaster = party.role === 'master';
   return (
-    <Panel className="flex min-h-0 flex-col px-5 pb-4 pt-5">
-      <SectionTitle>За столом</SectionTitle>
-      <div className="ui-scroll -mr-2 mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto pr-2">
-        {party.members.map((member) => (
-          <div key={member.userId} className="ui-party-row group flex items-center gap-3 px-2 py-2">
-            <span className="ui-display grid h-9 w-9 shrink-0 place-items-center rounded-full bg-inset text-frame-bright">
-              {member.displayName.charAt(0).toUpperCase()}
+    <div className="ui-scroll -mr-2 min-h-0 flex-1 space-y-1 overflow-y-auto pr-2">
+      {party.members.map((member) => (
+        <div key={member.userId} className="ui-party-row group flex items-center gap-3 px-2 py-2">
+          <span className="ui-display grid h-9 w-9 shrink-0 place-items-center rounded-full bg-inset text-frame-bright">
+            {member.displayName.charAt(0).toUpperCase()}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm text-ink">
+              {member.displayName}
+              {member.userId === userId && <span className="text-ink-faint"> · вы</span>}
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm text-ink">
-                {member.displayName}
-                {member.userId === userId && <span className="text-ink-faint"> · вы</span>}
-              </span>
-              <span className="block truncate text-xs text-ink-faint">
-                {member.role === 'master'
-                  ? 'мастер'
-                  : party.heroes.filter((hero) => hero.ownerId === member.userId).map((hero) => hero.name).join(', ') || 'без героя'}
-              </span>
+            <span className="block truncate text-xs text-ink-faint">
+              {member.role === 'master'
+                ? 'мастер'
+                : party.heroes
+                    .filter((hero) => hero.ownerId === member.userId)
+                    .map((hero) => hero.name)
+                    .join(', ') || 'без героя'}
             </span>
-            {isMaster && member.role !== 'master' && (
-              <IconButton
-                label="Убрать из-за стола"
-                size={28}
-                onClick={() => onKick({ userId: member.userId, name: member.displayName })}
-                className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-              >
-                <IconClose width={14} height={14} />
-              </IconButton>
-            )}
-          </div>
-        ))}
-      </div>
-    </Panel>
+          </span>
+          {isMaster && member.role !== 'master' && (
+            <IconButton
+              label="Убрать из-за стола"
+              size={28}
+              onClick={() => onKick({ userId: member.userId, name: member.displayName })}
+              className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            >
+              <IconClose width={14} height={14} />
+            </IconButton>
+          )}
+        </div>
+      ))}
+    </div>
   );
 };

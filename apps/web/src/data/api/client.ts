@@ -14,6 +14,8 @@ import type {
   LoginRequest,
   PartyDto,
   PartyListItemDto,
+  PartyMessageDto,
+  PartyMessagesDto,
   RegisterRequest,
   StartCombatRequest,
   SyncResponse,
@@ -193,6 +195,12 @@ export const api = {
       apiClient.request<void>(`/parties/${encode(id)}/npcs/${encode(npcId)}`, { method: 'PATCH', body }),
     removeNpc: (id: string, npcId: string) =>
       apiClient.request<void>(`/parties/${encode(id)}/npcs/${encode(npcId)}`, { method: 'DELETE' }),
+  },
+  messages: {
+    list: (id: string, before?: string) =>
+      apiClient.request<PartyMessagesDto>(`/parties/${encode(id)}/messages${before ? `?before=${encode(before)}` : ''}`),
+    send: (id: string, body: string, recipientId: string | null) =>
+      apiClient.request<PartyMessageDto>(`/parties/${encode(id)}/messages`, { method: 'POST', body: { body, recipientId } }),
   },
   invites: {
     preview: (code: string) => apiClient.request<InvitePreviewDto>(`/invites/${encode(code)}`),

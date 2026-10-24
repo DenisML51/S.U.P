@@ -277,3 +277,49 @@ export interface InvitePreviewDto {
   /** The viewer is already at this table. */
   member: boolean;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Table talk
+// ---------------------------------------------------------------------------------------------
+
+export const PARTY_MESSAGES = {
+  /** Characters in one message; keeps a realtime notification well under Postgres' NOTIFY limit. */
+  length: 2000,
+  /** Messages a party keeps; older ones are dropped as new ones come. */
+  kept: 500,
+  page: 50,
+} as const;
+
+/**
+ * A message to the whole table, or a private one: the master writes to one player, a player can
+ * write only to the master.
+ */
+export const SendMessageRequestSchema = z.object({
+  body: z.string().trim().min(1, 'Пустое сообщение').max(PARTY_MESSAGES.length, 'Сообщение слишком длинное'),
+  recipientId: z.uuid().nullable().default(null),
+});
+export type SendMessageRequest = z.input<typeof SendMessageRequestSchema>;
+
+/** Older messages than the one given (by id), newest page first when absent. */
+export const MessagesQuerySchema = z.object({
+  before: z.uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(PARTY_MESSAGES.page),
+});
+
+export interface PartyMessageDto {
+  id: string;
+  authorId: string;
+  authorName: string;
+  /** Set for a private message. */
+  recipientId: string | null;
+  recipientName: string | null;
+  body: string;
+  createdAt: string;
+}
+
+export interface PartyMessagesDto {
+  /** Oldest first. */
+  items: PartyMessageDto[];
+  /** There are older messages to load. */
+  hasMore: boolean;
+}

@@ -6,11 +6,13 @@ import {
   CreatePartyRequestSchema,
   InitiativeRequestSchema,
   InviteParamsSchema,
+  MessagesQuerySchema,
   NextTurnRequestSchema,
   PartyHeroParamsSchema,
   PartyMemberParamsSchema,
   PartyNpcParamsSchema,
   PartyParamsSchema,
+  SendMessageRequestSchema,
   StartCombatRequestSchema,
   UpdateNpcRequestSchema,
   UpdatePartyRequestSchema,
@@ -19,6 +21,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { AuthService } from '../auth/auth.service';
 import { authenticate } from '../auth/authenticate';
 import type { CombatService } from './combat.service';
+import type { MessagesService } from './messages.service';
 import type { PartyQueries } from './parties.queries';
 import type { PartiesService } from './parties.service';
 
@@ -27,6 +30,7 @@ interface PartyRoutesOptions {
   parties: PartiesService;
   combat: CombatService;
   queries: PartyQueries;
+  messages: MessagesService;
 }
 
 /** Invite codes are guessable only by brute force; keep that slow. */
@@ -36,7 +40,7 @@ const INVITE_RATE_LIMIT = { rateLimit: { max: 20, timeWindow: '1 minute' } };
  * Party API. Changes answer `204` (or the new id) and announce `party.changed` over the socket;
  * every member then fetches `GET /parties/:id`, which is tailored to who is asking.
  */
-export const partyRoutes: FastifyPluginAsyncZod<PartyRoutesOptions> = async (app, { auth, parties, combat, queries }) => {
+export const partyRoutes: FastifyPluginAsyncZod<PartyRoutesOptions> = async (app, { auth, parties, combat, queries, messages }) => {
   app.addHook('preHandler', authenticate(auth));
 
   // --- Parties --------------------------------------------------------------------------------
@@ -105,6 +109,18 @@ export const partyRoutes: FastifyPluginAsyncZod<PartyRoutesOptions> = async (app
     await parties.removeNpc(request.userId, request.params.id, request.params.npcId);
     return reply.status(204).send();
   });
+
+  // --- Table talk ---------------------------------------------------------------------------
+
+  app.get('/parties/:id/messages', { schema: { params: PartyParamsSchema, querystring: MessagesQuerySchema } }, async (request) =>
+    messages.list(request.userId, request.params.id, request.query.before, request.query.limit),
+  );
+
+  app.post(
+    '/parties/:id/messages',
+    { schema: { params: PartyParamsSchema, body: SendMessageRequestSchema }, config: { rateLimit: { max: 40, timeWindow: '1 minute' } } },
+    async (request, reply) => reply.status(201).send(await messages.send(request.userId, request.params.id, request.body)),
+  );
 
   // --- Combat ---------------------------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-import type { PartyDto, PartyListItemDto, WsServerMessage } from '@itd/schema';
+import type { PartyDto, PartyListItemDto, PartyMessagesDto, WsServerMessage } from '@itd/schema';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { characters } from '../src/db/schema';
@@ -269,5 +269,51 @@ describe('character summaries', () => {
     const [row] = await ctx.db.select({ summary: characters.summary }).from(characters).where(eq(characters.id, hero.id));
     expect(row!.summary).toMatchObject({ currentHP: 7, maxHP: 12 });
     expect(await ctx.services.characters.backfillSummaries()).toBe(0);
+  });
+});
+
+describe('table talk', () => {
+  it('shows public messages to all and private ones to their two ends only', async () => {
+    const app = await ctx.app();
+    const { master, player, partyId, code } = await table(app);
+    const other = await registerUser(app, 'Третий');
+    await call(app, other, 'POST', `/invites/${code}/accept`);
+
+    const socket = await app.injectWS('/api/ws');
+    const received: WsServerMessage[] = [];
+    socket.on('message', (raw) => received.push(JSON.parse(raw.toString()) as WsServerMessage));
+    socket.send(JSON.stringify({ type: 'auth', token: other.accessToken }));
+    await expect.poll(() => received.some((m) => m.type === 'ready')).toBe(true);
+
+    const send = (user: User, body: string, recipientId: string | null = null) =>
+      call(app, user, 'POST', `/parties/${partyId}/messages`, { body, recipientId });
+    expect((await send(player, 'Кто-нибудь слышал колокол?')).statusCode).toBe(201);
+    expect((await send(master, 'Ты чувствуешь запах соли.', player.user.id)).statusCode).toBe(201);
+    expect((await send(player, 'Я отхожу к двери.', master.user.id)).statusCode).toBe(201);
+    // A player whispers only to the master.
+    expect((await send(player, 'Эй, Третий', other.user.id)).statusCode).toBe(403);
+
+    const read = async (user: User) =>
+      (await call(app, user, 'GET', `/parties/${partyId}/messages`)).json<PartyMessagesDto>().items.map((m) => m.body);
+    expect(await read(player)).toEqual(['Кто-нибудь слышал колокол?', 'Ты чувствуешь запах соли.', 'Я отхожу к двери.']);
+    expect(await read(master)).toEqual(['Кто-нибудь слышал колокол?', 'Ты чувствуешь запах соли.', 'Я отхожу к двери.']);
+    expect(await read(other)).toEqual(['Кто-нибудь слышал колокол?']);
+
+    await expect.poll(() => received.filter((m) => m.type === 'party.message').length).toBe(1);
+    socket.terminate();
+
+    const stranger = await registerUser(app, 'Чужак');
+    expect((await call(app, stranger, 'GET', `/parties/${partyId}/messages`)).statusCode).toBe(404);
+  });
+
+  it('pages back through older messages', async () => {
+    const app = await ctx.app();
+    const { master, partyId } = await table(app);
+    for (let i = 1; i <= 5; i++) await call(app, master, 'POST', `/parties/${partyId}/messages`, { body: `#${i}` });
+    const first = (await call(app, master, 'GET', `/parties/${partyId}/messages?limit=2`)).json<PartyMessagesDto>();
+    expect(first.items.map((m) => m.body)).toEqual(['#4', '#5']);
+    expect(first.hasMore).toBe(true);
+    const next = (await call(app, master, 'GET', `/parties/${partyId}/messages?limit=2&before=${first.items[0]!.id}`)).json<PartyMessagesDto>();
+    expect(next.items.map((m) => m.body)).toEqual(['#2', '#3']);
   });
 });
