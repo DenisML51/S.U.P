@@ -1,5 +1,5 @@
 import { byClassLevel, modifierOf } from '../../helpers';
-import type { ClassDef, FeatureDef, SubclassDef } from '../../types';
+import type { BuildContext, ClassDef, FeatureDef, SubclassDef } from '../../types';
 import { PALADIN_KITS } from '../equipment';
 import { HALF_CASTER_SLOTS, abilityScoreImprovement, epicBoon, weaponMasteryChoice } from './shared';
 
@@ -186,7 +186,7 @@ const ancients: SubclassDef = {
 
 const vengeance: SubclassDef = {
   id: 'oath-of-vengeance',
-  name: 'Клятва мести',
+  name: 'Клятва возмездия',
   description: 'Карающий меч против великого зла: неотступный охотник, который не отпускает добычу.',
   alwaysPrepared: {
     3: ['bane', 'hunters-mark'],
@@ -226,6 +226,128 @@ const vengeance: SubclassDef = {
         'Ангел мести',
         'Бонусным действием вы на 10 минут обретаете крылья (скорость полёта 60 футов, можно парить) и ауру угрозы 30 футов: враг, впервые за ход входящий в неё или начинающий там ход, совершает спасбросок Мудрости или пугается на 1 минуту; атаки по испуганному совершаются с преимуществом.',
       ),
+    ],
+  },
+};
+
+// ------------------------------------------------------------------------------------------------
+// Supplement oaths
+// ------------------------------------------------------------------------------------------------
+
+/** The paladin's spell save DC: 8 + proficiency bonus + Charisma modifier. */
+const spellDC = (ctx: BuildContext) => 8 + ctx.proficiencyBonus + ctx.modifier('charisma');
+const ELEMENT_TYPES = 'звук, кислота, огонь, холод или электричество';
+
+const nobleGenies: SubclassDef = {
+  id: 'oath-of-the-noble-genies',
+  name: 'Клятва благородных гениев',
+  source: 'Forgotten Realms: Heroes of Faerûn',
+  description: 'Паладин, почитающий дао, джиннов, ифритов и маридов: стихийные кары, величие без доспехов и сила самих гениев.',
+  alwaysPrepared: {
+    3: ['thunderous-smite', 'chromatic-orb', 'elementalism'],
+    5: ['phantasmal-force', 'mirror-image'],
+    9: ['gaseous-form', 'fly'],
+    13: ['summon-elemental', 'conjure-minor-elementals'],
+    17: ['banishing-smite', 'contact-other-plane'],
+  },
+  levels: {
+    3: [
+      {
+        id: 'noble-genies.elemental-smite',
+        name: 'Стихийная кара',
+        description:
+          'Сразу после сотворения «Божественной кары» вы можете потратить Проведение божественности и вызвать один из эффектов: Всплеск марида, Давление дао, Побег джинна или Ярость ифрита.',
+        iconName: 'magic-swirl',
+      },
+      {
+        ...channelOption(
+          'noble-genies.marids-surge',
+          'Всплеск марида',
+          'Стихийная кара: цель «Божественной кары» и выбранные вами существа в эманации 10 футов совершают спасбросок Силы (СЛ ваших заклинаний). При провале существо отталкивается от вас на 15 футов по прямой и сбивается с ног (Опрокинутый).',
+          'passive',
+        ),
+        saveAttribute: 'strength',
+        saveDC: spellDC,
+        iconName: 'wave-strike',
+        color: '#4f9fd8',
+      },
+      {
+        ...channelOption(
+          'noble-genies.daos-crush',
+          'Давление дао',
+          'Стихийная кара: земля вздымается вокруг цели «Божественной кары» — она схвачена (СЛ освобождения равна СЛ ваших заклинаний) и, пока схвачена, также опутана.',
+          'passive',
+        ),
+        saveDC: spellDC,
+        iconName: 'earth-spit',
+        color: '#a07a4a',
+      },
+      {
+        ...channelOption(
+          'noble-genies.djinns-escape',
+          'Побег джинна',
+          'Стихийная кара: вы телепортируетесь в видимое свободное пространство в пределах 30 футов и до конца своего следующего хода становитесь отчасти бестелесным — сопротивление дробящему, колющему и рубящему урону, иммунитет к состояниям «Опрокинутый», «Опутанный» и «Схваченный».',
+          'passive',
+        ),
+        iconName: 'tornado',
+        color: '#9fc6e0',
+      },
+      {
+        ...channelOption(
+          'noble-genies.efreets-fury',
+          'Ярость ифрита',
+          'Стихийная кара: цель «Божественной кары» получает дополнительно 2к4 урона огнём, и пламя перескакивает на другое видимое вами существо в пределах 30 футов — оно тоже получает 2к4 урона огнём.',
+          'passive',
+        ),
+        damage: '2d4',
+        damageType: 'Огонь',
+        iconName: 'fire',
+        color: '#e8642c',
+      },
+      {
+        id: 'noble-genies.genies-splendor',
+        name: 'Великолепие гения',
+        description:
+          'Пока вы не носите доспехов, ваш базовый КД равен 10 + модификатор Ловкости + модификатор Харизмы; щит при этом можно использовать. Кроме того, вы получаете владение одним навыком: Акробатика, Выступление, Запугивание или Убеждение.',
+        effects: [{ type: 'unarmoredDefense', attribute: 'charisma' }],
+        choices: [{ id: 'skill', label: 'Навык', count: 1, options: { from: 'skills', list: ['acrobatics', 'performance', 'intimidation', 'persuasion'] } }],
+        iconName: 'gems',
+      },
+    ],
+    7: [
+      {
+        id: 'noble-genies.aura-of-elemental-shielding',
+        name: 'Аура стихийной защиты',
+        description: `Вы выбираете тип урона — ${ELEMENT_TYPES}. Вы и союзники в вашей Ауре защиты получаете сопротивление ему. В начале каждого своего хода тип можно сменить на другой из того же списка (без действия).`,
+        action: 'passive',
+        iconName: 'fire-shield',
+      },
+    ],
+    15: [
+      {
+        id: 'noble-genies.elemental-rebuke',
+        name: 'Стихийное возмездие',
+        description: `Когда по вам попадает атака, вы можете реакцией уменьшить её урон вдвое (с округлением вниз) и заставить атакующего совершить спасбросок Ловкости (СЛ ваших заклинаний): при провале он получает 2к10 + модификатор Харизмы урона (тип на ваш выбор: ${ELEMENT_TYPES}), при успехе — половину. Использований — модификатор Харизмы (минимум 1) за продолжительный отдых.`,
+        action: 'reaction',
+        damage: (ctx) => {
+          const mod = ctx.modifier('charisma');
+          return mod === 0 ? '2d10' : `2d10${mod > 0 ? '+' : ''}${mod}`;
+        },
+        saveAttribute: 'dexterity',
+        saveDC: spellDC,
+        resource: { id: 'noble-genies.elemental-rebuke', name: 'Стихийное возмездие', max: modifierOf('charisma'), recharge: 'long', iconName: 'shield-reflect' },
+        iconName: 'shield-reflect',
+      },
+    ],
+    20: [
+      {
+        ...capstone(
+          'noble-genies.noble-genie',
+          'Благородный гений',
+          'Бонусным действием вы на 10 минут (или пока не окончите это без действия) получаете:\n\n- **Полёт:** скорость полёта 60 футов, можно парить.\n- **Малое желание:** когда вы или союзник в вашей Ауре защиты проваливаете тест к20, вы можете реакцией превратить провал в успех.',
+        ),
+        iconName: 'whirlwind',
+      },
     ],
   },
 };
@@ -302,7 +424,7 @@ export const PALADIN: ClassDef = {
   ],
   mentalStrength: 65,
   subclassLevel: 3,
-  subclasses: [devotion, glory, ancients, vengeance],
+  subclasses: [devotion, glory, ancients, vengeance, nobleGenies],
   startingEquipment: PALADIN_KITS,
   spellcasting: {
     ability: 'charisma',

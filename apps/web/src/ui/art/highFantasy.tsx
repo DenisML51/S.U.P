@@ -171,14 +171,15 @@ const STARS =
   'radial-gradient(circle at 40% 80%, rgb(var(--c-frame-bright) / 0.5) 0 1.4px, transparent 2px) 0 0 / 311px 277px';
 
 /** Night sky over teal, the atlas's astrolabe turning slowly at the right edge, vines in the corners. */
-const Backdrop: React.FC = () => (
+const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => (
   <div className="absolute inset-0 text-frame">
     <div className="absolute inset-0" style={{ background: 'radial-gradient(120% 90% at 30% 0%, rgb(var(--c-surface-2) / 0.5), transparent 60%)' }} />
     <div className="absolute inset-0 opacity-60" style={{ background: STARS }} />
     <div className="ui-astrolabe absolute right-[-22vh] top-1/2 aspect-square h-[115vh] -translate-y-1/2 opacity-[0.16]">
       <Astrolabe />
     </div>
-    {(['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map(
+    {frame &&
+      (['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map(
       (position) => (
         <div key={position} className={`absolute ${position}`} style={{ margin: FRAME_OUTER }}>
           <VineFrameCorner />

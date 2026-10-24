@@ -1,4 +1,5 @@
-import { byClassLevel } from '../../helpers';
+import { byClassLevel, modifierOf } from '../../helpers';
+import { WEAPONS } from '../equipment';
 import type { ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
 import { FULL_CASTER_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
 
@@ -278,6 +279,374 @@ const illusionist: SubclassDef = {
 };
 
 // ------------------------------------------------------------------------------------------------
+// Subclasses of other books
+// ------------------------------------------------------------------------------------------------
+
+/** Martial melee weapons without the Two-Handed or Heavy property (Training in War and Song). */
+const BLADESINGER_WEAPONS = WEAPONS.filter(
+  (w) => w.category === 'martial' && w.kind === 'melee' && !w.properties.some((p) => p.startsWith('Тяжёлое') || p.startsWith('Двуручное')),
+);
+
+const bladesinger: SubclassDef = {
+  id: 'bladesinger',
+  name: 'Певец клинка',
+  source: 'Forgotten Realms: Heroes of Faerûn',
+  description: 'Эльфийская традиция, сплетающая фехтование, танец и волшебство: Песнь клинка делает мага быстрым и неуловимым бойцом.',
+  levels: {
+    3: [
+      {
+        id: 'bladesinger.bladesong',
+        name: 'Песнь клинка',
+        description:
+          'Бонусным действием, без доспехов и щита, вы начинаете Песнь клинка на 1 минуту. Она кончается раньше, если вы недееспособны, надеваете доспех или щит или атакуете оружием двумя руками; прервать её можно в любой момент (без действия). Использований — модификатор Интеллекта (минимум 1) за продолжительный отдых; Магическое восстановление возвращает одно. Пока она длится:\n\n- **Подвижность:** бонус к КЗ, равный модификатору Интеллекта (минимум +1), скорость +10 футов, преимущество на проверки Ловкости (Акробатика);\n- **Техника фехтования:** атакуя оружием, которым владеете, вы можете использовать Интеллект вместо Силы или Ловкости для бросков атаки и урона;\n- **Сосредоточенность:** к спасброскам Телосложения для концентрации вы добавляете модификатор Интеллекта.',
+        action: 'bonus',
+        resource: { id: 'bladesinger.bladesong', name: 'Песнь клинка', max: modifierOf('intelligence'), recharge: 'long' },
+        iconName: 'sparkling-sabre',
+        color: '#7fc3d9',
+      },
+      {
+        id: 'bladesinger.training-in-war-and-song',
+        name: 'Учение песни и войны',
+        description:
+          'Вы владеете воинским рукопашным оружием без свойств «Двуручное» и «Тяжёлое» и можете использовать рукопашное оружие, которым владеете, как фокусировку для заклинаний волшебника. Вы также владеете одним навыком на выбор: Акробатика, Атлетика, Выступление или Убеждение.',
+        iconName: 'sword-spin',
+        effects: BLADESINGER_WEAPONS.map((w) => ({ type: 'proficiency' as const, category: 'weapon' as const, value: w.name })),
+        choices: [{ id: 'skill', label: 'Навык Певца клинка', count: 1, options: { from: 'skills', list: ['acrobatics', 'athletics', 'performance', 'persuasion'] } }],
+      },
+    ],
+    6: [
+      {
+        id: 'bladesinger.extra-attack',
+        name: 'Дополнительная атака',
+        description: 'Совершая в свой ход действие Атака, вы можете атаковать дважды. Одну из этих атак можно заменить сотворением заговора волшебника со временем сотворения «действие».',
+        iconName: 'sword-clash',
+      },
+    ],
+    10: [
+      {
+        id: 'bladesinger.song-of-defense',
+        name: 'Песнь защиты',
+        description: 'Получая урон во время Песни клинка, вы можете реакцией потратить ячейку заклинаний и уменьшить урон на 5 × круг ячейки.',
+        action: 'reaction',
+        iconName: 'shield-impact',
+      },
+    ],
+    14: [
+      {
+        id: 'bladesinger.song-of-victory',
+        name: 'Песнь победы',
+        description: 'Сотворив заклинание со временем сотворения «действие», вы можете бонусным действием совершить одну атаку оружием.',
+        action: 'bonus',
+        iconName: 'sword-brandish',
+      },
+    ],
+  },
+};
+
+const necromancer: SubclassDef = {
+  id: 'necromancer',
+  name: 'Некромант',
+  source: 'Arcana Unleashed',
+  description: 'Исследователь жизни, смерти и нежизни: немёртвый фамильяр, поднятые слуги и власть над их силами.',
+  levels: withSavant(
+    {
+      3: [
+        {
+          id: 'necromancer.necromantic-grimoire',
+          name: 'Некромантический гримуар',
+          description:
+            '- **Сопротивление некротике:** у вас сопротивление некротическому урону.\n- **Немёртвый фамильяр:** в вашей книге есть «Обретение фамильяра»; фамильяр может быть Зомби или Скелетом, а обычный фамильяр — нежитью вместо зверя. Совершая действие Атака, вы можете отказаться от одной атаки, чтобы фамильяр реакцией совершил одну свою атаку.\n- **Оздоровление нежити:** сотворяя заклинание Некромантии с ячейкой, вы можете выбрать видимую нежить в пределах 60 футов — она восстанавливает хиты, равные кругу ячейки + уровню волшебника.',
+          effects: [
+            { type: 'resistance', damageType: 'Некротический' },
+            { type: 'spell', spell: 'find-familiar', alwaysPrepared: false },
+          ],
+          iconName: 'evil-book',
+        },
+      ],
+      6: [
+        {
+          id: 'necromancer.grave-power',
+          name: 'Сила могил',
+          description:
+            'Пока вы держите книгу заклинаний:\n\n- **Кладбищенская стойкость:** Магическое восстановление снижает ваше истощение на 1;\n- **Тотальный некроз:** урон ваших заклинаний и умений волшебника игнорирует сопротивление некротическому урону.',
+          iconName: 'death-skull',
+        },
+        {
+          id: 'necromancer.undead-thralls',
+          name: 'Неживые рабы',
+          description:
+            '«Поднятие мертвеца» всегда подготовлено; раз в продолжительный отдых его можно сотворить без ячейки, и, начиная сотворение, вы можете повысить его круг на 1. Пока вы держите книгу заклинаний:\n\n- **Стойкость нежити:** нежить, созданная или призванная вашим заклинанием Некромантии, получает к максимуму и текущим хитам модификатор Интеллекта + половину уровня волшебника (вниз);\n- **Иссушающий удар:** подконтрольная вам нежить в пределах 60 футов, попав броском атаки, наносит дополнительный некротический урон, равный модификатору Интеллекта (минимум 1).',
+          action: 'passive',
+          resource: { id: 'necromancer.undead-thralls', name: 'Поднятие мертвеца без ячейки', max: 1, recharge: 'long' },
+          effects: [{ type: 'spell', spell: 'animate-dead', alwaysPrepared: true }],
+          iconName: 'skull-staff',
+          color: '#7d8a6a',
+        },
+      ],
+      10: [
+        {
+          id: 'necromancer.undying-harvest',
+          name: 'Жатва немёртвых',
+          description: 'Сразу после того, как вы становитесь окровавленным, но не опускаетесь до 0 хитов, вы можете реакцией опустить до 0 хиты видимой подконтрольной вам нежити и восстановить хиты, равные уровню волшебника.',
+          action: 'reaction',
+          damage: (ctx) => `${ctx.classLevel}`,
+          damageType: 'Лечение',
+          iconName: 'reaper-scythe',
+        },
+      ],
+      14: [
+        {
+          id: 'necromancer.death-lord',
+          name: 'Повелитель смерти',
+          description:
+            '**Разгорание нежизни** (пока вы держите книгу заклинаний): бонусным действием любое число нежити в пределах 60 футов, созданной или призванной вашими заклинаниями Некромантии, получает временные хиты, равные уровню волшебника. Раз в продолжительный отдых.',
+          action: 'bonus',
+          resource: { id: 'necromancer.death-lord', name: 'Разгорание нежизни', max: 1, recharge: 'long' },
+          damage: (ctx) => `${ctx.classLevel}`,
+          iconName: 'crowned-skull',
+        },
+        {
+          id: 'necromancer.unlife-extinguished',
+          name: 'Погасание нежизни',
+          description:
+            'Когда хиты видимой вами нежити опускаются до 0, вы можете взорвать её: бросьте к6 в числе половины её непотраченных костей хитов (вверх, минимум 1к6). Существа в эманации 10 футов совершают спасбросок Ловкости: при провале — некротический урон, равный броску, и нет реакций до начала их следующего хода; при успехе — половина урона. Для неподконтрольной вам нежити нужны реакция и ячейка 5-го круга или выше.',
+          action: 'passive',
+          damageType: 'Некротический',
+          saveAttribute: 'dexterity',
+          saveDC: (ctx) => 8 + ctx.proficiencyBonus + ctx.modifier('intelligence'),
+          iconName: 'death-zone',
+        },
+      ],
+    },
+    savant('necromancer', 'Учёный-Некромант', 'Некромантия', 'Некромантии', 'burning-book'),
+  ),
+};
+
+const enchanter: SubclassDef = {
+  id: 'enchanter',
+  name: 'Очарователь',
+  source: 'Arcana Unleashed',
+  description: 'Маг, пленяющий разумы: завораживающий взгляд, чары на нескольких целей и стёртые воспоминания.',
+  levels: withSavant(
+    {
+      3: [
+        {
+          id: 'enchanter.beguiling-speaker',
+          name: 'Чарующий оратор',
+          description: 'Вы владеете одним навыком на выбор: Запугивание, Обман или Убеждение. К проверкам с этим навыком вы добавляете модификатор Интеллекта (минимум +1).',
+          iconName: 'charm',
+          choices: [
+            {
+              id: 'skill',
+              label: 'Навык оратора',
+              count: 1,
+              options: {
+                from: 'options',
+                options: (
+                  [
+                    ['intimidation', 'Запугивание'],
+                    ['deception', 'Обман'],
+                    ['persuasion', 'Убеждение'],
+                  ] as const
+                ).map(([skill, name]) => ({
+                  id: skill,
+                  name,
+                  description: `Владение навыком «${name}» и бонус модификатора Интеллекта (минимум +1) к его проверкам.`,
+                  effects: [
+                    { type: 'skill' as const, skill },
+                    { type: 'skillBonus' as const, skills: [skill], amount: modifierOf('intelligence') },
+                  ],
+                })),
+              },
+            },
+          ],
+        },
+        {
+          id: 'enchanter.mesmerizing-presence',
+          name: 'Гипнотизирующее присутствие',
+          description:
+            'Действием Магия выберите видимое существо в пределах 10 футов, которое видит или слышит вас: оно совершает спасбросок Мудрости или очаровано на 1 минуту, а пока очаровано — недееспособно и со скоростью 0. Эффект кончается, если цель отходит дальше 10 футов, получает урон или перестаёт видеть и слышать вас. Использований — модификатор Интеллекта (минимум 1) за продолжительный отдых.',
+          action: 'action',
+          resource: { id: 'enchanter.mesmerizing-presence', name: 'Гипнотизирующее присутствие', max: modifierOf('intelligence'), recharge: 'long' },
+          saveAttribute: 'wisdom',
+          saveDC: (ctx) => 8 + ctx.proficiencyBonus + ctx.modifier('intelligence'),
+          iconName: 'evil-eyes',
+          color: '#c77dd1',
+        },
+      ],
+      6: [
+        {
+          id: 'enchanter.split-enchantment',
+          name: 'Разделённое очарование',
+          description: 'Тратя ячейку на заклинание Очарования, которое на более высоком круге поражает больше существ (как «Очарование личности»), вы можете повысить его круг на 1. Использований — модификатор Интеллекта (минимум 1) за продолжительный отдых.',
+          action: 'passive',
+          resource: { id: 'enchanter.split-enchantment', name: 'Разделённое очарование', max: modifierOf('intelligence'), recharge: 'long' },
+          iconName: 'divided-spiral',
+        },
+      ],
+      10: [
+        {
+          id: 'enchanter.instinctive-charm',
+          name: 'Инстинктивное очарование',
+          description:
+            'Когда видимое существо в пределах 30 футов попадает по вам атакой, вы можете реакцией заставить его совершить спасбросок Мудрости: при провале атака промахивается и, если в пределах её дистанции есть другое существо, переходит на него (вы выбираете на кого) с тем же броском. Раз в продолжительный отдых; использование возвращает заклинание Очарования, сотворённое с ячейкой.',
+          action: 'reaction',
+          resource: { id: 'enchanter.instinctive-charm', name: 'Инстинктивное очарование', max: 1, recharge: 'long' },
+          saveAttribute: 'wisdom',
+          saveDC: (ctx) => 8 + ctx.proficiencyBonus + ctx.modifier('intelligence'),
+          iconName: 'chained-heart',
+        },
+      ],
+      14: [
+        {
+          id: 'enchanter.altered-memories',
+          name: 'Изменённые воспоминания',
+          description:
+            'Сотворяя с ячейкой заклинание Очарования, накладывающее очарование, вы можете выбрать одну цель — она не поймёт, что была очарована. Пока заклинание действует, вы можете один раз действием Магия заставить её совершить спасбросок Интеллекта: при провале она забывает последние 1 + модификатор Интеллекта часов (минимум 1, но не больше длительности заклинания).',
+          action: 'passive',
+          saveAttribute: 'intelligence',
+          saveDC: (ctx) => 8 + ctx.proficiencyBonus + ctx.modifier('intelligence'),
+          iconName: 'brain',
+        },
+      ],
+    },
+    savant('enchanter', 'Учёный-Зачарователь', 'Очарование', 'Очарования', 'crowned-heart'),
+  ),
+};
+
+const transmuter: SubclassDef = {
+  id: 'transmuter',
+  name: 'Преобразователь',
+  source: 'Arcana Unleashed',
+  description: 'Мастер изменения материи и энергии: камень преобразования, магические превращения и власть над формой.',
+  levels: withSavant(
+    {
+      3: [
+        {
+          id: 'transmuter.transmuters-stone',
+          name: 'Камень преобразования',
+          description:
+            'После продолжительного отдыха вы можете создать крошечный магический камень (прежний исчезает). Он служит фокусировкой для заклинаний волшебника и даёт носителю владение спасбросками Телосложения и одно свойство на выбор при создании; свойство можно сменить, сотворив заклинание Преобразования с ячейкой:\n\n- **Тёмное зрение:** 60 футов или +60 футов к имеющемуся;\n- **Сопротивление:** звуку, кислоте, огню, холоду, электричеству или яду (на выбор);\n- **Скорость:** +10 футов.',
+          action: 'passive',
+          iconName: 'rune-stone',
+        },
+        {
+          id: 'transmuter.magical-transformation',
+          name: 'Волшебное превращение',
+          description:
+            '«Смена обличья» всегда подготовлена; раз в продолжительный отдых её можно сотворить без ячейки. Пока она действует, вариант даёт дополнительное преимущество:\n\n- **Адаптация к воде:** под водой вы можете совершать Рывок бонусным действием;\n- **Естественное оружие:** его урон — 2к6, и спасброски Телосложения для концентрации вы совершаете с преимуществом;\n- **Изменение внешности:** преимущество на проверки Харизмы (Обман).',
+          action: 'passive',
+          resource: { id: 'transmuter.magical-transformation', name: 'Смена обличья без ячейки', max: 1, recharge: 'long' },
+          effects: [{ type: 'spell', spell: 'alter-self', alwaysPrepared: true }],
+          iconName: 'frog',
+        },
+      ],
+      6: [
+        {
+          id: 'transmuter.empowered-transmutation',
+          name: 'Усиленное преобразование',
+          description: 'Тратя ячейку на заклинание Преобразования без броска атаки и спасброска (как «Полёт» или «Магическое оружие»), вы можете повысить его круг на 1. Использований — модификатор Интеллекта (минимум 1) за продолжительный отдых.',
+          action: 'passive',
+          resource: { id: 'transmuter.empowered-transmutation', name: 'Усиленное преобразование', max: modifierOf('intelligence'), recharge: 'long' },
+          iconName: 'bubbling-flask',
+        },
+      ],
+      10: [
+        {
+          id: 'transmuter.potent-stone',
+          name: 'Могущественный камень',
+          description:
+            'Создавая Камень преобразования, вы выбираете два разных свойства (Сопротивление можно взять дважды с разными видами урона) и можете сменить одно или оба, сотворив заклинание Преобразования с ячейкой. Новые свойства:\n\n- **Могучее сложение:** преимущество на спасброски Силы; носитель считается на размер больше для грузоподъёмности;\n- **Чувство вибрации:** 30 футов.',
+          iconName: 'gems',
+        },
+        {
+          id: 'transmuter.master-of-polymorph',
+          name: 'Мастер превращения',
+          description:
+            '«Превращение» всегда подготовлено; раз в продолжительный отдых его можно сотворить без ячейки. Раз в продолжительный отдых, превращая себя, вы можете сохранить память, речь, Интеллект, Мудрость и Харизму, владения, классовые умения и черты, а в облике творить заклинания Преобразования без материальных компонентов с ценой или расходуемых.',
+          action: 'passive',
+          resource: { id: 'transmuter.master-of-polymorph', name: 'Превращение без ячейки', max: 1, recharge: 'long' },
+          effects: [{ type: 'spell', spell: 'polymorph', alwaysPrepared: true }],
+          iconName: 'wolf-howl',
+        },
+      ],
+      14: [
+        {
+          id: 'transmuter.master-transmuter',
+          name: 'Мастер преобразования',
+          description:
+            'Держа Камень преобразования, вы можете действием Магия поглотить его силу и выбрать эффект; камень рассыпается в пыль, если вы не потратите в том же действии ячейку 7-го круга или выше:\n\n- **Высшее преобразование:** за 10 минут работы немагический предмет до куба 10 футов (или восьми соединённых кубов 5 футов) превращается в другой немагический предмет схожего размера и массы не дороже исходного;\n- **Панацея:** коснувшееся существо восстанавливает половину максимума хитов (вниз), избавляется от всех магических болезней и проклятий (включая настройку на проклятые предметы), а состояния «отравлен» и «окаменел» на нём оканчиваются.',
+          action: 'action',
+          iconName: 'magic-potion',
+        },
+      ],
+    },
+    savant('transmuter', 'Учёный-Преобразователь', 'Преобразование', 'Преобразования', 'round-potion'),
+  ),
+};
+
+const BENIGN_TRANSPOSITION = 'conjurer.benign-transposition';
+
+const conjurer: SubclassDef = {
+  id: 'conjurer',
+  name: 'Призыватель',
+  source: 'Arcana Unleashed',
+  description: 'Маг, для которого расстояние и материя — лишь условности: мгновенные перемещения и стойкие призванные существа.',
+  levels: withSavant(
+    {
+      3: [
+        {
+          id: 'conjurer.benign-transposition',
+          name: 'Безопасный перенос',
+          description:
+            'Бонусным действием вы телепортируетесь в видимое свободное пространство в пределах 30 футов (60 с 6-го уровня) или меняетесь местами с согласным существом Среднего размера или меньше в пределах этой дистанции. Использований — модификатор Интеллекта (минимум 1) за продолжительный отдых.',
+          action: 'bonus',
+          resource: { id: BENIGN_TRANSPOSITION, name: 'Безопасный перенос', max: modifierOf('intelligence'), recharge: 'long' },
+          iconName: 'teleport',
+          color: '#8d7dd9',
+        },
+      ],
+      6: [
+        {
+          id: 'conjurer.distant-transposition',
+          name: 'Дальний перенос',
+          description: 'Дистанция Безопасного переноса — 60 футов. Потратив ячейку 3-го круга или выше (без действия), вы восстанавливаете одно его использование.',
+          iconName: 'magic-portal',
+        },
+        {
+          id: 'conjurer.durable-summons',
+          name: 'Надёжный вызов',
+          description:
+            'Существо, которое вы вызываете или создаёте заклинанием Вызова, сотворённым с ячейкой, при появлении получает временные хиты, равные 2 × уровень волшебника. Пока они есть, у него сопротивление всем видам урона, кроме некротического, психического, силового и лучистого.',
+          damage: (ctx) => `${2 * ctx.classLevel}`,
+          iconName: 'healing-shield',
+        },
+      ],
+      10: [
+        {
+          id: 'conjurer.focused-conjuration',
+          name: 'Сфокусированный призыв',
+          description: 'Получение урона не может прервать вашу концентрацию на заклинаниях Вызова.',
+          iconName: 'meditation',
+        },
+      ],
+      14: [
+        {
+          id: 'conjurer.split-summons',
+          name: 'Разделённый вызов',
+          description:
+            'Сотворяя с ячейкой заклинание Вызова, призывающее духа со своим блоком статистики (как «Вызов аберрации»), вы можете призвать двух одинаковых существ вместо одного — в разных свободных пространствах в пределах дистанции, с половиной хитов каждое; потеря концентрации убирает обоих. Раз в продолжительный отдых; использование возвращает ячейка 5-го круга или выше (без действия).',
+          action: 'passive',
+          resource: { id: 'conjurer.split-summons', name: 'Разделённый вызов', max: 1, recharge: 'long' },
+          iconName: 'magic-gate',
+        },
+      ],
+    },
+    savant('conjurer', 'Учёный-Призыватель', 'Вызов', 'Вызова', 'star-formation'),
+  ),
+};
+
+// ------------------------------------------------------------------------------------------------
 // The class
 // ------------------------------------------------------------------------------------------------
 
@@ -302,7 +671,7 @@ export const WIZARD: ClassDef = {
   proficiencies: [{ type: 'proficiency', category: 'weapon', value: 'Простое оружие' }],
   mentalStrength: 50,
   subclassLevel: 3,
-  subclasses: [abjurer, diviner, evoker, illusionist],
+  subclasses: [abjurer, diviner, evoker, illusionist, bladesinger, necromancer, enchanter, transmuter, conjurer],
   startingEquipment: WIZARD_KITS,
   spellcasting: {
     ability: 'intelligence',
@@ -407,5 +776,10 @@ export const WIZARD_ICONS = {
     diviner: 'crystal-ball',
     evoker: 'fire-zone',
     illusionist: 'drama-masks',
+    bladesinger: 'sparkling-sabre',
+    necromancer: 'skull-staff',
+    enchanter: 'charm',
+    transmuter: 'stone-sphere',
+    conjurer: 'magic-gate',
   } as Record<string, string>,
 };

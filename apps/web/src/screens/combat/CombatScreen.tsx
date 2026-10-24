@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { initiativeModifier, resetTurn } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { CharacterArt } from '../../ui/CharacterArt';
+import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { Button, IconButton } from '../../ui/primitives';
 import { IconDice, IconPrev, IconSettings } from '../../ui/icons';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
@@ -217,25 +217,8 @@ export const CombatScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenS
   return (
     <SheetDialogsProvider>
       <SettingScope setting={setting} className="relative h-screen overflow-clip bg-bg">
-        <motion.div
-          className="pointer-events-none absolute inset-y-0 left-0 w-[60%]"
-          initial={{ opacity: 0, scale: 1.04 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-          style={{
-            maskImage:
-              'linear-gradient(90deg, #000 30%, transparent), linear-gradient(0deg, transparent 20%, #000 60%)',
-            maskComposite: 'intersect',
-          }}
-        >
-          <CharacterArt
-            source={character}
-            kind="full"
-            className="h-full w-full opacity-60"
-            position="50% 20%"
-          />
-        </motion.div>
+        {/* The setting's atmosphere (the star atlas of high fantasy…) behind the bar, not the hero's art. */}
+        <SettingBackdrop setting={setting} strength={0.85} frame={false} />
         <CombatHud character={character} onOpenSettings={onOpenSettings} />
         <SheetDialogHost />
         <SlotPrompt />

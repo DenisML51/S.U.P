@@ -9,9 +9,10 @@ import { cx } from './primitives';
  * Screen atmosphere of each setting. All of them are mounted at once and cross-fade, so moving
  * between characters of different settings morphs the atmosphere instead of swapping it.
  */
-export const SettingBackdrop: React.FC<{ setting: Setting; className?: string; strength?: number }> = ({
+export const SettingBackdrop: React.FC<{ setting: Setting; className?: string; strength?: number; frame?: boolean }> = ({
   setting,
   className,
+  frame,
   // Atmosphere, not decoration: by default it stays well behind the content.
   strength = 0.45,
 }) => (
@@ -25,7 +26,7 @@ export const SettingBackdrop: React.FC<{ setting: Setting; className?: string; s
           className="absolute inset-0 transition-opacity duration-700"
           style={{ opacity: id === setting ? strength : 0 }}
         >
-          <Backdrop />
+          <Backdrop frame={frame} />
         </SettingScope>
       );
     })}

@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
 import { ARTISAN_TOOL_NAMES, MUSICAL_INSTRUMENT_NAMES } from '../equipment';
-import { abilityScoreImprovement, epicBoon, subclassHeading } from './shared';
+import { THIRD_CASTER_SLOTS, abilityScoreImprovement, epicBoon, subclassHeading } from './shared';
 
 /** Монах of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -287,6 +287,73 @@ const openHand: SubclassDef = {
 };
 
 // ------------------------------------------------------------------------------------------------
+// Supplement subclasses
+// ------------------------------------------------------------------------------------------------
+
+const mysticArts: SubclassDef = {
+  id: 'warrior-of-the-mystic-arts',
+  name: 'Мистический воин',
+  source: 'Arcana Unleashed',
+  description: 'Монах, поднявший сосредоточенность до магии: творит заклинания чародея Мудростью и перекачивает ячейки в очки сосредоточенности и обратно.',
+  spellcasting: {
+    ability: 'wisdom',
+    list: 'sorcerer',
+    slots: THIRD_CASTER_SLOTS,
+    mode: 'known',
+    prepared: byClassLevel({ 3: 3, 4: 4, 7: 5, 8: 6, 10: 7, 11: 8, 13: 9, 14: 10, 16: 11, 19: 12, 20: 13 }),
+    cantrips: byClassLevel({ 3: 2, 10: 3 }),
+  },
+  levels: {
+    3: [
+      {
+        id: 'mystic-arts.spellcasting',
+        name: 'Сотворение заклинаний',
+        description:
+          'Вы творите заклинания чародея Мудростью (СЛ = 8 + бонус мастерства + модификатор Мудрости); магическая фокусировка может служить заклинательной фокусировкой. Вы знаете 2 заговора чародея (3 с 10-го уровня; рекомендуются «Защита от оружия» и «Раскат грома») и готовите список заклинаний чародея 1-го круга и выше: 3 на 3-м уровне, далее по таблице подкласса, только тех кругов, для которых есть ячейки (рекомендуются «Волшебная стрела», «Прыжок» и «Щит»). При каждом повышении уровня монаха можно заменить один заговор и одно заклинание. Ячейки восстанавливаются после продолжительного отдыха.',
+        action: 'passive',
+        iconName: 'spell-book',
+      },
+    ],
+    6: [
+      {
+        id: 'mystic-arts.mystic-warrior-style',
+        name: 'Стиль мистического воина',
+        description: 'Совершая в свой ход действие «Атака», вы можете заменить один Безоружный удар сотворением заговора чародея со временем сотворения «действие».',
+        action: 'passive',
+        iconName: 'lightning-arc',
+      },
+      {
+        id: 'mystic-arts.mystic-focus',
+        name: 'Мистическая сосредоточенность',
+        description:
+          '**Ячейки в очки.** Без действия вы можете потратить ячейку заклинаний и восстановить столько потраченных очков сосредоточенности, каков её круг.\n\n**Очки в ячейки.** Используя Феноменальный метаболизм или завершая короткий отдых, вы можете потратить непотраченные очки сосредоточенности и восстановить одну потраченную ячейку: 1-го круга — 2 очка (с 6-го уровня), 2-го — 3 очка (с 7-го), 3-го — 5 очков (с 13-го), 4-го — 6 очков (с 19-го). Ячейку 5-го круга и выше так восстановить нельзя.',
+        action: 'passive',
+        iconName: 'divided-spiral',
+      },
+    ],
+    11: [
+      {
+        id: 'mystic-arts.focused-strike',
+        name: 'Сфокусированный удар',
+        description: 'Когда вы используете Ошеломляющий удар, его цель до начала вашего следующего хода совершает с помехой спасброски от ваших заклинаний — независимо от того, преуспела ли она в спасброске от удара.',
+        action: 'passive',
+        iconName: 'third-eye',
+      },
+    ],
+    17: [
+      {
+        id: 'mystic-arts.improved-mystic-warrior-style',
+        name: 'Улучшенный стиль мистического воина',
+        description:
+          'Используя Шквал ударов, вы можете заменить два Безоружных удара сотворением заклинания чародея 1-го или 2-го круга со временем сотворения «действие» — в рамках того же бонусного действия.',
+        action: 'passive',
+        iconName: 'star-formation',
+      },
+    ],
+  },
+};
+
+// ------------------------------------------------------------------------------------------------
 // The class
 // ------------------------------------------------------------------------------------------------
 
@@ -313,7 +380,7 @@ export const MONK: ClassDef = {
   ],
   mentalStrength: 65,
   subclassLevel: 3,
-  subclasses: [mercy, shadow, elements, openHand],
+  subclasses: [mercy, shadow, elements, openHand, mysticArts],
   startingEquipment: MONK_KITS,
   levels: {
     1: [
@@ -413,7 +480,7 @@ export const MONK: ClassDef = {
       },
     ],
     3: [
-      subclassHeading('monk', 'Подкласс монаха', 'Вы выбираете подкласс: Воин милосердия, Воин тени, Воин стихий или Воин открытой ладони.'),
+      subclassHeading('monk', 'Подкласс монаха', 'Вы выбираете подкласс: Воин милосердия, Воин тени, Воин стихий, Воин открытой ладони или Мистический воин.'),
       {
         id: 'monk.deflect-attacks',
         name: 'Отражение атак',
@@ -576,5 +643,6 @@ export const MONK_ICONS = {
     'warrior-of-shadow': 'ninja-mask',
     'warrior-of-the-elements': 'fire-punch',
     'warrior-of-the-open-hand': 'open-palm',
+    'warrior-of-the-mystic-arts': 'bolt-spell-cast',
   } as Record<string, string>,
 };
