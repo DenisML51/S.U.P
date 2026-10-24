@@ -432,13 +432,23 @@
   box-shadow: 0 2px 4px rgb(0 0 0 / 0.3);
 }
 
-.ui-panel--paper .ui-icon-button { color: rgb(var(--c-paper-ink) / 0.6); }
-
-.ui-panel--paper .ui-icon-button:not(:disabled):hover {
-  color: rgb(var(--c-paper-ink));
-  background: rgb(var(--c-paper-muted) / 0.15);
-  border-color: rgb(var(--c-paper-muted) / 0.5);
+/* On paper an icon button is drawn in the page's ink, a faint ring round it, whatever metal the
+   setting gives its buttons elsewhere: gold or brass on parchment would vanish into it. The doubled
+   class outranks the settings' own button rules. */
+.ui-panel.ui-panel--paper .ui-icon-button {
+  color: rgb(var(--c-paper-ink) / 0.8);
+  border-color: rgb(var(--c-paper-ink) / 0.3);
+  background: rgb(var(--c-paper-muted) / 0.12);
+  box-shadow: none;
 }
+
+.ui-panel.ui-panel--paper .ui-icon-button:not(:disabled):hover {
+  color: rgb(var(--c-paper-ink));
+  border-color: rgb(var(--c-paper-ink) / 0.65);
+  background: rgb(var(--c-paper-muted) / 0.28);
+}
+
+.ui-panel.ui-panel--paper .ui-icon-button:disabled { color: rgb(var(--c-paper-ink) / 0.35); border-color: rgb(var(--c-paper-ink) / 0.15); background: none; }
 
 /* Paper rows: the name underlines like a link in ink. */
 .ui-ledger__row:hover .ui-ledger__title {
