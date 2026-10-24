@@ -113,10 +113,12 @@
     0 var(--chamfer)
   );
 }
-/* Grimdark plates: brushed gunmetal under a heavy bronze rim. */
-[data-setting='grimdark'] .ui-panel:not(.ui-panel--inset):not(.ui-panel--paper) {
+/* Grimdark plates: blackened iron under a heavy brass rim. Lists are plates too (a cogitator's
+   slate, not a scroll), so the paper variant only shifts the iron a shade. */
+[data-setting='grimdark'] .ui-panel--paper::before { display: none; }
+[data-setting='grimdark'] .ui-panel:not(.ui-panel--inset) {
   border-width: 2px;
-  border-color: rgb(var(--c-frame) / 0.6);
+  border-color: rgb(var(--c-frame) / 0.7);
   background-image:
     repeating-linear-gradient(90deg, rgb(255 255 255 / 0.018) 0 1px, transparent 1px 3px),
     linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-surface)) 55%, rgb(var(--c-bg)));
@@ -346,6 +348,15 @@
 /* Sci-fi: a data-sheet rule, a short solid tab of blue leading a hairline. */
 [data-setting='sci-fi'] .ui-rule::before,
 [data-setting='sci-fi'] .ui-rule::after { background: rgb(var(--c-line)); }
+/* Grimdark: a double iron rule, as cut into a cathedral frieze. */
+[data-setting='grimdark'] .ui-rule::before,
+[data-setting='grimdark'] .ui-rule::after,
+[data-setting='grimdark'] .ui-rule--left::after {
+  height: 5px;
+  background: none;
+  border-top: 2px solid rgb(var(--c-frame) / 0.65);
+  border-bottom: 1px solid rgb(var(--c-frame) / 0.35);
+}
 [data-setting='sci-fi'] .ui-rule--left::after {
   height: 3px;
   background:
@@ -1387,3 +1398,21 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 /* Section titles: sci-fi sets them in plain white over the blue tab. */
 [data-setting='sci-fi'] .ui-section-title { color: rgb(var(--c-ink)); font-size: 1.1rem; letter-spacing: 0.08em; }
 [data-setting='sci-fi'] button.ui-ledger__bullet:hover::before { color: rgb(var(--c-accent)); }
+
+/* ------------------------------------------------------------------ Grimdark details */
+/* Entry names are rubricated like an Administratum ledger: the first letter in seal crimson. */
+[data-setting='grimdark'] .ui-ledger__title::first-letter { color: rgb(var(--c-danger)); }
+[data-setting='grimdark'] .ui-section-title { color: rgb(var(--c-frame-bright)); font-size: 1.3rem; }
+[data-setting='grimdark'] .ui-corner { color: rgb(var(--c-frame)); }
+/* Proficiency is a stamped square, crimson when held. */
+[data-setting='grimdark'] .ui-prof-mark { transform: none; }
+[data-setting='grimdark'] .ui-prof-mark.bg-frame-bright { background: rgb(var(--c-danger)); border-color: rgb(var(--c-danger)); }
+[data-setting='grimdark'] .ui-prof-mark.outline { outline-color: rgb(var(--c-frame-bright) / 0.8); }
+/* The open section of the rail: a crimson banner hung from a brass rod. */
+[data-setting='grimdark'] .ui-rail__item[aria-current='page'] {
+  color: rgb(var(--c-frame-bright));
+  background: linear-gradient(90deg, rgb(var(--c-accent) / 0.45), rgb(var(--c-accent) / 0.12));
+}
+[data-setting='grimdark'] .ui-rail__item[aria-current='page'] .ui-rail__mark { width: 3px; background: rgb(var(--c-frame-bright)); }
+[data-setting='grimdark'] .ui-rail__item { text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-display); }
+[data-setting='grimdark'] .ui-stat__label { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em; }

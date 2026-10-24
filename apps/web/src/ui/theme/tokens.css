@@ -58,49 +58,50 @@
 }
 
 /* ------------------------------------------------------------------ Grimdark */
-/* Gunmetal and bone, bronze plates, imperial red. Hard, heavy, riveted. */
+/* The Imperium of Man: blackened iron, worn brass, bone-white script and the crimson of purity
+   seals. Headings are carved Roman capitals; lists are iron cogitator plates, never parchment. */
 [data-setting='grimdark'] {
-  --font-display: 'Old Standard TT', 'Times New Roman', serif;
-  --font-numeric: 'Old Standard TT', 'Times New Roman', serif;
-  --display-tracking: 0.06em;
-  --display-weight: 700;
+  --font-display: 'Forum', 'Times New Roman', serif;
+  --font-numeric: 'Forum', 'Times New Roman', serif;
+  --display-tracking: 0.08em;
+  --display-weight: 400;
   --title-transform: uppercase;
 
-  --c-bg: 12 13 15;
-  --c-bg-deep: 5 6 7;
-  --c-surface: 24 25 28;
-  --c-surface-2: 35 36 40;
-  --c-inset: 12 12 13;
-  --c-line: 64 60 56;
-  --c-frame: 140 108 62;
-  --c-frame-bright: 196 154 82;
-  --c-ink: 228 221 206;
-  --c-ink-muted: 160 151 136;
-  --c-ink-faint: 104 98 89;
-  --c-accent: 158 35 30;
-  --c-accent-ink: 240 228 210;
-  --c-paper: 168 158 136;
-  --c-paper-ink: 30 24 20;
-  --c-paper-muted: 98 86 72;
+  --c-bg: 11 11 12;
+  --c-bg-deep: 4 4 5;
+  --c-surface: 22 22 24;
+  --c-surface-2: 34 33 35;
+  --c-inset: 9 9 10;
+  --c-line: 60 56 52;
+  --c-frame: 112 98 76;
+  --c-frame-bright: 188 156 96;
+  --c-ink: 226 218 200;
+  --c-ink-muted: 160 150 132;
+  --c-ink-faint: 104 98 90;
+  --c-accent: 152 30 27;
+  --c-accent-ink: 240 228 206;
+  --c-paper: 24 23 25;
+  --c-paper-ink: 226 218 200;
+  --c-paper-muted: 118 106 90;
 
-  --c-hp: 165 32 30;
-  --c-temp-hp: 196 154 82;
-  --c-sanity: 112 128 92;
-  --c-xp: 196 154 82;
-  --c-armor: 148 150 152;
+  --c-hp: 170 32 28;
+  --c-temp-hp: 188 156 96;
+  --c-sanity: 108 130 98;
+  --c-xp: 188 156 96;
+  --c-armor: 150 152 154;
   --c-success: 110 136 84;
-  --c-danger: 178 38 34;
+  --c-danger: 186 40 34;
   --c-warning: 206 150 60;
 
-  --c-act-action: 196 154 82;
+  --c-act-action: 188 156 96;
   --c-act-bonus: 112 138 96;
-  --c-act-reaction: 178 60 44;
+  --c-act-reaction: 186 52 40;
   --c-act-passive: 128 124 136;
 
   --radius: 0px;
   --chamfer: 6px;
   --panel-texture: var(--grain);
-  --panel-texture-opacity: 0.5;
+  --panel-texture-opacity: 0.45;
   --shadow-panel: 0 20px 44px -16px rgb(0 0 0 / 0.85);
 }
 
@@ -202,4 +203,16 @@
 [data-setting] {
   color: rgb(var(--c-ink));
   font-family: var(--font-body);
+}
+
+/* The service's own type. The hero select screen, the login and the service's dialogs keep it
+   whatever setting their colours follow; a setting's display face appears once a hero is opened. */
+.ui-service,
+.ui-service [data-setting],
+[data-setting].ui-service {
+  --font-display: var(--font-body);
+  --font-numeric: var(--font-body);
+  --display-tracking: 0.01em;
+  --display-weight: 600;
+  --title-transform: none;
 }

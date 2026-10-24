@@ -13,8 +13,8 @@
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.3.0",
     "@fontsource/cormorant-sc": "^5.3.0",
+    "@fontsource/forum": "^5.3.0",
     "@fontsource/golos-text": "^5.3.0",
-    "@fontsource/old-standard-tt": "^5.3.0",
     "@fontsource/oranienbaum": "^5.3.0",
     "@fontsource/tektur": "^5.3.0",
     "@itd/game-logic": "*",

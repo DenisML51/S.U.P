@@ -49,7 +49,7 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <SettingScope setting={DEFAULT_SETTING} className="relative grid h-screen place-items-center overflow-hidden bg-bg">
+    <SettingScope setting={DEFAULT_SETTING} className="ui-service relative grid h-screen place-items-center overflow-hidden bg-bg">
       <div
         className="pointer-events-none absolute inset-0"
         style={{ background: 'radial-gradient(ellipse at 50% 40%, rgb(var(--c-surface-2) / 0.5), rgb(var(--c-bg-deep)) 70%)' }}

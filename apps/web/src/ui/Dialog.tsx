@@ -27,6 +27,8 @@ interface DialogProps {
   width?: 'sm' | 'md' | 'lg' | 'xl';
   /** The setting to wear when the dialog is opened outside any screen's scope (app settings). */
   setting?: Setting;
+  /** Set in the service's own type rather than the setting's display face (app settings, hero select). */
+  service?: boolean;
   /** Paper suits reading (descriptions); plate suits forms. */
   variant?: 'plate' | 'paper';
   className?: string;
@@ -86,6 +88,7 @@ export const Dialog: React.FC<DialogProps> = ({
   width = 'md',
   variant = 'plate',
   setting: ownSetting,
+  service,
   className,
 }) => {
   const scopeSetting = useSetting();
@@ -118,7 +121,7 @@ export const Dialog: React.FC<DialogProps> = ({
       {open && (
         <SettingScope
           setting={setting}
-          className="fixed inset-0 z-[200] flex items-start justify-center px-6 pt-[9vh]"
+          className={cx('fixed inset-0 z-[200] flex items-start justify-center px-6 pt-[9vh]', service && 'ui-service')}
         >
           <motion.div
             className="absolute inset-0 bg-bg-deep/80"
@@ -224,13 +227,15 @@ export const ConfirmDialog: React.FC<{
   confirmLabel: string;
   danger?: boolean;
   setting?: Setting;
+  service?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
-}> = ({ open, title, message, confirmLabel, danger = false, setting, onConfirm, onCancel }) => (
+}> = ({ open, title, message, confirmLabel, danger = false, setting, service, onConfirm, onCancel }) => (
   <Dialog
     open={open}
     onClose={onCancel}
     setting={setting}
+    service={service}
     title={title}
     width="sm"
     footer={

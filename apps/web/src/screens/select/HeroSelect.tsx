@@ -105,7 +105,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
   const background = focused.kind === 'hero' ? fullArtSrc(focused.hero) : undefined;
 
   return (
-    <SettingScope setting={setting} className="ui-morph relative h-screen overflow-hidden bg-bg">
+    <SettingScope setting={setting} className="ui-service ui-morph relative h-screen overflow-hidden bg-bg">
       {/* Atmosphere: the focused hero's art, blurred into the backdrop. */}
       <AnimatePresence>
         {background && (
@@ -136,7 +136,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
           animate={{ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.15 } }}
           exit={{ opacity: 0, y: -12, transition: { duration: 0.25 } }}
         >
-          <Wordmark setting={setting} />
+          <Wordmark />
           <div className="flex items-center gap-3">
             <SyncBadge />
             <IconButton label="Настройки" onClick={onOpenSettings}>
@@ -213,6 +213,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
         }
         confirmLabel="Удалить"
         danger
+        service
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => {
           if (pendingDelete) void deleteCharacter(pendingDelete.id);

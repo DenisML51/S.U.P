@@ -65,6 +65,7 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
         open={open}
         onClose={onClose}
         setting={open ? screenSetting() : undefined}
+        service
         title="Настройки"
         width="md"
         footer={
