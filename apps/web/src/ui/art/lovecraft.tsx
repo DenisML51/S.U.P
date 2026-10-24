@@ -450,6 +450,37 @@ const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ id, level }) => (
   </div>
 );
 
+/** Hour marks of the watch's dial: twelve, the quarters longer. */
+const WATCH_TICKS = Array.from({ length: 12 }, (_, i) => {
+  const a = (i / 12) * Math.PI * 2;
+  const inner = i % 3 === 0 ? 17 : 19;
+  const at = (r: number) => `${(30 + r * Math.sin(a)).toFixed(2)} ${(46 - r * Math.cos(a)).toFixed(2)}`;
+  return `M${at(inner)}L${at(21)}`;
+}).join('');
+
+/**
+ * The level on a conductor's pocket watch: a brass case with its bow and crown, a yellowed dial
+ * with hour marks, the number in its middle and a pointer on the rim creeping round by the level,
+ * twenty to the full turn.
+ */
+const StatusLevel: NonNullable<SettingArt['StatusLevel']> = ({ level }) => (
+  <span className="lc-watch">
+    <svg className="ui-level__art" viewBox="0 0 60 74" aria-hidden>
+      <circle className="lc-watch__bow" cx="30" cy="8" r="6" />
+      <path className="lc-watch__crown" d="M26 12h8v6h-8Z" />
+      <circle className="lc-watch__case" cx="30" cy="46" r="27" />
+      <circle className="lc-watch__dial" cx="30" cy="46" r="22.5" />
+      <path className="lc-watch__ticks" d={WATCH_TICKS} />
+      <path
+        className="lc-watch__hand"
+        d="M30 25.5l2 6.5h-4Z"
+        transform={`rotate(${(Math.min(level, 20) / 20) * 360} 30 46)`}
+      />
+    </svg>
+    <span className="lc-watch__level ui-numeric">{level}</span>
+  </span>
+);
+
 export const LOVECRAFT_ART: SettingArt = {
   corner: { viewBox: '0 0 24 24', art: <BrassCorner /> },
   crest: { viewBox: '0 0 120 24', art: <FanCrest /> },
@@ -464,5 +495,6 @@ export const LOVECRAFT_ART: SettingArt = {
   LevelReady,
   WorldSigil,
   HeroReadout,
+  StatusLevel,
   Flourish,
 };

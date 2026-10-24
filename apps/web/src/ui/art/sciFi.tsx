@@ -176,6 +176,28 @@ const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ id, level }) => (
   </div>
 );
 
+/** Chevrons of rank by the tier of play: one up to level 4, two to 10, three to 16, four above. */
+const rankChevrons = (level: number) => (level < 5 ? 1 : level < 11 ? 2 : level < 17 ? 3 : 4);
+
+/**
+ * The level as a service rank patch: blue chevrons stacked over the number, in a matte cell with
+ * one corner cut, a hairline index under it.
+ */
+const StatusLevel: NonNullable<SettingArt['StatusLevel']> = ({ level }) => {
+  const count = rankChevrons(level);
+  return (
+    <span className="sf-rank">
+      <svg className="sf-rank__chevrons" viewBox="0 0 40 30" aria-hidden>
+        {Array.from({ length: count }, (_, i) => (
+          <path key={i} d={`M4 ${16 + i * 6 - (count - 1) * 3}l16 -6 16 6v4l-16 -6 -16 6Z`} />
+        ))}
+      </svg>
+      <span className="sf-rank__number ui-numeric">{String(level).padStart(2, '0')}</span>
+      <span className="sf-rank__unit">Ур</span>
+    </span>
+  );
+};
+
 export const SCI_FI_ART: SettingArt = {
   ruleMark: (
     <svg width="34" height="6" viewBox="0 0 34 6" aria-hidden>
@@ -191,4 +213,5 @@ export const SCI_FI_ART: SettingArt = {
   Backdrop,
   LevelReady,
   HeroReadout,
+  StatusLevel,
 };

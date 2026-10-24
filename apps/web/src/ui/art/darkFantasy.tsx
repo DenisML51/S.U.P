@@ -325,6 +325,32 @@ const Seal: React.FC = () => (
   </div>
 );
 
+/** The serrated edge of a hunter's badge: a saw's teeth round a disc, raked one way. */
+const BADGE_EDGE =
+  Array.from({ length: 20 }, (_, i) => {
+    const a = (i / 20) * Math.PI * 2;
+    const b = a + (Math.PI * 2) / 20 * 0.8;
+    const point = (angle: number, r: number) => `${(28 + r * Math.sin(angle)).toFixed(2)} ${(52 - r * Math.cos(angle)).toFixed(2)}`;
+    return `${i === 0 ? 'M' : 'L'}${point(a, 22)}L${point(b, 26.5)}`;
+  }).join('') + 'Z';
+
+/**
+ * The level on a hunter's badge: a serrated brass disc hung from a ribbon of the order's colours,
+ * the number struck into its dark centre.
+ */
+const StatusLevel: NonNullable<SettingArt['StatusLevel']> = ({ level }) => (
+  <span className="df-badge">
+    <svg className="ui-level__art" viewBox="0 0 56 80" aria-hidden>
+      <path className="df-badge__ribbon" d="M14 0H42V24L28 30 14 24Z" />
+      <path className="df-badge__stripe" d="M25 0H31V27.5L28 29 25 27.5Z" />
+      <path className="df-badge__edge" d={BADGE_EDGE} />
+      <circle className="df-badge__ring" cx="28" cy="52" r="19" />
+      <circle className="df-badge__face" cx="28" cy="52" r="16" />
+    </svg>
+    <span className="df-badge__level ui-numeric">{level}</span>
+  </span>
+);
+
 export const DARK_FANTASY_ART: SettingArt = {
   corner: { viewBox: '0 0 24 24', art: <GothicCorner /> },
   crest: { viewBox: '0 0 120 24', art: <ArchCrest /> },
@@ -340,4 +366,5 @@ export const DARK_FANTASY_ART: SettingArt = {
   WorldSigil,
   Flourish,
   HeroReadout,
+  StatusLevel,
 };

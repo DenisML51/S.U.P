@@ -344,19 +344,67 @@
   .ui-prof-mark { transform: rotate(45deg) scale(0.85); }
   .ui-prof-mark.bg-frame-bright { background: var(--brass); }
 
-  /* ---------------------------------------------------------------- Level and experience */
-  .ui-level { --cut: 4px; }
-  .ui-level__emblem,
-  .ui-level__plate {
-    border: 0;
-    background: var(--mahogany);
-    box-shadow: inset 0 0 0 1px rgb(var(--c-frame) / 0.8), inset 0 0 0 3px rgb(var(--c-wood-dark)), inset 0 0 0 4px rgb(var(--c-frame) / 0.35);
-    clip-path: var(--deco-shape);
+  /* ---------------------------------------------------------------- Vitals */
+  /* The sanatorium's instruments: each of the vitals a thermometer, a brass-capped glass tube
+     growing from a bulb with the picture in it, the scale engraved under the tube; the name typed
+     as on a case file. Sanity rises in the colour that does not belong. */
+  .ui-status__bars { gap: 0.95rem; padding-bottom: 0.45rem; }
+  .ui-vital { --vital-gap: 0; }
+  .ui-vital__label { padding-left: 0.6rem; font-family: var(--font-typed); font-size: 0.64rem; letter-spacing: 0.14em; color: rgb(var(--c-frame)); }
+  .ui-vital:hover .ui-vital__label { color: rgb(var(--c-frame-bright)); }
+  .ui-vital__current { font-size: 1.45rem; -webkit-text-stroke: 0.35px currentColor; }
+  .ui-vital__max { font-family: var(--font-typed); font-size: 0.7rem; color: rgb(var(--c-frame)); }
+  /* The bulb: a ball of the liquid in a brass collar, the tube leaves it on the right. */
+  .ui-vital__icon {
+    position: relative;
+    z-index: 1;
+    align-self: end;
+    width: 30px;
+    height: 30px;
+    margin-bottom: -10px;
+    border-radius: 999px;
+    color: rgb(var(--c-bg-deep) / 0.8);
+    background: radial-gradient(circle at 36% 30%, rgb(255 255 255 / 0.35), transparent 35%), rgb(var(--meter-color, var(--c-frame)));
+    box-shadow: 0 0 0 1.5px rgb(var(--c-frame-bright)), 0 0 0 3px rgb(var(--c-wood-dark)), 0 2px 6px 3px rgb(0 0 0 / 0.5);
   }
-  .ui-level__emblem { color: rgb(var(--c-frame-bright)); }
-  .ui-level__unit { font-family: var(--font-typed); font-size: 0.6rem; letter-spacing: 0.16em; color: rgb(var(--c-frame)); }
-  .ui-level__number { color: rgb(var(--c-ink)); }
-  .ui-level:hover .ui-level__emblem { color: rgb(var(--c-eldritch)); filter: drop-shadow(0 0 4px rgb(var(--c-eldritch) / 0.6)); }
+  .ui-vital[data-tone='hp'] .ui-vital__icon { --meter-color: var(--c-hp); color: rgb(var(--c-bg-deep) / 0.8); }
+  .ui-vital[data-tone='sanity'] .ui-vital__icon { --meter-color: var(--c-sanity); color: rgb(var(--c-bg-deep) / 0.8); box-shadow: 0 0 0 1.5px rgb(var(--c-frame-bright)), 0 0 0 3px rgb(var(--c-wood-dark)), 0 0 12px 2px rgb(var(--c-eldritch) / 0.45); }
+  .ui-vital__icon svg { width: 15px; height: 15px; }
+  .ui-vital__gauge { margin-left: -3px; padding: 0 6px 6px 0; }
+  .ui-vital .ui-meter { height: 9px; border-radius: 0 999px 999px 0; border-left: 0; background: linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(0 0 0 / 0.3)), rgb(var(--c-inset)); }
+  .ui-vital .ui-meter--ticks::after { inset: 1px 4px auto 2px; height: 1.5px; background: rgb(255 255 255 / 0.18); border-radius: 999px; }
+  /* The engraved scale under the tube. */
+  .ui-vital__gauge::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    right: 10px;
+    bottom: 0;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, rgb(var(--c-frame) / 0.75) 0 1px, transparent 1px 10%);
+  }
+
+  /* ---------------------------------------------------------------- Level and experience */
+  /* The level on a conductor's pocket watch: brass case, bow and crown, a yellowed dial with the
+     number in its middle and a red pointer creeping round the rim with every level. */
+  .ui-level { top: 0.45rem; height: 5.4rem; filter: drop-shadow(0 4px 5px rgb(0 0 0 / 0.7)); }
+  .ui-level:hover { filter: drop-shadow(0 4px 5px rgb(0 0 0 / 0.7)) drop-shadow(0 0 8px rgb(var(--c-eldritch) / 0.5)); }
+  .lc-watch__bow { fill: none; stroke: rgb(var(--c-frame-bright)); stroke-width: 2; }
+  .lc-watch__crown { fill: rgb(var(--c-frame)); stroke: rgb(var(--c-frame-bright)); stroke-width: 0.6; }
+  .lc-watch__case { fill: rgb(var(--c-frame)); stroke: rgb(var(--c-frame-bright)); stroke-width: 1.2; }
+  .lc-watch__dial { fill: rgb(var(--c-paper)); stroke: rgb(var(--c-wood-dark)); stroke-width: 1; }
+  .lc-watch__ticks { stroke: rgb(var(--c-paper-ink) / 0.75); stroke-width: 1; }
+  .lc-watch__hand { fill: rgb(var(--c-hp)); }
+  .lc-watch__level {
+    position: absolute;
+    top: 62%;
+    left: 50%;
+    font-size: 1.55rem;
+    line-height: 1;
+    color: rgb(var(--c-paper-ink));
+    -webkit-text-stroke: 0.5px currentColor;
+    transform: translate(-50%, -50%);
+  }
   .ui-xp__label { font-family: var(--font-typed); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--c-frame)); }
   .ui-xp__track { height: 6px; border-color: rgb(var(--c-frame) / 0.5); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7); }
   .ui-xp__fill { background: var(--brass); }

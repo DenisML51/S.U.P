@@ -1437,53 +1437,54 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-status { display: flex; flex-direction: column; }
 .ui-status__panel { z-index: 1; }
 /* The bars stand as tall as the level beside them, so the row under them never runs into it. */
-.ui-status__bars { min-height: 5.9rem; padding-right: 5.2rem; }
+.ui-status__bars { display: flex; flex-direction: column; justify-content: center; gap: 0.7rem; min-height: 5.9rem; padding-right: 5.2rem; }
+
+/* One of the vitals: the picture beside the name and figures, the gauge under them and the
+   temporary amount at the gauge's end, beside the hatched part it stands for. */
+.ui-vital {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: 'icon label value value' 'icon gauge gauge extra';
+  align-items: end;
+  row-gap: 0.3rem;
+  width: 100%;
+  text-align: left;
+}
+.ui-vital__icon { grid-area: icon; align-self: center; margin-right: var(--vital-gap, 0.6rem); display: grid; place-items: center; color: rgb(var(--c-ink-muted)); }
+.ui-vital[data-tone='hp'] .ui-vital__icon { color: rgb(var(--c-hp)); }
+.ui-vital[data-tone='sanity'] .ui-vital__icon { color: rgb(var(--c-sanity)); }
+.ui-vital__label { grid-area: label; overflow: hidden; padding-right: 0.4rem; white-space: nowrap; text-overflow: ellipsis; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1; color: rgb(var(--c-ink-faint)); transition: color 200ms; }
+.ui-vital__value { grid-area: value; line-height: 1; white-space: nowrap; }
+.ui-vital__current { font-size: 1.2rem; color: rgb(var(--c-ink)); }
+.ui-vital__max { margin-left: 0.15rem; font-size: 0.8rem; color: rgb(var(--c-ink-faint)); }
+.ui-vital__extra { grid-area: extra; align-self: center; margin-left: 0.45rem; font-size: 0.8rem; line-height: 1; color: rgb(var(--c-temp-hp)); }
+.ui-vital__gauge { grid-area: gauge; position: relative; display: block; }
+.ui-vital:hover .ui-vital__label { color: rgb(var(--c-ink-muted)); }
 
 /* ------------------------------------------------------------------ Level and experience */
-/* The level beside the bars: the setting's emblem in a tile over a plate with the number. */
+/* The level beside the bars: the setting's token of rank, drawn whole by its ornament set and
+   filled in by the setting's CSS. Its picture is an SVG stretched over the token; the figures lie
+   on top of it. */
 .ui-level {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 4.2rem;
-}
-/* What the setting may shape as one piece (a pennant); otherwise its parts stand on their own. */
-.ui-level__sheet { display: contents; }
-.ui-level__emblem {
   display: grid;
   place-items: center;
-  height: 2.3rem;
-  color: rgb(var(--c-frame));
-  background: rgb(var(--c-inset));
-  border: 1px solid rgb(var(--c-frame) / 0.45);
-  border-radius: var(--radius);
-  transition: color 200ms, border-color 200ms;
+  width: 4.2rem;
+  height: 5.6rem;
+  transition: transform 250ms ease, filter 250ms ease;
 }
-.ui-level__plate {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.2rem 0 0.3rem;
-  background: rgb(var(--c-inset));
-  border: 1px solid rgb(var(--c-frame) / 0.6);
-  border-radius: var(--radius);
-  transition: box-shadow 300ms, border-color 200ms;
-}
-.ui-level__unit { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
-.ui-level__number { font-size: 1.75rem; line-height: 1; color: rgb(var(--c-frame-bright)); }
-.ui-level__emblem svg { width: 22px; height: 22px; }
-.ui-level:hover .ui-level__emblem { color: rgb(var(--c-frame-bright)); }
-.ui-level:hover .ui-level__plate { border-color: rgb(var(--c-frame-bright)); }
-.ui-level[data-ready] .ui-level__plate { animation: ui-level-ready 2.2s ease-in-out infinite; border-color: rgb(var(--c-xp)); }
+.ui-level > * { position: relative; display: grid; place-items: center; width: 100%; height: 100%; }
+.ui-level__art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ui-level:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 3px; }
+.ui-level[data-ready] { animation: ui-level-ready 2.2s ease-in-out infinite; }
 @keyframes ui-level-ready {
-  50% { box-shadow: 0 0 18px rgb(var(--c-xp) / 0.55); }
+  50% { filter: drop-shadow(0 0 10px rgb(var(--c-xp) / 0.7)); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ui-level[data-ready] .ui-level__plate { animation: none; box-shadow: 0 0 14px rgb(var(--c-xp) / 0.5); }
+  .ui-level[data-ready] { animation: none; filter: drop-shadow(0 0 8px rgb(var(--c-xp) / 0.6)); }
 }
 
 /* Experience on a plaque fixed under the vitals panel: the label, a graduated bar, the figures. */
