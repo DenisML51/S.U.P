@@ -26,6 +26,7 @@ const speedFeature = (owner: string, speed: number, size: string): FeatureDef =>
   id: `${owner}.body`,
   name: 'Размер и скорость',
   description: `Размер: ${size}. Скорость ходьбы ${speed} фт.`,
+  iconName: 'sprint',
   effects: [{ type: 'baseSpeed', value: speed }],
 });
 
@@ -94,6 +95,7 @@ const AASIMAR: SpeciesDef = {
     {
       id: 'aasimar.light-bearer',
       name: 'Несущий свет',
+      iconName: 'sunbeams',
       description: 'Знаете заговор *Свет*; заклинательная характеристика — Харизма.',
       effects: [{ type: 'spell', spell: 'light', alwaysPrepared: true, ability: 'charisma' }],
     },
@@ -237,6 +239,7 @@ const DWARF: SpeciesDef = {
     {
       id: 'dwarf.toughness',
       name: 'Дварфийская выдержка',
+      iconName: 'heart-plus',
       description: 'Максимум хитов больше на 1 за каждый уровень персонажа.',
       effects: [{ type: 'hpPerLevel', amount: 1 }],
     },
@@ -325,6 +328,7 @@ const ELF: SpeciesDef = {
     {
       id: 'elf.keen-senses',
       name: 'Обострённые чувства',
+      iconName: 'all-seeing-eye',
       description: 'Владение одним навыком на выбор: Проницательность, Внимательность или Выживание.',
       choices: [
         { id: 'skill', label: 'Навык', count: 1, options: { from: 'skills', list: ['insight', 'perception', 'survival'] } },
@@ -333,6 +337,7 @@ const ELF: SpeciesDef = {
     {
       id: 'elf.trance',
       name: 'Транс',
+      iconName: 'moon',
       description:
         'Не нуждаетесь во сне, и магия не может вас усыпить. Долгий отдых можно завершить за 4 часа медитативного транса, оставаясь в сознании.',
     },
@@ -584,12 +589,14 @@ const HUMAN: SpeciesDef = {
     {
       id: 'human.skillful',
       name: 'Умелость',
+      iconName: 'book-cover',
       description: 'Владение одним навыком на выбор.',
       choices: [{ id: 'skill', label: 'Навык', count: 1, options: { from: 'skills' } }],
     },
     {
       id: 'human.versatile',
       name: 'Разносторонность',
+      iconName: 'sparkles',
       description: 'Получаете черту происхождения на выбор (рекомендуется Умелец).',
       choices: [{ id: 'feat', label: 'Черта происхождения', count: 1, options: { from: 'feats', categories: ['origin'] } }],
     },
@@ -701,6 +708,7 @@ const TIEFLING: SpeciesDef = {
     {
       id: 'tiefling.otherworldly-presence',
       name: 'Потустороннее присутствие',
+      iconName: 'ghost',
       description: 'Знаете заговор *Чудотворство*; характеристика та же, что у Дьявольского наследия.',
       effects: [{ type: 'spell', spell: 'thaumaturgy', alwaysPrepared: true, ability: 'charisma' }],
     },

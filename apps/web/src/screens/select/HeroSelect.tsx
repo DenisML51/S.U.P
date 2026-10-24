@@ -105,7 +105,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
   const background = focused.kind === 'hero' ? fullArtSrc(focused.hero) : undefined;
 
   return (
-    <SettingScope setting={setting} className="ui-service ui-morph relative h-screen overflow-hidden bg-bg">
+    <SettingScope setting={setting} className="ui-service ui-morph relative h-screen overflow-clip bg-bg">
       {/* Atmosphere: the focused hero's art, blurred into the backdrop. */}
       <AnimatePresence>
         {background && (

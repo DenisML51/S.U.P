@@ -36,7 +36,7 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
 
   return (
     <SheetDialogsProvider>
-      <SettingScope setting={setting} className="h-screen overflow-hidden bg-bg">
+      <SettingScope setting={setting} className="h-screen overflow-clip bg-bg">
         {/* Assembles on arrival: the rail and the hero slide in from the left, the section rises; on
             leaving the sheet sinks back. */}
         <motion.div className="flex h-full" exit={{ opacity: 0, scale: 0.985, transition: { duration: 0.25 } }}>

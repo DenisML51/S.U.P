@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { findBackground, findClass, findSubclass, pointsRemaining } from '@itd/game-logic';
 import { SETTINGS, DEFAULT_SETTING, type Setting } from '@itd/schema';
 import { Button, Panel, cx } from '../../ui/primitives';
-import { IconCheck, IconPrev } from '../../ui/icons';
+import { IconCheck, IconDice, IconPrev, IconQuill } from '../../ui/icons';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
 import { WorldCard } from './WorldCard';
@@ -76,7 +76,7 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
       issues: worldChosen ? [] : ['Мир'],
       stage: true,
       content: (
-        <div className="mx-auto grid h-[28rem] max-w-5xl grid-cols-3 gap-6 [margin-top:max(0px,calc(50vh-23rem))]">
+        <div className="mx-auto grid h-[28rem] w-full max-w-5xl grid-cols-3 gap-6">
           {SETTINGS.map((id) => (
             <WorldCard
               key={id}
@@ -100,8 +100,9 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
       issues: path ? [] : ['Путь'],
       stage: true,
       content: (
-        <div className="mx-auto grid h-[22rem] max-w-4xl grid-cols-2 gap-5 [margin-top:max(0px,calc(50vh-20rem))]">
+        <div className="mx-auto grid h-[22rem] w-full max-w-4xl grid-cols-2 gap-5">
           <BigChoice selected={path === 'dnd'} onSelect={() => { setPath('dnd'); setIndex(2); }} className="flex flex-col justify-center px-8">
+            <IconDice width={52} height={52} className="mb-5 text-frame-bright" />
             <span className="ui-display ui-title block text-[1.8rem] leading-tight text-frame-bright">По правилам D&D 2024</span>
             <span className="mt-3 block text-ink-muted">
               Виды, предыстории и классы Книги игрока. Умения, ячейки и выборы приходят сами с каждым уровнем.
@@ -109,6 +110,7 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
             <span className="mt-4 block text-sm text-ink-faint">Сейчас: паладин и воин со всеми подклассами</span>
           </BigChoice>
           <BigChoice selected={path === 'custom'} onSelect={() => { setPath('custom'); setIndex(2); }} className="flex flex-col justify-center px-8">
+            <IconQuill width={52} height={52} className="mb-5 text-frame-bright" />
             <span className="ui-display ui-title block text-[1.8rem] leading-tight text-frame-bright">Свой герой</span>
             <span className="mt-3 block text-ink-muted">
               Раса, класс и всё остальное — своими словами. Лист заполняете сами, по правилам вашего стола.
@@ -174,7 +176,7 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={step.id}
-        className="h-full min-h-0"
+        className={cx('min-h-0', step.stage ? 'w-full' : 'h-full')}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
@@ -186,7 +188,7 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
   );
 
   return (
-    <SettingScope setting={setting} className={cx('ui-morph flex h-screen overflow-hidden bg-bg', !worldChosen && 'ui-service')}>
+    <SettingScope setting={setting} className={cx('ui-morph flex h-screen overflow-clip bg-bg', !worldChosen && 'ui-service')}>
       <aside className="flex w-60 shrink-0 flex-col border-r border-line/50 px-4 py-6">
         <Button
           variant="ghost"
@@ -227,9 +229,10 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
 
       <div className="flex min-w-0 flex-1 flex-col">
         {step.stage ? (
-          <main className="min-h-0 flex-1 px-10 pt-8">
+          // A stage step (the world, the path): its question on top, its choices centred in the room left.
+          <main className="flex min-h-0 flex-1 flex-col px-10 pt-8">
             <h2 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">{step.question}</h2>
-            {content}
+            <div className="flex min-h-0 flex-1 items-center">{content}</div>
           </main>
         ) : (
           <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_20rem] gap-6 px-6 pt-6">

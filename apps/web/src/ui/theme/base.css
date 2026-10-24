@@ -319,6 +319,13 @@
 .ui-rule--left::after { background: linear-gradient(90deg, rgb(var(--c-frame) / 0.6), transparent); }
 
 /* ------------------------------------------------------------------ Scrollbars */
+/* A panel that may run a little long (the hero summary): it scrolls with the wheel, shows no bar,
+   and its last lines fade out instead of being cut. */
+.ui-quiet-scroll {
+  scrollbar-width: none;
+  mask-image: linear-gradient(180deg, #000 calc(100% - 1.75rem), transparent);
+}
+.ui-quiet-scroll::-webkit-scrollbar { display: none; }
 .ui-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgb(var(--c-frame) / 0.4) transparent;

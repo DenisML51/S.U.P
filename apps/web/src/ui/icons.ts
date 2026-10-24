@@ -18,6 +18,7 @@ export { default as IconInventory } from '~icons/game-icons/knapsack';
 export { default as IconCharacter } from '~icons/game-icons/drama-masks';
 export { default as IconNotes } from '~icons/ph/feather-fill';
 export { default as IconDice } from '~icons/game-icons/dice-twenty-faces-twenty';
+export { default as IconQuill } from '~icons/game-icons/quill-ink';
 export { default as IconCombat } from '~icons/game-icons/sword-clash';
 export { default as IconCoins } from '~icons/ph/coins-fill';
 export { default as IconAmmunition } from '~icons/ph/arrow-fat-up-fill';

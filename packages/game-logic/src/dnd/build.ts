@@ -907,7 +907,7 @@ export function choiceOptions(build: Build, level: number, open: OpenChoice): Op
           .filter(({ effect, owner }) => effect.type === 'proficiency' && effect.category === 'language' && !owner.key.startsWith(open.key))
           .map(({ effect }) => (effect as Extract<Effect, { type: 'proficiency' }>).value),
       );
-      return LANGUAGES.map((name) => ({ id: name, name, description: '', disabled: known.has(name) && !ownPicks.has(name) ? 'Уже знаете' : undefined }));
+      return LANGUAGES.map((name) => ({ id: name, name, description: '', iconName: 'scroll-unfurled', disabled: known.has(name) && !ownPicks.has(name) ? 'Уже знаете' : undefined }));
     }
     case 'options':
       return source.options.map((o) => ({ id: o.id, name: o.name, description: o.description }));
