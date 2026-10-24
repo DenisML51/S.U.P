@@ -103,6 +103,10 @@ export const InviteParamsSchema = z.object({ code: InviteCodeSchema });
 export const AddPartyHeroRequestSchema = z.object({ characterId: EntityIdSchema });
 export type AddPartyHeroRequest = z.input<typeof AddPartyHeroRequestSchema>;
 
+/** The master shows one of their own heroes to the players, or hides it again. */
+export const UpdatePartyHeroRequestSchema = z.object({ hidden: z.boolean() });
+export type UpdatePartyHeroRequest = z.input<typeof UpdatePartyHeroRequestSchema>;
+
 const hp = z.number().int().min(-9999).max(9999);
 
 /** Which side an NPC stands on: against the heroes, or with them. */
@@ -203,6 +207,11 @@ export interface PartyHeroDto {
   level: number;
   portrait?: string;
   vitals: HeroVitalsDto | null;
+  /**
+   * A master's hero the players do not see yet (only the master gets hidden heroes; a fight shows
+   * whoever is in it). Players' heroes are never hidden.
+   */
+  hidden: boolean;
 }
 
 /** Quick NPCs are the master's notes: never sent to players. */

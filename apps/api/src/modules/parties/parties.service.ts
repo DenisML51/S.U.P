@@ -242,7 +242,8 @@ export class PartiesService implements CharacterChangeListener {
         const [hero] = await tx.transaction((attempt) =>
           attempt
             .insert(partyHeroes)
-            .values({ partyId, userId, characterId })
+            // The master's heroes come in unseen; the master shows each one when the story calls for it.
+            .values({ partyId, userId, characterId, hidden: role === 'master' })
             .returning({ id: partyHeroes.id }),
         );
         return hero!;
@@ -270,6 +271,18 @@ export class PartiesService implements CharacterChangeListener {
       },
       LEAVING,
     );
+  }
+
+  /** The master shows one of their own heroes to the players, or hides it again. */
+  setHeroHidden(userId: string, partyId: string, heroId: string, hidden: boolean): Promise<void> {
+    return this.access.change(userId, partyId, 'master', async ({ tx }) => {
+      const [hero] = await tx
+        .update(partyHeroes)
+        .set({ hidden })
+        .where(and(eq(partyHeroes.id, heroId), eq(partyHeroes.partyId, partyId), eq(partyHeroes.userId, userId)))
+        .returning({ id: partyHeroes.id });
+      if (!hero) throw notFound('Герой мастера не найден');
+    });
   }
 
   // ------------------------------------------------------------------------------------------

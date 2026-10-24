@@ -25,6 +25,8 @@ export { default as IconAmmunition } from '~icons/ph/arrow-fat-up-fill';
 export { default as IconSpeed } from '~icons/ph/boot-fill';
 export { default as IconInitiative } from '~icons/ph/clock-countdown-fill';
 export { default as IconPerception } from '~icons/ph/eye-fill';
+export { default as IconShown } from '~icons/ph/eye-bold';
+export { default as IconHidden } from '~icons/ph/eye-slash-bold';
 export { default as IconProficiency } from '~icons/ph/star-fill';
 export { default as IconHistory } from '~icons/game-icons/scroll-quill';
 export { default as IconRest } from '~icons/ph/campfire-fill';

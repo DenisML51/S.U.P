@@ -48,6 +48,7 @@ interface HeroRow {
   userId: string;
   characterId: string;
   name: string;
+  hidden: boolean;
   summary: CharacterSummary | null;
 }
 
@@ -59,6 +60,7 @@ const heroesOf = (db: Executor, partyId: string): Promise<HeroRow[]> =>
       userId: partyHeroes.userId,
       characterId: partyHeroes.characterId,
       name: characters.name,
+      hidden: partyHeroes.hidden,
       summary: characters.summary,
     })
     .from(partyHeroes)
@@ -130,7 +132,14 @@ export class PartyQueries {
         characters,
         and(eq(characters.userId, partyHeroes.userId), eq(characters.id, partyHeroes.characterId)),
       )
-      .where(and(eq(partyHeroes.partyId, parties.id), isNull(characters.deletedAt)));
+      .where(
+        and(
+          eq(partyHeroes.partyId, parties.id),
+          isNull(characters.deletedAt),
+          // Players count only the heroes they can see.
+          sql`(not ${partyHeroes.hidden} or ${partyMembers.role} = 'master')`,
+        ),
+      );
 
     const rows = await this.db
       .select({
@@ -198,7 +207,10 @@ export class PartyQueries {
         const { party, role } = seat;
         const isMaster = role === 'master';
         const canSee = (ownerId: string) => isMaster || ownerId === userId;
-        const heroDtos = heroes.map((hero) => heroDto(hero, canSee(hero.userId)));
+        // The master's unseen heroes stay off the players' table; in a fight they show as combatants.
+        const heroDtos = heroes
+          .filter((hero) => isMaster || !hero.hidden)
+          .map((hero) => heroDto(hero, canSee(hero.userId)));
 
         let combatDto: CombatDto | null = null;
         if (combat) {
@@ -283,6 +295,7 @@ function heroDto(hero: HeroRow, visible: boolean): PartyHeroDto {
     subclass: summary.subclass,
     level: summary.level,
     portrait: summary.portrait,
+    hidden: hero.hidden,
     vitals: visible
       ? {
           currentHP: summary.currentHP,
