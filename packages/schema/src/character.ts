@@ -89,6 +89,9 @@ export const DEFAULT_SETTING: z.infer<typeof SettingSchema> = 'high-fantasy';
 /** Settings that were merged into another one; documents saved with them read as their successor. */
 const RETIRED_SETTINGS: Record<string, z.infer<typeof SettingSchema>> = { grimdark: 'dark-fantasy' };
 
+/** When a resource comes back: on a short rest (and a long one), only on a long rest, or by hand. */
+export const RecoverySchema = z.enum(['short', 'long', 'manual']);
+
 export const HistoryEntryTypeSchema = z.enum(['health', 'sanity', 'resource', 'inventory', 'exp', 'other']);
 
 export const DamageComponentSchema = passthroughObject({
@@ -112,6 +115,12 @@ export const ResourceSchema = passthroughObject({
   max: numberOr(0),
   description: longTextOr(),
   spellSlotLevel: optionalNumber,
+  /** The pool is hit dice of this size (10 for d10): a short rest spends them to heal. */
+  hitDie: optionalNumber,
+  /** Which rest restores it; a short rest also counts as part of a long one. */
+  recovery: text(RecoverySchema.default('long')),
+  /** How much a short rest returns ("one use"); absent means all of it. A long rest always returns all. */
+  recoveryAmount: optionalNumber,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
   grant: optionalShortText,
@@ -409,6 +418,7 @@ export type ItemType = z.infer<typeof ItemTypeSchema>;
 export type WeaponClass = z.infer<typeof WeaponClassSchema>;
 export type ResistanceLevel = z.infer<typeof ResistanceLevelSchema>;
 export type HistoryEntryType = z.infer<typeof HistoryEntryTypeSchema>;
+export type Recovery = z.infer<typeof RecoverySchema>;
 export type Setting = z.infer<typeof SettingSchema>;
 export type DamageComponent = z.infer<typeof DamageComponentSchema>;
 export type Skill = z.infer<typeof SkillSchema>;

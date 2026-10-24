@@ -2,6 +2,7 @@ import type { Ability, Build, Character, CharacterDraft, InventoryItem, Resistan
 import { ATTRIBUTES_LIST, SKILLS_LIST } from '../content/attributes';
 import { spellColor } from '../content/combat';
 import { abilityModifier } from '../rules/abilities';
+import { averageHitPoints } from '../rules/rest';
 import { DND } from './content';
 import { proficiencyForLevel, resolveAmount } from './helpers';
 import type {
@@ -13,6 +14,7 @@ import type {
   FeatDef,
   FeatureDef,
   OptionDef,
+  ResourceDef,
   SkillId,
   SpeciesDef,
   SpellDef,
@@ -306,8 +308,6 @@ export function buildScores(build: Build, level = build.level): Record<string, n
   return scores;
 }
 
-export const averageHitPoints = (hitDie: number): number => hitDie / 2 + 1;
-
 /** Maximum hit points of a build: the full die at level 1, then rolled or average gains. */
 export function buildMaxHP(build: Build, collected: Collected, scores: Record<string, number>, level = build.level): number {
   const classDef = findClass(build.class);
@@ -383,6 +383,19 @@ function spellEntry(def: SpellDef, previous: Spell | undefined, patch: Partial<S
   };
 }
 
+/** Id of the hit dice pool a preset hero gets from its class. */
+export const HIT_DICE_ID = 'hit-dice';
+
+/**
+ * When a pool comes back, in the sheet's terms. A pool that returns on either rest is a short-rest
+ * one; a long-rest pool that also gives some back on a short rest returns that much on it.
+ */
+const recoveryOf = (def: ResourceDef): Pick<Resource, 'recovery' | 'recoveryAmount'> => {
+  if (def.shortRestRegain !== undefined) return { recovery: 'short', recoveryAmount: def.shortRestRegain };
+  if (def.recharge === 'none') return { recovery: 'manual' };
+  return { recovery: def.recharge === 'long' ? 'long' : 'short' };
+};
+
 export interface ApplyResult<C extends CharacterDraft = Character> {
   character: C;
   /** Content the build refers to but the presets do not have yet (a spell id, a feat id). */
@@ -438,7 +451,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
     })),
   ];
 
-  // Resources: the pools of features, then spell slots.
+  // Resources: hit dice, the pools of features, then spell slots.
   const previousResources = new Map(character.resources.map((r) => [r.id, r]));
   const resources: Resource[] = [];
   const pushResource = (resource: Resource) => {
@@ -452,6 +465,19 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
       color: previous?.color ?? resource.color,
     });
   };
+  if (classDef) {
+    pushResource({
+      id: HIT_DICE_ID,
+      name: `Кости хитов (к${classDef.hitDie})`,
+      iconName: 'rolling-dices',
+      current: 0,
+      max: level,
+      description: 'Короткий отдых: потратьте кости, чтобы восстановить хиты (бросок + модификатор Телосложения). Долгий отдых возвращает половину.',
+      hitDie: classDef.hitDie,
+      recovery: 'long',
+      grant: 'build',
+    });
+  }
   for (const granted of collected.features) {
     const def = granted.feature.resource;
     if (!def) continue;
@@ -463,6 +489,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
       max: Math.max(0, resolveAmount(def.max, ctx)),
       description: def.description ?? '',
       color: def.color,
+      ...recoveryOf(def),
       grant: granted.key,
     });
   }
@@ -477,6 +504,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
       max: count,
       description: '',
       spellSlotLevel: index + 1,
+      recovery: 'long',
       grant: 'spellcasting',
     }),
   );

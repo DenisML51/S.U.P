@@ -18,6 +18,7 @@ export * from './rules/history';
 export * from './rules/inventory';
 export * from './rules/pointBuy';
 export * from './rules/progression';
+export * from './rules/rest';
 export * from './rules/resources';
 export * from './rules/sanity';
 export * from './rules/scaling';

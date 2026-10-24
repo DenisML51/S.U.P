@@ -92,6 +92,8 @@ export interface ResourceDef {
   name: string;
   max: Amount;
   recharge: Recharge;
+  /** Uses a short rest returns to a pool that otherwise comes back on a long rest (Second Wind: one). */
+  shortRestRegain?: number;
   description?: string;
   iconName?: string;
   color?: string;
