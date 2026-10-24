@@ -50,6 +50,22 @@ const BigChoice: React.FC<{ selected: boolean; onSelect: () => void; children: R
   </Panel>
 );
 
+/**
+ * Brings the field an issue names into view on the step's panel and flashes it. Issues carry the
+ * field's title, prefixed with its level on the level plan ("1: Навыки").
+ */
+function revealIssue(issue: string) {
+  const title = issue.replace(/^\d+:\s*/, '');
+  const panel = document.querySelector('[data-creation-panel]');
+  const field = [...(panel?.querySelectorAll('h3, h4, h5, label, .ui-label') ?? [])].find((el) => el.textContent?.trim().startsWith(title));
+  const target = field?.closest('section') ?? field;
+  if (!target) return;
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  target.classList.remove('ui-flash');
+  void (target as HTMLElement).offsetWidth;
+  target.classList.add('ui-flash');
+}
+
 const METHOD_NAMES = { pointBuy: 'Покупка очков', roll: 'Бросок 4к6', manual: 'Вручную' } as const;
 
 /**
@@ -240,7 +256,9 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
               <h2 className="ui-display ui-title border-b border-line/60 px-6 py-4 text-center text-[1.5rem] leading-tight text-frame-bright">
                 {step.question}
               </h2>
-              <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5">{content}</div>
+              <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5" data-creation-panel>
+                {content}
+              </div>
             </Panel>
             <HeroSummary sheet={summary} setting={setting} images={images} classIcon={path === 'dnd' ? build.class : undefined} />
           </main>
@@ -262,7 +280,19 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
               </Button>
             )}
           </div>
-          <span className="truncate text-sm text-ink-faint">{step.issues.length > 0 && `Осталось выбрать: ${step.issues.join(', ')}`}</span>
+          {/* What is left on this step: each one a link to its field on the panel. */}
+          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm text-ink-faint">
+            {step.issues.length > 0 && (
+              <>
+                Осталось выбрать:
+                {step.issues.map((issue) => (
+                  <button key={issue} type="button" className="ui-issue-link" onClick={() => revealIssue(issue)}>
+                    {issue}
+                  </button>
+                ))}
+              </>
+            )}
+          </span>
         </footer>
       </div>
     </SettingScope>

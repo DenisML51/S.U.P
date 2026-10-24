@@ -1611,3 +1611,17 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 /* ------------------------------------------------------------------ Combat HUD ornament */
 /* The HUD's panels are small: their corner pieces are drawn smaller to keep the pictures clear. */
 .ui-panel:is(.ui-hud-panel, .ui-hud-strip) > .ui-corner { width: 20px; height: 20px; }
+
+/* ------------------------------------------------------------------ Issue links (creation) */
+.ui-issue-link {
+  color: rgb(var(--c-warning));
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.ui-issue-link:hover { color: rgb(var(--c-frame-bright)); }
+/* A field brought into view by its issue lights up for a moment. */
+.ui-flash { animation: ui-flash 1.2s ease-out; }
+@keyframes ui-flash {
+  0%, 30% { box-shadow: 0 0 0 2px rgb(var(--c-frame-bright) / 0.8), 0 0 18px rgb(var(--c-frame-bright) / 0.4); }
+  100% { box-shadow: 0 0 0 2px transparent; }
+}
