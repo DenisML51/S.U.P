@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HISTORY_LIMIT, createCharacterDocument } from '@itd/schema';
 import {
   appendHistory,
+  armorClassOf,
   buildNewCharacter,
   canDecrement,
   canIncrement,
@@ -99,12 +100,13 @@ describe('buildNewCharacter', () => {
       level: 1,
       maxHP: 12,
       currentHP: 12,
-      armorClass: 11,
+      armorClassBonus: { always: 0, armored: 0, manual: 0 },
       sanity: 80 + 10,
       proficiencyBonus: 2,
     });
     expect(draft.limbs).toHaveLength(6);
-    expect(draft.limbs[0]).toMatchObject({ maxHP: 8, ac: 11 });
+    expect(draft.limbs[0]).toMatchObject({ maxHP: 8, acBonus: 0 });
+    expect(armorClassOf(draft)).toBe(11);
   });
 
   it('produces a valid document', () => {

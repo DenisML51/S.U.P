@@ -4,6 +4,7 @@ import {
   DND_ICONS,
   SKILLS_LIST,
   abilityModifier,
+  armorClassOf,
   describeGrant,
   findClass,
   formatModifier,
@@ -116,7 +117,7 @@ export const HeroSummary: React.FC<{
       <div className="flex justify-center gap-2.5">
         <Badge icon={<IconInitiative width={13} height={13} />} value={formatModifier(initiativeModifier(sheet))} label="Иниц." />
         <Badge icon={<IconHealth width={13} height={13} />} value={sheet.class ? sheet.maxHP : '—'} label={hitDie ? `Хиты к${hitDie}` : 'Хиты'} />
-        <Badge icon={<IconArmor width={13} height={13} />} value={sheet.armorClass} label="КБ" />
+        <Badge icon={<IconArmor width={13} height={13} />} value={armorClassOf(sheet)} label="КБ" />
         <Badge icon={<IconSpeed width={13} height={13} />} value={sheet.speed} label="Скорость" />
         <Badge icon={<IconSanity width={13} height={13} />} value={maxSanityOf(sheet)} label="Рассудок" />
       </div>

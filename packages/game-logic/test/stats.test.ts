@@ -157,9 +157,9 @@ describe('limbs', () => {
   });
 
   it('creates six limbs', () => {
-    const limbs = getDefaultLimbs(12, 14, 13);
+    const limbs = getDefaultLimbs(12, 14);
     expect(limbs.map((l) => l.id)).toEqual(['head', 'torso', 'rightArm', 'leftArm', 'rightLeg', 'leftLeg']);
-    expect(limbs[0]).toEqual({ id: 'head', name: 'Голова', currentHP: 8, maxHP: 8, ac: 13 });
+    expect(limbs[0]).toEqual({ id: 'head', name: 'Голова', currentHP: 8, maxHP: 8, ac: 0, acBonus: 0 });
   });
 
   it.each([

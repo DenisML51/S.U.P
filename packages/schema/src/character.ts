@@ -203,7 +203,13 @@ export const LimbSchema = passthroughObject({
   name: shortText,
   currentHP: numeric(num),
   maxHP: numeric(num),
+  /** The limb's armour class as older versions stored it; read once to derive `acBonus`. */
   ac: numberOr(0),
+  /**
+   * The player's modifier on top of the limb's derived armour class (worn armour, else 10 + DEX).
+   * Absent on sheets saved before it existed.
+   */
+  acBonus: optionalNumber,
 });
 
 export const TraitSchema = passthroughObject({
@@ -329,9 +335,15 @@ export const CharacterSchema = passthroughObject({
   level: numeric(int.min(1).max(100).default(1)),
   experience: numberOr(0),
   speed: numberOr(30),
+  /** The armour class as older versions stored it; read once to derive `armorClassBonus.manual`. */
   armorClass: numberOr(10),
-  /** Armour class from features rather than gear (Defense fighting style): always, and while armoured. */
-  armorClassBonus: text(passthroughObject({ always: numberOr(0), armored: numberOr(0) }).optional()),
+  /**
+   * Armour class beyond the gear: from features (Defense fighting style), always and while armoured,
+   * and the player's own modifier. `manual` is absent on sheets saved before it existed.
+   */
+  armorClassBonus: text(
+    passthroughObject({ always: numberOr(0), armored: numberOr(0), manual: optionalNumber }).optional(),
+  ),
   initiativeBonus: optionalNumber,
 
   sanity: numberOr(50),

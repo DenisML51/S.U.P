@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { calculateArmorClass, carriedWeight, isShield, isStackable, itemQuantity } from '@itd/game-logic';
+import { armorClassOf, carriedWeight, isShield, isStackable, itemQuantity } from '@itd/game-logic';
 import type { Character, InventoryItem, ItemType } from '@itd/schema';
 import { Ledger, LedgerBullet, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
 import { IconButton, Panel, cx } from '../../../ui/primitives';
@@ -142,7 +142,7 @@ export const EquipmentSection: React.FC<{ character: Character }> = ({ character
           <div className="flex items-baseline justify-between">
             <h3 className="ui-display text-lg text-frame-bright">Снаряжено</h3>
             <span className="text-xs text-ink-faint" title="Класс брони по надетому снаряжению">
-              КБ <span className="tabular-nums text-ink-muted">{calculateArmorClass(character)}</span>
+              КБ <span className="tabular-nums text-ink-muted">{armorClassOf(character)}</span>
             </span>
           </div>
           <WornSlot label="Броня" items={worn.filter((i) => i.type === 'armor' && !isShield(i))} onOpen={(item) => dialogs.open({ kind: 'item', id: item.id })} />
