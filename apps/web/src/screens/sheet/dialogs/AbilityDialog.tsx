@@ -150,6 +150,7 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
 
   return (
     <EntryView
+      reaction={entry.actionType === 'reaction'}
       icon={<EntryBadge kind="ability" entry={entry} />}
       open={open}
       onClose={onClose}

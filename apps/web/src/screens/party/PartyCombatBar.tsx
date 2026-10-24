@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { CombatantDto, PartyDto } from '@itd/schema';
+import type { PartyDto } from '@itd/schema';
 import { usePartyStore } from '../../store/usePartyStore';
 import { IconCombat, IconInitiative } from '../../ui/icons';
 import { Button } from '../../ui/primitives';
@@ -22,9 +22,7 @@ export const PartyCombatBar: React.FC<{
 }> = ({ party, characterId, onMyTurn }) => {
   const store = usePartyStore.getState();
   const heroId = party.heroes.find((hero) => hero.characterId === characterId)?.id;
-  const seat = useTableCombat(party, {
-    onMyTurn: (combatant: CombatantDto) => combatant.refId === heroId && onMyTurn(),
-  });
+  const seat = useTableCombat(party, { forHero: heroId, onMyTurn });
   const [starting, setStarting] = useState(false);
   const fight = party.combat;
   const rolling = fight?.phase === 'initiative';

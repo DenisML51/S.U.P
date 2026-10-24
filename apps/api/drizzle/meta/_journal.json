@@ -43,6 +43,13 @@
       "when": 1792852682847,
       "tag": "0005_party_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792853737660,
+      "tag": "0006_party_sessions",
+      "breakpoints": true
     }
   ]
 }

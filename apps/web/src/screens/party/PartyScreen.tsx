@@ -57,15 +57,18 @@ export const PartyScreen: React.FC<{ partyId: string; onOpenSettings: () => void
   const party = useParty(partyId);
   const gone = usePartyStore((s) => s.gone[partyId]);
   const failed = usePartyStore((s) => s.failed[partyId]);
+  const closed = usePartyStore((s) => s.closed[partyId]);
   const refreshParty = usePartyStore((s) => s.refreshParty);
   const go = useNavStore((s) => s.go);
   useDocumentSetting(party?.setting ?? 'service');
 
   useEffect(() => {
-    if (!gone) return;
-    toast('Вы больше не за этим столом', { id: `gone-${partyId}` });
+    if (!gone && !closed) return;
+    toast(gone ? 'Вы больше не за этим столом' : 'Сессия не идёт — стол откроется, когда мастер её начнёт', {
+      id: `out-${partyId}`,
+    });
     go({ screen: 'home' });
-  }, [gone, go, partyId]);
+  }, [gone, closed, go, partyId]);
 
   if (!party) {
     return (
@@ -102,7 +105,8 @@ type Overlay =
   | { kind: 'remove-hero'; hero: PartyHeroDto }
   | { kind: 'kick'; userId: string; name: string }
   | { kind: 'new-code' }
-  | { kind: 'end-combat' };
+  | { kind: 'end-combat' }
+  | { kind: 'end-session' };
 
 const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () => void }> = ({
   party,
@@ -154,7 +158,27 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
             {SETTING_INFO[party.setting].label} ·{' '}
             {isMaster ? 'вы мастер' : `мастер ${party.members[0]?.displayName ?? ''}`}
           </span>
-          <div className="ml-auto flex gap-1">
+          <div className="ml-auto flex items-center gap-1">
+            {isMaster &&
+              (party.sessionStartedAt ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mr-2"
+                  onClick={() => setOverlay({ kind: 'end-session' })}
+                >
+                  Завершить сессию
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="mr-2"
+                  onClick={() => void store.startSession(party.id)}
+                >
+                  Начать сессию
+                </Button>
+              ))}
             {isMaster ? (
               <IconButton
                 label="Настройки партии"
@@ -186,7 +210,12 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
               onOpen={() => setOverlay({ kind: 'lore' })}
               action={
                 isMaster &&
-                !party.combat && (
+                !party.combat &&
+                (!party.sessionStartedAt ? (
+                  <span className="ui-session-closed text-sm">
+                    Сессия не идёт — игроки ждут, стол закрыт для них
+                  </span>
+                ) : (
                   <Button
                     variant="primary"
                     icon={<IconCombat width={18} height={18} />}
@@ -194,7 +223,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                   >
                     Начать бой
                   </Button>
-                )
+                ))
               }
             />
             <AnimatePresence initial={false}>
@@ -354,6 +383,17 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         onCancel={close}
         onConfirm={() => {
           void store.endCombat(party.id);
+          close();
+        }}
+      />
+      <ConfirmDialog
+        open={overlay?.kind === 'end-session'}
+        title="Завершить сессию?"
+        message="Игроки выйдут из мира, бой закончится. НПС, их хиты, чат и летопись сохранятся; войти за стол можно будет, когда вы начнёте следующую сессию."
+        confirmLabel="Завершить сессию"
+        onCancel={close}
+        onConfirm={() => {
+          void store.endSession(party.id);
           close();
         }}
       />

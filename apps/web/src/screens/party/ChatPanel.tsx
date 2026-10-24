@@ -42,7 +42,9 @@ export const ChatPanel: React.FC<{ party: PartyDto; userId: string | undefined }
   const names = new Map(party.members.map((member) => [member.userId, member.displayName]));
   const heroOf = (memberId: string) => party.heroes.find((hero) => hero.ownerId === memberId)?.name;
   const others = party.members.filter((member) => member.userId !== userId);
-  const recipients = isMaster ? others.filter((member) => member.role === 'player') : others.filter((member) => member.role === 'master');
+  const recipients = isMaster
+    ? others.filter((member) => member.role === 'player')
+    : others.filter((member) => member.role === 'master');
   // The chosen reader may have left the table.
   const recipient = to !== EVERYONE && recipients.some((member) => member.userId === to) ? to : EVERYONE;
 
@@ -68,7 +70,9 @@ export const ChatPanel: React.FC<{ party: PartyDto; userId: string | undefined }
       >
         {count === 0 ? (
           <p className="py-6 text-center text-sm text-ink-faint">
-            {isMaster ? 'Скажите что-нибудь столу — или кому-то одному.' : 'Здесь говорит стол. Мастеру можно написать лично.'}
+            {isMaster
+              ? 'Скажите что-нибудь столу — или кому-то одному.'
+              : 'Здесь говорит стол. Мастеру можно написать лично.'}
           </p>
         ) : (
           <ol className="space-y-2.5 py-1">
@@ -80,7 +84,13 @@ export const ChatPanel: React.FC<{ party: PartyDto; userId: string | undefined }
                   mine={message.authorId === userId}
                   fromMaster={message.authorId === party.masterId}
                   hero={heroOf(message.authorId)}
-                  toName={message.recipientId ? (message.recipientId === userId ? 'вам' : (names.get(message.recipientId) ?? message.recipientName)) : null}
+                  toName={
+                    message.recipientId
+                      ? message.recipientId === userId
+                        ? 'вам'
+                        : (names.get(message.recipientId) ?? message.recipientName)
+                      : null
+                  }
                 />
               ))}
             </AnimatePresence>
@@ -88,54 +98,67 @@ export const ChatPanel: React.FC<{ party: PartyDto; userId: string | undefined }
         )}
       </div>
 
-      <div className="ui-chat__compose mt-3 space-y-2 pt-3">
-        {recipients.length > 0 &&
-          (isMaster ? (
-            <Select
-              value={recipient}
-              onChange={setTo}
-              className="!h-8 text-sm"
-              options={[
-                { value: EVERYONE, label: 'Всему столу' },
-                ...recipients.map((member) => ({
-                  value: member.userId,
-                  label: `Лично: ${member.displayName}`,
-                  hint: heroOf(member.userId),
-                })),
-              ]}
+      {!party.sessionStartedAt ? (
+        <p className="ui-chat__compose mt-3 pt-3 text-center text-xs text-ink-faint">
+          Сессия не идёт — чат откроется со следующей
+        </p>
+      ) : (
+        <div className="ui-chat__compose mt-3 space-y-2 pt-3">
+          {recipients.length > 0 &&
+            (isMaster ? (
+              <Select
+                value={recipient}
+                onChange={setTo}
+                className="!h-8 text-sm"
+                options={[
+                  { value: EVERYONE, label: 'Всему столу' },
+                  ...recipients.map((member) => ({
+                    value: member.userId,
+                    label: `Лично: ${member.displayName}`,
+                    hint: heroOf(member.userId),
+                  })),
+                ]}
+              />
+            ) : (
+              <Segmented
+                label="Кому"
+                value={recipient === EVERYONE ? EVERYONE : 'master'}
+                onChange={(value) => setTo(value === EVERYONE ? EVERYONE : party.masterId)}
+                options={[
+                  { value: EVERYONE, label: 'Всем' },
+                  { value: 'master', label: 'Мастеру лично' },
+                ]}
+                className="w-full"
+              />
+            ))}
+          <div className="flex items-end gap-2">
+            <textarea
+              value={text}
+              rows={Math.min(4, Math.max(1, text.split('\n').length))}
+              maxLength={PARTY_MESSAGES.length}
+              placeholder={recipient === EVERYONE ? 'Сообщение столу…' : 'Личное сообщение…'}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void submit();
+                }
+              }}
+              className={cx(
+                'ui-input ui-scroll min-w-0 flex-1 resize-none !py-2 text-sm',
+                recipient !== EVERYONE && 'ui-chat__input--private',
+              )}
             />
-          ) : (
-            <Segmented
-              label="Кому"
-              value={recipient === EVERYONE ? EVERYONE : 'master'}
-              onChange={(value) => setTo(value === EVERYONE ? EVERYONE : party.masterId)}
-              options={[
-                { value: EVERYONE, label: 'Всем' },
-                { value: 'master', label: 'Мастеру лично' },
-              ]}
-              className="w-full"
-            />
-          ))}
-        <div className="flex items-end gap-2">
-          <textarea
-            value={text}
-            rows={Math.min(4, Math.max(1, text.split('\n').length))}
-            maxLength={PARTY_MESSAGES.length}
-            placeholder={recipient === EVERYONE ? 'Сообщение столу…' : 'Личное сообщение…'}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void submit();
-              }
-            }}
-            className={cx('ui-input ui-scroll min-w-0 flex-1 resize-none !py-2 text-sm', recipient !== EVERYONE && 'ui-chat__input--private')}
-          />
-          <IconButton label="Отправить (Enter)" onClick={() => void submit()} disabled={!text.trim() || sending}>
-            <IconNext width={18} height={18} />
-          </IconButton>
+            <IconButton
+              label="Отправить (Enter)"
+              onClick={() => void submit()}
+              disabled={!text.trim() || sending}
+            >
+              <IconNext width={18} height={18} />
+            </IconButton>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -152,7 +175,11 @@ const Line: React.FC<{
     initial={{ opacity: 0, y: 6 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.2 }}
-    className={cx('ui-chat__line px-3 py-2', toName && 'ui-chat__line--private', fromMaster && 'ui-chat__line--master')}
+    className={cx(
+      'ui-chat__line px-3 py-2',
+      toName && 'ui-chat__line--private',
+      fromMaster && 'ui-chat__line--master',
+    )}
   >
     <div className="flex items-baseline gap-2 text-[11px]">
       <span className={cx('truncate font-semibold', fromMaster ? 'text-frame-bright' : 'text-ink')}>
@@ -163,6 +190,8 @@ const Line: React.FC<{
       {toName && <span className="shrink-0 text-accent">лично → {toName}</span>}
       <span className="ml-auto shrink-0 text-ink-faint">{time.format(new Date(message.createdAt))}</span>
     </div>
-    <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-snug text-ink-muted">{message.body}</p>
+    <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-snug text-ink-muted">
+      {message.body}
+    </p>
   </motion.li>
 );

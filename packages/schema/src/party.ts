@@ -166,6 +166,8 @@ export interface PartyListItemDto {
   memberCount: number;
   heroCount: number;
   inCombat: boolean;
+  /** A session is running: players can sit down at the table. */
+  inSession: boolean;
   /** The viewer's characters in the party. */
   myCharacterIds: string[];
   updatedAt: string;
@@ -262,6 +264,8 @@ export interface PartyDto {
   /** `null` for players. */
   npcs: PartyNpcDto[] | null;
   combat: CombatDto | null;
+  /** When the running session began; `null` between sessions (only the master sees the table then). */
+  sessionStartedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -274,6 +278,8 @@ export interface InvitePreviewDto {
   coverAssetId: string | null;
   masterName: string;
   memberCount: number;
+  /** A session is running; the code opens the table only then. */
+  inSession: boolean;
   /** The viewer is already at this table. */
   member: boolean;
 }

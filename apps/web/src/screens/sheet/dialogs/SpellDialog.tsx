@@ -293,6 +293,7 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
 
   return (
     <EntryView
+      reaction={entry.actionType === 'reaction'}
       icon={<EntryBadge kind="spell" entry={entry} />}
       open={open}
       onClose={onClose}

@@ -34,6 +34,7 @@ async function table(app: App) {
   expect(created.statusCode).toBe(201);
   const partyId = created.json<{ id: string }>().id;
   const code = (await view(app, master, partyId)).inviteCode!;
+  expect((await call(app, master, 'POST', `/parties/${partyId}/session`)).statusCode).toBe(204);
 
   const lowered = `${code.slice(0, 4)}-${code.slice(4)}`.toLowerCase();
   const joined = await call(app, player, 'POST', `/invites/${lowered}/accept`);
@@ -315,5 +316,54 @@ describe('table talk', () => {
     expect(first.hasMore).toBe(true);
     const next = (await call(app, master, 'GET', `/parties/${partyId}/messages?limit=2&before=${first.items[0]!.id}`)).json<PartyMessagesDto>();
     expect(next.items.map((m) => m.body)).toEqual(['#2', '#3']);
+  });
+});
+
+describe('sessions', () => {
+  it('closes the table between sessions, keeping everything but the fight', async () => {
+    const app = await ctx.app();
+    const { master, player, partyId, code } = await table(app);
+    const npcId = (
+      await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Тролль', maxHP: 84, armorClass: 15, initiativeBonus: -1 })
+    ).json<{ id: string }>().id;
+    await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${npcId}`, { currentHP: 40 });
+    await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [npcId] });
+    await call(app, player, 'POST', `/parties/${partyId}/messages`, { body: 'До встречи!' });
+
+    expect((await call(app, player, 'DELETE', `/parties/${partyId}/session`)).statusCode).toBe(403);
+    expect((await call(app, master, 'DELETE', `/parties/${partyId}/session`)).statusCode).toBe(204);
+
+    // Players are out; the master keeps the table, its NPCs and the talk, but not the fight.
+    const closed = await call(app, player, 'GET', `/parties/${partyId}`);
+    expect(closed.statusCode).toBe(409);
+    expect(closed.json()).toMatchObject({ error: 'session_closed' });
+    expect((await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>()[0]).toMatchObject({ inSession: false });
+    const asMaster = await view(app, master, partyId);
+    expect(asMaster).toMatchObject({ sessionStartedAt: null, combat: null });
+    expect(asMaster.npcs).toMatchObject([{ name: 'Тролль', currentHP: 40 }]);
+    expect((await call(app, master, 'GET', `/parties/${partyId}/messages`)).json<PartyMessagesDto>().items).toHaveLength(1);
+    expect((await call(app, player, 'POST', `/parties/${partyId}/messages`, { body: 'Эй?' })).statusCode).toBe(409);
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [npcId] })).statusCode).toBe(409);
+
+    // The code waits for the next session.
+    const late = await registerUser(app, 'Опоздавший');
+    expect((await call(app, late, 'GET', `/invites/${code}`)).statusCode).toBe(409);
+    expect((await call(app, late, 'POST', `/invites/${code}/accept`)).statusCode).toBe(409);
+
+    expect((await call(app, master, 'POST', `/parties/${partyId}/session`)).statusCode).toBe(204);
+    expect((await view(app, player, partyId)).sessionStartedAt).not.toBeNull();
+    expect((await call(app, late, 'POST', `/invites/${code}/accept`)).statusCode).toBe(200);
+  });
+
+  it('lets a player leave between sessions; their hero goes with them and keeps what happened to it', async () => {
+    const app = await ctx.app();
+    const { master, player, partyId, playerHero } = await table(app);
+    await saveHero(app, player, { ...playerHero, currentHP: 3 }, 1);
+    await call(app, master, 'DELETE', `/parties/${partyId}/session`);
+
+    expect((await call(app, player, 'DELETE', `/parties/${partyId}/members/${player.user.id}`)).statusCode).toBe(204);
+    expect((await view(app, master, partyId)).heroes.map((hero) => hero.characterId)).not.toContain(playerHero.id);
+    const sheet = (await call(app, player, 'GET', `/characters/${playerHero.id}`)).json<{ data: { currentHP: number } }>();
+    expect(sheet.data.currentHP).toBe(3);
   });
 });

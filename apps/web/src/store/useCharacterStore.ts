@@ -74,7 +74,7 @@ interface CharacterState {
   /**
    * Set while a party's fight goes on and it is not this hero's turn: why the hero cannot act. Using
    * attacks, abilities, spells and resources, resting and editing entries wait for the hero's turn;
-   * reading the sheet, rolls and hit point changes (being hit) do not.
+   * reactions, reading the sheet, rolls and hit point changes (being hit) do not.
    */
   turnLock: string | null;
   setTurnLock(lock: string | null): void;
@@ -129,6 +129,14 @@ const readOpen = (): string | null => {
     return sessionStorage.getItem(OPEN_CHARACTER_KEY);
   } catch {
     return null;
+  }
+};
+
+const writeViewMode = (viewMode: ViewMode) => {
+  try {
+    localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  } catch {
+    // Preference not persisted.
   }
 };
 
@@ -189,6 +197,12 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     if (!character.build) return;
     const rebuilt = applyBuild(character, character.build).character;
     if (!deepEqual(rebuilt, character)) get().updateCharacter(() => rebuilt);
+  };
+
+  /** The entry a request uses is a reaction (an attack, ability or spell taken with the reaction). */
+  const isReaction = (character: Character, request: PerformActionRequest): boolean => {
+    const entries = request.kind === 'attack' ? character.attacks : request.kind === 'ability' ? character.abilities : character.spells;
+    return entries.find((entry) => entry.id === request.id)?.actionType === 'reaction';
   };
 
   /** Refuses an action out of the hero's turn in a party's fight, saying why. */
@@ -261,11 +275,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     },
 
     setViewMode: (viewMode) => {
-      try {
-        localStorage.setItem(VIEW_MODE_KEY, viewMode);
-      } catch {
-        // Preference not persisted.
-      }
+      writeViewMode(viewMode);
       set({ viewMode });
     },
 
@@ -364,9 +374,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     },
 
     performAction: (request) => {
-      if (refuseOffTurn()) return null;
       const current = get().character;
       if (!current) return null;
+      // A reaction answers someone else's turn: it is the one thing a hero may do out of their own.
+      if (!isReaction(current, request) && refuseOffTurn()) return null;
       const result = performGameAction(current, request);
       if (!result.ok) {
         toast.error(result.message);
@@ -388,6 +399,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         toast.error('Персонаж не найден');
         return;
       }
+      writeViewMode(view);
       set({ character, viewMode: view, undoable: undoIds(character.id) });
       rememberOpen(character.id);
       refreshPreset(character);
@@ -476,8 +488,9 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
       const open = readOpen();
       const character = open ? await next.repository.get(open) : undefined;
+      // A reload returns to the hero as it was left: on its sheet or in its fight.
       if (character && workspace === next) {
-        set({ character, viewMode: 'tabs', undoable: [] });
+        set({ character, viewMode: readViewMode(), undoable: [] });
         refreshPreset(character);
       }
     },

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
@@ -23,11 +23,16 @@ const remember = (key: string) => {
 };
 
 /**
- * When the master starts a fight, every player at the table is taken to their hero's combat screen,
- * wherever they are in the app — once per fight; afterwards they move freely. Leaving combat goes
- * back to the party's table.
+ * What the master's table asks of a player wherever they are in the app:
+ * - a fight starts → they are taken to their hero's combat screen (once per fight, then they move freely);
+ * - the session ends → they leave the world: the table and their party hero's screens close.
  */
-export function useFightCall(): void {
+export function useTableCalls(): void {
+  useFightCall();
+  useSessionEnd();
+}
+
+function useFightCall(): void {
   const target = usePartyStore((s) =>
     s.list?.find((party) => party.role === 'player' && party.inCombat && party.myCharacterIds.length > 0),
   );
@@ -49,4 +54,31 @@ export function useFightCall(): void {
     else void loadCharacter(characterId, 'hotbar');
     toast(`Бой! Мастер «${party.name}» зовёт к оружию`, { icon: '⚔️', id: key });
   }, [party, startedAt, characterId]);
+}
+
+function useSessionEnd(): void {
+  const list = usePartyStore((s) => s.list);
+  /** Sessions seen running in this tab, so only an actual end (not a closed table at load) sends anyone away. */
+  const running = useRef(new Set<string>());
+
+  useEffect(() => {
+    for (const party of list ?? []) {
+      if (party.role !== 'player') continue;
+      if (party.inSession) {
+        running.current.add(party.id);
+        continue;
+      }
+      if (!running.current.delete(party.id)) continue;
+
+      const { character, goToCharacterList } = useCharacterStore.getState();
+      const nav = useNavStore.getState();
+      const inWorld =
+        (nav.place.screen === 'party' && nav.place.partyId === party.id) ||
+        (character !== null && party.myCharacterIds.includes(character.id));
+      if (!inWorld) continue;
+      if (character && party.myCharacterIds.includes(character.id)) goToCharacterList();
+      nav.go({ screen: 'home' });
+      toast(`Мастер завершил сессию «${party.name}». До встречи за столом!`, { icon: '🌙', id: `ended-${party.id}` });
+    }
+  }, [list]);
 }

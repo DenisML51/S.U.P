@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { INVITE_CODE_LENGTH, type InvitePreviewDto, type PartyListItemDto } from '@itd/schema';
+import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
 import { usePartyStore } from '../../store/usePartyStore';
@@ -20,7 +21,10 @@ const PANEL_HEIGHT = 'min(66vh, 620px)';
 
 /** "k7mq2x" → "K7MQ-2X": typed codes take the shape they are printed in. */
 const shapeCode = (raw: string) => {
-  const bare = raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, INVITE_CODE_LENGTH);
+  const bare = raw
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, INVITE_CODE_LENGTH);
   return bare.length > 4 ? `${bare.slice(0, 4)}-${bare.slice(4)}` : bare;
 };
 
@@ -37,10 +41,16 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
 
   return (
     <SettingScope setting="service" className="relative h-screen overflow-clip bg-bg">
-      <SettingScope setting={world} className="ui-morph ui-atmosphere pointer-events-none absolute inset-0 isolate bg-bg">
+      <SettingScope
+        setting={world}
+        className="ui-morph ui-atmosphere pointer-events-none absolute inset-0 isolate bg-bg"
+      >
         <div
           className="pointer-events-none absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at 50% 45%, transparent 20%, rgb(var(--c-bg-deep) / 0.92) 75%)' }}
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 45%, transparent 20%, rgb(var(--c-bg-deep) / 0.92) 75%)',
+          }}
         />
         <SettingBackdrop setting={world} />
       </SettingScope>
@@ -62,7 +72,10 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
         </motion.header>
 
         <main className="flex min-h-0 flex-1 items-center justify-center px-24">
-          <div className="grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-8" style={{ height: PANEL_HEIGHT }}>
+          <div
+            className="grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-8"
+            style={{ height: PANEL_HEIGHT }}
+          >
             <motion.div
               className="min-h-0"
               initial={{ opacity: 0, x: -24 }}
@@ -77,13 +90,16 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
               animate={{ opacity: 1, x: 0, transition: { ...ENTER, delay: 0.22 } }}
               exit={{ opacity: 0, x: 24, transition: { duration: 0.25 } }}
             >
-              <PartiesPanel onOpen={openParty} onFound={() => go({ screen: 'party-form' })} onWorld={setWorld} />
+              <PartiesPanel
+                onOpen={openParty}
+                onFound={() => go({ screen: 'party-form' })}
+                onWorld={setWorld}
+              />
             </motion.div>
           </div>
         </main>
         <div className="h-24 shrink-0" aria-hidden />
       </div>
-
     </SettingScope>
   );
 };
@@ -91,7 +107,10 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
 // ------------------------------------------------------------------------------------------------
 
 /** One's own heroes: their cards fanned like a hand, the most recent in front. */
-const HeroesPanel: React.FC<{ onOpen: () => void; onWorld: (world: Theme) => void }> = ({ onOpen, onWorld }) => {
+const HeroesPanel: React.FC<{ onOpen: () => void; onWorld: (world: Theme) => void }> = ({
+  onOpen,
+  onWorld,
+}) => {
   const heroes = useCharacterStore((s) => s.charactersList);
   const hand = heroes.slice(-5);
   const front = hand.at(-1);
@@ -137,7 +156,9 @@ const HeroesPanel: React.FC<{ onOpen: () => void; onWorld: (world: Theme) => voi
           <div className="text-[11px] uppercase tracking-[0.22em] text-ink-faint">Одиночная игра</div>
           <div className="ui-display mt-1 text-[2rem] leading-tight text-ink">Мои герои</div>
           <div className="mt-1 text-sm text-ink-muted">
-            {heroes.length === 0 ? 'Создайте первого героя' : `${heroes.length} ${heroWord(heroes.length)} · листы, бой, кубики`}
+            {heroes.length === 0
+              ? 'Создайте первого героя'
+              : `${heroes.length} ${heroWord(heroes.length)} · листы, бой, кубики`}
           </div>
         </div>
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-frame/40 text-frame-bright transition-transform group-hover:translate-x-1">
@@ -192,14 +213,27 @@ const PartiesPanel: React.FC<{
         </Button>
       </div>
 
-      <div className="ui-scroll mt-5 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-8 pb-2" onMouseLeave={() => onWorld('service')}>
+      <div
+        className="ui-scroll mt-5 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-8 pb-2"
+        onMouseLeave={() => onWorld('service')}
+      >
         {list?.map((party) => (
-          <PartyRow key={party.id} party={party} onOpen={() => onOpen(party.id)} onHover={() => onWorld(party.setting)} />
+          <PartyRow
+            key={party.id}
+            party={party}
+            onOpen={() =>
+              party.role === 'player' && !party.inSession
+                ? toast('Сессия не идёт — стол откроется, когда мастер её начнёт', { id: 'session-closed' })
+                : onOpen(party.id)
+            }
+            onHover={() => onWorld(party.setting)}
+          />
         ))}
         {list?.length === 0 && (
           <div className="grid h-full place-items-center text-center">
             <p className="max-w-sm text-sm leading-relaxed text-ink-muted">
-              Соберите свою партию и станьте мастером — или войдите за чужой стол по коду, который даст мастер.
+              Соберите свою партию и станьте мастером — или войдите за чужой стол по коду, который даст
+              мастер.
             </p>
           </div>
         )}
@@ -244,7 +278,11 @@ const PartiesPanel: React.FC<{
 };
 
 /** A table in the list, worn in its own world. */
-const PartyRow: React.FC<{ party: PartyListItemDto; onOpen: () => void; onHover: () => void }> = ({ party, onOpen, onHover }) => (
+const PartyRow: React.FC<{ party: PartyListItemDto; onOpen: () => void; onHover: () => void }> = ({
+  party,
+  onOpen,
+  onHover,
+}) => (
   <SettingScope setting={party.setting}>
     <Panel
       as="button"
@@ -255,21 +293,33 @@ const PartyRow: React.FC<{ party: PartyListItemDto; onOpen: () => void; onHover:
       onFocus={onHover}
       className="ui-morph flex w-full items-center gap-4 p-2.5 pr-5 text-left"
     >
-      <PartyCover assetId={party.coverAssetId} setting={party.setting} className="aspect-video w-32 shrink-0" />
+      <PartyCover
+        assetId={party.coverAssetId}
+        setting={party.setting}
+        className="aspect-video w-32 shrink-0"
+      />
       <span className="min-w-0 flex-1">
-        <span className="block text-[10px] uppercase tracking-[0.2em] text-frame-bright/80">{SETTING_INFO[party.setting].label}</span>
-        <span className="ui-display ui-title mt-0.5 block truncate text-[1.3rem] leading-tight text-ink">{party.name}</span>
+        <span className="block text-[10px] uppercase tracking-[0.2em] text-frame-bright/80">
+          {SETTING_INFO[party.setting].label}
+        </span>
+        <span className="ui-display ui-title mt-0.5 block truncate text-[1.3rem] leading-tight text-ink">
+          {party.name}
+        </span>
         <span className="mt-0.5 block truncate text-xs text-ink-muted">
-          {party.role === 'master' ? 'Вы мастер' : `Мастер ${party.masterName}`} · за столом {party.memberCount}
+          {party.role === 'master' ? 'Вы мастер' : `Мастер ${party.masterName}`} · за столом{' '}
+          {party.memberCount}
         </span>
       </span>
+      {!party.inSession && <span className="shrink-0 text-xs text-ink-faint">ждёт сессии</span>}
       {party.inCombat && (
         <span className="flex shrink-0 items-center gap-1.5 text-xs text-danger" title="Идёт бой">
           <IconCombat width={16} height={16} />
           Бой
         </span>
       )}
-      <span className={cx('shrink-0 text-xs', party.role === 'master' ? 'text-frame-bright' : 'text-ink-faint')}>
+      <span
+        className={cx('shrink-0 text-xs', party.role === 'master' ? 'text-frame-bright' : 'text-ink-faint')}
+      >
         {party.role === 'master' ? 'Мастер' : 'Игрок'}
       </span>
     </Panel>

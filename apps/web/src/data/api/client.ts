@@ -182,6 +182,8 @@ export const api = {
     update: (id: string, body: UpdatePartyRequest) =>
       apiClient.request<void>(`/parties/${encode(id)}`, { method: 'PATCH', body }),
     remove: (id: string) => apiClient.request<void>(`/parties/${encode(id)}`, { method: 'DELETE' }),
+    startSession: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/session`, { method: 'POST' }),
+    endSession: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/session`, { method: 'DELETE' }),
     regenerateInvite: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/invite`, { method: 'POST' }),
     removeMember: (id: string, userId: string) =>
       apiClient.request<void>(`/parties/${encode(id)}/members/${encode(userId)}`, { method: 'DELETE' }),

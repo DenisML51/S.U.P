@@ -23,7 +23,8 @@ import {
   users,
   type PartyNpcRow,
 } from '../../db/schema';
-import { partyNotFound } from './partyAccess';
+import { sessionClosed } from '../../lib/errors';
+import { CODE_WAITS, partyNotFound } from './partyAccess';
 import { turnOrder, type TurnEntry } from './turnOrder';
 
 type Executor = Database | Transaction;
@@ -61,7 +62,10 @@ const heroesOf = (db: Executor, partyId: string): Promise<HeroRow[]> =>
       summary: characters.summary,
     })
     .from(partyHeroes)
-    .innerJoin(characters, and(eq(characters.userId, partyHeroes.userId), eq(characters.id, partyHeroes.characterId)))
+    .innerJoin(
+      characters,
+      and(eq(characters.userId, partyHeroes.userId), eq(characters.id, partyHeroes.characterId)),
+    )
     .where(and(eq(partyHeroes.partyId, partyId), isNull(characters.deletedAt)))
     .orderBy(asc(partyHeroes.addedAt));
 
@@ -87,10 +91,16 @@ export async function combatantsOf(db: Executor, partyId: string): Promise<Comba
     })
     .from(partyCombatants)
     .leftJoin(partyHeroes, eq(partyHeroes.id, partyCombatants.heroId))
-    .leftJoin(characters, and(eq(characters.userId, partyHeroes.userId), eq(characters.id, partyHeroes.characterId)))
+    .leftJoin(
+      characters,
+      and(eq(characters.userId, partyHeroes.userId), eq(characters.id, partyHeroes.characterId)),
+    )
     .leftJoin(partyNpcs, eq(partyNpcs.id, partyCombatants.npcId))
     .where(eq(partyCombatants.partyId, partyId));
-  return rows.map(({ heroInitiative, npcBonus, ...row }) => ({ ...row, bonus: heroInitiative ?? npcBonus ?? 0 }));
+  return rows.map(({ heroInitiative, npcBonus, ...row }) => ({
+    ...row,
+    bonus: heroInitiative ?? npcBonus ?? 0,
+  }));
 }
 
 const npcDto = (row: PartyNpcRow): PartyNpcDto => ({
@@ -116,7 +126,10 @@ export class PartyQueries {
     const heroCount = this.db
       .select({ value: count() })
       .from(partyHeroes)
-      .innerJoin(characters, and(eq(characters.userId, partyHeroes.userId), eq(characters.id, partyHeroes.characterId)))
+      .innerJoin(
+        characters,
+        and(eq(characters.userId, partyHeroes.userId), eq(characters.id, partyHeroes.characterId)),
+      )
       .where(and(eq(partyHeroes.partyId, parties.id), isNull(characters.deletedAt)));
 
     const rows = await this.db
@@ -131,6 +144,7 @@ export class PartyQueries {
         memberCount: sql<number>`(${memberCount})::int`,
         heroCount: sql<number>`(${heroCount})::int`,
         inCombat: sql<boolean>`exists (select 1 from ${partyCombats} where ${partyCombats.partyId} = ${parties.id})`,
+        sessionStartedAt: parties.sessionStartedAt,
         myCharacterIds: sql<string[]>`coalesce((
           select array_agg(${partyHeroes.characterId}) from ${partyHeroes}
           where ${partyHeroes.partyId} = ${parties.id} and ${partyHeroes.userId} = ${userId}
@@ -142,7 +156,12 @@ export class PartyQueries {
       .where(eq(partyMembers.userId, userId))
       .orderBy(desc(parties.updatedAt));
 
-    return rows.map((row) => ({ ...row, setting: row.setting as Setting, updatedAt: row.updatedAt.toISOString() }));
+    return rows.map(({ sessionStartedAt, ...row }) => ({
+      ...row,
+      setting: row.setting as Setting,
+      inSession: sessionStartedAt !== null,
+      updatedAt: row.updatedAt.toISOString(),
+    }));
   }
 
   /** The party as `userId` sees it, read from one snapshot so its parts agree with each other. */
@@ -155,6 +174,8 @@ export class PartyQueries {
           .innerJoin(parties, eq(parties.id, partyMembers.partyId))
           .where(and(eq(partyMembers.partyId, partyId), eq(partyMembers.userId, userId)));
         if (!seat) throw partyNotFound();
+        // Between sessions the table is the master's alone.
+        if (seat.role !== 'master' && !seat.party.sessionStartedAt) throw sessionClosed();
 
         const [members, heroes, npcs, [combat], combatants] = await Promise.all([
           tx
@@ -209,6 +230,7 @@ export class PartyQueries {
           heroes: heroDtos,
           npcs: isMaster ? npcs.map(npcDto) : null,
           combat: combatDto,
+          sessionStartedAt: party.sessionStartedAt?.toISOString() ?? null,
           createdAt: party.createdAt.toISOString(),
           updatedAt: party.updatedAt.toISOString(),
         };
@@ -229,6 +251,7 @@ export class PartyQueries {
         description: parties.description,
         setting: parties.setting,
         coverAssetId: parties.coverAssetId,
+        sessionStartedAt: parties.sessionStartedAt,
         masterName: users.displayName,
         memberCount: sql<number>`(${memberCount})::int`,
         member: sql<boolean>`exists (
@@ -240,7 +263,9 @@ export class PartyQueries {
       .innerJoin(users, eq(users.id, parties.masterId))
       .where(eq(parties.inviteCode, code));
     if (!row) throw partyNotFound();
-    return { ...row, setting: row.setting as Setting };
+    const { sessionStartedAt, ...preview } = row;
+    if (!sessionStartedAt && !preview.member) throw sessionClosed(CODE_WAITS);
+    return { ...preview, setting: row.setting as Setting, inSession: sessionStartedAt !== null };
   }
 }
 
@@ -296,7 +321,12 @@ function combatantDto(
       controlled: isMaster || own,
       vitals:
         isMaster || own
-          ? { currentHP: summary.currentHP, maxHP: summary.maxHP, tempHP: summary.tempHP, armorClass: summary.armorClass }
+          ? {
+              currentHP: summary.currentHP,
+              maxHP: summary.maxHP,
+              tempHP: summary.tempHP,
+              armorClass: summary.armorClass,
+            }
           : null,
     };
   }
@@ -311,6 +341,8 @@ function combatantDto(
     hostile: npc.disposition === 'hostile',
     initiative: entry.initiative,
     controlled: isMaster,
-    vitals: isMaster ? { currentHP: npc.currentHp, maxHP: npc.maxHp, tempHP: 0, armorClass: npc.armorClass } : null,
+    vitals: isMaster
+      ? { currentHP: npc.currentHp, maxHP: npc.maxHp, tempHP: 0, armorClass: npc.armorClass }
+      : null,
   };
 }
