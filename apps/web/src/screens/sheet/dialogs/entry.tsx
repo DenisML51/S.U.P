@@ -47,16 +47,18 @@ export const EntryView: React.FC<
     /** The entry's icon, as on the combat bar. */
     icon?: React.ReactNode;
     onEdit: () => void;
+    /** The entry is taken with a reaction: it can be used out of the hero's turn in a party's fight. */
+    reaction?: boolean;
     /** The main thing to do with the entry: "Атаковать", "Использовать", "Сотворить". */
     primary?: React.ReactNode;
     children?: React.ReactNode;
   }
-> = ({ open, onClose, what, onDelete: remove, name, eyebrow, icon, onEdit, primary: action, children }) => {
+> = ({ open, onClose, what, onDelete: remove, name, eyebrow, icon, onEdit, primary: action, reaction, children }) => {
   const presentation = useEntryPresentation();
   // Out of the hero's turn in a party's fight the card is for reading only.
   const locked = useCharacterStore((s) => s.turnLock) !== null;
   const onDelete = locked ? undefined : remove;
-  const primary = locked ? undefined : action;
+  const primary = locked && !reaction ? undefined : action;
   const edit = (button: React.ReactNode) =>
     locked ? <span className="text-xs text-ink-faint">Действовать можно в свой ход</span> : button;
   if (presentation.mode === 'pane') {

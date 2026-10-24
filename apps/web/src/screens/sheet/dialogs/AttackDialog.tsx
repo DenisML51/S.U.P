@@ -154,6 +154,7 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
 
   return (
     <EntryView
+      reaction={entry.actionType === 'reaction'}
       icon={<EntryBadge kind="attack" entry={entry} />}
       open={open}
       onClose={onClose}

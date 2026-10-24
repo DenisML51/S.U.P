@@ -2,7 +2,7 @@ import type { PartyRole } from '@itd/schema';
 import { eq } from 'drizzle-orm';
 import type { Database, Transaction } from '../../db/client';
 import { parties, partyMembers, type PartyRow } from '../../db/schema';
-import { forbidden, notFound } from '../../lib/errors';
+import { forbidden, notFound, sessionClosed } from '../../lib/errors';
 import type { ChangeNotifier } from '../realtime/hub';
 
 export interface PartyContext {
@@ -16,6 +16,7 @@ export interface PartyContext {
 
 export const partyNotFound = () => notFound('Партия не найдена');
 export const masterOnly = () => forbidden('Это может только мастер');
+export const CODE_WAITS = 'Мастер ещё не начал сессию — код заработает, когда стол откроется';
 
 /**
  * Runs a change to a party: locks the party row (changes to one party apply one at a time), checks
@@ -28,11 +29,16 @@ export class PartyAccess {
     private readonly notifier: ChangeNotifier,
   ) {}
 
+  /**
+   * `openTable`: between sessions players may not do this (only leave, or take their hero away);
+   * the master always may.
+   */
   async change<T>(
     userId: string,
     partyId: string,
     need: 'member' | 'master',
     run: (context: PartyContext) => Promise<T>,
+    { openTable = true }: { openTable?: boolean } = {},
   ): Promise<T> {
     const { result, audience } = await this.db.transaction(async (tx) => {
       const [party] = await tx.select().from(parties).where(eq(parties.id, partyId)).for('update');
@@ -45,6 +51,7 @@ export class PartyAccess {
       // A stranger learns nothing, not even that the party exists.
       if (!seat) throw partyNotFound();
       if (need === 'master' && seat.role !== 'master') throw masterOnly();
+      if (openTable && seat.role !== 'master' && !party.sessionStartedAt) throw sessionClosed();
 
       const result = await run({ tx, party, userId, role: seat.role, members });
       await tx.update(parties).set({ updatedAt: new Date() }).where(eq(parties.id, partyId));

@@ -11,12 +11,20 @@ import {
 import { and, count, eq, inArray, isNull } from 'drizzle-orm';
 import type { z } from 'zod';
 import type { Database, Transaction } from '../../db/client';
-import { assets, characters, parties, partyHeroes, partyMembers, partyNpcs } from '../../db/schema';
-import { conflictError, forbidden, notFound, validationError } from '../../lib/errors';
+import {
+  assets,
+  characters,
+  parties,
+  partyCombats,
+  partyHeroes,
+  partyMembers,
+  partyNpcs,
+} from '../../db/schema';
+import { conflictError, forbidden, notFound, sessionClosed, validationError } from '../../lib/errors';
 import { isUniqueViolation } from '../../lib/postgres';
 import type { CharacterChangeListener } from '../characters/characters.service';
 import type { CombatService } from './combat.service';
-import { masterOnly, partyNotFound, type PartyAccess } from './partyAccess';
+import { CODE_WAITS, masterOnly, partyNotFound, type PartyAccess } from './partyAccess';
 
 type CreateParty = z.output<typeof CreatePartyRequestSchema>;
 type UpdateParty = z.output<typeof UpdatePartyRequestSchema>;
@@ -24,9 +32,14 @@ type CreateNpc = z.output<typeof CreateNpcRequestSchema>;
 type UpdateNpc = z.output<typeof UpdateNpcRequestSchema>;
 
 const INVITE_ATTEMPTS = 5;
+/** Leaving the table (or taking one's hero from it) is allowed between sessions too. */
+const LEAVING = { openTable: false } as const;
 
 const generateInviteCode = (): string =>
-  Array.from({ length: INVITE_CODE_LENGTH }, () => INVITE_CODE_ALPHABET[randomInt(INVITE_CODE_ALPHABET.length)]).join('');
+  Array.from(
+    { length: INVITE_CODE_LENGTH },
+    () => INVITE_CODE_ALPHABET[randomInt(INVITE_CODE_ALPHABET.length)],
+  ).join('');
 
 /** Retries a write that stores a fresh invite code until the code is unique. */
 async function withFreshCode<T>(write: (code: string) => Promise<T>): Promise<T> {
@@ -64,7 +77,10 @@ export class PartiesService implements CharacterChangeListener {
 
   async create(userId: string, input: CreateParty): Promise<{ id: string }> {
     return this.db.transaction(async (tx) => {
-      const [mastered] = await tx.select({ value: count() }).from(parties).where(eq(parties.masterId, userId));
+      const [mastered] = await tx
+        .select({ value: count() })
+        .from(parties)
+        .where(eq(parties.masterId, userId));
       if ((mastered?.value ?? 0) >= PARTY_LIMITS.mastered) {
         throw conflictError(`Можно вести не больше ${PARTY_LIMITS.mastered} партий`);
       }
@@ -109,22 +125,54 @@ export class PartiesService implements CharacterChangeListener {
   }
 
   // ------------------------------------------------------------------------------------------
+  // Sessions
+  // ------------------------------------------------------------------------------------------
+
+  /** Opens the table: players can sit down, the invite code works. */
+  startSession(userId: string, partyId: string): Promise<void> {
+    return this.access.change(userId, partyId, 'master', async ({ tx, party }) => {
+      if (party.sessionStartedAt) return;
+      await tx.update(parties).set({ sessionStartedAt: new Date() }).where(eq(parties.id, partyId));
+    });
+  }
+
+  /**
+   * Closes the table until the next session: a fight under way ends, everything else (NPCs and their
+   * hit points, talk, the chronicle) stays as it is. Players' devices leave the world on the notice.
+   */
+  endSession(userId: string, partyId: string): Promise<void> {
+    return this.access.change(userId, partyId, 'master', async ({ tx, party }) => {
+      if (!party.sessionStartedAt) return;
+      await tx.delete(partyCombats).where(eq(partyCombats.partyId, partyId));
+      await tx.update(parties).set({ sessionStartedAt: null }).where(eq(parties.id, partyId));
+    });
+  }
+
+  // ------------------------------------------------------------------------------------------
   // Seats
   // ------------------------------------------------------------------------------------------
 
   /** Takes a player's seat at the table the code opens; joining twice is harmless. */
   async join(userId: string, code: string): Promise<{ partyId: string }> {
-    const [party] = await this.db.select({ id: parties.id }).from(parties).where(eq(parties.inviteCode, code));
+    const [party] = await this.db
+      .select({ id: parties.id })
+      .from(parties)
+      .where(eq(parties.inviteCode, code));
     if (!party) throw partyNotFound();
 
     const { joined, audience } = await this.db.transaction(async (tx) => {
       // Same lock as every other change of the party: seats are counted race-free.
       const [locked] = await tx
-        .select({ id: parties.id, inviteCode: parties.inviteCode })
+        .select({
+          id: parties.id,
+          inviteCode: parties.inviteCode,
+          sessionStartedAt: parties.sessionStartedAt,
+        })
         .from(parties)
         .where(eq(parties.id, party.id))
         .for('update');
       if (!locked || locked.inviteCode !== code) throw partyNotFound();
+      if (!locked.sessionStartedAt) throw sessionClosed(CODE_WAITS);
 
       const members = await tx
         .select({ userId: partyMembers.userId })
@@ -143,18 +191,25 @@ export class PartiesService implements CharacterChangeListener {
 
   /** A player leaves (their own seat) or the master asks them to; the master's seat goes with the party. */
   removeMember(userId: string, partyId: string, memberId: string): Promise<void> {
-    return this.access.change(userId, partyId, 'member', async (context) => {
-      const target = context.members.find((member) => member.userId === memberId);
-      if (!target) throw notFound('Участник не найден');
-      if (target.role === 'master') throw forbidden('Мастер не может покинуть свою партию — её можно удалить');
-      if (memberId !== userId && context.role !== 'master') throw masterOnly();
+    return this.access.change(
+      userId,
+      partyId,
+      'member',
+      async (context) => {
+        const target = context.members.find((member) => member.userId === memberId);
+        if (!target) throw notFound('Участник не найден');
+        if (target.role === 'master')
+          throw forbidden('Мастер не может покинуть свою партию — её можно удалить');
+        if (memberId !== userId && context.role !== 'master') throw masterOnly();
 
-      const heroIds = await this.heroIdsOf(context.tx, partyId, eq(partyHeroes.userId, memberId));
-      await this.combat.releaseTurns(context.tx, partyId, { heroIds });
-      await context.tx
-        .delete(partyMembers)
-        .where(and(eq(partyMembers.partyId, partyId), eq(partyMembers.userId, memberId)));
-    });
+        const heroIds = await this.heroIdsOf(context.tx, partyId, eq(partyHeroes.userId, memberId));
+        await this.combat.releaseTurns(context.tx, partyId, { heroIds });
+        await context.tx
+          .delete(partyMembers)
+          .where(and(eq(partyMembers.partyId, partyId), eq(partyMembers.userId, memberId)));
+      },
+      LEAVING,
+    );
   }
 
   // ------------------------------------------------------------------------------------------
@@ -167,7 +222,9 @@ export class PartiesService implements CharacterChangeListener {
       const [character] = await tx
         .select({ id: characters.id })
         .from(characters)
-        .where(and(eq(characters.userId, userId), eq(characters.id, characterId), isNull(characters.deletedAt)));
+        .where(
+          and(eq(characters.userId, userId), eq(characters.id, characterId), isNull(characters.deletedAt)),
+        );
       if (!character) throw notFound('Персонаж не найден');
 
       const limit = role === 'master' ? PARTY_LIMITS.masterHeroes : PARTY_LIMITS.playerHeroes;
@@ -176,12 +233,17 @@ export class PartiesService implements CharacterChangeListener {
         .from(partyHeroes)
         .where(and(eq(partyHeroes.partyId, partyId), eq(partyHeroes.userId, userId)));
       if ((brought?.value ?? 0) >= limit) {
-        throw conflictError(limit === 1 ? 'Игрок приводит в партию одного героя' : `Не больше ${limit} героев`);
+        throw conflictError(
+          limit === 1 ? 'Игрок приводит в партию одного героя' : `Не больше ${limit} героев`,
+        );
       }
 
       try {
         const [hero] = await tx.transaction((attempt) =>
-          attempt.insert(partyHeroes).values({ partyId, userId, characterId }).returning({ id: partyHeroes.id }),
+          attempt
+            .insert(partyHeroes)
+            .values({ partyId, userId, characterId })
+            .returning({ id: partyHeroes.id }),
         );
         return hero!;
       } catch (error) {
@@ -193,15 +255,21 @@ export class PartiesService implements CharacterChangeListener {
 
   /** The hero's owner takes them away, or the master sends them off. */
   removeHero(userId: string, partyId: string, heroId: string): Promise<void> {
-    return this.access.change(userId, partyId, 'member', async ({ tx, role }) => {
-      const [hero] = await tx
-        .select({ userId: partyHeroes.userId })
-        .from(partyHeroes)
-        .where(and(eq(partyHeroes.id, heroId), eq(partyHeroes.partyId, partyId)));
-      if (!hero) throw notFound('Герой не найден');
-      if (hero.userId !== userId && role !== 'master') throw masterOnly();
-      await this.dropHeroes(tx, partyId, [heroId]);
-    });
+    return this.access.change(
+      userId,
+      partyId,
+      'member',
+      async ({ tx, role }) => {
+        const [hero] = await tx
+          .select({ userId: partyHeroes.userId })
+          .from(partyHeroes)
+          .where(and(eq(partyHeroes.id, heroId), eq(partyHeroes.partyId, partyId)));
+        if (!hero) throw notFound('Герой не найден');
+        if (hero.userId !== userId && role !== 'master') throw masterOnly();
+        await this.dropHeroes(tx, partyId, [heroId]);
+      },
+      LEAVING,
+    );
   }
 
   // ------------------------------------------------------------------------------------------
@@ -210,8 +278,12 @@ export class PartiesService implements CharacterChangeListener {
 
   createNpc(userId: string, partyId: string, input: CreateNpc): Promise<{ id: string }> {
     return this.access.change(userId, partyId, 'master', async ({ tx }) => {
-      const [existing] = await tx.select({ value: count() }).from(partyNpcs).where(eq(partyNpcs.partyId, partyId));
-      if ((existing?.value ?? 0) >= PARTY_LIMITS.npcs) throw conflictError(`Не больше ${PARTY_LIMITS.npcs} НПС`);
+      const [existing] = await tx
+        .select({ value: count() })
+        .from(partyNpcs)
+        .where(eq(partyNpcs.partyId, partyId));
+      if ((existing?.value ?? 0) >= PARTY_LIMITS.npcs)
+        throw conflictError(`Не больше ${PARTY_LIMITS.npcs} НПС`);
       await assertOwnAsset(tx, userId, input.portraitAssetId);
       const [npc] = await tx
         .insert(partyNpcs)
@@ -270,19 +342,31 @@ export class PartiesService implements CharacterChangeListener {
     void this.onCharacterChanged(userId, characterId, change).catch(this.onError);
   }
 
-  private async onCharacterChanged(userId: string, characterId: string, change: 'saved' | 'deleted' | 'restored') {
+  private async onCharacterChanged(
+    userId: string,
+    characterId: string,
+    change: 'saved' | 'deleted' | 'restored',
+  ) {
     const [hero] = await this.db
       .select({ id: partyHeroes.id, partyId: partyHeroes.partyId })
       .from(partyHeroes)
       .where(and(eq(partyHeroes.userId, userId), eq(partyHeroes.characterId, characterId)));
     if (!hero) return;
     if (change !== 'deleted') return this.access.announceToMembers(hero.partyId);
-    await this.access.change(userId, hero.partyId, 'member', ({ tx }) => this.dropHeroes(tx, hero.partyId, [hero.id]));
+    await this.access.change(
+      userId,
+      hero.partyId,
+      'member',
+      ({ tx }) => this.dropHeroes(tx, hero.partyId, [hero.id]),
+      LEAVING,
+    );
   }
 
   private async dropHeroes(tx: Transaction, partyId: string, heroIds: string[]) {
     await this.combat.releaseTurns(tx, partyId, { heroIds });
-    await tx.delete(partyHeroes).where(and(eq(partyHeroes.partyId, partyId), inArray(partyHeroes.id, heroIds)));
+    await tx
+      .delete(partyHeroes)
+      .where(and(eq(partyHeroes.partyId, partyId), inArray(partyHeroes.id, heroIds)));
   }
 
   private async heroIdsOf(tx: Transaction, partyId: string, where: ReturnType<typeof eq>): Promise<string[]> {

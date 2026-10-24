@@ -198,3 +198,11 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 .ui-chat__input--private {
   border-color: rgb(var(--c-accent) / 0.7);
 }
+
+.ui-session-closed {
+  color: rgb(var(--c-ink-muted));
+  padding: 0.5rem 0.9rem;
+  border: 1px dashed rgb(var(--c-frame) / 0.6);
+  border-radius: calc(var(--radius) * 0.6);
+  background: rgb(var(--c-bg-deep) / 0.6);
+}

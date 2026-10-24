@@ -74,7 +74,7 @@ interface CharacterState {
   /**
    * Set while a party's fight goes on and it is not this hero's turn: why the hero cannot act. Using
    * attacks, abilities, spells and resources, resting and editing entries wait for the hero's turn;
-   * reading the sheet, rolls and hit point changes (being hit) do not.
+   * reactions, reading the sheet, rolls and hit point changes (being hit) do not.
    */
   turnLock: string | null;
   setTurnLock(lock: string | null): void;
@@ -189,6 +189,12 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     if (!character.build) return;
     const rebuilt = applyBuild(character, character.build).character;
     if (!deepEqual(rebuilt, character)) get().updateCharacter(() => rebuilt);
+  };
+
+  /** The entry a request uses is a reaction (an attack, ability or spell taken with the reaction). */
+  const isReaction = (character: Character, request: PerformActionRequest): boolean => {
+    const entries = request.kind === 'attack' ? character.attacks : request.kind === 'ability' ? character.abilities : character.spells;
+    return entries.find((entry) => entry.id === request.id)?.actionType === 'reaction';
   };
 
   /** Refuses an action out of the hero's turn in a party's fight, saying why. */
@@ -364,9 +370,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     },
 
     performAction: (request) => {
-      if (refuseOffTurn()) return null;
       const current = get().character;
       if (!current) return null;
+      // A reaction answers someone else's turn: it is the one thing a hero may do out of their own.
+      if (!isReaction(current, request) && refuseOffTurn()) return null;
       const result = performGameAction(current, request);
       if (!result.ok) {
         toast.error(result.message);

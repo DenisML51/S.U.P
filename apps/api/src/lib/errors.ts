@@ -20,6 +20,9 @@ export const forbidden = (message = 'Доступ запрещён') => new AppE
 export const notFound = (message = 'Не найдено') => new AppError(404, ErrorCode.notFound, message);
 /** The request is valid but clashes with the current state ("already in another party", "no seats left"). */
 export const conflictError = (message: string) => new AppError(409, ErrorCode.conflict, message);
+/** The party's table is closed between sessions. */
+export const sessionClosed = (message = 'Сессия не идёт — мастер ещё не открыл стол') =>
+  new AppError(409, ErrorCode.sessionClosed, message);
 export const validationError = (message: string, details?: Record<string, unknown>) =>
   new AppError(400, ErrorCode.validation, message, details);
 

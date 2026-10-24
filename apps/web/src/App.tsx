@@ -4,7 +4,7 @@ import { usePartyStore } from './store/usePartyStore';
 import { HomeScreen } from './screens/home/HomeScreen';
 import { PartyFormScreen } from './screens/party/PartyFormScreen';
 import { PartyScreen } from './screens/party/PartyScreen';
-import { useFightCall } from './screens/party/useFightCall';
+import { useTableCalls } from './screens/party/useTableCalls';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
@@ -47,7 +47,7 @@ const App: React.FC = () => {
   useEffect(() => {
     void boot();
   }, [boot]);
-  useFightCall();
+  useTableCalls();
 
   const signedIn = status === 'authenticated';
 

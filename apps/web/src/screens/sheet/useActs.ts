@@ -22,9 +22,9 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
   const askReplace = useConcentrationPrompt((s) => s.askReplace);
   const roll = useRolls();
   const turnLock = useCharacterStore((s) => s.turnLock);
-  /** Out of the hero's turn in a party's fight nothing is done, wherever it is asked from. */
-  const onTurn = (run: () => void) => {
-    if (turnLock) toast.error(turnLock, { id: 'turn-lock' });
+  /** Out of the hero's turn in a party's fight only reactions are taken, wherever they are asked from. */
+  const onTurn = (entry: Attack | Ability | Spell, run: () => void) => {
+    if (turnLock && entry.actionType !== 'reaction') toast.error(turnLock, { id: 'turn-lock' });
     else run();
   };
 
@@ -69,8 +69,8 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     else castWith(spell, slots[0]);
   };
 
-  const activate = (entry: Ability) => onTurn(() => concentrating(entry, () => use(entry)));
-  const cast = (spell: Spell) => onTurn(() => concentrating(spell, () => castFrom(spell)));
+  const activate = (entry: Ability) => onTurn(entry, () => concentrating(entry, () => use(entry)));
+  const cast = (spell: Spell) => onTurn(spell, () => concentrating(spell, () => castFrom(spell)));
 
-  return { attack: (entry: Attack) => onTurn(() => attack(entry)), activate, cast };
+  return { attack: (entry: Attack) => onTurn(entry, () => attack(entry)), activate, cast };
 }

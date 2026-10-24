@@ -150,6 +150,8 @@ export const parties = pgTable(
     setting: text('setting').notNull(),
     coverAssetId: uuid('cover_asset_id').references(() => assets.id, { onDelete: 'set null' }),
     inviteCode: text('invite_code').notNull(),
+    /** The running session's start; `null` between sessions, when the table is closed to players. */
+    sessionStartedAt: timestamp('session_started_at', { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

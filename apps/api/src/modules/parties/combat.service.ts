@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Transaction } from '../../db/client';
 import { partyCombatants, partyCombats, partyHeroes, partyNpcs } from '../../db/schema';
-import { conflictError, notFound, validationError } from '../../lib/errors';
+import { conflictError, notFound, sessionClosed, validationError } from '../../lib/errors';
 import { masterOnly, type PartyAccess, type PartyContext } from './partyAccess';
 import { combatantsOf } from './parties.queries';
 import { nextTurn } from './turnOrder';
@@ -22,8 +22,12 @@ export class CombatService {
   constructor(private readonly access: PartyAccess) {}
 
   start(userId: string, partyId: string, participants: Participants): Promise<void> {
-    return this.access.change(userId, partyId, 'master', async ({ tx }) => {
-      const [existing] = await tx.select({ partyId: partyCombats.partyId }).from(partyCombats).where(eq(partyCombats.partyId, partyId));
+    return this.access.change(userId, partyId, 'master', async ({ tx, party }) => {
+      if (!party.sessionStartedAt) throw sessionClosed('Сначала начните сессию');
+      const [existing] = await tx
+        .select({ partyId: partyCombats.partyId })
+        .from(partyCombats)
+        .where(eq(partyCombats.partyId, partyId));
       if (existing) throw conflictError('Бой уже идёт');
       await tx.insert(partyCombats).values({ partyId, phase: 'initiative' });
       await this.enlist(tx, partyId, participants);
@@ -57,7 +61,10 @@ export class CombatService {
       const combatant = (await combatantsOf(context.tx, partyId)).find((entry) => entry.id === combatantId);
       if (!combatant) throw notFound('Участник боя не найден');
       if (!this.controls(context, combatant.ownerId)) throw masterOnly();
-      await context.tx.update(partyCombatants).set({ initiative: value }).where(eq(partyCombatants.id, combatantId));
+      await context.tx
+        .update(partyCombatants)
+        .set({ initiative: value })
+        .where(eq(partyCombatants.id, combatantId));
     });
   }
 
@@ -65,7 +72,9 @@ export class CombatService {
   rollForNpcs(userId: string, partyId: string): Promise<void> {
     return this.access.change(userId, partyId, 'master', async ({ tx }) => {
       await this.requireCombat(tx, partyId);
-      const waiting = (await combatantsOf(tx, partyId)).filter((entry) => entry.npcId && entry.initiative === null);
+      const waiting = (await combatantsOf(tx, partyId)).filter(
+        (entry) => entry.npcId && entry.initiative === null,
+      );
       for (const npc of waiting) {
         await tx
           .update(partyCombatants)

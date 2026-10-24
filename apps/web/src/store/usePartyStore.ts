@@ -9,6 +9,7 @@ import type {
   UpdateNpcRequest,
   UpdatePartyRequest,
 } from '@itd/schema';
+import { ErrorCode } from '@itd/schema';
 import { toast } from 'react-hot-toast';
 import { useEffect } from 'react';
 import { create } from 'zustand';
@@ -27,6 +28,8 @@ interface PartyState {
   parties: Record<string, PartyDto>;
   /** Parties the user lost their seat at (or that were deleted) while watching them. */
   gone: Record<string, true>;
+  /** Parties whose session is not running: players are kept out of their tables. */
+  closed: Record<string, true>;
   /** Parties whose view could not be fetched (offline, server error) and is not cached. */
   failed: Record<string, true>;
 
@@ -39,6 +42,8 @@ interface PartyState {
   update(id: string, input: UpdatePartyRequest): Promise<boolean>;
   remove(id: string): Promise<boolean>;
   regenerateInvite(id: string): Promise<boolean>;
+  startSession(id: string): Promise<boolean>;
+  endSession(id: string): Promise<boolean>;
   preview(code: string): Promise<InvitePreviewDto | null>;
   join(code: string): Promise<string | null>;
   removeMember(id: string, userId: string): Promise<boolean>;
@@ -72,6 +77,7 @@ const reportError = (error: unknown) => {
 };
 
 const isGone = (error: unknown) => error instanceof ApiError && (error.status === 404 || error.status === 403);
+const isClosed = (error: unknown) => error instanceof ApiError && error.code === ErrorCode.sessionClosed;
 
 /** One request per key at a time; asks made meanwhile are folded into one more run after it. */
 function singleFlight() {
@@ -108,8 +114,14 @@ export const usePartyStore = create<PartyState>((set, get) => {
         const party = await api.parties.get(id);
         const { [id]: _, ...gone } = get().gone;
         const { [id]: __, ...failed } = get().failed;
-        set({ parties: { ...get().parties, [id]: party }, gone, failed });
+        const { [id]: ___, ...closed } = get().closed;
+        set({ parties: { ...get().parties, [id]: party }, gone, failed, closed });
       } catch (error) {
+        if (isClosed(error)) {
+          const { [id]: _, ...parties } = get().parties;
+          set({ parties, closed: { ...get().closed, [id]: true } });
+          return;
+        }
         // A cached view stays on screen; without one the screen says what happened.
         if (!isGone(error)) {
           if (!get().parties[id]) set({ failed: { ...get().failed, [id]: true } });
@@ -129,7 +141,7 @@ export const usePartyStore = create<PartyState>((set, get) => {
       return true;
     } catch (error) {
       reportError(error);
-      if (isGone(error)) void get().refreshParty(id);
+      if (isGone(error) || isClosed(error)) void get().refreshParty(id);
       return false;
     }
   };
@@ -139,6 +151,7 @@ export const usePartyStore = create<PartyState>((set, get) => {
     parties: {},
     gone: {},
     failed: {},
+    closed: {},
 
     refreshList: () =>
       flight(LIST_KEY, async () => {
@@ -181,6 +194,8 @@ export const usePartyStore = create<PartyState>((set, get) => {
       return removed;
     },
     regenerateInvite: (id) => change(id, () => api.parties.regenerateInvite(id)),
+    startSession: (id) => change(id, () => api.parties.startSession(id)),
+    endSession: (id) => change(id, () => api.parties.endSession(id)),
 
     preview: async (code) => {
       try {
@@ -222,7 +237,7 @@ export const usePartyStore = create<PartyState>((set, get) => {
       detach?.();
       detach = null;
       watchers.clear();
-      set({ list: null, parties: {}, gone: {}, failed: {} });
+      set({ list: null, parties: {}, gone: {}, failed: {}, closed: {} });
       if (!workspace) return;
 
       detach = workspace.onPartyEvent((event) => {

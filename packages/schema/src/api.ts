@@ -13,6 +13,8 @@ export const ErrorCode = {
   forbidden: 'forbidden',
   notFound: 'not_found',
   conflict: 'conflict',
+  /** A party's session is not running: its table is closed to players until the master starts one. */
+  sessionClosed: 'session_closed',
   emailTaken: 'email_taken',
   invalidCredentials: 'invalid_credentials',
   rateLimited: 'rate_limited',
