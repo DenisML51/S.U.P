@@ -22,6 +22,9 @@ type PanelProps = React.HTMLAttributes<HTMLElement> & {
   as?: 'div' | 'section' | 'article' | 'aside' | 'header' | 'nav' | 'button';
 };
 
+/** The leaves under a sheet of paper, the one nearest the page first. */
+const LEAVES = [1, 2, 3, 4] as const;
+
 export const Panel = forwardRef<HTMLElement, PanelProps>(
   (
     { variant = 'plate', ornate = variant === 'plate', crest, interactive, active, as: Component = 'div', className, children, ...rest },
@@ -34,13 +37,9 @@ export const Panel = forwardRef<HTMLElement, PanelProps>(
       {...rest}
     >
       {interactive && <span className="ui-fx" aria-hidden />}
-      {/* Paper lies on older leaves; settings that keep records on parchment show the stack. */}
-      {variant === 'paper' && (
-        <>
-          <span className="ui-leaf ui-leaf--under" aria-hidden />
-          <span className="ui-leaf ui-leaf--between" aria-hidden />
-        </>
-      )}
+      {/* Paper lies on a heap of older leaves; settings that keep records on paper show it. */}
+      {variant === 'paper' &&
+        LEAVES.map((n) => <span key={n} className={`ui-leaf ui-leaf--${n}`} aria-hidden />)}
       {ornate && <Corners />}
       {crest && <Crest />}
       {children}

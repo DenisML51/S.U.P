@@ -33,7 +33,7 @@ export const Ledger: React.FC<{
       <h2 className="ui-display ui-title whitespace-nowrap text-[1.35rem] leading-none">{title}</h2>
       {aside && <div className="ml-auto mr-10 flex items-center gap-3 text-xs">{aside}</div>}
     </header>
-    <ul className={cx('ui-ledger__list min-h-0 px-6', scroll && 'ui-scroll flex-1 overflow-y-auto')}>
+    <ul className={cx('ui-ledger__list min-h-0 px-6', scroll && 'ui-scroll flex-1 overflow-y-auto', !onAdd && 'pb-4')}>
       {children}
     </ul>
     {onAdd && (

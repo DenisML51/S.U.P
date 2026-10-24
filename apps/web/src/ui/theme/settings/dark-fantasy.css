@@ -74,11 +74,11 @@
     --page-rule: rgb(var(--c-frame) / 0.8);
     --page-shading: inset 0 0 0 3px rgb(var(--c-paper)), inset 0 0 0 4px rgb(var(--c-paper-muted) / 0.55), inset 0 0 70px rgb(var(--c-paper-ink) / 0.5);
   }
-  /* Paper is a stack, not a single sheet (the reference's tracked goals): two older leaves lie askew
-     under the page, each turned its own way, their edges worn uneven. The page's own fill, rule and
+  /* Paper is a stack, not a single sheet (the reference's tracked goals): a heap of older leaves lies
+     askew under the page, darker the deeper they lie (their shape is the shared heap in base.css). The page's own fill, rule and
      shading are drawn by ::before, so the leaves (below it) show only where they stick out. */
   /* Room for the leaves on the left; below them the sheet section keeps a padding. */
-  .ui-panel--paper:not(.ui-dialog) { margin-left: 9px; }
+  .ui-panel--paper:not(.ui-dialog) { margin-inline: 12px 8px; }
   .ui-panel--paper {
     background: transparent;
     border-color: transparent;
@@ -107,17 +107,10 @@
       var(--leaf);
     box-shadow: inset 0 0 0 1px rgb(var(--c-paper-muted) / 0.6), inset 0 0 40px rgb(var(--c-paper-muted) / 0.6);
   }
-  .ui-leaf--under {
-    --leaf: color-mix(in srgb, rgb(var(--c-paper)) 62%, rgb(var(--c-paper-muted)));
-    transform: translate(-8px, 7px) rotate(-0.6deg);
-    clip-path: polygon(0.6% 1.4%, 17% 0.2%, 38% 1.1%, 61% 0%, 84% 0.9%, 99.2% 0.3%, 100% 18%, 99.1% 41%, 100% 66%, 99.4% 98.6%, 79% 100%, 55% 98.9%, 31% 100%, 9% 99.1%, 0% 99.6%, 0.9% 74%, 0% 47%, 0.7% 22%);
-    filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.6));
-  }
-  .ui-leaf--between {
-    --leaf: color-mix(in srgb, rgb(var(--c-paper)) 78%, rgb(var(--c-paper-muted)));
-    transform: translate(-4px, 3px) rotate(0.35deg);
-    clip-path: polygon(0% 0.8%, 23% 0%, 46% 0.9%, 72% 0.1%, 100% 0.7%, 99.3% 26%, 100% 52%, 99.4% 79%, 100% 100%, 74% 99.2%, 49% 100%, 26% 99.3%, 0.5% 100%, 0% 76%, 0.8% 51%, 0% 27%);
-  }
+  .ui-leaf--1 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 80%, rgb(var(--c-paper-muted))); }
+  .ui-leaf--2 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 70%, rgb(var(--c-paper-muted))); }
+  .ui-leaf--3 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 60%, rgb(var(--c-paper-muted))); }
+  .ui-leaf--4 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 50%, rgb(var(--c-paper-muted))); }
   .ui-corner { color: rgb(var(--c-frame-bright)); }
   /* The arch stands on the edge: its base line (y = 20 of 24) lies on the border. */
   .ui-crest {
