@@ -300,6 +300,31 @@ const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => (
   </div>
 );
 
+/**
+ * The focused hero card set like a relic: a pointed brass arch rises over its top edge and a wax
+ * seal is pressed on its corner, as the card comes forward.
+ */
+const HeroReadout: NonNullable<SettingArt['HeroReadout']> = () => (
+  <>
+    <svg className="df-arch" viewBox="0 0 120 24" aria-hidden>
+      <ArchCrest />
+    </svg>
+    <Seal />
+  </>
+);
+
+/** A wax seal on the card's corner, two ribbon tails under it, the cross of the order stamped in; it lands with a thud. */
+const Seal: React.FC = () => (
+  <div className="df-seal" aria-hidden>
+    <span className="df-seal__ribbon" />
+    <span className="df-seal__wax">
+      <svg viewBox="0 0 24 24" width="22" height="22">
+        <path d="M10.2 3h3.6L13 8.2 18 7.6v4.8L13 11.8 13.8 21h-3.6L11 11.8 6 12.4V7.6l5 .6Z" fill="currentColor" />
+      </svg>
+    </span>
+  </div>
+);
+
 export const DARK_FANTASY_ART: SettingArt = {
   corner: { viewBox: '0 0 24 24', art: <GothicCorner /> },
   crest: { viewBox: '0 0 120 24', art: <ArchCrest /> },
@@ -314,4 +339,5 @@ export const DARK_FANTASY_ART: SettingArt = {
   LevelReady,
   WorldSigil,
   Flourish,
+  HeroReadout,
 };

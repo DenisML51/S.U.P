@@ -34,9 +34,65 @@ const HALFTONE =
   'radial-gradient(circle, rgb(var(--c-frame-bright) / 0.55) 0 1px, transparent 1.4px) 0 0 / 14px 14px';
 
 /** Instrument frame: corner ticks and edge scales over a dot grid, a halftone in the far corner. */
+const VIEW_W = 1600;
+const VIEW_H = 1000;
+/** The planet below: its centre far under the bottom edge, so only its limb shows. */
+const PLANET = { x: 800, y: 1900, r: 1150 };
+/** Parallels on the planet's face: flattened ellipses across the visible cap, nearer ones wider. */
+const PARALLELS = Array.from({ length: 6 }, (_, i) => {
+  const y = PLANET.y - PLANET.r + 40 + i * i * 14 + i * 26;
+  const rx = Math.sqrt(PLANET.r ** 2 - (PLANET.y - y) ** 2);
+  return { y, rx, ry: rx * 0.09 };
+});
+
+/** A sparse field of stars, the same every time. */
+const STARS = (() => {
+  let seed = 4242;
+  const next = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  return Array.from({ length: 46 }, () => ({ x: next() * VIEW_W, y: next() * 700, r: next() < 0.15 ? 1.4 : 0.8 }));
+})();
+
+/**
+ * The view from orbit, in hairline: the limb of a planet across the bottom with its thin rim of
+ * atmosphere and faint parallels and meridians, the night side darker, under a sparse field of stars.
+ */
+const OrbitView: React.FC = () => (
+  <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor" aria-hidden className="h-full w-full">
+    <defs>
+      <linearGradient id="sf-planet-shade" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0" stopColor="rgb(var(--c-surface-2))" />
+        <stop offset="0.55" stopColor="rgb(var(--c-surface))" />
+        <stop offset="1" stopColor="rgb(var(--c-bg-deep))" />
+      </linearGradient>
+      <clipPath id="sf-planet-clip">
+        <circle cx={PLANET.x} cy={PLANET.y} r={PLANET.r} />
+      </clipPath>
+    </defs>
+    {STARS.map(({ x, y, r }, i) => (
+      <circle key={i} cx={x.toFixed(0)} cy={y.toFixed(0)} r={r} fill="currentColor" stroke="none" opacity="0.6" />
+    ))}
+    {/* The planet: shaded from day to night, parallels on its face, the rim of atmosphere. */}
+    <circle cx={PLANET.x} cy={PLANET.y} r={PLANET.r} fill="url(#sf-planet-shade)" stroke="none" />
+    <g clipPath="url(#sf-planet-clip)" strokeWidth="0.6" opacity="0.55">
+      {PARALLELS.map(({ y, rx, ry }) => (
+        <ellipse key={y} cx={PLANET.x} cy={y + ry} rx={rx} ry={ry} />
+      ))}
+      {[-0.5, -0.25, 0, 0.25, 0.5].map((k) => (
+        <ellipse key={k} cx={PLANET.x} cy={PLANET.y} rx={Math.abs(PLANET.r * k * 1.6) + 1} ry={PLANET.r} />
+      ))}
+    </g>
+    <circle cx={PLANET.x} cy={PLANET.y} r={PLANET.r} strokeWidth="1.2" />
+    <circle cx={PLANET.x} cy={PLANET.y} r={PLANET.r + 7} stroke="rgb(var(--c-accent))" strokeWidth="1.6" opacity="0.7" />
+    <circle cx={PLANET.x} cy={PLANET.y} r={PLANET.r + 18} stroke="rgb(var(--c-accent))" strokeWidth="0.6" opacity="0.3" />
+  </svg>
+);
+
 const Backdrop: React.FC = () => (
   <div className="absolute inset-0 text-frame">
     <div className="absolute inset-0 opacity-[0.18]" style={{ background: 'radial-gradient(circle, rgb(var(--c-frame)) 0 0.8px, transparent 1.2px) 0 0 / 28px 28px' }} />
+    <div className="sf-orbit absolute inset-0">
+      <OrbitView />
+    </div>
     <div
       className="absolute bottom-0 right-0 h-[42vh] w-[42vw] opacity-50"
       style={{ background: HALFTONE, maskImage: 'radial-gradient(100% 100% at 100% 100%, #000, transparent 70%)' }}
@@ -101,6 +157,25 @@ const LevelReady: React.FC = () => {
   );
 };
 
+/** A file code for a hero, four hex digits of the id's hash. */
+const fileCode = (id: string) => {
+  let hash = 0;
+  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return (hash & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+};
+
+/**
+ * The personnel file's tab over the focused hero card: a solid blue plate with the file code and a
+ * cut corner, the level as a readout at the far end, a short graduated scale down the right edge.
+ */
+const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ id, level }) => (
+  <div className="sf-file" aria-hidden>
+    <span className="sf-file__tab">ДОСЬЕ · {fileCode(id)}</span>
+    <span className="sf-file__level">УР {String(level).padStart(2, '0')}</span>
+    <span className="sf-file__scale" />
+  </div>
+);
+
 export const SCI_FI_ART: SettingArt = {
   ruleMark: (
     <svg width="34" height="6" viewBox="0 0 34 6" aria-hidden>
@@ -115,4 +190,5 @@ export const SCI_FI_ART: SettingArt = {
   Emblem: GiRingedPlanet,
   Backdrop,
   LevelReady,
+  HeroReadout,
 };

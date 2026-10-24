@@ -255,6 +255,86 @@ const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => (
   </div>
 );
 
+/** A level in Roman numerals, as a herald or a seal would carry it. */
+const toRoman = (value: number) =>
+  [
+    [10, 'X'],
+    [9, 'IX'],
+    [5, 'V'],
+    [4, 'IV'],
+    [1, 'I'],
+  ].reduce<[string, number]>(
+    ([out, rest], [n, glyph]) => {
+      const times = Math.floor(rest / (n as number));
+      return [out + (glyph as string).repeat(times), rest - times * (n as number)];
+    },
+    ['', value],
+  )[0];
+
+/** The card's corner in the atlas's box, and the arc hugging it. */
+const CORNER = 80;
+const ARC_R = 32;
+
+/** A point at angle `deg` (0° = right, 90° = down) on a circle round the corner. */
+const aroundCorner = (r: number, deg: number) => {
+  const a = (deg * Math.PI) / 180;
+  return [CORNER + r * Math.cos(a), CORNER + r * Math.sin(a)] as const;
+};
+
+const arcPath = (r: number, from: number, to: number) => {
+  const [x1, y1] = aroundCorner(r, from);
+  const [x2, y2] = aroundCorner(r, to);
+  return `M${x1.toFixed(1)} ${y1.toFixed(1)}A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+};
+
+/** Ticks of the atlas arc: a short one every 5°, a long one every 30°, standing outwards. */
+const ARC_TICKS = Array.from({ length: 31 }, (_, i) => {
+  const deg = 150 + i * 5;
+  const length = deg % 30 === 0 ? 7 : 3;
+  const [x1, y1] = aroundCorner(ARC_R, deg);
+  const [x2, y2] = aroundCorner(ARC_R + length, deg);
+  return `M${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}`;
+}).join('');
+
+/** The guiding star at the arc's upper end. */
+const [STAR_X, STAR_Y] = aroundCorner(ARC_R, 300);
+
+/** A small constellation strung along just above the card's top edge. */
+const CONSTELLATION = [
+  [128, 66],
+  [160, 56],
+  [192, 68],
+  [222, 58],
+] as const;
+
+/**
+ * The focused hero card laid on the star atlas: a gilt arc of an astrolabe hugging its top left
+ * corner, graduated, a dotted orbit beyond it, a guiding star at the arc's upper end with the hero's
+ * level in Roman numerals beside it, a small constellation along the top edge, and a compass rose
+ * by the bottom right corner. The arcs draw themselves and the stars kindle in turn as the card
+ * comes forward.
+ */
+const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ level }) => (
+  <div className="hf-atlas" aria-hidden>
+    <svg className="hf-atlas__arc" width="260" height="160" viewBox="0 0 260 160" fill="none" stroke="currentColor">
+      <path d={arcPath(ARC_R, 150, 300)} strokeWidth="1.2" pathLength={1} className="hf-atlas__draw" />
+      <path d={arcPath(ARC_R + 14, 160, 290)} strokeWidth="0.6" strokeDasharray="1 5" className="hf-atlas__ticks" />
+      <path d={ARC_TICKS} strokeWidth="0.7" className="hf-atlas__ticks" />
+      <path d={starPath(STAR_X, STAR_Y, 8, 2.4, 4)} fill="currentColor" stroke="none" className="hf-atlas__star" />
+      <path d={`M${CONSTELLATION.map(([x, y]) => `${x} ${y}`).join('L')}`} strokeWidth="0.5" pathLength={1} className="hf-atlas__draw hf-atlas__lines" />
+      {CONSTELLATION.map(([x, y], i) => (
+        <circle key={x} cx={x} cy={y} r={i === 1 ? 2 : 1.4} fill="currentColor" stroke="none" className="hf-atlas__dot" style={{ transitionDelay: `${900 + i * 120}ms` }} />
+      ))}
+    </svg>
+    <span className="hf-atlas__level">{toRoman(level)}</span>
+    <svg className="hf-atlas__rose" width="46" height="46" viewBox="-23 -23 46 46" fill="none" stroke="currentColor">
+      <circle r="16" strokeWidth="0.6" />
+      <path d={starPath(0, 0, 21, 3.4, 4)} fill="currentColor" stroke="none" />
+      <path d={starPath(0, 0, 12, 2.4, 4)} transform="rotate(45)" fill="currentColor" stroke="none" opacity="0.6" />
+    </svg>
+  </div>
+);
+
 export const HIGH_FANTASY_ART: SettingArt = {
   corner: { viewBox: '0 0 32 32', art: <VineCorner /> },
   crest: { viewBox: '0 0 120 24', art: <StarCrest /> },
@@ -268,4 +348,5 @@ export const HIGH_FANTASY_ART: SettingArt = {
   Backdrop,
   LevelReady,
   Flourish,
+  HeroReadout,
 };
