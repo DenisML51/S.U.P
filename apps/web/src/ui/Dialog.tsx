@@ -36,6 +36,9 @@ interface DialogProps {
 
 const WIDTHS = { sm: 448, md: 576, lg: 768, xl: 1024 } as const;
 
+/** Ids of the open dialogs, the topmost last. */
+const OPEN_DIALOGS: string[] = [];
+
 /** Focus the element marked for it, else the first field (or, on opening, the first button). */
 const focusInto = (panel: HTMLElement | null, orButton: boolean) =>
   (
@@ -99,8 +102,10 @@ export const Dialog: React.FC<DialogProps> = ({
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
+    OPEN_DIALOGS.push(titleId);
+    // Escape closes only the topmost dialog (a picker opened over a level-up window).
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && OPEN_DIALOGS[OPEN_DIALOGS.length - 1] === titleId) {
         event.stopPropagation();
         onClose();
       }
@@ -109,9 +114,10 @@ export const Dialog: React.FC<DialogProps> = ({
     requestAnimationFrame(() => focusInto(panelRef.current, true));
     return () => {
       window.removeEventListener('keydown', onKey);
+      OPEN_DIALOGS.splice(OPEN_DIALOGS.lastIndexOf(titleId), 1);
       previous?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open, onClose, titleId]);
 
   const [measure, contentHeight] = useHeight(swapKey);
   const focusFirstField = () => focusInto(panelRef.current, false);

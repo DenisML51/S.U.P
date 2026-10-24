@@ -1,9 +1,13 @@
-import type { Build, CharacterDraft, InventoryItem } from '@itd/schema';
+import type { Build, Character, CharacterDraft, InventoryItem } from '@itd/schema';
 import { attributeScore } from '../rules/abilities';
+import { calculateArmorClass, isShield } from '../rules/armor';
 import { buildNewCharacter, startingAttributes, startingSkills } from '../rules/creation';
 import { getDefaultLimbs } from '../rules/health';
+import { equipItem } from '../rules/inventory';
+import { rollDie } from '../rules/dice';
 import { experienceForLevel } from '../rules/progression';
-import { applyBuild, findBackground, findClass } from './build';
+import { maxSanityOf } from '../rules/sanity';
+import { applyBuild, findBackground, findClass, spellcastingOf, type OpenChoice } from './build';
 import { DND } from './content';
 import type { KitOption } from './types';
 
@@ -12,6 +16,9 @@ export const classKit = (build: Pick<Build, 'class'>, id: string | undefined): K
   findClass(build.class)?.startingEquipment.find((kit) => kit.id === id);
 export const backgroundKit = (build: Pick<Build, 'background'>, id: string | undefined): KitOption | undefined =>
   findBackground(build.background)?.equipment.find((kit) => kit.id === id);
+
+/** Gear that is used up in play: it gets a count, and the hotbar offers it among the items. */
+const CONSUMABLE_GEAR = new Set(['caltrops', 'candle', 'healers-kit', 'holy-water', 'oil', 'rations', 'torch']);
 
 let serial = 0;
 const itemId = (ref: string) => `item-${ref}-${Date.now().toString(36)}-${(serial += 1)}`;
@@ -76,7 +83,8 @@ export function kitItems(kit: KitOption): InventoryItem[] {
         equipped: false,
         weight: gear.weight,
         cost: gear.cost,
-        quantity,
+        // Only what gets used up is counted (and shows on the hotbar as a consumable).
+        quantity: gear.kind === 'ammunition' || CONSUMABLE_GEAR.has(ref) || quantity > 1 ? quantity : undefined,
         description: [gear.description, gear.contents && `Содержит: ${gear.contents.join(', ')}.`].filter(Boolean).join('\n\n'),
       },
     ];
@@ -95,7 +103,70 @@ export interface DndHeroInput {
  * class and background in the inventory and their gold in the purse.
  */
 export function createDndHero({ name, build, classKitId, backgroundKitId }: DndHeroInput): CharacterDraft {
-  const base = buildNewCharacter({
+  const base = skeleton(name);
+  const built = applyBuild(base, build).character;
+  const kits = [classKit(build, classKitId), backgroundKit(build, backgroundKitId)].filter((kit): kit is KitOption => !!kit);
+  const gold = kits.reduce((sum, kit) => sum + kit.gold, 0);
+  const inventory = kits.flatMap(kitItems);
+  let hero = {
+    ...built,
+    currentHP: built.maxHP,
+    experience: experienceForLevel(build.level),
+    armorClass: calculateArmorClass(built),
+    limbs: getDefaultLimbs(built.maxHP, attributeScore(built, 'constitution'), calculateArmorClass(built)),
+    inventory,
+    currency: { ...built.currency, gold: built.currency.gold + gold },
+  };
+  // The hero sets out dressed: the first body armour, a shield and the first weapon are worn.
+  const worn = [
+    inventory.find((i) => i.type === 'armor' && !isShield(i)),
+    inventory.find((i) => isShield(i)),
+    inventory.find((i) => i.type === 'weapon'),
+  ].filter((i): i is InventoryItem => !!i);
+  for (const item of worn) hero = equipItem(hero as Character, item.id);
+  // Attack bonuses of the new weapon attacks follow the build; the spells chosen at creation start prepared.
+  const result = applyBuild(hero, build).character;
+  const prepared = new Set(build.choices[PREPARED_AT_CREATION] ?? []);
+  return {
+    ...result,
+    sanity: maxSanityOf(result),
+    spells: result.spells.map((s) => (prepared.has(s.id.replace(/^spell-/, '')) ? { ...s, prepared: true } : s)),
+  };
+}
+
+/**
+ * Key in `build.choices` of the spells a preparing caster (paladin) starts with prepared. They are
+ * not part of the build's rules: after creation the player changes them on the sheet.
+ */
+export const PREPARED_AT_CREATION = 'creation:prepared';
+
+/** The pick of starting prepared spells, as a choice the creation screen can show. */
+export function preparedSpellsChoice(build: Build): OpenChoice | null {
+  const casting = spellcastingOf(build);
+  if (casting?.mode !== 'prepared') return null;
+  const level = build.level;
+  const count = applyBuild(skeleton('—'), build).character.maxPreparedSpells.total ?? 0;
+  const maxLevel = casting.slots[level - 1]?.length ?? 0;
+  const feature = { id: 'creation.prepared', name: 'Использование заклинаний', description: '' };
+  return {
+    key: PREPARED_AT_CREATION,
+    count,
+    picked: build.choices[PREPARED_AT_CREATION] ?? [],
+    level,
+    choice: {
+      id: 'prepared',
+      label: 'Подготовленные заклинания',
+      count,
+      options: { from: 'spells', lists: [casting.list], minLevel: 1, maxLevel },
+      hint: 'Список можно менять после продолжительного отдыха, на листе в разделе «Магия».',
+    },
+    owner: { key: 'creation', feature, level, source: 'class' },
+  };
+}
+
+/** An empty first-level sheet the build is written onto. */
+const skeleton = (name: string) =>
+  buildNewCharacter({
     name,
     race: '',
     class: '',
@@ -104,15 +175,41 @@ export function createDndHero({ name, build, classKitId, backgroundKitId }: DndH
     skills: startingSkills(),
     savingThrowProficiencies: [],
   });
-  const { character } = applyBuild(base, build);
-  const kits = [classKit(build, classKitId), backgroundKit(build, backgroundKitId)].filter((kit): kit is KitOption => !!kit);
-  const gold = kits.reduce((sum, kit) => sum + kit.gold, 0);
-  return {
-    ...character,
-    currentHP: character.maxHP,
-    experience: experienceForLevel(build.level),
-    limbs: getDefaultLimbs(character.maxHP, attributeScore(character, 'constitution'), character.armorClass),
-    inventory: kits.flatMap(kitItems),
-    currency: { ...character.currency, gold: character.currency.gold + gold },
-  };
+
+/** Six ability scores rolled the classic way: 4d6, the lowest die dropped. */
+export function rollAbilityScores(random: () => number = Math.random): number[] {
+  return Array.from({ length: 6 }, () => {
+    const dice = Array.from({ length: 4 }, () => rollDie(6, random)).sort((a, b) => a - b);
+    return dice[1]! + dice[2]! + dice[3]!;
+  });
+}
+
+/** An empty D&D 2024 build: nothing chosen, every score 8 for point buy. */
+export const emptyBuild = (): Build => ({
+  ruleset: 'dnd2024',
+  species: '',
+  background: '',
+  class: '',
+  abilityMethod: 'pointBuy',
+  baseAttributes: startingAttributes(),
+  backgroundBonuses: {},
+  choices: {},
+  hitPoints: [],
+  level: 1,
+});
+
+/** Picks under a root of the build (`species`, `background`, `class`…) are forgotten when it changes. */
+export const withoutPicks = (build: Build, ...roots: string[]): Build => ({
+  ...build,
+  choices: Object.fromEntries(Object.entries(build.choices).filter(([key]) => !roots.some((root) => key.startsWith(`${root}:`)))),
+});
+
+/** The background's ability increases are valid as +2/+1 to two of its scores or +1 to all three. */
+export function validBackgroundBonuses(build: Build): boolean {
+  const background = findBackground(build.background);
+  if (!background) return false;
+  const values = Object.entries(build.backgroundBonuses).filter(([, v]) => v > 0);
+  if (values.some(([id]) => !background.abilities.includes(id as never))) return false;
+  const sorted = values.map(([, v]) => v).sort();
+  return sorted.join() === '1,2' || sorted.join() === '1,1,1';
 }

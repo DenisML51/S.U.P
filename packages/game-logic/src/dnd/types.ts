@@ -71,6 +71,8 @@ export type Effect =
   | { type: 'hpPerLevel'; amount: number }
   | { type: 'hp'; amount: Amount }
   | { type: 'initiative'; amount: Amount }
+  /** Armour class bonus, only while wearing armour when `armored` (Defense). */
+  | { type: 'armorClass'; amount: number; armored?: boolean }
   | { type: 'resistance'; damageType: string; level?: 'resistance' | 'immunity' }
   /**
    * A spell the hero always has. `alwaysPrepared` spells never count against the prepared limit;

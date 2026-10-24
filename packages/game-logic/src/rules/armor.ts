@@ -13,10 +13,11 @@ export const equippedArmor = (inventory: readonly InventoryItem[]): InventoryIte
 
 /**
  * Armour class from equipment: worn armour sets the base (and how much Dexterity applies), an
- * equipped shield adds a flat bonus; without armour it is 10 + Dexterity.
+ * equipped shield adds a flat bonus; without armour it is 10 + Dexterity. Bonuses of features
+ * (a fighting style) are added on top.
  */
 export function calculateArmorClass(
-  character: Pick<Character, 'inventory' | 'attributes' | 'attributeBonuses'>,
+  character: Pick<Character, 'inventory' | 'attributes' | 'attributeBonuses'> & Partial<Pick<Character, 'armorClassBonus'>>,
 ): number {
   const dexterity = attributeModifier(character, 'dexterity');
   const armor = equippedArmor(character.inventory);
@@ -32,5 +33,7 @@ export function calculateArmorClass(
   }
 
   const shield = character.inventory.some((item) => item.equipped && isShield(item));
-  return base + appliedDexterity + (shield ? SHIELD_ARMOR_BONUS : 0);
+  const bonus = character.armorClassBonus;
+  const features = (bonus?.always ?? 0) + (armor ? (bonus?.armored ?? 0) : 0);
+  return base + appliedDexterity + (shield ? SHIELD_ARMOR_BONUS : 0) + features;
 }

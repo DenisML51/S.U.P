@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
-  CLASSES,
-  RACES,
   buildNewCharacter,
   canDecrement,
   canIncrement,
@@ -10,15 +8,16 @@ import {
   startingAttributes,
   startingSkills,
 } from '@itd/game-logic';
-import { DEFAULT_SETTING, type CharacterImages, type Setting, type Skill } from '@itd/schema';
+import type { CharacterImages, Setting, Skill } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { clearDraft } from './useDraftState';
 
 /**
- * A hero in the making: every choice of the creation screen and the rules that judge them.
+ * A hero of one's own in the making (race, class and the rest typed by the player): every choice
+ * of the creation screen and the rules that judge them.
  */
-export function useCreation(onCreated: () => void) {
+export function useCreation(setting: Setting, onCreated: () => void) {
   const createCharacter = useCharacterStore((s) => s.createCharacter);
-  const [setting, setSetting] = useState<Setting>(DEFAULT_SETTING);
   const [name, setName] = useState('');
   const [race, setRace] = useState('');
   const [subrace, setSubrace] = useState('');
@@ -31,8 +30,6 @@ export function useCreation(onCreated: () => void) {
   const [creating, setCreating] = useState(false);
 
   const points = pointsRemaining(attributes);
-  const raceInfo = RACES.find((r) => r.id === race);
-  const classInfo = CLASSES.find((c) => c.id === characterClass);
 
   const valid = {
     origin: race.trim() !== '' && characterClass.trim() !== '',
@@ -61,6 +58,7 @@ export function useCreation(onCreated: () => void) {
         setting,
         images: images.full || images.portrait ? images : undefined,
       });
+      clearDraft();
       onCreated();
     } catch {
       toast.error('Не удалось создать героя');
@@ -69,26 +67,14 @@ export function useCreation(onCreated: () => void) {
   };
 
   return {
-    setting,
-    setSetting,
     name,
     setName,
     race,
-    raceInfo,
-    /** Choosing another listed race forgets a subrace that belongs to the old one; typing a
-        race of one's own keeps the subrace typed beside it. */
-    setRace: (value: string) => {
-      if (RACES.some((r) => r.id === value || r.id === race)) setSubrace('');
-      setRace(value);
-    },
+    setRace,
     subrace,
     setSubrace,
     characterClass,
-    classInfo,
-    setCharacterClass: (value: string) => {
-      if (CLASSES.some((c) => c.id === value || c.id === characterClass)) setSubclass('');
-      setCharacterClass(value);
-    },
+    setCharacterClass,
     subclass,
     setSubclass,
     attributes,

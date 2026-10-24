@@ -6,6 +6,7 @@ import { Dialog } from '../../../ui/Dialog';
 import { NumberField, Segmented } from '../../../ui/forms';
 import { Button, Field, Meter, cx, type MeterTone } from '../../../ui/primitives';
 import { useVitals } from '../useVitals';
+import { useSheetDialogs } from './context';
 
 interface VitalProps {
   open: boolean;
@@ -227,6 +228,7 @@ export const SanityDialog: React.FC<VitalProps> = ({ open, onClose }) => {
 export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
   const character = useCharacterStore((s) => s.character) as Character;
   const vitals = useVitals();
+  const dialogs = useSheetDialogs();
   const progress = experienceProgress(character.level, character.experience);
   const format = (n: number) => n.toLocaleString('ru-RU');
   return (
@@ -237,7 +239,10 @@ export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
       width="md"
       footer={
         vitals.canLevelUp ? (
-          <Button variant="primary" onClick={() => vitals.setLevel(character.level + 1)}>
+          <Button
+            variant="primary"
+            onClick={() => (character.build ? dialogs.open({ kind: 'levelUp' }) : vitals.setLevel(character.level + 1))}
+          >
             Повысить до {character.level + 1} уровня
           </Button>
         ) : (
@@ -272,17 +277,20 @@ export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
           ]}
         />
       </div>
-      <div className="mt-6 flex items-center justify-between gap-4 text-sm text-ink-muted">
-        <span>Уровень вручную</span>
-        <NumberField
-          label="Уровень"
-          min={1}
-          max={100}
-          value={character.level}
-          onChange={vitals.setLevel}
-          className="w-32"
-        />
-      </div>
+      {/* A preset hero's level follows its build: it only grows through the level-up window. */}
+      {!character.build && (
+        <div className="mt-6 flex items-center justify-between gap-4 text-sm text-ink-muted">
+          <span>Уровень вручную</span>
+          <NumberField
+            label="Уровень"
+            min={1}
+            max={100}
+            value={character.level}
+            onChange={vitals.setLevel}
+            className="w-32"
+          />
+        </div>
+      )}
     </Dialog>
   );
 };

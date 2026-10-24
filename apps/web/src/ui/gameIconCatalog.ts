@@ -147,6 +147,37 @@ import GiComa from '~icons/game-icons/coma';
 import GiTiredEye from '~icons/game-icons/tired-eye';
 import GiCrush from '~icons/game-icons/crush';
 import GiColdHeart from '~icons/game-icons/cold-heart';
+// Pictures of origins and callings (species, backgrounds, classes) on the creation screen.
+import GiAngelWings from '~icons/game-icons/angel-wings';
+import GiDragonHead from '~icons/game-icons/dragon-head';
+import GiDwarfFace from '~icons/game-icons/dwarf-face';
+import GiWomanElfFace from '~icons/game-icons/woman-elf-face';
+import GiPointyHat from '~icons/game-icons/pointy-hat';
+import GiGiant from '~icons/game-icons/giant';
+import GiWalkingBoot from '~icons/game-icons/walking-boot';
+import GiPerson from '~icons/game-icons/person';
+import GiOrcHead from '~icons/game-icons/orc-head';
+import GiDevilMask from '~icons/game-icons/devil-mask';
+import GiAnvil from '~icons/game-icons/anvil';
+import GiFoxHead from '~icons/game-icons/fox-head';
+import GiHood from '~icons/game-icons/hood';
+import GiJesterHat from '~icons/game-icons/jester-hat';
+import GiWheat from '~icons/game-icons/wheat';
+import GiSpartanHelmet from '~icons/game-icons/spartan-helmet';
+import GiCompass from '~icons/game-icons/compass';
+import GiMountainCave from '~icons/game-icons/mountain-cave';
+import GiCoins from '~icons/game-icons/coins';
+import GiAnchor from '~icons/game-icons/anchor';
+import GiQuillInk from '~icons/game-icons/quill-ink';
+import GiKnightBanner from '~icons/game-icons/knight-banner';
+import GiBackpack from '~icons/game-icons/backpack';
+import GiVisoredHelm from '~icons/game-icons/visored-helm';
+import GiSwordBrandish from '~icons/game-icons/sword-brandish';
+import GiCrestedHelmet from '~icons/game-icons/crested-helmet';
+import GiAngelOutfit from '~icons/game-icons/angel-outfit';
+import GiLaurelCrown from '~icons/game-icons/laurel-crown';
+import GiOak from '~icons/game-icons/oak';
+import GiSwordInStone from '~icons/game-icons/sword-in-stone';
 
 export const ICONS = {
   broadsword: GiBroadsword,
@@ -296,6 +327,37 @@ export const ICONS = {
   'tired-eye': GiTiredEye,
   crush: GiCrush,
   'cold-heart': GiColdHeart,
+  // Origins and callings.
+  'angel-wings': GiAngelWings,
+  'dragon-head': GiDragonHead,
+  'dwarf-face': GiDwarfFace,
+  'woman-elf-face': GiWomanElfFace,
+  'pointy-hat': GiPointyHat,
+  giant: GiGiant,
+  'walking-boot': GiWalkingBoot,
+  person: GiPerson,
+  'orc-head': GiOrcHead,
+  'devil-mask': GiDevilMask,
+  anvil: GiAnvil,
+  'fox-head': GiFoxHead,
+  hood: GiHood,
+  'jester-hat': GiJesterHat,
+  wheat: GiWheat,
+  'spartan-helmet': GiSpartanHelmet,
+  compass: GiCompass,
+  'mountain-cave': GiMountainCave,
+  coins: GiCoins,
+  anchor: GiAnchor,
+  'quill-ink': GiQuillInk,
+  'knight-banner': GiKnightBanner,
+  backpack: GiBackpack,
+  'visored-helm': GiVisoredHelm,
+  'sword-brandish': GiSwordBrandish,
+  'crested-helmet': GiCrestedHelmet,
+  'angel-outfit': GiAngelOutfit,
+  'laurel-crown': GiLaurelCrown,
+  oak: GiOak,
+  'sword-in-stone': GiSwordInStone,
 } as const;
 
 export type GameIconId = keyof typeof ICONS;

@@ -1,6 +1,6 @@
 import { byClassLevel } from '../../helpers';
 import type { ClassDef, FeatureDef, SubclassDef } from '../../types';
-import { FIGHTER_KITS } from '../equipment';
+import { ARTISAN_TOOL_NAMES, FIGHTER_KITS } from '../equipment';
 import {
   THIRD_CASTER_SLOTS,
   abilityScoreImprovement,
@@ -61,7 +61,7 @@ const battleMaster: SubclassDef = {
             count: 1,
             options: { from: 'skills', list: ['acrobatics', 'animalHandling', 'athletics', 'history', 'insight', 'intimidation', 'persuasion', 'perception', 'survival'] },
           },
-          { id: 'tool', label: 'Инструменты ремесленника', count: 1, options: { from: 'tools' } },
+          { id: 'tool', label: 'Инструменты ремесленника', count: 1, options: { from: 'tools', list: ARTISAN_TOOL_NAMES } },
         ],
       },
     ],

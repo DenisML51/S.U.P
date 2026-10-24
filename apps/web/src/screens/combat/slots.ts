@@ -4,6 +4,7 @@ import {
   itemQuantity,
   remainingActions,
   resolveAmmunition,
+  spellColor,
 } from '@itd/game-logic';
 import type { ActionType, Character, InventoryItem } from '@itd/schema';
 import { ACTION_TYPES } from '../../ui/actionTypes';
@@ -137,7 +138,7 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
       id: spell.id,
       name: spell.name,
       iconName: spell.iconName,
-      color: spell.color,
+      color: spellColor(spell),
       subtitle: [spell.school, spell.level === 0 ? 'заговор' : `${spell.level} круг`]
         .filter(Boolean)
         .join(' · '),

@@ -333,3 +333,15 @@ export const FIGHTER_KITS: KitOption[] = [
   },
   { id: 'c', label: 'C', items: [], gold: 155 },
 ];
+
+const ARTISAN_TOOL_IDS = [
+  'alchemists-supplies', 'brewers-supplies', 'calligraphers-supplies', 'carpenters-tools', 'cartographers-tools',
+  'cobblers-tools', 'cooks-utensils', 'glassblowers-tools', 'jewelers-tools', 'leatherworkers-tools', 'masons-tools',
+  'painters-supplies', 'potters-tools', 'smiths-tools', 'tinkers-tools', 'weavers-tools', 'woodcarvers-tools',
+];
+const INSTRUMENT_IDS = ['bagpipes', 'drum', 'dulcimer', 'flute', 'horn', 'lute', 'lyre', 'pan-flute', 'shawm', 'viol'];
+const namesOf = (ids: string[]) => ids.map((id) => GEAR.find((g) => g.id === id)!.name);
+
+/** Names of the artisan's tools and musical instruments, for tool picks (Student of War, Musician). */
+export const ARTISAN_TOOL_NAMES = namesOf(ARTISAN_TOOL_IDS);
+export const MUSICAL_INSTRUMENT_NAMES = namesOf(INSTRUMENT_IDS);

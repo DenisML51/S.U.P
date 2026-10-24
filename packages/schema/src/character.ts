@@ -204,6 +204,7 @@ export const TraitSchema = passthroughObject({
   id: nestedId,
   name: shortText,
   description: longTextOr(),
+  iconName: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
   grant: optionalShortText,
 });
@@ -314,6 +315,8 @@ export const CharacterSchema = passthroughObject({
   experience: numberOr(0),
   speed: numberOr(30),
   armorClass: numberOr(10),
+  /** Armour class from features rather than gear (Defense fighting style): always, and while armoured. */
+  armorClassBonus: text(passthroughObject({ always: numberOr(0), armored: numberOr(0) }).optional()),
   initiativeBonus: optionalNumber,
 
   sanity: numberOr(50),

@@ -28,4 +28,5 @@ export * from './dnd/types';
 export * from './dnd/helpers';
 export * from './dnd/build';
 export { DND, DND_CLASSES } from './dnd/content';
+export { DND_ICONS } from './dnd/content/icons';
 export * from './dnd/creation';
