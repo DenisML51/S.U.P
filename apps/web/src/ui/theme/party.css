@@ -206,3 +206,28 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   border-radius: calc(var(--radius) * 0.6);
   background: rgb(var(--c-bg-deep) / 0.6);
 }
+
+/* ---------------------------------------------------------------- Talk over the fight */
+.ui-combat-chat {
+  padding: 0.6rem 0.8rem;
+  border-radius: calc(var(--radius) * 0.6);
+  background: rgb(var(--c-bg-deep) / 0.45);
+  border: 1px solid transparent;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.ui-combat-chat:hover {
+  border-color: rgb(var(--c-frame) / 0.5);
+  background: rgb(var(--c-bg-deep) / 0.7);
+}
+.ui-combat-chat__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: rgb(var(--c-accent));
+  color: rgb(var(--c-accent-ink));
+  font-size: 10px;
+  letter-spacing: 0;
+}

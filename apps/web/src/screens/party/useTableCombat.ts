@@ -4,6 +4,21 @@ import type { CombatantDto, PartyDto } from '@itd/schema';
 import { useSessionStore } from '../../store/useSessionStore';
 import { seatOf, type Seat } from './partyView';
 
+const readBegun = (key: string): string | null => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+const writeBegun = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Not remembered: a reload in the middle of the turn gives the actions back once more.
+  }
+};
+
 /**
  * The fight as the signed-in user lives it: the initiative roll asked of them as soon as the master
  * starts a fight, and a word when their turn comes. `onMyTurn` runs once each time a turn of one of
@@ -11,7 +26,12 @@ import { seatOf, type Seat } from './partyView';
  */
 export function useTableCombat(
   party: PartyDto | undefined,
-  options: { onMyTurn?: (combatant: CombatantDto) => void; announce?: boolean } = {},
+  options: {
+    /** Runs when a turn of this party hero begins (its screen gives the actions back). */
+    onMyTurn?: (combatant: CombatantDto) => void;
+    forHero?: string;
+    announce?: boolean;
+  } = {},
 ): Seat & {
   /** The combatant whose initiative window is open. */
   rolling: CombatantDto | null;
@@ -32,19 +52,32 @@ export function useTableCombat(
     setRolling(firstToRoll);
   }, [firstToRoll, rolling]);
 
-  const turnId = party?.combat?.phase === 'active' ? party.combat.currentCombatantId : null;
-  const onMyTurn = useRef(options.onMyTurn);
-  onMyTurn.current = options.onMyTurn;
-  const seenTurn = useRef<string | null>(turnId);
+  const fight = party?.combat;
+  const turnId = fight?.phase === 'active' ? fight.currentCombatantId : null;
   const myCurrent = seat.myTurn ? seat.current : null;
   const announce = options.announce !== false;
+
+  // A word when a turn of the user's hero comes (not for the turn already under way on opening).
+  const seenTurn = useRef<string | null>(turnId);
   useEffect(() => {
     if (turnId === seenTurn.current) return;
     seenTurn.current = turnId;
-    if (!myCurrent) return;
-    onMyTurn.current?.(myCurrent);
-    if (announce) toast.success(`Ваш ход: ${myCurrent.name}`, { id: 'my-turn' });
+    if (myCurrent && announce) toast.success(`Ваш ход: ${myCurrent.name}`, { id: 'my-turn' });
   }, [turnId, myCurrent, announce]);
+
+  // The start of a turn (actions back) happens once per turn, also when the screen was reloaded or
+  // opened mid-turn: the turn is identified by the fight, the round and the combatant, and remembered.
+  const onMyTurn = useRef(options.onMyTurn);
+  onMyTurn.current = options.onMyTurn;
+  const ours = myCurrent && myCurrent.refId === options.forHero ? myCurrent : null;
+  const turnKey = ours && fight ? `${fight.startedAt}:${fight.round}` : null;
+  useEffect(() => {
+    if (!turnKey || !ours || !onMyTurn.current) return;
+    const storageKey = `itd.turn-begun.${ours.id}`;
+    if (readBegun(storageKey) === turnKey) return;
+    writeBegun(storageKey, turnKey);
+    onMyTurn.current(ours);
+  }, [turnKey, ours]);
 
   return { ...seat, rolling, roll: setRolling };
 }

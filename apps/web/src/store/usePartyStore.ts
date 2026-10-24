@@ -156,7 +156,16 @@ export const usePartyStore = create<PartyState>((set, get) => {
     refreshList: () =>
       flight(LIST_KEY, async () => {
         try {
-          set({ list: await api.parties.list() });
+          const list = await api.parties.list();
+          // A table seen again in the list (or open again) is no longer "gone" or "closed" for this tab.
+          const { gone, closed } = get();
+          const seated = new Set(list.map((party) => party.id));
+          const open = new Set(list.filter((party) => party.inSession).map((party) => party.id));
+          set({
+            list,
+            gone: Object.fromEntries(Object.entries(gone).filter(([id]) => !seated.has(id))),
+            closed: Object.fromEntries(Object.entries(closed).filter(([id]) => !open.has(id))),
+          });
         } catch {
           // Offline: the last list stays; the next notification or reconnect refreshes it.
         }

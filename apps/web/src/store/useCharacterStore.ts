@@ -132,6 +132,14 @@ const readOpen = (): string | null => {
   }
 };
 
+const writeViewMode = (viewMode: ViewMode) => {
+  try {
+    localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  } catch {
+    // Preference not persisted.
+  }
+};
+
 const readViewMode = (): ViewMode => {
   try {
     return localStorage.getItem(VIEW_MODE_KEY) === 'hotbar' ? 'hotbar' : 'tabs';
@@ -267,11 +275,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     },
 
     setViewMode: (viewMode) => {
-      try {
-        localStorage.setItem(VIEW_MODE_KEY, viewMode);
-      } catch {
-        // Preference not persisted.
-      }
+      writeViewMode(viewMode);
       set({ viewMode });
     },
 
@@ -395,6 +399,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         toast.error('Персонаж не найден');
         return;
       }
+      writeViewMode(view);
       set({ character, viewMode: view, undoable: undoIds(character.id) });
       rememberOpen(character.id);
       refreshPreset(character);
@@ -483,8 +488,9 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
       const open = readOpen();
       const character = open ? await next.repository.get(open) : undefined;
+      // A reload returns to the hero as it was left: on its sheet or in its fight.
       if (character && workspace === next) {
-        set({ character, viewMode: 'tabs', undoable: [] });
+        set({ character, viewMode: readViewMode(), undoable: [] });
         refreshPreset(character);
       }
     },

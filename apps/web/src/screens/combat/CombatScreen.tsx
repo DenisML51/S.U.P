@@ -4,6 +4,8 @@ import { initiativeModifier, resetTurn } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useParty, usePartyOfCharacter } from '../../store/usePartyStore';
+import { useSessionStore } from '../../store/useSessionStore';
+import { CombatChat } from '../party/CombatChat';
 import { PartyCombatBar } from '../party/PartyCombatBar';
 import { useTurnLock } from '../party/useTurnLock';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
@@ -79,6 +81,7 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
   const dialogs = useSheetDialogs();
   const roll = useRolls();
   const [combat, setCombat] = useCombatState(character.id);
+  const userId = useSessionStore((s) => s.user?.id);
   // A hero at a party's table fights the party's fight: the master starts it and the turns are shared.
   const party = useParty(usePartyOfCharacter(character.id)?.id);
   const partyFight = party?.combat ?? null;
@@ -192,6 +195,18 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
       >
         <CombatLog character={character} />
       </motion.aside>
+
+      {/* The table's talk, folded to its last lines, opens without leaving the fight. */}
+      {party && (
+        <motion.div
+          className="absolute left-6 top-20 z-20 w-[24rem]"
+          initial={{ opacity: 0, x: -16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ ...ENTER, delay: 0.1 }}
+        >
+          <CombatChat party={party} userId={userId} />
+        </motion.div>
+      )}
 
       <motion.div
         className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-center gap-4 px-6 pb-5"
