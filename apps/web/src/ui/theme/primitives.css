@@ -1416,3 +1416,53 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 [data-setting='grimdark'] .ui-rail__item[aria-current='page'] .ui-rail__mark { width: 3px; background: rgb(var(--c-frame-bright)); }
 [data-setting='grimdark'] .ui-rail__item { text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-display); }
 [data-setting='grimdark'] .ui-stat__label { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ------------------------------------------------------------------ Dark fantasy details */
+/* Plates are engraved: a tarnished brass rim and a second hairline cut a few pixels inside it,
+   like the frame of an old portrait or a hunter's journal. */
+[data-setting='dark-fantasy'] .ui-panel:not(.ui-panel--inset):not(.ui-panel--paper) {
+  border-color: rgb(var(--c-frame) / 0.65);
+  background-image: linear-gradient(180deg, rgb(var(--c-surface-2) / 0.6), transparent 40%);
+  box-shadow:
+    inset 0 0 0 3px rgb(var(--c-surface)),
+    inset 0 0 0 4px rgb(var(--c-frame) / 0.3),
+    inset 0 0 40px rgb(0 0 0 / 0.35),
+    var(--shadow-panel);
+}
+/* Records are sepia cards inside the same engraved rim. */
+[data-setting='dark-fantasy'] .ui-panel--paper {
+  border-color: rgb(var(--c-frame) / 0.8);
+  box-shadow:
+    inset 0 0 0 3px rgb(var(--c-paper)),
+    inset 0 0 0 4px rgb(var(--c-paper-muted) / 0.55),
+    inset 0 0 60px rgb(var(--c-paper-ink) / 0.4),
+    var(--shadow-panel);
+}
+[data-setting='dark-fantasy'] .ui-section-title { color: rgb(var(--c-frame-bright)); font-size: 1.4rem; }
+/* An engraved double rule. */
+[data-setting='dark-fantasy'] .ui-rule::before,
+[data-setting='dark-fantasy'] .ui-rule::after,
+[data-setting='dark-fantasy'] .ui-rule--left::after {
+  height: 4px;
+  background: none;
+  border-top: 1px solid rgb(var(--c-frame) / 0.6);
+  border-bottom: 1px solid rgb(var(--c-frame) / 0.3);
+}
+/* Proficiency is a drop of sealing wax. */
+[data-setting='dark-fantasy'] .ui-prof-mark { transform: none; border-radius: 999px; }
+[data-setting='dark-fantasy'] .ui-prof-mark.bg-frame-bright { background: rgb(var(--c-danger)); border-color: rgb(var(--c-danger)); }
+[data-setting='dark-fantasy'] .ui-prof-mark.outline { outline-color: rgb(var(--c-frame-bright) / 0.7); border-radius: 999px; }
+/* The open section of the rail: a brass bookmark over a slightly lit page. */
+[data-setting='dark-fantasy'] .ui-rail__item[aria-current='page'] {
+  background: linear-gradient(90deg, rgb(var(--c-frame) / 0.22), transparent);
+}
+[data-setting='dark-fantasy'] .ui-stat__label { font-family: var(--font-display); letter-spacing: 0.06em; font-size: 0.8rem; }
+[data-setting='dark-fantasy'] .ui-button--primary {
+  background: rgb(var(--c-accent));
+  border-color: rgb(var(--c-frame) / 0.9);
+  box-shadow: inset 0 0 0 2px rgb(var(--c-accent)), inset 0 0 0 3px rgb(var(--c-frame-bright) / 0.45), 0 6px 18px -8px rgb(0 0 0 / 0.8);
+}
+[data-setting='dark-fantasy'] .ui-hud-slot {
+  border-color: rgb(var(--c-frame) / 0.6);
+  box-shadow: inset 0 0 0 2px rgb(var(--c-inset)), inset 0 0 0 3px rgb(var(--c-frame) / 0.25);
+}

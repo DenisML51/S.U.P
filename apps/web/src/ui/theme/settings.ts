@@ -8,7 +8,9 @@ import '@fontsource/forum/400.css';
 import '@fontsource/tektur/400.css';
 import '@fontsource/tektur/500.css';
 import '@fontsource/tektur/600.css';
-import '@fontsource/oranienbaum/400.css';
+import '@fontsource/playfair-display-sc/400.css';
+import '@fontsource/playfair-display-sc/700.css';
+import '@fontsource/playfair-display/400.css';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 
 export interface SettingInfo {

@@ -49,9 +49,11 @@ const SciFiFrame: React.FC = () => (
   </>
 );
 
-/** Darkness pressing in from the edges, a cold red at the bottom. */
+/** Darkness pressing in from the edges, a cold red at the bottom, an engraved double frame. */
 const DarkFantasyFrame: React.FC = () => (
   <>
+    <div className="absolute inset-3 border border-frame/50" />
+    <div className="absolute inset-[18px] border border-frame/25" />
     <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 220px 60px rgb(0 0 0 / 0.85)' }} />
     <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-accent/15 to-transparent" />
   </>
