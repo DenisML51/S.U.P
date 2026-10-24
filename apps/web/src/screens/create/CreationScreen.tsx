@@ -2,11 +2,11 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { findBackground, findClass, findSubclass, pointsRemaining } from '@itd/game-logic';
 import { SETTINGS, DEFAULT_SETTING, type Setting } from '@itd/schema';
-import { SettingEmblem } from '../../ui/ornaments';
 import { Button, Panel, cx } from '../../ui/primitives';
 import { IconCheck, IconPrev } from '../../ui/icons';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
+import { WorldCard } from './WorldCard';
 import { HeroSummary } from './HeroSummary';
 import { TrainingChoice } from './parts';
 import { OriginStep, PointBuyStep } from './custom/steps';
@@ -76,23 +76,18 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
       issues: worldChosen ? [] : ['Мир'],
       stage: true,
       content: (
-        <div className="mx-auto grid h-[26rem] max-w-6xl grid-cols-4 gap-5 [margin-top:max(0px,calc(50vh-22rem))]">
+        <div className="mx-auto grid h-[28rem] max-w-5xl grid-cols-3 gap-6 [margin-top:max(0px,calc(50vh-23rem))]">
           {SETTINGS.map((id) => (
-            <SettingScope key={id} setting={id} className="h-full">
-              <BigChoice
-                selected={worldChosen && setting === id}
-                onSelect={() => {
-                  setSetting(id);
-                  setWorldChosen(true);
-                  setIndex(1);
-                }}
-                className="flex h-full w-full flex-col items-center justify-center px-6 text-center"
-              >
-                <SettingEmblem size={64} className="mx-auto text-frame-bright" />
-                <span className="ui-display ui-title mt-6 block text-2xl leading-tight text-ink">{SETTING_INFO[id].label}</span>
-                <span className="mt-3 block text-sm text-ink-muted">{SETTING_INFO[id].hint}</span>
-              </BigChoice>
-            </SettingScope>
+            <WorldCard
+              key={id}
+              setting={id}
+              selected={worldChosen && setting === id}
+              onSelect={() => {
+                setSetting(id);
+                setWorldChosen(true);
+                setIndex(1);
+              }}
+            />
           ))}
         </div>
       ),

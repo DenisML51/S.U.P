@@ -5,7 +5,7 @@
  * strokes so they don't turn into boxes. Compiled into the bundle by unplugin-icons. Swap an icon
  * here and it changes everywhere.
  */
-export { default as IconAttributes } from '~icons/game-icons/laurels';
+export { default as IconAttributes } from '~icons/game-icons/stars-stack';
 export { default as IconHealth } from '~icons/ph/heartbeat-fill';
 export { default as IconSanity } from '~icons/ph/brain-fill';
 export { default as IconArmor } from '~icons/game-icons/chest-armor';

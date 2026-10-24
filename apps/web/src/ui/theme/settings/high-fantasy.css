@@ -7,7 +7,11 @@
 
 :root,
 [data-setting='high-fantasy'] {
-  --font-display: 'Cormorant SC', 'Cormorant Garamond', Georgia, serif;
+  /* The setting's own display face; the service's type may stand in for --font-display, never for it. */
+  --setting-display: 'Cormorant SC', 'Cormorant Garamond', Georgia, serif;
+  --font-display: var(--setting-display);
+  /* The light a world card is lit by. */
+  --world-light: rgb(var(--c-frame) / 0.28);
   --font-numeric: 'Cormorant Garamond', Georgia, serif;
   --display-tracking: 0.04em;
   --display-weight: 600;
@@ -653,4 +657,19 @@
 @media (prefers-reduced-motion: reduce) {
   [data-setting='high-fantasy'] :is(.hf-vine, .hf-leaf) { animation-duration: 1ms; }
   [data-setting='high-fantasy'] :is(.hf-vine-glint, .hf-mote, .ui-xp[data-ready]) { animation: none; }
+}
+
+/* ------------------------------------------------------------------ World card */
+/* A plate of the atlas in a double gilt rule: on hover the vine corners unfold, the emblem catches
+   the light and the name turns to gold. */
+[data-setting='high-fantasy'] {
+  .ui-world {
+    border-color: rgb(var(--c-frame) / 0.6);
+    box-shadow: inset 0 0 0 4px rgb(var(--c-bg)), inset 0 0 0 5px rgb(var(--c-frame) / 0.25), var(--shadow-panel);
+  }
+  .ui-world__name { font-weight: 600; letter-spacing: 0.04em; }
+  .ui-world .ui-corner { width: 40px; height: 40px; opacity: 0.6; transition: width 400ms, height 400ms, opacity 400ms; }
+  .ui-world:is(:hover, [aria-pressed='true']) .ui-corner { width: 58px; height: 58px; opacity: 1; }
+  .ui-world:is(:hover, [aria-pressed='true']) .ui-world__emblem { transform: translateY(-3px); filter: drop-shadow(0 0 16px rgb(var(--c-frame-bright) / 0.65)); }
+  .ui-world:is(:hover, [aria-pressed='true']) .ui-world__name { color: rgb(var(--c-frame-bright)); }
 }
