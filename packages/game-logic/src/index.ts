@@ -22,3 +22,10 @@ export * from './rules/resources';
 export * from './rules/sanity';
 export * from './rules/sheet';
 export * from './rules/spells';
+
+// D&D 2024 presets
+export * from './dnd/types';
+export * from './dnd/helpers';
+export * from './dnd/build';
+export { DND, DND_CLASSES } from './dnd/content';
+export * from './dnd/creation';

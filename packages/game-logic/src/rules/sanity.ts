@@ -1,5 +1,6 @@
 import type { Character } from '@itd/schema';
 import { CLASSES } from '../content/classes';
+import { DND_CLASSES } from '../dnd/content';
 import { DEFAULT_MENTAL_STRENGTH, MAX_SANITY_CAP } from '../content/progression';
 import { DEFAULT_ATTRIBUTE_SCORE, attributeScore } from './abilities';
 
@@ -7,14 +8,20 @@ import { DEFAULT_ATTRIBUTE_SCORE, attributeScore } from './abilities';
 export const getSanityModifierFromWisdom = (wisdom: number): number =>
   wisdom >= DEFAULT_ATTRIBUTE_SCORE ? Math.floor((wisdom - 10) / 2) * 5 : (wisdom - 10) * 5;
 
+/** Mental strength of a class: a D&D preset by id or name, or a class of the S.U.P. lists. */
+const mentalStrengthOf = (classId: string): number =>
+  DND_CLASSES.find((c) => c.id === classId || c.name === classId)?.mentalStrength ??
+  CLASSES.find((c) => c.id === classId)?.mentalStrength ??
+  DEFAULT_MENTAL_STRENGTH;
+
 export function calculateMaxSanity(classId: string, wisdom: number, level: number): number {
-  const mentalStrength = CLASSES.find((c) => c.id === classId)?.mentalStrength ?? DEFAULT_MENTAL_STRENGTH;
+  const mentalStrength = mentalStrengthOf(classId);
   const total = mentalStrength + getSanityModifierFromWisdom(wisdom) + Math.floor(level / 2);
   return Math.min(MAX_SANITY_CAP, Math.max(0, total));
 }
 
-export const maxSanityOf = (character: Pick<Character, 'class' | 'attributes' | 'level'>): number =>
-  calculateMaxSanity(character.class, attributeScore(character, 'wisdom'), character.level);
+export const maxSanityOf = (character: Pick<Character, 'class' | 'attributes' | 'level' | 'build'>): number =>
+  calculateMaxSanity(character.build?.class ?? character.class, attributeScore(character, 'wisdom'), character.level);
 
 export const clampSanity = (value: number, maxSanity: number): number => Math.min(maxSanity, Math.max(0, value));
 
