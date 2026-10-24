@@ -504,7 +504,7 @@
   }
   /* The optics' HUD in the screen's margins: thin condensed type in red, figures in cyan. */
   .cp-hud { position: absolute; inset: 0; color: rgb(var(--c-frame-bright)); font-family: var(--setting-display); text-shadow: 0 0 6px rgb(var(--c-frame-bright) / 0.6); }
-  .ui-world .cp-hud { display: none; }
+  & > .ui-world .cp-hud { display: none; }
   .cp-heading { filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.6)); }
   .cp-heading text { font-family: var(--setting-display); }
   .cp-status { display: grid; gap: 7px; font-size: 11px; letter-spacing: 0.14em; }
@@ -624,8 +624,8 @@
 /* Jacking in: on hover the reticle locks onto the emblem segment by segment, the picture tears
    once, scan lines sweep and the name splits into red and cyan. */
 [data-setting='cyberpunk'] {
-  .ui-world { border-color: rgb(var(--c-frame) / 0.7); clip-path: var(--cut-shape); }
-  .ui-world::after {
+  & > .ui-world { border-color: rgb(var(--c-frame) / 0.7); clip-path: var(--cut-shape); }
+  & > .ui-world::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -635,20 +635,20 @@
     background:
       linear-gradient(180deg, transparent, rgb(var(--c-neon) / 0.18) 48%, rgb(var(--c-neon) / 0.45) 50%, transparent 52%) 0 -100% / 100% 60% no-repeat;
   }
-  .ui-world__name { font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
-  .ui-world__emblem { color: rgb(var(--c-frame-bright)); }
-  .ui-world__sigil { width: 196px; height: 196px; }
+  & > .ui-world .ui-world__name { font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+  & > .ui-world .ui-world__emblem { color: rgb(var(--c-frame-bright)); }
+  & > .ui-world .ui-world__sigil { width: 196px; height: 196px; }
   .cp-sigil { color: rgb(var(--c-frame-bright)); opacity: 0.4; transition: opacity 300ms; }
   .cp-sigil__ring { transform-origin: 0 0; }
   .cp-sigil__lock { opacity: 0; transition: opacity 200ms 300ms; }
-  .ui-world:hover { border-color: rgb(var(--c-frame-bright)); transform: none; animation: cp-glitch 300ms steps(2) 1; }
-  .ui-world:hover::after { opacity: 1; animation: cp-world-scan 900ms ease-out forwards; }
-  .ui-world:hover .ui-world__emblem { color: rgb(var(--c-accent)); }
-  .ui-world:hover .ui-world__name { color: rgb(var(--c-ink)); text-shadow: -2px 0 rgb(var(--c-frame-bright) / 0.8), 2px 0 rgb(var(--c-neon) / 0.7); }
-  .ui-world:hover .cp-sigil { opacity: 1; }
-  .ui-world:hover .cp-sigil__ring { animation: cp-turn 18s linear infinite; }
-  .ui-world:hover .cp-sigil__seg { animation: cp-lock 500ms steps(2) both; }
-  .ui-world:hover .cp-sigil__lock { opacity: 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) { border-color: rgb(var(--c-frame-bright)); transform: none; animation: cp-glitch 300ms steps(2) 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { opacity: 1; animation: cp-world-scan 900ms ease-out forwards; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { color: rgb(var(--c-accent)); }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__name { color: rgb(var(--c-ink)); text-shadow: -2px 0 rgb(var(--c-frame-bright) / 0.8), 2px 0 rgb(var(--c-neon) / 0.7); }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .cp-sigil { opacity: 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .cp-sigil__ring { animation: cp-turn 18s linear infinite; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .cp-sigil__seg { animation: cp-lock 500ms steps(2) both; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .cp-sigil__lock { opacity: 1; }
 }
 @keyframes cp-world-scan {
   from { background-position: 0 -100%; }
@@ -659,7 +659,7 @@
   100% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='cyberpunk'] .ui-world:hover,
-  [data-setting='cyberpunk'] .ui-world:hover :is(.cp-sigil__ring, .cp-sigil__seg),
-  [data-setting='cyberpunk'] .ui-world:hover::after { animation: none; }
+  [data-setting='cyberpunk'] > :is(.ui-world:hover, .ui-world[aria-pressed='true']),
+  [data-setting='cyberpunk'] > :is(.ui-world:hover, .ui-world[aria-pressed='true']) :is(.cp-sigil__ring, .cp-sigil__seg),
+  [data-setting='cyberpunk'] > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { animation: none; }
 }

@@ -1607,8 +1607,8 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 }
 /* Hover wakes the world (each setting adds its own marvel); the chosen world keeps a calm mark —
    a bright rim and a lit scene — so hovering it still wakes it. */
-.ui-world:hover { transform: translateY(-4px); border-color: rgb(var(--c-frame-bright) / 0.8); }
-.ui-world:hover .ui-world__scene { opacity: 1; transform: scale(1.05); }
+:is(.ui-world:hover, .ui-world[aria-pressed='true']) { transform: translateY(-4px); border-color: rgb(var(--c-frame-bright) / 0.8); }
+:is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__scene { opacity: 1; transform: scale(1.05); }
 .ui-world[aria-pressed='true'] { border-color: rgb(var(--c-frame-bright)); }
 .ui-world[aria-pressed='true'] .ui-world__scene { opacity: 1; }
 .ui-world[aria-pressed='true'] .ui-world__name { color: rgb(var(--c-frame-bright)); }

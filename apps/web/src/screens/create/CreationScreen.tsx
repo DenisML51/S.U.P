@@ -92,7 +92,7 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
       issues: worldChosen ? [] : ['Мир'],
       stage: true,
       content: (
-        <div className="mx-auto grid h-[28rem] w-full max-w-6xl grid-cols-4 gap-5">
+        <div className="mx-auto grid h-[28rem] w-full max-w-7xl grid-cols-5 gap-4">
           {SETTINGS.map((id) => (
             <WorldCard
               key={id}
@@ -101,7 +101,6 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
               onSelect={() => {
                 setSetting(id);
                 setWorldChosen(true);
-                setIndex(1);
               }}
             />
           ))}
@@ -203,50 +202,69 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
     </AnimatePresence>
   );
 
+  const backToHeroes = (
+    <Button
+      variant="ghost"
+      size="sm"
+      icon={<IconPrev width={16} height={16} />}
+      className="self-start"
+      onClick={() => {
+        clearDraft();
+        onDone();
+      }}
+    >
+      Герои
+    </Button>
+  );
+
   return (
     <SettingScope setting={setting} className={cx('ui-morph flex h-screen overflow-clip bg-bg', !worldChosen && 'ui-service')}>
-      <aside className="flex w-60 shrink-0 flex-col border-r border-line/50 px-4 py-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<IconPrev width={16} height={16} />}
-          className="self-start"
-          onClick={() => {
-            clearDraft();
-            onDone();
-          }}
-        >
-          Герои
-        </Button>
-        <h1 className="ui-display ui-title mb-4 mt-6 px-2 text-xl text-frame-bright">Новый герой</h1>
-        <nav className="ui-scroll flex min-h-0 flex-col gap-0.5 overflow-y-auto" aria-label="Шаги">
-          {steps.map((s, i) => {
-            const done = i !== index && s.issues.length === 0 && reachable(i);
-            return (
-              <button
-                key={s.id}
-                type="button"
-                className="ui-steps__item"
-                aria-current={i === index ? 'step' : undefined}
-                data-done={done || undefined}
-                disabled={!reachable(i)}
-                onClick={() => setIndex(i)}
-              >
-                <span className="ui-steps__mark">
-                  <span>{done ? <IconCheck width={12} height={12} /> : i + 1}</span>
-                </span>
-                <span className="ui-steps__label">{s.label}</span>
-                <span className="ui-steps__value">{s.value ?? (i === index ? 'выбор…' : '—')}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
+      {/* The steps appear once the world is behind: choosing a world is a stage of its own. */}
+      <AnimatePresence initial={false}>
+        {index > 0 && (
+          <motion.aside
+            key="steps"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 240, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="flex shrink-0 flex-col overflow-hidden border-r border-line/50"
+          >
+            <div className="flex min-h-0 w-60 flex-1 flex-col px-4 py-6">
+              {backToHeroes}
+              <h1 className="ui-display ui-title mb-4 mt-6 px-2 text-xl text-frame-bright">Новый герой</h1>
+              <nav className="ui-scroll flex min-h-0 flex-col gap-0.5 overflow-y-auto" aria-label="Шаги">
+                {steps.map((s, i) => {
+                  const done = i !== index && s.issues.length === 0 && reachable(i);
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className="ui-steps__item"
+                      aria-current={i === index ? 'step' : undefined}
+                      data-done={done || undefined}
+                      disabled={!reachable(i)}
+                      onClick={() => setIndex(i)}
+                    >
+                      <span className="ui-steps__mark">
+                        <span>{done ? <IconCheck width={12} height={12} /> : i + 1}</span>
+                      </span>
+                      <span className="ui-steps__label">{s.label}</span>
+                      <span className="ui-steps__value">{s.value ?? (i === index ? 'выбор…' : '—')}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
       <div className="flex min-w-0 flex-1 flex-col">
         {step.stage ? (
           // A stage step (the world, the path): its question on top, its choices centred in the room left.
-          <main className="flex min-h-0 flex-1 flex-col px-10 pt-8">
+          <main className="relative flex min-h-0 flex-1 flex-col px-10 pt-8">
+            {index === 0 && <div className="absolute left-4 top-6">{backToHeroes}</div>}
             <h2 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">{step.question}</h2>
             <div className="flex min-h-0 flex-1 items-center">{content}</div>
           </main>

@@ -548,11 +548,11 @@
 /* A window onto Yharnam: on hover a candle is brought close — warm light rises from below, the
    emblem's flame trembles and the brass rim catches the light. */
 [data-setting='dark-fantasy'] {
-  .ui-world {
+  & > .ui-world {
     border-color: rgb(var(--c-frame) / 0.6);
     box-shadow: inset 0 0 0 3px rgb(var(--c-bg)), inset 0 0 0 4px rgb(var(--c-frame) / 0.25), inset 0 0 80px rgb(0 0 0 / 0.7), var(--shadow-panel);
   }
-  .ui-world::after {
+  & > .ui-world::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -563,22 +563,22 @@
     transform: translateY(30%);
     transition: opacity 700ms, transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .ui-world__name { font-weight: 400; letter-spacing: 0.02em; }
-  .ui-world:hover::after { opacity: 1; transform: none; }
-  .ui-world:hover .ui-world__emblem { color: rgb(var(--c-candle)); animation: df-world-flame 1.8s ease-in-out infinite; }
-  .ui-world:hover .ui-world__name { color: rgb(var(--c-frame-bright)); }
+  & > .ui-world .ui-world__name { font-weight: 400; letter-spacing: 0.02em; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { opacity: 1; transform: none; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { color: rgb(var(--c-candle)); animation: df-world-flame 1.8s ease-in-out infinite; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__name { color: rgb(var(--c-frame-bright)); }
 }
 
 /* The rune ring round the emblem: faint at rest; looked at, the runes burn in turn and it turns. */
 [data-setting='dark-fantasy'] {
-  .ui-world { gap: 3.4rem; }
-  .ui-world__sigil { width: 190px; height: 190px; }
+  & > .ui-world { gap: 3.4rem; }
+  & > .ui-world .ui-world__sigil { width: 190px; height: 190px; }
   .df-sigil { color: rgb(var(--c-frame)); opacity: 0.35; transition: opacity 600ms, color 600ms; }
   /* The ring is drawn round the origin of its viewBox, so it turns about 0 0. */
   .df-sigil__ring { transform-origin: 0 0; }
-  .ui-world:hover .df-sigil { color: rgb(var(--c-candle)); opacity: 1; }
-  .ui-world:hover .df-sigil__ring { animation: df-sigil-turn 40s linear infinite; }
-  .ui-world:hover .df-sigil__rune { animation: df-sigil-burn 2.64s ease-in-out infinite; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .df-sigil { color: rgb(var(--c-candle)); opacity: 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .df-sigil__ring { animation: df-sigil-turn 40s linear infinite; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .df-sigil__rune { animation: df-sigil-burn 2.64s ease-in-out infinite; }
 }
 
 @keyframes df-sigil-turn { to { transform: rotate(360deg); } }
@@ -594,5 +594,5 @@
   60% { filter: drop-shadow(0 0 8px rgb(var(--c-candle) / 0.4)); transform: translateY(0) rotate(0.5deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='dark-fantasy'] .ui-world :is(.ui-world__emblem, .df-sigil__ring, .df-sigil__rune) { animation: none; }
+  [data-setting='dark-fantasy'] > .ui-world :is(.ui-world__emblem, .df-sigil__ring, .df-sigil__rune) { animation: none; }
 }
