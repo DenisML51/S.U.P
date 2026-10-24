@@ -20,6 +20,9 @@ export const weaponAttack = (item: InventoryItem): Attack => ({
   usesAmmunition: item.weaponClass === 'ranged',
   ammunitionCost: 1,
   attribute: item.weaponClass === 'melee' ? 'strength' : 'dexterity',
+  // The attack shows the weapon's own picture.
+  iconName: item.iconName,
+  color: item.color,
 });
 
 const isBodyArmor = (item: InventoryItem) => item.type === 'armor' && !isShield(item);

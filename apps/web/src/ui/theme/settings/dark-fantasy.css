@@ -430,10 +430,16 @@
     font-variant: small-caps;
     background: linear-gradient(180deg, rgb(var(--tag-tone) / 0.16), rgb(var(--tag-tone) / 0.04));
   }
+  .ui-option { color: rgb(var(--c-ink-muted)); }
+  .ui-option:not(:disabled):hover { color: rgb(var(--c-ink)); }
+  /* The chosen option is sealed in blood lacquer under a brass rim, lit from below. */
   .ui-option[aria-pressed='true'] {
-    background: radial-gradient(100% 120% at 50% 120%, rgb(var(--c-candle) / 0.18), transparent 70%), rgb(var(--c-frame) / 0.1);
-    border-color: rgb(var(--c-frame-bright) / 0.7);
-    box-shadow: inset 0 0 0 3px rgb(var(--c-surface)), inset 0 0 0 4px rgb(var(--c-frame-bright) / 0.35), inset 4px 0 0 rgb(var(--c-accent));
+    color: rgb(var(--c-frame-bright));
+    background:
+      radial-gradient(100% 120% at 50% 130%, rgb(var(--c-candle) / 0.25), transparent 70%),
+      linear-gradient(180deg, rgb(var(--c-accent) / 0.45), rgb(var(--c-accent) / 0.2));
+    border-color: rgb(var(--c-frame-bright) / 0.8);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.08);
   }
   .ui-steps__label { font-family: var(--font-display); font-size: 1rem; }
 

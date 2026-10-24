@@ -4,6 +4,7 @@ import { spellColor } from '../content/combat';
 import { abilityModifier } from '../rules/abilities';
 import { averageHitPoints } from '../rules/rest';
 import { DND } from './content';
+import { DND_ICONS } from './content/icons';
 import { proficiencyForLevel, resolveAmount } from './helpers';
 import type {
   AttributeId,
@@ -896,6 +897,7 @@ export function choiceOptions(build: Build, level: number, open: OpenChoice): Op
             description: mastery?.description ?? '',
             meta: `${mastery?.name ?? w.mastery} · ${w.damage} ${w.damageType.toLowerCase()}`,
             group: `${w.category === 'simple' ? 'Простое' : 'Воинское'} ${w.kind === 'melee' ? 'рукопашное' : 'дальнобойное'}`,
+            iconName: DND_ICONS.weapons[w.id],
             disabled: taken.has(w.id) ? 'Уже выбрано' : undefined,
           };
         });

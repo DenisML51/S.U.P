@@ -238,6 +238,7 @@ const vengeance: SubclassDef = {
 const fightingStyle: FeatureDef = {
   id: 'paladin.fighting-style',
   name: 'Боевой стиль',
+  iconName: 'crossed-swords',
   description: 'Вы получаете черту боевого стиля на свой выбор или становитесь Благословлённым воином: изучаете два заговора жреца, которые творите Харизмой.',
   choices: [
     {
@@ -269,6 +270,7 @@ const fightingStyle: FeatureDef = {
               {
                 id: 'paladin.blessed-warrior',
                 name: 'Благословлённый воин',
+                iconName: 'holy-symbol',
                 description: 'Вы знаете два заговора жреца и творите их Харизмой. Повышая уровень паладина, можно заменить один из них.',
                 choices: [
                   { id: 'cantrips', label: 'Заговоры жреца (2)', count: 2, spellAbility: 'charisma', options: { from: 'spells', lists: ['cleric'], maxLevel: 0 } },
@@ -332,6 +334,7 @@ export const PALADIN: ClassDef = {
       {
         id: 'paladin.weapon-mastery',
         name: 'Оружейное мастерство',
+        iconName: 'broadsword',
         description: 'Вы используете свойства мастерства двух видов оружия. После продолжительного отдыха один вид можно заменить.',
         choices: [weaponMasteryChoice(2, 'Оружейное мастерство (2)')],
       },
@@ -378,6 +381,7 @@ export const PALADIN: ClassDef = {
       {
         id: 'paladin.faithful-steed',
         name: 'Верный скакун',
+        iconName: 'hunting-horn',
         description: 'Заклинание «Поиск скакуна» у вас всегда подготовлено. Раз в продолжительный отдых вы можете сотворить его без ячейки.',
         action: 'passive',
         resource: { id: 'paladin.faithful-steed', name: 'Скакун без ячейки', max: 1, recharge: 'long' },
@@ -406,6 +410,7 @@ export const PALADIN: ClassDef = {
       {
         id: 'paladin.aura-of-courage',
         name: 'Аура отваги',
+        iconName: 'aura',
         description: 'Вы и союзники в вашей Ауре защиты не можете быть испуганы. Если испуганное существо входит в ауру, состояние на нём не действует, пока оно там.',
         action: 'passive',
       },
@@ -426,6 +431,7 @@ export const PALADIN: ClassDef = {
       {
         id: 'paladin.restoring-touch',
         name: 'Восстанавливающее касание',
+        iconName: 'healing',
         description: 'Используя Наложение рук, вы также можете снять с цели состояния «Ослеплён», «Очарован», «Оглохший», «Испуган», «Парализован» или «Ошеломлён» — по 5 единиц запаса за каждое.',
         action: 'passive',
       },
@@ -435,6 +441,7 @@ export const PALADIN: ClassDef = {
       {
         id: 'paladin.aura-expansion',
         name: 'Расширение ауры',
+        iconName: 'sunbeams',
         description: 'Радиус вашей Ауры защиты увеличивается до 30 футов.',
         action: 'passive',
       },

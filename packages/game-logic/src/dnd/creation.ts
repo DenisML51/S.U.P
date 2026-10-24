@@ -9,6 +9,7 @@ import { experienceForLevel } from '../rules/progression';
 import { maxSanityOf } from '../rules/sanity';
 import { applyBuild, findBackground, findClass, spellcastingOf, type OpenChoice } from './build';
 import { DND } from './content';
+import { DND_ICONS } from './content/icons';
 import type { KitOption } from './types';
 
 /** A starting kit option of the build's class or background, by its id. */
@@ -44,6 +45,7 @@ export function kitItems(kit: KitOption): InventoryItem[] {
           damage: weapon.damage,
           damageType: weapon.damageType,
           ammunitionType: weapon.ammunition,
+          iconName: DND_ICONS.weapons[weapon.id],
           description: [weapon.properties.join(', '), mastery && `Мастерство: ${mastery.name}`].filter(Boolean).join('\n\n'),
         },
       ];

@@ -1,8 +1,8 @@
 /**
- * Pictures (game-icons ids) of species, backgrounds, classes and subclasses, for the choosing grids
- * of the creation screen and the hero summary.
+ * Pictures (game-icons ids) of species, backgrounds, classes, subclasses and weapons, for the choosing
+ * grids of the creation screen, the hero summary and the items and attacks made from the tables.
  */
-export const DND_ICONS: Record<'species' | 'backgrounds' | 'classes' | 'subclasses', Record<string, string>> = {
+export const DND_ICONS: Record<'species' | 'backgrounds' | 'classes' | 'subclasses' | 'weapons', Record<string, string>> = {
   species: {
     aasimar: 'angel-wings',
     dragonborn: 'dragon-head',
@@ -46,5 +46,45 @@ export const DND_ICONS: Record<'species' | 'backgrounds' | 'classes' | 'subclass
     'oath-of-glory': 'crested-helmet',
     'oath-of-the-ancients': 'oak',
     'oath-of-vengeance': 'sword-in-stone',
+  },
+  weapons: {
+    club: 'spiked-mace',
+    dagger: 'plain-dagger',
+    greatclub: 'spiked-mace',
+    handaxe: 'battle-axe',
+    javelin: 'barbed-spear',
+    'light-hammer': 'warhammer',
+    mace: 'spiked-mace',
+    quarterstaff: 'wizard-staff',
+    sickle: 'reaper-scythe',
+    spear: 'barbed-spear',
+    dart: 'thrown-daggers',
+    'light-crossbow': 'crossbow',
+    shortbow: 'bow-arrow',
+    sling: 'thrown-daggers',
+    battleaxe: 'battle-axe',
+    flail: 'spiked-mace',
+    glaive: 'reaper-scythe',
+    greataxe: 'battle-axe',
+    greatsword: 'broadsword',
+    halberd: 'reaper-scythe',
+    lance: 'barbed-spear',
+    longsword: 'broadsword',
+    maul: 'warhammer',
+    morningstar: 'spiked-mace',
+    pike: 'barbed-spear',
+    rapier: 'saber-slash',
+    scimitar: 'saber-slash',
+    shortsword: 'broadsword',
+    trident: 'trident',
+    warhammer: 'warhammer',
+    'war-pick': 'warhammer',
+    whip: 'whip',
+    blowgun: 'thrown-daggers',
+    'hand-crossbow': 'crossbow',
+    'heavy-crossbow': 'crossbow',
+    longbow: 'bow-arrow',
+    musket: 'rifle',
+    pistol: 'pistol-gun',
   },
 };
