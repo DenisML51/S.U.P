@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   CONDITIONS,
   INJURY_DESCRIPTIONS,
@@ -15,7 +15,8 @@ import type { Character, Limb, ResistanceLevel } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { Ledger, LedgerRow } from '../../../ui/Ledger';
 import { IconButton, Meter, Panel, SectionTitle, cx } from '../../../ui/primitives';
-import { IconMinus, IconPlus } from '../../../ui/icons';
+import { IconClose, IconMinus, IconPlus } from '../../../ui/icons';
+import { CONDITION_ICONS, CatalogIcon } from '../../../ui/GameIcon';
 import { ArmorClassSum } from '../parts/ArmorClassSum';
 import { useSheetDialogs } from '../dialogs/context';
 
@@ -101,7 +102,9 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
   const dialogs = useSheetDialogs();
   const armorClass = armorClassBreakdown(character);
   const active = new Set(character.conditions);
-  const conditions = [...CONDITIONS].sort((a, b) => Number(active.has(b.id)) - Number(active.has(a.id)));
+  const current = CONDITIONS.filter((c) => active.has(c.id));
+  const others = CONDITIONS.filter((c) => !active.has(c.id));
+  const [marking, setMarking] = useState(false);
 
   const changeLimb = (limb: Limb, delta: number) => updateCharacter((doc) => changeLimbHP(doc, limb.id, delta));
 
@@ -164,21 +167,46 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
         </section>
       </div>
 
-      <Ledger className="max-h-full self-start" title="Состояния" aside={<span>{active.size > 0 ? `действует: ${active.size}` : 'нет'}</span>}>
-        {conditions.map((condition) => {
-          const on = active.has(condition.id);
-          return (
-            <LedgerRow
-              key={condition.id}
-              title={condition.name}
-              meta={on ? condition.description : undefined}
-              wrapMeta
-              dim={!on}
-              active={on}
-              onOpen={() => toggleCondition(condition.id, condition.name)}
-            />
-          );
-        })}
+      {/* What acts on the hero now, in full; the rest wait folded behind "Отметить состояние". */}
+      <Ledger
+        className="max-h-full self-start"
+        title="Состояния"
+        aside={<span>{active.size > 0 ? `действует: ${active.size}` : 'нет'}</span>}
+        addLabel={marking ? 'Свернуть' : 'Отметить состояние'}
+        onAdd={() => setMarking(!marking)}
+      >
+        {current.map((condition) => (
+          <LedgerRow
+            key={condition.id}
+            title={condition.name}
+            meta={condition.description}
+            wrapMeta
+            active
+            onOpen={() => toggleCondition(condition.id, condition.name)}
+            action={
+              <IconButton label={`Снять: ${condition.name}`} size={26} onClick={() => toggleCondition(condition.id, condition.name)}>
+                <IconClose width={14} height={14} />
+              </IconButton>
+            }
+          />
+        ))}
+        {current.length === 0 && !marking && <li className="py-4 text-sm opacity-60">Ничто не мешает герою</li>}
+        {marking && (
+          <li className="flex flex-wrap gap-1.5 py-3">
+            {others.map((condition) => (
+              <button
+                key={condition.id}
+                type="button"
+                className="ui-chip flex items-center gap-1.5"
+                title={condition.description}
+                onClick={() => toggleCondition(condition.id, condition.name)}
+              >
+                <CatalogIcon id={CONDITION_ICONS[condition.id] ?? 'terror'} size={14} />
+                {condition.name}
+              </button>
+            ))}
+          </li>
+        )}
       </Ledger>
     </div>
   );

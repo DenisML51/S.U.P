@@ -17,7 +17,7 @@ import { Button, Field, IconButton, Input } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
 import { IconMinus, IconPlus } from '../../../ui/icons';
 import { damageParts } from '../parts/damage';
-import { useInventory } from '../useInventory';
+import { useInventory, withBuild } from '../useInventory';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
 import {
   CardRule,
@@ -104,10 +104,10 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
         weaponClass: weapon ? (draft.weaponClass ?? 'melee') : undefined,
       };
       updateCharacter(
-        (doc) => saveItem(doc, saved),
+        (doc) => withBuild(saveItem(doc, saved)),
         entry ? undefined : { log: { message: `Получен предмет: ${saved.name}`, type: 'inventory' } },
       );
-      if (entry) stopEditing();
+      if (entry && !edit) stopEditing();
       else onClose();
     };
     return (
@@ -121,7 +121,7 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
         eyebrow={entry ? 'Предмет · правка' : 'Новый предмет'}
         canSave={!!draft.name.trim()}
         onSave={save}
-        onCancel={entry ? stopEditing : onClose}
+        onCancel={entry && !edit ? stopEditing : onClose}
       >
         <EntryNameField kind="item" draft={draft} set={set} />
         <div className="flex items-end gap-5">

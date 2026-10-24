@@ -1,4 +1,4 @@
-import type { ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
+import type { Ability, ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
 import { startConcentration } from './concentration';
 import { changeItemQuantity, itemQuantity } from './inventory';
 import { changeResource } from './resources';
@@ -33,6 +33,14 @@ export function setActionLimit(character: Character, slot: ActionSlot, limit: nu
   const spent = spentActionsOf(character);
   return { ...character, actionLimits: limits, spentActions: { ...spent, [slot]: Math.min(spent[slot], limits[slot]) } };
 }
+
+/**
+ * Whether an ability can be used from the sheet: anything that takes an action, and a passive one
+ * that spends uses (Sacred Weapon spends Channel Divinity as part of the Attack action) — that one
+ * costs no action of its own.
+ */
+export const isUsable = (ability: Pick<Ability, 'actionType' | 'resourceId'>): boolean =>
+  ability.actionType !== 'passive' || !!ability.resourceId;
 
 /** A new turn: every action is available again. */
 export const resetTurn = (character: Character): Character => ({ ...character, spentActions: { ...NO_SPENT_ACTIONS } });
@@ -112,7 +120,10 @@ export function performAction(character: Character, request: PerformActionReques
         : character.spells.find((s) => s.id === request.id);
   if (!source) return fail('not_found', 'Действие не найдено');
   const slot = source.actionType;
-  if (slot === 'passive') return fail('passive', `«${source.name}» — пассивная способность`);
+  const free = slot === 'passive';
+  if (free && !(request.kind === 'ability' && isUsable(source as Ability))) {
+    return fail('passive', `«${source.name}» — пассивная способность`);
+  }
   if (request.kind === 'spell' && !(source as Character['spells'][number]).prepared) {
     return fail('not_prepared', `Заклинание «${source.name}» не подготовлено`);
   }
@@ -120,12 +131,12 @@ export function performAction(character: Character, request: PerformActionReques
   let next = character;
   const costs: PerformActionCosts = {};
 
-  if (request.trackActionEconomy) {
-    if (remainingActions(next, slot) === 0) {
+  if (request.trackActionEconomy && !free) {
+    if (remainingActions(next, slot as ActionSlot) === 0) {
       return fail('no_action_left', `Не осталось действий: ${ACTION_SLOT_NAMES[slot]}`);
     }
-    next = setSpentActions(next, slot, spentActionsOf(next)[slot] + 1);
-    costs.slot = slot;
+    next = setSpentActions(next, slot as ActionSlot, spentActionsOf(next)[slot as ActionSlot] + 1);
+    costs.slot = slot as ActionSlot;
   }
 
   // A spell cast with a chosen slot spends that slot instead of the one of its own level.

@@ -1,5 +1,5 @@
 import React from 'react';
-import { createEntityId, removeById, upsertById } from '@itd/game-logic';
+import { createEntityId, isUsable, removeById, upsertById } from '@itd/game-logic';
 import type { Ability, ActionType, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
@@ -71,7 +71,7 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
         resourceCost: draft.resourceId ? (draft.resourceCost ?? 1) : undefined,
       };
       updateCharacter((doc) => ({ ...doc, abilities: upsertById(doc.abilities, saved) }));
-      if (entry) stopEditing();
+      if (entry && !edit) stopEditing();
       else onClose();
     };
     return (
@@ -85,7 +85,7 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
         eyebrow={entry ? 'Способность · правка' : 'Новая способность'}
         canSave={!!draft.name.trim()}
         onSave={save}
-        onCancel={entry ? stopEditing : onClose}
+        onCancel={entry && !edit ? stopEditing : onClose}
       >
         <EntryNameField kind="ability" draft={draft} set={set} />
         <div className="flex items-end gap-5">
@@ -146,7 +146,7 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
   if (!entry) return null;
   const parts = damageParts(entry);
   const cost = costLabel(character, entry.resourceId, entry.resourceCost);
-  const passive = entry.actionType === 'passive';
+  const passive = !isUsable(entry);
 
   return (
     <EntryView
@@ -159,7 +159,7 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
       eyebrow={
         passive
           ? 'Способность · действует всегда'
-          : `Способность · ${ACTION_TYPES[entry.actionType].short}${entry.concentration ? ' · концентрация' : ''}`
+          : `Способность · ${entry.actionType === 'passive' ? 'без действия' : ACTION_TYPES[entry.actionType].short}${entry.concentration ? ' · концентрация' : ''}`
       }
       onEdit={startEditing}
       primary={

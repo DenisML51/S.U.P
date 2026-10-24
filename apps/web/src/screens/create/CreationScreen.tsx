@@ -2,11 +2,11 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { findBackground, findClass, findSubclass, pointsRemaining } from '@itd/game-logic';
 import { SETTINGS, DEFAULT_SETTING, type Setting } from '@itd/schema';
-import { SettingEmblem } from '../../ui/art/emblems';
 import { Button, Panel, cx } from '../../ui/primitives';
-import { IconCheck, IconPrev } from '../../ui/icons';
+import { IconCheck, IconDice, IconPrev, IconQuill } from '../../ui/icons';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
+import { WorldCard } from './WorldCard';
 import { HeroSummary } from './HeroSummary';
 import { TrainingChoice } from './parts';
 import { OriginStep, PointBuyStep } from './custom/steps';
@@ -50,6 +50,22 @@ const BigChoice: React.FC<{ selected: boolean; onSelect: () => void; children: R
   </Panel>
 );
 
+/**
+ * Brings the field an issue names into view on the step's panel and flashes it. Issues carry the
+ * field's title, prefixed with its level on the level plan ("1: Навыки").
+ */
+function revealIssue(issue: string) {
+  const title = issue.replace(/^\d+:\s*/, '');
+  const panel = document.querySelector('[data-creation-panel]');
+  const field = [...(panel?.querySelectorAll('h3, h4, h5, label, .ui-label') ?? [])].find((el) => el.textContent?.trim().startsWith(title));
+  const target = field?.closest('section') ?? field;
+  if (!target) return;
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  target.classList.remove('ui-flash');
+  void (target as HTMLElement).offsetWidth;
+  target.classList.add('ui-flash');
+}
+
 const METHOD_NAMES = { pointBuy: 'Покупка очков', roll: 'Бросок 4к6', manual: 'Вручную' } as const;
 
 /**
@@ -76,23 +92,18 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
       issues: worldChosen ? [] : ['Мир'],
       stage: true,
       content: (
-        <div className="mx-auto grid h-[26rem] max-w-6xl grid-cols-4 gap-5 [margin-top:max(0px,calc(50vh-22rem))]">
+        <div className="mx-auto grid h-[28rem] w-full max-w-5xl grid-cols-3 gap-6">
           {SETTINGS.map((id) => (
-            <SettingScope key={id} setting={id} className="h-full">
-              <BigChoice
-                selected={worldChosen && setting === id}
-                onSelect={() => {
-                  setSetting(id);
-                  setWorldChosen(true);
-                  setIndex(1);
-                }}
-                className="flex h-full w-full flex-col items-center justify-center px-6 text-center"
-              >
-                <SettingEmblem size={64} className="mx-auto text-frame-bright" />
-                <span className="ui-display ui-title mt-6 block text-2xl leading-tight text-ink">{SETTING_INFO[id].label}</span>
-                <span className="mt-3 block text-sm text-ink-muted">{SETTING_INFO[id].hint}</span>
-              </BigChoice>
-            </SettingScope>
+            <WorldCard
+              key={id}
+              setting={id}
+              selected={worldChosen && setting === id}
+              onSelect={() => {
+                setSetting(id);
+                setWorldChosen(true);
+                setIndex(1);
+              }}
+            />
           ))}
         </div>
       ),
@@ -105,15 +116,17 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
       issues: path ? [] : ['Путь'],
       stage: true,
       content: (
-        <div className="mx-auto grid h-[22rem] max-w-4xl grid-cols-2 gap-5 [margin-top:max(0px,calc(50vh-20rem))]">
+        <div className="mx-auto grid h-[22rem] w-full max-w-4xl grid-cols-2 gap-5">
           <BigChoice selected={path === 'dnd'} onSelect={() => { setPath('dnd'); setIndex(2); }} className="flex flex-col justify-center px-8">
+            <IconDice width={52} height={52} className="mb-5 text-frame-bright" />
             <span className="ui-display ui-title block text-[1.8rem] leading-tight text-frame-bright">По правилам D&D 2024</span>
             <span className="mt-3 block text-ink-muted">
               Виды, предыстории и классы Книги игрока. Умения, ячейки и выборы приходят сами с каждым уровнем.
             </span>
-            <span className="mt-4 block text-sm text-ink-faint">Сейчас: паладин и воин со всеми подклассами</span>
+            <span className="mt-4 block text-sm text-ink-faint">12 классов, 48 подклассов и все заклинания Книги игрока</span>
           </BigChoice>
           <BigChoice selected={path === 'custom'} onSelect={() => { setPath('custom'); setIndex(2); }} className="flex flex-col justify-center px-8">
+            <IconQuill width={52} height={52} className="mb-5 text-frame-bright" />
             <span className="ui-display ui-title block text-[1.8rem] leading-tight text-frame-bright">Свой герой</span>
             <span className="mt-3 block text-ink-muted">
               Раса, класс и всё остальное — своими словами. Лист заполняете сами, по правилам вашего стола.
@@ -179,7 +192,7 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={step.id}
-        className="h-full min-h-0"
+        className={cx('min-h-0', step.stage ? 'w-full' : 'h-full')}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
@@ -191,7 +204,7 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
   );
 
   return (
-    <SettingScope setting={setting} className={cx('ui-morph flex h-screen overflow-hidden bg-bg', !worldChosen && 'ui-service')}>
+    <SettingScope setting={setting} className={cx('ui-morph flex h-screen overflow-clip bg-bg', !worldChosen && 'ui-service')}>
       <aside className="flex w-60 shrink-0 flex-col border-r border-line/50 px-4 py-6">
         <Button
           variant="ghost"
@@ -232,9 +245,10 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
 
       <div className="flex min-w-0 flex-1 flex-col">
         {step.stage ? (
-          <main className="min-h-0 flex-1 px-10 pt-8">
+          // A stage step (the world, the path): its question on top, its choices centred in the room left.
+          <main className="flex min-h-0 flex-1 flex-col px-10 pt-8">
             <h2 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">{step.question}</h2>
-            {content}
+            <div className="flex min-h-0 flex-1 items-center">{content}</div>
           </main>
         ) : (
           <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_20rem] gap-6 px-6 pt-6">
@@ -242,7 +256,9 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
               <h2 className="ui-display ui-title border-b border-line/60 px-6 py-4 text-center text-[1.5rem] leading-tight text-frame-bright">
                 {step.question}
               </h2>
-              <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5">{content}</div>
+              <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5" data-creation-panel>
+                {content}
+              </div>
             </Panel>
             <HeroSummary sheet={summary} setting={setting} images={images} classIcon={path === 'dnd' ? build.class : undefined} />
           </main>
@@ -264,7 +280,19 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
               </Button>
             )}
           </div>
-          <span className="truncate text-sm text-ink-faint">{step.issues.length > 0 && `Осталось выбрать: ${step.issues.join(', ')}`}</span>
+          {/* What is left on this step: each one a link to its field on the panel. */}
+          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm text-ink-faint">
+            {step.issues.length > 0 && (
+              <>
+                Осталось выбрать:
+                {step.issues.map((issue) => (
+                  <button key={issue} type="button" className="ui-issue-link" onClick={() => revealIssue(issue)}>
+                    {issue}
+                  </button>
+                ))}
+              </>
+            )}
+          </span>
         </footer>
       </div>
     </SettingScope>

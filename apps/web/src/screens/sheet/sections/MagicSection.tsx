@@ -16,9 +16,10 @@ import type { Character, Spell } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { Ledger, LedgerBullet, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
-import { Button, IconButton, Input, Panel, cx } from '../../../ui/primitives';
+import { Button, IconButton, Input, Panel, Tabs } from '../../../ui/primitives';
 import { IconMinus, IconPlus } from '../../../ui/icons';
 import { SectionNotes } from '../parts/EditableText';
+import { SectionAside, SectionList } from '../SectionAside';
 import { useSheetText } from '../useSheetText';
 import { ConcentrationMark } from '../Concentration';
 import { useActs } from '../useActs';
@@ -56,6 +57,8 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
   const slots = slotResourceFor(character, level);
   // A class that prepares N spells of any level (paladin) sets one limit for all circles.
   const classLimit = level > 0 && character.maxPreparedSpells[TOTAL_PREPARED] !== undefined;
+  // A preset caster who knows their spells (bard, warlock) never prepares them: no counter.
+  const known = !!character.build && character.spells.filter((s) => s.level === level).every((s) => s.alwaysPrepared);
   return (
     <span className="flex items-center gap-4">
       {classLimit && (
@@ -64,7 +67,7 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
           <span className="tabular-nums">{limit}</span>
         </span>
       )}
-      {level > 0 && !classLimit && (
+      {level > 0 && !classLimit && !known && (
         <span className="flex items-center gap-1" title="Сколько заклинаний этого круга можно подготовить">
           подготовлено <span className="tabular-nums">{preparedCount(character, level)}</span> из
           <IconButton
@@ -179,46 +182,41 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   };
 
   return (
-    <div className="grid h-full grid-cols-[1fr_270px] gap-8">
-      <div className="flex min-h-0 min-w-0 flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Круг заклинаний">
-            {(['all', ...levels] as LevelFilter[]).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setLevel(option)}
-                aria-current={level === option}
-                className={cx(
-                  'border-b pb-0.5 text-sm transition-colors',
-                  level === option
-                    ? 'border-frame-bright text-ink'
-                    : 'border-transparent text-ink-faint hover:text-ink-muted',
-                )}
-              >
-                {option === 'all' ? 'Все круги' : option === 0 ? 'Заговоры' : option}
-              </button>
-            ))}
-          </nav>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-muted">
-            <input
-              type="checkbox"
-              checked={preparedOnly}
-              onChange={(e) => setPreparedOnly(e.target.checked)}
-              className="accent-[rgb(var(--c-frame-bright))]"
-            />
-            только подготовленные
-          </label>
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Поиск"
-            className="ml-auto !w-48"
+    <div className="flex h-full gap-8">
+      <SectionList>
+        <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
+          <Tabs
+            label="Круг заклинаний"
+            value={String(level)}
+            onChange={(value) => setLevel(value === 'all' ? 'all' : Number(value))}
+            items={(['all', ...levels] as LevelFilter[]).map((option) => ({
+              id: String(option),
+              label: option === 'all' ? 'Все круги' : option === 0 ? 'Заговоры' : `${option} круг`,
+            }))}
           />
         </div>
 
         <Ledger
           title="Книга заклинаний"
+          aside={
+            <>
+              <button
+                type="button"
+                className="ui-chip"
+                aria-pressed={preparedOnly}
+                onClick={() => setPreparedOnly(!preparedOnly)}
+              >
+                подготовленные
+              </button>
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Поиск"
+                className="!h-8 !w-36 text-sm"
+              />
+            </>
+          }
+          className="min-h-0"
           addLabel="Добавить заклинание"
           onAdd={() => dialogs.open({ kind: 'spell' })}
         >
@@ -266,7 +264,8 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
                         ]}
                       />
                     }
-                    onOpen={() => dialogs.open({ kind: 'spell', id: spell.id })}
+                    selected={dialogs.isSelected('spell', spell.id)}
+                    onOpen={() => dialogs.openEntry('spell', spell.id)}
                     action={
                       spell.prepared && (
                         <Button size="row" variant="secondary" onClick={() => cast(spell)}>
@@ -285,9 +284,10 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
             </li>
           )}
         </Ledger>
-      </div>
+      </SectionList>
 
-      <aside className="flex min-h-0 min-w-0 flex-col gap-5">
+      {/* What the book is cast with: the difficulty, the studied schools, notes. */}
+      <SectionAside width={270}>
         <Panel className="px-5 py-4">
           <DifficultyEditor
             name={character.spellcastingDifficultyName ?? 'СЛ заклинаний'}
@@ -297,26 +297,23 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
             }
           />
         </Panel>
-
         {/* Studied schools are a homebrew limit; preset heroes prepare by their class rules. */}
         {!character.build && (
           <section>
-            <h3 className="mb-2 text-xs uppercase tracking-[0.16em] text-ink-muted">Изучаемые школы</h3>
-            <ul className="grid gap-1">
+            <div className="ui-label">Изучаемые школы</div>
+            <div className="flex flex-wrap gap-1.5">
               {SPELL_SCHOOLS.map((school) => (
-                <li key={school}>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-muted hover:text-ink">
-                    <input
-                      type="checkbox"
-                      checked={character.knownSchools.includes(school)}
-                      onChange={() => updateCharacter((doc) => toggleKnownSchool(doc, school))}
-                      className="accent-[rgb(var(--c-frame-bright))]"
-                    />
-                    {school}
-                  </label>
-                </li>
+                <button
+                  key={school}
+                  type="button"
+                  className="ui-chip"
+                  aria-pressed={character.knownSchools.includes(school)}
+                  onClick={() => updateCharacter((doc) => toggleKnownSchool(doc, school))}
+                >
+                  {school}
+                </button>
               ))}
-            </ul>
+            </div>
             {character.knownSchools.length === 0 && (
               <p className="mt-2 text-xs text-ink-faint">
                 Школы не отмечены — можно готовить любые заклинания.
@@ -324,11 +321,10 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
             )}
           </section>
         )}
-
         <div className="mt-auto">
           <SectionNotes value={character.spellsNotes} onSave={saveText('spellsNotes')} />
         </div>
-      </aside>
+      </SectionAside>
     </div>
   );
 };

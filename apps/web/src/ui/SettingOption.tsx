@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Setting } from '@itd/schema';
-import { SettingEmblem } from './art/emblems';
+import { SettingEmblem } from './ornaments';
 import { cx } from './primitives';
 import { SettingScope } from './theme/SettingScope';
 import { SETTING_INFO } from './theme/settings';
@@ -20,11 +20,8 @@ export const SettingOption: React.FC<{ setting: Setting; selected: boolean; onSe
       className={cx('ui-setting-option ui-morph', selected && 'ui-setting-option--selected')}
     >
       <SettingEmblem size={26} className="shrink-0 text-frame-bright" />
-      <span className="min-w-0 text-left">
-        <span className="ui-display ui-title block truncate text-[1.05rem] leading-tight text-ink">
-          {SETTING_INFO[setting].label}
-        </span>
-        <span className="block truncate text-xs text-ink-muted">{SETTING_INFO[setting].hint}</span>
+      <span className="ui-display ui-title min-w-0 truncate text-left text-[1.05rem] leading-tight text-ink">
+        {SETTING_INFO[setting].label}
       </span>
     </button>
   </SettingScope>

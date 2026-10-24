@@ -1,13 +1,16 @@
-import { changeItemQuantity, equipItem, itemQuantity, unequipItem } from '@itd/game-logic';
-import type { InventoryItem } from '@itd/schema';
+import { applyBuild, changeItemQuantity, equipItem, itemQuantity, unequipItem } from '@itd/game-logic';
+import type { Character, InventoryItem } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
+
+/** A preset hero's weapon attacks take their bonuses from the build (proficiency, ability, styles). */
+export const withBuild = (doc: Character): Character => (doc.build ? applyBuild(doc, doc.build).character : doc);
 
 /** Putting on, taking off and counting items; the same from the list and from an item's card. */
 export function useInventory() {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
 
   const toggleEquip = (item: InventoryItem) =>
-    updateCharacter((doc) => (item.equipped ? unequipItem(doc, item.id) : equipItem(doc, item.id)), {
+    updateCharacter((doc) => withBuild(item.equipped ? unequipItem(doc, item.id) : equipItem(doc, item.id)), {
       log: { message: `${item.equipped ? 'Снято' : 'Экипировано'}: ${item.name}`, type: 'inventory' },
     });
 

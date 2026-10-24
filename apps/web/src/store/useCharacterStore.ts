@@ -173,6 +173,16 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     if (get().settings.notifications) toast[kind](message);
   };
 
+  /**
+   * A preset hero picks up improvements of the preset content (damage that grows, saves) the moment
+   * it is opened; the rebuild keeps uses, damage taken and preparation.
+   */
+  const refreshPreset = (character: Character) => {
+    if (!character.build) return;
+    const rebuilt = applyBuild(character, character.build).character;
+    if (!deepEqual(rebuilt, character)) get().updateCharacter(() => rebuilt);
+  };
+
   const replacePreview = (doc: Character) =>
     get().charactersList.map((preview) => (preview.id === doc.id ? toCharacterPreview(doc) : preview));
 
@@ -358,12 +368,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       }
       set({ character, viewMode: 'tabs', undoable: undoIds(character.id) });
       rememberOpen(character.id);
-      // A preset hero picks up improvements of the preset content (damage that grows, saves) the
-      // moment it is opened; the rebuild keeps uses, damage taken and preparation.
-      if (character.build) {
-        const rebuilt = applyBuild(character, character.build).character;
-        if (!deepEqual(rebuilt, character)) get().updateCharacter(() => rebuilt);
-      }
+      refreshPreset(character);
     },
 
     createCharacter: async (draft) => {
@@ -449,7 +454,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
       const open = readOpen();
       const character = open ? await next.repository.get(open) : undefined;
-      if (character && workspace === next) set({ character, viewMode: 'tabs', undoable: [] });
+      if (character && workspace === next) {
+        set({ character, viewMode: 'tabs', undoable: [] });
+        refreshPreset(character);
+      }
     },
   };
 });

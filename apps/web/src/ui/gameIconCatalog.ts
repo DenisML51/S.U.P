@@ -178,6 +178,179 @@ import GiAngelOutfit from '~icons/game-icons/angel-outfit';
 import GiLaurelCrown from '~icons/game-icons/laurel-crown';
 import GiOak from '~icons/game-icons/oak';
 import GiSwordInStone from '~icons/game-icons/sword-in-stone';
+import GiBarbarian from '~icons/game-icons/barbarian';
+import GiHarp from '~icons/game-icons/harp';
+import GiChurch from '~icons/game-icons/church';
+import GiMonkFace from '~icons/game-icons/monk-face';
+import GiArcher from '~icons/game-icons/archer';
+import GiHighShot from '~icons/game-icons/high-shot';
+import GiCloakDagger from '~icons/game-icons/cloak-dagger';
+import GiFireRay from '~icons/game-icons/fire-ray';
+import GiMagicPalm from '~icons/game-icons/magic-palm';
+import GiWarlockEye from '~icons/game-icons/warlock-eye';
+import GiWarlockHood from '~icons/game-icons/warlock-hood';
+import GiWizardFace from '~icons/game-icons/wizard-face';
+import GiAngryEyes from '~icons/game-icons/angry-eyes';
+import GiMuscleUp from '~icons/game-icons/muscle-up';
+import GiPunch from '~icons/game-icons/punch';
+import GiHighKick from '~icons/game-icons/high-kick';
+import GiMeditation from '~icons/game-icons/meditation';
+import GiOpenPalm from '~icons/game-icons/open-palm';
+import GiShadowFollower from '~icons/game-icons/shadow-follower';
+import GiFireDash from '~icons/game-icons/fire-dash';
+import GiDragonBreath from '~icons/game-icons/dragon-breath';
+import GiDragonSpiral from '~icons/game-icons/dragon-spiral';
+import GiCog from '~icons/game-icons/cog';
+import GiGears from '~icons/game-icons/gears';
+import GiSpinningBlades from '~icons/game-icons/spinning-blades';
+import GiEyeTarget from '~icons/game-icons/eye-target';
+import GiLockpicks from '~icons/game-icons/lockpicks';
+import GiTrapMask from '~icons/game-icons/trap-mask';
+import GiContract from '~icons/game-icons/contract';
+import GiBookAura from '~icons/game-icons/book-aura';
+import GiBurningBook from '~icons/game-icons/burning-book';
+import GiEvilBook from '~icons/game-icons/evil-book';
+import GiTentaclesSkull from '~icons/game-icons/tentacles-skull';
+import GiImp from '~icons/game-icons/imp';
+import GiFairy from '~icons/game-icons/fairy';
+import GiThirdEye from '~icons/game-icons/third-eye';
+import GiDiceFire from '~icons/game-icons/dice-fire';
+import GiPerspectiveDiceSixFacesRandom from '~icons/game-icons/perspective-dice-six-faces-random';
+import GiTribalMask from '~icons/game-icons/tribal-mask';
+import GiMusicalNotes from '~icons/game-icons/musical-notes';
+import GiDramaMasks from '~icons/game-icons/drama-masks';
+import GiQuill from '~icons/game-icons/quill';
+import GiBookPile from '~icons/game-icons/book-pile';
+import GiWingCloak from '~icons/game-icons/wing-cloak';
+import GiLifeInTheBalance from '~icons/game-icons/life-in-the-balance';
+import GiSunPriest from '~icons/game-icons/sun-priest';
+import GiSparklingSabre from '~icons/game-icons/sparkling-sabre';
+import GiFireShield from '~icons/game-icons/fire-shield';
+import GiShieldReflect from '~icons/game-icons/shield-reflect';
+import GiDodging from '~icons/game-icons/dodging';
+import GiNinjaHeroicStance from '~icons/game-icons/ninja-heroic-stance';
+import GiNinjaMask from '~icons/game-icons/ninja-mask';
+import GiShadowGrasp from '~icons/game-icons/shadow-grasp';
+import GiThrownKnife from '~icons/game-icons/thrown-knife';
+import GiSmokingOrb from '~icons/game-icons/smoking-orb';
+import GiBurningEye from '~icons/game-icons/burning-eye';
+import GiPentacle from '~icons/game-icons/pentacle';
+import GiCrownedSkull from '~icons/game-icons/crowned-skull';
+import GiDreadSkull from '~icons/game-icons/dread-skull';
+import GiFireBreath from '~icons/game-icons/fire-breath';
+import GiScales from '~icons/game-icons/scales';
+import GiDragonShield from '~icons/game-icons/dragon-shield';
+import GiVortex from '~icons/game-icons/vortex';
+import GiMagicGate from '~icons/game-icons/magic-gate';
+import GiTimeTrap from '~icons/game-icons/time-trap';
+import GiCrystalWand from '~icons/game-icons/crystal-wand';
+import GiOrbWand from '~icons/game-icons/orb-wand';
+import GiGlowingHands from '~icons/game-icons/glowing-hands';
+import GiCrownedHeart from '~icons/game-icons/crowned-heart';
+import GiCrosshair from '~icons/game-icons/crosshair';
+import GiTargetArrows from '~icons/game-icons/target-arrows';
+import GiArrowCluster from '~icons/game-icons/arrow-cluster';
+import GiHunterEyes from '~icons/game-icons/hunter-eyes';
+import GiEyeShield from '~icons/game-icons/eye-shield';
+import GiDividedSpiral from '~icons/game-icons/divided-spiral';
+import GiEnergise from '~icons/game-icons/energise';
+import GiMirrorMirror from '~icons/game-icons/mirror-mirror';
+import GiMagicHat from '~icons/game-icons/magic-hat';
+import GiRuneSword from '~icons/game-icons/rune-sword';
+import GiSwordSpin from '~icons/game-icons/sword-spin';
+import GiKnifeThrust from '~icons/game-icons/knife-thrust';
+import GiPoisonGas from '~icons/game-icons/poison-gas';
+import GiGiftOfKnowledge from '~icons/game-icons/gift-of-knowledge';
+import GiBoltShield from '~icons/game-icons/bolt-shield';
+import GiCursedStar from '~icons/game-icons/cursed-star';
+import GiSkullStaff from '~icons/game-icons/skull-staff';
+import GiDeathZone from '~icons/game-icons/death-zone';
+import GiGrimReaper from '~icons/game-icons/grim-reaper';
+import GiSpectre from '~icons/game-icons/spectre';
+import GiWisdom from '~icons/game-icons/wisdom';
+import GiPrism from '~icons/game-icons/prism';
+import GiShieldImpact from '~icons/game-icons/shield-impact';
+import GiArmorUpgrade from '~icons/game-icons/armor-upgrade';
+import GiHoodedFigure from '~icons/game-icons/hooded-figure';
+import GiRobberMask from '~icons/game-icons/robber-mask';
+import GiSing from '~icons/game-icons/sing';
+import GiFlute from '~icons/game-icons/flute';
+import GiDrum from '~icons/game-icons/drum';
+import GiYinYang from '~icons/game-icons/yin-yang';
+import GiFirePunch from '~icons/game-icons/fire-punch';
+import GiLightningArc from '~icons/game-icons/lightning-arc';
+import GiChainedHeart from '~icons/game-icons/chained-heart';
+import GiHealingShield from '~icons/game-icons/healing-shield';
+import GiRegeneration from '~icons/game-icons/regeneration';
+import GiRallyTheTroops from '~icons/game-icons/rally-the-troops';
+import GiCrossedAxes from '~icons/game-icons/crossed-axes';
+import GiAxeSwing from '~icons/game-icons/axe-swing';
+import GiSwordClash from '~icons/game-icons/sword-clash';
+import GiStomp from '~icons/game-icons/stomp';
+import GiRun from '~icons/game-icons/run';
+import GiHeartWings from '~icons/game-icons/heart-wings';
+import GiEyeOfHorus from '~icons/game-icons/eye-of-horus';
+import GiOakLeaf from '~icons/game-icons/oak-leaf';
+import GiLeafSwirl from '~icons/game-icons/leaf-swirl';
+import GiTreeGrowth from '~icons/game-icons/tree-growth';
+import GiSprout from '~icons/game-icons/sprout';
+import GiTreeRoots from '~icons/game-icons/tree-roots';
+import GiThornyVine from '~icons/game-icons/thorny-vine';
+import GiVineWhip from '~icons/game-icons/vine-whip';
+import GiRose from '~icons/game-icons/rose';
+import GiMushroom from '~icons/game-icons/mushroom';
+import GiPineTree from '~icons/game-icons/pine-tree';
+import GiForest from '~icons/game-icons/forest';
+import GiFlowerTwirl from '~icons/game-icons/flower-twirl';
+import GiLotus from '~icons/game-icons/lotus';
+import GiWolfHead from '~icons/game-icons/wolf-head';
+import GiWolfHowl from '~icons/game-icons/wolf-howl';
+import GiBearHead from '~icons/game-icons/bear-head';
+import GiEagleHead from '~icons/game-icons/eagle-head';
+import GiLion from '~icons/game-icons/lion';
+import GiPaw from '~icons/game-icons/paw';
+import GiBat from '~icons/game-icons/bat';
+import GiRaven from '~icons/game-icons/raven';
+import GiDeer from '~icons/game-icons/deer';
+import GiCat from '~icons/game-icons/cat';
+import GiSpiderFace from '~icons/game-icons/spider-face';
+import GiBeastEye from '~icons/game-icons/beast-eye';
+import GiClaws from '~icons/game-icons/claws';
+import GiFrog from '~icons/game-icons/frog';
+import GiSharkJaws from '~icons/game-icons/shark-jaws';
+import GiOctopus from '~icons/game-icons/octopus';
+import GiJellyfish from '~icons/game-icons/jellyfish';
+import GiDinosaurRex from '~icons/game-icons/dinosaur-rex';
+import GiPegasus from '~icons/game-icons/pegasus';
+import GiUnicorn from '~icons/game-icons/unicorn';
+import GiFairyWings from '~icons/game-icons/fairy-wings';
+import GiFeatheredWing from '~icons/game-icons/feathered-wing';
+import GiFootprint from '~icons/game-icons/footprint';
+import GiWaveCrest from '~icons/game-icons/wave-crest';
+import GiWaveStrike from '~icons/game-icons/wave-strike';
+import GiWaterSplash from '~icons/game-icons/water-splash';
+import GiStarSwirl from '~icons/game-icons/star-swirl';
+import GiStarFormation from '~icons/game-icons/star-formation';
+import GiNightSky from '~icons/game-icons/night-sky';
+import GiMoonOrbit from '~icons/game-icons/moon-orbit';
+import GiSun from '~icons/game-icons/sun';
+import GiSunrise from '~icons/game-icons/sunrise';
+import GiSunSpear from '~icons/game-icons/sun-spear';
+import GiLightningStorm from '~icons/game-icons/lightning-storm';
+import GiWhirlwind from '~icons/game-icons/whirlwind';
+import GiEarthSpit from '~icons/game-icons/earth-spit';
+import GiStoneSphere from '~icons/game-icons/stone-sphere';
+import GiMountains from '~icons/game-icons/mountains';
+import GiSnowflake1 from '~icons/game-icons/snowflake-1';
+import GiIceCube from '~icons/game-icons/ice-cube';
+import GiFireBowl from '~icons/game-icons/fire-bowl';
+import GiFireZone from '~icons/game-icons/fire-zone';
+import GiIceSpellCast from '~icons/game-icons/ice-spell-cast';
+import GiMoonClaws from '~icons/game-icons/moon-claws';
+import GiWolverineClaws from '~icons/game-icons/wolverine-claws';
+import GiSpiralBloom from '~icons/game-icons/spiral-bloom';
+import GiGrowth from '~icons/game-icons/growth';
+import GiGroundSprout from '~icons/game-icons/ground-sprout';
 
 export const ICONS = {
   broadsword: GiBroadsword,
@@ -358,6 +531,179 @@ export const ICONS = {
   'laurel-crown': GiLaurelCrown,
   oak: GiOak,
   'sword-in-stone': GiSwordInStone,
+  barbarian: GiBarbarian,
+  harp: GiHarp,
+  church: GiChurch,
+  'monk-face': GiMonkFace,
+  archer: GiArcher,
+  'high-shot': GiHighShot,
+  'cloak-dagger': GiCloakDagger,
+  'fire-ray': GiFireRay,
+  'magic-palm': GiMagicPalm,
+  'warlock-eye': GiWarlockEye,
+  'warlock-hood': GiWarlockHood,
+  'wizard-face': GiWizardFace,
+  'angry-eyes': GiAngryEyes,
+  'muscle-up': GiMuscleUp,
+  punch: GiPunch,
+  'high-kick': GiHighKick,
+  meditation: GiMeditation,
+  'open-palm': GiOpenPalm,
+  'shadow-follower': GiShadowFollower,
+  'fire-dash': GiFireDash,
+  'dragon-breath': GiDragonBreath,
+  'dragon-spiral': GiDragonSpiral,
+  cog: GiCog,
+  gears: GiGears,
+  'spinning-blades': GiSpinningBlades,
+  'eye-target': GiEyeTarget,
+  lockpicks: GiLockpicks,
+  'trap-mask': GiTrapMask,
+  contract: GiContract,
+  'book-aura': GiBookAura,
+  'burning-book': GiBurningBook,
+  'evil-book': GiEvilBook,
+  'tentacles-skull': GiTentaclesSkull,
+  imp: GiImp,
+  fairy: GiFairy,
+  'third-eye': GiThirdEye,
+  'dice-fire': GiDiceFire,
+  'perspective-dice-six-faces-random': GiPerspectiveDiceSixFacesRandom,
+  'tribal-mask': GiTribalMask,
+  'musical-notes': GiMusicalNotes,
+  'drama-masks': GiDramaMasks,
+  quill: GiQuill,
+  'book-pile': GiBookPile,
+  'wing-cloak': GiWingCloak,
+  'life-in-the-balance': GiLifeInTheBalance,
+  'sun-priest': GiSunPriest,
+  'sparkling-sabre': GiSparklingSabre,
+  'fire-shield': GiFireShield,
+  'shield-reflect': GiShieldReflect,
+  dodging: GiDodging,
+  'ninja-heroic-stance': GiNinjaHeroicStance,
+  'ninja-mask': GiNinjaMask,
+  'shadow-grasp': GiShadowGrasp,
+  'thrown-knife': GiThrownKnife,
+  'smoking-orb': GiSmokingOrb,
+  'burning-eye': GiBurningEye,
+  pentacle: GiPentacle,
+  'crowned-skull': GiCrownedSkull,
+  'dread-skull': GiDreadSkull,
+  'fire-breath': GiFireBreath,
+  scales: GiScales,
+  'dragon-shield': GiDragonShield,
+  vortex: GiVortex,
+  'magic-gate': GiMagicGate,
+  'time-trap': GiTimeTrap,
+  'crystal-wand': GiCrystalWand,
+  'orb-wand': GiOrbWand,
+  'glowing-hands': GiGlowingHands,
+  'crowned-heart': GiCrownedHeart,
+  crosshair: GiCrosshair,
+  'target-arrows': GiTargetArrows,
+  'arrow-cluster': GiArrowCluster,
+  'hunter-eyes': GiHunterEyes,
+  'eye-shield': GiEyeShield,
+  'divided-spiral': GiDividedSpiral,
+  energise: GiEnergise,
+  'mirror-mirror': GiMirrorMirror,
+  'magic-hat': GiMagicHat,
+  'rune-sword': GiRuneSword,
+  'sword-spin': GiSwordSpin,
+  'knife-thrust': GiKnifeThrust,
+  'poison-gas': GiPoisonGas,
+  'gift-of-knowledge': GiGiftOfKnowledge,
+  'bolt-shield': GiBoltShield,
+  'cursed-star': GiCursedStar,
+  'skull-staff': GiSkullStaff,
+  'death-zone': GiDeathZone,
+  'grim-reaper': GiGrimReaper,
+  spectre: GiSpectre,
+  wisdom: GiWisdom,
+  prism: GiPrism,
+  'shield-impact': GiShieldImpact,
+  'armor-upgrade': GiArmorUpgrade,
+  'hooded-figure': GiHoodedFigure,
+  'robber-mask': GiRobberMask,
+  sing: GiSing,
+  flute: GiFlute,
+  drum: GiDrum,
+  'yin-yang': GiYinYang,
+  'fire-punch': GiFirePunch,
+  'lightning-arc': GiLightningArc,
+  'chained-heart': GiChainedHeart,
+  'healing-shield': GiHealingShield,
+  regeneration: GiRegeneration,
+  'rally-the-troops': GiRallyTheTroops,
+  'crossed-axes': GiCrossedAxes,
+  'axe-swing': GiAxeSwing,
+  'sword-clash': GiSwordClash,
+  stomp: GiStomp,
+  run: GiRun,
+  'heart-wings': GiHeartWings,
+  'eye-of-horus': GiEyeOfHorus,
+  'oak-leaf': GiOakLeaf,
+  'leaf-swirl': GiLeafSwirl,
+  'tree-growth': GiTreeGrowth,
+  sprout: GiSprout,
+  'tree-roots': GiTreeRoots,
+  'thorny-vine': GiThornyVine,
+  'vine-whip': GiVineWhip,
+  rose: GiRose,
+  mushroom: GiMushroom,
+  'pine-tree': GiPineTree,
+  forest: GiForest,
+  'flower-twirl': GiFlowerTwirl,
+  lotus: GiLotus,
+  'wolf-head': GiWolfHead,
+  'wolf-howl': GiWolfHowl,
+  'bear-head': GiBearHead,
+  'eagle-head': GiEagleHead,
+  lion: GiLion,
+  paw: GiPaw,
+  bat: GiBat,
+  raven: GiRaven,
+  deer: GiDeer,
+  cat: GiCat,
+  'spider-face': GiSpiderFace,
+  'beast-eye': GiBeastEye,
+  claws: GiClaws,
+  frog: GiFrog,
+  'shark-jaws': GiSharkJaws,
+  octopus: GiOctopus,
+  jellyfish: GiJellyfish,
+  'dinosaur-rex': GiDinosaurRex,
+  pegasus: GiPegasus,
+  unicorn: GiUnicorn,
+  'fairy-wings': GiFairyWings,
+  'feathered-wing': GiFeatheredWing,
+  footprint: GiFootprint,
+  'wave-crest': GiWaveCrest,
+  'wave-strike': GiWaveStrike,
+  'water-splash': GiWaterSplash,
+  'star-swirl': GiStarSwirl,
+  'star-formation': GiStarFormation,
+  'night-sky': GiNightSky,
+  'moon-orbit': GiMoonOrbit,
+  sun: GiSun,
+  sunrise: GiSunrise,
+  'sun-spear': GiSunSpear,
+  'lightning-storm': GiLightningStorm,
+  whirlwind: GiWhirlwind,
+  'earth-spit': GiEarthSpit,
+  'stone-sphere': GiStoneSphere,
+  mountains: GiMountains,
+  'snowflake-1': GiSnowflake1,
+  'ice-cube': GiIceCube,
+  'fire-bowl': GiFireBowl,
+  'fire-zone': GiFireZone,
+  'ice-spell-cast': GiIceSpellCast,
+  'moon-claws': GiMoonClaws,
+  'wolverine-claws': GiWolverineClaws,
+  'spiral-bloom': GiSpiralBloom,
+  growth: GiGrowth,
+  'ground-sprout': GiGroundSprout,
 } as const;
 
 export type GameIconId = keyof typeof ICONS;
@@ -536,6 +882,189 @@ export const ICON_GROUPS: { label: string; icons: { id: GameIconId; label: strin
       { id: 'lyre', label: 'Лира' },
       { id: 'rolling-dices', label: 'Кости' },
       { id: 'feather', label: 'Перо' },
+    ],
+  },
+  {
+    label: 'Классы и умения',
+    icons: [
+      { id: 'barbarian', label: 'Варвар' },
+      { id: 'harp', label: 'Арфа' },
+      { id: 'church', label: 'Храм' },
+      { id: 'monk-face', label: 'Монах' },
+      { id: 'archer', label: 'Лучник' },
+      { id: 'high-shot', label: 'Навесной выстрел' },
+      { id: 'cloak-dagger', label: 'Плащ и кинжал' },
+      { id: 'fire-ray', label: 'Огненный луч' },
+      { id: 'magic-palm', label: 'Магическая ладонь' },
+      { id: 'warlock-eye', label: 'Око колдуна' },
+      { id: 'warlock-hood', label: 'Колдун' },
+      { id: 'wizard-face', label: 'Волшебник' },
+      { id: 'angry-eyes', label: 'Ярость' },
+      { id: 'muscle-up', label: 'Сила' },
+      { id: 'punch', label: 'Удар' },
+      { id: 'high-kick', label: 'Удар ногой' },
+      { id: 'meditation', label: 'Медитация' },
+      { id: 'open-palm', label: 'Открытая ладонь' },
+      { id: 'shadow-follower', label: 'Тень' },
+      { id: 'fire-dash', label: 'Рывок' },
+      { id: 'dragon-breath', label: 'Дыхание дракона' },
+      { id: 'dragon-spiral', label: 'Дракон' },
+      { id: 'cog', label: 'Шестерня' },
+      { id: 'gears', label: 'Механизм' },
+      { id: 'spinning-blades', label: 'Вихрь клинков' },
+      { id: 'eye-target', label: 'Прицел' },
+      { id: 'lockpicks', label: 'Отмычки' },
+      { id: 'trap-mask', label: 'Маска' },
+      { id: 'contract', label: 'Договор' },
+      { id: 'book-aura', label: 'Сияющая книга' },
+      { id: 'burning-book', label: 'Пылающая книга' },
+      { id: 'evil-book', label: 'Тёмный фолиант' },
+      { id: 'tentacles-skull', label: 'Великий Древний' },
+      { id: 'imp', label: 'Бес' },
+      { id: 'fairy', label: 'Фея' },
+      { id: 'third-eye', label: 'Третий глаз' },
+      { id: 'dice-fire', label: 'Дикая магия' },
+      { id: 'perspective-dice-six-faces-random', label: 'Случайность' },
+      { id: 'tribal-mask', label: 'Племенная маска' },
+      { id: 'musical-notes', label: 'Музыка' },
+      { id: 'drama-masks', label: 'Театр' },
+      { id: 'quill', label: 'Перо писца' },
+      { id: 'book-pile', label: 'Знания' },
+      { id: 'wing-cloak', label: 'Крылатый плащ' },
+      { id: 'life-in-the-balance', label: 'Жизнь на весах' },
+      { id: 'sun-priest', label: 'Жрец света' },
+      { id: 'sparkling-sabre', label: 'Сияющий клинок' },
+      { id: 'fire-shield', label: 'Огненный щит' },
+      { id: 'shield-reflect', label: 'Отражение' },
+      { id: 'dodging', label: 'Уклонение' },
+      { id: 'ninja-heroic-stance', label: 'Стойка' },
+      { id: 'ninja-mask', label: 'Маска убийцы' },
+      { id: 'shadow-grasp', label: 'Хватка тени' },
+      { id: 'thrown-knife', label: 'Метательный нож' },
+      { id: 'smoking-orb', label: 'Дымная сфера' },
+      { id: 'burning-eye', label: 'Пылающий взгляд' },
+      { id: 'pentacle', label: 'Пентакль' },
+      { id: 'crowned-skull', label: 'Коронованный череп' },
+      { id: 'dread-skull', label: 'Ужас' },
+      { id: 'fire-breath', label: 'Огненное дыхание' },
+      { id: 'scales', label: 'Чешуя' },
+      { id: 'dragon-shield', label: 'Драконий щит' },
+      { id: 'vortex', label: 'Вихрь' },
+      { id: 'magic-gate', label: 'Врата' },
+      { id: 'time-trap', label: 'Остановка времени' },
+      { id: 'crystal-wand', label: 'Кристальный жезл' },
+      { id: 'orb-wand', label: 'Жезл со сферой' },
+      { id: 'glowing-hands', label: 'Сияющие руки' },
+      { id: 'crowned-heart', label: 'Благородство' },
+      { id: 'crosshair', label: 'Перекрестье' },
+      { id: 'target-arrows', label: 'Мишень' },
+      { id: 'arrow-cluster', label: 'Град стрел' },
+      { id: 'hunter-eyes', label: 'Взгляд охотника' },
+      { id: 'eye-shield', label: 'Защита разума' },
+      { id: 'divided-spiral', label: 'Спираль' },
+      { id: 'energise', label: 'Энергия' },
+      { id: 'mirror-mirror', label: 'Зеркало' },
+      { id: 'magic-hat', label: 'Фокусник' },
+      { id: 'rune-sword', label: 'Рунный меч' },
+      { id: 'sword-spin', label: 'Круговой удар' },
+      { id: 'knife-thrust', label: 'Выпад' },
+      { id: 'poison-gas', label: 'Ядовитый газ' },
+      { id: 'gift-of-knowledge', label: 'Дар знаний' },
+      { id: 'bolt-shield', label: 'Щит молний' },
+      { id: 'cursed-star', label: 'Проклятие' },
+      { id: 'skull-staff', label: 'Посох некроманта' },
+      { id: 'death-zone', label: 'Зона смерти' },
+      { id: 'grim-reaper', label: 'Жнец' },
+      { id: 'spectre', label: 'Призрак' },
+      { id: 'wisdom', label: 'Мудрость' },
+      { id: 'prism', label: 'Призма' },
+      { id: 'shield-impact', label: 'Удар о щит' },
+      { id: 'armor-upgrade', label: 'Укрепление' },
+      { id: 'hooded-figure', label: 'Фигура в капюшоне' },
+      { id: 'robber-mask', label: 'Вор' },
+      { id: 'sing', label: 'Песня' },
+      { id: 'flute', label: 'Флейта' },
+      { id: 'drum', label: 'Барабан' },
+      { id: 'yin-yang', label: 'Равновесие' },
+      { id: 'fire-punch', label: 'Огненный кулак' },
+      { id: 'lightning-arc', label: 'Дуга молнии' },
+      { id: 'chained-heart', label: 'Скованное сердце' },
+      { id: 'healing-shield', label: 'Исцеляющий щит' },
+      { id: 'regeneration', label: 'Восстановление' },
+      { id: 'rally-the-troops', label: 'Сбор отряда' },
+      { id: 'crossed-axes', label: 'Скрещённые топоры' },
+      { id: 'axe-swing', label: 'Взмах топора' },
+      { id: 'sword-clash', label: 'Сшибка' },
+      { id: 'stomp', label: 'Топот' },
+      { id: 'run', label: 'Бег' },
+      { id: 'heart-wings', label: 'Крылатое сердце' },
+      { id: 'eye-of-horus', label: 'Всевидящее око' },
+    ],
+  },
+  {
+    label: 'Природа и звери',
+    icons: [
+      { id: 'oak-leaf', label: 'Дубовый лист' },
+      { id: 'leaf-swirl', label: 'Вихрь листьев' },
+      { id: 'tree-growth', label: 'Рост' },
+      { id: 'sprout', label: 'Росток' },
+      { id: 'tree-roots', label: 'Корни' },
+      { id: 'thorny-vine', label: 'Терновник' },
+      { id: 'vine-whip', label: 'Лоза' },
+      { id: 'rose', label: 'Роза' },
+      { id: 'mushroom', label: 'Гриб' },
+      { id: 'pine-tree', label: 'Сосна' },
+      { id: 'forest', label: 'Лес' },
+      { id: 'flower-twirl', label: 'Цветок' },
+      { id: 'lotus', label: 'Лотос' },
+      { id: 'wolf-head', label: 'Волк' },
+      { id: 'wolf-howl', label: 'Вой' },
+      { id: 'bear-head', label: 'Медведь' },
+      { id: 'eagle-head', label: 'Орёл' },
+      { id: 'lion', label: 'Лев' },
+      { id: 'paw', label: 'Лапа' },
+      { id: 'bat', label: 'Летучая мышь' },
+      { id: 'raven', label: 'Ворон' },
+      { id: 'deer', label: 'Олень' },
+      { id: 'cat', label: 'Кошка' },
+      { id: 'spider-face', label: 'Паук' },
+      { id: 'beast-eye', label: 'Глаз зверя' },
+      { id: 'claws', label: 'Когти зверя' },
+      { id: 'frog', label: 'Лягушка' },
+      { id: 'shark-jaws', label: 'Акула' },
+      { id: 'octopus', label: 'Осьминог' },
+      { id: 'jellyfish', label: 'Медуза' },
+      { id: 'dinosaur-rex', label: 'Ящер' },
+      { id: 'pegasus', label: 'Пегас' },
+      { id: 'unicorn', label: 'Единорог' },
+      { id: 'fairy-wings', label: 'Крылья феи' },
+      { id: 'feathered-wing', label: 'Крыло' },
+      { id: 'footprint', label: 'След' },
+      { id: 'wave-crest', label: 'Волна' },
+      { id: 'wave-strike', label: 'Удар волны' },
+      { id: 'water-splash', label: 'Брызги' },
+      { id: 'star-swirl', label: 'Звёздный вихрь' },
+      { id: 'star-formation', label: 'Созвездие' },
+      { id: 'night-sky', label: 'Ночное небо' },
+      { id: 'moon-orbit', label: 'Луна' },
+      { id: 'sun', label: 'Солнце' },
+      { id: 'sunrise', label: 'Рассвет' },
+      { id: 'sun-spear', label: 'Солнечное копьё' },
+      { id: 'lightning-storm', label: 'Гроза' },
+      { id: 'whirlwind', label: 'Смерч' },
+      { id: 'earth-spit', label: 'Земля' },
+      { id: 'stone-sphere', label: 'Камень' },
+      { id: 'mountains', label: 'Горы' },
+      { id: 'snowflake-1', label: 'Снег' },
+      { id: 'ice-cube', label: 'Лёд' },
+      { id: 'fire-bowl', label: 'Чаша огня' },
+      { id: 'fire-zone', label: 'Огненное поле' },
+      { id: 'ice-spell-cast', label: 'Ледяное заклинание' },
+      { id: 'moon-claws', label: 'Лунные когти' },
+      { id: 'wolverine-claws', label: 'Стальные когти' },
+      { id: 'spiral-bloom', label: 'Цветение' },
+      { id: 'growth', label: 'Буйный рост' },
+      { id: 'ground-sprout', label: 'Всходы' },
     ],
   },
 ];

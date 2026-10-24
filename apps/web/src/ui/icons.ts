@@ -1,32 +1,34 @@
 /**
- * Interface icons, by meaning. Phosphor (MIT), in the manner of Baldur's Gate 3 pictograms: solid
- * filled shapes that read at a glance even small; pure glyphs (close, plus, arrows) are bold strokes
- * so they don't turn into boxes. Compiled into the bundle by unplugin-icons. Swap an icon here
- * and it changes everywhere.
+ * Interface icons, by meaning, in the manner of Baldur's Gate 3 pictograms: solid filled shapes that
+ * read at a glance even small. The sheet's places (the rail, the dice) are game pictures from
+ * game-icons.net (CC BY 3.0), the rest Phosphor (MIT); pure glyphs (close, plus, arrows) are bold
+ * strokes so they don't turn into boxes. Compiled into the bundle by unplugin-icons. Swap an icon
+ * here and it changes everywhere.
  */
-export { default as IconAttributes } from '~icons/ph/person-simple-fill';
+export { default as IconAttributes } from '~icons/game-icons/stars-stack';
 export { default as IconHealth } from '~icons/ph/heartbeat-fill';
 export { default as IconSanity } from '~icons/ph/brain-fill';
-export { default as IconArmor } from '~icons/ph/shield-check-fill';
+export { default as IconArmor } from '~icons/game-icons/chest-armor';
 export { default as IconExperience } from '~icons/ph/stairs-fill';
 export { default as IconAbilities } from '~icons/ph/hand-fist-fill';
-export { default as IconSpells } from '~icons/ph/book-open-text-fill';
-export { default as IconAttacks } from '~icons/ph/sword-fill';
+export { default as IconSpells } from '~icons/game-icons/spell-book';
+export { default as IconAttacks } from '~icons/game-icons/crossed-swords';
 export { default as IconEquipment } from '~icons/ph/t-shirt-fill';
-export { default as IconInventory } from '~icons/ph/backpack-fill';
-export { default as IconCharacter } from '~icons/ph/scroll-fill';
+export { default as IconInventory } from '~icons/game-icons/knapsack';
+export { default as IconCharacter } from '~icons/game-icons/drama-masks';
 export { default as IconNotes } from '~icons/ph/feather-fill';
-export { default as IconDice } from '~icons/ph/dice-five-fill';
-export { default as IconCombat } from '~icons/ph/crosshair-fill';
+export { default as IconDice } from '~icons/game-icons/dice-twenty-faces-twenty';
+export { default as IconQuill } from '~icons/game-icons/quill-ink';
+export { default as IconCombat } from '~icons/game-icons/sword-clash';
 export { default as IconCoins } from '~icons/ph/coins-fill';
 export { default as IconAmmunition } from '~icons/ph/arrow-fat-up-fill';
 export { default as IconSpeed } from '~icons/ph/boot-fill';
 export { default as IconInitiative } from '~icons/ph/clock-countdown-fill';
 export { default as IconPerception } from '~icons/ph/eye-fill';
 export { default as IconProficiency } from '~icons/ph/star-fill';
-export { default as IconHistory } from '~icons/ph/hourglass-medium-fill';
+export { default as IconHistory } from '~icons/game-icons/scroll-quill';
 export { default as IconRest } from '~icons/ph/campfire-fill';
-export { default as IconSettings } from '~icons/ph/gear-six-fill';
+export { default as IconSettings } from '~icons/game-icons/cog';
 export { default as IconExit } from '~icons/ph/sign-out-bold';
 export { default as IconWound } from '~icons/ph/drop-fill';
 export { default as IconCondition } from '~icons/ph/flask-fill';

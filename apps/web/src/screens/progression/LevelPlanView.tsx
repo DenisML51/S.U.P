@@ -21,11 +21,13 @@ import { ChoiceField } from './ChoiceField';
 import { EntryCardButton, EntryDetails, type EntryInfo } from './EntryDetails';
 
 /** Where on the plan a source belongs: creation shows species and background on their own steps. */
-export const CLASS_SOURCES: SourceKind[] = ['class', 'subclass', 'feat', 'option', 'maneuver'];
+export const CLASS_SOURCES: SourceKind[] = ['class', 'subclass', 'feat', 'option', 'maneuver', 'catalog'];
 
 const inSources = (sources: SourceKind[] | undefined, key: string, source: SourceKind) => {
   if (!sources) return true;
   const root = key.split(':')[0];
+  // Replacing an earlier pick only matters on a real level-up; at creation the player just picks again.
+  if (root === 'swap') return false;
   const rootKind: SourceKind | undefined =
     root === 'species' ? 'species' : root === 'background' ? 'background' : root === 'subclass' || root === 'casting' ? 'subclass' : root === 'class' ? 'class' : undefined;
   return sources.includes(rootKind ?? source);
@@ -121,12 +123,19 @@ export const LevelPlanView: React.FC<{
   const plan = levelPlan(build, level);
   const classDef = findClass(build.class);
   const features = plan.features.filter((f) => !f.feature.hidden && f.feature.description && inSources(sources, f.key, f.source));
-  const choices = plan.choices.filter((c) => inSources(sources, c.key, c.owner.source));
+  // Optional replacements of earlier picks come after what the level brings.
+  const choices = plan.choices
+    .filter((c) => inSources(sources, c.key, c.owner.source))
+    .sort((a, b) => Number(a.key.startsWith('swap:')) - Number(b.key.startsWith('swap:')));
   const subclassDue = !!classDef && level === classDef.subclassLevel && (!sources || sources.includes('subclass'));
   const showHitPoints = level > 1 && (!sources || sources.includes('class'));
 
   const chooseSubclass = (id: string) => {
-    const choices = Object.fromEntries(Object.entries(build.choices).filter(([key]) => !key.startsWith('subclass:') && !key.startsWith('casting:')));
+    // Spells picked through the subclass (Eldritch Knight) go with it; a class caster keeps theirs.
+    const subclassCasts = !classDef?.spellcasting;
+    const choices = Object.fromEntries(
+      Object.entries(build.choices).filter(([key]) => !key.startsWith('subclass:') && !(subclassCasts && (key.startsWith('casting:') || key.startsWith('swap:')))),
+    );
     onChange({ ...build, subclass: id, choices });
   };
 

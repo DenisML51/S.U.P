@@ -21,7 +21,7 @@ const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
 
 /**
  * The character sheet: a rail of sections on the left, the hero (vitals, resources) always in view,
- * the chosen section filling the rest. Laid out for a full desktop screen without page scrolling;
+ * the chosen section filling the rest (with the chosen entry's card in its right column). Laid out for a full desktop screen without page scrolling;
  * only long lists scroll inside their panels.
  */
 export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
@@ -36,7 +36,7 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
 
   return (
     <SheetDialogsProvider>
-      <SettingScope setting={setting} className="h-screen overflow-hidden bg-bg">
+      <SettingScope setting={setting} className="h-screen overflow-clip bg-bg">
         {/* Assembles on arrival: the rail and the hero slide in from the left, the section rises; on
             leaving the sheet sinks back. */}
         <motion.div className="flex h-full" exit={{ opacity: 0, scale: 0.985, transition: { duration: 0.25 } }}>
@@ -58,7 +58,7 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
             <HeroColumn character={character} onShowConditions={() => setSection('body')} />
           </motion.div>
           <motion.main
-            className="ui-scroll min-w-0 flex-1 overflow-y-auto px-10 py-8"
+            className="min-w-0 flex-1 px-10 py-8"
             initial={{ y: 16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ ...ENTER, delay: 0.14 }}
@@ -66,7 +66,7 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={section}
-                className="h-full"
+                className="ui-scroll h-full overflow-y-auto pb-3"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}

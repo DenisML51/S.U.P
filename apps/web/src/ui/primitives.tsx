@@ -1,5 +1,5 @@
 import React, { forwardRef, useId } from 'react';
-import { Corners, RuleMark } from './ornaments';
+import { Corners, Crest, RuleMark } from './ornaments';
 
 const cx = (...classes: (string | false | null | undefined)[]) => classes.filter(Boolean).join(' ');
 
@@ -13,6 +13,8 @@ type PanelProps = React.HTMLAttributes<HTMLElement> & {
   variant?: PanelVariant;
   /** Corner ornaments; on by default for plates. */
   ornate?: boolean;
+  /** The setting's centre piece on the top edge: marks the main panel of a screen. */
+  crest?: boolean;
   /** Clickable surface with the setting's hover effect. */
   interactive?: boolean;
   /** Persistent "selected" look, the same as hover. */
@@ -22,7 +24,7 @@ type PanelProps = React.HTMLAttributes<HTMLElement> & {
 
 export const Panel = forwardRef<HTMLElement, PanelProps>(
   (
-    { variant = 'plate', ornate = variant === 'plate', interactive, active, as: Component = 'div', className, children, ...rest },
+    { variant = 'plate', ornate = variant === 'plate', crest, interactive, active, as: Component = 'div', className, children, ...rest },
     ref,
   ) => (
     <Component
@@ -32,7 +34,15 @@ export const Panel = forwardRef<HTMLElement, PanelProps>(
       {...rest}
     >
       {interactive && <span className="ui-fx" aria-hidden />}
+      {/* Paper lies on older leaves; settings that keep records on parchment show the stack. */}
+      {variant === 'paper' && (
+        <>
+          <span className="ui-leaf ui-leaf--under" aria-hidden />
+          <span className="ui-leaf ui-leaf--between" aria-hidden />
+        </>
+      )}
       {ornate && <Corners />}
+      {crest && <Crest />}
       {children}
     </Component>
   ),
@@ -114,6 +124,51 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   ),
 );
 IconButton.displayName = 'IconButton';
+
+// ------------------------------------------------------------------------------------------------
+// Tabs
+// ------------------------------------------------------------------------------------------------
+
+export interface TabItem<T extends string> {
+  id: T;
+  label: React.ReactNode;
+  /** How many entries the tab holds, shown after its name. */
+  count?: number;
+}
+
+/** Views of one list ("Всё", "Оружие", "Броня"): the open one is marked in the setting's manner. */
+export function Tabs<T extends string>({
+  value,
+  items,
+  onChange,
+  label,
+  className,
+}: {
+  value: T;
+  items: TabItem<T>[];
+  onChange: (value: T) => void;
+  /** Accessible name of the tab list. */
+  label: string;
+  className?: string;
+}) {
+  return (
+    <div role="tablist" aria-label={label} className={cx('ui-tabs', className)}>
+      {items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          role="tab"
+          aria-selected={item.id === value}
+          onClick={() => onChange(item.id)}
+          className="ui-tabs__tab"
+        >
+          {item.label}
+          {item.count !== undefined && <span className="ui-tabs__count">{item.count}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 // ------------------------------------------------------------------------------------------------
 // Meter
@@ -205,15 +260,7 @@ export const Tag: React.FC<{ tone?: string; children: React.ReactNode; className
   children,
   className,
 }) => (
-  <span
-    className={cx('inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium leading-none', className)}
-    style={{
-      color: `rgb(var(--c-${tone}))`,
-      border: `1px solid rgb(var(--c-${tone}) / 0.45)`,
-      background: `rgb(var(--c-${tone}) / 0.08)`,
-      borderRadius: 'var(--radius)',
-    }}
-  >
+  <span className={cx('ui-tag', className)} style={{ '--tag-tone': `var(--c-${tone})` } as React.CSSProperties}>
     {children}
   </span>
 );

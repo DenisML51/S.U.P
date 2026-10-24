@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { armorClassOf, carriedWeight, isShield, isStackable, itemQuantity } from '@itd/game-logic';
 import type { Character, InventoryItem, ItemType } from '@itd/schema';
 import { Ledger, LedgerBullet, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
-import { IconButton, Panel, cx } from '../../../ui/primitives';
+import { IconButton, Panel, Tabs, cx } from '../../../ui/primitives';
 import { IconCoins, IconMinus, IconPlus } from '../../../ui/icons';
 import { plainText } from '../../../ui/text';
 import { SectionNotes } from '../parts/EditableText';
+import { SectionAside, SectionList } from '../SectionAside';
 import { damageParts, describeDamage } from '../parts/damage';
 import { useInventory } from '../useInventory';
 import { useSheetText } from '../useSheetText';
@@ -53,12 +54,21 @@ const describeItem = (item: InventoryItem) => {
 };
 
 /** One worn piece of equipment in the side panel. */
-const WornSlot: React.FC<{ label: string; items: InventoryItem[]; onOpen: (item: InventoryItem) => void }> = ({ label, items, onOpen }) => (
+const WornSlot: React.FC<{
+  label: string;
+  items: InventoryItem[];
+  onOpen: (item: InventoryItem) => void;
+}> = ({ label, items, onOpen }) => (
   <div>
     <div className="text-[11px] uppercase tracking-[0.16em] text-ink-faint">{label}</div>
     {items.length > 0 ? (
       items.map((item) => (
-        <button key={item.id} type="button" onClick={() => onOpen(item)} className="block w-full truncate text-left text-[15px] text-ink hover:text-frame-bright">
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onOpen(item)}
+          className="block w-full truncate text-left text-[15px] text-ink hover:text-frame-bright"
+        >
           {item.name}
         </button>
       ))
@@ -79,27 +89,24 @@ export const EquipmentSection: React.FC<{ character: Character }> = ({ character
   const { toggleEquip, changeQuantity } = useInventory();
 
   return (
-    <div className="grid h-full grid-cols-[1fr_290px] gap-8">
-      <div className="flex min-h-0 min-w-0 flex-col gap-3">
-        <nav className="flex gap-4" aria-label="Тип вещей">
-          {FILTERS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setFilter(option.id)}
-              aria-current={filter === option.id}
-              className={cx(
-                'border-b pb-0.5 text-sm transition-colors',
-                filter === option.id ? 'border-frame-bright text-ink' : 'border-transparent text-ink-faint hover:text-ink-muted',
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </nav>
+    <div className="flex h-full gap-8">
+      <SectionList>
+        <Tabs
+          label="Тип вещей"
+          value={filter}
+          onChange={setFilter}
+          items={FILTERS.map((option) => ({
+            ...option,
+            count:
+              option.id === 'all'
+                ? undefined
+                : character.inventory.filter((item) => item.type === option.id).length,
+          }))}
+        />
 
         <Ledger
           title="Снаряжение и вещи"
+          className="min-h-0"
           aside={<span className="tabular-nums">вес {carriedWeight(character)} фнт</span>}
           addLabel="Добавить предмет"
           onAdd={() => dialogs.open({ kind: 'item' })}
@@ -109,20 +116,34 @@ export const EquipmentSection: React.FC<{ character: Character }> = ({ character
             return (
               <LedgerRow
                 key={item.id}
-                leading={isEquippable(item) ? <EquipMark item={item} onToggle={() => toggleEquip(item)} /> : undefined}
+                leading={
+                  isEquippable(item) ? (
+                    <EquipMark item={item} onToggle={() => toggleEquip(item)} />
+                  ) : undefined
+                }
                 dim={stackable && itemQuantity(item) === 0}
                 active={item.equipped}
                 title={item.name}
                 meta={<MetaLine parts={describeItem(item)} />}
-                onOpen={() => dialogs.open({ kind: 'item', id: item.id })}
+                selected={dialogs.isSelected('item', item.id)}
+                onOpen={() => dialogs.openEntry('item', item.id)}
                 value={
                   stackable && (
                     <span className="flex items-center gap-1">
-                      <IconButton label={`Убрать: ${item.name}`} size={22} onClick={() => changeQuantity(item, -1)} disabled={itemQuantity(item) <= 0}>
+                      <IconButton
+                        label={`Убрать: ${item.name}`}
+                        size={22}
+                        onClick={() => changeQuantity(item, -1)}
+                        disabled={itemQuantity(item) <= 0}
+                      >
                         <IconMinus width={12} height={12} />
                       </IconButton>
                       <span className="w-7 text-center">{itemQuantity(item)}</span>
-                      <IconButton label={`Добавить: ${item.name}`} size={22} onClick={() => changeQuantity(item, 1)}>
+                      <IconButton
+                        label={`Добавить: ${item.name}`}
+                        size={22}
+                        onClick={() => changeQuantity(item, 1)}
+                      >
                         <IconPlus width={12} height={12} />
                       </IconButton>
                     </span>
@@ -135,9 +156,10 @@ export const EquipmentSection: React.FC<{ character: Character }> = ({ character
         </Ledger>
 
         <SectionNotes value={character.inventoryNotes} onSave={saveText('inventoryNotes')} />
-      </div>
+      </SectionList>
 
-      <aside className="flex min-h-0 min-w-0 flex-col gap-5">
+      {/* What is worn, the purse and notes about the gear. */}
+      <SectionAside width={290}>
         <Panel className="space-y-3 px-5 py-4">
           <div className="flex items-baseline justify-between">
             <h3 className="ui-display text-lg text-frame-bright">Снаряжено</h3>
@@ -145,13 +167,31 @@ export const EquipmentSection: React.FC<{ character: Character }> = ({ character
               КБ <span className="tabular-nums text-ink-muted">{armorClassOf(character)}</span>
             </span>
           </div>
-          <WornSlot label="Броня" items={worn.filter((i) => i.type === 'armor' && !isShield(i))} onOpen={(item) => dialogs.open({ kind: 'item', id: item.id })} />
-          <WornSlot label="Щит" items={worn.filter(isShield)} onOpen={(item) => dialogs.open({ kind: 'item', id: item.id })} />
-          <WornSlot label="Оружие" items={worn.filter((i) => i.type === 'weapon')} onOpen={(item) => dialogs.open({ kind: 'item', id: item.id })} />
+          <div className="space-y-3">
+            <WornSlot
+              label="Броня"
+              items={worn.filter((i) => i.type === 'armor' && !isShield(i))}
+              onOpen={(item) => dialogs.openEntry('item', item.id)}
+            />
+            <WornSlot
+              label="Щит"
+              items={worn.filter(isShield)}
+              onOpen={(item) => dialogs.openEntry('item', item.id)}
+            />
+            <WornSlot
+              label="Оружие"
+              items={worn.filter((i) => i.type === 'weapon')}
+              onOpen={(item) => dialogs.openEntry('item', item.id)}
+            />
+          </div>
         </Panel>
-
         <Panel className="px-5 py-4">
-          <button type="button" onClick={() => dialogs.open({ kind: 'currency' })} className="group w-full text-left" title="Кошелёк: пополнить, потратить, разменять">
+          <button
+            type="button"
+            onClick={() => dialogs.open({ kind: 'currency' })}
+            className="group w-full text-left"
+            title="Кошелёк: пополнить, потратить, разменять"
+          >
             <div className="mb-2 flex items-center justify-between">
               <h3 className="ui-display text-lg text-frame-bright">Кошелёк</h3>
               <IconCoins width={20} height={20} className="text-ink-faint group-hover:text-frame-bright" />
@@ -165,18 +205,23 @@ export const EquipmentSection: React.FC<{ character: Character }> = ({ character
                 ] as const
               ).map(([key, label, tone]) => (
                 <div key={key}>
-                  <div className={cx('ui-display ui-numeric text-2xl leading-none', tone)}>{character.currency[key]}</div>
+                  <div className={cx('ui-display ui-numeric text-2xl leading-none', tone)}>
+                    {character.currency[key]}
+                  </div>
                   <div className="mt-1 text-[11px] text-ink-faint">{label}</div>
                 </div>
               ))}
             </div>
           </button>
         </Panel>
-
         <div className="mt-auto">
-          <SectionNotes title="О снаряжении" value={character.equipmentNotes} onSave={saveText('equipmentNotes')} />
+          <SectionNotes
+            title="О снаряжении"
+            value={character.equipmentNotes}
+            onSave={saveText('equipmentNotes')}
+          />
         </div>
-      </aside>
+      </SectionAside>
     </div>
   );
 };

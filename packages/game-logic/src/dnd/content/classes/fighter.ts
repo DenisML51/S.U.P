@@ -364,12 +364,14 @@ export const FIGHTER: ClassDef = {
   mentalStrength: 55,
   subclassLevel: 3,
   subclasses: [battleMaster, champion, eldritchKnight, psiWarrior],
+  replaceable: [{ pool: 'maneuvers', label: 'Замена приёма' }],
   startingEquipment: FIGHTER_KITS,
   levels: {
     1: [
       {
         id: 'fighter.fighting-style',
         name: 'Боевой стиль',
+        iconName: 'crossed-swords',
         description: 'Вы получаете черту боевого стиля на свой выбор. Повышая уровень воина, можно заменить её другой.',
         choices: [{ id: 'style', label: 'Боевой стиль', count: 1, options: { from: 'feats', categories: ['fightingStyle'] } }],
       },
@@ -388,6 +390,7 @@ export const FIGHTER: ClassDef = {
       {
         id: 'fighter.weapon-mastery',
         name: 'Оружейное мастерство',
+        iconName: 'broadsword',
         description:
           'Вы используете свойства мастерства трёх видов простого или воинского оружия (4 с 4-го уровня, 5 с 10-го, 6 с 16-го). После продолжительного отдыха один вид можно заменить.',
         choices: [weaponMasteryChoice(3, 'Оружейное мастерство (3)')],
@@ -406,6 +409,7 @@ export const FIGHTER: ClassDef = {
       {
         id: 'fighter.tactical-mind',
         name: 'Тактический ум',
+        iconName: 'brain',
         description:
           'Провалив проверку характеристики, вы можете потратить использование Второго дыхания и добавить к результату 1к10. Если проверка всё равно провалена, использование не тратится.',
         action: 'passive',
@@ -429,6 +433,7 @@ export const FIGHTER: ClassDef = {
       {
         id: 'fighter.tactical-shift',
         name: 'Тактический сдвиг',
+        iconName: 'dodge',
         description: 'Активируя Второе дыхание бонусным действием, вы можете переместиться на половину скорости, не провоцируя атак.',
         action: 'passive',
       },
@@ -448,6 +453,7 @@ export const FIGHTER: ClassDef = {
       {
         id: 'fighter.tactical-master',
         name: 'Мастер тактики',
+        iconName: 'all-seeing-eye',
         description: 'Атакуя оружием, свойство мастерства которого вы используете, вы можете заменить его на Толчок, Ослабление или Замедление.',
         action: 'passive',
       },
@@ -459,6 +465,7 @@ export const FIGHTER: ClassDef = {
       {
         id: 'fighter.studied-attacks',
         name: 'Изученные атаки',
+        iconName: 'arrow-scope',
         description: 'Промахнувшись атакой по существу, вы совершаете с преимуществом следующий бросок атаки по нему до конца своего следующего хода.',
         action: 'passive',
       },

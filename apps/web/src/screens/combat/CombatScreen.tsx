@@ -216,7 +216,7 @@ export const CombatScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenS
 
   return (
     <SheetDialogsProvider>
-      <SettingScope setting={setting} className="relative h-screen overflow-hidden bg-bg">
+      <SettingScope setting={setting} className="relative h-screen overflow-clip bg-bg">
         <motion.div
           className="pointer-events-none absolute inset-y-0 left-0 w-[60%]"
           initial={{ opacity: 0, scale: 1.04 }}

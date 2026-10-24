@@ -346,7 +346,7 @@ export const ActionTokens: React.FC<{ character: Character }> = ({ character }) 
     );
 
   return (
-    <Panel ornate={false} className="ui-hud-strip" ref={anchor}>
+    <Panel className="ui-hud-strip" ref={anchor}>
       {ACTION_SLOTS.map((slot) => (
         <div key={slot} className="flex gap-1" aria-label={ACTION_TYPES[slot].label}>
           {Array.from({ length: limits[slot] }, (_, i) => {
@@ -432,7 +432,7 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
   );
 
   return (
-    <Panel ornate={false} className="ui-hud-strip">
+    <Panel className="ui-hud-strip">
       {resources.map(tile)}
       {resources.length > 0 && <span className="h-6 w-px bg-line" aria-hidden />}
       <button
@@ -500,7 +500,7 @@ export const CombatStats: React.FC<{
     },
   ];
   return (
-    <Panel ornate={false} className="ui-hud-strip !gap-0 divide-x divide-line/60">
+    <Panel className="ui-hud-strip !gap-0 divide-x divide-line/60">
       {stats.map((stat) => {
         const Tag = stat.onClick ? 'button' : 'div';
         return (

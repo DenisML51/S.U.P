@@ -59,9 +59,17 @@ export const spellAttackBonus = (character: Pick<Character, 'spellcastingDifficu
   character.proficiencyBonus + spellcastingModifier(character);
 
 /** The modifier a spell uses: its own ability when it has one (species, feats), else the sheet's. */
-function modifierFor(character: Character, spell: Spell): number {
+function modifierFor(character: Character, spell: Pick<Spell, 'ability'>): number {
   return spell.ability ? abilityModifier(attributeScore(character, spell.ability)) : spellcastingModifier(character);
 }
+
+/** Attack bonus of a spell: a spell cast with its own ability (Magic Initiate) uses that ability. */
+export const spellAttackBonusFor = (character: Character, spell: Pick<Spell, 'ability'>): number =>
+  character.proficiencyBonus + modifierFor(character, spell);
+
+/** Save DC of a spell, by the same rule; a sheet's own DC stands for its class spells. */
+export const spellSaveDCFor = (character: Character, spell: Pick<Spell, 'ability'>): number | undefined =>
+  spell.ability ? 8 + character.proficiencyBonus + modifierFor(character, spell) : character.spellcastingDifficultyValue;
 
 /**
  * The damage (or healing) of a spell cast with a slot of `slotLevel` (its own level when not given)

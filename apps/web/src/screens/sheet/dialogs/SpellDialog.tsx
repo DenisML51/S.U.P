@@ -160,7 +160,7 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
         resourceCost: draft.resourceId ? (draft.resourceCost ?? 1) : undefined,
       };
       updateCharacter((doc) => ({ ...doc, spells: upsertById(doc.spells, saved) }));
-      if (entry) stopEditing();
+      if (entry && !edit) stopEditing();
       else onClose();
     };
     const text = (
@@ -190,7 +190,7 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
         eyebrow={entry ? 'Заклинание · правка' : 'Новое заклинание'}
         canSave={!!draft.name.trim()}
         onSave={save}
-        onCancel={entry ? stopEditing : onClose}
+        onCancel={entry && !edit ? stopEditing : onClose}
         width="xl"
       >
         <div className="grid grid-cols-[1.1fr_1fr] gap-6">

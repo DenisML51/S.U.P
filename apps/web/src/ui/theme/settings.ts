@@ -7,38 +7,24 @@ import '@fontsource/cormorant-garamond/600.css';
 import '@fontsource/tektur/400.css';
 import '@fontsource/tektur/500.css';
 import '@fontsource/tektur/600.css';
-import '@fontsource/playfair-display-sc/400.css';
-import '@fontsource/playfair-display-sc/700.css';
-import '@fontsource/playfair-display/400.css';
+import '@fontsource/old-standard-tt/400.css';
+import '@fontsource/old-standard-tt/700.css';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 
 export interface SettingInfo {
   id: Setting;
-  /** Shown when choosing a character's universe. */
+  /** The setting's name, as players know these genres. */
   label: string;
-  hint: string;
 }
 
 /**
- * Visual settings a character can belong to. Colours, fonts and ornaments live in `tokens.css`
- * under `[data-setting="…"]`; this list is what the UI offers.
+ * Visual settings a character can belong to. Each one's look lives in `settings/<id>.css` and its
+ * ornaments in `ui/art`; this list is what the UI offers.
  */
 export const SETTING_INFO: Record<Setting, SettingInfo> = {
-  'high-fantasy': {
-    id: 'high-fantasy',
-    label: 'Высокое фэнтези',
-    hint: 'Королевства, магия, эпос',
-  },
-  'sci-fi': {
-    id: 'sci-fi',
-    label: 'Научная фантастика',
-    hint: 'Корабли, технологии, далёкие миры',
-  },
-  'dark-fantasy': {
-    id: 'dark-fantasy',
-    label: 'Тёмное фэнтези',
-    hint: 'Ужас, безумие, гниющий мир',
-  },
+  'high-fantasy': { id: 'high-fantasy', label: 'High Fantasy' },
+  'sci-fi': { id: 'sci-fi', label: 'Sci-Fi' },
+  'dark-fantasy': { id: 'dark-fantasy', label: 'Dark Fantasy' },
 };
 
 export const SETTING_LIST = Object.values(SETTING_INFO);
