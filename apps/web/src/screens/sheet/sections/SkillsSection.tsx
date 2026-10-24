@@ -41,7 +41,7 @@ const ProficiencyMark: React.FC<{ skill: Skill; onCycle: () => void }> = ({ skil
     >
       <span
         className={cx(
-          'block h-2.5 w-2.5 rotate-45 border transition-colors',
+          'ui-prof-mark block h-2.5 w-2.5 rotate-45 border transition-colors',
           state === 'none' && 'border-ink-faint',
           state === 'proficient' && 'border-frame-bright bg-frame-bright',
           state === 'expertise' && 'border-frame-bright bg-frame-bright outline outline-1 outline-offset-2 outline-frame-bright/60',
@@ -62,7 +62,7 @@ const AttributePlate: React.FC<{
   const proficientSave = character.savingThrowProficiencies.includes(attribute.id);
   return (
     <Panel ornate={false} className="flex flex-col items-center px-2 pb-2 pt-3 text-center">
-      <span className="text-xs text-ink-muted">{attribute.name}</span>
+      <span className="ui-stat__label">{attribute.name}</span>
       <button
         type="button"
         onClick={onCheck}

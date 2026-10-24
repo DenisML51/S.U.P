@@ -9,7 +9,7 @@
   font-weight: var(--display-weight);
   letter-spacing: var(--display-tracking);
   font-variant-numeric: lining-nums;
-  /* Display faces differ a lot in x-height (Cormorant is small, Unbounded is huge); equalising it
+  /* Display faces differ a lot in x-height (Cormorant is small, Tektur is large); equalising it
      keeps one font-size meaning one visual size in every setting. */
   font-size-adjust: ex-height 0.5;
 }
@@ -101,8 +101,7 @@
 }
 
 /* Chamfered settings cut the corners of plates. */
-[data-setting='grimdark'] .ui-panel:not(.ui-panel--inset),
-[data-setting='sci-fi'] .ui-panel:not(.ui-panel--inset) {
+[data-setting='grimdark'] .ui-panel:not(.ui-panel--inset) {
   clip-path: polygon(
     var(--chamfer) 0,
     calc(100% - var(--chamfer)) 0,
@@ -126,19 +125,18 @@
     inset 0 0 0 1px rgb(0 0 0 / 0.6),
     var(--shadow-panel);
 }
-/* Sci-fi plates are matte: an even dark surface and a thin lit frame, no sheen or glow, so a
-   bright art behind them never shows through as a glare. */
-[data-setting='sci-fi'] .ui-panel:not(.ui-panel--inset):not(.ui-panel--paper) {
-  background-color: rgb(var(--c-surface) / 0.95);
-  backdrop-filter: blur(6px);
-  border-color: rgb(var(--c-frame) / 0.35);
-}
-[data-setting='sci-fi'] .ui-panel::before,
-[data-setting='sci-fi'] .ui-panel--paper::after { display: none; }
+/* Sci-fi plates are matte terminal panes: an even graphite surface under a hairline, square
+   corners, no sheen, glow or ornament. Structure comes from rules and type, not from frames. */
+[data-setting='sci-fi'] .ui-panel,
 [data-setting='sci-fi'] .ui-panel--paper {
-  border-color: rgb(var(--c-frame) / 0.45);
-  box-shadow: inset 0 1px 0 rgb(var(--c-frame) / 0.25), var(--shadow-panel);
+  background-color: rgb(var(--c-surface) / 0.96);
+  border-color: rgb(var(--c-line));
+  box-shadow: var(--shadow-panel);
 }
+[data-setting='sci-fi'] .ui-panel:not(.ui-panel--inset) { backdrop-filter: blur(6px); }
+[data-setting='sci-fi'] .ui-panel::before,
+[data-setting='sci-fi'] .ui-panel::after { display: none; }
+[data-setting='sci-fi'] .ui-panel--inset { background-color: rgb(var(--c-inset)); box-shadow: none; }
 
 /* ------------------------------------------------------------------ Corners */
 .ui-corner,
@@ -221,17 +219,24 @@
 }
 .ui-button--danger:not(:disabled):hover { background: rgb(var(--c-danger) / 0.16); }
 
-[data-setting='grimdark'] .ui-button,
-[data-setting='sci-fi'] .ui-button {
+[data-setting='grimdark'] .ui-button {
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
-[data-setting='sci-fi'] .ui-button { text-transform: uppercase; font-size: 0.8em; letter-spacing: 0.12em; }
+/* Sci-fi: the primary command is a solid block of signal blue, the rest are hairline keys. */
+[data-setting='sci-fi'] .ui-button { font-size: 0.82em; letter-spacing: 0.1em; }
 [data-setting='sci-fi'] .ui-button--primary {
-  background: rgb(var(--c-accent) / 0.16);
-  color: rgb(var(--c-frame-bright));
-  border-color: rgb(var(--c-accent) / 0.8);
+  background: rgb(var(--c-accent));
+  color: rgb(var(--c-accent-ink));
+  border-color: rgb(var(--c-accent));
+  box-shadow: none;
 }
-[data-setting='sci-fi'] .ui-button--primary:not(:disabled):hover { background: rgb(var(--c-accent) / 0.26); }
+[data-setting='sci-fi'] .ui-button--primary:not(:disabled):hover { filter: brightness(1.12); }
+[data-setting='sci-fi'] .ui-button--secondary { background: transparent; border-color: rgb(var(--c-frame) / 0.8); }
+[data-setting='sci-fi'] .ui-button--secondary:not(:disabled):hover {
+  color: rgb(var(--c-ink));
+  border-color: rgb(var(--c-accent));
+  background: rgb(var(--c-accent) / 0.08);
+}
 
 /* Icon button: square, framed only on hover. */
 .ui-icon-button {
@@ -285,9 +290,9 @@
   background-image: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgb(var(--c-bg-deep) / 0.55) calc(10% - 1px) 10%);
   pointer-events: none;
 }
-[data-setting='sci-fi'] .ui-meter__fill {
-  background: rgb(var(--meter-color));
-}
+[data-setting='sci-fi'] .ui-meter { border-color: rgb(var(--c-line) / 0.8); }
+[data-setting='sci-fi'] .ui-meter__fill { background: rgb(var(--meter-color)); }
+[data-setting='sci-fi'] .ui-meter__extra { background: rgb(var(--meter-extra-color) / 0.55); }
 
 /* ------------------------------------------------------------------ Fields */
 .ui-input {
@@ -338,6 +343,15 @@
 }
 .ui-rule--left::before { display: none; }
 .ui-rule--left::after { background: linear-gradient(90deg, rgb(var(--c-frame) / 0.6), transparent); }
+/* Sci-fi: a data-sheet rule, a short solid tab of blue leading a hairline. */
+[data-setting='sci-fi'] .ui-rule::before,
+[data-setting='sci-fi'] .ui-rule::after { background: rgb(var(--c-line)); }
+[data-setting='sci-fi'] .ui-rule--left::after {
+  height: 3px;
+  background:
+    linear-gradient(rgb(var(--c-accent)), rgb(var(--c-accent))) left center / 1.75rem 3px no-repeat,
+    linear-gradient(rgb(var(--c-line)), rgb(var(--c-line))) left center / 100% 1px no-repeat;
+}
 
 /* ------------------------------------------------------------------ Scrollbars */
 .ui-scroll {
@@ -379,20 +393,18 @@
   box-shadow: inset 0 0 30px rgb(var(--c-frame) / 0.18);
 }
 
-[data-setting='sci-fi'] .ui-interactive:hover,
-[data-setting='sci-fi'] .ui-interactive[data-active='true'] {
-  border-color: rgb(var(--c-accent) / 0.85);
-}
+/* Sci-fi: the pane under the cursor lifts a step; the selected one carries a solid blue edge. */
+[data-setting='sci-fi'] .ui-interactive:hover { border-color: rgb(var(--c-frame)); background-color: rgb(var(--c-surface-2)); }
+[data-setting='sci-fi'] .ui-interactive[data-active='true'] { border-color: rgb(var(--c-accent) / 0.6); }
 [data-setting='sci-fi'] .ui-fx {
-  box-shadow: inset 0 0 0 1px rgb(var(--c-accent) / 0.5);
-  background: linear-gradient(90deg, transparent, rgb(var(--c-frame-bright) / 0.9), transparent) top / 40% 1px no-repeat;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: rgb(var(--c-accent));
+  transform: scaleY(0.3);
+  transition: opacity 150ms, transform 200ms ease-out;
 }
 [data-setting='sci-fi'] .ui-interactive:hover .ui-fx,
-[data-setting='sci-fi'] .ui-interactive[data-active='true'] .ui-fx { animation: ui-scan 1.6s linear infinite; }
-@keyframes ui-scan {
-  from { background-position: -60% 0; }
-  to { background-position: 160% 0; }
-}
+[data-setting='sci-fi'] .ui-interactive[data-active='true'] .ui-fx { transform: scaleY(1); }
 
 [data-setting='grimdark'] .ui-fx {
   inset: 0 auto 0 0;
@@ -486,13 +498,7 @@
     repeating-linear-gradient(180deg, rgb(var(--c-paper)) 0 3px, rgb(var(--c-paper-muted)) 3px 4px);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 75% 90%, 50% 100%, 25% 90%, 0 100%);
 }
-[data-setting='sci-fi'] .ui-ledger__ribbon {
-  width: 36px;
-  height: 4px;
-  top: 0;
-  background: rgb(var(--c-accent));
-  clip-path: none;
-}
+[data-setting='sci-fi'] .ui-ledger__ribbon { display: none; }
 [data-setting='dark-fantasy'] .ui-ledger__ribbon { background: rgb(var(--c-accent)); }
 .ui-panel--paper .ui-icon-button { color: rgb(var(--c-paper-ink) / 0.6); }
 .ui-panel--paper .ui-icon-button:not(:disabled):hover {
@@ -508,70 +514,64 @@
   text-underline-offset: 4px;
 }
 
-/* Sci-fi: an inventory grid instead of a written list. Every entry is its own block, names wrap
-   instead of being cut, the block lights up under the cursor. */
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  align-content: start;
-  gap: 6px;
-  padding: 0.25rem 1.25rem 0.25rem;
+/* Sci-fi: a data listing. The header is a tab of type over a hairline, rows are numbered like
+   records in a terminal, the row under the cursor lifts a step and a worn item or prepared spell
+   carries a solid blue edge. */
+[data-setting='sci-fi'] .ui-ledger__head {
+  padding-top: 0.9rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid rgb(var(--c-line));
 }
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__list > li:not(.ui-ledger__row) { grid-column: 1 / -1; }
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row,
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:last-child {
+[data-setting='sci-fi'] .ui-ledger__head h2 { font-size: 1rem; letter-spacing: 0.08em; color: rgb(var(--c-ink)); }
+[data-setting='sci-fi'] .ui-ledger__head > svg { color: rgb(var(--c-accent)); }
+[data-setting='sci-fi'] .ui-ledger__list { counter-reset: ledger-row; padding-left: 0; padding-right: 0; }
+[data-setting='sci-fi'] .ui-ledger__row {
   position: relative;
-  padding: 0.6rem 0.7rem 0.6rem 0.5rem;
-  border: 1px solid rgb(var(--c-line));
-  background: rgb(var(--c-surface-2) / 0.45);
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
-  transition: border-color 150ms, background-color 150ms, box-shadow 200ms;
+  counter-increment: ledger-row;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  border-bottom: 1px solid rgb(var(--c-line) / 0.7);
+  transition: background-color 120ms;
 }
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row::before {
+[data-setting='sci-fi'] .ui-ledger__row:hover { background: rgb(var(--c-surface-2)); }
+[data-setting='sci-fi'] .ui-ledger__row:hover .ui-ledger__title { text-decoration: none; }
+[data-setting='sci-fi'] .ui-ledger__row::before {
   content: '';
   position: absolute;
   inset: 0 auto 0 0;
-  width: 2px;
+  width: 3px;
   background: rgb(var(--c-accent));
   opacity: 0;
-  transition: opacity 150ms;
 }
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:hover {
-  border-color: rgb(var(--c-accent) / 0.7);
-  background: rgb(var(--c-surface-2) / 0.75);
+[data-setting='sci-fi'] .ui-ledger__row[data-active]::before { opacity: 1; }
+/* The record number replaces the bullet; a custom leading control (a preparation toggle) stays. */
+[data-setting='sci-fi'] .ui-ledger__bullet > svg { display: none; }
+[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__bullet::before {
+  content: counter(ledger-row, decimal-leading-zero);
+  font-family: var(--font-numeric);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: rgb(var(--c-ink-faint));
 }
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:hover::before { opacity: 1; }
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row:hover .ui-ledger__title { text-decoration: none; color: rgb(var(--c-frame-bright)); }
-[data-setting='sci-fi'] .ui-ledger__title {
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  font-size: 0.92rem;
-  line-height: 1.25;
-}
+[data-setting='sci-fi'] .ui-ledger__row[data-active] .ui-ledger__bullet::before { color: rgb(var(--c-accent)); }
+[data-setting='sci-fi'] .ui-ledger--log .ui-ledger__bullet > svg { display: block; color: rgb(var(--c-ink-faint)); }
+[data-setting='sci-fi'] .ui-ledger__title { font-family: var(--font-body); font-size: 0.98rem; font-weight: 500; letter-spacing: 0; }
 [data-setting='sci-fi'] .ui-ledger__meta { color: rgb(var(--c-ink-muted)); }
-[data-setting='sci-fi'] .ui-ledger__group { padding-top: 0.75rem; color: rgb(var(--c-frame-bright)); opacity: 0.8; }
-[data-setting='sci-fi'] .ui-ledger__group::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, rgb(var(--c-frame) / 0.5), transparent);
-  order: 1;
+[data-setting='sci-fi'] .ui-ledger__group {
+  padding: 1rem 1.5rem 0.4rem;
+  font-family: var(--font-display);
+  color: rgb(var(--c-accent));
+  opacity: 1;
 }
 [data-setting='sci-fi'] .ui-ledger__add {
-  margin: 0.5rem 1.25rem 1rem;
-  border-style: dashed;
-  border-color: rgb(var(--c-frame) / 0.4);
+  margin: 0;
+  padding: 0.75rem 1.5rem;
+  border: 0;
+  border-radius: 0;
   background: transparent;
-  color: rgb(var(--c-ink-muted));
+  color: rgb(var(--c-ink-faint));
 }
-[data-setting='sci-fi'] .ui-ledger__add:hover { border-color: rgb(var(--c-accent)); color: rgb(var(--c-frame-bright)); background: rgb(var(--c-accent) / 0.06); }
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row[data-active] {
-  border-color: rgb(var(--c-accent) / 0.45);
-  background: rgb(var(--c-accent) / 0.08);
-}
-[data-setting='sci-fi'] .ui-ledger:not(.ui-ledger--log) .ui-ledger__row[data-active]::before { opacity: 1; }
+[data-setting='sci-fi'] .ui-ledger__add:hover { color: rgb(var(--c-accent)); background: rgb(var(--c-surface-2)); }
 
 /* Notes collapsed to a few lines fade out instead of being cut mid-word. */
 .ui-notes { transition: max-height 250ms ease; }
@@ -651,10 +651,10 @@
 [data-setting='high-fantasy'] .ui-toast::after { bottom: 3px; }
 /* Sci-fi: a cut glass readout with a lit edge. */
 [data-setting='sci-fi'] .ui-toast {
-  background: rgb(var(--c-surface) / 0.96);
-  border-color: rgb(var(--c-accent) / 0.45);
-  border-left: 2px solid rgb(var(--c-accent));
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  background: rgb(var(--c-surface) / 0.98);
+  border-color: rgb(var(--c-line));
+  border-left: 3px solid rgb(var(--c-accent));
+  box-shadow: 0 14px 30px -12px rgb(0 0 0 / 0.8);
 }
 [data-setting='sci-fi'] .ui-toast--error { border-left-color: rgb(var(--c-danger)); }
 /* Grimdark: an iron plate with a red seal strip. */
@@ -695,7 +695,13 @@
   border-color: rgb(var(--segment-tone) / 0.5);
 }
 .ui-segmented__option:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 1px; }
-[data-setting='sci-fi'] .ui-segmented__option[aria-checked='true'] { box-shadow: inset 0 -2px 0 rgb(var(--segment-tone)); }
+/* Sci-fi: the chosen option is a solid block, like a selected record. */
+[data-setting='sci-fi'] .ui-segmented__option[aria-checked='true'] {
+  color: rgb(var(--c-accent-ink));
+  background: rgb(var(--segment-tone));
+  border-color: rgb(var(--segment-tone));
+}
+[data-setting='sci-fi'] .ui-segmented__option { --segment-tone: var(--c-accent); }
 [data-setting='grimdark'] .ui-segmented__option { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.75rem; }
 
 .ui-switch {
@@ -838,20 +844,21 @@
 }
 [data-setting='grimdark'] .ui-dialog__eyebrow { color: rgb(var(--c-accent)); opacity: 1; font-weight: 600; }
 
-/* Sci-fi: a terminal window. A rule under the header with a lit segment, the label in signal blue. */
+/* Sci-fi: a terminal window. A hairline under the header led by a short tab of blue. */
 [data-setting='sci-fi'] .ui-dialog__head {
   margin-bottom: 1rem;
-  border-bottom: 1px solid rgb(var(--c-frame) / 0.3);
+  border-bottom: 1px solid rgb(var(--c-line));
 }
 [data-setting='sci-fi'] .ui-dialog__head::after {
   content: '';
   position: absolute;
   left: 1.5rem;
-  bottom: -1px;
-  width: 4rem;
-  height: 2px;
+  bottom: -2px;
+  width: 1.75rem;
+  height: 3px;
   background: rgb(var(--c-accent));
 }
+[data-setting='sci-fi'] .ui-dialog__title { font-size: 1.35rem; letter-spacing: 0.06em; }
 [data-setting='sci-fi'] .ui-dialog__eyebrow { color: rgb(var(--c-accent)); opacity: 1; }
 
 /* Dark fantasy: a title in old blood under a thin thorned rule, darkness pooling at the edges. */
@@ -873,11 +880,11 @@
 [data-setting='sci-fi'] .ui-dialog .ui-keyfacts { gap: 0.5rem; }
 [data-setting='sci-fi'] .ui-dialog .ui-keyfacts > div {
   padding: 0.45rem 0.9rem 0.55rem;
-  background: rgb(var(--c-surface-2) / 0.6);
-  border-left: 2px solid rgb(var(--c-accent));
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  background: rgb(var(--c-surface-2));
+  border-left: 3px solid rgb(var(--c-accent));
 }
-[data-setting='sci-fi'] .ui-dialog .ui-keyfacts dt { color: rgb(var(--c-frame-bright)); opacity: 0.8; }
+[data-setting='sci-fi'] .ui-dialog .ui-keyfacts dt { color: rgb(var(--c-ink-muted)); opacity: 1; }
+[data-setting='sci-fi'] .ui-keyfacts dd { font-family: var(--font-numeric); }
 /* Grimdark: figures stamped between bronze brackets. */
 [data-setting='grimdark'] .ui-dialog .ui-keyfacts > div {
   padding: 0.2rem 0.8rem;
@@ -995,14 +1002,25 @@
 }
 [data-setting='grimdark'] .ui-hud-slot:hover,
 [data-setting='grimdark'] .ui-hud-slot[data-active] { border-color: rgb(var(--c-accent)); }
+/* Sci-fi: flat square keys; the picture is a flat glyph, no shadow or vignette. */
 [data-setting='sci-fi'] .ui-hud-slot {
   background: rgb(var(--c-inset));
-  border-color: rgb(var(--c-frame) / 0.5);
+  border-color: rgb(var(--c-line));
   box-shadow: none;
-  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
 }
+[data-setting='sci-fi'] .ui-hud-slot__icon { filter: none; }
 [data-setting='sci-fi'] .ui-hud-slot:hover,
 [data-setting='sci-fi'] .ui-hud-slot[data-active] { border-color: rgb(var(--c-accent)); background: rgb(var(--c-surface-2)); }
+[data-setting='sci-fi'] .ui-hud-slot:not(.ui-hud-slot--small):not(.ui-hud-slot--large):hover { transform: none; }
+[data-setting='sci-fi'] .ui-hud-slot__level,
+[data-setting='sci-fi'] .ui-hud-slot__count { text-shadow: none; font-size: 0.66rem; }
+[data-setting='sci-fi'] .ui-hud-slot__count {
+  bottom: 0;
+  right: 0;
+  padding: 1px 3px;
+  color: rgb(var(--c-ink));
+  background: rgb(var(--c-bg-deep) / 0.85);
+}
 [data-setting='dark-fantasy'] .ui-hud-slot { border-radius: 2px; background: rgb(var(--c-inset)); }
 [data-setting='dark-fantasy'] .ui-hud-slot:hover,
 [data-setting='dark-fantasy'] .ui-hud-slot[data-active] { box-shadow: inset 0 0 18px rgb(var(--c-accent) / 0.35); }
@@ -1024,7 +1042,13 @@
   border-bottom: 2px solid rgb(var(--c-frame) / 0.5);
   color: rgb(var(--c-ink));
 }
-[data-setting='sci-fi'] .ui-hud-panel__head { color: rgb(var(--c-frame-bright)); border-bottom-color: rgb(var(--c-frame) / 0.35); }
+[data-setting='sci-fi'] .ui-hud-panel__head {
+  font-family: var(--font-display);
+  letter-spacing: 0.14em;
+  color: rgb(var(--c-ink));
+  border-bottom-color: rgb(var(--c-line));
+  background: linear-gradient(rgb(var(--c-accent)), rgb(var(--c-accent))) 0.9rem 100% / 1.75rem 2px no-repeat;
+}
 [data-setting='high-fantasy'] .ui-hud-panel__head { font-family: var(--font-display); letter-spacing: 0.12em; color: rgb(var(--c-frame-bright)); }
 [data-setting='dark-fantasy'] .ui-hud-panel__head { font-family: var(--font-display); letter-spacing: 0.1em; color: rgb(var(--c-ink)); }
 
@@ -1115,18 +1139,26 @@
   box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), 0 0 0 1px rgb(var(--portrait-frame) / 0.25), var(--shadow-panel);
 }
 [data-setting='high-fantasy'] .ui-hud-portrait > button { border-radius: 1rem; }
-[data-setting='grimdark'] .ui-hud-portrait,
-[data-setting='sci-fi'] .ui-hud-portrait {
+[data-setting='grimdark'] .ui-hud-portrait {
   border: 0;
   padding: 3px;
   background: rgb(var(--portrait-frame) / 0.75);
   clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
 }
-[data-setting='grimdark'] .ui-hud-portrait > button,
-[data-setting='sci-fi'] .ui-hud-portrait > button {
+[data-setting='grimdark'] .ui-hud-portrait > button {
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
 }
-[data-setting='sci-fi'] .ui-hud-portrait { background: rgb(var(--portrait-frame) / 0.55); padding: 2px; }
+/* Sci-fi: a square feed in a hairline; its state shows as a solid bar along the bottom. */
+[data-setting='sci-fi'] .ui-hud-portrait {
+  --portrait-frame: var(--c-line);
+  padding: 0;
+  border-width: 1px;
+  border-color: rgb(var(--c-line));
+  box-shadow: inset 0 -3px 0 rgb(var(--c-accent)), var(--shadow-panel);
+}
+[data-setting='sci-fi'] .ui-hud-portrait--shielded { border-color: rgb(var(--c-temp-hp) / 0.7); }
+[data-setting='sci-fi'] .ui-hud-portrait--down { border-color: rgb(var(--c-danger)); box-shadow: inset 0 -3px 0 rgb(var(--c-danger)); }
+[data-setting='sci-fi'] .ui-hud-portrait__temp { border-radius: 0; }
 [data-setting='dark-fantasy'] .ui-hud-portrait { border-radius: 2px; }
 
 /* Health and sanity as tall bars that fill from the bottom. */
@@ -1275,7 +1307,8 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   background: rgb(var(--c-accent));
   border-radius: 999px;
 }
-[data-setting='sci-fi'] .ui-die,
+[data-setting='sci-fi'] .ui-die--in { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+[data-setting='sci-fi'] .ui-die--in .ui-die__count { color: rgb(var(--c-ink)); background: rgb(var(--c-bg-deep)); }
 [data-setting='grimdark'] .ui-die { clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
 [data-setting='sci-fi'] .ui-die__count,
 [data-setting='grimdark'] .ui-die__count { border-radius: 0; }
@@ -1332,3 +1365,25 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 [data-setting='high-fantasy'] .ui-crop__corner--ne { border-top-right-radius: 6px; }
 [data-setting='high-fantasy'] .ui-crop__corner--sw { border-bottom-left-radius: 6px; }
 [data-setting='high-fantasy'] .ui-crop__corner--se { border-bottom-right-radius: 6px; }
+
+/* ------------------------------------------------------------------ Navigation rail */
+/* Sci-fi: the open section is a solid block of signal blue, like the selected record. */
+[data-setting='sci-fi'] .ui-rail__item[aria-current='page'] { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); }
+[data-setting='sci-fi'] .ui-rail__item[aria-current='page'] .ui-rail__mark { display: none; }
+[data-setting='sci-fi'] .ui-rail__item { font-family: var(--font-display); letter-spacing: 0.04em; }
+[data-setting='sci-fi'] .ui-rail__item:not([aria-current]):hover { background: rgb(var(--c-surface-2)); }
+
+/* ------------------------------------------------------------------ Attribute plates */
+.ui-stat__label { font-size: 0.75rem; color: rgb(var(--c-ink-muted)); }
+[data-setting='sci-fi'] .ui-stat__label {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+/* Sci-fi marks proficiency with square cells, not diamonds. */
+[data-setting='sci-fi'] .ui-prof-mark { transform: none; }
+
+/* Section titles: sci-fi sets them in plain white over the blue tab. */
+[data-setting='sci-fi'] .ui-section-title { color: rgb(var(--c-ink)); font-size: 1.1rem; letter-spacing: 0.08em; }
+[data-setting='sci-fi'] button.ui-ledger__bullet:hover::before { color: rgb(var(--c-accent)); }

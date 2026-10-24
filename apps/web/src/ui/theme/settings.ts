@@ -6,8 +6,9 @@ import '@fontsource/cormorant-sc/600.css';
 import '@fontsource/cormorant-garamond/600.css';
 import '@fontsource/old-standard-tt/400.css';
 import '@fontsource/old-standard-tt/700.css';
-import '@fontsource/unbounded/400.css';
-import '@fontsource/unbounded/500.css';
+import '@fontsource/tektur/400.css';
+import '@fontsource/tektur/500.css';
+import '@fontsource/tektur/600.css';
 import '@fontsource/oranienbaum/400.css';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 
