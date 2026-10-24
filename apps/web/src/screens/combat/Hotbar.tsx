@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ActionType, Character } from '@itd/schema';
 import { ACTION_TYPES } from '../../ui/actionTypes';
-import { CatalogIcon, GameIcon } from '../../ui/GameIcon';
+import { CatalogIcon, GameIcon, tileStyle } from '../../ui/GameIcon';
 import { Panel, cx } from '../../ui/primitives';
 import { Prose } from '../../ui/Prose';
 import { useSheetDialogs } from '../sheet/dialogs/context';
@@ -99,16 +99,12 @@ const SlotButton: React.FC<{
       onOpen();
     }}
     aria-label={slot.name}
-    className={cx('ui-hud-slot', slot.blocked && 'ui-hud-slot--blocked')}
+    className={cx('ui-hud-slot ui-hud-slot--tile', slot.blocked && 'ui-hud-slot--blocked')}
+    style={tileStyle(slot.color)}
+    data-kind={slot.kind}
     {...hint}
   >
-    <GameIcon
-      name={slot.iconName}
-      kind={slot.kind}
-      size={30}
-      color={slot.color}
-      className="ui-hud-slot__icon"
-    />
+    <GameIcon name={slot.iconName} kind={slot.kind} size={36} className="ui-hud-slot__icon" />
     {slot.level !== undefined && (
       <span className="ui-hud-slot__level">{slot.level === 0 ? '·' : slot.level}</span>
     )}
