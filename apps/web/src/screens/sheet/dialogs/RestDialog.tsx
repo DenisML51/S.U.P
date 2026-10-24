@@ -20,7 +20,7 @@ import { FormSection } from './parts';
 const ABOUT: Record<RestKind, string> = {
   short:
     'Час передышки. Можно потратить кости хитов на лечение; возвращаются ресурсы с восстановлением «короткий отдых».',
-  long: 'Ночь сна. Хиты в максимум, временные хиты пропадают, возвращаются ресурсы короткого и долгого отдыха и половина костей хитов. Рассудок сном не лечится.',
+  long: 'Ночь сна. Хиты в максимум, временные хиты пропадают, возвращаются ресурсы короткого и долгого отдыха и половина костей хитов, концентрация прекращается. Рассудок сном не лечится.',
 };
 
 /** "Хиты 12 → 30 / 44": one line of the preview. */
@@ -127,6 +127,9 @@ export const RestDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
           </ul>
         ) : (
           <p className="text-sm text-ink-faint">Ничего: всё и так восстановлено.</p>
+        )}
+        {kind === 'long' && character.concentratingOn && (
+          <p className="text-sm text-ink-muted">Концентрация на «{character.concentratingOn.name}» прекратится.</p>
         )}
       </FormSection>
     </Dialog>

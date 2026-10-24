@@ -258,6 +258,12 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
                 label="Подготовлено"
               />
             </div>
+            <Switch
+              checked={!!draft.concentration}
+              onChange={(concentration) => set({ concentration: concentration || undefined })}
+              label="Концентрация"
+              hint="Сотворение начинает концентрацию; урон требует спасброска Телосложения"
+            />
             <Field label="Эффект" hint="Коротко: что происходит при сотворении">
               {({ id }) => (
                 <MarkdownField id={id} value={draft.effect} onChange={(effect) => set({ effect })} rows={3} />
@@ -293,7 +299,12 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
       what="заклинание"
       onDelete={remove}
       name={entry.name}
-      eyebrow={[levelLabel(entry.level), entry.school, entry.prepared ? 'подготовлено' : 'не подготовлено']
+      eyebrow={[
+        levelLabel(entry.level),
+        entry.school,
+        entry.concentration && 'концентрация',
+        entry.prepared ? 'подготовлено' : 'не подготовлено',
+      ]
         .filter(Boolean)
         .join(' · ')}
       onEdit={startEditing}

@@ -1,6 +1,7 @@
 import type { Character, Limb } from '@itd/schema';
 import type { InjuryLevel, LimbType } from '../content/combat';
 import { abilityModifier } from './abilities';
+import { keepConcentration } from './concentration';
 
 export const LIMB_IDS = ['head', 'torso', 'rightArm', 'leftArm', 'rightLeg', 'leftLeg'] as const;
 
@@ -52,7 +53,8 @@ export interface HealthValues {
   maxHPBonus: number;
 }
 
-export const setHealth = (character: Character, health: HealthValues): Character => ({ ...character, ...health });
+export const setHealth = (character: Character, health: HealthValues): Character =>
+  keepConcentration({ ...character, ...health });
 
 /** Limb hit points stay between the lost mark (−10) and the limb's maximum. */
 export const clampLimbHP = (limb: Limb): Limb => {
@@ -79,13 +81,13 @@ export interface HealthChange {
   absorbed: number;
 }
 
-/** Damage eats temporary hit points first, then hit points, which stop at zero. */
+/** Damage eats temporary hit points first, then hit points, which stop at zero; at zero concentration ends. */
 export function applyDamage(character: Character, damage: number): HealthChange {
   const amount = Math.max(0, Math.trunc(damage));
   const absorbed = Math.min(character.tempHP, amount);
   const lost = Math.min(character.currentHP, amount - absorbed);
   return {
-    character: { ...character, tempHP: character.tempHP - absorbed, currentHP: character.currentHP - lost },
+    character: keepConcentration({ ...character, tempHP: character.tempHP - absorbed, currentHP: character.currentHP - lost }),
     amount: lost,
     absorbed,
   };

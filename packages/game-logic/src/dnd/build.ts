@@ -374,6 +374,7 @@ function spellEntry(def: SpellDef, previous: Spell | undefined, patch: Partial<S
     addModifier: def.addModifier,
     attackRoll: def.attackRoll,
     saveAttribute: def.saveAttribute,
+    concentration: def.concentration,
     prepared: previous?.prepared ?? false,
     resourceId: def.level > 0 ? `slot-${def.level}` : undefined,
     resourceCost: def.level > 0 ? 1 : undefined,
@@ -532,6 +533,8 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
         damageType: feature.damageType,
         saveAttribute: feature.saveAttribute,
         saveDC: feature.saveDC !== undefined ? resolveAmount(feature.saveDC, ctx) : undefined,
+        // Features have no concentration of their own; a player's mark survives the rebuild.
+        concentration: previous?.concentration,
         iconName: previous?.iconName ?? feature.iconName,
         color: previous?.color ?? feature.color,
         grant: granted.key,

@@ -10,6 +10,7 @@ import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { settingOf } from '../../ui/theme/settings';
 import { SheetDialogsProvider, useSheetDialogs } from '../sheet/dialogs/context';
 import { SheetDialogHost } from '../sheet/dialogs/SheetDialogHost';
+import { ConcentrationPrompt } from '../sheet/Concentration';
 import { SlotPrompt } from '../sheet/SlotPrompt';
 import { foldRepeats } from '../sheet/parts/history';
 import { useRolls } from '../sheet/useRolls';
@@ -238,6 +239,7 @@ export const CombatScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenS
         <CombatHud character={character} onOpenSettings={onOpenSettings} />
         <SheetDialogHost />
         <SlotPrompt />
+        <ConcentrationPrompt />
       </SettingScope>
     </SheetDialogsProvider>
   );

@@ -142,6 +142,8 @@ describe('build engine', () => {
     const smite = character.spells.find((s) => s.id === 'spell-divine-smite');
     expect(smite?.alwaysPrepared && smite.prepared).toBe(true);
     expect(character.spells.find((s) => s.id === 'spell-aid')?.alwaysPrepared).toBe(true);
+    expect(character.spells.find((s) => s.id === 'spell-shield-of-faith')?.concentration).toBe(true);
+    expect(character.spells.find((s) => s.id === 'spell-aid')?.concentration).toBeFalsy();
     expect(character.spells.some((s) => s.level === 3)).toBe(false);
     expect(character.spellcastingDifficultyValue).toBe(8 + 3 + 3);
     // d10 + 2 at level 1, then (6 + 2) four times.

@@ -20,6 +20,7 @@ import { Button, IconButton, Input, Panel, cx } from '../../../ui/primitives';
 import { IconMinus, IconPlus } from '../../../ui/icons';
 import { SectionNotes } from '../parts/EditableText';
 import { useSheetText } from '../useSheetText';
+import { ConcentrationMark } from '../Concentration';
 import { useActs } from '../useActs';
 import { useSheetDialogs } from '../dialogs/context';
 import { describeDamage, spellDamageParts } from '../parts/damage';
@@ -248,7 +249,12 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
                         onToggle={() => updateCharacter((doc) => togglePrepared(doc, spell.id))}
                       />
                     }
-                    title={spell.name}
+                    title={
+                      <>
+                        {spell.name}
+                        {spell.concentration && <ConcentrationMark />}
+                      </>
+                    }
                     meta={
                       <MetaLine
                         parts={[

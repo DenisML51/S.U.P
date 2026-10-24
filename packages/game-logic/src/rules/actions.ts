@@ -1,4 +1,5 @@
 import type { ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
+import { startConcentration } from './concentration';
 import { changeItemQuantity, itemQuantity } from './inventory';
 import { changeResource } from './resources';
 
@@ -99,7 +100,8 @@ export function resolveAmmunition(character: Character, attack: Attack): Invento
 
 /**
  * Uses an attack, ability or spell and pays for it: the resource it costs, the ammunition it fires
- * and, in combat, the action it takes. Nothing is spent unless everything can be paid.
+ * and, in combat, the action it takes. Nothing is spent unless everything can be paid. An entry that
+ * needs concentration starts it.
  */
 export function performAction(character: Character, request: PerformActionRequest): PerformActionResult {
   const source =
@@ -157,12 +159,16 @@ export function performAction(character: Character, request: PerformActionReques
     costs.ammunition = { id: ammunition.id, name: ammunition.name, amount };
   }
 
+  // A spell or ability that needs concentration starts it, ending any other.
+  const concentrates = request.kind !== 'attack' && 'concentration' in source && !!source.concentration;
+  if (concentrates) next = startConcentration(next, { kind: request.kind as 'spell' | 'ability', id: source.id, name: source.name });
+
   const paid = [
     costs.resource && `${costs.resource.name} −${costs.resource.amount}`,
     costs.ammunition && `${costs.ammunition.name} −${costs.ammunition.amount}`,
   ].filter(Boolean);
   const verb = request.kind === 'attack' ? 'Атака' : request.kind === 'spell' ? 'Заклинание' : 'Способность';
-  const message = `${verb}: ${source.name}${paid.length ? ` (${paid.join(', ')})` : ''}`;
+  const message = `${verb}: ${source.name}${paid.length ? ` (${paid.join(', ')})` : ''}${concentrates ? ' · концентрация' : ''}`;
 
   return { ok: true, character: next, costs, message };
 }

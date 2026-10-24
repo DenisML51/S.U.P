@@ -201,6 +201,8 @@ export const AbilitySchema = passthroughObject({
   saveAttribute: optionalShortText,
   saveDC: optionalNumber,
   hitBonus: optionalNumber,
+  /** Using it starts concentration, which a new concentration, a failed save or incapacitation ends. */
+  concentration: optionalFlag,
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
@@ -255,6 +257,8 @@ export const SpellSchema = passthroughObject({
   /** A spell attack roll (`melee`/`ranged`) or the ability of the target's saving throw. */
   attackRoll: text(z.enum(['melee', 'ranged']).optional()),
   saveAttribute: optionalShortText,
+  /** Casting it starts concentration, which a new concentration, a failed save or incapacitation ends. */
+  concentration: optionalFlag,
   prepared: flag(false),
   /** Granted by a feature (oath spells): always prepared and not counted against the limit. */
   alwaysPrepared: optionalFlag,
@@ -283,7 +287,15 @@ export const ResistanceSchema = passthroughObject({
   grant: optionalShortText,
 });
 
-export const ActionCountersSchema = passthroughObject({
+export const ConcentrationSchema = passthroughObject({
+  kind: z.enum(['spell', 'ability']),
+  id: nestedId,
+  /** Shown even if the entry is renamed or deleted meanwhile. */
+  name: shortText,
+  startedAt: numeric(num),
+});
+
+export const ActionCountersSchema =passthroughObject({
   action: numeric(int.min(0).default(0)),
   bonus: numeric(int.min(0).default(0)),
   reaction: numeric(int.min(0).default(0)),
@@ -368,6 +380,8 @@ export const CharacterSchema = passthroughObject({
   limbs: list(LimbSchema),
   resistances: list(ResistanceSchema),
   conditions: list(shortString),
+  /** The spell or ability the hero keeps concentration on; absent when not concentrating. */
+  concentratingOn: text(ConcentrationSchema.optional()),
 
   attributes: numberMap(64),
   attributeBonuses: numberMap(64),
@@ -434,6 +448,7 @@ export type Spell = z.infer<typeof SpellSchema>;
 export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 export type Resistance = z.infer<typeof ResistanceSchema>;
 export type ActionCounters = z.infer<typeof ActionCountersSchema>;
+export type Concentration = z.infer<typeof ConcentrationSchema>;
 export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
 export type Build = z.infer<typeof BuildSchema>;
 export type Character = z.infer<typeof CharacterSchema>;
