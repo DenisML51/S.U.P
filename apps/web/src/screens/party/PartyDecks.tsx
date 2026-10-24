@@ -166,7 +166,12 @@ const Deck: React.FC<{
   const all: Card[] = add
     ? [
         ...cards,
-        { key: `add-${title}`, render: (shown) => <AddCard label={add.label} hint={add.hint} small={shown === 'small'} onAdd={add.onAdd} /> },
+        {
+          key: `add-${title}`,
+          render: (shown) => (
+            <AddCard label={add.label} hint={add.hint} small={shown === 'small'} onAdd={add.onAdd} />
+          ),
+        },
       ]
     : cards;
   // A stack shows the add card on top only when it is empty.
@@ -180,8 +185,8 @@ const Deck: React.FC<{
       layout
       transition={SPRING}
       className={cx(
-        'flex min-h-0 flex-col',
-        spread ? 'min-w-0 flex-1' : 'shrink-0',
+        'relative flex min-h-0 flex-col',
+        spread ? 'min-w-0 flex-1 self-stretch' : 'shrink-0',
         small && 'ui-deck--small',
       )}
     >
@@ -208,7 +213,7 @@ const Deck: React.FC<{
       </motion.button>
 
       {spread ? (
-        <Line>
+        <Line count={all.length}>
           {all.map((card) => (
             <motion.div
               key={card.key}
@@ -266,31 +271,76 @@ const Deck: React.FC<{
 
 // ------------------------------------------------------------------------------------------------
 
-/** A laid-out stack; when it runs past the room its far end fades, until scrolled there. */
-const Line: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const GAP = 16;
+/** Cards are never laid out taller than this, nor smaller than the second. */
+const CARD_MAX_H = 336;
+const CARD_MIN_H = 150;
+
+interface Fit {
+  height: number;
+  perRow: number;
+}
+
+/**
+ * The size of a laid-out stack's cards: one row when they fit near full height, otherwise two even
+ * rows sharing the room — so a whole table is seen at once, without scrolling.
+ */
+function fitCards(count: number, width: number, height: number): Fit {
+  const across = (rows: number): Fit => {
+    const perRow = Math.ceil(count / rows);
+    const byHeight = Math.min(CARD_MAX_H, (height - GAP * (rows - 1)) / rows);
+    const byWidth = (width - GAP * (perRow - 1)) / perRow / 0.75;
+    return { height: Math.min(byHeight, byWidth), perRow };
+  };
+  const one = across(1);
+  const two = across(2);
+  const best = count > 1 && one.height < CARD_MAX_H * 0.8 && two.height > one.height ? two : one;
+  return { height: Math.max(CARD_MIN_H, Math.floor(best.height)), perRow: best.perRow };
+}
+
+/** A laid-out stack: its cards in one line, or two even ones when one would make them too small. */
+const Line: React.FC<{ count: number; children: React.ReactNode }> = ({ count, children }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const [more, setMore] = useState(false);
+  const [fit, setFit] = useState<Fit | null>(null);
   useEffect(() => {
-    const node = ref.current;
+    const node = ref.current?.parentElement;
     if (!node) return;
-    const check = () => setMore(node.scrollLeft + node.clientWidth < node.scrollWidth - 2);
-    check();
-    const observer = new ResizeObserver(check);
-    observer.observe(node);
-    node.addEventListener('scroll', check, { passive: true });
-    return () => {
-      observer.disconnect();
-      node.removeEventListener('scroll', check);
+    // Measured on the stack's room; a few pixels spare, as cards lift a little under the cursor.
+    const measure = () => {
+      // The section is the line's offset parent; sizes are read untransformed (the stack may be animating).
+      setFit(fitCards(count, node.clientWidth, node.clientHeight - (ref.current?.offsetTop ?? 0) - 8));
     };
-  }, []);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [count]);
+  const cardWidth = fit ? Math.floor(fit.height * 0.75) : 0;
   return (
-    <div ref={ref} className="ui-scroll ui-deck__line mt-4 flex min-h-0 gap-4 overflow-x-auto pb-3 pt-3" data-more={more || undefined}>
+    <div
+      ref={ref}
+      className="mt-4 flex flex-wrap content-start gap-4"
+      style={
+        fit
+          ? ({
+              '--card-h': `${fit.height}px`,
+              '--card-w': `${cardWidth}px`,
+              maxWidth: fit.perRow * cardWidth + (fit.perRow - 1) * GAP,
+            } as React.CSSProperties)
+          : { visibility: 'hidden' }
+      }
+    >
       {children}
     </div>
   );
 };
 
-const AddCard: React.FC<{ label: string; hint: string; small: boolean; onAdd: () => void }> = ({ label, hint, small, onAdd }) => (
+const AddCard: React.FC<{ label: string; hint: string; small: boolean; onAdd: () => void }> = ({
+  label,
+  hint,
+  small,
+  onAdd,
+}) => (
   <Panel
     as="button"
     interactive
@@ -298,7 +348,12 @@ const AddCard: React.FC<{ label: string; hint: string; small: boolean; onAdd: ()
     aria-label={label}
     className="flex h-full w-full flex-col items-center justify-center gap-3 px-4 text-center"
   >
-    <span className={cx('grid place-items-center rounded-full border border-frame/50 text-frame-bright', small ? 'h-9 w-9' : 'h-14 w-14')}>
+    <span
+      className={cx(
+        'grid place-items-center rounded-full border border-frame/50 text-frame-bright',
+        small ? 'h-9 w-9' : 'h-14 w-14',
+      )}
+    >
       <IconCreate width={small ? 18 : 26} height={small ? 18 : 26} />
     </span>
     {!small && (
@@ -345,7 +400,7 @@ const HeroCard: React.FC<{
               <span className="block truncate text-[10px] uppercase tracking-[0.2em] text-frame-bright/80">
                 {label}
               </span>
-              <span className="ui-display block truncate text-[1.35rem] leading-tight text-ink">
+              <span className="ui-display ui-card-name block truncate leading-tight text-ink">
                 {hero.name}
               </span>
               <span className="block truncate text-xs text-ink-muted">
@@ -478,7 +533,7 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
               {hostile ? 'враг' : 'союзник'}
               {inFight && <span className="text-ink-muted"> · в бою</span>}
             </span>
-            <span className="ui-display block truncate text-[1.3rem] leading-tight text-ink">{npc.name}</span>
+            <span className="ui-display ui-card-name block truncate leading-tight text-ink">{npc.name}</span>
             <span className="flex items-center gap-3 text-xs text-ink-muted">
               <span className="flex items-center gap-1" title="Класс брони">
                 <IconArmor width={13} height={13} className="text-armor" />

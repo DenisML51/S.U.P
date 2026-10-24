@@ -19,18 +19,18 @@ export const Companions: React.FC<{ party: PartyDto; userId: string | undefined 
       {others.length === 0 ? (
         <p className="mt-4 text-sm text-ink-muted">Пока за столом только вы — остальные герои появятся здесь.</p>
       ) : (
-        <ul className="mt-5 flex flex-wrap gap-6">
+        <ul className="mt-5 flex flex-wrap gap-8">
           {others.map((hero, index) => (
             <motion.li
               key={hero.id}
-              className="flex w-28 flex-col items-center gap-2 text-center"
+              className="flex w-40 flex-col items-center gap-2 text-center"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0, transition: { delay: 0.05 * index } }}
             >
-              <span className="ui-companion relative block h-24 w-24 overflow-hidden">
+              <span className="ui-companion relative block h-40 w-40 overflow-hidden">
                 <CharacterArt source={art(hero)} kind="portrait" className="h-full w-full" />
               </span>
-              <span className="ui-display block w-full truncate text-base leading-tight text-ink">{hero.name}</span>
+              <span className="ui-display block w-full truncate text-lg leading-tight text-ink">{hero.name}</span>
               <span className="-mt-1.5 block w-full truncate text-[11px] text-ink-faint">
                 {hero.ownerId === party.masterId ? 'мастер' : names.get(hero.ownerId)}
               </span>

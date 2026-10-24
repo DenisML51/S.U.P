@@ -1,5 +1,6 @@
 import React from 'react';
 import { Rail, RailButton, RailDivider } from '../../ui/Rail';
+import { useNavStore } from '../../store/useNavStore';
 import { useSheetDialogs } from './dialogs/context';
 import {
   IconArmor,
@@ -35,10 +36,17 @@ export const SheetRail: React.FC<{
   onCombat: () => void;
   onSettings: () => void;
 }> = ({ section, onSection, onBack, onCombat, onSettings }) => {
+  // Opened from a party's table, the hero goes back to it.
+  const atTable = useNavStore((s) => s.place.screen === 'party');
   const dialogs = useSheetDialogs();
   return (
     <Rail label="Разделы листа">
-      <RailButton label="Герои" Icon={IconPrev} onClick={onBack} hint="К выбору героя" />
+      <RailButton
+        label={atTable ? 'Стол' : 'Герои'}
+        Icon={IconPrev}
+        onClick={onBack}
+        hint={atTable ? 'К столу партии' : 'К выбору героя'}
+      />
       <RailDivider />
       <div className="flex flex-1 flex-col">
         {SHEET_SECTIONS.map(({ id, label, Icon }) => (

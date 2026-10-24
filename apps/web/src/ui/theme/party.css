@@ -146,10 +146,6 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   width: var(--card-w);
   height: var(--card-h);
 }
-/* A line longer than the room fades out at its end instead of being cut. */
-.ui-deck__line[data-more] {
-  mask-image: linear-gradient(to right, black calc(100% - 3rem), transparent);
-}
 .ui-deck__stack:focus-visible {
   outline: 2px solid rgb(var(--c-frame-bright) / 0.6);
   outline-offset: 6px;
@@ -170,4 +166,14 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 .ui-turn-locked {
   filter: saturate(0.45) brightness(0.75);
   transition: filter 0.4s;
+}
+
+.ui-companion {
+  border: 1px solid rgb(var(--c-frame) / 0.5);
+  border-radius: calc(var(--radius) * 0.75);
+  box-shadow: 0 14px 30px -16px rgb(0 0 0 / 0.9);
+}
+/* A card's name keeps to the card's size: smaller cards of a full table still show whole names. */
+.ui-card-name {
+  font-size: clamp(1rem, calc(var(--card-w, 15rem) * 0.105), 1.35rem);
 }

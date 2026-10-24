@@ -97,6 +97,18 @@ describe('parties', () => {
     expect(list[0]!.myCharacterIds).toEqual([playerHero.id]);
   });
 
+  it('seats the master and four players, no more', async () => {
+    const app = await ctx.app();
+    const { partyId, code } = await table(app);
+    for (const name of ['Второй', 'Третий', 'Четвёртый']) {
+      const guest = await registerUser(app, name);
+      expect((await call(app, guest, 'POST', `/invites/${code}/accept`)).statusCode).toBe(200);
+    }
+    const sixth = await registerUser(app, 'Лишний');
+    expect((await call(app, sixth, 'POST', `/invites/${code}/accept`)).statusCode).toBe(409);
+    expect((await call(app, sixth, 'GET', `/parties/${partyId}`)).statusCode).toBe(404);
+  });
+
   it('hides a party from strangers and stale codes', async () => {
     const app = await ctx.app();
     const { master, partyId, code } = await table(app);

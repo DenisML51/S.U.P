@@ -6,12 +6,13 @@ import { AssetIdSchema, EntityIdSchema, SettingSchema, type Setting } from './ch
  * the character summary the server keeps for party views (members never load each other's sheets).
  */
 
+/** A classic table: the master and four players. */
 export const PARTY_LIMITS = {
   /** Master included. */
-  members: 12,
-  /** Heroes a player brings; the master may run several. */
+  members: 5,
+  /** Heroes a player brings; the master may run several of their own. */
   playerHeroes: 1,
-  masterHeroes: 12,
+  masterHeroes: 4,
   npcs: 100,
   /** Parties one account can run as master. */
   mastered: 50,
