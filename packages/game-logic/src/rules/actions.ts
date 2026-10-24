@@ -1,4 +1,5 @@
-import type { ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
+import type { Ability, ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
+import { startConcentration } from './concentration';
 import { changeItemQuantity, itemQuantity } from './inventory';
 import { changeResource } from './resources';
 
@@ -33,6 +34,14 @@ export function setActionLimit(character: Character, slot: ActionSlot, limit: nu
   return { ...character, actionLimits: limits, spentActions: { ...spent, [slot]: Math.min(spent[slot], limits[slot]) } };
 }
 
+/**
+ * Whether an ability can be used from the sheet: anything that takes an action, and a passive one
+ * that spends uses (Sacred Weapon spends Channel Divinity as part of the Attack action) — that one
+ * costs no action of its own.
+ */
+export const isUsable = (ability: Pick<Ability, 'actionType' | 'resourceId'>): boolean =>
+  ability.actionType !== 'passive' || !!ability.resourceId;
+
 /** A new turn: every action is available again. */
 export const resetTurn = (character: Character): Character => ({ ...character, spentActions: { ...NO_SPENT_ACTIONS } });
 
@@ -49,6 +58,8 @@ export interface PerformActionRequest {
   ammunitionItemId?: string;
   /** Spend an action of the matching kind from this turn's budget. */
   trackActionEconomy?: boolean;
+  /** Cast a spell with a slot of this level (higher than its own to upcast). */
+  slotLevel?: number;
 }
 
 export type PerformActionFailure =
@@ -97,7 +108,8 @@ export function resolveAmmunition(character: Character, attack: Attack): Invento
 
 /**
  * Uses an attack, ability or spell and pays for it: the resource it costs, the ammunition it fires
- * and, in combat, the action it takes. Nothing is spent unless everything can be paid.
+ * and, in combat, the action it takes. Nothing is spent unless everything can be paid. An entry that
+ * needs concentration starts it.
  */
 export function performAction(character: Character, request: PerformActionRequest): PerformActionResult {
   const source =
@@ -108,7 +120,10 @@ export function performAction(character: Character, request: PerformActionReques
         : character.spells.find((s) => s.id === request.id);
   if (!source) return fail('not_found', 'Действие не найдено');
   const slot = source.actionType;
-  if (slot === 'passive') return fail('passive', `«${source.name}» — пассивная способность`);
+  const free = slot === 'passive';
+  if (free && !(request.kind === 'ability' && isUsable(source as Ability))) {
+    return fail('passive', `«${source.name}» — пассивная способность`);
+  }
   if (request.kind === 'spell' && !(source as Character['spells'][number]).prepared) {
     return fail('not_prepared', `Заклинание «${source.name}» не подготовлено`);
   }
@@ -116,15 +131,20 @@ export function performAction(character: Character, request: PerformActionReques
   let next = character;
   const costs: PerformActionCosts = {};
 
-  if (request.trackActionEconomy) {
-    if (remainingActions(next, slot) === 0) {
+  if (request.trackActionEconomy && !free) {
+    if (remainingActions(next, slot as ActionSlot) === 0) {
       return fail('no_action_left', `Не осталось действий: ${ACTION_SLOT_NAMES[slot]}`);
     }
-    next = setSpentActions(next, slot, spentActionsOf(next)[slot] + 1);
-    costs.slot = slot;
+    next = setSpentActions(next, slot as ActionSlot, spentActionsOf(next)[slot as ActionSlot] + 1);
+    costs.slot = slot as ActionSlot;
   }
 
-  const resourceId = 'resourceId' in source ? source.resourceId : undefined;
+  // A spell cast with a chosen slot spends that slot instead of the one of its own level.
+  const chosenSlot =
+    request.kind === 'spell' && request.slotLevel !== undefined
+      ? next.resources.find((r) => r.spellSlotLevel === request.slotLevel)?.id
+      : undefined;
+  const resourceId = chosenSlot ?? ('resourceId' in source ? source.resourceId : undefined);
   if (resourceId) {
     const amount = ('resourceCost' in source ? source.resourceCost : undefined) ?? 1;
     const resource = next.resources.find((r) => r.id === resourceId);
@@ -150,12 +170,16 @@ export function performAction(character: Character, request: PerformActionReques
     costs.ammunition = { id: ammunition.id, name: ammunition.name, amount };
   }
 
+  // A spell or ability that needs concentration starts it, ending any other.
+  const concentrates = request.kind !== 'attack' && 'concentration' in source && !!source.concentration;
+  if (concentrates) next = startConcentration(next, { kind: request.kind as 'spell' | 'ability', id: source.id, name: source.name });
+
   const paid = [
     costs.resource && `${costs.resource.name} −${costs.resource.amount}`,
     costs.ammunition && `${costs.ammunition.name} −${costs.ammunition.amount}`,
   ].filter(Boolean);
   const verb = request.kind === 'attack' ? 'Атака' : request.kind === 'spell' ? 'Заклинание' : 'Способность';
-  const message = `${verb}: ${source.name}${paid.length ? ` (${paid.join(', ')})` : ''}`;
+  const message = `${verb}: ${source.name}${paid.length ? ` (${paid.join(', ')})` : ''}${concentrates ? ' · концентрация' : ''}`;
 
   return { ok: true, character: next, costs, message };
 }

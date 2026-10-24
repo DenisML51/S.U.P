@@ -3,18 +3,16 @@
  * localStorage and are not synced. Keys are the ones the desktop app used, so preferences carry over.
  */
 export interface AppSettings {
-  compactCards: boolean;
   notifications: boolean;
   fullscreen: boolean;
 }
 
 const KEYS: Record<keyof AppSettings, string> = {
-  compactCards: 'trpg_compact_cards',
   notifications: 'trpg_notifications',
   fullscreen: 'trpg_fullscreen',
 };
 
-const DEFAULTS: AppSettings = { compactCards: false, notifications: true, fullscreen: false };
+const DEFAULTS: AppSettings = { notifications: true, fullscreen: false };
 
 const read = (key: string): string | null => {
   try {
@@ -29,7 +27,7 @@ export function loadSettings(): AppSettings {
     const value = read(KEYS[name]);
     return value === null ? DEFAULTS[name] : value === 'true';
   };
-  return { compactCards: flag('compactCards'), notifications: flag('notifications'), fullscreen: flag('fullscreen') };
+  return { notifications: flag('notifications'), fullscreen: flag('fullscreen') };
 }
 
 export function saveSettings(settings: AppSettings): void {

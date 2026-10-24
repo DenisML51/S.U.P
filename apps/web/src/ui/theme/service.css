@@ -1,0 +1,170 @@
+/* ================================================================== Service theme
+ * The service's own face, for everything that belongs to no world: the account, app settings,
+ * hero select controls. Frosted glass over whatever is behind, soft round shapes, near-neutral greys
+ * with a faint sage cast (between Lovecraft and High Fantasy, but quieter), ivory as the one accent.
+ * No ornament: it has to sit calmly over any setting's atmosphere.
+ *
+ * It is the bottom layer: a world outranks it. Every rule stops at a world's scope
+ * (`:not([data-world] *)`), so anything wearing a setting inside a service screen keeps its setting's
+ * look whatever the specificity.
+ */
+
+[data-setting='service'] {
+  --setting-display: var(--font-body);
+  --font-display: var(--setting-display);
+  --font-numeric: var(--font-body);
+  --display-tracking: 0;
+  --display-weight: 600;
+  --title-transform: none;
+  --panel-texture: none;
+  --panel-texture-opacity: 0;
+  --chamfer: 0px;
+  --radius: 16px;
+
+  --c-bg: 12 14 13;
+  --c-bg-deep: 6 7 7;
+  --c-surface: 20 23 22;
+  --c-surface-2: 30 34 32;
+  --c-inset: 9 10 10;
+  --c-line: 50 55 52;
+  --c-frame: 104 110 104;
+  --c-frame-bright: 232 230 218;
+  --c-ink: 238 237 230;
+  --c-ink-muted: 170 172 164;
+  --c-ink-faint: 112 116 110;
+  --c-accent: 230 226 210;
+  --c-accent-ink: 20 22 19;
+
+  --c-hp: 226 92 84;
+  --c-temp-hp: 112 170 236;
+  --c-sanity: 150 132 226;
+  --c-xp: var(--c-accent);
+  --c-armor: 170 186 176;
+  --c-success: 104 200 140;
+  --c-danger: 236 98 88;
+  --c-warning: 236 170 72;
+  --c-act-action: 104 200 140;
+  --c-act-bonus: 236 170 72;
+  --c-act-reaction: 150 132 226;
+  --c-act-passive: 150 160 152;
+  --c-paper: var(--c-surface);
+  --c-paper-ink: var(--c-ink);
+  --c-paper-muted: var(--c-ink-muted);
+
+  /* Glass: thick enough to read on its own, since the blur is lost on surfaces turned in 3D (the carousel). */
+  --glass: rgb(36 40 38 / 0.72);
+  --glass-hover: rgb(46 50 47 / 0.78);
+  --glass-edge: rgb(232 230 218 / 0.1);
+  --glass-edge-hover: rgb(232 230 218 / 0.3);
+  --glass-blur: blur(28px) saturate(1.4);
+  --control: rgb(232 230 218 / 0.08);
+  --control-hover: rgb(232 230 218 / 0.15);
+  --control-edge: rgb(232 230 218 / 0.1);
+  --divider: rgb(232 230 218 / 0.08);
+
+  /* ---------------------------------------------------------------- Panels */
+  .ui-panel:not([data-world] *) {
+    background: var(--glass);
+    border: 1px solid var(--glass-edge);
+    border-radius: var(--radius);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 24px 60px -24px rgb(0 0 0 / 0.8);
+    backdrop-filter: var(--glass-blur);
+  }
+  .ui-panel:not([data-world] *)::before,
+  .ui-panel:not([data-world] *)::after { display: none; }
+  .ui-dialog:not([data-world] *) { border-radius: 22px; }
+  .ui-dialog__title:not([data-world] *) { font-size: 1.35rem; }
+  .ui-dialog__head:not([data-world] *) { margin-bottom: 0.25rem; }
+  .ui-dialog__foot:not([data-world] *) { border-top: 1px solid var(--divider); }
+
+  /* A clickable panel (the new-hero card): the edge brightens, nothing moves. */
+  .ui-interactive:not([data-world] *) { transition: border-color 160ms, background-color 160ms; }
+  .ui-interactive:not([data-world] *):hover,
+  .ui-interactive:not([data-world] *)[data-active='true'] {
+    border-color: var(--glass-edge-hover);
+    background: var(--glass-hover);
+  }
+  .ui-fx:not([data-world] *) { display: none; }
+
+  /* ---------------------------------------------------------------- Type */
+  .ui-label:not([data-world] *) {
+    margin-bottom: 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgb(var(--c-ink-faint));
+  }
+
+  /* ---------------------------------------------------------------- Buttons */
+  /* Capsules: the main one solid ivory with a soft light under it, the rest glass. */
+  .ui-button:not([data-world] *) {
+    font-family: var(--font-body);
+    font-weight: 500;
+    letter-spacing: 0;
+    border-radius: 999px;
+    transition: background-color 140ms, border-color 140ms, color 140ms, box-shadow 200ms;
+  }
+  .ui-button--sm:not([data-world] *) { font-size: 0.85rem; }
+  .ui-button--md:not([data-world] *) { font-size: 0.95rem; }
+  .ui-button--lg:not([data-world] *) { font-size: 1rem; }
+  .ui-button--primary:not([data-world] *) {
+    color: rgb(var(--c-accent-ink));
+    background: rgb(var(--c-accent));
+    border: 1px solid transparent;
+    box-shadow: 0 10px 30px -12px rgb(var(--c-accent) / 0.45);
+  }
+  .ui-button--primary:not([data-world] *):not(:disabled):hover {
+    filter: none;
+    background: rgb(242 239 226);
+    box-shadow: 0 12px 36px -10px rgb(var(--c-accent) / 0.6);
+  }
+  .ui-button--secondary:not([data-world] *) {
+    color: rgb(var(--c-ink));
+    background: var(--control);
+    border-color: var(--control-edge);
+    backdrop-filter: blur(16px);
+  }
+  .ui-button--ghost:not([data-world] *) { color: rgb(var(--c-ink-muted)); }
+  :is(.ui-button--secondary, .ui-button--ghost):not([data-world] *):not(:disabled):hover {
+    color: rgb(var(--c-ink));
+    background: var(--control-hover);
+    border-color: var(--control-edge);
+  }
+  :is(.ui-button, .ui-icon-button):not([data-world] *):focus-visible { outline: 2px solid rgb(var(--c-frame-bright) / 0.8); outline-offset: 2px; }
+
+  /* Icon buttons are bare icons; a round glass ground appears under the cursor. */
+  .ui-icon-button:not([data-world] *) {
+    color: rgb(var(--c-ink-muted));
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    transition: color 140ms, background-color 140ms, border-color 140ms;
+  }
+  .ui-icon-button:not([data-world] *):not(:disabled):hover {
+    color: rgb(var(--c-ink));
+    background: var(--control-hover);
+    border-color: var(--control-edge);
+  }
+  .ui-icon-button:not([data-world] *):disabled { opacity: 0.3; }
+
+  /* ---------------------------------------------------------------- Controls */
+  .ui-switch:not([data-world] *) { background: var(--control); border-color: var(--control-edge); }
+  .ui-switch:not([data-world] *)::after { background: rgb(var(--c-ink-muted)); }
+  [aria-checked='true'] > .ui-switch:not([data-world] *) { background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+  [aria-checked='true'] > .ui-switch:not([data-world] *)::after { background: rgb(var(--c-accent-ink)); }
+  .ui-input:not([data-world] *) { border-radius: 999px; background: var(--control); border-color: var(--control-edge); }
+  .ui-toast:not([data-world] *) { border-radius: 22px; background: var(--glass); border-color: var(--glass-edge); backdrop-filter: var(--glass-blur); }
+
+  /* ---------------------------------------------------------------- Hero select */
+  .ui-wordmark:not([data-world] *) { letter-spacing: 0.1em; color: rgb(var(--c-ink)); }
+  .ui-new-hero-mark:not([data-world] *) { border-color: var(--control-edge); background: var(--control); }
+}
+
+/* The atmosphere of the new-hero slot, which belongs to no world: a faint sage cast, a brass glint. */
+.ui-atmosphere[data-setting='service'] {
+  background:
+    radial-gradient(70% 60% at 20% 10%, rgb(70 92 82 / 0.28), transparent 70%),
+    radial-gradient(60% 60% at 90% 90%, rgb(120 106 74 / 0.18), transparent 70%),
+    rgb(12 14 13);
+}

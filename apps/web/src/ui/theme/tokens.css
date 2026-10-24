@@ -1,0 +1,31 @@
+/*
+ * Design tokens. Every colour is an "r g b" triplet so Tailwind can add alpha
+ * (`bg-surface/80`). A setting is applied by `data-setting` on any element, so a
+ * part of the page (a character card) can wear a different setting than the rest.
+ */
+
+:root {
+  --font-body: 'Golos Text', system-ui, sans-serif;
+  --control-height: 2.5rem;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Anything wearing a setting re-declares the text colour and font so nested scopes switch cleanly. */
+[data-setting] {
+  color: rgb(var(--c-ink));
+  font-family: var(--font-body);
+  /* Tokens not every setting sets: reset here, or a nested scope would inherit its parent's. */
+  --title-transform: none;
+}
+
+/* The service's own type. The hero select screen, the login and the service's dialogs keep it
+   whatever setting their colours follow; a setting's display face appears once a hero is opened. */
+.ui-service,
+.ui-service [data-setting],
+[data-setting].ui-service {
+  --font-display: var(--font-body);
+  --font-numeric: var(--font-body);
+  --display-tracking: 0.01em;
+  --display-weight: 600;
+  --title-transform: none;
+}

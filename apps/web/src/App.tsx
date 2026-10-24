@@ -1,72 +1,85 @@
-import React, { useEffect } from 'react';
-import { Toaster } from 'react-hot-toast';
-import { Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
-import { CharacterSheet } from './components/CharacterSheet/index';
-import { CharacterList } from './components/CharacterList';
-import { Navbar } from './components/Navbar';
-import { DiceRoller } from './components/DiceRoller';
-import { AuthScreen } from './components/AuthScreen';
+import { AuthScreen } from './screens/auth/AuthScreen';
+import { SettingsDialog } from './screens/settings/SettingsDialog';
+import { HeroSelect } from './screens/select/HeroSelect';
+import { SheetScreen } from './screens/sheet/SheetScreen';
+import { CombatScreen } from './screens/combat/CombatScreen';
+import { CreationScreen } from './screens/create/CreationScreen';
+import { SettingScope } from './ui/theme/SettingScope';
+import { Toasts } from './ui/Toasts';
 
 const Loading: React.FC = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
-  </div>
+  <SettingScope setting="service" className="grid h-screen place-items-center bg-bg">
+    <span className="ui-display animate-pulse text-2xl text-frame-bright">S.U.P.</span>
+  </SettingScope>
 );
 
-const AppContent: React.FC = () => {
+const App: React.FC = () => {
   const status = useSessionStore((s) => s.status);
   const boot = useSessionStore((s) => s.boot);
   const character = useCharacterStore((s) => s.character);
+  const viewMode = useCharacterStore((s) => s.viewMode);
   const isLoaded = useCharacterStore((s) => s.isLoaded);
+  const [creating, setCreating] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     void boot();
   }, [boot]);
 
   const signedIn = status === 'authenticated';
-  const showSheet = signedIn && character;
+
+  let screen: React.ReactNode;
+  let screenKey: string;
+  if (status === 'booting' || (signedIn && !isLoaded)) {
+    screen = <Loading />;
+    screenKey = 'loading';
+  } else if (!signedIn) {
+    screen = <AuthScreen />;
+    screenKey = 'auth';
+  } else if (character && viewMode === 'tabs') {
+    screen = (
+      <>
+        <SheetScreen onOpenSettings={() => setSettingsOpen(true)} />
+      </>
+    );
+    screenKey = 'sheet';
+  } else if (character) {
+    screen = (
+      <>
+        <CombatScreen onOpenSettings={() => setSettingsOpen(true)} />
+      </>
+    );
+    screenKey = 'combat';
+  } else if (creating) {
+    screen = <CreationScreen onDone={() => setCreating(false)} />;
+    screenKey = 'create';
+  } else {
+    screen = <HeroSelect onCreate={() => setCreating(true)} onOpenSettings={() => setSettingsOpen(true)} />;
+    screenKey = 'select';
+  }
 
   return (
-    <div className="relative min-h-screen bg-dark-bg text-white">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
-      </div>
-
-      {showSheet && <Navbar key={character.id} />}
-
-      <main className={`relative z-10 ${showSheet ? 'pt-24' : ''}`}>
-        {status === 'booting' || (signedIn && !isLoaded) ? (
-          <Loading />
-        ) : !signedIn ? (
-          <AuthScreen />
-        ) : showSheet ? (
-          <CharacterSheet />
-        ) : (
-          <CharacterList />
-        )}
-      </main>
-
-      {showSheet && <DiceRoller />}
-
-      <Toaster
-        position="bottom-center"
-        toastOptions={{
-          style: {
-            background: '#1a1a1a',
-            color: '#fff',
-            border: '1px solid #333',
-            borderRadius: '12px',
-            fontSize: '14px'
-          },
-        }}
-      />
-    </div>
+    <MotionConfig reducedMotion="user">
+      {/* One screen at a time: the old one plays its exit (cards fly apart, the sheet folds away)
+          before the next one assembles itself. */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={screenKey}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: 0.25 } }}
+          exit={{ opacity: 0, transition: { duration: 0.3, delay: 0.1 } }}
+        >
+          {screen}
+        </motion.div>
+      </AnimatePresence>
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <Toasts />
+    </MotionConfig>
   );
 };
-
-const App: React.FC = () => <AppContent />;
 
 export default App;

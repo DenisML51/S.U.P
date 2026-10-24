@@ -6,14 +6,13 @@ import {
   remainingActions,
   resetTurn,
   resolveAmmunition,
-  restoreAllResources,
   setActionLimit,
   setSpentActions,
 } from '../src';
 import { item, makeCharacter } from './helpers';
 
-const focus = { id: 'focus', name: 'Фокус', iconName: 'Zap', current: 3, max: 3, description: '' };
-const slot1 = { id: 'slot1', name: 'Ячейка 1 ур.', iconName: 'Star', current: 1, max: 2, description: '' };
+const focus = { id: 'focus', name: 'Фокус', iconName: 'Zap', current: 3, max: 3, description: '', recovery: 'long' as const };
+const slot1 = { id: 'slot1', name: 'Ячейка 1 ур.', iconName: 'Star', current: 1, max: 2, description: '', recovery: 'long' as const };
 
 const fireball: Spell = {
   id: 'fireball',
@@ -66,10 +65,6 @@ describe('resources', () => {
     expect(changeResource(character, 'missing', -1)).toBeNull();
   });
 
-  it('restores everything on a long rest', () => {
-    const character = makeCharacter({ resources: [{ ...focus, current: 0 }, slot1] });
-    expect(restoreAllResources(character).resources.map((r) => r.current)).toEqual([3, 2]);
-  });
 });
 
 describe('action economy', () => {
@@ -158,7 +153,7 @@ describe('performAction', () => {
   });
 
   it('refuses passive abilities and unprepared spells', () => {
-    const passive = { ...surge, id: 'aura', actionType: 'passive' as const };
+    const passive = { ...surge, id: 'aura', actionType: 'passive' as const, resourceId: undefined, resourceCost: undefined };
     const character = makeCharacter({ abilities: [passive], spells: [{ ...fireball, prepared: false }] });
 
     expect(performAction(character, { kind: 'ability', id: 'aura' })).toMatchObject({ reason: 'passive' });

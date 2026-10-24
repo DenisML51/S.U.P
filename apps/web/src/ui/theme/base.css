@@ -1,0 +1,1702 @@
+/*
+ * Look of the design-system primitives. Components (src/ui/*.tsx) render these classes;
+ * per-setting differences live here, next to each other, so a setting is easy to compare.
+ */
+
+/* ------------------------------------------------------------------ Display type */
+.ui-display {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  font-variant-numeric: lining-nums;
+  /* Display faces differ a lot in x-height (Cormorant is small, Tektur is large); equalising it
+     keeps one font-size meaning one visual size in every setting. */
+  font-size-adjust: ex-height 0.5;
+}
+
+/* Section titles and buttons follow the setting's title case. */
+.ui-title,
+.ui-button {
+  text-transform: var(--title-transform, none);
+}
+
+.ui-numeric {
+  font-family: var(--font-numeric);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'lnum' 1, 'tnum' 1;
+}
+
+/* ------------------------------------------------------------------ Panels */
+.ui-panel {
+  position: relative;
+  isolation: isolate;
+  background-color: rgb(var(--c-surface));
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  border-radius: var(--radius);
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--c-bg-deep) / 0.7),
+    inset 0 0 0 3px rgb(var(--c-frame) / 0.08),
+    var(--shadow-panel);
+}
+
+.ui-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image: var(--panel-texture),
+    radial-gradient(120% 90% at 50% 0%, rgb(var(--c-surface-2) / 0.9), transparent 70%);
+  opacity: 1;
+  mix-blend-mode: normal;
+}
+
+.ui-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image: var(--panel-texture);
+  opacity: var(--panel-texture-opacity);
+  mix-blend-mode: overlay;
+}
+
+/* Paper: long text and notes. Parchment in fantasy settings, a lit datapad in sci-fi. */
+.ui-panel--paper {
+  background-color: rgb(var(--c-paper));
+  color: rgb(var(--c-paper-ink));
+  border-color: rgb(var(--c-paper-muted) / 0.6);
+  /* Gently darkened edges. */
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.25),
+    inset 0 0 48px rgb(var(--c-paper-muted) / 0.55),
+    var(--shadow-panel);
+}
+
+/* Paper: a calm, even sheet with soft light and age variation and a fine grain, so long text
+   stays easy to read. No blotchy noise: it tiles visibly and reads as torn paper. */
+.ui-panel--paper::before {
+  background-image:
+    radial-gradient(ellipse 70% 55% at 30% 18%, rgb(255 240 210 / 0.12), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 88% 92%, rgb(var(--c-paper-muted) / 0.3), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 70% 30%, rgb(var(--c-paper-muted) / 0.1), transparent 70%);
+  opacity: 1;
+  mix-blend-mode: normal;
+}
+
+.ui-panel--paper::after {
+  display: block;
+  background-image: var(--grain);
+  opacity: 0.18;
+  mix-blend-mode: multiply;
+}
+
+/* Inset: wells for values and inputs. */
+.ui-panel--inset {
+  background-color: rgb(var(--c-inset));
+  border-color: rgb(var(--c-line));
+  box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.45);
+}
+
+.ui-panel--inset::before,
+.ui-panel--inset::after {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ Corners */
+.ui-corner,
+.ui-fx,
+.ui-leaf {
+  /* Overlays never take part in sibling spacing (space-y-* on a panel). */
+  margin: 0 !important;
+}
+
+.ui-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  color: rgb(var(--c-frame-bright));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ui-corner--tl { top: -1px; left: -1px; }
+
+.ui-corner--tr { top: -1px; right: -1px; transform: scaleX(-1); }
+
+.ui-corner--bl { bottom: -1px; left: -1px; transform: scaleY(-1); }
+
+.ui-corner--br { bottom: -1px; right: -1px; transform: scale(-1, -1); }
+
+.ui-panel--paper .ui-corner { color: rgb(var(--c-paper-muted)); }
+
+/* ------------------------------------------------------------------ Buttons */
+.ui-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  letter-spacing: calc(var(--display-tracking) + 0.04em);
+  line-height: 1;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  transition: background-color 120ms, border-color 120ms, color 120ms, filter 120ms;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ui-button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.ui-button:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 2px; }
+
+.ui-button--sm { height: 2rem; padding: 0 0.75rem; font-size: 0.85rem; }
+
+.ui-button--md { height: 2.5rem; padding: 0 1.1rem; font-size: 1rem; }
+
+.ui-button--lg { height: 3rem; padding: 0 1.6rem; font-size: 1.15rem; }
+
+/* Primary: a gilt plate in fantasy, a lit button elsewhere. */
+.ui-button--primary {
+  color: rgb(var(--c-accent-ink));
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 45%, rgb(0 0 0 / 0.18)),
+    rgb(var(--c-accent));
+  border-color: rgb(var(--c-frame-bright) / 0.9);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.25), 0 6px 18px -8px rgb(var(--c-accent) / 0.6);
+}
+
+.ui-button--primary:not(:disabled):hover { filter: brightness(1.08); }
+
+.ui-button--primary:not(:disabled):active { filter: brightness(0.94); }
+
+.ui-button--secondary {
+  color: rgb(var(--c-ink));
+  background: rgb(var(--c-surface-2));
+  border-color: rgb(var(--c-frame) / 0.55);
+}
+
+.ui-button--secondary:not(:disabled):hover {
+  border-color: rgb(var(--c-frame-bright));
+  color: rgb(var(--c-frame-bright));
+}
+
+.ui-button--ghost {
+  color: rgb(var(--c-ink-muted));
+  background: transparent;
+}
+
+.ui-button--ghost:not(:disabled):hover { color: rgb(var(--c-ink)); background: rgb(var(--c-surface-2) / 0.6); }
+
+.ui-button--danger {
+  color: rgb(var(--c-danger));
+  background: rgb(var(--c-danger) / 0.08);
+  border-color: rgb(var(--c-danger) / 0.45);
+}
+
+.ui-button--danger:not(:disabled):hover { background: rgb(var(--c-danger) / 0.16); }
+
+/* Icon button: square, framed only on hover. */
+.ui-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  color: rgb(var(--c-ink-muted));
+  border: 1px solid transparent;
+  transition: color 120ms, border-color 120ms, background-color 120ms;
+}
+
+.ui-icon-button:not(:disabled):hover {
+  color: rgb(var(--c-frame-bright));
+  border-color: rgb(var(--c-frame) / 0.5);
+  background: rgb(var(--c-surface-2) / 0.7);
+}
+
+.ui-icon-button[aria-pressed='true'] {
+  color: rgb(var(--c-frame-bright));
+  border-color: rgb(var(--c-frame) / 0.7);
+  background: rgb(var(--c-surface-2));
+}
+
+.ui-icon-button:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 2px; }
+
+/* ------------------------------------------------------------------ Meters */
+.ui-meter {
+  position: relative;
+  height: var(--meter-height, 8px);
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.ui-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.25), rgb(255 255 255 / 0) 50%, rgb(0 0 0 / 0.2)),
+    rgb(var(--meter-color));
+  transition: width 300ms ease-out;
+}
+
+.ui-meter__extra {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: repeating-linear-gradient(135deg, rgb(var(--meter-extra-color)) 0 3px, rgb(var(--meter-extra-color) / 0.55) 3px 6px);
+}
+
+/* Notches every 10% read as a gauge rather than a progress bar. */
+.ui-meter--ticks::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgb(var(--c-bg-deep) / 0.55) calc(10% - 1px) 10%);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ Fields */
+.ui-input {
+  width: 100%;
+  background: rgb(var(--c-inset));
+  color: rgb(var(--c-ink));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.95rem;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+
+.ui-input::placeholder { color: rgb(var(--c-ink-faint)); }
+
+/* One height for every single-line control, so fields in a row line up. */
+/* :where keeps it overridable by a size utility (the compact field of the health row). */
+:where(input, button).ui-input { height: var(--control-height); padding-top: 0; padding-bottom: 0; }
+
+.ui-input:hover { border-color: rgb(var(--c-frame) / 0.5); }
+
+.ui-input:focus {
+  outline: none;
+  border-color: rgb(var(--c-frame-bright));
+  box-shadow: 0 0 0 3px rgb(var(--c-frame) / 0.15);
+}
+
+.ui-input[aria-invalid='true'] { border-color: rgb(var(--c-danger)); }
+
+.ui-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--c-ink-muted));
+}
+
+/* ------------------------------------------------------------------ Rules */
+.ui-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgb(var(--c-frame));
+}
+
+.ui-rule::before,
+.ui-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.6), transparent);
+}
+
+.ui-rule--left::before { display: none; }
+
+.ui-rule--left::after { background: linear-gradient(90deg, rgb(var(--c-frame) / 0.6), transparent); }
+
+/* ------------------------------------------------------------------ Scrollbars */
+/* A panel that may run a little long (the hero summary): it scrolls with the wheel, shows no bar,
+   and its last lines fade out instead of being cut. */
+.ui-quiet-scroll {
+  scrollbar-width: none;
+  mask-image: linear-gradient(180deg, #000 calc(100% - 1.75rem), transparent);
+}
+.ui-quiet-scroll::-webkit-scrollbar { display: none; }
+.ui-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-frame) / 0.4) transparent;
+}
+/* Scrolls by wheel and touch with no bar: a page running past the screen's edge says there is more. */
+.ui-scroll--bare { scrollbar-width: none; }
+.ui-scroll--bare::-webkit-scrollbar { display: none; }
+
+/* ------------------------------------------------------------------ Interactive surfaces */
+/*
+ * Hover and the active state differ by setting, not only by colour: gilt corners unfold in high
+ * fantasy, a scan line runs along the edge in sci-fi, darkness
+ * creeps from the edges in dark fantasy. `.ui-fx` is the effect layer the Panel renders.
+ */
+.ui-interactive {
+  cursor: pointer;
+  transition: border-color 200ms, box-shadow 250ms, transform 200ms;
+}
+
+.ui-interactive:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 3px; }
+
+.ui-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 250ms, transform 300ms;
+}
+
+.ui-interactive:hover .ui-fx,
+.ui-interactive[data-active='true'] .ui-fx { opacity: 1; }
+
+/* Elements that should glide, not jump, when their setting changes (the hero select screen). */
+.ui-morph {
+  transition: color 600ms ease, background-color 600ms ease, border-color 600ms ease;
+}
+
+/* Row actions ("Атака", "Сотворить"): small and quiet in every setting. Display faces are kept
+   for primary buttons; in a list they would shout over the content. */
+.ui-button--row,
+[data-setting] .ui-button--row {
+  height: 1.75rem;
+  padding: 0 0.7rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ------------------------------------------------------------------ Ledger (lists on paper) */
+.ui-ledger__row { border-bottom: 1px solid rgb(var(--c-paper-muted) / 0.35); }
+
+.ui-ledger__row:last-child { border-bottom: 0; }
+
+.ui-ledger__add {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 1rem 0.9rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  color: rgb(var(--c-paper-ink) / 0.75);
+  background: rgb(var(--c-paper-muted) / 0.14);
+  border: 1px solid rgb(var(--c-paper-muted) / 0.25);
+  border-radius: var(--radius);
+  transition: background-color 150ms, color 150ms;
+}
+
+.ui-ledger__add:hover { background: rgb(var(--c-paper-muted) / 0.24); color: rgb(var(--c-paper-ink)); }
+
+/* Buttons on paper take the ink of the page. */
+.ui-panel--paper .ui-button--secondary {
+  background: transparent;
+  color: rgb(var(--c-paper-ink));
+  border-color: rgb(var(--c-paper-muted) / 0.6);
+}
+
+.ui-panel--paper .ui-button--secondary:not(:disabled):hover {
+  background: rgb(var(--c-paper-muted) / 0.15);
+  color: rgb(var(--c-paper-ink));
+  border-color: rgb(var(--c-paper-ink) / 0.6);
+}
+
+.ui-panel--paper .ui-input {
+  background: rgb(var(--c-paper-muted) / 0.12);
+  color: rgb(var(--c-paper-ink));
+  border-color: rgb(var(--c-paper-muted) / 0.45);
+}
+
+.ui-panel--paper .ui-input::placeholder { color: rgb(var(--c-paper-ink) / 0.45); }
+
+/* The ribbon: a cloth bookmark in fantasy, a status tab in sci-fi. */
+.ui-ledger__ribbon {
+  position: absolute;
+  top: -1px;
+  right: 1.5rem;
+  width: 22px;
+  height: 46px;
+  z-index: 1;
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.15), transparent 30%, transparent 70%, rgb(0 0 0 / 0.2)), rgb(var(--c-hp));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.3);
+}
+
+/* On paper an icon button is drawn in the page's ink, a faint ring round it, whatever metal the
+   setting gives its buttons elsewhere: gold or brass on parchment would vanish into it. The doubled
+   class outranks the settings' own button rules. */
+.ui-panel.ui-panel--paper .ui-icon-button {
+  color: rgb(var(--c-paper-ink) / 0.8);
+  border-color: rgb(var(--c-paper-ink) / 0.3);
+  background: rgb(var(--c-paper-muted) / 0.12);
+  box-shadow: none;
+}
+
+.ui-panel.ui-panel--paper .ui-icon-button:not(:disabled):hover {
+  color: rgb(var(--c-paper-ink));
+  border-color: rgb(var(--c-paper-ink) / 0.65);
+  background: rgb(var(--c-paper-muted) / 0.28);
+}
+
+.ui-panel.ui-panel--paper .ui-icon-button:disabled { color: rgb(var(--c-paper-ink) / 0.35); border-color: rgb(var(--c-paper-ink) / 0.15); background: none; }
+
+/* Paper rows: the name underlines like a link in ink. */
+.ui-ledger__row:hover .ui-ledger__title {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+/* Notes collapsed to a few lines fade out instead of being cut mid-word. */
+.ui-notes { transition: max-height 250ms ease; }
+
+.ui-notes--collapsed { max-height: 4.6em; overflow: hidden; }
+
+.ui-notes--faded { mask-image: linear-gradient(180deg, #000 55%, transparent); }
+
+/* ------------------------------------------------------------------ Toasts */
+.ui-toast {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 15rem;
+  max-width: 30rem;
+  padding: 0.7rem 1.1rem;
+  font-size: 0.875rem;
+  color: rgb(var(--c-ink));
+  background: rgb(var(--c-surface) / 0.96);
+  border: 1px solid rgb(var(--c-frame) / 0.5);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep) / 0.7), 0 14px 30px -12px rgb(0 0 0 / 0.8);
+  backdrop-filter: blur(8px);
+}
+
+.ui-toast--error { border-color: rgb(var(--c-danger) / 0.6); }
+
+/* ------------------------------------------------------------------ Form controls */
+.ui-segmented {
+  display: inline-flex;
+  height: var(--control-height);
+  padding: 2px;
+  gap: 2px;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+}
+
+.ui-segmented__option {
+  --segment-tone: var(--c-frame-bright);
+  flex: 1;
+  padding: 0 0.8rem;
+  font-size: 0.85rem;
+  color: rgb(var(--c-ink-muted));
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  white-space: nowrap;
+  transition: color 120ms, background-color 120ms, border-color 120ms;
+}
+
+.ui-segmented__option:hover { color: rgb(var(--c-ink)); }
+
+.ui-segmented__option[aria-checked='true'] {
+  color: rgb(var(--segment-tone));
+  background: rgb(var(--segment-tone) / 0.12);
+  border-color: rgb(var(--segment-tone) / 0.5);
+}
+
+.ui-segmented__option:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 1px; }
+
+.ui-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.1rem;
+  height: 1.15rem;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 999px;
+  transition: background-color 150ms, border-color 150ms;
+}
+
+.ui-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.15rem - 6px);
+  height: calc(1.15rem - 6px);
+  background: rgb(var(--c-ink-faint));
+  border-radius: 999px;
+  transition: transform 150ms ease, background-color 150ms;
+}
+
+[aria-checked='true'] > .ui-switch { background: rgb(var(--c-accent) / 0.25); border-color: rgb(var(--c-accent) / 0.8); }
+
+[aria-checked='true'] > .ui-switch::after { transform: translateX(0.95rem); background: rgb(var(--c-frame-bright)); }
+
+.ui-number {
+  display: inline-flex;
+  align-items: stretch;
+  height: var(--control-height);
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  transition: border-color 120ms;
+}
+
+.ui-number:focus-within { border-color: rgb(var(--c-frame-bright)); }
+
+.ui-number input {
+  width: 3.5rem;
+  min-width: 0;
+  flex: 1;
+  text-align: center;
+  background: transparent;
+  color: rgb(var(--c-ink));
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+
+.ui-number button {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  color: rgb(var(--c-ink-faint));
+  transition: color 120ms, background-color 120ms;
+}
+
+.ui-number button:not(:disabled):hover { color: rgb(var(--c-frame-bright)); background: rgb(var(--c-surface-2)); }
+
+.ui-number button:disabled { opacity: 0.35; }
+
+.ui-popover {
+  position: fixed;
+  z-index: 300;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: 4px;
+  background: rgb(var(--c-surface));
+  border: 1px solid rgb(var(--c-frame) / 0.5);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 36px -12px rgb(0 0 0 / 0.85);
+}
+
+.ui-popover__option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.9rem;
+  color: rgb(var(--c-ink-muted));
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.ui-popover__option[data-active] { background: rgb(var(--c-surface-2)); color: rgb(var(--c-ink)); }
+
+.ui-popover__option[aria-selected='true'] { color: rgb(var(--c-frame-bright)); }
+
+/* ------------------------------------------------------------------ Dialog content */
+/* Key figures of a card: what a player looks for first, large and side by side. */
+.ui-keyfacts {
+  display: flex;
+  gap: 0.75rem 2.25rem;
+}
+
+.ui-keyfacts dt {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.ui-keyfacts dd {
+  margin-top: 0.15rem;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.ui-dialog__foot { border-top: 1px solid rgb(var(--c-line) / 0.6); }
+
+.ui-panel--paper .ui-dialog__foot { border-top-color: rgb(var(--c-paper-muted) / 0.35); }
+
+.ui-keyfacts > div:last-child { flex: 1; min-width: 0; }
+
+.ui-panel--paper .ui-rule { color: rgb(var(--c-paper-muted)); }
+
+.ui-panel--paper .ui-rule::before,
+.ui-panel--paper .ui-rule::after { background: linear-gradient(90deg, transparent, rgb(var(--c-paper-muted) / 0.7), transparent); }
+
+/* ------------------------------------------------------------------ Dialog chrome per setting */
+/* Body and footer line up with the header's text, which leaves room for the close button. */
+.ui-dialog__frame { display: none; }
+
+.ui-dialog__rule { display: none; }
+
+/* The amount on a resource card, with its steppers either side. */
+.ui-resource-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.ui-resource-count > span { font-size: 2.6rem; line-height: 1; }
+
+/* Grimdark: figures stamped between bronze brackets. */
+.ui-segmented--compact .ui-segmented__option { padding: 0 0.55rem; font-size: 0.8rem; }
+
+/* Portraits in the hero select strip take the radius of the theme they are shown in. */
+.ui-strip-thumb { border-radius: var(--radius); }
+
+/* ------------------------------------------------------------------ Profile */
+.ui-image-slot {
+  display: block;
+  width: 100%;
+  background: rgb(var(--c-inset));
+  border: 1px dashed rgb(var(--c-frame) / 0.45);
+  border-radius: var(--radius);
+  transition: border-color 150ms;
+}
+
+.ui-image-slot:hover { border-color: rgb(var(--c-frame-bright)); border-style: solid; }
+
+.ui-image-slot__veil {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  text-align: center;
+  color: rgb(var(--c-ink));
+  background: linear-gradient(0deg, rgb(var(--c-bg-deep) / 0.9), transparent);
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.ui-image-slot:hover .ui-image-slot__veil,
+.ui-image-slot:disabled .ui-image-slot__veil { opacity: 1; }
+
+.ui-setting-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: rgb(var(--c-surface));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  transition: border-color 150ms, box-shadow 200ms;
+}
+
+.ui-setting-option:hover { border-color: rgb(var(--c-frame) / 0.7); }
+
+.ui-setting-option--selected {
+  border-color: rgb(var(--c-frame-bright));
+  box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.4), inset 0 0 24px rgb(var(--c-accent) / 0.12);
+}
+
+/* ------------------------------------------------------------------ Combat bar */
+.ui-token {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: var(--radius);
+  transition: opacity 150ms, transform 150ms;
+}
+
+.ui-token:hover { transform: translateY(-1px); }
+
+.ui-token--spent { opacity: 0.35; }
+
+/* An icon slot: the picture on a dark well inside the setting's frame. The hotbar, the icon
+   picker and its preview share it. */
+.ui-hud-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  color: rgb(var(--c-frame-bright));
+  background: radial-gradient(circle at 50% 45%, rgb(var(--c-surface-2)), rgb(var(--c-inset)) 78%);
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 -10px 16px rgb(0 0 0 / 0.3);
+  transition: transform 150ms, border-color 150ms, box-shadow 200ms, opacity 150ms, filter 150ms;
+}
+
+.ui-hud-slot--small { width: 100%; height: 2.6rem; }
+
+.ui-hud-slot--large { width: 3.9rem; height: 3.9rem; }
+
+.ui-hud-slot__icon { filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.7)); transition: transform 150ms; }
+
+.ui-hud-slot:hover,
+.ui-hud-slot:focus-visible,
+.ui-hud-slot[data-active] { border-color: rgb(var(--c-frame-bright)); outline: none; }
+
+.ui-hud-slot:not(.ui-hud-slot--small):not(.ui-hud-slot--large):hover { transform: translateY(-2px); }
+
+.ui-hud-slot:hover .ui-hud-slot__icon { transform: scale(1.08); }
+
+.ui-hud-slot:active { transform: scale(0.95); }
+
+.ui-hud-slot--blocked { filter: grayscale(0.9); opacity: 0.42; }
+
+.ui-hud-slot__level,
+.ui-hud-slot__count {
+  position: absolute;
+  font-family: var(--font-numeric);
+  font-size: 0.68rem;
+  line-height: 1;
+  color: rgb(var(--c-ink));
+  text-shadow: 0 1px 2px rgb(0 0 0), 0 0 4px rgb(0 0 0);
+}
+
+.ui-hud-slot__level { top: 4px; left: 5px; color: rgb(var(--c-frame-bright)); }
+
+.ui-hud-slot__count { bottom: 4px; right: 5px; }
+
+.ui-hud-slot__shape { position: absolute; bottom: 4px; right: 4px; }
+
+/* A panel of the hotbar: its title over a well of icons. */
+.ui-hud-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(var(--c-ink-muted));
+  border-bottom: 1px solid rgb(var(--c-line) / 0.6);
+}
+
+/* A strip over the panels: action tokens, resources, figures. */
+.ui-hud-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 3.1rem;
+  padding: 0.35rem 0.75rem;
+}
+
+/* A small square of the HUD: a condition, a defence, a resource. */
+.ui-hud-chip {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: rgb(var(--c-frame-bright));
+  background: rgb(var(--c-inset) / 0.9);
+  border: 1px solid rgb(var(--c-frame) / 0.4);
+  border-radius: var(--radius);
+  transition: border-color 150ms, transform 150ms, opacity 150ms;
+}
+
+.ui-hud-chip:hover { border-color: rgb(var(--c-frame-bright)); transform: translateY(-1px); }
+
+.ui-hud-chip--condition { color: rgb(var(--c-warning)); border-color: rgb(var(--c-warning) / 0.5); background: rgb(var(--c-warning) / 0.1); }
+
+.ui-hud-chip--resistance { color: rgb(var(--c-armor)); }
+
+.ui-hud-chip--vulnerability { color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger) / 0.5); }
+
+.ui-hud-chip--immunity { color: rgb(var(--c-success)); border-color: rgb(var(--c-success) / 0.5); }
+
+.ui-hud-chip--add { color: rgb(var(--c-ink-faint)); border-style: dashed; background: transparent; }
+
+.ui-hud-chip--empty { opacity: 0.5; }
+
+.ui-hud-chip__count {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.25rem;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-numeric);
+  font-size: 0.65rem;
+  line-height: 1;
+  color: rgb(var(--c-ink));
+  background: rgb(var(--c-surface-2));
+  border: 1px solid rgb(var(--c-frame) / 0.6);
+  border-radius: 999px;
+}
+
+.ui-hud-chip--empty .ui-hud-chip__count { color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger) / 0.6); }
+
+/* The portrait: the hero's face in the setting's frame; the frame tells their state. */
+.ui-hud-portrait {
+  --portrait-frame: var(--c-frame);
+  position: relative;
+  width: 11rem;
+  height: 11rem;
+  padding: 5px;
+  background: rgb(var(--c-surface));
+  border: 2px solid rgb(var(--portrait-frame) / 0.7);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-panel);
+  transition: border-color 300ms, box-shadow 300ms;
+}
+
+.ui-hud-portrait > button { border-radius: inherit; background: rgb(var(--c-inset)); }
+
+.ui-hud-portrait--shielded { --portrait-frame: var(--c-temp-hp); }
+
+.ui-hud-portrait--down { --portrait-frame: var(--c-danger); animation: ui-portrait-down 1.6s ease-in-out infinite; }
+
+@keyframes ui-portrait-down {
+  50% { box-shadow: 0 0 22px rgb(var(--c-danger) / 0.45); }
+}
+
+.ui-hud-portrait__temp {
+  position: absolute;
+  bottom: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.05rem 0.55rem;
+  font-family: var(--font-numeric);
+  font-size: 0.85rem;
+  color: rgb(var(--c-temp-hp));
+  background: rgb(var(--c-bg-deep));
+  border: 1px solid rgb(var(--c-temp-hp) / 0.8);
+  border-radius: 999px;
+}
+
+/* Health and sanity as tall bars that fill from the bottom. */
+.ui-vbar {
+  position: relative;
+  width: 1.9rem;
+  height: 12.5rem;
+  margin-top: 2.2rem;
+}
+
+.ui-vbar__track {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), var(--shadow-panel);
+  transition: border-color 150ms, box-shadow 200ms;
+}
+
+.ui-vbar:hover .ui-vbar__track { border-color: rgb(var(--c-frame-bright)); }
+
+.ui-vbar--low .ui-vbar__track { border-color: rgb(var(--c-danger) / 0.6); box-shadow: 0 0 14px rgb(var(--c-danger) / 0.25); }
+
+.ui-vbar__fill,
+.ui-vbar__extra {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.ui-vbar__fill {
+  opacity: 0.85;
+  background-image: linear-gradient(90deg, rgb(0 0 0 / 0.28), transparent 45%, rgb(0 0 0 / 0.22));
+}
+
+.ui-vbar__extra {
+  background: repeating-linear-gradient(135deg, rgb(var(--c-temp-hp) / 0.85) 0 4px, rgb(var(--c-temp-hp) / 0.55) 4px 8px);
+}
+
+.ui-vbar__label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.62rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgb(var(--c-ink) / 0.75);
+  text-shadow: 0 0 4px rgb(0 0 0);
+  pointer-events: none;
+}
+
+.ui-vbar__value {
+  position: absolute;
+  bottom: calc(100% + 0.3rem);
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-numeric);
+  font-size: 0.85rem;
+  line-height: 1;
+  white-space: nowrap;
+  color: rgb(var(--c-ink));
+}
+
+/* Experience under the panels. */
+.ui-hud-xp {
+  position: relative;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+}
+
+.ui-hud-xp__fill { display: block; height: 100%; background: rgb(var(--c-xp) / 0.85); }
+
+button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
+
+/* Long descriptions in a hint fade out instead of growing past the screen. */
+/* A long description scrolls inside the hint; the hint stays open while the cursor is on it. */
+.ui-hud-hint__text {
+  max-height: min(40vh, 18rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
+}
+
+/* Icon picker of entry forms. */
+.ui-icon-picker {
+  padding: 0.75rem;
+  background: rgb(var(--c-inset) / 0.55);
+  border: 1px solid rgb(var(--c-line) / 0.7);
+  border-radius: var(--radius);
+}
+
+.ui-swatch {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid rgb(0 0 0 / 0.5);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  transition: transform 120ms, box-shadow 150ms;
+}
+
+.ui-swatch:hover { transform: scale(1.12); }
+
+.ui-swatch--auto {
+  background: linear-gradient(135deg, rgb(var(--c-frame-bright)) 0 50%, rgb(var(--c-accent)) 50% 100%);
+}
+
+.ui-swatch--selected { box-shadow: 0 0 0 2px rgb(var(--c-bg)), 0 0 0 3px rgb(var(--c-frame-bright)); }
+
+/* ------------------------------------------------------------------ Dice tray */
+.ui-die {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 3.2rem;
+  font-size: 1.05rem;
+  color: rgb(var(--c-ink-muted));
+  background: rgb(var(--c-surface-2) / 0.6);
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  transition: color 120ms, border-color 120ms, transform 120ms, background-color 120ms;
+}
+
+.ui-die:hover { color: rgb(var(--c-ink)); border-color: rgb(var(--c-frame) / 0.7); }
+
+.ui-die:active { transform: translateY(1px); }
+
+.ui-die--in { color: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame-bright) / 0.8); background: rgb(var(--c-accent) / 0.1); }
+
+/* How many of a die are in the pool; sits inside the die so no scrolling edge can cut it. */
+.ui-die__count {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  min-width: 1.15rem;
+  padding: 0 0.3rem;
+  font-size: 0.68rem;
+  line-height: 1.15rem;
+  text-align: center;
+  color: rgb(var(--c-accent-ink));
+  background: rgb(var(--c-accent));
+  border-radius: 999px;
+}
+
+.ui-die-face {
+  display: grid;
+  place-items: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.4rem;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--c-ink));
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+}
+
+.ui-die-face--max { color: rgb(var(--c-success)); border-color: rgb(var(--c-success) / 0.6); }
+
+.ui-die-face--min { color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger) / 0.6); }
+
+.ui-die-face--dropped { opacity: 0.4; text-decoration: line-through; }
+
+/* ------------------------------------------------------------------ Image framing */
+.ui-crop { background: rgb(var(--c-bg-deep)); border: 1px solid rgb(var(--c-line)); border-radius: var(--radius); }
+
+/* The frame: everything outside it is shaded, its corners are brackets to pull. */
+.ui-crop__frame {
+  position: absolute;
+  cursor: move;
+  touch-action: none;
+  outline: 1px solid rgb(var(--c-frame-bright) / 0.85);
+  box-shadow: 0 0 0 9999px rgb(var(--c-bg-deep) / 0.68);
+  background-image:
+    linear-gradient(rgb(var(--c-frame-bright) / 0.22), rgb(var(--c-frame-bright) / 0.22)),
+    linear-gradient(rgb(var(--c-frame-bright) / 0.22), rgb(var(--c-frame-bright) / 0.22)),
+    linear-gradient(rgb(var(--c-frame-bright) / 0.22), rgb(var(--c-frame-bright) / 0.22)),
+    linear-gradient(rgb(var(--c-frame-bright) / 0.22), rgb(var(--c-frame-bright) / 0.22));
+  background-size: 1px 100%, 1px 100%, 100% 1px, 100% 1px;
+  background-position: 33.33% 0, 66.66% 0, 0 33.33%, 0 66.66%;
+  background-repeat: no-repeat;
+}
+
+.ui-crop__corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  touch-action: none;
+  border: 0 solid rgb(var(--c-frame-bright));
+  transition: transform 120ms;
+}
+
+.ui-crop__corner:hover { transform: scale(1.15); }
+
+.ui-crop__corner--nw { top: 0; left: 0; border-width: 4px 0 0 4px; cursor: nwse-resize; }
+
+.ui-crop__corner--ne { top: 0; right: 0; border-width: 4px 4px 0 0; cursor: nesw-resize; }
+
+.ui-crop__corner--sw { bottom: 0; left: 0; border-width: 0 0 4px 4px; cursor: nesw-resize; }
+
+.ui-crop__corner--se { bottom: 0; right: 0; border-width: 0 4px 4px 0; cursor: nwse-resize; }
+
+/* ------------------------------------------------------------------ Attribute plates */
+.ui-stat__label { font-size: 0.75rem; color: rgb(var(--c-ink-muted)); }
+
+/* ------------------------------------------------------------------ Icon tiles */
+/* A hotbar key or a card picture in the manner of Baldur's Gate 3: the entry's colour paints the
+   tile, lit from above, and a large solid pictogram sits on it in pale ink. */
+[data-setting] .ui-hud-slot--tile {
+  --tile-color: var(--tile, var(--tile-kind, rgb(var(--c-frame))));
+  color: rgb(246 238 222);
+  border: 1px solid color-mix(in srgb, var(--tile-color) 40%, rgb(var(--c-frame-bright)));
+  background: radial-gradient(
+    120% 95% at 50% 12%,
+    color-mix(in srgb, var(--tile-color) 80%, #fff),
+    color-mix(in srgb, var(--tile-color) 50%, #000) 48%,
+    color-mix(in srgb, var(--tile-color) 14%, #000) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    inset 0 0 0 1px rgb(0 0 0 / 0.55),
+    inset 0 -10px 14px rgb(0 0 0 / 0.45),
+    0 2px 5px rgb(0 0 0 / 0.55);
+}
+
+/* Without a chosen colour, the kind of entry tints the tile, so the panels stay tellable apart. */
+.ui-hud-slot--tile[data-kind='attack'] { --tile-kind: rgb(var(--c-danger)); }
+
+.ui-hud-slot--tile[data-kind='ability'] { --tile-kind: rgb(var(--c-success)); }
+
+.ui-hud-slot--tile[data-kind='spell'] { --tile-kind: rgb(var(--c-sanity)); }
+
+.ui-hud-slot--tile[data-kind='item'] { --tile-kind: rgb(var(--c-warning)); }
+
+/* The pictogram is lit like a painted icon: a hard dark edge below, a glow of the tile's colour. */
+[data-setting] .ui-hud-slot--tile .ui-hud-slot__icon {
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.9)) drop-shadow(0 0 5px color-mix(in srgb, var(--tile-color) 70%, transparent));
+}
+
+[data-setting] .ui-hud-slot--tile:hover .ui-hud-slot__icon { transform: scale(1.06); }
+
+@keyframes ui-hologram-scan {
+  from { background-position: 0 -60%, 0 0; }
+  to { background-position: 0 160%, 0 0; }
+}
+
+/* ------------------------------------------------------------------ Option tiles */
+/* An option of a choice (a feat, a spell, a lineage): quiet until chosen; the chosen look is the
+   setting's own selection (a solid block in sci-fi, a gilt frame in
+   fantasy). */
+.ui-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.55rem 0.8rem;
+  text-align: left;
+  color: rgb(var(--c-ink));
+  background: rgb(var(--c-surface-2) / 0.45);
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  transition: border-color 120ms, background-color 120ms, color 120ms, box-shadow 150ms;
+}
+
+.ui-option:not(:disabled):hover { border-color: rgb(var(--c-frame)); background: rgb(var(--c-surface-2)); }
+
+.ui-option:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 2px; }
+
+.ui-option:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ui-option__meta { font-size: 0.72rem; color: rgb(var(--c-ink-faint)); }
+
+.ui-option[aria-pressed='true'] {
+  border-color: rgb(var(--c-frame-bright));
+  background: rgb(var(--c-accent) / 0.12);
+  box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.35);
+}
+
+.ui-option[aria-pressed='true'] .ui-option__meta { color: rgb(var(--c-ink-muted)); }
+
+.ui-option--empty { border-style: dashed; background: transparent; }
+
+.ui-option[data-focus]:not([aria-pressed='true']) { border-color: rgb(var(--c-frame) / 0.8); background: rgb(var(--c-surface-2)); }
+
+/* The feature a choice comes from, beside the choice's name. */
+.ui-choice-origin {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.72rem;
+  color: rgb(var(--c-frame-bright));
+  border: 1px solid rgb(var(--c-frame) / 0.5);
+  border-radius: var(--radius);
+}
+
+/* ------------------------------------------------------------------ Journey steps */
+/* The steps of hero creation down the left edge, each with what was chosen on it, as in a game's
+   character creator: a mark (done, current, ahead), the step's name, the choice under it. */
+.ui-steps__item {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr;
+  column-gap: 0.7rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  text-align: left;
+  border-radius: var(--radius);
+  transition: background-color 120ms, color 120ms;
+}
+
+.ui-steps__item:not(:disabled):hover { background: rgb(var(--c-surface-2) / 0.6); }
+
+.ui-steps__item:disabled { opacity: 0.35; cursor: default; }
+
+.ui-steps__mark {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 0.7rem;
+  color: rgb(var(--c-ink-faint));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 999px;
+}
+
+.ui-steps__label { font-size: 0.92rem; line-height: 1.2; color: rgb(var(--c-ink-muted)); }
+
+.ui-steps__value { font-size: 0.75rem; line-height: 1.2; color: rgb(var(--c-ink-faint)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ui-steps__item[data-done] .ui-steps__mark { color: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame-bright) / 0.7); }
+
+.ui-steps__item[data-done] .ui-steps__value { color: rgb(var(--c-frame-bright) / 0.85); }
+
+.ui-steps__item[aria-current='step'] .ui-steps__label { color: rgb(var(--c-ink)); }
+
+.ui-steps__item[aria-current='step'] .ui-steps__mark { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame-bright)); }
+
+/* ------------------------------------------------------------------ Origin tiles */
+/* A species, background or class to pick: its emblem large over its name, framed when chosen. */
+.ui-origin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.7rem 0.4rem 0.6rem;
+  text-align: center;
+  color: rgb(var(--c-ink-muted));
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) + 4px);
+  transition: color 150ms, border-color 150ms, background-color 150ms;
+}
+
+.ui-origin__icon {
+  color: rgb(var(--c-frame-bright));
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.9)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.6));
+  transition: transform 150ms, filter 150ms;
+}
+
+.ui-origin__name { font-size: 0.85rem; line-height: 1.15; }
+
+.ui-origin:hover { color: rgb(var(--c-ink)); }
+
+.ui-origin:hover .ui-origin__icon { transform: translateY(-2px); }
+
+.ui-origin[aria-pressed='true'] {
+  color: rgb(var(--c-ink));
+  border-color: rgb(var(--c-frame-bright) / 0.85);
+  background: radial-gradient(circle at 50% 30%, rgb(var(--c-frame) / 0.18), transparent 70%);
+  box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.25), 0 0 16px -6px rgb(var(--c-frame-bright) / 0.6);
+}
+
+.ui-origin[aria-pressed='true'] .ui-origin__icon { filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.9)) drop-shadow(0 0 10px rgb(var(--c-frame-bright) / 0.55)); }
+
+/* ------------------------------------------------------------------ Hero summary (creation) */
+.ui-summary__heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.45rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: rgb(var(--c-ink));
+}
+
+.ui-summary__heading::before,
+.ui-summary__heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.55), transparent);
+}
+
+.ui-summary__badge {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  width: 2.7rem;
+  height: 2.7rem;
+  font-size: 0.82rem;
+  color: rgb(var(--c-ink));
+  background: radial-gradient(circle at 50% 30%, rgb(var(--c-surface-2)), rgb(var(--c-inset)));
+  border: 1px solid rgb(var(--c-frame) / 0.6);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 2px rgb(var(--c-bg-deep) / 0.6);
+}
+
+.ui-summary__badge svg { color: rgb(var(--c-frame-bright)); }
+
+.ui-summary__portrait {
+  width: 5.5rem;
+  height: 5.5rem;
+  object-fit: cover;
+  border: 2px solid rgb(var(--c-frame-bright) / 0.7);
+  border-radius: 999px;
+}
+
+/* ------------------------------------------------------------------ Damage block */
+/* What an entry deals, set apart on its card so it is never searched for. */
+.ui-damage-block {
+  padding: 0.75rem 1rem;
+  background: rgb(var(--c-inset) / 0.7);
+  border: 1px solid rgb(var(--c-line));
+  border-left: 3px solid rgb(var(--c-frame-bright) / 0.7);
+  border-radius: var(--radius);
+}
+
+.ui-panel--paper .ui-damage-block { background: rgb(var(--c-paper-muted) / 0.12); border-color: rgb(var(--c-paper-muted) / 0.4); }
+
+/* ------------------------------------------------------------------ Crest */
+/* The setting's centre piece sits on the top edge of a major panel, half above it. */
+.ui-crest {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 120px;
+  height: 24px;
+  margin: 0 !important;
+  transform: translate(-50%, -50%);
+  color: rgb(var(--c-frame-bright));
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ------------------------------------------------------------------ Rail */
+.ui-rail {
+  background: rgb(var(--c-bg-deep) / 0.6);
+  border-right: 1px solid rgb(var(--c-line) / 0.7);
+}
+.ui-rail__item {
+  color: rgb(var(--c-ink-faint));
+  transition: color 150ms, background-color 150ms;
+}
+.ui-rail__item:hover { color: rgb(var(--c-ink-muted)); }
+.ui-rail__item[aria-current='page'] { color: rgb(var(--c-frame-bright)); }
+.ui-rail__mark {
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 2px;
+  background: transparent;
+  transition: background-color 150ms;
+}
+.ui-rail__item[aria-current='page'] .ui-rail__mark { background: rgb(var(--c-frame-bright)); }
+.ui-rail__divider { background: rgb(var(--c-line) / 0.7); }
+
+/* ------------------------------------------------------------------ Tabs */
+.ui-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.25rem;
+  border-bottom: 1px solid rgb(var(--c-line) / 0.7);
+}
+.ui-tabs__tab {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.35rem 0 0.55rem;
+  font-size: 0.9rem;
+  color: rgb(var(--c-ink-faint));
+  transition: color 150ms;
+}
+.ui-tabs__tab:hover { color: rgb(var(--c-ink-muted)); }
+.ui-tabs__tab[aria-selected='true'] { color: rgb(var(--c-ink)); }
+.ui-tabs__tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: rgb(var(--c-frame-bright));
+  transform: scaleX(0);
+  transition: transform 200ms ease;
+}
+.ui-tabs__tab[aria-selected='true']::after { transform: scaleX(1); }
+.ui-tabs__tab:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 2px; }
+.ui-tabs__count { font-size: 0.72rem; color: rgb(var(--c-ink-faint)); font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------------ Paper stack */
+/* Older leaves heaped under a sheet of paper: hidden unless the setting keeps its records on paper.
+   The heap is the same everywhere — each leaf pushed its own way and turned askew, its edges worn
+   ragged, bitten by small tears, a corner folded off — and the setting colours the leaves. The
+   rags are cut in pixels, so a long edge is no smoother than a short one. */
+:root {
+  --ragged-1: polygon(0.0% 0.0px, 3.6% 2.2px, 7.1% 0.5px, 10.7% 1.3px, 14.3% 1.8px, 17.9% 1.3px, 21.4% 1.5px, 25.0% 0.6px, 28.6% 1.7px, 32.1% 0.1px, 35.7% 1.1px, 39.3% 1.9px, 42.9% 1.2px, 46.4% 1.7px, 50.0% 1.4px, 53.6% 2.2px, 57.1% 0.8px, 60.7% 0.8px, 64.3% 0.7px, 67.9% 0.7px, 71.4% 1.3px, 74.1% 0.5px, 75.0% 6.7px, 75.6% 0.5px, 78.6% 0.5px, 82.1% 0.1px, 85.7% 0.8px, 89.3% 2.2px, 92.9% 0.4px, 96.4% 0.7px, 100.0% 1.0px, calc(100% - 0.8px) 0.0%, calc(100% - 1.3px) 10.0%, calc(100% - 0.6px) 20.0%, calc(100% - 1.1px) 30.0%, calc(100% - 1.5px) 40.0%, calc(100% - 1.2px) 50.0%, calc(100% - 1.7px) 60.0%, calc(100% - 1.0px) 70.0%, calc(100% - 0.6px) 80.0%, calc(100% - 0.8px) 90.0%, calc(100% - 0.9px) 100.0%, 100.0% calc(100% - 1.7px), 96.4% calc(100% - 1.0px), 92.9% calc(100% - 2.3px), 89.3% calc(100% - 2.1px), 85.7% calc(100% - 0.1px), 82.1% calc(100% - 1.7px), 78.6% calc(100% - 2.2px), 75.0% calc(100% - 0.1px), 72.4% calc(100% - 0.6px), 71.4% calc(100% - 7.3px), 70.1% calc(100% - 0.7px), 67.9% calc(100% - 0.5px), 64.3% calc(100% - 1.6px), 60.7% calc(100% - 2.3px), 57.1% calc(100% - 2.2px), 54.6% calc(100% - 0.0px), 53.6% calc(100% - 7.9px), 52.1% calc(100% - 0.6px), 50.0% calc(100% - 2.1px), 46.4% calc(100% - 0.6px), 42.9% calc(100% - 0.6px), 39.3% calc(100% - 1.2px), 35.7% calc(100% - 0.6px), 32.7% calc(100% - 0.7px), 32.1% calc(100% - 5.3px), 31.3% calc(100% - 0.1px), 28.6% calc(100% - 2.2px), 25.0% calc(100% - 2.1px), 21.4% calc(100% - 2.2px), 17.9% calc(100% - 1.4px), 14.3% calc(100% - 0.3px), 10.7% calc(100% - 0.5px), 7.8% calc(100% - 1.2px), 7.1% calc(100% - 5.5px), 6.1% calc(100% - 0.1px), 3.6% calc(100% - 2.1px), 0.0% calc(100% - 1.9px), 0.5px 100.0%, 2.1px 90.0%, 2.4px 80.0%, 0.7px 70.0%, 1.0px 60.0%, 0.8px 50.0%, 1.5px 40.0%, 1.3px 30.0%, 1.0px 20.0%, 1.0px 10.0%, 2.1px 0.0%);
+  --ragged-2: polygon(0.0% 2.1px, 3.6% 0.4px, 7.1% 1.8px, 10.7% 3.0px, 14.3% 0.6px, 17.9% 0.5px, 21.4% 1.7px, 25.0% 1.6px, 28.6% 1.2px, 32.1% 0.1px, 35.7% 1.7px, 39.3% 2.3px, 42.9% 0.8px, 45.1% 1.1px, 46.4% 10.6px, 47.4% 1.5px, 50.0% 2.2px, 53.6% 0.1px, 57.1% 1.9px, 60.0% 0.1px, 60.7% 7.5px, 61.2% 0.1px, 64.3% 0.0px, 67.9% 3.0px, 71.4% 0.4px, 75.0% 2.2px, 78.6% 1.5px, 82.1% 1.4px, 85.7% 2.5px, 88.5% 1.0px, 89.3% 10.8px, 89.9% 0.2px, 92.9% 3.0px, calc(100% - 12.3px) 0px, 100% 12.3px, calc(100% - 0.2px) 10.0%, calc(100% - 2.1px) 20.0%, calc(100% - 1.5px) 30.0%, calc(100% - 0.2px) 40.0%, calc(100% - 0.5px) 49.4%, calc(100% - 7.4px) 50.0%, calc(100% - 0.4px) 50.4%, calc(100% - 3.0px) 60.0%, calc(100% - 2.4px) 70.0%, calc(100% - 2.7px) 80.0%, calc(100% - 2.6px) 90.0%, calc(100% - 1.8px) 100.0%, 100.0% calc(100% - 0.7px), 96.4% calc(100% - 2.9px), 93.4% calc(100% - 1.1px), 92.9% calc(100% - 7.1px), 92.1% calc(100% - 0.5px), 89.3% calc(100% - 0.4px), 85.7% calc(100% - 2.2px), 82.1% calc(100% - 2.6px), 78.6% calc(100% - 0.7px), 75.0% calc(100% - 0.6px), 71.4% calc(100% - 1.4px), 67.9% calc(100% - 0.9px), 64.3% calc(100% - 1.8px), 60.7% calc(100% - 1.4px), 57.1% calc(100% - 2.3px), 53.6% calc(100% - 2.6px), 50.0% calc(100% - 0.3px), 46.4% calc(100% - 0.8px), 42.9% calc(100% - 2.5px), 39.3% calc(100% - 2.4px), 35.7% calc(100% - 2.8px), 32.1% calc(100% - 0.3px), 28.6% calc(100% - 3.1px), 25.0% calc(100% - 1.6px), 21.4% calc(100% - 3.2px), 17.9% calc(100% - 2.8px), 14.3% calc(100% - 2.0px), 10.7% calc(100% - 2.3px), 7.1% calc(100% - 1.6px), 3.6% calc(100% - 1.3px), 0.0% calc(100% - 1.1px), 0.3px 100.0%, 2.3px 90.0%, 2.5px 80.0%, 1.8px 70.0%, 2.3px 60.0%, 0.4px 50.0%, 1.9px 40.0%, 0.1px 30.0%, 0.4px 20.0%, 2.2px 10.0%, 3.0px 0.0%);
+  --ragged-3: polygon(0.0% 2.5px, 3.6% 0.9px, 7.1% 1.0px, 10.7% 2.5px, 14.3% 3.3px, 16.6% 0.7px, 17.9% 12.6px, 18.8% 1.3px, 19.9% 0.8px, 21.4% 12.8px, 22.5% 0.8px, 25.0% 3.5px, 28.6% 2.9px, 32.1% 3.4px, 35.7% 2.9px, 39.3% 0.5px, 42.2% 0.4px, 42.9% 13.3px, 43.3% 1.7px, 46.4% 3.8px, 48.9% 0.9px, 50.0% 9.5px, 50.7% 0.6px, 53.6% 1.9px, 56.4% 1.0px, 57.1% 11.0px, 57.6% 1.6px, 60.7% 2.9px, 64.3% 2.8px, 67.9% 2.5px, 71.4% 3.1px, 75.0% 2.8px, 78.6% 3.2px, 82.1% 0.3px, 85.7% 2.6px, 89.3% 2.2px, 92.2% 0.1px, 92.9% 10.5px, 93.3% 0.7px, 96.4% 0.8px, 100.0% 0.5px, calc(100% - 0.2px) 0.0%, calc(100% - 0.0px) 10.0%, calc(100% - 0.5px) 18.6%, calc(100% - 10.7px) 20.0%, calc(100% - 1.8px) 21.0%, calc(100% - 0.3px) 28.4%, calc(100% - 11.9px) 30.0%, calc(100% - 0.9px) 31.1%, calc(100% - 0.1px) 40.0%, calc(100% - 3.0px) 50.0%, calc(100% - 1.0px) 60.0%, calc(100% - 3.3px) 70.0%, calc(100% - 1.8px) 80.0%, calc(100% - 1.0px) 90.0%, 100% calc(100% - 13.7px), calc(100% - 13.7px) 100%, 92.9% calc(100% - 1.6px), 89.9% calc(100% - 1.3px), 89.3% calc(100% - 13.0px), 88.4% calc(100% - 1.0px), 85.7% calc(100% - 2.3px), 82.1% calc(100% - 2.3px), 78.6% calc(100% - 1.3px), 75.0% calc(100% - 3.8px), 71.4% calc(100% - 2.5px), 67.9% calc(100% - 1.2px), 64.3% calc(100% - 2.8px), 60.7% calc(100% - 2.0px), 57.1% calc(100% - 2.1px), 53.6% calc(100% - 2.2px), 50.0% calc(100% - 1.8px), 46.4% calc(100% - 0.8px), 42.9% calc(100% - 3.5px), 40.1% calc(100% - 1.7px), 39.3% calc(100% - 11.8px), 38.1% calc(100% - 1.3px), 35.7% calc(100% - 0.2px), 32.1% calc(100% - 3.2px), 28.6% calc(100% - 3.3px), 25.0% calc(100% - 3.4px), 21.4% calc(100% - 3.5px), 17.9% calc(100% - 2.8px), 14.3% calc(100% - 2.8px), 10.7% calc(100% - 3.0px), 7.1% calc(100% - 3.3px), 3.6% calc(100% - 2.0px), 0.0% calc(100% - 2.7px), 3.9px 100.0%, 1.2px 90.9%, 13.1px 90.0%, 1.2px 88.8%, 2.0px 80.0%, 3.0px 70.0%, 2.4px 60.0%, 1.7px 50.0%, 0.5px 40.0%, 1.1px 30.0%, 0.4px 20.0%, 1.6px 10.0%, 2.5px 0.0%);
+  --ragged-4: polygon(0px 17.4px, 17.4px 0px, 7.1% 2.6px, 10.7% 2.6px, 14.3% 0.9px, 17.9% 3.3px, 21.4% 4.6px, 25.0% 0.1px, 28.6% 2.5px, 32.1% 3.3px, 35.7% 0.2px, 39.3% 4.7px, 42.9% 3.3px, 46.4% 1.0px, 50.0% 2.7px, 53.6% 0.1px, 57.1% 3.1px, 60.7% 1.5px, 64.3% 4.5px, 67.9% 3.0px, 71.4% 1.2px, 73.8% 1.5px, 75.0% 15.4px, 75.8% 0.2px, 78.6% 1.5px, 82.1% 2.0px, 84.7% 0.8px, 85.7% 14.2px, 86.4% 1.2px, 89.3% 2.6px, 92.9% 3.0px, 96.4% 4.5px, 100.0% 4.0px, calc(100% - 4.7px) 0.0%, calc(100% - 3.1px) 10.0%, calc(100% - 0.1px) 19.1%, calc(100% - 15.4px) 20.0%, calc(100% - 0.3px) 20.6%, calc(100% - 1.2px) 30.0%, calc(100% - 1.1px) 40.0%, calc(100% - 0.7px) 50.0%, calc(100% - 1.5px) 60.0%, calc(100% - 1.7px) 68.6%, calc(100% - 15.0px) 70.0%, calc(100% - 2.3px) 71.0%, calc(100% - 0.3px) 80.0%, calc(100% - 0.2px) 90.0%, calc(100% - 2.3px) 100.0%, 100.0% calc(100% - 4.1px), 96.4% calc(100% - 3.6px), 92.9% calc(100% - 1.2px), 89.3% calc(100% - 3.1px), 85.7% calc(100% - 1.1px), 82.6% calc(100% - 0.3px), 82.1% calc(100% - 13.5px), 81.5% calc(100% - 0.1px), 78.6% calc(100% - 3.2px), 75.0% calc(100% - 4.0px), 71.4% calc(100% - 3.2px), 67.9% calc(100% - 3.5px), 64.3% calc(100% - 0.1px), 61.6% calc(100% - 2.0px), 60.7% calc(100% - 11.3px), 59.5% calc(100% - 0.8px), 57.1% calc(100% - 3.9px), 54.3% calc(100% - 1.3px), 53.6% calc(100% - 10.6px), 52.5% calc(100% - 1.0px), 50.0% calc(100% - 1.6px), 46.4% calc(100% - 0.9px), 42.9% calc(100% - 0.5px), 39.3% calc(100% - 2.6px), 35.7% calc(100% - 4.7px), 32.8% calc(100% - 1.1px), 32.1% calc(100% - 13.0px), 31.2% calc(100% - 1.3px), 28.6% calc(100% - 3.5px), 25.0% calc(100% - 4.8px), 21.4% calc(100% - 0.8px), 17.9% calc(100% - 3.2px), 14.3% calc(100% - 1.9px), 11.6% calc(100% - 0.7px), 10.7% calc(100% - 11.1px), 9.5% calc(100% - 1.4px), 7.1% calc(100% - 3.4px), 3.6% calc(100% - 2.5px), 0.0% calc(100% - 1.3px), 3.1px 100.0%, 3.4px 90.0%, 4.6px 80.0%, 4.5px 70.0%, 4.7px 60.0%, 2.0px 50.0%, 4.2px 40.0%, 2.0px 30.0%, 1.9px 20.0%, 1.3px 10.0%);
+}
+.ui-leaf { display: none; }
+.ui-leaf--1 { clip-path: var(--ragged-1); transform: translate(-6px, 5px) rotate(0.5deg); }
+.ui-leaf--2 { clip-path: var(--ragged-2); transform: translate(9px, -6px) rotate(-0.8deg); }
+.ui-leaf--3 { clip-path: var(--ragged-3); transform: translate(-14px, 11px) rotate(-1.1deg); }
+.ui-leaf--4 { clip-path: var(--ragged-4); transform: translate(7px, 17px) rotate(1.3deg); }
+
+/* ------------------------------------------------------------------ Ledger row states */
+.ui-ledger__row--dim { opacity: 0.6; }
+.ui-ledger__row[data-selected] { background: rgb(var(--c-paper-muted) / 0.16); }
+
+/* ------------------------------------------------------------------ Details pane */
+.ui-details__eyebrow {
+  margin-bottom: 0.35rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(var(--c-frame));
+}
+.ui-details__title { font-size: 1.6rem; line-height: 1.15; color: rgb(var(--c-ink)); }
+.ui-details__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 1px;
+  background: rgb(var(--c-line) / 0.6);
+  border: 1px solid rgb(var(--c-line) / 0.6);
+}
+.ui-details__fact { padding: 0.5rem 0.75rem; background: rgb(var(--c-surface)); }
+.ui-details__fact dt { font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
+.ui-details__fact dd { margin-top: 0.2rem; font-size: 1rem; color: rgb(var(--c-ink)); }
+.ui-details__foot { border-top: 1px solid rgb(var(--c-line) / 0.6); }
+/* A card is born for each entry; the frame stays still while its contents come in. */
+:is(.ui-details__head, .ui-details__facts, .ui-details__body, .ui-details__foot) { animation: ui-details-in 0.2s ease-out; }
+@keyframes ui-details-in { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { :is(.ui-details__head, .ui-details__facts, .ui-details__body, .ui-details__foot) { animation: none; } }
+
+/* ------------------------------------------------------------------ Hero column */
+.ui-hero-column {
+  background: rgb(var(--c-surface) / 0.4);
+  border-right: 1px solid rgb(var(--c-line) / 0.7);
+}
+
+/* ------------------------------------------------------------------ Tags */
+/* A quiet label for a category (action type, school, rarity), tinted by its tone. */
+.ui-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: rgb(var(--tag-tone));
+  background: rgb(var(--tag-tone) / 0.08);
+  border: 1px solid rgb(var(--tag-tone) / 0.45);
+  border-radius: var(--radius);
+}
+
+/* ------------------------------------------------------------------ Status cluster */
+/* The vitals panel with the level set into its top right corner, experience on a plaque fixed
+   under it. The bars leave room for the level. */
+.ui-status { display: flex; flex-direction: column; }
+.ui-status__panel { z-index: 1; }
+/* The bars stand as tall as the level beside them, so the row under them never runs into it. */
+.ui-status__bars { display: flex; flex-direction: column; justify-content: center; gap: 0.7rem; min-height: 5.9rem; padding-right: 5.2rem; }
+
+/* One of the vitals: the picture beside the name and figures, the gauge under them and the
+   temporary amount at the gauge's end, beside the hatched part it stands for. */
+.ui-vital {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: 'icon label value value' 'icon gauge gauge extra';
+  align-items: end;
+  row-gap: 0.3rem;
+  width: 100%;
+  text-align: left;
+}
+.ui-vital__icon { grid-area: icon; align-self: center; margin-right: var(--vital-gap, 0.6rem); display: grid; place-items: center; color: rgb(var(--c-ink-muted)); }
+.ui-vital[data-tone='hp'] .ui-vital__icon { color: rgb(var(--c-hp)); }
+.ui-vital[data-tone='sanity'] .ui-vital__icon { color: rgb(var(--c-sanity)); }
+.ui-vital__label { grid-area: label; overflow: hidden; padding-right: 0.4rem; white-space: nowrap; text-overflow: ellipsis; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1; color: rgb(var(--c-ink-faint)); transition: color 200ms; }
+.ui-vital__value { grid-area: value; line-height: 1; white-space: nowrap; }
+.ui-vital__current { font-size: 1.2rem; color: rgb(var(--c-ink)); }
+.ui-vital__max { margin-left: 0.15rem; font-size: 0.8rem; color: rgb(var(--c-ink-faint)); }
+.ui-vital__extra { grid-area: extra; align-self: center; margin-left: 0.45rem; font-size: 0.8rem; line-height: 1; color: rgb(var(--c-temp-hp)); }
+.ui-vital__gauge { grid-area: gauge; position: relative; display: block; }
+.ui-vital:hover .ui-vital__label { color: rgb(var(--c-ink-muted)); }
+
+/* ------------------------------------------------------------------ Level and experience */
+/* The level beside the bars: the setting's token of rank, drawn whole by its ornament set and
+   filled in by the setting's CSS. Its picture is an SVG stretched over the token; the figures lie
+   on top of it. */
+.ui-level {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 4.2rem;
+  height: 5.6rem;
+  transition: transform 250ms ease, filter 250ms ease;
+}
+.ui-level > * { position: relative; display: grid; place-items: center; width: 100%; height: 100%; }
+.ui-level__art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ui-level:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 3px; }
+.ui-level[data-ready] { animation: ui-level-ready 2.2s ease-in-out infinite; }
+@keyframes ui-level-ready {
+  50% { filter: drop-shadow(0 0 10px rgb(var(--c-xp) / 0.7)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-level[data-ready] { animation: none; filter: drop-shadow(0 0 8px rgb(var(--c-xp) / 0.6)); }
+}
+
+/* Experience on a plaque fixed under the vitals panel: the label, a graduated bar, the figures. */
+.ui-xp {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 0.35rem 0.6rem;
+  margin: -1px 0.6rem 0;
+  padding: 0.45rem 0.75rem 0.5rem;
+  text-align: left;
+  background: rgb(var(--c-surface));
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow-panel);
+}
+.ui-xp__label { font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
+/* The bar with room around it for the level-up marvel. */
+.ui-xp__rail { position: relative; display: block; grid-column: 1 / -1; }
+.ui-xp__track {
+  position: relative;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  background: rgb(var(--c-inset));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+}
+.ui-xp__fill { position: absolute; inset: 0 auto 0 0; background: rgb(var(--c-xp)); transition: width 400ms ease-out; }
+.ui-xp__value { justify-self: end; font-size: 0.8rem; color: rgb(var(--c-ink-muted)); white-space: nowrap; }
+.ui-xp__of { color: rgb(var(--c-ink-faint)); }
+.ui-xp[data-ready] .ui-xp__label { color: rgb(var(--c-xp)); }
+.ui-xp:hover .ui-xp__track { border-color: rgb(var(--c-xp) / 0.6); }
+
+/* ------------------------------------------------------------------ Key field */
+/* A number field standing in a row of buttons: the setting gives it the buttons' silhouette. */
+.ui-keyfield { position: relative; display: inline-flex; }
+.ui-keyfield > .ui-input { width: 100%; }
+
+/* ------------------------------------------------------------------ Sheet sections */
+/* Side-by-side lists stack when the section gives up room to an entry's card. */
+.ui-section-list { container: section-list / inline-size; }
+@container section-list (max-width: 760px) {
+  .ui-section-list .ui-section__columns { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; align-content: start; }
+}
+
+/* ------------------------------------------------------------------ Chips */
+/* A small on/off choice among several (studied schools). */
+.ui-chip {
+  white-space: nowrap;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  color: rgb(var(--c-ink-faint));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  transition: color 120ms, border-color 120ms, background-color 120ms;
+}
+.ui-chip:hover { color: rgb(var(--c-ink-muted)); border-color: rgb(var(--c-frame) / 0.6); }
+/* A chip that says what it filters by a picture alone, square to the height of a field beside it. */
+.ui-chip--icon { display: inline-grid; place-items: center; width: 2rem; height: 2rem; padding: 0; }
+.ui-chip[aria-pressed='true'] { color: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame-bright) / 0.7); background: rgb(var(--c-frame) / 0.12); }
+/* On paper a chip is written in the page's ink. */
+.ui-panel--paper .ui-chip { color: rgb(var(--c-paper-ink) / 0.6); border-color: rgb(var(--c-paper-muted) / 0.6); background: none; }
+.ui-panel--paper .ui-chip:hover { color: rgb(var(--c-paper-ink)); }
+.ui-panel--paper .ui-chip[aria-pressed='true'] { color: rgb(var(--c-paper-ink)); border-color: rgb(var(--c-paper-ink) / 0.7); background: rgb(var(--c-paper-muted) / 0.2); }
+
+/* ------------------------------------------------------------------ Level ready */
+/* The setting's effect over the experience bar, spilling past it; never in the way of a click. */
+.ui-level-ready {
+  position: absolute;
+  inset: -14px -6px;
+  pointer-events: none;
+  z-index: 1;
+}
+.ui-level-ready > svg { width: 100%; height: 100%; overflow: visible; }
+
+/* ------------------------------------------------------------------ World cards (hero creation) */
+/* A world to begin in, as a window into it: its atmosphere behind, its emblem and name over it. */
+.ui-world {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: rgb(var(--c-frame-bright));
+  background: radial-gradient(90% 65% at 50% 38%, var(--world-light), transparent 72%), rgb(var(--c-bg));
+  border: 1px solid rgb(var(--c-frame) / 0.5);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-panel);
+  transition: border-color 300ms, box-shadow 300ms, transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-world__scene {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  opacity: 0.85;
+  transition: opacity 600ms, transform 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-world__veil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(80% 65% at 50% 42%, transparent 35%, rgb(var(--c-bg-deep) / 0.7));
+}
+.ui-world__emblem { position: relative; display: grid; place-items: center; filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.7)); transition: transform 400ms, filter 400ms; }
+/* A setting's sigil round the emblem, wider than it and behind it. */
+.ui-world__sigil { position: absolute; left: 50%; top: 50%; z-index: -1; width: 210px; height: 210px; transform: translate(-50%, -50%); pointer-events: none; }
+.ui-world__sigil > svg { width: 100%; height: 100%; }
+/* Each world's name in its own face, even on the service-typed first step of creation. */
+.ui-world__name {
+  font-family: var(--setting-display);
+  font-size: 2.1rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: rgb(var(--c-ink));
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.8);
+  transition: color 300ms, letter-spacing 400ms;
+}
+/* Hover wakes the world (each setting adds its own marvel); the chosen world keeps a calm mark —
+   a bright rim and a lit scene — so hovering it still wakes it. */
+:is(.ui-world:hover, .ui-world[aria-pressed='true']) { transform: translateY(-4px); border-color: rgb(var(--c-frame-bright) / 0.8); }
+:is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__scene { opacity: 1; transform: scale(1.05); }
+.ui-world[aria-pressed='true'] { border-color: rgb(var(--c-frame-bright)); }
+.ui-world[aria-pressed='true'] .ui-world__scene { opacity: 1; }
+.ui-world[aria-pressed='true'] .ui-world__name { color: rgb(var(--c-frame-bright)); }
+.ui-world:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 4px; }
+/* The world in front told in a few lines: its tagline in its own face, a few words more, what it grew from. */
+.ui-world-lore { display: flex; flex-direction: column; align-items: center; gap: 0.55rem; text-align: center; }
+.ui-world-lore__tagline { font-family: var(--setting-display); font-size: 1.75rem; line-height: 1.15; color: rgb(var(--c-frame-bright)); text-shadow: 0 2px 10px rgb(0 0 0 / 0.8); }
+.ui-world-lore__text { line-height: 1.5; color: rgb(var(--c-ink-muted)); text-shadow: 0 1px 6px rgb(0 0 0 / 0.9); }
+.ui-world-lore__sources { font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
+
+/* ------------------------------------------------------------------ Combat HUD ornament */
+/* The HUD's panels are small: their corner pieces are drawn smaller to keep the pictures clear. */
+.ui-panel:is(.ui-hud-panel, .ui-hud-strip) > .ui-corner { width: 20px; height: 20px; }
+
+/* ------------------------------------------------------------------ Issue links (creation) */
+.ui-issue-link {
+  color: rgb(var(--c-warning));
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.ui-issue-link:hover { color: rgb(var(--c-frame-bright)); }
+/* A field brought into view by its issue lights up for a moment. */
+.ui-flash { animation: ui-flash 1.2s ease-out; }
+@keyframes ui-flash {
+  0%, 30% { box-shadow: 0 0 0 2px rgb(var(--c-frame-bright) / 0.8), 0 0 18px rgb(var(--c-frame-bright) / 0.4); }
+  100% { box-shadow: 0 0 0 2px transparent; }
+}
+
+/* ------------------------------------------------------------------ World flourish */
+/* A setting's flourish over the whole screen when its world is chosen (see Flourish.tsx): a fixed
+   layer that takes no clicks; each setting animates its ::before, ::after and three spans. */
+.ui-flourish {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ui-flourish::before,
+.ui-flourish::after,
+.ui-flourish > i {
+  content: '';
+  position: absolute;
+  display: block;
+  opacity: 0;
+}
+/* The loose particles start at the card; settings that use them show them. */
+.ui-flourish__p {
+  position: absolute;
+  left: var(--fx-x);
+  top: var(--fx-y);
+  display: none;
+}
+.ui-flourish > svg { position: absolute; inset: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .ui-flourish { display: none; }
+  [data-flourish] { animation: none !important; }
+}

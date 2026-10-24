@@ -1,0 +1,713 @@
+/* ================================================================== Sci-fi
+ * "The tactical terminal": Mass Effect, Halo, Star Wars. Matte graphite panes under hairlines, one
+ * signal blue, orange kept for alarms. No sheen, glow or ornament: structure comes from rules,
+ * index numbers, codes and large condensed figures. The chosen thing is a solid block of colour,
+ * the way a terminal highlights a record. Main panes have one corner cut, nothing else does.
+ */
+
+[data-setting='sci-fi'] {
+  /* The setting's own display face; the service's type may stand in for --font-display, never for it. */
+  --setting-display: 'Tektur', 'Segoe UI', sans-serif;
+  --font-display: var(--setting-display);
+  /* The light a world card is lit by. */
+  --world-light: rgb(var(--c-accent) / 0.3);
+  --font-numeric: 'Tektur', 'Segoe UI', sans-serif;
+  --display-tracking: 0.03em;
+  --display-weight: 500;
+  --title-transform: uppercase;
+
+  --c-bg: 9 11 14;
+  --c-bg-deep: 4 5 7;
+  --c-surface: 14 17 21;
+  --c-surface-2: 21 25 31;
+  --c-inset: 7 9 11;
+  --c-line: 37 43 51;
+  --c-frame: 66 80 96;
+  --c-frame-bright: 150 196 236;
+  --c-ink: 222 229 236;
+  --c-ink-muted: 136 148 160;
+  --c-ink-faint: 86 96 108;
+  --c-accent: 62 152 240;
+  --c-accent-ink: 2 9 18;
+  --c-paper: 14 17 21;
+  --c-paper-ink: 222 229 236;
+  --c-paper-muted: 104 118 134;
+
+  --c-hp: 232 104 66;
+  --c-temp-hp: 62 152 240;
+  --c-sanity: 148 128 226;
+  --c-xp: 62 152 240;
+  --c-armor: 150 196 236;
+  --c-success: 84 190 146;
+  --c-danger: 236 96 70;
+  --c-warning: 238 140 58;
+
+  --c-act-action: 62 152 240;
+  --c-act-bonus: 84 190 146;
+  --c-act-reaction: 238 140 58;
+  --c-act-passive: 136 148 160;
+
+  --radius: 0px;
+  --chamfer: 0px;
+  --panel-texture: none;
+  --panel-texture-opacity: 0;
+  --shadow-panel: 0 16px 32px -20px rgb(0 0 0 / 0.9);
+
+  /* The one cut corner of a main pane, and the smaller cut of a button. */
+  --cut: 18px;
+  --cut-button: 9px;
+
+  /* ---------------------------------------------------------------- Panels */
+  /* Matte panes: an even graphite surface under a hairline. A short blue tab leads the top edge. */
+  .ui-panel,
+  .ui-panel--paper {
+    background-color: rgb(var(--c-surface) / 0.96);
+    border-color: rgb(var(--c-line));
+    box-shadow: var(--shadow-panel);
+  }
+  .ui-panel:not(.ui-panel--inset) { backdrop-filter: blur(6px); }
+  .ui-panel::before,
+  .ui-panel::after { display: none; }
+  .ui-panel--inset { background-color: rgb(var(--c-inset)); box-shadow: none; }
+
+  /* A main pane: the top right corner cut, the cut drawn as a hairline, a blue tab on the edge. */
+  :is(.ui-details, .ui-dialog) {
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
+  }
+  :is(.ui-details, .ui-dialog)::before {
+    content: '';
+    display: block;
+    inset: 0 0 auto auto;
+    width: var(--cut);
+    height: var(--cut);
+    z-index: 2;
+    background: linear-gradient(to bottom left, transparent calc(50% - 0.7px), rgb(var(--c-frame)) 50%, transparent calc(50% + 0.7px));
+  }
+  :is(.ui-details, .ui-dialog)::after {
+    content: '';
+    display: block;
+    inset: -1px auto auto 1.5rem;
+    width: 2.5rem;
+    height: 3px;
+    z-index: 2;
+    opacity: 1;
+    mix-blend-mode: normal;
+    background: rgb(var(--c-accent));
+  }
+
+  /* ---------------------------------------------------------------- Type and rules */
+  .ui-section-title { color: rgb(var(--c-ink)); font-size: 1.1rem; letter-spacing: 0.08em; }
+  .ui-rule::before,
+  .ui-rule::after { background: rgb(var(--c-line)); }
+  /* A data-sheet rule: a short solid tab of blue leading a hairline. */
+  .ui-rule--left::after {
+    height: 3px;
+    background:
+      linear-gradient(rgb(var(--c-accent)), rgb(var(--c-accent))) left center / 1.75rem 3px no-repeat,
+      linear-gradient(rgb(var(--c-line)), rgb(var(--c-line))) left center / 100% 1px no-repeat;
+  }
+  .ui-label { font-family: var(--font-display); font-size: 0.68rem; letter-spacing: 0.16em; color: rgb(var(--c-ink-muted)); }
+
+  /* ---------------------------------------------------------------- Interactive surfaces */
+  /* The pane under the cursor lifts a step; the selected one carries a solid blue edge. */
+  .ui-interactive:hover { border-color: rgb(var(--c-frame)); background-color: rgb(var(--c-surface-2)); }
+  .ui-interactive[data-active='true'] { border-color: rgb(var(--c-accent) / 0.6); }
+  .ui-fx {
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: rgb(var(--c-accent));
+    transform: scaleY(0.3);
+    transition: opacity 150ms, transform 200ms ease-out;
+  }
+  .ui-interactive:hover .ui-fx,
+  .ui-interactive[data-active='true'] .ui-fx { transform: scaleY(1); }
+
+  /* ---------------------------------------------------------------- Buttons */
+  /* Keys with the bottom right corner cut. The rim is the button's own background, the fill is
+     laid 1px inside it by ::before, so the cut keeps its hairline. */
+  .ui-button {
+    --rim: rgb(var(--c-frame) / 0.9);
+    /* Fills are opaque: the rim under them must not show through. */
+    --fill: rgb(var(--c-surface));
+    --shape: polygon(0 0, 100% 0, 100% calc(100% - var(--cut-button)), calc(100% - var(--cut-button)) 100%, 0 100%);
+    isolation: isolate;
+    border: 0;
+    font-size: 0.8em;
+    letter-spacing: 0.14em;
+    background: var(--rim);
+    clip-path: var(--shape);
+    color: rgb(var(--c-ink));
+    transition: background-color 120ms, color 120ms, filter 120ms;
+  }
+  .ui-button::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    clip-path: var(--shape);
+    background: var(--fill);
+    transition: background-color 120ms;
+  }
+  .ui-button:focus-visible { outline: none; --rim: rgb(var(--c-frame-bright)); }
+  .ui-button:disabled { opacity: 0.4; }
+  /* The command: a solid block of signal blue. */
+  .ui-button--primary { --rim: rgb(var(--c-accent)); --fill: rgb(var(--c-accent)); color: rgb(var(--c-accent-ink)); box-shadow: none; }
+  .ui-button--primary:not(:disabled):hover { filter: brightness(1.15); }
+  .ui-button--secondary:not(:disabled):hover { --rim: rgb(var(--c-accent)); --fill: linear-gradient(rgb(var(--c-accent) / 0.14), rgb(var(--c-accent) / 0.14)), rgb(var(--c-surface)); color: rgb(var(--c-frame-bright)); }
+  .ui-button--danger { --rim: rgb(var(--c-danger) / 0.8); --fill: linear-gradient(rgb(var(--c-danger) / 0.08), rgb(var(--c-danger) / 0.08)), rgb(var(--c-surface)); color: rgb(var(--c-danger)); }
+  .ui-button--danger:not(:disabled):hover { --fill: rgb(var(--c-danger)); color: rgb(var(--c-bg-deep)); }
+  .ui-button--ghost { --rim: transparent; --fill: transparent; clip-path: none; color: rgb(var(--c-ink-muted)); }
+  .ui-button--ghost::before { display: none; }
+  .ui-button--ghost:not(:disabled):hover { color: rgb(var(--c-accent)); background: none; }
+  .ui-button--row { --cut-button: 6px; font-family: var(--font-display); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; }
+
+  /* Square keys; the pressed one is a solid block. */
+  .ui-icon-button:not(:disabled):hover { color: rgb(var(--c-ink)); border-color: rgb(var(--c-frame)); background: rgb(var(--c-surface-2)); }
+  .ui-icon-button[aria-pressed='true'] { color: rgb(var(--c-accent-ink)); border-color: rgb(var(--c-accent)); background: rgb(var(--c-accent)); }
+
+  /* ---------------------------------------------------------------- Tabs */
+  /* Record filters: small capitals on the hairline; the open one is a solid block. */
+  .ui-tabs { gap: 2px; border-bottom-color: rgb(var(--c-line)); }
+  .ui-tabs__tab {
+    padding: 0.4rem 0.8rem;
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgb(var(--c-ink-muted));
+    transition: color 120ms, background-color 120ms;
+  }
+  .ui-tabs__tab:hover { color: rgb(var(--c-ink)); background: rgb(var(--c-surface-2)); }
+  .ui-tabs__tab[aria-selected='true'] { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); }
+  .ui-tabs__tab::after { display: none; }
+  .ui-tabs__count { font-family: var(--font-numeric); font-size: 0.68rem; color: inherit; opacity: 0.65; }
+
+  /* ---------------------------------------------------------------- Lists */
+  /* A data listing: the header is a tab of type over a hairline, rows are numbered records, the
+     row under the cursor lifts a step, a worn item or prepared spell carries a solid blue edge and
+     the record open beside the list is a solid blue block. */
+  .ui-ledger__ribbon { display: none; }
+  .ui-ledger__head {
+    padding-top: 0.9rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid rgb(var(--c-line));
+  }
+  .ui-ledger__head h2 { font-size: 1rem; letter-spacing: 0.08em; color: rgb(var(--c-ink)); }
+  .ui-ledger__head > svg { color: rgb(var(--c-accent)); }
+  .ui-ledger__list { counter-reset: ledger-row; padding-left: 0; padding-right: 0; }
+  .ui-ledger__row {
+    position: relative;
+    counter-increment: ledger-row;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    border-bottom: 1px solid rgb(var(--c-line) / 0.7);
+    transition: background-color 120ms;
+  }
+  .ui-ledger__row:hover { background: rgb(var(--c-surface-2)); }
+  .ui-ledger__row:hover .ui-ledger__title { text-decoration: none; }
+  .ui-ledger__row::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: rgb(var(--c-accent));
+    opacity: 0;
+  }
+  .ui-ledger__row[data-active]::before { opacity: 1; }
+  .ui-ledger__row--dim { opacity: 1; }
+  .ui-ledger__row--dim .ui-ledger__title { color: rgb(var(--c-ink-muted)); }
+  .ui-ledger__row[data-selected] { background: rgb(var(--c-accent)); }
+  .ui-ledger__row[data-selected]::before { background: rgb(var(--c-accent-ink)); }
+  .ui-ledger__row[data-selected] :is(.ui-ledger__title, .ui-ledger__meta, .font-medium) {
+    color: rgb(var(--c-accent-ink));
+  }
+  .ui-ledger__row[data-selected] .ui-button--row { --rim: rgb(var(--c-accent-ink) / 0.7); --fill: rgb(var(--c-accent)); color: rgb(var(--c-accent-ink)); }
+  /* The record number replaces the bullet; a custom leading control (a preparation toggle) stays. */
+  .ui-ledger__bullet > svg { display: none; }
+  .ui-ledger:not(.ui-ledger--log) .ui-ledger__bullet::before {
+    content: counter(ledger-row, decimal-leading-zero);
+    font-family: var(--font-numeric);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: rgb(var(--c-ink-faint));
+  }
+  .ui-ledger__row[data-active] .ui-ledger__bullet::before { color: rgb(var(--c-accent)); }
+  button.ui-ledger__bullet:hover::before { color: rgb(var(--c-accent)); }
+  .ui-ledger__row[data-selected] .ui-ledger__bullet::before { color: rgb(var(--c-accent-ink) / 0.7); }
+  .ui-ledger--log .ui-ledger__bullet > svg { display: block; color: rgb(var(--c-ink-faint)); }
+  .ui-ledger__title { font-family: var(--font-body); font-size: 0.98rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .ui-ledger__meta { color: rgb(var(--c-ink-muted)); }
+  .ui-ledger__group {
+    padding: 1rem 1.5rem 0.4rem;
+    font-family: var(--font-display);
+    color: rgb(var(--c-accent));
+    opacity: 1;
+  }
+  .ui-ledger__add {
+    margin: 0;
+    padding: 0.75rem 1.5rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: rgb(var(--c-ink-faint));
+  }
+  .ui-ledger__add:hover { color: rgb(var(--c-accent)); background: rgb(var(--c-surface-2)); }
+
+  /* ---------------------------------------------------------------- Details pane */
+  /* A dossier: the code line in blue, the name in capitals, the figures as readout cells with a
+     blue edge, a halftone fading in at the top right. */
+  .ui-details__head {
+    padding-top: 1.4rem;
+    background: radial-gradient(circle, rgb(var(--c-frame-bright) / 0.32) 0 1px, transparent 1.4px) 0 0 / 9px 9px;
+    background-clip: padding-box;
+    mask-image: none;
+  }
+  .ui-details__head::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, rgb(var(--c-surface)) 45%, rgb(var(--c-surface) / 0.6) 70%, rgb(var(--c-surface) / 0.1));
+    pointer-events: none;
+  }
+  .ui-details__head > * { position: relative; }
+  .ui-details__eyebrow { font-family: var(--font-display); font-size: 0.68rem; letter-spacing: 0.18em; color: rgb(var(--c-accent)); }
+  .ui-details__title { font-size: 1.45rem; letter-spacing: 0.04em; }
+  .ui-details__rule { display: none; }
+  /* Figures read as lines of a readout: the code at the left, the value at the right. */
+  .ui-details__facts { display: flex; flex-direction: column; gap: 2px; background: none; border: 0; }
+  .ui-details__fact {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0.75rem;
+    background: rgb(var(--c-surface-2));
+    box-shadow: inset 3px 0 0 rgb(var(--c-accent));
+  }
+  .ui-details__fact dt { font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.16em; color: rgb(var(--c-ink-muted)); }
+  .ui-details__fact dd { margin: 0; font-size: 0.95rem; text-align: right; }
+  .ui-details__foot { border-top-color: rgb(var(--c-line)); }
+  .ui-damage-block { border-left-color: rgb(var(--c-accent)); }
+
+  /* ---------------------------------------------------------------- Figures */
+  /* Attribute panes: the label as a code at the top left, a blue tick on the edge. */
+  .ui-stat::after {
+    content: '';
+    display: block;
+    inset: -1px auto auto -1px;
+    width: 12px;
+    height: 2px;
+    opacity: 1;
+    mix-blend-mode: normal;
+    background: rgb(var(--c-accent));
+  }
+  .ui-stat__label { font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--c-ink-muted)); }
+  /* Gauges are cells, like a suit's power readout. */
+  .ui-meter { border-color: rgb(var(--c-line) / 0.8); }
+  .ui-meter__fill { background: rgb(var(--meter-color)); }
+  .ui-meter__extra { background: rgb(var(--meter-extra-color) / 0.55); }
+  .ui-meter--ticks::after { background-image: repeating-linear-gradient(90deg, transparent 0 calc(5% - 2px), rgb(var(--c-inset)) calc(5% - 2px) 5%); }
+  .ui-prof-mark { transform: none; }
+
+  /* ---------------------------------------------------------------- Vitals */
+  /* The suit's vitals readout: an index and a code over each gauge, the figure large and condensed,
+     the gauge counted in cells with a graduated scale under it; the picture in a hairline cell
+     with a bar of its colour down the side. */
+  .ui-status__bars { counter-reset: vital; gap: 0.9rem; padding-right: 4.95rem; }
+  .ui-vital { --vital-gap: 0.6rem; }
+  .ui-vital__icon { position: relative; width: 26px; height: 26px; border: 1px solid rgb(var(--c-line)); background: rgb(var(--c-surface-2) / 0.6); }
+  .ui-vital__icon::before { content: ''; position: absolute; top: -1px; bottom: -1px; left: -1px; width: 2px; background: currentColor; }
+  .ui-vital__icon svg { width: 15px; height: 15px; }
+  .ui-vital__label { padding-right: 0.25rem; font-family: var(--setting-display); font-size: 0.62rem; letter-spacing: 0.12em; color: rgb(var(--c-ink-muted)); }
+  .ui-vital__label::before { counter-increment: vital; content: '0' counter(vital) ' '; color: rgb(var(--c-accent)); }
+  .ui-vital:hover .ui-vital__label { color: rgb(var(--c-ink)); }
+  .ui-vital__current { font-size: 1.3rem; font-weight: 500; }
+  .ui-vital__max { font-size: 0.75rem; }
+  .ui-vital__gauge { padding-bottom: 5px; }
+  .ui-vital .ui-meter { height: 9px; }
+  .ui-vital__gauge::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: repeating-linear-gradient(90deg, rgb(var(--c-frame) / 0.9) 0 1px, transparent 1px 25%) left / calc(100% - 1px) 100% no-repeat, linear-gradient(90deg, rgb(var(--c-frame) / 0.9) 0 1px, transparent 1px) right / 1px 100% no-repeat;
+  }
+
+  /* ---------------------------------------------------------------- Level and experience */
+  /* The level as a service rank patch: blue chevrons of the tier of play stacked over the number in
+     a matte cell with one corner cut. Experience counted in cells. */
+  .sf-rank {
+    align-content: center;
+    gap: 0.15rem;
+    background: rgb(var(--c-surface-2) / 0.7);
+    box-shadow: inset 0 0 0 1px rgb(var(--c-line));
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+    transition: box-shadow 200ms;
+  }
+  .ui-level:hover .sf-rank { box-shadow: inset 0 0 0 1px rgb(var(--c-accent)); }
+  .sf-rank__chevrons { width: 34px; height: 26px; fill: rgb(var(--c-accent)); }
+  .sf-rank__number { font-size: 1.65rem; font-weight: 500; line-height: 1; color: rgb(var(--c-ink)); }
+  .sf-rank__unit { font-family: var(--setting-display); font-size: 0.55rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
+  .ui-xp__track { height: 8px; border-color: rgb(var(--c-line) / 0.8); }
+  .ui-xp__track::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(5% - 2px), rgb(var(--c-inset)) calc(5% - 2px) 5%);
+  }
+  .ui-xp__value { font-family: var(--font-numeric); font-size: 0.75rem; }
+
+  /* The combat screen's experience bar is counted in cells. */
+  .ui-hud-xp { height: 8px; border-color: rgb(var(--c-line) / 0.8); }
+  .ui-hud-xp::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(2% - 2px), rgb(var(--c-inset)) calc(2% - 2px) 2%);
+  }
+
+  /* ---------------------------------------------------------------- Rail and hero column */
+  .ui-rail { background: rgb(var(--c-bg-deep) / 0.85); border-right-color: rgb(var(--c-line)); }
+  .ui-rail__item { font-family: var(--font-display); letter-spacing: 0.06em; }
+  .ui-rail__label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; }
+  .ui-rail__item:not([aria-current]):hover { color: rgb(var(--c-ink)); background: rgb(var(--c-surface-2)); }
+  /* The open section is a solid block of signal blue, like the selected record. */
+  .ui-rail__item[aria-current='page'] { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); }
+  .ui-rail__item[aria-current='page'] .ui-rail__mark { display: none; }
+  .ui-hero-column { background: rgb(var(--c-surface) / 0.55); border-right-color: rgb(var(--c-line)); }
+
+  /* ---------------------------------------------------------------- Fields and controls */
+  .ui-input { background: rgb(var(--c-inset)); }
+  .ui-input:focus { border-color: rgb(var(--c-accent)); box-shadow: inset 0 -2px 0 rgb(var(--c-accent)); }
+  .ui-segmented { --segment-tone: var(--c-accent); }
+  .ui-segmented__option { --segment-tone: var(--c-accent); font-family: var(--font-display); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  /* The chosen option is a solid block, like a selected record. */
+  .ui-segmented__option[aria-checked='true'] {
+    color: rgb(var(--c-accent-ink));
+    background: rgb(var(--segment-tone));
+    border-color: rgb(var(--segment-tone));
+  }
+  .ui-switch,
+  .ui-switch::after { border-radius: 0; }
+  .ui-popover__option[data-active] { box-shadow: inset 2px 0 0 rgb(var(--c-accent)); }
+  .ui-swatch { border-radius: 0; }
+
+  /* A number field among buttons keeps their cut corner. */
+  .ui-keyfield {
+    --shape: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+    padding: 1px;
+    background: rgb(var(--c-frame) / 0.9);
+    clip-path: var(--shape);
+  }
+  .ui-keyfield:focus-within { background: rgb(var(--c-accent)); }
+  .ui-keyfield > .ui-input { height: calc(2rem - 2px) !important; border: 0; clip-path: var(--shape); font-family: var(--font-numeric); }
+  .ui-keyfield > .ui-input:focus { box-shadow: none; }
+  .ui-number { border-color: rgb(var(--c-line)); }
+  .ui-number input { font-family: var(--font-numeric); }
+  .ui-number button:not(:disabled):hover { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); }
+
+  /* ---------------------------------------------------------------- Toasts */
+  /* A readout with a lit edge. */
+  .ui-toast {
+    background: rgb(var(--c-surface) / 0.98);
+    border-color: rgb(var(--c-line));
+    border-left: 3px solid rgb(var(--c-accent));
+    box-shadow: 0 14px 30px -12px rgb(0 0 0 / 0.8);
+  }
+  .ui-toast--error { border-left-color: rgb(var(--c-danger)); }
+
+  /* ---------------------------------------------------------------- Dialogs */
+  /* A terminal window: a hairline under the header, the code line in blue. */
+  .ui-dialog__head { margin-bottom: 1rem; border-bottom: 1px solid rgb(var(--c-line)); }
+  .ui-dialog__title { font-size: 1.35rem; letter-spacing: 0.06em; }
+  .ui-dialog__eyebrow { color: rgb(var(--c-accent)); opacity: 1; }
+  /* Key figures are readouts, each in its own lit cell. */
+  :is(.ui-dialog, .ui-details) .ui-keyfacts { gap: 0.5rem; }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts > div {
+    padding: 0.45rem 0.9rem 0.55rem;
+    background: rgb(var(--c-surface-2));
+    border-left: 3px solid rgb(var(--c-accent));
+  }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts dt { color: rgb(var(--c-ink-muted)); opacity: 1; }
+  .ui-keyfacts dd { font-family: var(--font-numeric); }
+
+  .ui-chip { font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  .ui-chip[aria-pressed='true'] { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+
+  /* ---------------------------------------------------------------- Choices */
+  .ui-option[aria-pressed='true'] {
+    color: rgb(var(--c-accent-ink));
+    background: rgb(var(--c-accent));
+    border-color: rgb(var(--c-accent));
+    box-shadow: none;
+  }
+  .ui-option[aria-pressed='true'] .ui-option__meta { color: rgb(var(--c-accent-ink) / 0.75); }
+  /* Text inside a solid selection takes the selection's ink. */
+  .ui-option[aria-pressed='true'] :is(.text-ink, .text-ink-muted, .text-ink-faint) { color: rgb(var(--c-accent-ink) / 0.85); }
+  .ui-tag { border-radius: 0; font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .ui-steps__mark { border-radius: 0; }
+  .ui-steps__item[aria-current='step'] .ui-steps__mark { background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+  .ui-origin { border-radius: 0; }
+  .ui-origin__icon { filter: none; color: rgb(var(--c-ink)); }
+  .ui-origin[aria-pressed='true'] { background: rgb(var(--c-accent) / 0.14); border-color: rgb(var(--c-accent)); box-shadow: inset 0 -3px 0 rgb(var(--c-accent)); }
+  .ui-origin[aria-pressed='true'] .ui-origin__icon { color: rgb(var(--c-frame-bright)); filter: none; }
+  .ui-summary__badge,
+  .ui-summary__portrait { border-radius: 0; box-shadow: none; }
+
+  /* ---------------------------------------------------------------- Combat */
+  /* Flat square keys; the picture is a flat glyph, no shadow or vignette. */
+  .ui-hud-slot { background: rgb(var(--c-inset)); border-color: rgb(var(--c-line)); box-shadow: none; }
+  .ui-hud-slot__icon { filter: none; }
+  .ui-hud-slot:hover,
+  .ui-hud-slot[data-active] { border-color: rgb(var(--c-accent)); background: rgb(var(--c-surface-2)); }
+  .ui-hud-slot:not(.ui-hud-slot--small):not(.ui-hud-slot--large):hover { transform: none; }
+  .ui-hud-slot__level,
+  .ui-hud-slot__count { text-shadow: none; font-size: 0.66rem; }
+  .ui-hud-slot__count {
+    bottom: 0;
+    right: 0;
+    padding: 1px 3px;
+    color: rgb(var(--c-ink));
+    background: rgb(var(--c-bg-deep) / 0.85);
+  }
+  /* Tiles stay matte: one flat tone, no light from above. */
+  .ui-hud-slot--tile {
+    background: color-mix(in srgb, var(--tile-color) 34%, rgb(var(--c-inset)));
+    border-color: color-mix(in srgb, var(--tile-color) 60%, rgb(var(--c-line)));
+    box-shadow: none;
+  }
+  .ui-hud-slot--tile .ui-hud-slot__icon { filter: none; }
+  .ui-hud-panel__head {
+    font-family: var(--font-display);
+    letter-spacing: 0.14em;
+    color: rgb(var(--c-ink));
+    border-bottom-color: rgb(var(--c-line));
+    background: linear-gradient(rgb(var(--c-accent)), rgb(var(--c-accent))) 0.9rem 100% / 1.75rem 2px no-repeat;
+  }
+  .ui-hud-chip__count { border-radius: 0; }
+  /* The portrait is a square feed in a hairline; its state shows as a solid bar along the bottom. */
+  .ui-hud-portrait {
+    --portrait-frame: var(--c-line);
+    padding: 0;
+    border-width: 1px;
+    border-color: rgb(var(--c-line));
+    box-shadow: inset 0 -3px 0 rgb(var(--c-accent)), var(--shadow-panel);
+  }
+  .ui-hud-portrait--shielded { border-color: rgb(var(--c-temp-hp) / 0.7); }
+  .ui-hud-portrait--down { border-color: rgb(var(--c-danger)); box-shadow: inset 0 -3px 0 rgb(var(--c-danger)); }
+  .ui-hud-portrait__temp { border-radius: 0; }
+  /* A tall bar reads as cells. */
+  .ui-vbar__track::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0 9px, rgb(var(--c-inset)) 9px 11px);
+    pointer-events: none;
+  }
+  .ui-die--in { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+  .ui-die--in .ui-die__count { color: rgb(var(--c-ink)); background: rgb(var(--c-bg-deep)); }
+  .ui-die__count { border-radius: 0; }
+
+  /* ---------------------------------------------------------------- Hero cards (hero select) */
+  /* The hero is a hologram on the projector: a lit blue outline, a scan line drifting down the
+     picture, targeting brackets standing off the card's corners. */
+  &.ui-hero-card > .ui-panel {
+    border-color: rgb(var(--c-accent) / 0.45);
+    box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.12), 0 0 22px -6px rgb(var(--c-accent) / 0.35), var(--shadow-panel);
+    transition: border-color 300ms, box-shadow 300ms;
+  }
+  &.ui-hero-card[data-focused] > .ui-panel {
+    border-color: rgb(var(--c-accent) / 0.85);
+    box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.3), 0 0 36px -4px rgb(var(--c-accent) / 0.5), var(--shadow-panel);
+  }
+  &.ui-hero-card .ui-fx {
+    inset: 0;
+    width: auto;
+    z-index: 1;
+    transform: none;
+    background:
+      linear-gradient(180deg, transparent, rgb(var(--c-frame-bright) / 0.16) 45%, rgb(var(--c-frame-bright) / 0.32) 50%, transparent 52%) 0 0 / 100% 40% no-repeat,
+      repeating-linear-gradient(0deg, rgb(var(--c-frame-bright) / 0.035) 0 1px, transparent 1px 3px);
+    animation: ui-hologram-scan 3.2s linear infinite;
+  }
+  &.ui-hero-card::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms, inset 300ms;
+    --bracket: rgb(var(--c-accent));
+    background:
+      linear-gradient(var(--bracket), var(--bracket)) top left / 18px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) top left / 2px 18px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) top right / 18px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) top right / 2px 18px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom left / 18px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom left / 2px 18px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom right / 18px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom right / 2px 18px no-repeat;
+  }
+  &.ui-hero-card[data-focused]::before { opacity: 1; inset: -14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='sci-fi'].ui-hero-card .ui-fx { animation: none; }
+}
+
+/* ------------------------------------------------------------------ The view from orbit (backdrop) */
+/* Hairline over the dot grid. */
+[data-setting='sci-fi'] {
+  .sf-orbit { color: rgb(var(--c-frame-bright)); opacity: 0.4; }
+  & > .ui-world .sf-orbit { opacity: 0.6; }
+}
+
+
+/* ------------------------------------------------------------------ Level ready */
+/* The bar is charged: chevrons run along it, the readout's corners lock on, arcs crackle off it. */
+[data-setting='sci-fi'] {
+  .ui-xp[data-ready] { border-color: rgb(var(--c-accent) / 0.8); animation: sf-plaque-charge 1.6s steps(2) infinite; }
+  .sf-chevrons { opacity: 0.75; animation: sf-chevrons 0.8s linear infinite; }
+  .sf-lock { animation: sf-lock 1.4s steps(2) infinite; }
+  .sf-arc { opacity: 0; filter: drop-shadow(0 0 3px rgb(var(--c-accent))); animation: sf-arc 2.4s steps(1) infinite; }
+}
+
+@keyframes sf-plaque-charge {
+  50% { box-shadow: inset 0 0 0 1px rgb(var(--c-accent) / 0.35), 0 14px 30px -12px rgb(0 0 0 / 0.8); }
+}
+@keyframes sf-chevrons { to { transform: translateX(14px); } }
+@keyframes sf-lock { 50% { opacity: 0.25; } }
+@keyframes sf-arc {
+  0% { opacity: 0; }
+  4% { opacity: 1; }
+  7% { opacity: 0; }
+  9% { opacity: 1; }
+  13% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='sci-fi'] :is(.sf-chevrons, .sf-lock, .sf-arc, .ui-xp[data-ready]) { animation: none; }
+}
+
+/* ------------------------------------------------------------------ World card */
+/* A display coming online: on hover targeting brackets fly in to the corners and lock, a scan grid
+   sweeps down the card once, the emblem flickers on like a hologram and the name spreads out. */
+[data-setting='sci-fi'] {
+  & > .ui-world { border-color: rgb(var(--c-line)); }
+  & > .ui-world::before {
+    content: '';
+    position: absolute;
+    inset: -24px;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0;
+    --bracket: rgb(var(--c-accent));
+    background:
+      linear-gradient(var(--bracket), var(--bracket)) top left / 22px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) top left / 2px 22px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) top right / 22px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) top right / 2px 22px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom left / 22px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom left / 2px 22px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom right / 22px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom right / 2px 22px no-repeat;
+    transition: inset 350ms cubic-bezier(0.2, 1.4, 0.4, 1), opacity 200ms;
+  }
+  & > .ui-world::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    background:
+      linear-gradient(180deg, transparent, rgb(var(--c-accent) / 0.22) 48%, rgb(var(--c-frame-bright) / 0.5) 50%, transparent 52%) 0 -100% / 100% 60% no-repeat,
+      repeating-linear-gradient(90deg, rgb(var(--c-accent) / 0.08) 0 1px, transparent 1px 24px),
+      repeating-linear-gradient(0deg, rgb(var(--c-accent) / 0.08) 0 1px, transparent 1px 24px);
+  }
+  & > .ui-world .ui-world__name { font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) { border-color: rgb(var(--c-accent) / 0.7); transform: none; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::before { inset: 10px; opacity: 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { opacity: 1; animation: sf-world-scan 900ms ease-out forwards; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { color: rgb(var(--c-accent)); animation: sf-world-flicker 600ms steps(1) both; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__name { letter-spacing: 0.16em; }
+}
+
+@keyframes sf-world-scan {
+  from { background-position: 0 -100%, 0 0, 0 0; }
+  to { background-position: 0 220%, 0 0, 0 0; }
+}
+@keyframes sf-world-flicker {
+  0% { opacity: 0.2; }
+  15% { opacity: 1; }
+  25% { opacity: 0.35; }
+  40% { opacity: 1; }
+  55% { opacity: 0.7; }
+  70%, 100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='sci-fi'] > :is(.ui-world:hover, .ui-world[aria-pressed='true']) :is(.ui-world__emblem),
+  [data-setting='sci-fi'] > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { animation: none; }
+}
+
+/* ------------------------------------------------------------------ World flourish */
+/* The terminal re-scans: a bright line sweeps down the screen trailing a fading grid. */
+.ui-flourish--sci-fi {
+  & > i:first-child {
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 28vh;
+    background:
+      linear-gradient(180deg, transparent, rgb(62 152 240 / 0.12) 85%, rgb(150 196 236 / 0.9) 99%, rgb(220 240 255) 100%),
+      repeating-linear-gradient(90deg, rgb(62 152 240 / 0.08) 0 1px, transparent 1px 32px);
+    box-shadow: 0 2px 18px rgb(62 152 240 / 0.7);
+    animation: sf-flourish-scan 0.75s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+  }
+  & > i:not(:first-child) { display: none; }
+}
+@keyframes sf-flourish-scan {
+  0% { opacity: 1; transform: translateY(-30vh); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(102vh); }
+}
+
+/* ------------------------------------------------------------------ Hero card file tab */
+/* The personnel file's tab over the focused card: a solid blue plate with a cut corner carrying the
+   file code, the level at the far end, a graduated scale down the right edge; it slides in. */
+[data-setting='sci-fi'] {
+  .sf-file { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  .sf-file__tab,
+  .sf-file__level {
+    position: absolute;
+    bottom: calc(100% + 18px);
+    font-family: var(--setting-display);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    opacity: 0;
+    transition: opacity 250ms, transform 300ms ease-out;
+  }
+  .sf-file__tab {
+    left: -12px;
+    padding: 3px 14px 3px 8px;
+    color: rgb(var(--c-accent-ink));
+    background: rgb(var(--c-accent));
+    clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+    transform: translateX(-12px);
+  }
+  .sf-file__level { right: -12px; color: rgb(var(--c-frame-bright)); transform: translateX(12px); }
+  .sf-file__scale {
+    position: absolute;
+    top: 12%;
+    bottom: 12%;
+    left: calc(100% + 22px);
+    width: 8px;
+    background: repeating-linear-gradient(180deg, rgb(var(--c-frame-bright) / 0.7) 0 1px, transparent 1px 9px);
+    border-left: 1px solid rgb(var(--c-frame-bright) / 0.5);
+    opacity: 0;
+    transition: opacity 400ms;
+  }
+  &.ui-hero-card[data-focused] :is(.sf-file__tab, .sf-file__level) { opacity: 1; transform: none; transition-delay: 150ms; }
+  &.ui-hero-card[data-focused] .sf-file__scale { opacity: 1; transition-delay: 250ms; }
+}

@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { CharacterSchema, type Character } from '@itd/schema';
 import { afterEach, describe, expect, it } from 'vitest';
-import { CharacterRepository } from '../src/data/local/characterRepository';
+import { CharacterRepository, normalizeCharacter } from '../src/data/local/characterRepository';
 import { CharacterDatabase } from '../src/data/local/database';
 import { SyncEngine } from '../src/data/sync/syncEngine';
 import { FakeServer } from './fakeServer';
@@ -25,16 +25,19 @@ afterEach(() => {
   }
 });
 
+/** A hero as reads return it: parsed by the schema and brought up to the rules. */
 const hero = (overrides: Partial<Character> = {}): Character =>
-  CharacterSchema.parse({
-    schemaVersion: 1,
-    id: 'eisenhorn',
-    name: 'Эйзенхорн',
-    attributes: { strength: 10, wisdom: 15 },
-    currentHP: 20,
-    sanity: 50,
-    ...overrides,
-  });
+  normalizeCharacter(
+    CharacterSchema.parse({
+      schemaVersion: 1,
+      id: 'eisenhorn',
+      name: 'Эйзенхорн',
+      attributes: { strength: 10, wisdom: 15 },
+      currentHP: 20,
+      sanity: 50,
+      ...overrides,
+    }),
+  );
 
 const item = (id: string, quantity = 1) => ({
   id,
@@ -255,5 +258,22 @@ describe('repository', () => {
     await phone.repository.remove('first');
 
     expect((await phone.repository.list()).map((c) => c.id)).toEqual(['second']);
+  });
+
+  it('brings a stored sheet up to the current rules on read and before an edit', async () => {
+    const server = new FakeServer();
+    const phone = device(server);
+    const stored = CharacterSchema.parse({
+      ...hero(),
+      maxSanityBonus: undefined,
+      sanity: 90,
+      limbs: [{ id: 'head', name: 'Голова', currentHP: -1049, maxHP: 60, ac: 0 }],
+    });
+    await phone.repository.create(stored);
+
+    expect(await phone.repository.get('eisenhorn')).toMatchObject({ sanity: 90, limbs: [{ currentHP: -10 }] });
+    const edited = await phone.repository.update('eisenhorn', (c) => c);
+    expect(edited?.limbs[0]?.currentHP).toBe(-10);
+    expect(edited?.maxSanityBonus).toBeGreaterThan(0);
   });
 });

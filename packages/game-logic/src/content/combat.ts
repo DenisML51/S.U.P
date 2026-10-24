@@ -6,12 +6,14 @@ export const DAMAGE_TYPES = [
   'Огонь',
   'Холод',
   'Электричество',
+  'Звук',
   'Яд',
   'Кислота',
   'Психический',
   'Некротический',
   'Лучистый',
   'Силовой',
+  'Лечение',
 ];
 
 export const DEFAULT_DAMAGE_TYPE = 'Физический';
@@ -66,3 +68,32 @@ export const INJURY_DESCRIPTIONS: Record<LimbType, Record<Exclude<InjuryLevel, '
     destroyed: 'Критическое повреждение внутренних органов',
   },
 };
+
+/**
+ * Colour of a spell's icon by the base damage type it deals; custom types have none, so the icon
+ * keeps the default look. A colour the player chose always wins.
+ */
+export const DAMAGE_COLORS: Record<string, string> = {
+  Огонь: '#e07b39',
+  Холод: '#4fa3c7',
+  Электричество: '#d9c24a',
+  Звук: '#8fa6c9',
+  Яд: '#7fb069',
+  Кислота: '#a8c23a',
+  Психический: '#c665a8',
+  Некротический: '#7a5f9e',
+  Лучистый: '#e6cf7a',
+  Силовой: '#8a7be0',
+  Физический: '#a3aab3',
+  Колющий: '#a3aab3',
+  Рубящий: '#a3aab3',
+  Дробящий: '#a3aab3',
+  Лечение: '#7fb069',
+};
+
+export const spellColor = (spell: {
+  color?: string;
+  damageType?: string;
+  damageComponents?: { type: string }[];
+}): string | undefined =>
+  spell.color ?? DAMAGE_COLORS[spell.damageComponents?.[0]?.type || spell.damageType || ''];

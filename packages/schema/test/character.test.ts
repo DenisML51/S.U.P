@@ -59,6 +59,29 @@ describe('CharacterSchema', () => {
     expect(character.attributes.strength).toBe(15);
   });
 
+  it('accepts known settings and rejects unknown ones', () => {
+    expect(CharacterSchema.parse({ ...minimal, setting: 'sci-fi' }).setting).toBe('sci-fi');
+    expect(CharacterSchema.parse({ ...minimal, setting: 'cyberpunk' }).setting).toBe('cyberpunk');
+    expect(CharacterSchema.parse({ ...minimal, setting: 'lovecraft' }).setting).toBe('lovecraft');
+    expect(CharacterSchema.parse(minimal).setting).toBeUndefined();
+    expect(CharacterSchema.safeParse({ ...minimal, setting: 'steampunk' }).success).toBe(false);
+  });
+
+  it('reads the retired grimdark setting as dark fantasy', () => {
+    expect(CharacterSchema.parse({ ...minimal, setting: 'grimdark' }).setting).toBe('dark-fantasy');
+  });
+
+  it('reads a resource saved before rest rules as restored by a long rest', () => {
+    const resources = [{ id: 'focus', name: 'Фокус', current: 1, max: 3 }];
+    expect(CharacterSchema.parse({ ...minimal, resources }).resources[0]).toMatchObject({ recovery: 'long' });
+  });
+
+  it('references uploaded art by asset id', () => {
+    const id = 'a3bb189e-8bf9-4888-9912-ace4e6543002';
+    expect(CharacterSchema.parse({ ...minimal, images: { portrait: id } }).images).toEqual({ portrait: id });
+    expect(CharacterSchema.safeParse({ ...minimal, images: { full: 'not-an-id' } }).success).toBe(false);
+  });
+
   it('rejects a numeric field that holds text', () => {
     expect(CharacterSchema.safeParse({ ...minimal, maxHP: 'много' }).success).toBe(false);
   });
@@ -122,11 +145,15 @@ describe('toCharacterPreview', () => {
     expect(toCharacterPreview(character)).toEqual({
       id: character.id,
       name: 'Лиара',
+      setting: undefined,
+      race: '',
+      subrace: undefined,
       class: '',
       subclass: '',
       level: 18,
       currentHP: 168,
       maxHP: 290,
+      images: undefined,
       avatar: undefined,
       resistances: [],
     });

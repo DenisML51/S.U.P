@@ -3,6 +3,7 @@ import Dexie from 'dexie';
 import { toast } from 'react-hot-toast';
 import { create } from 'zustand';
 import { api } from '../data/api/client';
+import { moveEmbeddedPortraits } from '../data/legacy/avatarMigration';
 import { importLegacyBrowserStorage } from '../data/legacy/browserStorageImport';
 import { databaseNameFor } from '../data/local/database';
 import { sessionManager } from '../data/session/sessionManager';
@@ -44,15 +45,26 @@ export const useSessionStore = create<SessionState>((set, get) => {
     if (workspace?.userId === user.id) return;
     closeWorkspace();
 
-    workspace = createWorkspace(user.id, sessionManager);
-    unsubscribeSync = workspace.sync.subscribe((sync) => {
+    const current = createWorkspace(user.id, sessionManager);
+    workspace = current;
+    // Housekeeping of old data waits until this device has the account's server state:
+    // importing into an empty local copy would race the server copies of the same sheets.
+    let legacyChecked = false;
+    unsubscribeSync = current.sync.subscribe((sync) => {
       set({ sync });
       if (sync.state === 'unauthorized') void handleSessionLost();
+      if (!legacyChecked && sync.state === 'idle' && sync.lastSyncedAt !== null) {
+        legacyChecked = true;
+        void importLegacy(current, user.id).then(() => moveEmbeddedPortraits(current.repository));
+      }
     });
-    await useCharacterStore.getState().attachWorkspace(workspace);
-    workspace.start(online);
+    await useCharacterStore.getState().attachWorkspace(current);
+    current.start(online);
+  };
 
-    const legacy = await importLegacyBrowserStorage(workspace.repository, user.id);
+  const importLegacy = async (target: Workspace, userId: string) => {
+    const legacy = await importLegacyBrowserStorage(target.repository, userId);
+    if (workspace !== target) return;
     if (legacy.imported.length > 0) {
       toast.success(`Перенесены персонажи из старой версии: ${legacy.imported.join(', ')}`, { duration: 6000 });
       await useCharacterStore.getState().reloadList();

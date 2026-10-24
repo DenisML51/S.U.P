@@ -1,4 +1,5 @@
 import type { Character } from '@itd/schema';
+import { keepConcentration } from './concentration';
 
 /** Toggling proficiency off also drops expertise, which cannot exist without it. */
 export const toggleSkillProficiency = (character: Character, skillId: string): Character => ({
@@ -32,7 +33,8 @@ export const setAttribute = (character: Character, attributeId: string, score: n
   attributeBonuses: { ...character.attributeBonuses, [attributeId]: bonus },
 });
 
+/** An incapacitating condition also ends concentration. */
 export const setCondition = (character: Character, conditionId: string, active: boolean): Character => {
   const without = character.conditions.filter((id) => id !== conditionId);
-  return { ...character, conditions: active ? [...without, conditionId] : without };
+  return keepConcentration({ ...character, conditions: active ? [...without, conditionId] : without });
 };

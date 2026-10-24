@@ -6,10 +6,18 @@ export interface HistoryEvent {
   type?: HistoryEntryType;
 }
 
-/** Prepends an entry to the character's event log, keeping the newest `HISTORY_LIMIT` entries. */
-export function appendHistory(character: Character, event: HistoryEvent, now: number = Date.now()): Character {
+/**
+ * Prepends an entry to the character's event log, keeping the newest `HISTORY_LIMIT` entries. An edit
+ * applied more than once (on screen, then to the stored copy) passes the same `id` and `now` each time.
+ */
+export function appendHistory(
+  character: Character,
+  event: HistoryEvent,
+  now: number = Date.now(),
+  id: string = createEntityId('log'),
+): Character {
   const entry: HistoryEntry = {
-    id: createEntityId('log'),
+    id,
     timestamp: now,
     message: event.message,
     type: event.type ?? 'other',

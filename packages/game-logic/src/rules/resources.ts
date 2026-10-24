@@ -20,9 +20,3 @@ export function changeResource(character: Character, resourceId: string, delta: 
     applied: current - resource.current,
   };
 }
-
-/** Long rest: every resource is restored to its maximum. */
-export const restoreAllResources = (character: Character): Character => ({
-  ...character,
-  resources: character.resources.map((r) => ({ ...r, current: r.max })),
-});

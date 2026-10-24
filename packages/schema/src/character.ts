@@ -82,6 +82,16 @@ export const ActionTypeSchema = z.enum(['action', 'bonus', 'reaction', 'passive'
 export const ItemTypeSchema = z.enum(['armor', 'weapon', 'ammunition', 'item']);
 export const WeaponClassSchema = z.enum(['melee', 'ranged']);
 export const ResistanceLevelSchema = z.enum(['resistance', 'vulnerability', 'immunity', 'none']);
+/** The universe a character comes from; drives the visual theme of the sheet. */
+export const SETTINGS = ['high-fantasy', 'sci-fi', 'dark-fantasy', 'cyberpunk', 'lovecraft'] as const;
+export const SettingSchema = z.enum(SETTINGS);
+export const DEFAULT_SETTING: z.infer<typeof SettingSchema> = 'high-fantasy';
+/** Settings that were merged into another one; documents saved with them read as their successor. */
+const RETIRED_SETTINGS: Record<string, z.infer<typeof SettingSchema>> = { grimdark: 'dark-fantasy' };
+
+/** When a resource comes back: on a short rest (and a long one), only on a long rest, or by hand. */
+export const RecoverySchema = z.enum(['short', 'long', 'manual']);
+
 export const HistoryEntryTypeSchema = z.enum(['health', 'sanity', 'resource', 'inventory', 'exp', 'other']);
 
 export const DamageComponentSchema = passthroughObject({
@@ -95,6 +105,8 @@ export const SkillSchema = passthroughObject({
   attribute: shortText,
   proficient: flag(false),
   expertise: flag(false),
+  /** A flat bonus a preset feature gives to checks of the skill (a Thaumaturge's Wisdom to Arcana). */
+  bonus: optionalNumber,
 });
 
 export const ResourceSchema = passthroughObject({
@@ -105,7 +117,15 @@ export const ResourceSchema = passthroughObject({
   max: numberOr(0),
   description: longTextOr(),
   spellSlotLevel: optionalNumber,
+  /** The pool is hit dice of this size (10 for d10): a short rest spends them to heal. */
+  hitDie: optionalNumber,
+  /** Which rest restores it; a short rest also counts as part of a long one. */
+  recovery: text(RecoverySchema.default('long')),
+  /** How much a short rest returns ("one use"); absent means all of it. A long rest always returns all. */
+  recoveryAmount: optionalNumber,
   color: optionalShortText,
+  /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const CurrencySchema = passthroughObject({
@@ -147,6 +167,8 @@ export const InventoryItemSchema = passthroughObject({
   ammunitionType: optionalShortText,
   iconName: optionalShortText,
   color: optionalShortText,
+  /** Id of the preset weapon, armour or gear the item was made from (D&D 2024 tables). */
+  ref: optionalShortText,
 });
 
 export const AttackSchema = passthroughObject({
@@ -164,6 +186,8 @@ export const AttackSchema = passthroughObject({
   attribute: optionalShortText,
   iconName: optionalShortText,
   color: optionalShortText,
+  /** Id of the preset feature that wrote this entry (a Monk's Unarmed Strike); rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const AbilitySchema = passthroughObject({
@@ -177,8 +201,16 @@ export const AbilitySchema = passthroughObject({
   damage: optionalShortText,
   damageType: optionalShortText,
   damageComponents: optionalList(DamageComponentSchema),
+  /** How it hits: a saving throw of this ability against `saveDC`, or an attack roll with `hitBonus`. */
+  saveAttribute: optionalShortText,
+  saveDC: optionalNumber,
+  hitBonus: optionalNumber,
+  /** Using it starts concentration, which a new concentration, a failed save or incapacitation ends. */
+  concentration: optionalFlag,
   iconName: optionalShortText,
   color: optionalShortText,
+  /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const LimbSchema = passthroughObject({
@@ -186,13 +218,22 @@ export const LimbSchema = passthroughObject({
   name: shortText,
   currentHP: numeric(num),
   maxHP: numeric(num),
+  /** The limb's armour class as older versions stored it; read once to derive `acBonus`. */
   ac: numberOr(0),
+  /**
+   * The player's modifier on top of the limb's derived armour class (worn armour, else 10 + DEX).
+   * Absent on sheets saved before it existed.
+   */
+  acBonus: optionalNumber,
 });
 
 export const TraitSchema = passthroughObject({
   id: nestedId,
   name: shortText,
   description: longTextOr(),
+  iconName: optionalShortText,
+  /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const SpellSchema = passthroughObject({
@@ -211,11 +252,28 @@ export const SpellSchema = passthroughObject({
   damage: optionalShortText,
   damageType: optionalShortText,
   damageComponents: optionalList(DamageComponentSchema),
+  /** Dice added per slot level above the spell's own when cast with a higher slot. */
+  upcastDamage: optionalShortText,
+  /** A cantrip whose dice count grows with character level (5, 11, 17). */
+  cantripScaling: optionalFlag,
+  /** The spellcasting modifier is added to the damage or healing. */
+  addModifier: optionalFlag,
+  /** A spell attack roll (`melee`/`ranged`) or the ability of the target's saving throw. */
+  attackRoll: text(z.enum(['melee', 'ranged']).optional()),
+  saveAttribute: optionalShortText,
+  /** Casting it starts concentration, which a new concentration, a failed save or incapacitation ends. */
+  concentration: optionalFlag,
   prepared: flag(false),
+  /** Granted by a feature (oath spells): always prepared and not counted against the limit. */
+  alwaysPrepared: optionalFlag,
+  /** Spellcasting ability of a spell granted outside the class list (species, feats). */
+  ability: optionalShortText,
   resourceId: optionalNestedId,
   resourceCost: optionalNumber,
   iconName: optionalShortText,
   color: optionalShortText,
+  /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const HistoryEntrySchema = passthroughObject({
@@ -229,9 +287,19 @@ export const ResistanceSchema = passthroughObject({
   id: nestedId,
   type: shortText,
   level: ResistanceLevelSchema,
+  /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
+  grant: optionalShortText,
 });
 
-export const ActionCountersSchema = passthroughObject({
+export const ConcentrationSchema = passthroughObject({
+  kind: z.enum(['spell', 'ability']),
+  id: nestedId,
+  /** Shown even if the entry is renamed or deleted meanwhile. */
+  name: shortText,
+  startedAt: numeric(num),
+});
+
+export const ActionCountersSchema =passthroughObject({
   action: numeric(int.min(0).default(0)),
   bonus: numeric(int.min(0).default(0)),
   reaction: numeric(int.min(0).default(0)),
@@ -240,11 +308,51 @@ export const ActionCountersSchema = passthroughObject({
 const numberMap = (maxKeyLength: number) =>
   text(z.record(z.string().max(maxKeyLength), numeric(num)).default({}));
 
+/**
+ * The preset choices a hero was built from (D&D 2024). The sheet's granted entries (abilities,
+ * traits, resources, spells marked with `grant`) are derived from it and rebuilt on every level-up;
+ * everything else on the sheet stays the player's.
+ */
+export const BuildSchema = passthroughObject({
+  ruleset: z.literal('dnd2024'),
+  species: shortTextOr(),
+  background: shortTextOr(),
+  class: shortTextOr(),
+  subclass: optionalShortText,
+  abilityMethod: text(z.enum(['pointBuy', 'roll', 'manual']).default('manual')),
+  /** Scores before any increase. */
+  baseAttributes: numberMap(64),
+  /** The background's +2/+1 or +1/+1/+1. */
+  backgroundBonuses: numberMap(64),
+  /** Picks by choice path (`class:fighter.fighting-style/style`). */
+  choices: text(z.record(z.string().max(500), z.array(shortString).max(50)).default({})),
+  /** Hit points gained on each level after the first. */
+  hitPoints: list(
+    passthroughObject({
+      level: numeric(int.min(2).max(20)),
+      method: z.enum(['average', 'roll']),
+      value: numeric(int.min(1).max(20)),
+    }),
+  ),
+  level: numeric(int.min(1).max(20).default(1)),
+});
+
+/** Uploaded artwork, referenced by asset id (see the API's /assets). */
+export const AssetIdSchema = z.uuid();
+export const CharacterImagesSchema = passthroughObject({
+  /** Full-height art for the hero screens. */
+  full: text(AssetIdSchema.optional()),
+  /** Square-ish portrait for lists, the sheet header and combat. */
+  portrait: text(AssetIdSchema.optional()),
+});
+
 export const CharacterSchema = passthroughObject({
   schemaVersion: z.literal(CHARACTER_SCHEMA_VERSION),
   id: EntityIdSchema,
 
   name: text(shortString.trim().min(1)),
+  /** Absent on older sheets: they read as `DEFAULT_SETTING`. */
+  setting: text(z.preprocess((v) => (typeof v === 'string' ? (RETIRED_SETTINGS[v] ?? v) : v), SettingSchema.optional())),
   race: shortTextOr(),
   subrace: optionalShortText,
   class: shortTextOr(),
@@ -252,10 +360,33 @@ export const CharacterSchema = passthroughObject({
   level: numeric(int.min(1).max(100).default(1)),
   experience: numberOr(0),
   speed: numberOr(30),
+  /** The armour class as older versions stored it; read once to derive `armorClassBonus.manual`. */
   armorClass: numberOr(10),
+  /**
+   * Armour class beyond the gear: from features (Defense fighting style), always and while armoured,
+   * and the player's own modifier. `manual` is absent on sheets saved before it existed.
+   */
+  armorClassBonus: text(
+    passthroughObject({
+      always: numberOr(0),
+      armored: numberOr(0),
+      manual: optionalNumber,
+      /** Unarmored Defense: without armour the AC is 10 + Dexterity + this ability's modifier. */
+      unarmored: optionalShortText,
+      /** The Unarmored Defense is lost while holding a shield (Monk). */
+      unarmoredNoShield: optionalFlag,
+    }).optional(),
+  ),
   initiativeBonus: optionalNumber,
+  /** Half the proficiency bonus on checks without proficiency, initiative included (Jack of All Trades). */
+  halfProficiency: optionalFlag,
 
   sanity: numberOr(50),
+  /**
+   * Added to the maximum sanity the rules give (a gift, a relic). Absent on sheets saved before it
+   * existed: reading them turns sanity above the computed maximum into this bonus.
+   */
+  maxSanityBonus: optionalNumber,
   currentHP: numberOr(10),
   maxHP: numberOr(10),
   tempHP: numberOr(0),
@@ -263,6 +394,8 @@ export const CharacterSchema = passthroughObject({
   limbs: list(LimbSchema),
   resistances: list(ResistanceSchema),
   conditions: list(shortString),
+  /** The spell or ability the hero keeps concentration on; absent when not concentrating. */
+  concentratingOn: text(ConcentrationSchema.optional()),
 
   attributes: numberMap(64),
   attributeBonuses: numberMap(64),
@@ -299,9 +432,12 @@ export const CharacterSchema = passthroughObject({
   bonds: longTextOr(),
   flaws: longTextOr(),
 
+  images: text(CharacterImagesSchema.optional()),
+  /** Legacy embedded portrait (data URL) from before uploaded images; read when `images.portrait` is absent. */
   avatar: text(z.string().max(LIMITS.avatar).optional()),
   history: text(z.array(HistoryEntrySchema).max(LIMITS.history).default([])),
   actionLimits: text(ActionCountersSchema.optional()),
+  build: text(BuildSchema.optional()),
   spentActions: text(ActionCountersSchema.optional()),
 });
 
@@ -310,6 +446,8 @@ export type ItemType = z.infer<typeof ItemTypeSchema>;
 export type WeaponClass = z.infer<typeof WeaponClassSchema>;
 export type ResistanceLevel = z.infer<typeof ResistanceLevelSchema>;
 export type HistoryEntryType = z.infer<typeof HistoryEntryTypeSchema>;
+export type Recovery = z.infer<typeof RecoverySchema>;
+export type Setting = z.infer<typeof SettingSchema>;
 export type DamageComponent = z.infer<typeof DamageComponentSchema>;
 export type Skill = z.infer<typeof SkillSchema>;
 export type Resource = z.infer<typeof ResourceSchema>;
@@ -324,6 +462,9 @@ export type Spell = z.infer<typeof SpellSchema>;
 export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 export type Resistance = z.infer<typeof ResistanceSchema>;
 export type ActionCounters = z.infer<typeof ActionCountersSchema>;
+export type Concentration = z.infer<typeof ConcentrationSchema>;
+export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
+export type Build = z.infer<typeof BuildSchema>;
 export type Character = z.infer<typeof CharacterSchema>;
 
 /** A character before it has an identity: what the creation wizard produces. */
