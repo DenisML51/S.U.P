@@ -6,6 +6,7 @@ import {
   preparationBlocker,
   preparedCount,
   setMaxPrepared,
+  TOTAL_PREPARED,
   slotResourceFor,
   spellLevelName,
   toggleKnownSchool,
@@ -26,7 +27,11 @@ import { damageParts, describeDamage } from '../parts/damage';
 type LevelFilter = 'all' | number;
 
 /** The ledger bullet of a spell doubles as its preparation switch: filled means prepared. */
-const PrepareMark: React.FC<{ spell: Spell; blocker: string | null; onToggle: () => void }> = ({ spell, blocker, onToggle }) => (
+const PrepareMark: React.FC<{ spell: Spell; blocker: string | null; onToggle: () => void }> = ({
+  spell,
+  blocker,
+  onToggle,
+}) => (
   <button
     type="button"
     onClick={onToggle}
@@ -48,16 +53,33 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
   const limit = maxPrepared(character, level);
   const unlimited = limit >= UNLIMITED_PREPARED;
   const slots = slotResourceFor(character, level);
+  // A class that prepares N spells of any level (paladin) sets one limit for all circles.
+  const classLimit = level > 0 && character.maxPreparedSpells[TOTAL_PREPARED] !== undefined;
   return (
     <span className="flex items-center gap-4">
-      {level > 0 && (
+      {classLimit && (
+        <span title="Сколько заклинаний всех кругов можно подготовить; задаётся классом и уровнем">
+          подготовлено <span className="tabular-nums">{preparedCount(character, level)}</span> из{' '}
+          <span className="tabular-nums">{limit}</span>
+        </span>
+      )}
+      {level > 0 && !classLimit && (
         <span className="flex items-center gap-1" title="Сколько заклинаний этого круга можно подготовить">
           подготовлено <span className="tabular-nums">{preparedCount(character, level)}</span> из
-          <IconButton label="Уменьшить лимит" size={20} onClick={() => onLimit(unlimited ? preparedCount(character, level) : limit - 1)}>
+          <IconButton
+            label="Уменьшить лимит"
+            size={20}
+            onClick={() => onLimit(unlimited ? preparedCount(character, level) : limit - 1)}
+          >
             <IconMinus width={12} height={12} />
           </IconButton>
           <span className="tabular-nums">{unlimited ? '∞' : limit}</span>
-          <IconButton label="Увеличить лимит" size={20} disabled={unlimited} onClick={() => onLimit(limit + 1)}>
+          <IconButton
+            label="Увеличить лимит"
+            size={20}
+            disabled={unlimited}
+            onClick={() => onLimit(limit + 1)}
+          >
             <IconPlus width={12} height={12} />
           </IconButton>
         </span>
@@ -72,18 +94,25 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
 };
 
 /** Spellcasting difficulty: its name and value, edited in place. */
-const DifficultyEditor: React.FC<{ name: string; value: number; onSave: (name: string, value: number) => void }> = ({
-  name,
-  value,
-  onSave,
-}) => {
+const DifficultyEditor: React.FC<{
+  name: string;
+  value: number;
+  onSave: (name: string, value: number) => void;
+}> = ({ name, value, onSave }) => {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftValue, setDraftValue] = useState(String(value));
   if (!editing) {
     return (
-      <button type="button" onClick={() => setEditing(true)} className="group block w-full text-left" title="Изменить">
-        <span className="ui-display ui-numeric text-4xl leading-none text-ink group-hover:text-frame-bright">{value}</span>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="group block w-full text-left"
+        title="Изменить"
+      >
+        <span className="ui-display ui-numeric text-4xl leading-none text-ink group-hover:text-frame-bright">
+          {value}
+        </span>
         <span className="mt-1 block text-xs text-ink-faint">{name}</span>
       </button>
     );
@@ -100,7 +129,12 @@ const DifficultyEditor: React.FC<{ name: string; value: number; onSave: (name: s
     >
       <Input value={draftName} onChange={(e) => setDraftName(e.target.value)} aria-label="Название" />
       <div className="flex gap-2">
-        <Input value={draftValue} onChange={(e) => setDraftValue(e.target.value)} inputMode="numeric" aria-label="Значение" />
+        <Input
+          value={draftValue}
+          onChange={(e) => setDraftValue(e.target.value)}
+          inputMode="numeric"
+          aria-label="Значение"
+        />
         <Button type="submit" size="sm" variant="primary">
           Готово
         </Button>
@@ -119,7 +153,10 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   const [preparedOnly, setPreparedOnly] = useState(false);
   const [query, setQuery] = useState('');
 
-  const levels = useMemo(() => [...new Set(character.spells.map((s) => s.level))].sort((a, b) => a - b), [character.spells]);
+  const levels = useMemo(
+    () => [...new Set(character.spells.map((s) => s.level))].sort((a, b) => a - b),
+    [character.spells],
+  );
   const visible = character.spells.filter(
     (spell) =>
       (level === 'all' || spell.level === level) &&
@@ -153,7 +190,9 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
                 aria-current={level === option}
                 className={cx(
                   'border-b pb-0.5 text-sm transition-colors',
-                  level === option ? 'border-frame-bright text-ink' : 'border-transparent text-ink-faint hover:text-ink-muted',
+                  level === option
+                    ? 'border-frame-bright text-ink'
+                    : 'border-transparent text-ink-faint hover:text-ink-muted',
                 )}
               >
                 {option === 'all' ? 'Все круги' : option === 0 ? 'Заговоры' : option}
@@ -169,10 +208,19 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
             />
             только подготовленные
           </label>
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск" className="ml-auto !w-48" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Поиск"
+            className="ml-auto !w-48"
+          />
         </div>
 
-        <Ledger title="Книга заклинаний" addLabel="Добавить заклинание" onAdd={() => dialogs.open({ kind: 'spell' })}>
+        <Ledger
+          title="Книга заклинаний"
+          addLabel="Добавить заклинание"
+          onAdd={() => dialogs.open({ kind: 'spell' })}
+        >
           {groups.map((group) => (
             <React.Fragment key={group.level}>
               <LedgerGroup
@@ -244,27 +292,32 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
           />
         </Panel>
 
-        <section>
-          <h3 className="mb-2 text-xs uppercase tracking-[0.16em] text-ink-muted">Изучаемые школы</h3>
-          <ul className="grid gap-1">
-            {SPELL_SCHOOLS.map((school) => (
-              <li key={school}>
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-muted hover:text-ink">
-                  <input
-                    type="checkbox"
-                    checked={character.knownSchools.includes(school)}
-                    onChange={() => updateCharacter((doc) => toggleKnownSchool(doc, school))}
-                    className="accent-[rgb(var(--c-frame-bright))]"
-                  />
-                  {school}
-                </label>
-              </li>
-            ))}
-          </ul>
-          {character.knownSchools.length === 0 && (
-            <p className="mt-2 text-xs text-ink-faint">Школы не отмечены — можно готовить любые заклинания.</p>
-          )}
-        </section>
+        {/* Studied schools are a homebrew limit; preset heroes prepare by their class rules. */}
+        {!character.build && (
+          <section>
+            <h3 className="mb-2 text-xs uppercase tracking-[0.16em] text-ink-muted">Изучаемые школы</h3>
+            <ul className="grid gap-1">
+              {SPELL_SCHOOLS.map((school) => (
+                <li key={school}>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-muted hover:text-ink">
+                    <input
+                      type="checkbox"
+                      checked={character.knownSchools.includes(school)}
+                      onChange={() => updateCharacter((doc) => toggleKnownSchool(doc, school))}
+                      className="accent-[rgb(var(--c-frame-bright))]"
+                    />
+                    {school}
+                  </label>
+                </li>
+              ))}
+            </ul>
+            {character.knownSchools.length === 0 && (
+              <p className="mt-2 text-xs text-ink-faint">
+                Школы не отмечены — можно готовить любые заклинания.
+              </p>
+            )}
+          </section>
+        )}
 
         <div className="mt-auto">
           <SectionNotes value={character.spellsNotes} onSave={saveText('spellsNotes')} />

@@ -1472,19 +1472,36 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
    tile, lit from above, and a large solid pictogram sits on it in pale ink. */
 [data-setting] .ui-hud-slot--tile {
   --tile-color: var(--tile, var(--tile-kind, rgb(var(--c-frame))));
-  color: rgb(244 236 220);
-  background:
-    radial-gradient(circle at 50% 28%, color-mix(in srgb, var(--tile-color) 58%, #000), color-mix(in srgb, var(--tile-color) 16%, #000) 82%);
+  color: rgb(246 238 222);
+  border: 1px solid color-mix(in srgb, var(--tile-color) 40%, rgb(var(--c-frame-bright)));
+  background: radial-gradient(
+    120% 95% at 50% 12%,
+    color-mix(in srgb, var(--tile-color) 80%, #fff),
+    color-mix(in srgb, var(--tile-color) 50%, #000) 48%,
+    color-mix(in srgb, var(--tile-color) 14%, #000) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    inset 0 0 0 1px rgb(0 0 0 / 0.55),
+    inset 0 -10px 14px rgb(0 0 0 / 0.45),
+    0 2px 5px rgb(0 0 0 / 0.55);
 }
 /* Without a chosen colour, the kind of entry tints the tile, so the panels stay tellable apart. */
 .ui-hud-slot--tile[data-kind='attack'] { --tile-kind: rgb(var(--c-danger)); }
 .ui-hud-slot--tile[data-kind='ability'] { --tile-kind: rgb(var(--c-success)); }
 .ui-hud-slot--tile[data-kind='spell'] { --tile-kind: rgb(var(--c-sanity)); }
 .ui-hud-slot--tile[data-kind='item'] { --tile-kind: rgb(var(--c-warning)); }
-[data-setting] .ui-hud-slot--tile .ui-hud-slot__icon { filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.65)); }
+/* The pictogram is lit like a painted icon: a hard dark edge below, a glow of the tile's colour. */
+[data-setting] .ui-hud-slot--tile .ui-hud-slot__icon {
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.9)) drop-shadow(0 0 5px color-mix(in srgb, var(--tile-color) 70%, transparent));
+}
 [data-setting] .ui-hud-slot--tile:hover .ui-hud-slot__icon { transform: scale(1.06); }
 /* Sci-fi keeps its tiles matte: one flat tone, no light from above. */
-[data-setting='sci-fi'] .ui-hud-slot--tile { background: color-mix(in srgb, var(--tile-color) 34%, rgb(var(--c-inset))); }
+[data-setting='sci-fi'] .ui-hud-slot--tile {
+  background: color-mix(in srgb, var(--tile-color) 34%, rgb(var(--c-inset)));
+  border-color: color-mix(in srgb, var(--tile-color) 60%, rgb(var(--c-line)));
+  box-shadow: none;
+}
 [data-setting='sci-fi'] .ui-hud-slot--tile .ui-hud-slot__icon { filter: none; }
 
 /* ------------------------------------------------------------------ High fantasy details */
@@ -1545,3 +1562,195 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 @media (prefers-reduced-motion: reduce) {
   [data-setting='sci-fi'].ui-hero-card .ui-fx { animation: none; }
 }
+
+/* ------------------------------------------------------------------ Option tiles */
+/* An option of a choice (a feat, a spell, a lineage): quiet until chosen; the chosen look is the
+   setting's own selection (a solid block in sci-fi, a seal edge in grimdark, a gilt frame in
+   fantasy). */
+.ui-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.55rem 0.8rem;
+  text-align: left;
+  color: rgb(var(--c-ink));
+  background: rgb(var(--c-surface-2) / 0.45);
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+  transition: border-color 120ms, background-color 120ms, color 120ms, box-shadow 150ms;
+}
+.ui-option:not(:disabled):hover { border-color: rgb(var(--c-frame)); background: rgb(var(--c-surface-2)); }
+.ui-option:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 2px; }
+.ui-option:disabled { opacity: 0.4; cursor: not-allowed; }
+.ui-option__meta { font-size: 0.72rem; color: rgb(var(--c-ink-faint)); }
+.ui-option[aria-pressed='true'] {
+  border-color: rgb(var(--c-frame-bright));
+  background: rgb(var(--c-accent) / 0.12);
+  box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.35);
+}
+.ui-option[aria-pressed='true'] .ui-option__meta { color: rgb(var(--c-ink-muted)); }
+[data-setting='sci-fi'] .ui-option[aria-pressed='true'] {
+  color: rgb(var(--c-accent-ink));
+  background: rgb(var(--c-accent));
+  border-color: rgb(var(--c-accent));
+  box-shadow: none;
+}
+[data-setting='sci-fi'] .ui-option[aria-pressed='true'] .ui-option__meta { color: rgb(var(--c-accent-ink) / 0.75); }
+[data-setting='grimdark'] .ui-option[aria-pressed='true'] {
+  border-color: rgb(var(--c-frame-bright) / 0.8);
+  background: linear-gradient(90deg, rgb(var(--c-accent) / 0.35), rgb(var(--c-accent) / 0.08));
+  box-shadow: inset 3px 0 0 rgb(var(--c-danger));
+}
+[data-setting='dark-fantasy'] .ui-option[aria-pressed='true'] {
+  background: rgb(var(--c-frame) / 0.16);
+  box-shadow: inset 0 0 0 3px rgb(var(--c-surface)), inset 0 0 0 4px rgb(var(--c-frame-bright) / 0.4);
+}
+
+
+/* Text inside a solid sci-fi selection takes the selection's ink. */
+[data-setting='sci-fi'] .ui-option[aria-pressed='true'] :is(.text-ink, .text-ink-muted, .text-ink-faint) { color: rgb(var(--c-accent-ink) / 0.85); }
+/* High fantasy: the chosen option is gilded, its name in gold. */
+[data-setting='high-fantasy'] .ui-option[aria-pressed='true'] {
+  color: rgb(var(--c-frame-bright));
+  background: linear-gradient(180deg, rgb(var(--c-frame) / 0.22), rgb(var(--c-frame) / 0.08));
+  box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.5), 0 0 14px -4px rgb(var(--c-frame) / 0.5);
+}
+.ui-option--empty { border-style: dashed; background: transparent; }
+.ui-option[data-focus]:not([aria-pressed='true']) { border-color: rgb(var(--c-frame) / 0.8); background: rgb(var(--c-surface-2)); }
+/* The feature a choice comes from, beside the choice's name. */
+.ui-choice-origin {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.72rem;
+  color: rgb(var(--c-frame-bright));
+  border: 1px solid rgb(var(--c-frame) / 0.5);
+  border-radius: var(--radius);
+}
+
+/* ------------------------------------------------------------------ Journey steps */
+/* The steps of hero creation down the left edge, each with what was chosen on it, as in a game's
+   character creator: a mark (done, current, ahead), the step's name, the choice under it. */
+.ui-steps__item {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr;
+  column-gap: 0.7rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  text-align: left;
+  border-radius: var(--radius);
+  transition: background-color 120ms, color 120ms;
+}
+.ui-steps__item:not(:disabled):hover { background: rgb(var(--c-surface-2) / 0.6); }
+.ui-steps__item:disabled { opacity: 0.35; cursor: default; }
+.ui-steps__mark {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 0.7rem;
+  color: rgb(var(--c-ink-faint));
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 999px;
+}
+.ui-steps__label { font-size: 0.92rem; line-height: 1.2; color: rgb(var(--c-ink-muted)); }
+.ui-steps__value { font-size: 0.75rem; line-height: 1.2; color: rgb(var(--c-ink-faint)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-steps__item[data-done] .ui-steps__mark { color: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame-bright) / 0.7); }
+.ui-steps__item[data-done] .ui-steps__value { color: rgb(var(--c-frame-bright) / 0.85); }
+.ui-steps__item[aria-current='step'] .ui-steps__label { color: rgb(var(--c-ink)); }
+.ui-steps__item[aria-current='step'] .ui-steps__mark { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame-bright)); }
+[data-setting='sci-fi'] .ui-steps__mark { border-radius: 0; }
+[data-setting='sci-fi'] .ui-steps__item[aria-current='step'] .ui-steps__mark { background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+[data-setting='grimdark'] .ui-steps__mark { border-radius: 0; transform: rotate(45deg); }
+[data-setting='grimdark'] .ui-steps__mark > * { transform: rotate(-45deg); }
+[data-setting='grimdark'] .ui-steps__item[aria-current='step'] .ui-steps__mark { background: rgb(var(--c-accent)); border-color: rgb(var(--c-frame-bright)); color: rgb(var(--c-accent-ink)); }
+[data-setting='grimdark'] .ui-steps__label,
+[data-setting='dark-fantasy'] .ui-steps__label,
+[data-setting='high-fantasy'] .ui-steps__label { font-family: var(--font-display); font-size: 1rem; }
+
+/* ------------------------------------------------------------------ Origin tiles */
+/* A species, background or class to pick: its emblem large over its name, framed when chosen. */
+.ui-origin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.7rem 0.4rem 0.6rem;
+  text-align: center;
+  color: rgb(var(--c-ink-muted));
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) + 4px);
+  transition: color 150ms, border-color 150ms, background-color 150ms;
+}
+.ui-origin__icon {
+  color: rgb(var(--c-frame-bright));
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.9)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.6));
+  transition: transform 150ms, filter 150ms;
+}
+.ui-origin__name { font-size: 0.85rem; line-height: 1.15; }
+.ui-origin:hover { color: rgb(var(--c-ink)); }
+.ui-origin:hover .ui-origin__icon { transform: translateY(-2px); }
+.ui-origin[aria-pressed='true'] {
+  color: rgb(var(--c-ink));
+  border-color: rgb(var(--c-frame-bright) / 0.85);
+  background: radial-gradient(circle at 50% 30%, rgb(var(--c-frame) / 0.18), transparent 70%);
+  box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.25), 0 0 16px -6px rgb(var(--c-frame-bright) / 0.6);
+}
+.ui-origin[aria-pressed='true'] .ui-origin__icon { filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.9)) drop-shadow(0 0 10px rgb(var(--c-frame-bright) / 0.55)); }
+[data-setting='sci-fi'] .ui-origin { border-radius: 0; }
+[data-setting='sci-fi'] .ui-origin__icon { filter: none; color: rgb(var(--c-ink)); }
+[data-setting='sci-fi'] .ui-origin[aria-pressed='true'] { background: rgb(var(--c-accent) / 0.14); border-color: rgb(var(--c-accent)); box-shadow: inset 0 -3px 0 rgb(var(--c-accent)); }
+[data-setting='sci-fi'] .ui-origin[aria-pressed='true'] .ui-origin__icon { color: rgb(var(--c-frame-bright)); filter: none; }
+
+/* ------------------------------------------------------------------ Hero summary (creation) */
+.ui-summary__heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.45rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: rgb(var(--c-ink));
+}
+.ui-summary__heading::before,
+.ui-summary__heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.55), transparent);
+}
+.ui-summary__badge {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  width: 2.7rem;
+  height: 2.7rem;
+  font-size: 0.82rem;
+  color: rgb(var(--c-ink));
+  background: radial-gradient(circle at 50% 30%, rgb(var(--c-surface-2)), rgb(var(--c-inset)));
+  border: 1px solid rgb(var(--c-frame) / 0.6);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 2px rgb(var(--c-bg-deep) / 0.6);
+}
+.ui-summary__badge svg { color: rgb(var(--c-frame-bright)); }
+.ui-summary__portrait {
+  width: 5.5rem;
+  height: 5.5rem;
+  object-fit: cover;
+  border: 2px solid rgb(var(--c-frame-bright) / 0.7);
+  border-radius: 999px;
+}
+[data-setting='sci-fi'] .ui-summary__badge,
+[data-setting='sci-fi'] .ui-summary__portrait { border-radius: 0; box-shadow: none; }
+[data-setting='grimdark'] .ui-summary__badge { border-radius: 0; transform: rotate(45deg); }
+[data-setting='grimdark'] .ui-summary__badge > * { transform: rotate(-45deg); }
+/* Fantasy keys are softened like enamelled tokens; grimdark iron and sci-fi keys stay square. */
+[data-setting='high-fantasy'] .ui-hud-slot,
+[data-setting='high-fantasy'] .ui-hud-slot--tile { border-radius: 9px; }
+[data-setting='dark-fantasy'] .ui-hud-slot,
+[data-setting='dark-fantasy'] .ui-hud-slot--tile { border-radius: 7px; }

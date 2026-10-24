@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LevelUpDialog } from '../../progression/LevelUpDialog';
 import { AbilityDialog } from './AbilityDialog';
 import { AttackDialog } from './AttackDialog';
 import { DiceDialog } from './DiceDialog';
@@ -53,6 +54,8 @@ export const SheetDialogHost: React.FC = () => {
       return <ProfileDialog key={key} open={open} onClose={close} />;
     case 'limb':
       return <LimbDialog key={key} open={open} id={current.id} onClose={close} />;
+    case 'levelUp':
+      return <LevelUpDialog key={key} open={open} onClose={close} />;
     case 'dice':
       return <DiceDialog key={key} open={open} onClose={close} />;
     default:

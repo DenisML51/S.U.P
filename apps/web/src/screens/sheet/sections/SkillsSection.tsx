@@ -13,6 +13,7 @@ import {
 } from '@itd/game-logic';
 import type { Character, Skill } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
+import { Prose } from '../../../ui/Prose';
 import { Panel, SectionTitle, TextArea, cx } from '../../../ui/primitives';
 import { useSheetText } from '../useSheetText';
 import { useRolls } from '../useRolls';
@@ -92,8 +93,8 @@ const AttributePlate: React.FC<{
   );
 };
 
-/** Languages and tool proficiencies: free text, edited in place. */
-const LanguagesNote: React.FC<{ value: string; onSave: (value: string) => void }> = ({ value, onSave }) => {
+/** Languages and proficiencies: the ones the build grants (read-only), then the player's own notes. */
+const LanguagesNote: React.FC<{ value: string; granted?: string; onSave: (value: string) => void }> = ({ value, granted, onSave }) => {
   const [draft, setDraft] = useState<string | null>(null);
   return (
     <Panel variant="paper" ornate={false} className="px-5 py-4">
@@ -106,7 +107,10 @@ const LanguagesNote: React.FC<{ value: string; onSave: (value: string) => void }
         )}
       </div>
       {draft === null ? (
-        <p className="whitespace-pre-line text-sm leading-relaxed">{value || 'Не указаны'}</p>
+        <>
+          {granted && <Prose className="text-sm">{granted}</Prose>}
+          {(value || !granted) && <p className={cx('whitespace-pre-line text-sm leading-relaxed', granted && 'mt-2')}>{value || 'Не указаны'}</p>}
+        </>
       ) : (
         <TextArea
           autoFocus
@@ -194,7 +198,11 @@ export const SkillsSection: React.FC<{ character: Character }> = ({ character })
         </div>
       </section>
 
-      <LanguagesNote value={character.languagesAndProficiencies} onSave={saveText('languagesAndProficiencies')} />
+      <LanguagesNote
+        value={character.languagesAndProficiencies}
+        granted={character.traits.find((t) => t.id === 'g-proficiencies')?.description}
+        onSave={saveText('languagesAndProficiencies')}
+      />
     </div>
   );
 };
