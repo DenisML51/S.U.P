@@ -1,61 +1,52 @@
 import React from 'react';
 import type { Setting } from '@itd/schema';
-import { StarRule, VineCorner } from './art/highFantasy';
+import { SETTING_ART } from './art';
 import { useSetting } from './theme/SettingScope';
 
-/**
- * Small line ornaments drawn in `currentColor`. Each setting has its own vocabulary:
- * Tolkien-style vines, engraved Victorian corners; sci-fi panes stay bare.
- */
-
-const CORNERS: Record<Setting, React.ReactNode> = {
-  'high-fantasy': <VineCorner />,
-  // A terminal pane has no ornament: its structure is in the rules and the type.
-  'sci-fi': null,
-  // An engraved Victorian corner: a double rule with a small lozenge where the rules meet.
-  'dark-fantasy': (
-    <>
-      <path d="M1 18V1h17" fill="none" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M5 12V5h7" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.7" />
-      <path d="M5 2.2 7.8 5 5 7.8 2.2 5Z" fill="currentColor" />
-    </>
-  ),
+/** The ornament set of the nearest setting scope, or of the one asked for. */
+const useArt = (setting?: Setting) => {
+  const scope = useSetting();
+  return SETTING_ART[setting ?? scope];
 };
 
-/** The vine is drawn on a finer grid than the other corners. */
-const VIEWBOX: Record<Setting, string> = {
-  'high-fantasy': '0 0 32 32',
-  'sci-fi': '0 0 24 24',
-  'dark-fantasy': '0 0 24 24',
-};
-
+/** The setting's corner pieces on all four corners of the positioned parent; nothing in sci-fi. */
 export const Corners: React.FC<{ setting?: Setting }> = ({ setting }) => {
-  const current = useSetting();
-  const art = CORNERS[setting ?? current];
-  if (!art) return null;
+  const corner = useArt(setting).corner;
+  if (!corner) return null;
   return (
     <>
       {(['tl', 'tr', 'bl', 'br'] as const).map((position) => (
-        <svg key={position} className={`ui-corner ui-corner--${position}`} viewBox={VIEWBOX[setting ?? current]} aria-hidden>
-          {art}
+        <svg key={position} className={`ui-corner ui-corner--${position}`} viewBox={corner.viewBox} aria-hidden>
+          {corner.art}
         </svg>
       ))}
     </>
   );
 };
 
-const RULE_MARKS: Record<Setting, React.ReactNode> = {
-  'high-fantasy': <StarRule />,
-  'sci-fi': (
-    <svg width="34" height="6" viewBox="0 0 34 6" aria-hidden>
-      <path d="M0 3h6M10 3h14M28 3h6" stroke="currentColor" strokeWidth="1.5" />
+/** The setting's centre piece on the top edge of the positioned parent (a major panel). */
+export const Crest: React.FC = () => {
+  const crest = useArt().crest;
+  if (!crest) return null;
+  return (
+    <svg className="ui-crest" viewBox={crest.viewBox} aria-hidden>
+      {crest.art}
     </svg>
-  ),
-  'dark-fantasy': (
-    <svg width="24" height="12" viewBox="0 0 24 12" aria-hidden>
-      <path d="M12 0v12M7 4h10" stroke="currentColor" strokeWidth="1" />
-    </svg>
-  ),
+  );
 };
 
-export const RuleMark: React.FC = () => <>{RULE_MARKS[useSetting()]}</>;
+export const RuleMark: React.FC = () => <>{useArt().ruleMark}</>;
+
+/** List bullet in the vocabulary of the current setting; outlined marks an inactive entry. */
+export const LedgerBullet: React.FC<{ filled?: boolean }> = ({ filled = true }) => (
+  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden className="shrink-0">
+    {useArt().bullet(filled)}
+  </svg>
+);
+
+/** Small heraldic mark of the setting. */
+export const SettingEmblem: React.FC<{ size?: number; className?: string }> = ({ size = 28, className }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden className={className}>
+    {useArt().emblem}
+  </svg>
+);

@@ -1,12 +1,13 @@
 import React from 'react';
+import type { SettingArt } from './types';
 
 /**
- * High fantasy ornament, after the illuminated borders of Tolkien-era book design: square double
- * rules whose corners open into curling vines, almond leaves and the eight-pointed star.
+ * High fantasy ornament: an astronomer's atlas bound as an illuminated book. Gilt double rules
+ * whose corners open into curling vines and almond leaves, the eight-pointed star of Elvish
+ * heraldry, astrolabe rings and a field of stars behind everything.
  *
  * Corner pieces are drawn ON the frame they decorate: their straight strokes coincide with the
- * frame's rules and the flourish grows inwards from the corner, so frame and ornament read as one.
- * Everything is drawn in `currentColor`.
+ * frame's rules and the flourish grows inwards, so frame and ornament read as one.
  */
 
 /** Almond leaf with a midrib, 9 units long, its base at the origin pointing along +x. */
@@ -31,21 +32,40 @@ export const starPath = (cx: number, cy: number, outer: number, inner: number, p
 
 /**
  * Panel corner, 32×32. The panel's 1px border runs along x = 0.5 and y = 0.5 of this box; the
- * corner thickens that border near the corner and sends a curl with two leaves inwards.
+ * corner thickens it near the corner, echoes the inner rule and sends a curl with a leaf inwards.
  */
-export const VineCorner: React.FC = () => (
+const VineCorner: React.FC = () => (
   <>
-    <path d="M0.75 24V0.75H24" fill="none" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M0.75 0.75C5 5 9 7.5 12.5 8 15.8 8.4 17 5.6 15 4.3 13.4 3.3 11.7 4.8 12.6 6.2" fill="none" stroke="currentColor" strokeWidth="0.9" />
-    <path d="M0.75 0.75C5 5 7.5 9 8 12.5 8.4 15.8 5.6 17 4.3 15 3.3 13.4 4.8 11.7 6.2 12.6" fill="none" stroke="currentColor" strokeWidth="0.9" />
-    <Leaf x={17} y={2.6} angle={-12} scale={0.75} />
-    <Leaf x={2.6} y={17} angle={102} scale={0.75} />
-    <path d={starPath(0.75, 0.75, 3.4, 1.4)} fill="currentColor" />
+    <path d="M0.75 22V0.75H22" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M4.5 13V4.5H13" fill="none" stroke="currentColor" strokeWidth="0.6" opacity="0.8" />
+    <path d="M4.5 4.5C8.5 8.5 12 9.6 14.6 8.6 16.8 7.7 16.4 5 14.4 4.8 12.8 4.7 12.3 6.4 13.4 7.1" fill="none" stroke="currentColor" strokeWidth="0.8" />
+    <path d="M4.5 4.5C8.5 8.5 9.6 12 8.6 14.6 7.7 16.8 5 16.4 4.8 14.4 4.7 12.8 6.4 12.3 7.1 13.4" fill="none" stroke="currentColor" strokeWidth="0.8" />
+    <Leaf x={14.5} y={10.5} angle={30} scale={0.6} />
+    <Leaf x={10.5} y={14.5} angle={60} scale={0.6} />
+    <path d={starPath(0.75, 0.75, 3.6, 1.4)} fill="currentColor" />
+  </>
+);
+
+/**
+ * Medallion on the top edge of a major panel, 120×24, the edge running along y = 12: an
+ * eight-pointed star in a gilt ring, tendrils running out along the edge and ending in leaves.
+ */
+const StarCrest: React.FC = () => (
+  <>
+    <path d="M47 12C40 12 37 7.5 31 7.8 26.5 8 25.5 12.6 29 13.4 31.6 14 32.8 11.4 31.4 10.2" fill="none" stroke="currentColor" strokeWidth="0.9" />
+    <path d="M73 12C80 12 83 7.5 89 7.8 93.5 8 94.5 12.6 91 13.4 88.4 14 87.2 11.4 88.6 10.2" fill="none" stroke="currentColor" strokeWidth="0.9" />
+    <path d="M47 12C42 14.5 36 16.5 24 15.5M73 12C78 14.5 84 16.5 96 15.5" fill="none" stroke="currentColor" strokeWidth="0.6" opacity="0.7" />
+    <Leaf x={24} y={15.5} angle={185} scale={0.85} />
+    <Leaf x={96} y={15.5} angle={-5} scale={0.85} />
+    <circle cx="60" cy="12" r="10.5" fill="rgb(var(--c-surface))" stroke="currentColor" strokeWidth="1" />
+    <circle cx="60" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.6" />
+    <path d={starPath(60, 12, 6.6, 2.5)} fill="currentColor" />
+    <circle cx="60" cy="12" r="1.2" fill="rgb(var(--c-surface))" />
   </>
 );
 
 /** Divider mark: an eight-pointed star between two tendrils ending in leaves. */
-export const StarRule: React.FC = () => (
+const StarRule: React.FC = () => (
   <svg width="86" height="14" viewBox="0 0 86 14" aria-hidden>
     <path d="M6 7C14 7 20 4.5 26 7 30 8.6 33 7 35.5 7M80 7C72 7 66 4.5 60 7 56 8.6 53 7 50.5 7" fill="none" stroke="currentColor" strokeWidth="0.8" />
     <Leaf x={6} y={7} angle={180} scale={0.7} />
@@ -56,7 +76,7 @@ export const StarRule: React.FC = () => (
 );
 
 /** Distance of the screen-corner flourishes from the window edge, in px. */
-export const FRAME_OUTER = 18;
+const FRAME_OUTER = 18;
 const FRAME_GAP = 5;
 
 /**
@@ -102,4 +122,86 @@ export const VineFrameCorner: React.FC = () => {
       <circle cx="3" cy="3" r="1.4" fill="rgb(var(--c-bg-deep))" />
     </svg>
   );
+};
+
+/** Ticks of a graduated ring: a short one every `step` degrees, a long one every `major`. */
+const ringTicks = (r: number, step: number, major: number, short: number, long: number) =>
+  Array.from({ length: 360 / step }, (_, i) => {
+    const angle = (i * step * Math.PI) / 180;
+    const length = (i * step) % major === 0 ? long : short;
+    const [c, s] = [Math.cos(angle), Math.sin(angle)];
+    return `M${(r * c).toFixed(1)} ${(r * s).toFixed(1)}L${((r - length) * c).toFixed(1)} ${((r - length) * s).toFixed(1)}`;
+  }).join('');
+
+/** Twelve house glyphs of the zodiac ring are stars here: an atlas, not a horoscope. */
+const RING_STARS = Array.from({ length: 12 }, (_, i) => {
+  const angle = ((i * 30 + 15) * Math.PI) / 180;
+  return starPath(Math.cos(angle) * 318, Math.sin(angle) * 318, 7, 2.6);
+}).join('');
+
+/**
+ * An astrolabe, 760 units across, centred on the origin: graduated rings, the tilted ecliptic,
+ * the rete's pointers. Shown large and half off-screen, it is the atlas the sheet is written in.
+ */
+const Astrolabe: React.FC = () => (
+  <svg viewBox="-380 -380 760 760" fill="none" stroke="currentColor" aria-hidden className="h-full w-full">
+    <circle r="372" strokeWidth="1" />
+    <circle r="360" strokeWidth="0.6" />
+    <path d={ringTicks(360, 2, 10, 6, 16)} strokeWidth="0.7" />
+    <circle r="336" strokeWidth="0.6" />
+    <path d={RING_STARS} fill="currentColor" stroke="none" />
+    <circle r="300" strokeWidth="0.8" />
+    <path d={ringTicks(300, 5, 30, 5, 12)} strokeWidth="0.6" />
+    <circle r="220" strokeWidth="0.5" strokeDasharray="2 6" />
+    <ellipse cx="40" cy="-30" rx="250" ry="200" transform="rotate(-23)" strokeWidth="0.7" />
+    <circle r="140" strokeWidth="0.6" />
+    <path d="M-372 0H372M0-372V372" strokeWidth="0.4" opacity="0.7" />
+    <path d="M0 0L250-170M0 0L-120 290" strokeWidth="1.1" />
+    <circle cx="250" cy="-170" r="4" fill="currentColor" stroke="none" />
+    <circle r="10" strokeWidth="1" />
+    <path d={starPath(0, 0, 9, 3.5)} fill="currentColor" stroke="none" />
+  </svg>
+);
+
+/** A faint field of stars, as on an atlas of the sky. Three scattered layers, so it never tiles. */
+const STARS =
+  'radial-gradient(circle at 20% 30%, rgb(var(--c-frame-bright) / 0.7) 0 1px, transparent 1.5px) 0 0 / 173px 197px,' +
+  'radial-gradient(circle at 70% 60%, rgb(var(--c-ink) / 0.45) 0 0.8px, transparent 1.3px) 0 0 / 89px 113px,' +
+  'radial-gradient(circle at 40% 80%, rgb(var(--c-frame-bright) / 0.5) 0 1.4px, transparent 2px) 0 0 / 311px 277px';
+
+/** Night sky over teal, the atlas's astrolabe turning slowly at the right edge, vines in the corners. */
+const Backdrop: React.FC = () => (
+  <div className="absolute inset-0 text-frame">
+    <div className="absolute inset-0" style={{ background: 'radial-gradient(120% 90% at 30% 0%, rgb(var(--c-surface-2) / 0.5), transparent 60%)' }} />
+    <div className="absolute inset-0 opacity-60" style={{ background: STARS }} />
+    <div className="ui-astrolabe absolute right-[-22vh] top-1/2 aspect-square h-[115vh] -translate-y-1/2 opacity-[0.16]">
+      <Astrolabe />
+    </div>
+    {(['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map(
+      (position) => (
+        <div key={position} className={`absolute ${position}`} style={{ margin: FRAME_OUTER }}>
+          <VineFrameCorner />
+        </div>
+      ),
+    )}
+  </div>
+);
+
+export const HIGH_FANTASY_ART: SettingArt = {
+  corner: { viewBox: '0 0 32 32', art: <VineCorner /> },
+  crest: { viewBox: '0 0 120 24', art: <StarCrest /> },
+  ruleMark: <StarRule />,
+  // Four-pointed star of illuminated ledgers.
+  bullet: (filled) => (
+    <path d="M7 0.8 8.4 5.6 13.2 7 8.4 8.4 7 13.2 5.6 8.4 0.8 7 5.6 5.6Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
+  ),
+  // A sprig with two leaves under the eight-pointed star.
+  emblem: (
+    <>
+      <path d={starPath(16, 9, 6, 2.4)} fill="currentColor" />
+      <path d="M16 30V17" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M16 24C11 24 8 21 7.5 17.5 11.5 17.5 15 20 16 24ZM16 21C21 21 24 18 24.5 14.5 20.5 14.5 17 17 16 21Z" fill="currentColor" />
+    </>
+  ),
+  Backdrop,
 };

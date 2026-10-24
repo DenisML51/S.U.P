@@ -151,6 +151,7 @@ export const Dialog: React.FC<DialogProps> = ({
               as="section"
               variant={variant}
               ornate
+              crest
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}

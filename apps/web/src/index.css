@@ -1,88 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 @import './ui/theme/tokens.css';
-@import './ui/theme/primitives.css';
+@import './ui/theme/base.css';
+@import './ui/theme/settings/high-fantasy.css';
+@import './ui/theme/settings/sci-fi.css';
+@import './ui/theme/settings/dark-fantasy.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 body {
-  @apply bg-dark-bg text-white font-sans antialiased;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background: rgb(var(--c-bg-deep));
+  color: rgb(var(--c-ink));
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
   min-height: 100vh;
 }
 
-*::-webkit-scrollbar {
-  width: 5px !important;
-  height: 5px !important;
-}
-
-*::-webkit-scrollbar-track {
-  background: transparent !important;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 20px !important;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
-}
-
-*::-webkit-scrollbar-button,
-*::-webkit-scrollbar-button:start,
-*::-webkit-scrollbar-button:end,
-*::-webkit-scrollbar-button:vertical:start:increment,
-*::-webkit-scrollbar-button:vertical:start:decrement,
-*::-webkit-scrollbar-button:vertical:end:increment,
-*::-webkit-scrollbar-button:vertical:end:decrement,
-*::-webkit-scrollbar-button:horizontal:start:increment,
-*::-webkit-scrollbar-button:horizontal:start:decrement,
-*::-webkit-scrollbar-button:horizontal:end:increment,
-*::-webkit-scrollbar-button:horizontal:end:decrement {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-*::-webkit-scrollbar-corner {
-  background: transparent !important;
-}
-
+/* Thin, quiet scrollbars everywhere; `.ui-scroll` tints them with the setting. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none !important;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
+  scrollbar-color: rgb(255 255 255 / 0.1) transparent;
 }
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
-  -webkit-appearance: none !important;
-  margin: 0 !important;
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-input[type="number"] {
-  -moz-appearance: textfield !important;
-  appearance: textfield !important;
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
-

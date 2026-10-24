@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { experienceProgress, maxSanityOf, totalMaxHP } from '@itd/game-logic';
 import type { Character, Resource } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
-import { SettingEmblem } from '../../../ui/art/emblems';
+import { SettingEmblem } from '../../../ui/ornaments';
 import { IconButton, Meter, Panel, cx, type MeterTone } from '../../../ui/primitives';
 import { IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../../ui/icons';
 import { useSheetDialogs } from '../dialogs/context';

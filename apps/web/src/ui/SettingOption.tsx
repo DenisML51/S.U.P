@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Setting } from '@itd/schema';
-import { SettingEmblem } from './art/emblems';
+import { SettingEmblem } from './ornaments';
 import { cx } from './primitives';
 import { SettingScope } from './theme/SettingScope';
 import { SETTING_INFO } from './theme/settings';

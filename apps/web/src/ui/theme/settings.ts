@@ -7,9 +7,8 @@ import '@fontsource/cormorant-garamond/600.css';
 import '@fontsource/tektur/400.css';
 import '@fontsource/tektur/500.css';
 import '@fontsource/tektur/600.css';
-import '@fontsource/playfair-display-sc/400.css';
-import '@fontsource/playfair-display-sc/700.css';
-import '@fontsource/playfair-display/400.css';
+import '@fontsource/old-standard-tt/400.css';
+import '@fontsource/old-standard-tt/700.css';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 
 export interface SettingInfo {
@@ -20,8 +19,8 @@ export interface SettingInfo {
 }
 
 /**
- * Visual settings a character can belong to. Colours, fonts and ornaments live in `tokens.css`
- * under `[data-setting="…"]`; this list is what the UI offers.
+ * Visual settings a character can belong to. Each one's look lives in `settings/<id>.css` and its
+ * ornaments in `ui/art`; this list is what the UI offers.
  */
 export const SETTING_INFO: Record<Setting, SettingInfo> = {
   'high-fantasy': {

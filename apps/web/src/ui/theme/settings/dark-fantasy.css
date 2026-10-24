@@ -1,0 +1,390 @@
+/* ================================================================== Dark fantasy
+ * "The hunter's reliquary": Bloodborne, Warhammer, Dragon Age. Blackened iron and old leather,
+ * tarnished brass engraved in double rules with spikes and rivets, bone-white Victorian type with
+ * the first letter rubricated in blood, aged vellum for records. Buttons are iron plates with every
+ * corner cut; the chosen thing is marked in blood and lit by a candle from below.
+ */
+
+[data-setting='dark-fantasy'] {
+  --font-display: 'Old Standard TT', 'Times New Roman', serif;
+  --font-numeric: 'Old Standard TT', 'Times New Roman', serif;
+  --display-tracking: 0.02em;
+  --display-weight: 400;
+
+  --c-bg: 13 11 10;
+  --c-bg-deep: 6 5 4;
+  --c-surface: 23 20 18;
+  --c-surface-2: 35 30 26;
+  --c-inset: 10 8 7;
+  --c-line: 62 52 43;
+  --c-frame: 134 106 70;
+  --c-frame-bright: 202 170 118;
+  --c-ink: 228 218 198;
+  --c-ink-muted: 162 148 126;
+  --c-ink-faint: 108 98 86;
+  --c-accent: 142 28 26;
+  --c-accent-ink: 246 234 212;
+  --c-paper: 166 146 110;
+  --c-paper-ink: 34 22 14;
+  --c-paper-muted: 104 80 52;
+
+  --c-hp: 150 32 28;
+  --c-temp-hp: 202 170 118;
+  --c-sanity: 118 136 104;
+  --c-xp: 202 170 118;
+  --c-armor: 140 136 128;
+  --c-success: 108 130 82;
+  --c-danger: 170 44 36;
+  --c-warning: 190 138 64;
+
+  --c-act-action: 202 170 118;
+  --c-act-bonus: 108 130 82;
+  --c-act-reaction: 170 62 46;
+  --c-act-passive: 124 114 126;
+
+  /* Candlelight: the warm glow that marks what is under the hand. */
+  --c-candle: 232 150 70;
+
+  --radius: 1px;
+  --chamfer: 0px;
+  --panel-texture: var(--grain);
+  --panel-texture-opacity: 0.5;
+  --shadow-panel: 0 18px 40px -18px rgb(0 0 0 / 0.92);
+
+  /* Brass, dark and worn, catching a little light at the top. */
+  --brass: linear-gradient(180deg, rgb(var(--c-frame-bright)), rgb(var(--c-frame)) 45%, rgb(70 52 32));
+
+  /* ---------------------------------------------------------------- Panels */
+  /* Blackened iron under an engraved brass rim: the rim, a gap of iron, a fainter rule inside. */
+  .ui-panel:not(.ui-panel--inset):not(.ui-panel--paper) {
+    border-color: rgb(var(--c-frame) / 0.65);
+    background-image: linear-gradient(180deg, rgb(var(--c-surface-2) / 0.6), transparent 40%);
+    box-shadow:
+      inset 0 0 0 3px rgb(var(--c-surface)),
+      inset 0 0 0 4px rgb(var(--c-frame) / 0.3),
+      inset 0 0 40px rgb(0 0 0 / 0.4),
+      var(--shadow-panel);
+  }
+  /* Records are aged vellum in the same rim, darkening towards the edges. */
+  .ui-panel--paper {
+    border-color: rgb(var(--c-frame) / 0.8);
+    box-shadow:
+      inset 0 0 0 3px rgb(var(--c-paper)),
+      inset 0 0 0 4px rgb(var(--c-paper-muted) / 0.55),
+      inset 0 0 70px rgb(var(--c-paper-ink) / 0.5),
+      var(--shadow-panel);
+  }
+  .ui-corner { color: rgb(var(--c-frame-bright)); }
+  /* The arch stands on the edge: its base line (y = 20 of 24) lies on the border. */
+  .ui-crest {
+    width: var(--crest-width, 120px);
+    height: calc(var(--crest-width, 120px) / 5);
+    transform: translate(-50%, -83%);
+    filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.8));
+  }
+  .ui-details { --crest-width: 160px; }
+
+  /* Hover: a candle is brought close — warm light from below, the rim brightens. */
+  .ui-fx { box-shadow: inset 0 -30px 40px -20px rgb(var(--c-candle) / 0.22), inset 0 0 60px rgb(0 0 0 / 0.5); }
+  .ui-interactive:hover,
+  .ui-interactive[data-active='true'] { border-color: rgb(var(--c-frame-bright) / 0.75); }
+
+  /* ---------------------------------------------------------------- Type and rules */
+  /* Titles are rubricated: the first letter in blood. */
+  .ui-section-title { color: rgb(var(--c-ink)); font-size: 1.45rem; }
+  :is(.ui-section-title, .ui-ledger__head h2, .ui-dialog__title, .ui-details__title)::first-letter { color: rgb(var(--c-danger)); }
+  /* An engraved double rule. */
+  .ui-rule::before,
+  .ui-rule::after,
+  .ui-rule--left::after {
+    height: 4px;
+    background: none;
+    border-top: 1px solid rgb(var(--c-frame) / 0.6);
+    border-bottom: 1px solid rgb(var(--c-frame) / 0.3);
+  }
+  .ui-label { font-family: var(--font-display); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: none; font-variant: small-caps; color: rgb(var(--c-frame)); }
+
+  /* ---------------------------------------------------------------- Buttons */
+  /* Iron plates with every corner cut. The brass rim is the button's background, the plate is
+     laid 1px inside it, a fainter engraved line 3px further in. */
+  .ui-button {
+    --cut: 6px;
+    --rim: var(--brass);
+    --fill: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-inset)));
+    --shape: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
+    isolation: isolate;
+    border: 0;
+    font-variant: small-caps;
+    letter-spacing: 0.08em;
+    background: var(--rim);
+    clip-path: var(--shape);
+    color: rgb(var(--c-frame-bright));
+    text-shadow: 0 1px 1px rgb(0 0 0 / 0.8);
+    transition: filter 200ms, color 200ms;
+  }
+  .ui-button::before,
+  .ui-button::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    clip-path: var(--shape);
+    pointer-events: none;
+  }
+  .ui-button::before { background: var(--fill); }
+  /* The engraved inner line, and the candle under it on hover. */
+  .ui-button::after {
+    inset: 4px;
+    clip-path: none;
+    border: 1px solid rgb(var(--c-frame) / 0.28);
+    background: radial-gradient(80% 120% at 50% 130%, rgb(var(--c-candle) / 0.35), transparent 70%);
+    background-size: 100% 0%;
+    background-repeat: no-repeat;
+    background-position: bottom;
+    transition: background-size 300ms ease;
+  }
+  .ui-button:not(:disabled):hover::after { background-size: 100% 100%; }
+  .ui-button:not(:disabled):hover { color: rgb(var(--c-ink)); }
+  .ui-button:not(:disabled):active { filter: brightness(0.85); }
+  .ui-button:focus-visible { outline: none; filter: drop-shadow(0 0 4px rgb(var(--c-candle) / 0.7)); }
+  .ui-button:disabled { opacity: 1; filter: grayscale(1) brightness(0.55); }
+  /* The command: blood lacquer in brass. */
+  .ui-button--primary {
+    --fill: linear-gradient(180deg, rgb(116 30 26), rgb(88 18 16) 45%, rgb(48 9 8));
+    color: rgb(var(--c-accent-ink));
+    box-shadow: none;
+  }
+  .ui-button--primary::after { border-color: rgb(var(--c-frame-bright) / 0.35); }
+  .ui-button--secondary:not(:disabled):hover { border-color: transparent; background: var(--rim); }
+  .ui-button--danger {
+    --rim: linear-gradient(180deg, rgb(200 90 70), rgb(90 20 18));
+    --fill: linear-gradient(180deg, rgb(56 14 12), rgb(30 8 7));
+    color: rgb(230 150 130);
+  }
+  /* Ghost: bone type, underlined in blood on hover. */
+  .ui-button--ghost {
+    --rim: none;
+    clip-path: none;
+    background: none;
+    color: rgb(var(--c-ink-muted));
+  }
+  .ui-button--ghost::before { display: none; }
+  .ui-button--ghost::after {
+    inset: auto 0.6rem 0.45rem;
+    height: 1px;
+    border: 0;
+    background: rgb(var(--c-danger));
+    transform: scaleX(0);
+    transition: transform 250ms ease;
+  }
+  .ui-button--ghost:not(:disabled):hover { color: rgb(var(--c-ink)); background: none; }
+  .ui-button--ghost:not(:disabled):hover::after { transform: scaleX(1); background-size: auto; }
+  .ui-button--row { --cut: 4px; font-variant: normal; letter-spacing: 0; }
+  .ui-button--row::after { display: none; }
+  .ui-panel--paper :is(.ui-button--secondary, .ui-button--row) {
+    --rim: linear-gradient(180deg, rgb(var(--c-paper-ink) / 0.8), rgb(var(--c-paper-ink) / 0.55));
+    --fill: linear-gradient(180deg, color-mix(in srgb, rgb(var(--c-paper)) 85%, white), rgb(var(--c-paper)));
+    color: rgb(var(--c-paper-ink));
+    text-shadow: none;
+    background: var(--rim);
+  }
+  .ui-panel--paper :is(.ui-button--secondary, .ui-button--row):not(:disabled):hover {
+    --fill: linear-gradient(180deg, rgb(116 30 26), rgb(84 17 15));
+    color: rgb(var(--c-accent-ink));
+    background: var(--rim);
+  }
+
+  /* Icon buttons are iron studs. */
+  .ui-icon-button { color: rgb(var(--c-frame)); }
+  .ui-icon-button:not(:disabled):hover {
+    color: rgb(var(--c-frame-bright));
+    border-color: rgb(var(--c-frame) / 0.6);
+    background: radial-gradient(circle at 50% 120%, rgb(var(--c-candle) / 0.22), rgb(var(--c-surface-2)) 70%);
+  }
+  .ui-icon-button[aria-pressed='true'] {
+    color: rgb(var(--c-accent-ink));
+    border-color: rgb(var(--c-frame-bright) / 0.8);
+    background: linear-gradient(180deg, rgb(116 30 26), rgb(84 17 15));
+  }
+
+  /* ---------------------------------------------------------------- Tabs */
+  /* The open tab is underlined in blood, a drop hanging from the rule under it. */
+  .ui-tabs { gap: 1.5rem; border-bottom-color: rgb(var(--c-frame) / 0.3); }
+  .ui-tabs__tab { font-family: var(--font-display); font-size: 1.02rem; color: rgb(var(--c-ink-faint)); }
+  .ui-tabs__tab:hover { color: rgb(var(--c-ink-muted)); }
+  .ui-tabs__tab[aria-selected='true'] { color: rgb(var(--c-ink)); }
+  .ui-tabs__tab::after { height: 2px; background: linear-gradient(90deg, transparent, rgb(var(--c-danger)) 20%, rgb(var(--c-danger)) 80%, transparent); }
+  .ui-tabs__tab[aria-selected='true']::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -7px;
+    width: 6px;
+    height: 6px;
+    background: rgb(var(--c-danger));
+    border-radius: 0 50% 50% 50%;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .ui-tabs__count { align-self: flex-start; font-family: var(--font-numeric); font-size: 0.72rem; color: rgb(var(--c-frame)); }
+
+  /* ---------------------------------------------------------------- Lists on vellum */
+  .ui-ledger__ribbon { background: linear-gradient(90deg, rgb(0 0 0 / 0.2), transparent 30%, transparent 70%, rgb(0 0 0 / 0.25)), rgb(var(--c-accent)); }
+  .ui-ledger__head h2 { color: rgb(var(--c-paper-ink)); }
+  /* Rules drawn by hand: thick where the pen touched down, fading out. */
+  .ui-ledger__row {
+    border-bottom: 0;
+    background: linear-gradient(90deg, rgb(var(--c-paper-ink) / 0.5), rgb(var(--c-paper-muted) / 0.35) 40%, transparent 92%) bottom left / 100% 1px no-repeat;
+    transition: background-color 200ms;
+  }
+  .ui-ledger__row:last-child { background: none; }
+  .ui-ledger__title::first-letter { color: rgb(var(--c-accent)); }
+  /* The record open beside the list: a blood bookmark at its edge, the vellum darkened under it. */
+  .ui-ledger__row[data-selected] {
+    background-color: rgb(var(--c-paper-ink) / 0.12);
+    box-shadow: inset 4px 0 0 rgb(var(--c-accent));
+  }
+  .ui-ledger__row[data-selected] .ui-ledger__title { text-decoration: none; }
+  .ui-ledger__group { font-family: var(--font-display); font-variant: small-caps; letter-spacing: 0.08em; text-transform: none; font-size: 0.85rem; }
+
+  /* ---------------------------------------------------------------- Details pane */
+  /* A relic's card: the picture in an iron frame beside the name, the figures between daggers,
+     the text in bone on iron. */
+  .ui-details__head { padding-top: 2rem; }
+  .ui-details__eyebrow { font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.08em; text-transform: none; font-variant: small-caps; color: rgb(var(--c-frame)); }
+  .ui-details__title { font-size: 1.7rem; }
+  .ui-details__head .ui-hud-slot--large { box-shadow: 0 0 0 3px rgb(var(--c-surface)), 0 0 0 4px rgb(var(--c-frame) / 0.6), 0 8px 20px -6px rgb(0 0 0 / 0.9); }
+  .ui-details__facts { gap: 0; background: none; border: 0; border-block: 1px solid rgb(var(--c-frame) / 0.3); }
+  .ui-details__fact { padding: 0.55rem 0.4rem; text-align: center; background: none; }
+  .ui-details__fact + .ui-details__fact { background: linear-gradient(rgb(var(--c-frame) / 0.35), rgb(var(--c-frame) / 0.35)) left center / 1px 60% no-repeat; }
+  .ui-details__fact dt { font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: none; font-variant: small-caps; color: rgb(var(--c-frame)); }
+  .ui-details__fact dd { font-size: 1.05rem; }
+  .ui-details__foot { border-top-color: rgb(var(--c-frame) / 0.25); }
+  .ui-damage-block {
+    background: radial-gradient(120% 140% at 0% 100%, rgb(var(--c-accent) / 0.18), transparent 60%), rgb(var(--c-inset));
+    border-color: rgb(var(--c-frame) / 0.3);
+    border-left: 3px solid rgb(var(--c-accent));
+  }
+
+  /* ---------------------------------------------------------------- Figures */
+  /* Attribute plates: a brass spike driven into the top rule. */
+  .ui-stat { overflow: visible; }
+  .ui-stat::after {
+    content: '';
+    top: -1px;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    width: 10px;
+    height: 6px;
+    background: rgb(var(--c-frame));
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform: translateX(-50%);
+    opacity: 1;
+    mix-blend-mode: normal;
+    z-index: 1;
+  }
+  .ui-stat:hover::after { background: rgb(var(--c-danger)); }
+  .ui-stat__label { font-family: var(--font-display); letter-spacing: 0.04em; font-variant: small-caps; color: rgb(var(--c-frame)); }
+  /* Gauges are iron channels, square-ended, the blood dark at the bottom. */
+  .ui-meter { border-color: rgb(var(--c-frame) / 0.45); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7); }
+  .ui-meter__fill { background: linear-gradient(180deg, rgb(255 255 255 / 0.12), transparent 40%, rgb(0 0 0 / 0.35)), rgb(var(--meter-color)); }
+  /* Proficiency is a drop of sealing wax. */
+  .ui-prof-mark { transform: none; border-radius: 999px; }
+  .ui-prof-mark.bg-frame-bright { background: rgb(var(--c-danger)); border-color: rgb(var(--c-danger)); }
+  .ui-prof-mark.outline { outline-color: rgb(var(--c-frame-bright) / 0.7); border-radius: 999px; }
+
+  /* ---------------------------------------------------------------- Rail and hero column */
+  /* Old leather down the edge, a brass rule beside it; the open section is marked in blood and lit
+     by a candle. */
+  .ui-rail {
+    background: linear-gradient(90deg, rgb(var(--c-bg-deep)), rgb(var(--c-bg) / 0.8));
+    border-right: 0;
+    box-shadow: inset -1px 0 0 rgb(var(--c-frame) / 0.45), inset -3px 0 0 rgb(var(--c-bg-deep)), inset -4px 0 0 rgb(var(--c-frame) / 0.18);
+  }
+  .ui-rail__item:hover { color: rgb(var(--c-frame)); }
+  .ui-rail__item[aria-current='page'] {
+    color: rgb(var(--c-ink));
+    background: radial-gradient(70% 60% at 50% 90%, rgb(var(--c-candle) / 0.2), transparent 75%);
+  }
+  .ui-rail__item[aria-current='page'] .ui-rail__mark { width: 3px; background: rgb(var(--c-accent)); }
+  .ui-rail__divider { background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.5), transparent); }
+  .ui-hero-column { background: linear-gradient(180deg, rgb(var(--c-surface) / 0.6), rgb(var(--c-bg) / 0.4)); border-right-color: rgb(var(--c-frame) / 0.25); }
+
+  /* ---------------------------------------------------------------- Fields and controls */
+  .ui-input { border-color: rgb(var(--c-frame) / 0.3); }
+  .ui-input:focus { border-color: rgb(var(--c-frame-bright)); box-shadow: 0 0 0 3px rgb(var(--c-accent) / 0.2), 0 6px 16px -6px rgb(var(--c-candle) / 0.35); }
+  .ui-segmented { border-color: rgb(var(--c-frame) / 0.35); }
+  .ui-segmented__option { font-family: var(--font-display); font-size: 0.95rem; }
+  .ui-segmented__option[aria-checked='true'] {
+    color: rgb(var(--c-accent-ink));
+    background: linear-gradient(180deg, rgb(116 30 26), rgb(84 17 15));
+    border-color: rgb(var(--c-frame) / 0.8);
+  }
+  [aria-checked='true'] > .ui-switch { background: rgb(var(--c-accent)); border-color: rgb(var(--c-frame)); }
+  [aria-checked='true'] > .ui-switch::after { background: var(--brass); }
+  .ui-switch,
+  .ui-switch::after { border-radius: 2px; }
+
+  /* ---------------------------------------------------------------- Toasts */
+  /* A note pinned under a wax seal, worn dark at the edges. */
+  .ui-toast {
+    border-color: rgb(var(--c-frame) / 0.55);
+    box-shadow: inset 0 0 0 3px rgb(var(--c-surface)), inset 0 0 0 4px rgb(var(--c-frame) / 0.2), inset 0 0 26px rgb(0 0 0 / 0.7), 0 14px 30px -12px rgb(0 0 0 / 0.8);
+  }
+
+  /* ---------------------------------------------------------------- Dialogs */
+  .ui-dialog { box-shadow: inset 0 0 80px rgb(0 0 0 / 0.75), var(--shadow-panel); }
+  .ui-dialog__head { padding-top: 1.8rem; }
+  .ui-dialog__eyebrow { font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.08em; text-transform: none; font-variant: small-caps; color: rgb(var(--c-frame)); opacity: 1; }
+  .ui-dialog__rule { display: flex; opacity: 0.7; }
+  .ui-dialog__foot { border-top-color: rgb(var(--c-frame) / 0.25); }
+
+  /* ---------------------------------------------------------------- Choices */
+  .ui-tag {
+    border-radius: 1px;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-variant: small-caps;
+    background: linear-gradient(180deg, rgb(var(--tag-tone) / 0.16), rgb(var(--tag-tone) / 0.04));
+  }
+  .ui-option[aria-pressed='true'] {
+    background: radial-gradient(100% 120% at 50% 120%, rgb(var(--c-candle) / 0.18), transparent 70%), rgb(var(--c-frame) / 0.1);
+    border-color: rgb(var(--c-frame-bright) / 0.7);
+    box-shadow: inset 0 0 0 3px rgb(var(--c-surface)), inset 0 0 0 4px rgb(var(--c-frame-bright) / 0.35), inset 4px 0 0 rgb(var(--c-accent));
+  }
+  .ui-steps__label { font-family: var(--font-display); font-size: 1rem; }
+
+  /* ---------------------------------------------------------------- Combat */
+  .ui-hud-slot,
+  .ui-hud-slot--tile { border-radius: 3px; }
+  .ui-hud-slot {
+    background: rgb(var(--c-inset));
+    border-color: rgb(var(--c-frame) / 0.6);
+    box-shadow: inset 0 0 0 2px rgb(var(--c-inset)), inset 0 0 0 3px rgb(var(--c-frame) / 0.25);
+  }
+  .ui-hud-slot:hover,
+  .ui-hud-slot[data-active] { box-shadow: inset 0 0 18px rgb(var(--c-accent) / 0.35), 0 6px 14px -6px rgb(var(--c-candle) / 0.45); }
+  .ui-hud-panel__head { font-family: var(--font-display); letter-spacing: 0.08em; font-variant: small-caps; text-transform: none; color: rgb(var(--c-ink)); }
+  .ui-hud-portrait { border-radius: 2px; }
+  .ui-vbar__track { border-radius: 2px; }
+
+  /* ---------------------------------------------------------------- Atmosphere */
+  /* Fog along the floor: two layers of soft grey drifting against each other. */
+  .ui-fog {
+    background:
+      radial-gradient(40% 60% at 25% 70%, rgb(150 140 130 / 0.16), transparent 70%),
+      radial-gradient(35% 55% at 70% 80%, rgb(140 130 125 / 0.14), transparent 70%),
+      radial-gradient(50% 50% at 50% 100%, rgb(120 110 105 / 0.18), transparent 75%);
+    filter: blur(8px);
+    animation: df-fog 40s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes df-fog {
+  from { transform: translateX(-4%); }
+  to { transform: translateX(4%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='dark-fantasy'] .ui-fog { animation: none; }
+}

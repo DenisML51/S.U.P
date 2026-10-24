@@ -12,7 +12,7 @@ import {
 } from '@itd/game-logic';
 import type { CharacterDraft, CharacterImages, Setting } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
-import { SettingEmblem } from '../../ui/art/emblems';
+import { SettingEmblem } from '../../ui/ornaments';
 import { GameIcon, type IconKind } from '../../ui/GameIcon';
 import { Prose } from '../../ui/Prose';
 import { Panel, cx } from '../../ui/primitives';

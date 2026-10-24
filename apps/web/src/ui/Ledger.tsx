@@ -1,30 +1,9 @@
 import React from 'react';
-import type { Setting } from '@itd/schema';
 import { Panel, cx } from './primitives';
-import { useSetting } from './theme/SettingScope';
+import { LedgerBullet } from './ornaments';
+
+export { LedgerBullet };
 import { IconPlus } from './icons';
-
-const BULLETS: Record<Setting, (filled: boolean) => React.ReactNode> = {
-  // Four-pointed star of illuminated ledgers.
-  'high-fantasy': (filled) => (
-    <path d="M7 0.8 8.4 5.6 13.2 7 8.4 8.4 7 13.2 5.6 8.4 0.8 7 5.6 5.6Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
-  ),
-  // Interface chevron.
-  'sci-fi': (filled) => (
-    <path d="M3 2.5 9.5 7 3 11.5 5.5 7Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
-  ),
-  // Narrow dagger cross.
-  'dark-fantasy': (filled) => (
-    <path d="M7 0.5 8 4.5 11.5 5.5 8 6.5 7 13.5 6 6.5 2.5 5.5 6 4.5Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
-  ),
-};
-
-/** List bullet in the vocabulary of the current setting; outlined marks an inactive entry. */
-export const LedgerBullet: React.FC<{ filled?: boolean }> = ({ filled = true }) => (
-  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden className="shrink-0">
-    {BULLETS[useSetting()](filled)}
-  </svg>
-);
 
 /**
  * A list on paper: parchment in fantasy settings, a datapad in sci-fi. A ribbon marks the list, rows
@@ -73,11 +52,17 @@ export const LedgerRow: React.FC<{
   dim?: boolean;
   /** A worn item, a prepared spell: marked by the setting (a lit edge in sci-fi). */
   active?: boolean;
+  /** The entry whose details are open beside the list. */
+  selected?: boolean;
   /** The second line wraps instead of being cut to one line (a condition's full effect). */
   wrapMeta?: boolean;
   onOpen?: () => void;
-}> = ({ title, meta, value, action, leading, dim, active, wrapMeta, onOpen }) => (
-  <li className={cx('ui-ledger__row group flex items-center gap-3 py-2.5', dim && 'opacity-60')} data-active={active || undefined}>
+}> = ({ title, meta, value, action, leading, dim, active, selected, wrapMeta, onOpen }) => (
+  <li
+    className={cx('ui-ledger__row group flex items-center gap-3 py-2.5', dim && 'ui-ledger__row--dim')}
+    data-active={active || undefined}
+    data-selected={selected || undefined}
+  >
     {leading ?? (
       <span className="ui-ledger__bullet grid h-6 w-6 shrink-0 place-items-center opacity-80">
         <LedgerBullet filled={!dim} />

@@ -2,7 +2,7 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { findBackground, findClass, findSubclass, pointsRemaining } from '@itd/game-logic';
 import { SETTINGS, DEFAULT_SETTING, type Setting } from '@itd/schema';
-import { SettingEmblem } from '../../ui/art/emblems';
+import { SettingEmblem } from '../../ui/ornaments';
 import { Button, Panel, cx } from '../../ui/primitives';
 import { IconCheck, IconPrev } from '../../ui/icons';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';

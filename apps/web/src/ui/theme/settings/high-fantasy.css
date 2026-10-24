@@ -1,0 +1,451 @@
+/* ================================================================== High fantasy
+ * "The mage's atlas": D&D and Baldur's Gate, Tolkien, the Elder Scrolls. Night-sky lacquer of deep
+ * teal, old gold in double rules with filigree corners, ivory type, parchment for reading. Buttons
+ * are enamel cartouches in gilt rims; the chosen thing is gilded and lit, never just recoloured.
+ * It is also the app's default look, outside any setting.
+ */
+
+:root,
+[data-setting='high-fantasy'] {
+  --font-display: 'Cormorant SC', 'Cormorant Garamond', Georgia, serif;
+  --font-numeric: 'Cormorant Garamond', Georgia, serif;
+  --display-tracking: 0.04em;
+  --display-weight: 600;
+
+  --c-bg: 8 17 19;
+  --c-bg-deep: 4 9 10;
+  --c-surface: 13 26 28;
+  --c-surface-2: 21 39 41;
+  --c-inset: 6 14 15;
+  --c-line: 40 60 58;
+  --c-frame: 170 142 90;
+  --c-frame-bright: 228 204 146;
+  --c-ink: 237 230 210;
+  --c-ink-muted: 172 168 150;
+  --c-ink-faint: 112 118 106;
+  --c-accent: 212 184 122;
+  --c-accent-ink: 24 22 14;
+  --c-paper: 190 174 140;
+  --c-paper-ink: 30 22 13;
+  --c-paper-muted: 104 86 58;
+
+  --c-hp: 176 62 50;
+  --c-temp-hp: 212 184 122;
+  --c-sanity: 128 148 196;
+  --c-xp: 212 184 122;
+  --c-armor: 168 176 182;
+  --c-success: 120 156 100;
+  --c-danger: 190 74 58;
+  --c-warning: 216 162 72;
+
+  --c-act-action: 212 184 122;
+  --c-act-bonus: 120 156 100;
+  --c-act-reaction: 190 114 72;
+  --c-act-passive: 128 148 196;
+
+  /* Enamel of the cartouches: the teal of the night sky, fired and polished. */
+  --c-enamel: 32 96 98;
+  --c-enamel-deep: 10 40 42;
+
+  --radius: 2px;
+  --chamfer: 0px;
+  --panel-texture: var(--grain);
+  --panel-texture-opacity: 0.22;
+  --shadow-panel: 0 18px 40px -18px rgb(0 0 0 / 0.8);
+
+  /* A gilt rim, lit from above. */
+  --gilt: linear-gradient(180deg, rgb(244 224 168), rgb(var(--c-frame)) 48%, rgb(112 86 44));
+}
+
+[data-setting='high-fantasy'] {
+  /* ---------------------------------------------------------------- Panels */
+  /* Lacquer under a double gilt rule: the outer rule on the edge, a fainter one 4px inside. */
+  .ui-panel:not(.ui-panel--paper):not(.ui-panel--inset) {
+    background-color: rgb(var(--c-surface));
+    border-color: rgb(var(--c-frame) / 0.55);
+    box-shadow:
+      inset 0 0 0 3px rgb(var(--c-surface)),
+      inset 0 0 0 4px rgb(var(--c-frame) / 0.2),
+      inset 0 40px 60px -40px rgb(var(--c-surface-2)),
+      var(--shadow-panel);
+  }
+  .ui-panel::before {
+    background-image: radial-gradient(120% 80% at 50% 0%, rgb(var(--c-surface-2) / 0.7), transparent 70%);
+  }
+
+  /* Parchment keeps a gilt-brown rule a few pixels inside its edge, as a page of a bound book. */
+  .ui-panel--paper {
+    border-color: rgb(var(--c-frame) / 0.7);
+    box-shadow:
+      inset 0 0 0 4px rgb(var(--c-paper)),
+      inset 0 0 0 5px rgb(var(--c-paper-muted) / 0.45),
+      inset 0 0 56px rgb(var(--c-paper-muted) / 0.5),
+      var(--shadow-panel);
+  }
+
+  /* The vine corner is drawn on the panel border: its box starts exactly on the border pixel. */
+  .ui-corner { width: 32px; height: 32px; }
+  .ui-crest { width: var(--crest-width, 120px); height: calc(var(--crest-width, 120px) / 5); filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.6)); }
+  .ui-panel--paper .ui-crest { color: rgb(var(--c-frame)); }
+
+  /* Hover: the corner vines unfold and the rim warms. */
+  .ui-interactive .ui-corner {
+    opacity: 0.25;
+    transition: opacity 250ms, width 250ms, height 250ms;
+  }
+  .ui-interactive:hover .ui-corner,
+  .ui-interactive[data-active='true'] .ui-corner { opacity: 1; width: 40px; height: 40px; }
+  .ui-interactive:hover,
+  .ui-interactive[data-active='true'] { border-color: rgb(var(--c-frame-bright) / 0.85); }
+  .ui-fx { box-shadow: inset 0 0 34px rgb(var(--c-frame) / 0.2); }
+
+  /* ---------------------------------------------------------------- Type and rules */
+  /* Section rules are an astronomer's scale: a gilt line with fine graduations beneath it. */
+  .ui-rule--left::after {
+    height: 6px;
+    background:
+      linear-gradient(90deg, rgb(var(--c-frame) / 0.7), rgb(var(--c-frame) / 0.15)) top / 100% 1px no-repeat,
+      repeating-linear-gradient(90deg, rgb(var(--c-frame) / 0.45) 0 1px, transparent 1px 8px) bottom / 100% 4px no-repeat;
+    mask-image: linear-gradient(90deg, #000 40%, transparent);
+  }
+  .ui-label { font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: none; color: rgb(var(--c-frame)); }
+
+  /* ---------------------------------------------------------------- Buttons */
+  /* A cartouche: pointed ends, a gilt rim drawn by the button's own background and the enamel
+     laid 1px inside it by ::before. ::after carries the light that sweeps across on hover. */
+  .ui-button {
+    --tip: 0.75em;
+    --rim: var(--gilt);
+    --fill: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-inset)));
+    --shape: polygon(var(--tip) 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, var(--tip) 100%, 0 50%);
+    isolation: isolate;
+    padding-inline: calc(1.1rem + var(--tip) * 0.6);
+    border: 0;
+    background: var(--rim);
+    clip-path: var(--shape);
+    color: rgb(var(--c-frame-bright));
+    text-shadow: 0 1px 0 rgb(0 0 0 / 0.55);
+    transition: filter 150ms, color 150ms;
+  }
+  .ui-button::before,
+  .ui-button::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    clip-path: var(--shape);
+    pointer-events: none;
+  }
+  .ui-button::before { background: linear-gradient(180deg, rgb(255 255 255 / 0.14), transparent 3px), var(--fill); }
+  .ui-button::after {
+    background: linear-gradient(105deg, transparent 35%, rgb(255 244 210 / 0.22) 50%, transparent 65%) -120% 0 / 220% 100% no-repeat;
+    transition: background-position 0s;
+  }
+  .ui-button:not(:disabled):hover::after { background-position: 120% 0; transition: background-position 650ms ease; }
+  .ui-button:not(:disabled):hover { filter: brightness(1.12); }
+  .ui-button:not(:disabled):active { filter: brightness(0.92); }
+  .ui-button:focus-visible { outline: none; filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.8)); }
+  .ui-button:disabled { opacity: 1; filter: grayscale(0.85) brightness(0.6); }
+
+  .ui-button--sm { --tip: 0.65em; }
+  .ui-button--lg { --tip: 0.85em; letter-spacing: 0.1em; }
+
+  /* The command: teal enamel in gold, ivory letters. */
+  .ui-button--primary {
+    --fill: linear-gradient(180deg, rgb(var(--c-enamel)), rgb(var(--c-enamel-deep)) 75%);
+    color: rgb(var(--c-ink));
+    box-shadow: none;
+  }
+  /* The rest: dark lacquer in a quieter rim, gold letters. */
+  .ui-button--secondary {
+    --rim: linear-gradient(180deg, rgb(var(--c-frame) / 0.9), rgb(var(--c-frame) / 0.45));
+  }
+  .ui-button--secondary:not(:disabled):hover { color: rgb(var(--c-ink)); border-color: transparent; }
+  .ui-button--danger {
+    --rim: linear-gradient(180deg, rgb(226 150 120), rgb(140 52 40));
+    --fill: linear-gradient(180deg, rgb(92 30 24), rgb(48 14 12));
+    color: rgb(244 206 190);
+  }
+  /* Ghost: no plate at all, gold type that brightens, a starred underline drawn on hover. */
+  .ui-button--ghost {
+    --rim: none;
+    clip-path: none;
+    padding-inline: 0.6rem;
+    background: none;
+    color: rgb(var(--c-frame));
+  }
+  .ui-button--ghost::before,
+  .ui-button--ghost::after { display: none; }
+  .ui-button--ghost:not(:disabled):hover { color: rgb(var(--c-frame-bright)); background: none; filter: none; }
+
+  /* Buttons inside a list row: a small cartouche in the body face. */
+  .ui-button--row {
+    --tip: 0.55em;
+    --rim: linear-gradient(180deg, rgb(var(--c-frame) / 0.85), rgb(var(--c-frame) / 0.4));
+    padding-inline: calc(0.7rem + var(--tip) * 0.5);
+  }
+  .ui-panel--paper .ui-button--secondary,
+  .ui-panel--paper .ui-button--row {
+    --rim: linear-gradient(180deg, rgb(var(--c-paper-muted)), rgb(var(--c-paper-muted) / 0.6));
+    --fill: linear-gradient(180deg, rgb(var(--c-paper)), color-mix(in srgb, rgb(var(--c-paper)) 70%, rgb(var(--c-paper-muted))));
+    color: rgb(var(--c-paper-ink));
+    text-shadow: none;
+    background: var(--rim);
+  }
+  .ui-panel--paper .ui-button--secondary:not(:disabled):hover,
+  .ui-panel--paper .ui-button--row:not(:disabled):hover {
+    --fill: linear-gradient(180deg, rgb(var(--c-enamel)), rgb(var(--c-enamel-deep)));
+    --rim: var(--gilt);
+    color: rgb(var(--c-ink));
+    background: var(--rim);
+  }
+
+  /* Round medallions, as the tool buttons of a game's book of spells. */
+  .ui-icon-button {
+    border-radius: 999px;
+    color: rgb(var(--c-frame));
+  }
+  .ui-icon-button:not(:disabled):hover {
+    color: rgb(var(--c-frame-bright));
+    border-color: rgb(var(--c-frame) / 0.7);
+    background: radial-gradient(circle at 50% 35%, rgb(var(--c-surface-2)), rgb(var(--c-inset)));
+    box-shadow: inset 0 0 0 2px rgb(var(--c-bg-deep)), inset 0 0 0 3px rgb(var(--c-frame) / 0.3);
+  }
+  .ui-icon-button[aria-pressed='true'] {
+    color: rgb(var(--c-ink));
+    border-color: rgb(var(--c-frame-bright));
+    background: radial-gradient(circle at 50% 30%, rgb(var(--c-enamel)), rgb(var(--c-enamel-deep)));
+    box-shadow: inset 0 0 0 2px rgb(var(--c-bg-deep) / 0.5), 0 0 12px -2px rgb(var(--c-frame) / 0.5);
+  }
+
+  /* ---------------------------------------------------------------- Tabs */
+  /* Small caps in the display face; the open tab is gilded and marked with a star on the rule. */
+  .ui-tabs { gap: 1.6rem; border-bottom-color: rgb(var(--c-frame) / 0.3); }
+  .ui-tabs__tab { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: 0.05em; color: rgb(var(--c-ink-faint)); }
+  .ui-tabs__tab[aria-selected='true'] { color: rgb(var(--c-frame-bright)); text-shadow: 0 0 12px rgb(var(--c-frame) / 0.45); }
+  .ui-tabs__tab::after {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(var(--c-frame-bright)), transparent);
+  }
+  .ui-tabs__tab[aria-selected='true']::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -4px;
+    width: 7px;
+    height: 7px;
+    background: rgb(var(--c-frame-bright));
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .ui-tabs__count {
+    align-self: flex-start;
+    font-family: var(--font-numeric);
+    font-size: 0.75rem;
+    color: rgb(var(--c-frame) / 0.75);
+  }
+
+  /* ---------------------------------------------------------------- Lists on parchment */
+  .ui-ledger__row { transition: background-color 200ms; }
+  .ui-ledger__row:hover { background: linear-gradient(90deg, rgb(var(--c-paper-muted) / 0.14), transparent 80%); }
+  /* The entry open beside the list is underlaid with a band of darker ink and a gilt bar. */
+  .ui-ledger__row[data-selected] {
+    background: linear-gradient(90deg, rgb(var(--c-paper-muted) / 0.32), rgb(var(--c-paper-muted) / 0.08) 85%);
+    box-shadow: inset 3px 0 0 rgb(var(--c-frame));
+  }
+  .ui-ledger__row[data-selected] .ui-ledger__title { text-decoration: none; }
+  .ui-ledger__group { font-family: var(--font-display); letter-spacing: 0.12em; opacity: 0.8; }
+
+  /* ---------------------------------------------------------------- Details pane */
+  /* A plate of the atlas: the picture over a centred title, the figures between gilt rules, the
+     text opening with a gilded initial. */
+  .ui-details { --crest-width: 150px; }
+  .ui-details__head { text-align: center; padding-top: 2.1rem; }
+  /* The picture sits in a gilt ring, as a seal on the page. */
+  .ui-details__head .ui-hud-slot--large { box-shadow: 0 0 0 3px rgb(var(--c-surface)), 0 0 0 4px rgb(var(--c-frame) / 0.55), 0 6px 18px -6px rgb(0 0 0 / 0.8); }
+  .ui-details__head > div:first-child { flex-direction: column; gap: 0.9rem; }
+  .ui-details__eyebrow { font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.14em; text-transform: none; color: rgb(var(--c-frame)); }
+  .ui-details__title { font-size: 1.85rem; color: rgb(var(--c-frame-bright)); }
+  .ui-details__facts { gap: 0; background: none; border: 0; border-block: 1px solid rgb(var(--c-frame) / 0.3); }
+  .ui-details__fact { padding: 0.6rem 0.5rem; text-align: center; background: none; }
+  .ui-details__fact + .ui-details__fact { box-shadow: inset 1px 0 0 rgb(var(--c-frame) / 0.25); }
+  .ui-details__fact dt { font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: none; color: rgb(var(--c-frame)); }
+  .ui-details__fact dd { font-size: 1.15rem; }
+  .ui-details__body > p:first-of-type::first-letter {
+    float: left;
+    margin: 0.1rem 0.45rem 0 0;
+    font-family: var(--font-display);
+    font-size: 3.1rem;
+    line-height: 0.8;
+    color: rgb(var(--c-frame-bright));
+  }
+  .ui-details__foot { justify-content: center; border-top-color: rgb(var(--c-frame) / 0.25); }
+
+  .ui-damage-block {
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 0%, rgb(var(--c-surface-2)), rgb(var(--c-inset)));
+    border: 1px solid rgb(var(--c-frame) / 0.35);
+    border-left-width: 1px;
+  }
+  .ui-damage-block .ui-display { color: rgb(var(--c-frame-bright)); }
+
+  /* ---------------------------------------------------------------- Figures */
+  /* Attribute plates: a gilt lozenge set into the top rule. */
+  .ui-stat { overflow: visible; }
+  .ui-stat::after {
+    content: '';
+    top: -4px;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    width: 7px;
+    height: 7px;
+    background: rgb(var(--c-frame));
+    border: 1px solid rgb(var(--c-bg-deep));
+    transform: translateX(-50%) rotate(45deg);
+    opacity: 1;
+    mix-blend-mode: normal;
+    z-index: 1;
+  }
+  .ui-stat:hover::after { background: rgb(var(--c-frame-bright)); }
+  .ui-stat__label { font-family: var(--font-display); letter-spacing: 0.04em; color: rgb(var(--c-frame)); }
+
+  /* Gauges are gilt-rimmed capsules. */
+  .ui-meter {
+    border-radius: 999px;
+    border-color: rgb(var(--c-frame) / 0.5);
+    padding: 1px;
+    background: rgb(var(--c-inset));
+    box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.6);
+  }
+  .ui-meter__fill,
+  .ui-meter__extra { inset: 1px auto 1px 1px; border-radius: 999px; }
+
+  /* ---------------------------------------------------------------- Rail and hero column */
+  .ui-rail {
+    background: linear-gradient(90deg, rgb(var(--c-bg-deep) / 0.9), rgb(var(--c-bg) / 0.75));
+    border-right: 0;
+    box-shadow: inset -1px 0 0 rgb(var(--c-frame) / 0.4), inset -4px 0 0 rgb(var(--c-bg-deep)), inset -5px 0 0 rgb(var(--c-frame) / 0.15);
+  }
+  .ui-rail__item { color: rgb(var(--c-ink-faint)); }
+  .ui-rail__item:hover { color: rgb(var(--c-frame)); }
+  .ui-rail__item[aria-current='page'] {
+    color: rgb(var(--c-frame-bright));
+    background: radial-gradient(60% 55% at 50% 40%, rgb(var(--c-frame) / 0.2), transparent 75%);
+  }
+  .ui-rail__item[aria-current='page'] .ui-rail__icon { filter: drop-shadow(0 0 6px rgb(var(--c-frame) / 0.7)); }
+  .ui-rail__item[aria-current='page'] .ui-rail__mark {
+    width: 2px;
+    background: linear-gradient(180deg, transparent, rgb(var(--c-frame-bright)), transparent);
+  }
+  .ui-rail__divider { background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.5), transparent); }
+
+  .ui-hero-column {
+    background: linear-gradient(180deg, rgb(var(--c-surface) / 0.55), rgb(var(--c-bg) / 0.35));
+    border-right: 1px solid rgb(var(--c-frame) / 0.25);
+  }
+
+  /* ---------------------------------------------------------------- Fields and controls */
+  .ui-input { border-color: rgb(var(--c-frame) / 0.3); }
+  .ui-input:hover { border-color: rgb(var(--c-frame) / 0.55); }
+  .ui-input:focus { border-color: rgb(var(--c-frame-bright)); box-shadow: 0 0 0 3px rgb(var(--c-frame) / 0.14), 0 0 14px -4px rgb(var(--c-frame) / 0.6); }
+
+  .ui-segmented { border-color: rgb(var(--c-frame) / 0.35); }
+  .ui-segmented__option { font-family: var(--font-display); font-size: 0.98rem; letter-spacing: 0.03em; }
+  .ui-segmented__option[aria-checked='true'] {
+    color: rgb(var(--segment-tone));
+    background: linear-gradient(180deg, rgb(var(--c-enamel) / 0.7), rgb(var(--c-enamel-deep) / 0.8));
+    border-color: rgb(var(--segment-tone) / 0.7);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+  [aria-checked='true'] > .ui-switch { background: rgb(var(--c-enamel)); border-color: rgb(var(--c-frame)); }
+  [aria-checked='true'] > .ui-switch::after { background: var(--gilt); }
+
+  /* ---------------------------------------------------------------- Toasts */
+  /* A plaque: gilt hairlines above and below. */
+  .ui-toast { border-color: rgb(var(--c-frame) / 0.6); }
+  .ui-toast::before,
+  .ui-toast::after {
+    content: '';
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(var(--c-frame-bright) / 0.8), transparent);
+  }
+  .ui-toast::before { top: 3px; }
+  .ui-toast::after { bottom: 3px; }
+
+  /* ---------------------------------------------------------------- Dialogs */
+  /* A card from an illuminated book: a second gilt frame inside the edge, large vine corners, the
+     title centred in gold above a starred rule. */
+  .ui-dialog__frame {
+    display: block;
+    position: absolute;
+    inset: 7px;
+    border: 1px solid rgb(var(--c-frame) / 0.3);
+    pointer-events: none;
+  }
+  .ui-dialog .ui-corner { width: 46px; height: 46px; }
+  .ui-dialog__head { text-align: center; padding-top: 1.9rem; padding-left: 3.5rem; }
+  .ui-dialog__title { color: rgb(var(--c-frame-bright)); }
+  .ui-dialog__eyebrow { font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.14em; text-transform: none; color: rgb(var(--c-frame)); opacity: 1; }
+  .ui-dialog__rule { display: flex; }
+  .ui-dialog__foot { border-top-color: rgb(var(--c-frame) / 0.25); }
+  .ui-dialog .ui-keyfacts { justify-content: center; column-gap: 3rem; }
+  .ui-dialog .ui-keyfacts > div:last-child { flex: 0 1 auto; min-width: 0; }
+  .ui-dialog .ui-minorfacts { justify-content: center; }
+
+  /* ---------------------------------------------------------------- Tags */
+  /* Small enamel pills, their colour set in a dark ground. */
+  .ui-tag {
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgb(var(--tag-tone) / 0.2), rgb(var(--tag-tone) / 0.06));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  }
+
+  /* ---------------------------------------------------------------- Choices */
+  .ui-option[aria-pressed='true'] {
+    color: rgb(var(--c-frame-bright));
+    background: linear-gradient(180deg, rgb(var(--c-frame) / 0.22), rgb(var(--c-frame) / 0.08));
+    box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.5), 0 0 14px -4px rgb(var(--c-frame) / 0.5);
+  }
+  .ui-steps__label { font-family: var(--font-display); font-size: 1rem; }
+
+  /* ---------------------------------------------------------------- Combat */
+  /* Keys are softened like enamelled tokens. */
+  .ui-hud-slot,
+  .ui-hud-slot--tile { border-radius: 9px; }
+  .ui-hud-slot {
+    border-color: rgb(var(--c-frame) / 0.6);
+    box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), inset 0 0 0 2px rgb(var(--c-frame) / 0.22), inset 0 -10px 16px rgb(0 0 0 / 0.3);
+  }
+  .ui-hud-slot:hover,
+  .ui-hud-slot[data-active] {
+    box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), inset 0 0 0 2px rgb(var(--c-frame-bright) / 0.4), 0 0 14px rgb(var(--c-frame) / 0.35);
+  }
+  .ui-hud-panel__head { font-family: var(--font-display); letter-spacing: 0.12em; color: rgb(var(--c-frame-bright)); }
+  .ui-hud-portrait {
+    border-radius: 1.4rem;
+    box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), 0 0 0 1px rgb(var(--portrait-frame) / 0.25), var(--shadow-panel);
+  }
+  .ui-hud-portrait > button { border-radius: 1rem; }
+  .ui-vbar__track { border-radius: 999px; border-color: rgb(var(--c-frame) / 0.6); }
+
+  /* ---------------------------------------------------------------- Image framing */
+  .ui-crop__corner--nw { border-top-left-radius: 6px; }
+  .ui-crop__corner--ne { border-top-right-radius: 6px; }
+  .ui-crop__corner--sw { border-bottom-left-radius: 6px; }
+  .ui-crop__corner--se { border-bottom-right-radius: 6px; }
+
+  /* ---------------------------------------------------------------- Atmosphere */
+  .ui-astrolabe { animation: hf-astrolabe 240s linear infinite; }
+}
+
+@keyframes hf-astrolabe {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='high-fantasy'] .ui-astrolabe { animation: none; }
+}
