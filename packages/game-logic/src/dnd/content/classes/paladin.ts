@@ -355,7 +355,7 @@ export const PALADIN: ClassDef = {
         description:
           'Вы направляете божественную силу в эффекты своей клятвы и в «Божественное чувство». Использований 2 (3 с 11-го уровня); короткий отдых возвращает одно, продолжительный — все. СЛ = СЛ ваших заклинаний паладина.',
         action: 'passive',
-        resource: { id: CHANNEL_DIVINITY, name: 'Проведение божественности', max: byClassLevel({ 3: 2, 11: 3 }), recharge: 'long', iconName: 'sunbeams' },
+        resource: { id: CHANNEL_DIVINITY, name: 'Проведение божественности', max: byClassLevel({ 3: 2, 11: 3 }), recharge: 'long', shortRestRegain: 1, iconName: 'sunbeams' },
         iconName: 'sunbeams',
       },
       channelOption(

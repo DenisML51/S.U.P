@@ -15,11 +15,17 @@ import {
   appendHistory,
   applyBuild,
   changeResource,
+  hitDiceOf,
+  longRest,
   performAction as performGameAction,
-  restoreAllResources,
+  rollDie,
+  shortRest,
   type HistoryEvent,
   type PerformActionRequest,
   type PerformActionResult,
+  type RestKind,
+  type RestResult,
+  type ShortRestOptions,
 } from '@itd/game-logic';
 import { toast } from 'react-hot-toast';
 import type { z } from 'zod';
@@ -54,7 +60,8 @@ interface CharacterState {
   updateCharacter(updater: CharacterUpdater, options?: UpdateOptions): void;
   logHistory(message: string, type?: HistoryEntryType): void;
   updateResourceCount(resourceId: string, delta: number): void;
-  resetAllResources(): void;
+  /** Takes a short or long rest; returns what it changed. */
+  rest(kind: RestKind, options?: Omit<ShortRestOptions, 'rolls' | 'random'>): RestResult | null;
   /** Uses an attack, ability or spell, paying its costs. Returns why it failed, if it did. */
   performAction(request: PerformActionRequest): PerformActionResult | null;
 
@@ -248,10 +255,21 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       notify(`${resource.name}: ${resource.current}/${resource.max}`, delta < 0 ? 'error' : 'success');
     },
 
-    resetAllResources: () => {
-      get().updateCharacter(restoreAllResources, { log: { message: 'Все ресурсы восстановлены (Длинный отдых)', type: 'resource' },
-      });
-      toast.success('Все ресурсы восстановлены');
+    rest: (kind, options = {}) => {
+      const current = get().character;
+      if (!current) return null;
+      // Dice are rolled once here: the edit runs again on the stored copy and must heal the same.
+      const hitDie = hitDiceOf(current)?.hitDie;
+      const rolls =
+        kind === 'short' && options.method !== 'average' && hitDie
+          ? Array.from({ length: Math.max(0, options.hitDice ?? 0) }, () => rollDie(hitDie))
+          : undefined;
+      const apply = (doc: Character): RestResult => (kind === 'short' ? shortRest(doc, { ...options, rolls }) : longRest(doc));
+
+      const result = apply(current);
+      get().updateCharacter((doc) => apply(doc).character, { log: { message: result.message, type: 'resource' } });
+      toast.success(kind === 'short' ? 'Короткий отдых окончен' : 'Долгий отдых окончен');
+      return result;
     },
 
     performAction: (request) => {
