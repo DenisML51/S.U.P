@@ -5,6 +5,7 @@ import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { settingOf } from '../../ui/theme/settings';
 import { SheetDialogsProvider } from './dialogs/context';
 import { SheetDialogHost } from './dialogs/SheetDialogHost';
+import { SlotPrompt } from './SlotPrompt';
 import { HeroColumn } from './HeroColumn';
 import { SheetRail, type SheetSection } from './SheetRail';
 import { ActionsSection } from './sections/ActionsSection';
@@ -82,6 +83,7 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
           </motion.main>
         </motion.div>
           <SheetDialogHost />
+          <SlotPrompt />
       </SettingScope>
     </SheetDialogsProvider>
   );

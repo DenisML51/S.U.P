@@ -1,16 +1,21 @@
 import type { Ability, Attack, Spell } from '@itd/schema';
+import { castableSlots, spellAttackBonus } from '@itd/game-logic';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { damageParts } from './parts/damage';
+import { damageParts, spellDamageParts } from './parts/damage';
+import { useSlotPrompt } from './SlotPrompt';
 import { useRolls } from './useRolls';
 
 /**
  * What the hero does with an entry of the sheet: attack, use an ability, cast a spell. The same
  * from a list row, an entry's dialog and the combat bar. Costs (ammunition, resources and, in
  * combat, the action itself) are paid by the store, which refuses with a message when they cannot be.
+ * A spell that could be cast with a higher slot asks which one first; what it deals follows the slot.
  */
 export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
   const performAction = useCharacterStore((s) => s.performAction);
   const logHistory = useCharacterStore((s) => s.logHistory);
+  const character = useCharacterStore((s) => s.character);
+  const askSlot = useSlotPrompt((s) => s.ask);
   const roll = useRolls();
 
   const attack = (entry: Attack) => {
@@ -25,12 +30,25 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     } else {
       logHistory(`Способность: ${entry.name}`);
     }
+    if (entry.hitBonus !== undefined) roll.check(`${entry.name}: попадание`, entry.hitBonus);
     roll.damage(entry.name, damageParts(entry));
   };
 
+  const castWith = (spell: Spell, slotLevel?: number) => {
+    if (!character) return;
+    if (!performAction({ kind: 'spell', id: spell.id, trackActionEconomy: inCombat, slotLevel })?.ok) return;
+    const upcast = slotLevel !== undefined && slotLevel > spell.level ? ` (${slotLevel} круг)` : '';
+    if (spell.attackRoll) roll.check(`${spell.name}: попадание`, spellAttackBonus(character));
+    roll.damage(`${spell.name}${upcast}`, spellDamageParts(character, spell, slotLevel ?? spell.level));
+  };
+
   const cast = (spell: Spell) => {
-    if (!performAction({ kind: 'spell', id: spell.id, trackActionEconomy: inCombat })?.ok) return;
-    roll.damage(spell.name, damageParts(spell));
+    if (!character) return;
+    // Only spells paid with spell slots choose one; a higher free slot makes it a real choice.
+    const usesSlot = spell.level > 0 && character.resources.some((r) => r.id === spell.resourceId && r.spellSlotLevel !== undefined);
+    const slots = usesSlot ? castableSlots(character, spell) : [];
+    if (slots.some((level) => level > spell.level)) askSlot(spell, slots, (level) => castWith(spell, level));
+    else castWith(spell, slots[0]);
   };
 
   return { attack, activate, cast };

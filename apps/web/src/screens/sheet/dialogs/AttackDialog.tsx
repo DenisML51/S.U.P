@@ -7,15 +7,14 @@ import { MarkdownField, NumberField, Segmented, Switch } from '../../../ui/forms
 import { Button, Field } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
 import { IconDice } from '../../../ui/icons';
+import { DamageBlock } from '../../../ui/DamageBlock';
 import { damageParts } from '../parts/damage';
 import { useActs } from '../useActs';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
 import {
   CardRule,
   DamageEditor,
-  DamageFigures,
   FormSection,
-  KeyFacts,
   MinorFacts,
   EntryBadge,
   EntryNameField,
@@ -174,12 +173,7 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
         </Button>
       }
     >
-      <KeyFacts
-        facts={[
-          { label: 'Попадание', value: formatModifier(entry.hitBonus) },
-          ...(parts.length > 0 ? [{ label: 'Урон', value: <DamageFigures parts={parts} /> }] : []),
-        ]}
-      />
+      <DamageBlock parts={parts} hit={`${formatModifier(entry.hitBonus)} к попаданию`} className="mb-4" />
       <MinorFacts
         facts={[
           entry.usesAmmunition && (['Боеприпасы', `${entry.ammunitionCost ?? 1} за атаку`] as const),

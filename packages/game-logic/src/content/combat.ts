@@ -13,6 +13,7 @@ export const DAMAGE_TYPES = [
   'Некротический',
   'Лучистый',
   'Силовой',
+  'Лечение',
 ];
 
 export const DEFAULT_DAMAGE_TYPE = 'Физический';
@@ -87,6 +88,7 @@ export const DAMAGE_COLORS: Record<string, string> = {
   Колющий: '#a3aab3',
   Рубящий: '#a3aab3',
   Дробящий: '#a3aab3',
+  Лечение: '#7fb069',
 };
 
 export const spellColor = (spell: {

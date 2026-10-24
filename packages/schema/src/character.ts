@@ -186,6 +186,10 @@ export const AbilitySchema = passthroughObject({
   damage: optionalShortText,
   damageType: optionalShortText,
   damageComponents: optionalList(DamageComponentSchema),
+  /** How it hits: a saving throw of this ability against `saveDC`, or an attack roll with `hitBonus`. */
+  saveAttribute: optionalShortText,
+  saveDC: optionalNumber,
+  hitBonus: optionalNumber,
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
@@ -225,6 +229,15 @@ export const SpellSchema = passthroughObject({
   damage: optionalShortText,
   damageType: optionalShortText,
   damageComponents: optionalList(DamageComponentSchema),
+  /** Dice added per slot level above the spell's own when cast with a higher slot. */
+  upcastDamage: optionalShortText,
+  /** A cantrip whose dice count grows with character level (5, 11, 17). */
+  cantripScaling: optionalFlag,
+  /** The spellcasting modifier is added to the damage or healing. */
+  addModifier: optionalFlag,
+  /** A spell attack roll (`melee`/`ranged`) or the ability of the target's saving throw. */
+  attackRoll: text(z.enum(['melee', 'ranged']).optional()),
+  saveAttribute: optionalShortText,
   prepared: flag(false),
   /** Granted by a feature (oath spells): always prepared and not counted against the limit. */
   alwaysPrepared: optionalFlag,

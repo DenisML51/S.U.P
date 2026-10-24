@@ -1,4 +1,5 @@
-import type { ManeuverDef } from '../types';
+import { byClassLevel } from '../helpers';
+import type { AttributeId, BuildContext, ManeuverDef } from '../types';
 
 /**
  * Battle Master maneuvers of the Player's Handbook 2024. Each one spends one Superiority Die
@@ -9,7 +10,7 @@ import type { ManeuverDef } from '../types';
 const DIE = { id: 'fighter.superiority-dice', cost: 1 } as const;
 const DC = 'Сл 8 + бонус мастерства + мод. Силы или Ловкости';
 
-export const MANEUVERS: ManeuverDef[] = [
+const LIST: ManeuverDef[] = [
   {
     id: 'maneuver.ambush',
     name: 'Засада',
@@ -206,3 +207,31 @@ export const MANEUVERS: ManeuverDef[] = [
     iconName: 'falling',
   },
 ];
+
+const SAVE_NAMES: Record<string, AttributeId> = {
+  Силы: 'strength',
+  Ловкости: 'dexterity',
+  Телосложения: 'constitution',
+  Интеллекта: 'intelligence',
+  Мудрости: 'wisdom',
+  Харизмы: 'charisma',
+};
+
+/** The superiority die of a Battle Master's level: d8, d10 from 10th, d12 from 18th. */
+const superiorityDie = byClassLevel({ 3: 8, 10: 10, 18: 12 });
+
+/**
+ * Maneuvers with their numbers: one that adds the die to damage deals it (growing with level), one
+ * that forces a saving throw carries the ability and its DC (8 + proficiency + Strength or Dexterity).
+ */
+export const MANEUVERS: ManeuverDef[] = LIST.map((maneuver) => {
+  const save = maneuver.description.match(/спасбросок (Силы|Ловкости|Телосложения|Интеллекта|Мудрости|Харизмы)/)?.[1];
+  return {
+    ...maneuver,
+    ...(maneuver.description.includes('кость к урону') && { damage: (ctx: BuildContext) => `1d${superiorityDie(ctx)}` }),
+    ...(save && {
+      saveAttribute: SAVE_NAMES[save],
+      saveDC: (ctx: BuildContext) => 8 + ctx.proficiencyBonus + Math.max(ctx.modifier('strength'), ctx.modifier('dexterity')),
+    }),
+  };
+});

@@ -111,8 +111,13 @@ export interface FeatureDef {
   resource?: ResourceDef;
   /** Spending a pool of another feature (Channel Divinity options, maneuvers). */
   usesResource?: { id: string; cost?: number };
-  damage?: string;
+  /** Dice it deals or heals, growing with level when a function (`1d10` → `4d10` breath). */
+  damage?: string | ((ctx: BuildContext) => string);
+  /** `Лечение` for healing. */
   damageType?: string;
+  /** The saving throw a target makes against it, and its DC. */
+  saveAttribute?: AttributeId;
+  saveDC?: Amount;
   effects?: Effect[] | ((ctx: BuildContext) => Effect[]);
   choices?: ChoiceDef[];
   /** Game-icons id and colour the hotbar shows (see apps/web GameIcon catalogue). */
@@ -195,8 +200,22 @@ export interface SpellDef {
   description: string;
   /** What higher-level slots or character levels add. */
   higherLevels?: string;
+  /**
+   * Dice of the spell's main effect at its base level (`8d6`). Healing spells put their dice here
+   * too, with `damageType: 'Лечение'`.
+   */
   damage?: string;
   damageType?: string;
+  /** Dice added per slot level above the spell's level (`1d6`), when the spell grows by slot. */
+  upcastDamage?: string;
+  /** A cantrip whose dice count grows at character levels 5, 11 and 17 (×2, ×3, ×4). */
+  cantripScaling?: boolean;
+  /** The caster's spellcasting modifier is added to the damage or healing (Cure Wounds). */
+  addModifier?: boolean;
+  /** How the spell hits: a melee or ranged spell attack roll… */
+  attackRoll?: 'melee' | 'ranged';
+  /** …or a saving throw of this ability against the caster's spell save DC. */
+  saveAttribute?: AttributeId;
   lists: SpellListId[];
   iconName?: string;
   color?: string;
