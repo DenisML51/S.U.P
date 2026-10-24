@@ -429,7 +429,17 @@
     border: 0;
     border-radius: 0;
     box-shadow: inset 0 0 24px rgb(var(--c-paper-muted) / 0.45), 0 14px 30px -12px rgb(0 0 0 / 0.85);
+    /* On the telegram's paper everything is typed in ink: content coloured for the dark screen
+       (a roll's total in brass, its label in ivory) takes the paper's inks instead. */
+    --c-ink: var(--c-paper-ink);
+    --c-ink-muted: var(--c-paper-muted);
+    --c-ink-faint: var(--c-paper-muted);
+    --c-frame-bright: var(--c-paper-ink);
+    --c-success: var(--c-pen);
+    --c-danger: 128 30 22;
   }
+  /* Figures typed, not drawn in the thin poster face. */
+  .ui-toast .ui-numeric { font-family: var(--font-typed); }
   .ui-toast::before {
     content: 'Телеграмма';
     align-self: stretch;
