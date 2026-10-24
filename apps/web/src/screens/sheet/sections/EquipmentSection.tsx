@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { calculateArmorClass, carriedWeight, isShield, isStackable, itemQuantity } from '@itd/game-logic';
+import { armorClassOf, carriedWeight, isShield, isStackable, itemQuantity } from '@itd/game-logic';
 import type { Character, InventoryItem, ItemType } from '@itd/schema';
 import { Ledger, LedgerBullet, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
 import { IconButton, Panel, Tabs, cx } from '../../../ui/primitives';
@@ -11,7 +11,8 @@ import { damageParts, describeDamage } from '../parts/damage';
 import { useInventory } from '../useInventory';
 import { useSheetText } from '../useSheetText';
 import { useSheetDialogs } from '../dialogs/context';
-import { ITEM_TYPE_LABEL, isEquippable } from '../dialogs/ItemDialog';
+import { itemKindLabel } from '../../../ui/characterLabels';
+import { isEquippable } from '../dialogs/ItemDialog';
 
 type Filter = 'all' | ItemType;
 
@@ -40,7 +41,7 @@ const EquipMark: React.FC<{ item: InventoryItem; onToggle: () => void }> = ({ it
 const describeItem = (item: InventoryItem) => {
   const damage = damageParts(item);
   return [
-    item.itemClass || ITEM_TYPE_LABEL[item.type],
+    itemKindLabel(item),
     item.type === 'armor' && item.baseAC !== undefined && (
       <>
         КБ <MetaValue>{item.baseAC}</MetaValue>
@@ -163,7 +164,7 @@ export const EquipmentSection: React.FC<{ character: Character }> = ({ character
           <div className="flex items-baseline justify-between">
             <h3 className="ui-display text-lg text-frame-bright">Снаряжено</h3>
             <span className="text-xs text-ink-faint" title="Класс брони по надетому снаряжению">
-              КБ <span className="tabular-nums text-ink-muted">{calculateArmorClass(character)}</span>
+              КБ <span className="tabular-nums text-ink-muted">{armorClassOf(character)}</span>
             </span>
           </div>
           <div className="space-y-3">

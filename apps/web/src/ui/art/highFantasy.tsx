@@ -1,5 +1,5 @@
 import React from 'react';
-import GiDragonHead from '~icons/game-icons/dragon-head';
+import GiLaurelCrown from '~icons/game-icons/laurel-crown';
 import type { SettingArt } from './types';
 
 /**
@@ -255,8 +255,8 @@ export const HIGH_FANTASY_ART: SettingArt = {
   bullet: (filled) => (
     <path d="M7 0.8 8.4 5.6 13.2 7 8.4 8.4 7 13.2 5.6 8.4 0.8 7 5.6 5.6Z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
   ),
-  // A dragon, the heart of the old tales.
-  Emblem: GiDragonHead,
+  // A crowned laurel wreath: the glory of the old tales.
+  Emblem: GiLaurelCrown,
   Backdrop,
   LevelReady,
 };

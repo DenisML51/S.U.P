@@ -5,6 +5,7 @@ import {
   deepEqual,
   migrateCharacter,
   newCharacterId,
+  revertCharacter,
   toCharacterPreview,
   type Character,
   type CharacterDraft,
@@ -15,24 +16,50 @@ import {
   appendHistory,
   applyBuild,
   changeResource,
+  createEntityId,
+  hitDiceOf,
+  longRest,
   performAction as performGameAction,
-  restoreAllResources,
+  rollDie,
+  shortRest,
   type HistoryEvent,
   type PerformActionRequest,
   type PerformActionResult,
+  type RestKind,
+  type RestResult,
+  type ShortRestOptions,
 } from '@itd/game-logic';
 import { toast } from 'react-hot-toast';
 import type { z } from 'zod';
 import { create } from 'zustand';
+import { normalizeCharacter } from '../data/local/characterRepository';
 import { loadSettings, saveSettings, type AppSettings } from '../data/settings';
 import type { Workspace } from '../data/workspace';
 import type { ViewMode } from '../types';
+import { showUndoToast } from '../ui/UndoToast';
 
 export type CharacterUpdater = Character | ((previous: Character) => Character);
 
 export interface UpdateOptions {
   /** History entry recorded in the same write as the change. */
   log?: HistoryEvent;
+  /**
+   * `false` for writes that are not the player's edits (a log line, a rebuild on opening, an undo):
+   * they are not put on the undo stack.
+   */
+  undoable?: boolean;
+}
+
+/** How many edits of one character can be undone in a session. */
+export const UNDO_LIMIT = 50;
+
+/** One edit that can be taken back: the character as it was before and right after it. */
+interface UndoStep {
+  /** The id of the log entry the edit wrote, when it wrote one. */
+  id: string;
+  label: string;
+  before: Character;
+  after: Character;
 }
 
 interface CharacterState {
@@ -42,6 +69,8 @@ interface CharacterState {
   /** The character list has been read from the device for the signed-in account. */
   isLoaded: boolean;
   settings: AppSettings;
+  /** Ids of the open character's edits that can still be undone, oldest first. */
+  undoable: string[];
 
   setViewMode(mode: ViewMode): void;
   updateSettings(patch: Partial<AppSettings>): void;
@@ -51,9 +80,15 @@ interface CharacterState {
    * form; an object is treated as a patch of the fields that differ from the character on screen.
    */
   updateCharacter(updater: CharacterUpdater, options?: UpdateOptions): void;
+  /**
+   * Takes back the edit with this id and every later one (the last edit when no id is given). The
+   * revert is an ordinary edit that syncs; changes from other devices made since are kept.
+   */
+  undo(stepId?: string): void;
   logHistory(message: string, type?: HistoryEntryType): void;
   updateResourceCount(resourceId: string, delta: number): void;
-  resetAllResources(): void;
+  /** Takes a short or long rest; returns what it changed. */
+  rest(kind: RestKind, options?: Omit<ShortRestOptions, 'rolls' | 'random'>): RestResult | null;
   /** Uses an attack, ability or spell, paying its costs. Returns why it failed, if it did. */
   performAction(request: PerformActionRequest): PerformActionResult | null;
 
@@ -129,6 +164,10 @@ let unsubscribeRepository: (() => void) | null = null;
 const writeQueue: { id: string; edit: (doc: Character) => Character }[] = [];
 let writing = false;
 
+/** Undo stacks by character id: for this session only, never in the document. */
+const undoStacks = new Map<string, UndoStep[]>();
+const undoIds = (characterId: string): string[] => (undoStacks.get(characterId) ?? []).map((step) => step.id);
+
 export const useCharacterStore = create<CharacterState>((set, get) => {
   const notify = (message: string, kind: 'success' | 'error' = 'success') => {
     if (get().settings.notifications) toast[kind](message);
@@ -176,7 +215,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     if (!open || !ids.includes(open.id) || writeQueue.some((w) => w.id === open.id) || writing) return;
     const latest = await repository.get(open.id);
     if (!latest) {
-      set({ character: null });
+      set({ character: null, undoable: [] });
       toast('Персонаж был удалён на другом устройстве', { icon: '🗑️' });
     } else if (get().character?.id === latest.id) {
       set({ character: latest });
@@ -189,6 +228,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     viewMode: readViewMode(),
     isLoaded: false,
     settings: loadSettings(),
+    undoable: [],
 
 
     setViewMode: (viewMode) => {
@@ -211,10 +251,13 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       const current = get().character;
       if (!current) return;
 
+      // The edit runs on screen and again on the stored copy: its log entry is the same in both.
+      const logId = log ? createEntityId('log') : undefined;
+      const now = Date.now();
       const patch = typeof updater === 'function' ? null : changedFields(current, updater);
       const change = (doc: Character): Character => {
         const next = patch ? { ...doc, ...patch } : (updater as (previous: Character) => Character)(doc);
-        return log ? appendHistory(next, log) : next;
+        return log ? appendHistory(next, log, now, logId) : next;
       };
 
       const parsed = CharacterSchema.safeParse(change(current));
@@ -225,10 +268,37 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
       set({ character: parsed.data, charactersList: replacePreview(parsed.data) });
       enqueueWrite(current.id, change);
+
+      if (options?.undoable === false || deepEqual(current, parsed.data)) return;
+      const step = { id: logId ?? createEntityId('edit'), label: log?.message ?? 'Правка листа', before: current, after: parsed.data };
+      const stack = [...(undoStacks.get(current.id) ?? []), step].slice(-UNDO_LIMIT);
+      undoStacks.set(current.id, stack);
+      set({ undoable: stack.map((s) => s.id) });
+      if (log && get().settings.notifications) showUndoToast(log.message, () => get().undo(step.id));
+    },
+
+    undo: (stepId) => {
+      const current = get().character;
+      const stack = current ? (undoStacks.get(current.id) ?? []) : [];
+      const index = stepId === undefined ? stack.length - 1 : stack.findIndex((s) => s.id === stepId);
+      if (!current || index < 0) return;
+
+      const undone = stack.slice(index);
+      const remaining = stack.slice(0, index);
+      undoStacks.set(current.id, remaining);
+      set({ undoable: remaining.map((s) => s.id) });
+
+      const before = undone[0]!.before;
+      const after = undone[undone.length - 1]!.after;
+      const logIds = new Set(undone.map((s) => s.id));
+      get().updateCharacter((doc) => revertCharacter(before, after, doc, logIds), { undoable: false });
+      if (get().settings.notifications) {
+        toast.success(undone.length > 1 ? `Отменено изменений: ${undone.length}` : `Отменено: ${undone[0]!.label}`);
+      }
     },
 
     logHistory: (message, type = 'other') => {
-      get().updateCharacter((doc) => doc, { log: { message, type } });
+      get().updateCharacter((doc) => doc, { log: { message, type }, undoable: false });
     },
 
     updateResourceCount: (resourceId, delta) => {
@@ -244,13 +314,22 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
       get().updateCharacter((doc) => changeResource(doc, resourceId, delta)?.character ?? doc, { log: { message, type: 'resource' },
       });
-      notify(`${resource.name}: ${resource.current}/${resource.max}`, delta < 0 ? 'error' : 'success');
     },
 
-    resetAllResources: () => {
-      get().updateCharacter(restoreAllResources, { log: { message: 'Все ресурсы восстановлены (Длинный отдых)', type: 'resource' },
-      });
-      toast.success('Все ресурсы восстановлены');
+    rest: (kind, options = {}) => {
+      const current = get().character;
+      if (!current) return null;
+      // Dice are rolled once here: the edit runs again on the stored copy and must heal the same.
+      const hitDie = hitDiceOf(current)?.hitDie;
+      const rolls =
+        kind === 'short' && options.method !== 'average' && hitDie
+          ? Array.from({ length: Math.max(0, options.hitDice ?? 0) }, () => rollDie(hitDie))
+          : undefined;
+      const apply = (doc: Character): RestResult => (kind === 'short' ? shortRest(doc, { ...options, rolls }) : longRest(doc));
+
+      const result = apply(current);
+      get().updateCharacter((doc) => apply(doc).character, { log: { message: result.message, type: 'resource' } });
+      return result;
     },
 
     performAction: (request) => {
@@ -277,7 +356,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         toast.error('Персонаж не найден');
         return;
       }
-      set({ character, viewMode: 'tabs' });
+      set({ character, viewMode: 'tabs', undoable: undoIds(character.id) });
       rememberOpen(character.id);
       // A preset hero picks up improvements of the preset content (damage that grows, saves) the
       // moment it is opened; the rebuild keeps uses, damage taken and preparation.
@@ -290,12 +369,13 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     createCharacter: async (draft) => {
       const repository = workspace?.repository;
       if (!repository) throw new Error('Нет активного аккаунта');
-      const character = createCharacterDocument(draft);
+      const character = normalizeCharacter(createCharacterDocument(draft));
       await repository.create(character);
       set({
         character,
         charactersList: [...get().charactersList, toCharacterPreview(character)],
         viewMode: 'tabs',
+        undoable: [],
       });
       rememberOpen(character.id);
       return character.id;
@@ -316,7 +396,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
       let character: Character;
       try {
-        character = migrateCharacter(JSON.parse(await file.text()));
+        character = normalizeCharacter(migrateCharacter(JSON.parse(await file.text())));
       } catch (error) {
         const reason = error instanceof CharacterMigrationError ? error.message : 'файл не является JSON';
         toast.error(`Не удалось импортировать: ${reason}`);
@@ -330,6 +410,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         character,
         charactersList: [...get().charactersList, toCharacterPreview(character)],
         viewMode: 'tabs',
+        undoable: [],
       });
       rememberOpen(character.id);
       notify(`Персонаж ${character.name} импортирован`);
@@ -344,7 +425,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
     goToCharacterList: () => {
       rememberOpen(null);
-      set({ character: null });
+      set({ character: null, undoable: [] });
     },
 
     reloadList: async () => {
@@ -357,7 +438,8 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       unsubscribeRepository = null;
       writeQueue.length = 0;
       workspace = next;
-      set({ character: null, charactersList: [], isLoaded: false });
+      undoStacks.clear();
+      set({ character: null, charactersList: [], isLoaded: false, undoable: [] });
       if (!next) return;
 
       unsubscribeRepository = next.repository.subscribe((change) => {
@@ -367,7 +449,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
       const open = readOpen();
       const character = open ? await next.repository.get(open) : undefined;
-      if (character && workspace === next) set({ character, viewMode: 'tabs' });
+      if (character && workspace === next) set({ character, viewMode: 'tabs', undoable: [] });
     },
   };
 });

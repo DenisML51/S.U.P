@@ -8,6 +8,7 @@ import { IconDice } from '../../../ui/icons';
 import { damageParts, describeDamage } from '../parts/damage';
 import { SectionNotes } from '../parts/EditableText';
 import { useSheetText } from '../useSheetText';
+import { ConcentrationMark } from '../Concentration';
 import { useActs } from '../useActs';
 import { useSheetDialogs } from '../dialogs/context';
 import { SectionAside, SectionList } from '../SectionAside';
@@ -80,7 +81,12 @@ export const ActionsSection: React.FC<{ character: Character }> = ({ character }
                 return (
                   <LedgerRow
                     key={entry.id}
-                    title={entry.name}
+                    title={
+                      <>
+                        {entry.name}
+                        {entry.concentration && <ConcentrationMark />}
+                      </>
+                    }
                     meta={
                       <MetaLine
                         parts={[

@@ -3,8 +3,9 @@ import { experienceProgress, maxSanityOf, totalMaxHP } from '@itd/game-logic';
 import type { Character, Resource } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { LevelReady, SettingEmblem } from '../../../ui/ornaments';
-import { IconButton, Meter, Panel, cx, type MeterTone } from '../../../ui/primitives';
+import { Button, IconButton, Meter, Panel, cx, type MeterTone } from '../../../ui/primitives';
 import { IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../../ui/icons';
+import { ConcentrationBadge } from '../Concentration';
 import { useSheetDialogs } from '../dialogs/context';
 import { useVitals } from '../useVitals';
 
@@ -215,6 +216,7 @@ export const StatusCluster: React.FC<{ character: Character; className?: string 
             onClick={() => dialogs.open({ kind: 'sanity' })}
           />
         </div>
+        <ConcentrationBadge character={character} />
         <QuickHealth />
       </Panel>
       <ExperienceLine character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
@@ -225,16 +227,22 @@ export const StatusCluster: React.FC<{ character: Character; className?: string 
 /** The hero's resources with spend and restore, a long rest and adding a new one. */
 export const ResourceList: React.FC<{ character: Character }> = ({ character }) => {
   const updateResourceCount = useCharacterStore((s) => s.updateResourceCount);
-  const resetAllResources = useCharacterStore((s) => s.resetAllResources);
   const dialogs = useSheetDialogs();
   return (
     <section>
       <div className="mb-1 flex items-center justify-between">
         <h2 className="text-xs uppercase tracking-[0.16em] text-ink-muted">Ресурсы</h2>
-        <div className="flex">
-          <IconButton label="Длинный отдых: восстановить все ресурсы" size={28} onClick={resetAllResources}>
-            <IconRest width={18} height={18} />
-          </IconButton>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            className="!h-7"
+            variant="secondary"
+            icon={<IconRest width={15} height={15} />}
+            onClick={() => dialogs.open({ kind: 'rest' })}
+            title="Короткий или долгий отдых: что восстановится"
+          >
+            Отдых
+          </Button>
           <IconButton label="Добавить ресурс" size={28} onClick={() => dialogs.open({ kind: 'resource' })}>
             <IconPlus width={16} height={16} />
           </IconButton>

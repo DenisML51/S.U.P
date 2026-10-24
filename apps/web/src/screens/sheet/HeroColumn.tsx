@@ -1,5 +1,5 @@
 import React from 'react';
-import { CONDITIONS, formatModifier, initiativeModifier } from '@itd/game-logic';
+import { CONDITIONS, armorClassOf, formatModifier, initiativeModifier } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
@@ -82,7 +82,7 @@ export const HeroColumn: React.FC<{ character: Character; onShowConditions: () =
         )}
 
         <div className="grid grid-cols-4 divide-x divide-line/70 border-y border-line/70">
-          <StatCell label="Класс брони" value={character.armorClass} onClick={() => dialogs.open({ kind: 'armor' })} hint="Защита и сопротивления" />
+          <StatCell label="Класс брони" value={armorClassOf(character)} onClick={() => dialogs.open({ kind: 'armor' })} hint="Защита и сопротивления" />
           <StatCell
             label="Инициатива"
             value={formatModifier(initiativeModifier(character))}

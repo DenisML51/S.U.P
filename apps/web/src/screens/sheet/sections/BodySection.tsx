@@ -1,10 +1,22 @@
 import React from 'react';
-import { CONDITIONS, INJURY_DESCRIPTIONS, LIMB_IDS, getLimbInjuryLevel, getLimbType, replaceLimb, setCondition } from '@itd/game-logic';
+import {
+  CONDITIONS,
+  INJURY_DESCRIPTIONS,
+  armorClassBreakdown,
+  LIMB_IDS,
+  LIMB_LOST_HP,
+  changeLimbHP,
+  getLimbInjuryLevel,
+  getLimbType,
+  limbArmorClassOf,
+  setCondition,
+} from '@itd/game-logic';
 import type { Character, Limb, ResistanceLevel } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { Ledger, LedgerRow } from '../../../ui/Ledger';
 import { IconButton, Meter, Panel, SectionTitle, cx } from '../../../ui/primitives';
 import { IconMinus, IconPlus } from '../../../ui/icons';
+import { ArmorClassSum } from '../parts/ArmorClassSum';
 import { useSheetDialogs } from '../dialogs/context';
 
 const INJURY = {
@@ -25,7 +37,12 @@ const RESISTANCE_WORD: Record<ResistanceLevel, string> = {
 const ordered = (limbs: Limb[]) =>
   [...limbs].sort((a, b) => LIMB_IDS.indexOf(a.id as (typeof LIMB_IDS)[number]) - LIMB_IDS.indexOf(b.id as (typeof LIMB_IDS)[number]));
 
-const LimbPlate: React.FC<{ limb: Limb; onChange: (delta: number) => void; onOpen: () => void }> = ({ limb, onChange, onOpen }) => {
+const LimbPlate: React.FC<{ limb: Limb; armorClass: number; onChange: (delta: number) => void; onOpen: () => void }> = ({
+  limb,
+  armorClass,
+  onChange,
+  onOpen,
+}) => {
   const level = getLimbInjuryLevel(limb.currentHP);
   const injury = INJURY[level];
   return (
@@ -42,16 +59,20 @@ const LimbPlate: React.FC<{ limb: Limb; onChange: (delta: number) => void; onOpe
     >
       <div className="relative flex items-baseline justify-between gap-3">
         <h3 className="ui-display truncate text-[1.1rem] leading-none text-ink">{limb.name}</h3>
-        <span className={cx('shrink-0 text-xs', injury.tone)}>{injury.label}</span>
+        {level !== 'destroyed' && <span className={cx('shrink-0 text-xs', injury.tone)}>{injury.label}</span>}
       </div>
       <div className="relative flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-        <IconButton label={`Урон: ${limb.name}`} size={28} onClick={() => onChange(-1)} disabled={limb.currentHP <= -10}>
+        <IconButton label={`Урон: ${limb.name}`} size={28} onClick={() => onChange(-1)} disabled={limb.currentHP <= LIMB_LOST_HP}>
           <IconMinus width={14} height={14} />
         </IconButton>
-        <span className="ui-display ui-numeric flex-1 text-center text-2xl leading-none">
-          <span className={cx(limb.currentHP <= 0 && 'text-danger')}>{limb.currentHP}</span>
-          <span className="text-base text-ink-faint"> / {limb.maxHP}</span>
-        </span>
+        {level === 'destroyed' ? (
+          <span className="ui-display flex-1 text-center text-xl leading-none text-danger">{injury.label}</span>
+        ) : (
+          <span className="ui-display ui-numeric flex-1 text-center text-2xl leading-none">
+            <span className={cx(limb.currentHP <= 0 && 'text-danger')}>{limb.currentHP}</span>
+            <span className="text-base text-ink-faint"> / {limb.maxHP}</span>
+          </span>
+        )}
         <IconButton label={`Лечение: ${limb.name}`} size={28} onClick={() => onChange(1)} disabled={limb.currentHP >= limb.maxHP}>
           <IconPlus width={14} height={14} />
         </IconButton>
@@ -59,7 +80,7 @@ const LimbPlate: React.FC<{ limb: Limb; onChange: (delta: number) => void; onOpe
       <Meter value={Math.max(0, limb.currentHP)} max={limb.maxHP} tone={level === 'none' ? 'hp' : 'danger'} height={4} className="relative" />
       <div className="relative flex items-baseline justify-between gap-3 text-xs">
         <span className="shrink-0 whitespace-nowrap text-ink-faint">
-          ЗК <span className="tabular-nums text-ink-muted">{limb.ac}</span>
+          ЗК <span className="tabular-nums text-ink-muted">{armorClass}</span>
         </span>
         {level !== 'none' && (
           <span className="truncate text-right text-ink-muted" title={INJURY_DESCRIPTIONS[getLimbType(limb.id)][level]}>
@@ -78,15 +99,11 @@ const LimbPlate: React.FC<{ limb: Limb; onChange: (delta: number) => void; onOpe
 export const BodySection: React.FC<{ character: Character }> = ({ character }) => {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const dialogs = useSheetDialogs();
+  const armorClass = armorClassBreakdown(character);
   const active = new Set(character.conditions);
   const conditions = [...CONDITIONS].sort((a, b) => Number(active.has(b.id)) - Number(active.has(a.id)));
 
-  const changeLimb = (limb: Limb, delta: number) =>
-    updateCharacter((doc) => {
-      const current = doc.limbs.find((l) => l.id === limb.id);
-      if (!current) return doc;
-      return replaceLimb(doc, { ...current, currentHP: Math.min(current.maxHP, Math.max(-10, current.currentHP + delta)) });
-    });
+  const changeLimb = (limb: Limb, delta: number) => updateCharacter((doc) => changeLimbHP(doc, limb.id, delta));
 
   const toggleCondition = (id: string, name: string) => {
     const on = !active.has(id);
@@ -101,7 +118,13 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
           {character.limbs.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
               {ordered(character.limbs).map((limb) => (
-                <LimbPlate key={limb.id} limb={limb} onChange={(delta) => changeLimb(limb, delta)} onOpen={() => dialogs.open({ kind: 'limb', id: limb.id })} />
+                <LimbPlate
+                  key={limb.id}
+                  limb={limb}
+                  armorClass={limbArmorClassOf(character, limb)}
+                  onChange={(delta) => changeLimb(limb, delta)}
+                  onOpen={() => dialogs.open({ kind: 'limb', id: limb.id })}
+                />
               ))}
             </div>
           ) : (
@@ -122,7 +145,7 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
           </SectionTitle>
           <div className="mb-3 flex items-baseline gap-3">
             <span className="text-sm text-ink-faint">Класс брони</span>
-            <span className="ui-display ui-numeric text-2xl leading-none text-ink">{character.armorClass}</span>
+            <ArmorClassSum breakdown={armorClass} large className="min-w-0" />
           </div>
           {character.resistances.length === 0 ? (
             <p className="text-sm text-ink-faint">Сопротивлений и уязвимостей нет: урон проходит полностью.</p>

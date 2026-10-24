@@ -6,6 +6,7 @@ import { DiceDialog } from './DiceDialog';
 import { ItemDialog } from './ItemDialog';
 import { ProfileDialog } from './ProfileDialog';
 import { ResourceDialog } from './ResourceDialog';
+import { RestDialog } from './RestDialog';
 import { SpellDialog } from './SpellDialog';
 import { ArmorDialog, AttributeDialog, LimbDialog } from './StatDialogs';
 import { TraitDialog } from './TraitDialog';
@@ -72,6 +73,8 @@ export const SheetDialogHost: React.FC = () => {
       return <LimbDialog key={key} open={open} id={current.id} onClose={close} />;
     case 'levelUp':
       return <LevelUpDialog key={key} open={open} onClose={close} />;
+    case 'rest':
+      return <RestDialog key={key} open={open} onClose={close} />;
     case 'dice':
       return <DiceDialog key={key} open={open} onClose={close} />;
     default:

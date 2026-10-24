@@ -3,16 +3,19 @@ import {
   ATTRIBUTES_LIST,
   DAMAGE_TYPES,
   INJURY_DESCRIPTIONS,
+  LIMB_LOST_HP,
   SKILLS_LIST,
+  armorClassBreakdown,
   attributeModifier,
   attributeScore,
-  calculateArmorClass,
   createEntityId,
   formatModifier,
   getLimbInjuryLevel,
   getLimbType,
+  limbArmorClassBreakdown,
   replaceLimb,
   savingThrowModifier,
+  setArmorClassBonus,
   setAttribute,
   skillModifier,
   toggleSavingThrowProficiency,
@@ -23,6 +26,7 @@ import { Dialog } from '../../../ui/Dialog';
 import { NumberField, Segmented, Suggest, Switch } from '../../../ui/forms';
 import { Button, Field, IconButton } from '../../../ui/primitives';
 import { IconClose, IconDice, IconPlus } from '../../../ui/icons';
+import { ArmorClassSum } from '../parts/ArmorClassSum';
 import { useRolls } from '../useRolls';
 import { FormSection, KeyFacts, MinorFacts } from './parts';
 
@@ -128,7 +132,7 @@ const LEVELS: { value: Exclude<ResistanceLevel, 'none'>; label: string; tone: st
 export const ArmorDialog: React.FC<Props> = ({ open, onClose }) => {
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
-  const fromGear = calculateArmorClass(character);
+  const armorClass = armorClassBreakdown(character);
   const [added, setAdded] = useState<string>();
 
   const setResistances = (resistances: Resistance[]) => updateCharacter((doc) => ({ ...doc, resistances }));
@@ -153,29 +157,21 @@ export const ArmorDialog: React.FC<Props> = ({ open, onClose }) => {
         </Button>
       }
     >
-      <div className="flex items-end gap-4">
-        <Field label="Класс брони">
+      <FormSection label="Класс брони">
+        <ArmorClassSum breakdown={armorClass} large />
+      </FormSection>
+      <div className="mt-4">
+        <Field label="Бонус" hint="Магия, укрытие, прочее — сверх снаряжения">
           {({ id }) => (
             <NumberField
               id={id}
-              min={0}
-              value={character.armorClass}
-              onChange={(armorClass) => updateCharacter((doc) => ({ ...doc, armorClass }))}
-              className="w-40"
+              signed
+              value={character.armorClassBonus?.manual ?? 0}
+              onChange={(manual) => updateCharacter((doc) => setArmorClassBonus(doc, manual))}
+              className="w-36"
             />
           )}
         </Field>
-        {fromGear !== character.armorClass && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="mb-1"
-            onClick={() => updateCharacter((doc) => ({ ...doc, armorClass: fromGear }))}
-            title="Броня, щит и ловкость"
-          >
-            По снаряжению: {fromGear}
-          </Button>
-        )}
       </div>
 
       <FormSection
@@ -267,7 +263,7 @@ export const LimbDialog: React.FC<Props & { id: string }> = ({ open, onClose, id
           {({ id: fieldId }) => (
             <NumberField
               id={fieldId}
-              min={-10}
+              min={LIMB_LOST_HP}
               max={limb.maxHP}
               value={limb.currentHP}
               onChange={(currentHP) => set({ currentHP })}
@@ -286,19 +282,23 @@ export const LimbDialog: React.FC<Props & { id: string }> = ({ open, onClose, id
             />
           )}
         </Field>
-        <Field label="Защита (ЗК)">
+        <Field label="Бонус к ЗК">
           {({ id: fieldId }) => (
             <NumberField
               id={fieldId}
-              min={0}
-              value={limb.ac}
-              onChange={(ac) => set({ ac })}
+              signed
+              value={limb.acBonus ?? 0}
+              onChange={(acBonus) => set({ acBonus })}
               className="w-full"
             />
           )}
         </Field>
       </div>
-      <p className="mt-4 text-sm text-ink-muted">
+      <div className="mt-4 flex items-baseline gap-2">
+        <span className="text-sm text-ink-faint">Класс брони (ЗК):</span>
+        <ArmorClassSum breakdown={limbArmorClassBreakdown(character, limb)} />
+      </div>
+      <p className="mt-2 text-sm text-ink-muted">
         {level === 'none'
           ? 'Ниже нуля начинается ранение, на −5 оно тяжёлое, на −10 часть тела потеряна.'
           : INJURY_DESCRIPTIONS[getLimbType(limb.id)][level]}

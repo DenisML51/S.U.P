@@ -16,7 +16,8 @@ const ICON: Partial<Record<Toast['type'], React.ReactNode>> = {
 /**
  * Messages of the app (rolls, saves, errors) as plates in the language of the current setting.
  * They rise from the bottom edge (a screen with a bottom HUD lifts them with `--toast-offset`), the
- * stack makes room smoothly, hovering holds them, a click dismisses one.
+ * stack makes room smoothly, hovering holds them, a click dismisses one. A message may carry its own
+ * button ("Отменить"), so the plate itself is not a button.
  */
 export const Toasts: React.FC = () => {
   const { toasts, handlers } = useToaster({ duration: 3500 });
@@ -31,9 +32,8 @@ export const Toasts: React.FC = () => {
     >
       <AnimatePresence initial={false}>
         {visible.map((t) => (
-          <motion.button
+          <motion.div
             key={t.id}
-            type="button"
             layout
             role={t.type === 'error' ? 'alert' : 'status'}
             onClick={() => toast.dismiss(t.id)}
@@ -41,11 +41,11 @@ export const Toasts: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.97, transition: { duration: 0.18 } }}
             transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-            className={cx('ui-toast pointer-events-auto', t.type === 'error' && 'ui-toast--error')}
+            className={cx('ui-toast pointer-events-auto cursor-pointer', t.type === 'error' && 'ui-toast--error')}
           >
             {ICON[t.type]}
             <span className="min-w-0 text-left">{resolveValue(t.message, t)}</span>
-          </motion.button>
+          </motion.div>
         ))}
       </AnimatePresence>
     </div>

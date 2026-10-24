@@ -89,6 +89,9 @@ export const DEFAULT_SETTING: z.infer<typeof SettingSchema> = 'high-fantasy';
 /** Settings that were merged into another one; documents saved with them read as their successor. */
 const RETIRED_SETTINGS: Record<string, z.infer<typeof SettingSchema>> = { grimdark: 'dark-fantasy' };
 
+/** When a resource comes back: on a short rest (and a long one), only on a long rest, or by hand. */
+export const RecoverySchema = z.enum(['short', 'long', 'manual']);
+
 export const HistoryEntryTypeSchema = z.enum(['health', 'sanity', 'resource', 'inventory', 'exp', 'other']);
 
 export const DamageComponentSchema = passthroughObject({
@@ -112,6 +115,12 @@ export const ResourceSchema = passthroughObject({
   max: numberOr(0),
   description: longTextOr(),
   spellSlotLevel: optionalNumber,
+  /** The pool is hit dice of this size (10 for d10): a short rest spends them to heal. */
+  hitDie: optionalNumber,
+  /** Which rest restores it; a short rest also counts as part of a long one. */
+  recovery: text(RecoverySchema.default('long')),
+  /** How much a short rest returns ("one use"); absent means all of it. A long rest always returns all. */
+  recoveryAmount: optionalNumber,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
   grant: optionalShortText,
@@ -192,6 +201,8 @@ export const AbilitySchema = passthroughObject({
   saveAttribute: optionalShortText,
   saveDC: optionalNumber,
   hitBonus: optionalNumber,
+  /** Using it starts concentration, which a new concentration, a failed save or incapacitation ends. */
+  concentration: optionalFlag,
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
@@ -203,7 +214,13 @@ export const LimbSchema = passthroughObject({
   name: shortText,
   currentHP: numeric(num),
   maxHP: numeric(num),
+  /** The limb's armour class as older versions stored it; read once to derive `acBonus`. */
   ac: numberOr(0),
+  /**
+   * The player's modifier on top of the limb's derived armour class (worn armour, else 10 + DEX).
+   * Absent on sheets saved before it existed.
+   */
+  acBonus: optionalNumber,
 });
 
 export const TraitSchema = passthroughObject({
@@ -240,6 +257,8 @@ export const SpellSchema = passthroughObject({
   /** A spell attack roll (`melee`/`ranged`) or the ability of the target's saving throw. */
   attackRoll: text(z.enum(['melee', 'ranged']).optional()),
   saveAttribute: optionalShortText,
+  /** Casting it starts concentration, which a new concentration, a failed save or incapacitation ends. */
+  concentration: optionalFlag,
   prepared: flag(false),
   /** Granted by a feature (oath spells): always prepared and not counted against the limit. */
   alwaysPrepared: optionalFlag,
@@ -268,7 +287,15 @@ export const ResistanceSchema = passthroughObject({
   grant: optionalShortText,
 });
 
-export const ActionCountersSchema = passthroughObject({
+export const ConcentrationSchema = passthroughObject({
+  kind: z.enum(['spell', 'ability']),
+  id: nestedId,
+  /** Shown even if the entry is renamed or deleted meanwhile. */
+  name: shortText,
+  startedAt: numeric(num),
+});
+
+export const ActionCountersSchema =passthroughObject({
   action: numeric(int.min(0).default(0)),
   bonus: numeric(int.min(0).default(0)),
   reaction: numeric(int.min(0).default(0)),
@@ -329,12 +356,23 @@ export const CharacterSchema = passthroughObject({
   level: numeric(int.min(1).max(100).default(1)),
   experience: numberOr(0),
   speed: numberOr(30),
+  /** The armour class as older versions stored it; read once to derive `armorClassBonus.manual`. */
   armorClass: numberOr(10),
-  /** Armour class from features rather than gear (Defense fighting style): always, and while armoured. */
-  armorClassBonus: text(passthroughObject({ always: numberOr(0), armored: numberOr(0) }).optional()),
+  /**
+   * Armour class beyond the gear: from features (Defense fighting style), always and while armoured,
+   * and the player's own modifier. `manual` is absent on sheets saved before it existed.
+   */
+  armorClassBonus: text(
+    passthroughObject({ always: numberOr(0), armored: numberOr(0), manual: optionalNumber }).optional(),
+  ),
   initiativeBonus: optionalNumber,
 
   sanity: numberOr(50),
+  /**
+   * Added to the maximum sanity the rules give (a gift, a relic). Absent on sheets saved before it
+   * existed: reading them turns sanity above the computed maximum into this bonus.
+   */
+  maxSanityBonus: optionalNumber,
   currentHP: numberOr(10),
   maxHP: numberOr(10),
   tempHP: numberOr(0),
@@ -342,6 +380,8 @@ export const CharacterSchema = passthroughObject({
   limbs: list(LimbSchema),
   resistances: list(ResistanceSchema),
   conditions: list(shortString),
+  /** The spell or ability the hero keeps concentration on; absent when not concentrating. */
+  concentratingOn: text(ConcentrationSchema.optional()),
 
   attributes: numberMap(64),
   attributeBonuses: numberMap(64),
@@ -392,6 +432,7 @@ export type ItemType = z.infer<typeof ItemTypeSchema>;
 export type WeaponClass = z.infer<typeof WeaponClassSchema>;
 export type ResistanceLevel = z.infer<typeof ResistanceLevelSchema>;
 export type HistoryEntryType = z.infer<typeof HistoryEntryTypeSchema>;
+export type Recovery = z.infer<typeof RecoverySchema>;
 export type Setting = z.infer<typeof SettingSchema>;
 export type DamageComponent = z.infer<typeof DamageComponentSchema>;
 export type Skill = z.infer<typeof SkillSchema>;
@@ -407,6 +448,7 @@ export type Spell = z.infer<typeof SpellSchema>;
 export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 export type Resistance = z.infer<typeof ResistanceSchema>;
 export type ActionCounters = z.infer<typeof ActionCountersSchema>;
+export type Concentration = z.infer<typeof ConcentrationSchema>;
 export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
 export type Build = z.infer<typeof BuildSchema>;
 export type Character = z.infer<typeof CharacterSchema>;

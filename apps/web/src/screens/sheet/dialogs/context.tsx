@@ -10,7 +10,7 @@ export type EntryKind = 'attack' | 'ability' | 'spell' | 'item' | 'trait' | 'res
  */
 export type SheetDialog =
   | { kind: EntryKind; id?: string; edit?: boolean }
-  | { kind: 'health' | 'sanity' | 'experience' | 'currency' | 'armor' | 'profile' | 'dice' | 'levelUp' }
+  | { kind: 'health' | 'sanity' | 'experience' | 'currency' | 'armor' | 'profile' | 'dice' | 'levelUp' | 'rest' }
   | { kind: 'attribute' | 'limb'; id: string };
 
 /** An entry whose card is shown beside its list. */

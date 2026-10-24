@@ -69,6 +69,11 @@ describe('CharacterSchema', () => {
     expect(CharacterSchema.parse({ ...minimal, setting: 'grimdark' }).setting).toBe('dark-fantasy');
   });
 
+  it('reads a resource saved before rest rules as restored by a long rest', () => {
+    const resources = [{ id: 'focus', name: 'Фокус', current: 1, max: 3 }];
+    expect(CharacterSchema.parse({ ...minimal, resources }).resources[0]).toMatchObject({ recovery: 'long' });
+  });
+
   it('references uploaded art by asset id', () => {
     const id = 'a3bb189e-8bf9-4888-9912-ace4e6543002';
     expect(CharacterSchema.parse({ ...minimal, images: { portrait: id } }).images).toEqual({ portrait: id });

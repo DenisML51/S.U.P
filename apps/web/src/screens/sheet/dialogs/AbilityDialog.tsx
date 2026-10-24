@@ -3,7 +3,7 @@ import { createEntityId, removeById, upsertById } from '@itd/game-logic';
 import type { Ability, ActionType, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
-import { MarkdownField, Segmented } from '../../../ui/forms';
+import { MarkdownField, Segmented, Switch } from '../../../ui/forms';
 import { Button, Field } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
 import { DamageBlock } from '../../../ui/DamageBlock';
@@ -111,10 +111,18 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
           )}
         </div>
         {draft.actionType !== 'passive' && (
-          <DamageEditor
-            value={draft.damageComponents ?? []}
-            onChange={(damageComponents) => set({ damageComponents })}
-          />
+          <>
+            <DamageEditor
+              value={draft.damageComponents ?? []}
+              onChange={(damageComponents) => set({ damageComponents })}
+            />
+            <Switch
+              checked={!!draft.concentration}
+              onChange={(concentration) => set({ concentration: concentration || undefined })}
+              label="Концентрация"
+              hint="Использование начинает концентрацию; урон требует спасброска Телосложения"
+            />
+          </>
         )}
         <Field label="Эффект" hint="Коротко: что происходит при использовании">
           {({ id }) => (
@@ -149,7 +157,9 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
       onDelete={remove}
       name={entry.name}
       eyebrow={
-        passive ? 'Способность · действует всегда' : `Способность · ${ACTION_TYPES[entry.actionType].short}`
+        passive
+          ? 'Способность · действует всегда'
+          : `Способность · ${ACTION_TYPES[entry.actionType].short}${entry.concentration ? ' · концентрация' : ''}`
       }
       onEdit={startEditing}
       primary={
