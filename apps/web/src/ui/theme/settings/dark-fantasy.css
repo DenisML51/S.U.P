@@ -472,15 +472,45 @@
     filter: blur(8px);
     animation: df-fog 40s ease-in-out infinite alternate;
   }
+  /* Candlelight breathing low behind the rose window, a cold red rising from the floor. */
+  .df-candlelight {
+    background:
+      radial-gradient(32% 42% at 14% 50%, rgb(var(--c-candle) / 0.16), transparent 70%),
+      radial-gradient(70% 45% at 50% 115%, rgb(var(--c-accent) / 0.3), transparent 70%);
+    animation: df-candlelight 7s ease-in-out infinite;
+  }
+  /* Embers rising through the dark and drifting aside. */
+  .df-ember {
+    position: absolute;
+    bottom: -2%;
+    border-radius: 50%;
+    background: rgb(var(--c-candle));
+    box-shadow: 0 0 5px rgb(var(--c-candle) / 0.9);
+    opacity: 0;
+    animation: df-ember linear infinite;
+  }
 }
 
 @keyframes df-fog {
   from { transform: translateX(-4%); }
   to { transform: translateX(4%); }
 }
+@keyframes df-candlelight {
+  0%, 100% { opacity: 1; }
+  30% { opacity: 0.8; }
+  55% { opacity: 0.95; }
+  75% { opacity: 0.75; }
+}
+@keyframes df-ember {
+  0% { opacity: 0; transform: translate(0, 0); }
+  12% { opacity: 0.8; }
+  70% { opacity: 0.3; }
+  100% { opacity: 0; transform: translate(var(--drift), -60vh); }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='dark-fantasy'] .ui-fog { animation: none; }
+  [data-setting='dark-fantasy'] :is(.ui-fog, .df-candlelight) { animation: none; }
+  [data-setting='dark-fantasy'] .df-ember { display: none; }
 }
 
 /* ------------------------------------------------------------------ Level ready */

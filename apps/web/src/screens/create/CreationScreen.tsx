@@ -92,7 +92,7 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
       issues: worldChosen ? [] : ['Мир'],
       stage: true,
       content: (
-        <div className="mx-auto grid h-[28rem] w-full max-w-5xl grid-cols-3 gap-6">
+        <div className="mx-auto grid h-[28rem] w-full max-w-6xl grid-cols-4 gap-5">
           {SETTINGS.map((id) => (
             <WorldCard
               key={id}
