@@ -10,7 +10,8 @@ import { damageParts, describeDamage } from '../parts/damage';
 import { useInventory } from '../useInventory';
 import { useSheetText } from '../useSheetText';
 import { useSheetDialogs } from '../dialogs/context';
-import { ITEM_TYPE_LABEL, isEquippable } from '../dialogs/ItemDialog';
+import { itemKindLabel } from '../../../ui/characterLabels';
+import { isEquippable } from '../dialogs/ItemDialog';
 
 type Filter = 'all' | ItemType;
 
@@ -39,7 +40,7 @@ const EquipMark: React.FC<{ item: InventoryItem; onToggle: () => void }> = ({ it
 const describeItem = (item: InventoryItem) => {
   const damage = damageParts(item);
   return [
-    item.itemClass || ITEM_TYPE_LABEL[item.type],
+    itemKindLabel(item),
     item.type === 'armor' && item.baseAC !== undefined && (
       <>
         КБ <MetaValue>{item.baseAC}</MetaValue>

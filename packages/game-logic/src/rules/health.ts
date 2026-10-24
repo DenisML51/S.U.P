@@ -22,10 +22,13 @@ export function getDefaultLimbs(maxHP: number, constitution: number, armorClass:
   return LIMB_IDS.map((id) => ({ id, name: LIMB_NAMES[id], currentHP: limbMaxHP, maxHP: limbMaxHP, ac: armorClass }));
 }
 
+/** Hit points of a lost limb: wounds never take it lower. */
+export const LIMB_LOST_HP = -10;
+
 /** A limb is fine above 0 HP; below that the injury worsens at −5 and the limb is lost at −10. */
 export const getLimbInjuryLevel = (currentHP: number): InjuryLevel => {
   if (currentHP > 0) return 'none';
-  if (currentHP <= -10) return 'destroyed';
+  if (currentHP <= LIMB_LOST_HP) return 'destroyed';
   if (currentHP <= -5) return 'severe';
   return 'light';
 };
@@ -50,10 +53,22 @@ export interface HealthValues {
 
 export const setHealth = (character: Character, health: HealthValues): Character => ({ ...character, ...health });
 
+/** Limb hit points stay between the lost mark (−10) and the limb's maximum. */
+export const clampLimbHP = (limb: Limb): Limb => {
+  const currentHP = Math.min(limb.maxHP, Math.max(LIMB_LOST_HP, limb.currentHP));
+  return currentHP === limb.currentHP ? limb : { ...limb, currentHP };
+};
+
 export const replaceLimb = (character: Character, limb: Limb): Character => ({
   ...character,
-  limbs: character.limbs.map((l) => (l.id === limb.id ? limb : l)),
+  limbs: character.limbs.map((l) => (l.id === limb.id ? clampLimbHP(limb) : l)),
 });
+
+/** Wounds (negative delta) or heals a limb, within −10..max. */
+export function changeLimbHP(character: Character, limbId: string, delta: number): Character {
+  const limb = character.limbs.find((l) => l.id === limbId);
+  return limb ? replaceLimb(character, { ...limb, currentHP: limb.currentHP + Math.trunc(delta) }) : character;
+}
 
 export interface HealthChange {
   character: Character;

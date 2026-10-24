@@ -24,6 +24,7 @@ import {
 import { toast } from 'react-hot-toast';
 import type { z } from 'zod';
 import { create } from 'zustand';
+import { normalizeCharacter } from '../data/local/characterRepository';
 import { loadSettings, saveSettings, type AppSettings } from '../data/settings';
 import type { Workspace } from '../data/workspace';
 import type { ViewMode } from '../types';
@@ -290,7 +291,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     createCharacter: async (draft) => {
       const repository = workspace?.repository;
       if (!repository) throw new Error('Нет активного аккаунта');
-      const character = createCharacterDocument(draft);
+      const character = normalizeCharacter(createCharacterDocument(draft));
       await repository.create(character);
       set({
         character,
@@ -316,7 +317,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
 
       let character: Character;
       try {
-        character = migrateCharacter(JSON.parse(await file.text()));
+        character = normalizeCharacter(migrateCharacter(JSON.parse(await file.text())));
       } catch (error) {
         const reason = error instanceof CharacterMigrationError ? error.message : 'файл не является JSON';
         toast.error(`Не удалось импортировать: ${reason}`);

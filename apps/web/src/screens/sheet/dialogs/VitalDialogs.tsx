@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { experienceProgress, maxSanityOf, totalMaxHP, type Coin } from '@itd/game-logic';
+import { baseMaxSanityOf, experienceProgress, maxSanityOf, totalMaxHP, type Coin } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { Dialog } from '../../../ui/Dialog';
@@ -183,6 +183,7 @@ export const SanityDialog: React.FC<VitalProps> = ({ open, onClose }) => {
   const character = useCharacterStore((s) => s.character) as Character;
   const vitals = useVitals();
   const max = maxSanityOf(character);
+  const bonus = character.maxSanityBonus ?? 0;
   return (
     <Dialog
       open={open}
@@ -208,6 +209,8 @@ export const SanityDialog: React.FC<VitalProps> = ({ open, onClose }) => {
         note={
           character.sanity <= 0 ? (
             <span className="text-danger">Безумие</span>
+          ) : bonus !== 0 ? (
+            `Максимум: ${baseMaxSanityOf(character)} по правилам ${bonus > 0 ? '+' : '−'} ${Math.abs(bonus)} бонус`
           ) : (
             'Максимум: ментальная сила, мудрость и уровень'
           )
@@ -220,6 +223,13 @@ export const SanityDialog: React.FC<VitalProps> = ({ open, onClose }) => {
             { label: 'Восстановить', onApply: (n) => vitals.changeSanity(n) },
           ]}
         />
+      </div>
+      <div className="mt-6 grid grid-cols-3 gap-4">
+        <Field label="Бонус к максимуму" hint="Дары, реликвии">
+          {({ id }) => (
+            <NumberField id={id} signed value={bonus} onChange={vitals.setSanityBonus} className="w-full" />
+          )}
+        </Field>
       </div>
     </Dialog>
   );

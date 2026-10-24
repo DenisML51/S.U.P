@@ -2,6 +2,7 @@ import { toast } from 'react-hot-toast';
 import {
   applyDamage,
   applyHealing,
+  boundSanity,
   clampSanity,
   experienceProgress,
   grantTempHP,
@@ -62,6 +63,10 @@ export function useVitals() {
     });
   };
 
+  /** A smaller bonus lowers the maximum, and sanity above it goes with it. */
+  const setSanityBonus = (value: number) =>
+    updateCharacter((doc) => boundSanity({ ...doc, maxSanityBonus: Math.trunc(value) }));
+
   const addExperience = (delta: number) => {
     const experience = Math.max(0, character.experience + delta);
     updateCharacter((doc) => setExperience(doc, Math.max(0, doc.experience + delta), doc.level), { log: { message: delta > 0 ? `Опыт: +${delta} (${experience})` : `Опыт: ${delta} (${experience})`, type: 'exp' },
@@ -103,6 +108,7 @@ export function useVitals() {
     healFully,
     setHealthField,
     changeSanity,
+    setSanityBonus,
     addExperience,
     setLevel,
     canLevelUp,

@@ -3,6 +3,7 @@ import {
   ATTRIBUTES_LIST,
   DAMAGE_TYPES,
   INJURY_DESCRIPTIONS,
+  LIMB_LOST_HP,
   SKILLS_LIST,
   attributeModifier,
   attributeScore,
@@ -267,7 +268,7 @@ export const LimbDialog: React.FC<Props & { id: string }> = ({ open, onClose, id
           {({ id: fieldId }) => (
             <NumberField
               id={fieldId}
-              min={-10}
+              min={LIMB_LOST_HP}
               max={limb.maxHP}
               value={limb.currentHP}
               onChange={(currentHP) => set({ currentHP })}

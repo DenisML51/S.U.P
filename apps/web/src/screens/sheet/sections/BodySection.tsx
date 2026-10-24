@@ -1,5 +1,14 @@
 import React from 'react';
-import { CONDITIONS, INJURY_DESCRIPTIONS, LIMB_IDS, getLimbInjuryLevel, getLimbType, replaceLimb, setCondition } from '@itd/game-logic';
+import {
+  CONDITIONS,
+  INJURY_DESCRIPTIONS,
+  LIMB_IDS,
+  LIMB_LOST_HP,
+  changeLimbHP,
+  getLimbInjuryLevel,
+  getLimbType,
+  setCondition,
+} from '@itd/game-logic';
 import type { Character, Limb, ResistanceLevel } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { Ledger, LedgerRow } from '../../../ui/Ledger';
@@ -42,16 +51,20 @@ const LimbPlate: React.FC<{ limb: Limb; onChange: (delta: number) => void; onOpe
     >
       <div className="relative flex items-baseline justify-between gap-3">
         <h3 className="ui-display truncate text-[1.1rem] leading-none text-ink">{limb.name}</h3>
-        <span className={cx('shrink-0 text-xs', injury.tone)}>{injury.label}</span>
+        {level !== 'destroyed' && <span className={cx('shrink-0 text-xs', injury.tone)}>{injury.label}</span>}
       </div>
       <div className="relative flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-        <IconButton label={`Урон: ${limb.name}`} size={28} onClick={() => onChange(-1)} disabled={limb.currentHP <= -10}>
+        <IconButton label={`Урон: ${limb.name}`} size={28} onClick={() => onChange(-1)} disabled={limb.currentHP <= LIMB_LOST_HP}>
           <IconMinus width={14} height={14} />
         </IconButton>
-        <span className="ui-display ui-numeric flex-1 text-center text-2xl leading-none">
-          <span className={cx(limb.currentHP <= 0 && 'text-danger')}>{limb.currentHP}</span>
-          <span className="text-base text-ink-faint"> / {limb.maxHP}</span>
-        </span>
+        {level === 'destroyed' ? (
+          <span className="ui-display flex-1 text-center text-xl leading-none text-danger">{injury.label}</span>
+        ) : (
+          <span className="ui-display ui-numeric flex-1 text-center text-2xl leading-none">
+            <span className={cx(limb.currentHP <= 0 && 'text-danger')}>{limb.currentHP}</span>
+            <span className="text-base text-ink-faint"> / {limb.maxHP}</span>
+          </span>
+        )}
         <IconButton label={`Лечение: ${limb.name}`} size={28} onClick={() => onChange(1)} disabled={limb.currentHP >= limb.maxHP}>
           <IconPlus width={14} height={14} />
         </IconButton>
@@ -81,12 +94,7 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
   const active = new Set(character.conditions);
   const conditions = [...CONDITIONS].sort((a, b) => Number(active.has(b.id)) - Number(active.has(a.id)));
 
-  const changeLimb = (limb: Limb, delta: number) =>
-    updateCharacter((doc) => {
-      const current = doc.limbs.find((l) => l.id === limb.id);
-      if (!current) return doc;
-      return replaceLimb(doc, { ...current, currentHP: Math.min(current.maxHP, Math.max(-10, current.currentHP + delta)) });
-    });
+  const changeLimb = (limb: Limb, delta: number) => updateCharacter((doc) => changeLimbHP(doc, limb.id, delta));
 
   const toggleCondition = (id: string, name: string) => {
     const on = !active.has(id);

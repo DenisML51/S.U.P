@@ -335,6 +335,11 @@ export const CharacterSchema = passthroughObject({
   initiativeBonus: optionalNumber,
 
   sanity: numberOr(50),
+  /**
+   * Added to the maximum sanity the rules give (a gift, a relic). Absent on sheets saved before it
+   * existed: reading them turns sanity above the computed maximum into this bonus.
+   */
+  maxSanityBonus: optionalNumber,
   currentHP: numberOr(10),
   maxHP: numberOr(10),
   tempHP: numberOr(0),
