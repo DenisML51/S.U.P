@@ -10,6 +10,7 @@ export * from './rules/abilities';
 export * from './rules/actions';
 export * from './rules/armor';
 export * from './rules/collections';
+export * from './rules/concentration';
 export * from './rules/creation';
 export * from './rules/currency';
 export * from './rules/dice';

@@ -1,6 +1,7 @@
 import type { Character, Resource } from '@itd/schema';
 import { attributeModifier } from './abilities';
 import { resetTurn } from './actions';
+import { endConcentration } from './concentration';
 import { rollDie, type RandomSource } from './dice';
 import { totalMaxHP } from './health';
 
@@ -126,13 +127,14 @@ export function shortRest(character: Character, options: ShortRestOptions = {}):
 
 /**
  * A long rest: full hit points, no temporary ones, every short- and long-rest resource (spell slots
- * among them) restored, half of the hit dice back (at least one), this turn's actions reset.
+ * among them) restored, half of the hit dice back (at least one), this turn's actions reset and
+ * concentration over.
  * Sanity does not come back with sleep.
  */
 export function longRest(character: Character): RestResult {
   const { resources, changes } = restoreResources(character, 'long');
   const maxHP = totalMaxHP(character);
-  let next: Character = resetTurn({ ...character, resources, currentHP: maxHP, tempHP: 0 });
+  let next: Character = endConcentration(resetTurn({ ...character, resources, currentHP: maxHP, tempHP: 0 }));
 
   const pool = hitDiceOf(character);
   if (pool && pool.current < pool.max) {

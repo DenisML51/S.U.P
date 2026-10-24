@@ -15,7 +15,13 @@ const pool = (id: string, patch: Partial<Resource>): Resource => ({
 });
 
 const hitDice = pool('hd', { name: 'Кости хитов', hitDie: 10, current: 3, max: 5 });
-const wind = pool('wind', { name: 'Второе дыхание', recovery: 'short', recoveryAmount: 1, current: 0, max: 3 });
+const wind = pool('wind', {
+  name: 'Второе дыхание',
+  recovery: 'short',
+  recoveryAmount: 1,
+  current: 0,
+  max: 3,
+});
 const surge = pool('surge', { name: 'Всплеск', recovery: 'short', current: 0, max: 2 });
 const slots = pool('slots', { name: 'Ячейки', recovery: 'long', current: 0, max: 4 });
 const luck = pool('luck', { name: 'Удача', recovery: 'manual', current: 0, max: 2 });
@@ -40,11 +46,15 @@ describe('short rest', () => {
     expect(character.currentHP).toBe(4 + 7 + 11);
     expect(current(character).hd).toBe(1);
     expect(changes[0]).toEqual({ id: 'hp', label: 'Хиты', before: 4, after: 22, max: 40 });
-    expect(message).toBe('Короткий отдых: Хиты 4 → 22, Кости хитов 3 → 1, Второе дыхание 0 → 1, Всплеск 0 → 2 (к10: 6, 10)');
+    expect(message).toBe(
+      'Короткий отдых: Хиты 4 → 22, Кости хитов 3 → 1, Второе дыхание 0 → 1, Всплеск 0 → 2 (к10: 6, 10)',
+    );
   });
 
   it('rolls the dice not given', () => {
-    expect(shortRest(hero(), { hitDice: 2, random: sequence(0.5, 0.95) }).character.currentHP).toBe(4 + 7 + 11);
+    expect(shortRest(hero(), { hitDice: 2, random: sequence(0.5, 0.95) }).character.currentHP).toBe(
+      4 + 7 + 11,
+    );
   });
 
   it('takes the average when asked, and never more dice than are left', () => {
@@ -54,7 +64,12 @@ describe('short rest', () => {
   });
 
   it('heals at least 1 per die and never above the maximum', () => {
-    const weak = makeCharacter({ attributes: { constitution: 1 }, currentHP: 1, maxHP: 2, resources: [hitDice] });
+    const weak = makeCharacter({
+      attributes: { constitution: 1 },
+      currentHP: 1,
+      maxHP: 2,
+      resources: [hitDice],
+    });
     expect(shortRest(weak, { hitDice: 1, random: () => 0 }).character.currentHP).toBe(2);
   });
 

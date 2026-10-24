@@ -5,6 +5,7 @@ import { useCharacterStore } from '../../../store/useCharacterStore';
 import { SettingEmblem } from '../../../ui/art/emblems';
 import { Button, IconButton, Meter, Panel, cx, type MeterTone } from '../../../ui/primitives';
 import { IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../../ui/icons';
+import { ConcentrationBadge } from '../Concentration';
 import { useSheetDialogs } from '../dialogs/context';
 import { useVitals } from '../useVitals';
 
@@ -162,6 +163,7 @@ export const StatusCluster: React.FC<{ character: Character; className?: string 
         </div>
         <LevelPlate character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
       </div>
+      <ConcentrationBadge character={character} />
       <ExperienceLine character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
       <QuickHealth />
     </Panel>

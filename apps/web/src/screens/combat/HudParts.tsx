@@ -13,6 +13,7 @@ import {
   itemQuantity,
   maxSanityOf,
   setActionLimit,
+  setCondition,
   setSpentActions,
   spentActionsOf,
   totalCopper,
@@ -27,6 +28,7 @@ import { NumberField } from '../../ui/forms';
 import { CONDITION_ICONS, CatalogIcon, DAMAGE_ICONS, GameIcon } from '../../ui/GameIcon';
 import { Panel, cx } from '../../ui/primitives';
 import { IconAmmunition, IconCoins, IconPlus } from '../../ui/icons';
+import { useEndConcentration } from '../sheet/Concentration';
 import { useSheetDialogs } from '../sheet/dialogs/context';
 import { ActionShape } from './Hotbar';
 import { HudTip, useHudTip, type TipBinding } from './HudTip';
@@ -192,19 +194,30 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
   const { bind, view } = useHint();
   const [picking, setPicking] = useState(false);
   const addButton = useRef<HTMLButtonElement>(null);
-  const toggle = (id: string) =>
-    updateCharacter((doc) => ({
-      ...doc,
-      conditions: doc.conditions.includes(id)
-        ? doc.conditions.filter((c) => c !== id)
-        : [...doc.conditions, id],
-    }));
+  const endConcentration = useEndConcentration();
+  const toggle = (id: string) => updateCharacter((doc) => setCondition(doc, id, !doc.conditions.includes(id)));
   const defences = character.resistances.filter((r) => r.level !== 'none');
   const down = character.currentHP <= 0;
 
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex max-w-[12.5rem] flex-wrap justify-center gap-1.5">
+        {character.concentratingOn && (
+          <button
+            type="button"
+            onClick={() => endConcentration('по желанию')}
+            className="ui-hud-chip"
+            style={{ color: 'rgb(var(--c-accent))', borderColor: 'rgb(var(--c-accent) / 0.6)' }}
+            aria-label={`Прекратить концентрацию: ${character.concentratingOn.name}`}
+            {...bind({
+              key: 'concentration',
+              title: `Концентрация: ${character.concentratingOn.name}`,
+              lines: ['Урон требует спасброска Телосложения', 'Нажмите, чтобы прекратить'],
+            })}
+          >
+            <CatalogIcon id="psychic-waves" size={20} />
+          </button>
+        )}
         <AnimatePresence mode="popLayout" initial={false}>
           {character.conditions.map((id) => {
             const condition = CONDITIONS.find((c) => c.id === id);

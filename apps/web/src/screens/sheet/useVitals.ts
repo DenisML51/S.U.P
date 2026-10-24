@@ -6,6 +6,7 @@ import {
   clampSanity,
   experienceProgress,
   grantTempHP,
+  keepConcentration,
   maxSanityOf,
   receiveCoins,
   setExperience,
@@ -15,6 +16,7 @@ import {
 } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { useConcentrationPrompt } from './Concentration';
 
 const COIN_NAME: Record<Coin, string> = { gold: 'зм', silver: 'см', copper: 'мм' };
 
@@ -32,6 +34,8 @@ export function useVitals() {
     const absorbed = preview.absorbed ? ` (${preview.absorbed} поглощено временными)` : '';
     updateCharacter((doc) => applyDamage(doc, value).character, { log: { message: `Получен урон: ${value}${absorbed} — ${preview.character.currentHP}/${max}`, type: 'health' },
     });
+    // Concentration that survives the hit still has to survive a Constitution save.
+    if (preview.character.concentratingOn) useConcentrationPrompt.getState().askSave(value);
   };
 
   const heal = (value: number) => {
@@ -49,7 +53,7 @@ export function useVitals() {
   const setHealthField = (field: 'maxHP' | 'maxHPBonus' | 'tempHP' | 'currentHP', value: number) =>
     updateCharacter((doc) => {
       const next = { ...doc, [field]: Math.max(field === 'maxHPBonus' ? -Infinity : 0, value) };
-      return { ...next, currentHP: Math.min(next.currentHP, totalMaxHP(next)) };
+      return keepConcentration({ ...next, currentHP: Math.min(next.currentHP, totalMaxHP(next)) });
     });
 
   const changeSanity = (delta: number) => {
