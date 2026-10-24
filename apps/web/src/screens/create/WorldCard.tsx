@@ -15,7 +15,7 @@ export const WorldCard: React.FC<{ setting: Setting; selected: boolean; onSelect
   selected,
   onSelect,
 }) => {
-  const { Backdrop } = SETTING_ART[setting];
+  const { Backdrop, WorldSigil } = SETTING_ART[setting];
   return (
     <SettingScope setting={setting} className="h-full">
       <button type="button" className="ui-world" aria-pressed={selected} onClick={onSelect}>
@@ -25,6 +25,11 @@ export const WorldCard: React.FC<{ setting: Setting; selected: boolean; onSelect
         <span className="ui-world__veil" aria-hidden />
         <Corners />
         <span className="ui-world__emblem">
+          {WorldSigil && (
+            <span className="ui-world__sigil" aria-hidden>
+              <WorldSigil />
+            </span>
+          )}
           <SettingEmblem size={76} />
         </span>
         <span className="ui-world__name ui-display ui-title">{SETTING_INFO[setting].label}</span>

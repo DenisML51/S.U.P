@@ -1577,7 +1577,10 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   z-index: -1;
   background: radial-gradient(80% 65% at 50% 42%, transparent 35%, rgb(var(--c-bg-deep) / 0.7));
 }
-.ui-world__emblem { filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.7)); transition: transform 400ms, filter 400ms; }
+.ui-world__emblem { position: relative; display: grid; place-items: center; filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.7)); transition: transform 400ms, filter 400ms; }
+/* A setting's sigil round the emblem, wider than it and behind it. */
+.ui-world__sigil { position: absolute; left: 50%; top: 50%; z-index: -1; width: 210px; height: 210px; transform: translate(-50%, -50%); pointer-events: none; }
+.ui-world__sigil > svg { width: 100%; height: 100%; }
 /* Each world's name in its own face, even on the service-typed first step of creation. */
 .ui-world__name {
   font-family: var(--setting-display);

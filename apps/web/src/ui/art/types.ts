@@ -19,4 +19,6 @@ export interface SettingArt {
   Backdrop: React.FC;
   /** Laid over the experience bar when a new level can be taken: the setting's own marvel. */
   LevelReady: React.FC;
+  /** Drawn round the emblem of the setting's world card, if the setting has such a thing. */
+  WorldSigil?: React.FC;
 }

@@ -528,11 +528,30 @@
   .ui-world:is(:hover, [aria-pressed='true']) .ui-world__name { color: rgb(var(--c-frame-bright)); }
 }
 
+/* The rune ring round the emblem: faint at rest; looked at, the runes burn in turn and it turns. */
+[data-setting='dark-fantasy'] {
+  .ui-world { gap: 3.4rem; }
+  .ui-world__sigil { width: 190px; height: 190px; }
+  .df-sigil { color: rgb(var(--c-frame)); opacity: 0.35; transition: opacity 600ms, color 600ms; }
+  /* The ring is drawn round the origin of its viewBox, so it turns about 0 0. */
+  .df-sigil__ring { transform-origin: 0 0; }
+  .ui-world:is(:hover, [aria-pressed='true']) .df-sigil { color: rgb(var(--c-candle)); opacity: 1; }
+  .ui-world:is(:hover, [aria-pressed='true']) .df-sigil__ring { animation: df-sigil-turn 40s linear infinite; }
+  .ui-world:is(:hover, [aria-pressed='true']) .df-sigil__rune { animation: df-sigil-burn 2.64s ease-in-out infinite; }
+}
+
+@keyframes df-sigil-turn { to { transform: rotate(360deg); } }
+@keyframes df-sigil-burn {
+  0%, 100% { opacity: 0.35; filter: none; }
+  25% { opacity: 1; filter: drop-shadow(0 0 3px rgb(var(--c-candle))) drop-shadow(0 0 6px rgb(var(--c-accent))); }
+  55% { opacity: 0.7; }
+}
+
 @keyframes df-world-flame {
   0%, 100% { filter: drop-shadow(0 0 10px rgb(var(--c-candle) / 0.5)); transform: translateY(0); }
   30% { filter: drop-shadow(0 0 16px rgb(var(--c-candle) / 0.75)); transform: translateY(-1px) rotate(-0.6deg); }
   60% { filter: drop-shadow(0 0 8px rgb(var(--c-candle) / 0.4)); transform: translateY(0) rotate(0.5deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='dark-fantasy'] .ui-world .ui-world__emblem { animation: none; }
+  [data-setting='dark-fantasy'] .ui-world :is(.ui-world__emblem, .df-sigil__ring, .df-sigil__rune) { animation: none; }
 }

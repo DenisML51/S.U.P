@@ -139,6 +139,43 @@ const LevelReady: React.FC = () => {
   );
 };
 
+/** Glyphs of the ring round the world card's emblem, 4×9 each, drawn as strokes. */
+const SIGIL_RUNES = [
+  'M0 0V9M0 2 4 0M0 5 4 3',
+  'M0 0 3 9 6 0M1 4H5',
+  'M0 0V9M0 0 4 4 0 9',
+  'M2 0V9M0 3 4 6M0 6 4 3',
+  'M0 9 2 0 4 9M0 5H4',
+  'M0 0H4V4H0V9',
+  'M0 0 4 9M4 0 0 9',
+  'M2 0V9M0 0H4M0 9H4',
+  'M0 0V9H4',
+  'M0 4 2 0 4 4 2 9Z',
+  'M0 9V0L4 5V0',
+  'M2 0V9M2 3 0 0M2 3 4 0',
+];
+
+/**
+ * A ring of runes round the world card's emblem: faint until the card is looked at, then they burn
+ * one after another like embers while the ring turns slowly, as a ward drawn on a crypt floor.
+ */
+const WorldSigil: React.FC = () => (
+  <svg viewBox="-110 -110 220 220" fill="none" aria-hidden className="df-sigil">
+    <circle r="96" stroke="currentColor" strokeWidth="0.6" opacity="0.5" />
+    <circle r="78" stroke="currentColor" strokeWidth="0.4" opacity="0.35" strokeDasharray="2 5" />
+    <g className="df-sigil__ring">
+      {SIGIL_RUNES.map((d, i) => {
+        const angle = (i * 360) / SIGIL_RUNES.length;
+        return (
+          <g key={d} transform={`rotate(${angle}) translate(-2 -92)`}>
+            <path className="df-sigil__rune" style={{ animationDelay: `${i * 0.22}s` }} d={d} stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+        );
+      })}
+    </g>
+  </svg>
+);
+
 export const DARK_FANTASY_ART: SettingArt = {
   corner: { viewBox: '0 0 24 24', art: <GothicCorner /> },
   crest: { viewBox: '0 0 120 24', art: <ArchCrest /> },
@@ -151,4 +188,5 @@ export const DARK_FANTASY_ART: SettingArt = {
   Emblem: GiCandleSkull,
   Backdrop,
   LevelReady,
+  WorldSigil,
 };
