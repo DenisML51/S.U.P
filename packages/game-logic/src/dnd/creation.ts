@@ -7,7 +7,7 @@ import { equipItem } from '../rules/inventory';
 import { rollDie } from '../rules/dice';
 import { experienceForLevel } from '../rules/progression';
 import { maxSanityOf } from '../rules/sanity';
-import { applyBuild, findBackground, findClass, spellcastingOf, type OpenChoice } from './build';
+import { applyBuild, collect, findBackground, findClass, maxSpellLevel, spellcastingOf, type OpenChoice } from './build';
 import { DND } from './content';
 import { DND_ICONS, armorIcon, gearIcon } from './content/icons';
 import type { KitOption } from './types';
@@ -143,13 +143,20 @@ export function createDndHero({ name, build, classKitId, backgroundKitId }: DndH
  */
 export const PREPARED_AT_CREATION = 'creation:prepared';
 
-/** The pick of starting prepared spells, as a choice the creation screen can show. */
+/**
+ * The pick of starting prepared spells, as a choice the creation screen can show: from the class
+ * list for a preparing caster, from the spellbook for a wizard.
+ */
 export function preparedSpellsChoice(build: Build): OpenChoice | null {
   const casting = spellcastingOf(build);
-  if (casting?.mode !== 'prepared') return null;
+  if (casting?.mode !== 'prepared' && casting?.mode !== 'spellbook') return null;
   const level = build.level;
   const count = applyBuild(skeleton('—'), build).character.maxPreparedSpells.total ?? 0;
-  const maxLevel = casting.slots[level - 1]?.length ?? 0;
+  const maxLevel = maxSpellLevel(casting, level);
+  const book =
+    casting.mode === 'spellbook'
+      ? collect(build).poolPicks.filter((p) => p.pool === 'spellbook' && p.active).map((p) => p.id)
+      : undefined;
   const feature = { id: 'creation.prepared', name: 'Использование заклинаний', description: '' };
   return {
     key: PREPARED_AT_CREATION,
@@ -160,8 +167,10 @@ export function preparedSpellsChoice(build: Build): OpenChoice | null {
       id: 'prepared',
       label: 'Подготовленные заклинания',
       count,
-      options: { from: 'spells', lists: [casting.list], minLevel: 1, maxLevel },
-      hint: 'Список можно менять после продолжительного отдыха, на листе в разделе «Магия».',
+      options: { from: 'spells', lists: [casting.list], minLevel: 1, maxLevel, ids: book },
+      hint: book
+        ? 'Из заклинаний вашей книги. Список можно менять после продолжительного отдыха, на листе в разделе «Магия».'
+        : 'Список можно менять после продолжительного отдыха, на листе в разделе «Магия».',
     },
     owner: { key: 'creation', feature, level, source: 'class' },
   };

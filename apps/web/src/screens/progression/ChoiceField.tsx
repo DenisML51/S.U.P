@@ -8,7 +8,7 @@ import { Button, IconButton, cx } from '../../ui/primitives';
 import { IconClose, IconMinus, IconPlus } from '../../ui/icons';
 
 /** Choices whose options are many or long to read open in a picker; the page shows the picks. */
-const PICKER_SOURCES = new Set(['feats', 'spells', 'maneuvers', 'weapons', 'tools', 'languages']);
+const PICKER_SOURCES = new Set(['feats', 'spells', 'maneuvers', 'weapons', 'tools', 'languages', 'catalog', 'forget']);
 /** Inline options (lineages, ancestries) move to the picker past this many. */
 const INLINE_OPTIONS = 6;
 
@@ -16,6 +16,7 @@ const INLINE_OPTIONS = 6;
 const ICON_KIND: Record<string, IconKind> = {
   feats: 'ability',
   maneuvers: 'ability',
+  catalog: 'ability',
   spells: 'spell',
   weapons: 'attack',
   tools: 'item',
@@ -25,9 +26,9 @@ const ICON_KIND: Record<string, IconKind> = {
 
 const stripCount = (label: string) => label.replace(/\s*\(\d+\)$/, '');
 
-const Counter: React.FC<{ picked: number; count: number }> = ({ picked, count }) => (
+const Counter: React.FC<{ picked: number; count: number; optional?: boolean }> = ({ picked, count, optional }) => (
   <span className={cx('ui-numeric shrink-0 whitespace-nowrap text-xs', picked >= count ? 'text-success' : 'text-ink-faint')}>
-    {picked} / {count}
+    {optional && picked === 0 ? 'по желанию' : `${picked} / ${count}`}
   </span>
 );
 
@@ -69,7 +70,7 @@ export const ChoiceField: React.FC<{
     <div className="mb-2 flex min-w-0 items-baseline gap-3">
       <h4 className="ui-display shrink-0 text-[1.05rem] leading-tight text-ink">{label}</h4>
       {origin && <span className="ui-choice-origin shrink-0">от «{origin}»</span>}
-      <Counter picked={picks.length} count={open.count} />
+      <Counter picked={picks.length} count={open.count} optional={open.choice.optional} />
       {open.choice.hint && (
         <span className="min-w-0 truncate text-xs text-ink-faint" title={open.choice.hint}>
           {open.choice.hint}
@@ -168,7 +169,8 @@ export const ChoiceField: React.FC<{
   }
 
   // Long lists: the picks as cards, empty slots to fill, the picker on demand.
-  const kind = ICON_KIND[source.from] ?? 'ability';
+  // Given-up picks of known spells look like spells; invocations and the like like abilities.
+  const kind = source.from === 'forget' ? (source.pool.startsWith('known-') ? 'spell' : 'ability') : (ICON_KIND[source.from] ?? 'ability');
   const picked = picks.map((id) => options.find((o) => o.id === id) ?? { id, name: id, description: '' });
   return (
     <section>

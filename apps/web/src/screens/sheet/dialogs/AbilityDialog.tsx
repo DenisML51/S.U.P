@@ -1,5 +1,5 @@
 import React from 'react';
-import { createEntityId, removeById, upsertById } from '@itd/game-logic';
+import { createEntityId, isUsable, removeById, upsertById } from '@itd/game-logic';
 import type { Ability, ActionType, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
@@ -146,7 +146,7 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
   if (!entry) return null;
   const parts = damageParts(entry);
   const cost = costLabel(character, entry.resourceId, entry.resourceCost);
-  const passive = entry.actionType === 'passive';
+  const passive = !isUsable(entry);
 
   return (
     <EntryView
@@ -159,7 +159,7 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
       eyebrow={
         passive
           ? 'Способность · действует всегда'
-          : `Способность · ${ACTION_TYPES[entry.actionType].short}${entry.concentration ? ' · концентрация' : ''}`
+          : `Способность · ${entry.actionType === 'passive' ? 'без действия' : ACTION_TYPES[entry.actionType].short}${entry.concentration ? ' · концентрация' : ''}`
       }
       onEdit={startEditing}
       primary={

@@ -1,4 +1,4 @@
-import { formatModifier, spellAttackBonus, spellDamageAt } from '@itd/game-logic';
+import { formatModifier, spellAttackBonusFor, spellDamageAt, spellSaveDCFor } from '@itd/game-logic';
 import type { Character, DamageComponent, Spell } from '@itd/schema';
 
 /** A formula that deals something: not empty and not a bare zero. */
@@ -43,10 +43,10 @@ export function hitLabel(
   spell = false,
 ): string | null {
   if (entry.saveAttribute) {
-    const dc = spell ? character.spellcastingDifficultyValue : entry.saveDC;
+    const dc = spell ? spellSaveDCFor(character, entry as Spell) : entry.saveDC;
     return `${dc !== undefined ? `СЛ ${dc}, ` : ''}спасбросок ${SAVE_OF[entry.saveAttribute] ?? entry.saveAttribute}`;
   }
-  if (spell && entry.attackRoll) return `${formatModifier(spellAttackBonus(character))} к попаданию`;
+  if (spell && entry.attackRoll) return `${formatModifier(spellAttackBonusFor(character, entry as Spell))} к попаданию`;
   if (!spell && entry.hitBonus !== undefined) return `${formatModifier(entry.hitBonus)} к попаданию`;
   return null;
 }

@@ -1,5 +1,5 @@
 import type { Ability, Attack, Spell } from '@itd/schema';
-import { castableSlots, spellAttackBonus } from '@itd/game-logic';
+import { castableSlots, spellAttackBonusFor } from '@itd/game-logic';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { damageParts, spellDamageParts } from './parts/damage';
 import { useConcentrationPrompt } from './Concentration';
@@ -48,16 +48,17 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     if (!character) return;
     if (!performAction({ kind: 'spell', id: spell.id, trackActionEconomy: inCombat, slotLevel })?.ok) return;
     const upcast = slotLevel !== undefined && slotLevel > spell.level ? ` (${slotLevel} круг)` : '';
-    if (spell.attackRoll) roll.check(`${spell.name}: попадание`, spellAttackBonus(character));
+    if (spell.attackRoll) roll.check(`${spell.name}: попадание`, spellAttackBonusFor(character, spell));
     roll.damage(`${spell.name}${upcast}`, spellDamageParts(character, spell, slotLevel ?? spell.level));
   };
 
   const castFrom = (spell: Spell) => {
     if (!character) return;
-    // Only spells paid with spell slots choose one; a higher free slot makes it a real choice.
+    // Only spells paid with spell slots choose one.
     const usesSlot = spell.level > 0 && character.resources.some((r) => r.id === spell.resourceId && r.spellSlotLevel !== undefined);
     const slots = usesSlot ? castableSlots(character, spell) : [];
-    if (slots.some((level) => level > spell.level)) askSlot(spell, slots, (level) => castWith(spell, level));
+    // Several slot levels to choose from make it a real choice; a warlock's single pact level does not.
+    if (new Set(slots).size > 1 && slots.some((level) => level > spell.level)) askSlot(spell, slots, (level) => castWith(spell, level));
     else castWith(spell, slots[0]);
   };
 

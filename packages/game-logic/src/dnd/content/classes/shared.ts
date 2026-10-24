@@ -49,3 +49,33 @@ export const HALF_CASTER_SLOTS: number[][] = [
   [4, 3, 3], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 1], [4, 3, 3, 2], [4, 3, 3, 2], [4, 3, 3, 3, 1], [4, 3, 3, 3, 1],
   [4, 3, 3, 3, 2], [4, 3, 3, 3, 2],
 ];
+
+/** Full-caster slot table (bard, cleric, druid, sorcerer, wizard) by class level. */
+export const FULL_CASTER_SLOTS: number[][] = [
+  [2], [3], [4, 2], [4, 3], [4, 3, 2], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 2], [4, 3, 3, 3, 1], [4, 3, 3, 3, 2],
+  [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1],
+  [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1], [4, 3, 3, 3, 3, 1, 1, 1, 1], [4, 3, 3, 3, 3, 2, 1, 1, 1],
+  [4, 3, 3, 3, 3, 2, 2, 1, 1],
+];
+
+/** Pact Magic of the Warlock by class level: how many slots, all of one level. */
+export const PACT_SLOTS: { count: number; level: number }[] = [
+  { count: 1, level: 1 }, { count: 2, level: 1 }, { count: 2, level: 2 }, { count: 2, level: 2 }, { count: 2, level: 3 },
+  { count: 2, level: 3 }, { count: 2, level: 4 }, { count: 2, level: 4 }, { count: 2, level: 5 }, { count: 2, level: 5 },
+  { count: 3, level: 5 }, { count: 3, level: 5 }, { count: 3, level: 5 }, { count: 3, level: 5 }, { count: 3, level: 5 },
+  { count: 3, level: 5 }, { count: 4, level: 5 }, { count: 4, level: 5 }, { count: 4, level: 5 }, { count: 4, level: 5 },
+];
+
+/** A value of a table by class level 1–20 (prepared spells of the 2024 class tables). */
+export const byTable =
+  (values: number[]) =>
+  (ctx: { classLevel: number }): number =>
+    values[Math.min(values.length, Math.max(1, ctx.classLevel)) - 1] ?? 0;
+
+/** The "Subclass" heading of level 3, shown in the level-up window above the subclass pick. */
+export const subclassHeading = (classId: string, name: string, description: string): FeatureDef => ({
+  id: `${classId}.subclass`,
+  name,
+  description,
+  hidden: true,
+});

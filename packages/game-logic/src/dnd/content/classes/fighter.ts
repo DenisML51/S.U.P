@@ -364,6 +364,7 @@ export const FIGHTER: ClassDef = {
   mentalStrength: 55,
   subclassLevel: 3,
   subclasses: [battleMaster, champion, eldritchKnight, psiWarrior],
+  replaceable: [{ pool: 'maneuvers', label: 'Замена приёма' }],
   startingEquipment: FIGHTER_KITS,
   levels: {
     1: [

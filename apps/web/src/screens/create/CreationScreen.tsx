@@ -123,7 +123,7 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
             <span className="mt-3 block text-ink-muted">
               Виды, предыстории и классы Книги игрока. Умения, ячейки и выборы приходят сами с каждым уровнем.
             </span>
-            <span className="mt-4 block text-sm text-ink-faint">Сейчас: паладин и воин со всеми подклассами</span>
+            <span className="mt-4 block text-sm text-ink-faint">12 классов, 48 подклассов и все заклинания Книги игрока</span>
           </BigChoice>
           <BigChoice selected={path === 'custom'} onSelect={() => { setPath('custom'); setIndex(2); }} className="flex flex-col justify-center px-8">
             <IconQuill width={52} height={52} className="mb-5 text-frame-bright" />

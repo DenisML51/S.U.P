@@ -153,7 +153,7 @@ describe('performAction', () => {
   });
 
   it('refuses passive abilities and unprepared spells', () => {
-    const passive = { ...surge, id: 'aura', actionType: 'passive' as const };
+    const passive = { ...surge, id: 'aura', actionType: 'passive' as const, resourceId: undefined, resourceCost: undefined };
     const character = makeCharacter({ abilities: [passive], spells: [{ ...fireball, prepared: false }] });
 
     expect(performAction(character, { kind: 'ability', id: 'aura' })).toMatchObject({ reason: 'passive' });

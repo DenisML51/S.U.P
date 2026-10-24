@@ -57,6 +57,8 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
   const slots = slotResourceFor(character, level);
   // A class that prepares N spells of any level (paladin) sets one limit for all circles.
   const classLimit = level > 0 && character.maxPreparedSpells[TOTAL_PREPARED] !== undefined;
+  // A preset caster who knows their spells (bard, warlock) never prepares them: no counter.
+  const known = !!character.build && character.spells.filter((s) => s.level === level).every((s) => s.alwaysPrepared);
   return (
     <span className="flex items-center gap-4">
       {classLimit && (
@@ -65,7 +67,7 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
           <span className="tabular-nums">{limit}</span>
         </span>
       )}
-      {level > 0 && !classLimit && (
+      {level > 0 && !classLimit && !known && (
         <span className="flex items-center gap-1" title="Сколько заклинаний этого круга можно подготовить">
           подготовлено <span className="tabular-nums">{preparedCount(character, level)}</span> из
           <IconButton

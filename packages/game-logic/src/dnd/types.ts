@@ -78,7 +78,49 @@ export type Effect =
    * A spell the hero always has. `alwaysPrepared` spells never count against the prepared limit;
    * `ability` overrides the spellcasting ability for it (species and feat spells).
    */
-  | { type: 'spell'; spell: string; alwaysPrepared?: boolean; ability?: AttributeId; note?: string };
+  | {
+      type: 'spell';
+      spell: string;
+      alwaysPrepared?: boolean;
+      ability?: AttributeId;
+      note?: string;
+      /** A pool of its own the spell is cast with instead of a slot (Mystic Arcanum). */
+      resourceId?: string;
+    }
+  /**
+   * Armour class without armour: 10 + Dexterity + this ability (Barbarian: Constitution, Monk:
+   * Wisdom). A shield still adds to it unless `noShield` (the Monk loses the feature with one).
+   */
+  | { type: 'unarmoredDefense'; attribute: AttributeId; noShield?: boolean }
+  /** A flat bonus to checks of some skills (Thaumaturge: Wisdom modifier to Arcana and Religion). */
+  | { type: 'skillBonus'; skills: SkillId[]; amount: Amount }
+  /** Half the proficiency bonus on ability checks without proficiency, initiative included (Jack of All Trades). */
+  | { type: 'halfProficiency' }
+  /** An attack the hero always has, without a weapon (a Monk's Unarmed Strike, Psychic Blades). */
+  | { type: 'attack'; attack: GrantedAttackDef }
+  /** A bonus to attack rolls with weapons of a kind (Archery: +2 with ranged weapons). */
+  | { type: 'attackBonus'; kind: 'melee' | 'ranged'; amount: number }
+  /**
+   * Weapons of a kind may attack with this ability when it is better (Martial Arts: Dexterity with
+   * Monk weapons; Pact of the Blade: Charisma with the pact weapon).
+   */
+  | { type: 'weaponAbility'; ability: AttributeId; weapons: WeaponFilter | 'monk' }
+  /** Weapons of a kind may deal this die instead of their own when it is bigger (Martial Arts die). */
+  | { type: 'weaponDie'; die: string; weapons: WeaponFilter | 'monk' };
+
+/** An attack a feature gives (Unarmed Strike with the Martial Arts die). */
+export interface GrantedAttackDef {
+  id: string;
+  name: string;
+  description?: string;
+  /** Damage dice before the ability modifier, growing with level when a function. */
+  damage: string | ((ctx: BuildContext) => string);
+  damageType: string;
+  /** The ability added to the attack and damage; the best of several when a list. */
+  abilities: AttributeId[];
+  actionType?: ActionType;
+  iconName?: string;
+}
 
 // ------------------------------------------------------------------------------------------------
 // Features, resources and choices
@@ -91,7 +133,8 @@ export interface ResourceDef {
   id: string;
   name: string;
   max: Amount;
-  recharge: Recharge;
+  /** When it comes back; a function when it changes with level (Bardic Inspiration from level 5). */
+  recharge: Recharge | ((ctx: BuildContext) => Recharge);
   /** Uses a short rest returns to a pool that otherwise comes back on a long rest (Second Wind: one). */
   shortRestRegain?: number;
   description?: string;
@@ -142,21 +185,38 @@ export interface OptionDef {
 }
 
 export type FeatCategory = 'origin' | 'general' | 'fightingStyle' | 'epicBoon';
-export type SpellListId = 'paladin' | 'wizard' | 'cleric' | 'druid';
+export type SpellListId = 'bard' | 'cleric' | 'druid' | 'paladin' | 'ranger' | 'sorcerer' | 'warlock' | 'wizard';
+
+/** Lists of picks other than feats and spells (Eldritch Invocations, Metamagic). */
+export type CatalogId = 'invocations' | 'metamagic';
 
 export type OptionSource =
   | { from: 'skills'; list?: SkillId[] }
-  /** Expertise in skills the hero is already proficient in. */
-  | { from: 'expertise' }
+  /** Expertise in skills the hero is already proficient in (only these skills, when listed). */
+  | { from: 'expertise'; list?: SkillId[] }
   /**
    * Ability score increases: `amount` to each picked score, up to `max` (20). A score may be picked
    * more than once (+1 twice = +2 to one score) unless `distinct`.
    */
   | { from: 'attributes'; list?: AttributeId[]; amount: number; max?: number; distinct?: boolean }
   | { from: 'feats'; categories: FeatCategory[] }
-  | { from: 'spells'; lists: SpellListId[]; minLevel?: number; maxLevel: Amount; schools?: string[]; ritual?: boolean }
+  | {
+      from: 'spells';
+      lists: SpellListId[];
+      minLevel?: number;
+      maxLevel: Amount;
+      schools?: string[];
+      ritual?: boolean;
+      /** Only these spells (the spells of a wizard's spellbook). */
+      ids?: string[];
+      /** Only spells already written into the hero's spellbook (Spell Mastery, Signature Spells). */
+      fromSpellbook?: boolean;
+    }
   | { from: 'weapons'; filter: WeaponFilter }
   | { from: 'maneuvers' }
+  | { from: 'catalog'; catalog: CatalogId }
+  /** Picks made earlier in a pool, one of which is given up for a new one (a spell replaced on a level-up). */
+  | { from: 'forget'; pool: string }
   | { from: 'tools'; list?: string[] }
   | { from: 'languages' }
   | { from: 'options'; options: OptionDef[] };
@@ -180,6 +240,12 @@ export interface ChoiceDef {
   hint?: string;
   /** For spell picks: the ability they are cast with (they are always prepared). */
   spellAbility?: AttributeId;
+  /** For spell picks: they go into a spellbook and are prepared by the player, not always prepared. */
+  spellbook?: boolean;
+  /** For spell picks: cast with this pool of the owner instead of a slot (Mystic Arcanum). */
+  spellResource?: string;
+  /** The player may leave it without a pick (giving up a spell on a level-up). */
+  optional?: boolean;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -229,13 +295,22 @@ export interface SpellcastingDef {
   list: SpellListId;
   slots: number[][];
   /**
-   * `prepared`: every spell of the list the hero can cast is on the sheet and they prepare
-   * `prepared(level)` of them (paladin). `known`: the hero picks spells in the level-up window and
-   * they are always prepared (Eldritch Knight).
+   * Pact Magic (Warlock): instead of `slots`, a few slots all of one level that come back on a
+   * short rest, by class level.
    */
-  mode: 'prepared' | 'known';
+  pact?: { count: number; level: number }[];
+  /**
+   * `prepared`: every spell of the list the hero can cast is on the sheet and they prepare
+   * `prepared(level)` of them (paladin, cleric, druid, ranger). `known`: the hero picks spells in
+   * the level-up window and they are always prepared (bard, sorcerer, warlock, Eldritch Knight); on
+   * every later level one of them may be replaced. `spellbook`: the hero writes six spells into a
+   * spellbook at level 1 and two more on every level, and prepares `prepared(level)` of them (wizard).
+   */
+  mode: 'prepared' | 'known' | 'spellbook';
   prepared: Amount;
   cantrips?: Amount;
+  /** From this class level new known spells may also come from these lists (Bard's Magical Secrets). */
+  extraLists?: { from: number; lists: SpellListId[] };
   /** Schools a `known` caster must mostly pick from; not enforced in 2024, kept for hints. */
   schools?: string[];
 }
@@ -270,6 +345,11 @@ export interface ClassDef {
   subclassLevel: number;
   subclasses: SubclassDef[];
   spellcasting?: SpellcastingDef;
+  /**
+   * Pools of picks one of which may be replaced on every later class level (maneuvers, Eldritch
+   * Invocations, Metamagic). Known spells and cantrips of a caster are replaceable without listing.
+   */
+  replaceable?: { pool: string; label: string }[];
   startingEquipment: KitOption[];
 }
 
@@ -310,6 +390,22 @@ export interface FeatPrerequisite {
 export interface FeatDef extends FeatureDef {
   category: FeatCategory;
   prerequisite?: FeatPrerequisite;
+  repeatable?: boolean;
+}
+
+/** An entry of a catalog (an Eldritch Invocation, a Metamagic option). */
+export interface CatalogEntryDef extends FeatureDef {
+  catalog: CatalogId;
+  prerequisite?: {
+    /** Class level it opens at. */
+    level?: number;
+    /** A spell the hero must know (Eldritch Blast for Agonizing Blast). */
+    spell?: string;
+    /** Another entry of the catalog the hero must have (Pact of the Blade). */
+    entry?: string;
+    text?: string;
+  };
+  /** May be taken more than once (each time with its own picks). */
   repeatable?: boolean;
 }
 

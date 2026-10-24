@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatModifier } from '@itd/game-logic';
+import { formatModifier, isUsable } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { Ledger, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
@@ -23,8 +23,8 @@ export const ActionsSection: React.FC<{ character: Character }> = ({ character }
   const { attack, activate } = useActs();
   const dialogs = useSheetDialogs();
 
-  const passive = character.abilities.filter((a) => a.actionType === 'passive');
-  const active = character.abilities.filter((a) => a.actionType !== 'passive');
+  const passive = character.abilities.filter((a) => !isUsable(a));
+  const active = character.abilities.filter(isUsable);
 
   return (
     <div className="flex h-full gap-8">
@@ -90,7 +90,7 @@ export const ActionsSection: React.FC<{ character: Character }> = ({ character }
                     meta={
                       <MetaLine
                         parts={[
-                          ACTION_TYPES[entry.actionType].short,
+                          entry.actionType === 'passive' ? 'без действия' : ACTION_TYPES[entry.actionType].short,
                           entry.resourceId && (
                             <>
                               <MetaValue>{entry.resourceCost ?? 1}</MetaValue>{' '}

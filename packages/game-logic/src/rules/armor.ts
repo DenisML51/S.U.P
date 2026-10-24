@@ -34,12 +34,31 @@ const breakdown = (parts: ArmorClassPart[]): ArmorClassBreakdown => {
 
 const MANUAL_LABEL = 'бонус';
 
-/** Unarmoured: 10 + Dexterity, plus features that always apply. */
-const unarmoredParts = (character: ArmorSource): ArmorClassPart[] => [
-  { label: 'основа', value: BASE_ARMOR_CLASS },
-  { label: 'ЛВК', value: attributeModifier(character, 'dexterity') },
-  { label: 'особенности', value: character.armorClassBonus?.always ?? 0 },
-];
+const ABILITY_LABELS: Record<string, string> = {
+  strength: 'СИЛ',
+  dexterity: 'ЛВК',
+  constitution: 'ТЕЛ',
+  intelligence: 'ИНТ',
+  wisdom: 'МДР',
+  charisma: 'ХАР',
+};
+
+const hasShield = (character: ArmorSource): boolean => character.inventory.some((item) => item.equipped && isShield(item));
+
+/**
+ * Unarmoured: 10 + Dexterity, plus features that always apply. Unarmored Defense adds an ability
+ * (Constitution, Wisdom) unless it is lost to a shield.
+ */
+const unarmoredParts = (character: ArmorSource): ArmorClassPart[] => {
+  const bonus = character.armorClassBonus;
+  const unarmored = bonus?.unarmored && !(bonus.unarmoredNoShield && hasShield(character)) ? bonus.unarmored : undefined;
+  return [
+    { label: 'основа', value: BASE_ARMOR_CLASS },
+    { label: 'ЛВК', value: attributeModifier(character, 'dexterity') },
+    ...(unarmored ? [{ label: ABILITY_LABELS[unarmored] ?? unarmored, value: attributeModifier(character, unarmored) }] : []),
+    { label: 'особенности', value: bonus?.always ?? 0 },
+  ];
+};
 
 /**
  * Armour class from equipment and features: worn armour sets the base (and how much Dexterity
@@ -48,7 +67,7 @@ const unarmoredParts = (character: ArmorSource): ArmorClassPart[] => [
  */
 function gearParts(character: ArmorSource): ArmorClassPart[] {
   const armor = equippedArmor(character.inventory);
-  const shield = character.inventory.some((item) => item.equipped && isShield(item));
+  const shield = hasShield(character);
   const shieldPart = { label: 'щит', value: shield ? SHIELD_ARMOR_BONUS : 0 };
   if (!armor) return [...unarmoredParts(character), shieldPart];
 

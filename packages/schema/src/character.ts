@@ -105,6 +105,8 @@ export const SkillSchema = passthroughObject({
   attribute: shortText,
   proficient: flag(false),
   expertise: flag(false),
+  /** A flat bonus a preset feature gives to checks of the skill (a Thaumaturge's Wisdom to Arcana). */
+  bonus: optionalNumber,
 });
 
 export const ResourceSchema = passthroughObject({
@@ -184,6 +186,8 @@ export const AttackSchema = passthroughObject({
   attribute: optionalShortText,
   iconName: optionalShortText,
   color: optionalShortText,
+  /** Id of the preset feature that wrote this entry (a Monk's Unarmed Strike); rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const AbilitySchema = passthroughObject({
@@ -363,9 +367,19 @@ export const CharacterSchema = passthroughObject({
    * and the player's own modifier. `manual` is absent on sheets saved before it existed.
    */
   armorClassBonus: text(
-    passthroughObject({ always: numberOr(0), armored: numberOr(0), manual: optionalNumber }).optional(),
+    passthroughObject({
+      always: numberOr(0),
+      armored: numberOr(0),
+      manual: optionalNumber,
+      /** Unarmored Defense: without armour the AC is 10 + Dexterity + this ability's modifier. */
+      unarmored: optionalShortText,
+      /** The Unarmored Defense is lost while holding a shield (Monk). */
+      unarmoredNoShield: optionalFlag,
+    }).optional(),
   ),
   initiativeBonus: optionalNumber,
+  /** Half the proficiency bonus on checks without proficiency, initiative included (Jack of All Trades). */
+  halfProficiency: optionalFlag,
 
   sanity: numberOr(50),
   /**

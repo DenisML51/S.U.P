@@ -5,6 +5,7 @@ import {
   remainingActions,
   resolveAmmunition,
   spellColor,
+  isUsable,
 } from '@itd/game-logic';
 import type { ActionType, Character, InventoryItem } from '@itd/schema';
 import { ACTION_TYPES } from '../../ui/actionTypes';
@@ -63,8 +64,7 @@ function blockedBy(
   resourceId?: string,
   cost = 1,
 ): string | null {
-  if (actionType === 'passive') return null;
-  if (inCombat && remainingActions(character, actionType) === 0)
+  if (actionType !== 'passive' && inCombat && remainingActions(character, actionType) === 0)
     return `Не осталось: ${ACTION_TYPES[actionType].short}`;
   if (resourceId) {
     const resource = character.resources.find((r) => r.id === resourceId);
@@ -105,7 +105,7 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
   });
 
   const abilities = character.abilities
-    .filter((a) => a.actionType !== 'passive')
+    .filter(isUsable)
     .map((ability): Slot => ({
       key: `ability:${ability.id}`,
       kind: 'ability',
