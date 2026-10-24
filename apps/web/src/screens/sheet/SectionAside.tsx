@@ -27,7 +27,7 @@ const SWAP = { duration: 0.22, ease: 'easeOut' } as const;
  * The right column of a section. It holds the section's secondary information (the purse, notes)
  * until an entry of the list is chosen; then the entry's card takes its place, and closing the
  * card brings the information back. A section without such information shows the column only
- * for the card. The column's width eases between the two, so the list beside it gives way gently.
+ * for the card; choosing another entry keeps the card where it is. The column's width eases between the two, so the list beside it gives way gently.
  */
 export const SectionAside: React.FC<{ width?: number; children?: React.ReactNode }> = ({
   width = 0,
@@ -47,7 +47,7 @@ export const SectionAside: React.FC<{ width?: number; children?: React.ReactNode
       <AnimatePresence mode="wait" initial={false}>
         {selected ? (
           <motion.div
-            key={`${selected.kind}:${selected.id}`}
+            key="card"
             className="h-full pt-5"
             style={{ width: CARD_WIDTH }}
             initial={{ opacity: 0, x: 16 }}

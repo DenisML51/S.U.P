@@ -1402,6 +1402,10 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-details__fact dt { font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
 .ui-details__fact dd { margin-top: 0.2rem; font-size: 1rem; color: rgb(var(--c-ink)); }
 .ui-details__foot { border-top: 1px solid rgb(var(--c-line) / 0.6); }
+/* A card is born for each entry; the frame stays still while its contents come in. */
+:is(.ui-details__head, .ui-details__facts, .ui-details__body, .ui-details__foot) { animation: ui-details-in 0.2s ease-out; }
+@keyframes ui-details-in { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { :is(.ui-details__head, .ui-details__facts, .ui-details__body, .ui-details__foot) { animation: none; } }
 
 /* ------------------------------------------------------------------ Hero column */
 .ui-hero-column {

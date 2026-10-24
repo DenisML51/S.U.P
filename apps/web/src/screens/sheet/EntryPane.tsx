@@ -16,7 +16,8 @@ const entriesOf = (character: Character, kind: EntryKind): { id: string }[] =>
 
 /**
  * The card of the entry chosen in a list, rendered as the details pane. Editing opens the card's
- * form as a dialog over it, so the pane stays in place.
+ * form as a dialog over it, so the pane stays in place. Another entry gets a fresh card in the
+ * same frame: only the contents change.
  */
 export const EntryPane: React.FC = () => {
   const character = useCharacterStore((s) => s.character);
@@ -31,7 +32,7 @@ export const EntryPane: React.FC = () => {
   if (!selected || !exists) return null;
   return (
     <EntryPresentationScope value={{ mode: 'pane', edit: () => open({ kind: selected.kind, id: selected.id, edit: true }) }}>
-      <EntryCard kind={selected.kind} id={selected.id} open onClose={clearSelection} />
+      <EntryCard key={`${selected.kind}:${selected.id}`} kind={selected.kind} id={selected.id} open onClose={clearSelection} />
     </EntryPresentationScope>
   );
 };
