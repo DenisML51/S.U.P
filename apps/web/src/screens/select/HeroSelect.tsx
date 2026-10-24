@@ -297,7 +297,7 @@ const HeroCard: React.FC<{ hero: CharacterPreview; focused: boolean; onClick: ()
   const origin = describeOrigin(hero);
   const setting = settingOf(hero);
   return (
-    <SettingScope setting={setting} className="h-full">
+    <SettingScope setting={setting} className="ui-hero-card relative h-full" data-focused={focused || undefined}>
       <Panel
         as="button"
         interactive
