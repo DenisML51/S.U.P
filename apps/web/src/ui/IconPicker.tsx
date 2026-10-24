@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { GameIcon, ICON_COLORS, ICON_GROUPS, resolveIcon, type IconKind } from './GameIcon';
+import { GameIcon, ICON_COLORS, ICON_GROUPS, resolveIcon, tileStyle, type IconKind } from './GameIcon';
 import { cx } from './primitives';
 
 /**
@@ -32,10 +32,12 @@ export const IconNameField: React.FC<{
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           title="Иконка и цвет"
-          className="ui-hud-slot ui-hud-slot--large shrink-0"
+          className="ui-hud-slot ui-hud-slot--large ui-hud-slot--tile shrink-0"
+          style={tileStyle(color)}
+          data-kind={kind}
           data-active={open || undefined}
         >
-          <GameIcon name={iconName} kind={kind} size={34} color={color} className="ui-hud-slot__icon" />
+          <GameIcon name={iconName} kind={kind} size={40} className="ui-hud-slot__icon" />
         </button>
         <div className="min-w-0 flex-1">{children}</div>
       </div>
@@ -101,13 +103,7 @@ export const IconNameField: React.FC<{
                           className="ui-hud-slot ui-hud-slot--small"
                           data-active={current === icon.id || undefined}
                         >
-                          <GameIcon
-                            name={icon.id}
-                            kind={kind}
-                            size={22}
-                            color={color}
-                            className="ui-hud-slot__icon"
-                          />
+                          <GameIcon name={icon.id} kind={kind} size={24} className="ui-hud-slot__icon" />
                         </button>
                       ))}
                     </div>

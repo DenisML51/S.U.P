@@ -3,7 +3,7 @@ import { DAMAGE_TYPES } from '@itd/game-logic';
 import type { Character, DamageComponent, Resource } from '@itd/schema';
 import { ConfirmDialog } from '../../../ui/Dialog';
 import { NumberField, Select, Suggest } from '../../../ui/forms';
-import { GameIcon, type IconKind } from '../../../ui/GameIcon';
+import { GameIcon, tileStyle, type IconKind } from '../../../ui/GameIcon';
 import { IconNameField } from '../../../ui/IconPicker';
 import { Button, Field, IconButton, Input, Rule, cx } from '../../../ui/primitives';
 import { IconClose, IconPlus } from '../../../ui/icons';
@@ -133,8 +133,8 @@ export const EntryBadge: React.FC<{ kind: IconKind; entry: { iconName?: string; 
   kind,
   entry,
 }) => (
-  <span className="ui-hud-slot ui-hud-slot--large shrink-0">
-    <GameIcon name={entry.iconName} kind={kind} size={34} color={entry.color} className="ui-hud-slot__icon" />
+  <span className="ui-hud-slot ui-hud-slot--large ui-hud-slot--tile shrink-0" style={tileStyle(entry.color)} data-kind={kind}>
+    <GameIcon name={entry.iconName} kind={kind} size={40} className="ui-hud-slot__icon" />
   </span>
 );
 

@@ -107,6 +107,14 @@ export const GameIcon: React.FC<{
   );
 };
 
+/**
+ * Colour of an icon tile (the hotbar, the picture of a card): the entry's chosen colour paints the
+ * tile and the picture sits on it in light ink, as action icons do in Baldur's Gate 3. Without a
+ * colour the kind of entry tints it (see primitives.css).
+ */
+export const tileStyle = (color?: string): React.CSSProperties | undefined =>
+  color ? ({ '--tile': color } as React.CSSProperties) : undefined;
+
 /** A picture by its catalogue id, for conditions and damage types. */
 export const CatalogIcon: React.FC<{ id: GameIconId; size?: number; className?: string }> = ({
   id,
