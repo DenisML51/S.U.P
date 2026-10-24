@@ -11,7 +11,8 @@
 }
 
 /* ------------------------------------------------------------------ High fantasy */
-/* Tolkien-era illumination: deep forest night, old gold, ivory, parchment for reading. */
+/* Tolkien-era illumination read off a star atlas: deep teal night, old gold, ivory, parchment
+   for reading. */
 :root,
 [data-setting='high-fantasy'] {
   --font-display: 'Cormorant SC', 'Cormorant Garamond', Georgia, serif;
@@ -19,12 +20,12 @@
   --display-tracking: 0.04em;
   --display-weight: 600;
 
-  --c-bg: 14 18 17;
-  --c-bg-deep: 7 9 9;
-  --c-surface: 22 28 26;
-  --c-surface-2: 31 38 35;
-  --c-inset: 11 14 13;
-  --c-line: 56 63 55;
+  --c-bg: 11 20 22;
+  --c-bg-deep: 5 10 11;
+  --c-surface: 16 29 31;
+  --c-surface-2: 23 40 42;
+  --c-inset: 8 16 17;
+  --c-line: 44 64 62;
   --c-frame: 178 152 100;
   --c-frame-bright: 228 206 152;
   --c-ink: 237 231 214;
