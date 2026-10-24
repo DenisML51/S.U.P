@@ -627,6 +627,49 @@ function weaponAttackFor(
 }
 
 // ------------------------------------------------------------------------------------------------
+// Where an entry comes from
+// ------------------------------------------------------------------------------------------------
+
+/**
+ * Where a granted entry of the sheet comes from, for people: "Вид «Эльф»", "Паладин, 2 уровень",
+ * "Черта «Бдительный» · Предыстория «Солдат»". `grant` is the entry's `grant` field.
+ */
+export function describeGrant(build: Build, grant: string | undefined): string | undefined {
+  if (!grant) return undefined;
+  const classDef = findClass(build.class);
+  if (grant === 'spellcasting') return classDef ? `Заклинания класса «${classDef.name}»` : undefined;
+  if (grant === 'build') return 'Класс, вид и предыстория';
+
+  const collected = collect(build);
+  const granted = collected.features.find((f) => f.key === grant);
+  const root = grant.split(':')[0];
+  const level = granted?.level ?? 1;
+  const subclass = findSubclass(classDef, build.subclass);
+  const origin =
+    root === 'species'
+      ? `Вид «${findSpecies(build.species)?.name ?? ''}»`
+      : root === 'background'
+        ? `Предыстория «${findBackground(build.background)?.name ?? ''}»`
+        : root === 'subclass' || root === 'casting'
+          ? `${subclass?.name ?? classDef?.name ?? ''}, ${level} уровень`
+          : `${classDef?.name ?? ''}, ${level} уровень`;
+
+  // A feat, a maneuver or an inline option names its own feature, then where it was picked.
+  const via = collected.features.find(
+    (f) => f.key !== grant && (f.source === 'feat' || f.source === 'option' || f.source === 'maneuver') && grant.startsWith(f.key),
+  );
+  const own =
+    granted?.source === 'feat'
+      ? `Черта «${granted.feature.name}»`
+      : granted?.source === 'maneuver'
+        ? 'Приём мастера боевых искусств'
+        : via?.source === 'feat'
+          ? `Черта «${via.feature.name}»`
+          : undefined;
+  return own ? `${own} · ${origin}` : origin;
+}
+
+// ------------------------------------------------------------------------------------------------
 // Level plans and options
 // ------------------------------------------------------------------------------------------------
 

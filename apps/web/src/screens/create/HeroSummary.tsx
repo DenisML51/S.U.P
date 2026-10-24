@@ -1,30 +1,56 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ATTRIBUTES_LIST,
   DND_ICONS,
   SKILLS_LIST,
   abilityModifier,
+  describeGrant,
   findClass,
   formatModifier,
   initiativeModifier,
   maxSanityOf,
   spellColor,
 } from '@itd/game-logic';
-import type { CharacterDraft, CharacterImages, Setting } from '@itd/schema';
+import type { ActionType, CharacterDraft, CharacterImages, Setting } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
 import { SettingEmblem } from '../../ui/art/emblems';
 import { GameIcon, tileStyle, type IconKind } from '../../ui/GameIcon';
 import { Prose } from '../../ui/Prose';
-import { Panel, cx } from '../../ui/primitives';
+import { ACTION_TYPES } from '../../ui/actionTypes';
+import { Dialog } from '../../ui/Dialog';
+import { Button, Panel, cx } from '../../ui/primitives';
 import { IconArmor, IconHealth, IconInitiative, IconSanity, IconSpeed } from '../../ui/icons';
 import { SETTING_INFO } from '../../ui/theme/settings';
 
-/** A block of the summary: the entries as hotbar tiles, named on hover. */
+/** Anything the summary shows as an icon: an attack, ability, spell or trait of the sheet. */
+interface SummaryEntry {
+  id: string;
+  name: string;
+  iconName?: string;
+  color?: string;
+  description?: string;
+  damage?: string;
+  damageType?: string;
+  actionType?: ActionType;
+  hitBonus?: number;
+  level?: number;
+  school?: string;
+  castingTime?: string;
+  range?: string;
+  duration?: string;
+  components?: string;
+  grant?: string;
+}
+
+const entryColor = (kind: IconKind, entry: SummaryEntry) => (kind === 'spell' ? spellColor(entry) : entry.color);
+
+/** A block of the summary: the entries as hotbar tiles, named on hover, told about on click. */
 const IconBlock: React.FC<{
   title: string;
   kind: IconKind;
-  entries: { id: string; name: string; iconName?: string; color?: string; damageType?: string }[];
-}> = ({ title, kind, entries }) =>
+  entries: SummaryEntry[];
+  onOpen: (entry: SummaryEntry, kind: IconKind) => void;
+}> = ({ title, kind, entries, onOpen }) =>
   entries.length === 0 ? null : (
     <section className="text-center">
       <h4 className="ui-summary__heading">
@@ -32,19 +58,68 @@ const IconBlock: React.FC<{
       </h4>
       <div className="flex flex-wrap justify-center gap-1.5">
         {entries.map((entry) => (
-          <span
+          <button
             key={entry.id}
+            type="button"
             className="ui-hud-slot ui-hud-slot--tile !h-9 !w-9"
             data-kind={kind}
-            style={tileStyle(kind === 'spell' ? spellColor(entry) : entry.color)}
+            style={tileStyle(entryColor(kind, entry))}
             title={entry.name}
+            aria-label={entry.name}
+            onClick={() => onOpen(entry, kind)}
           >
             <GameIcon name={entry.iconName} kind={kind} size={22} className="ui-hud-slot__icon" />
-          </span>
+          </button>
         ))}
       </div>
     </section>
   );
+
+/** The card of an icon of the summary: what it is, where it comes from, what it does. */
+const EntryCard: React.FC<{
+  open: { entry: SummaryEntry; kind: IconKind } | null;
+  source?: string;
+  onClose: () => void;
+}> = ({ open, source, onClose }) => {
+  const entry = open?.entry;
+  const kind = open?.kind ?? 'ability';
+  const facts = entry
+    ? [
+        entry.level !== undefined && (entry.level === 0 ? 'Заговор' : `${entry.level} круг`),
+        entry.school,
+        entry.castingTime ?? (entry.actionType && ACTION_TYPES[entry.actionType].label),
+        entry.range,
+        entry.duration,
+        entry.components,
+        entry.hitBonus !== undefined && `${formatModifier(entry.hitBonus)} к попаданию`,
+        entry.damage && `${entry.damage} ${entry.damageType?.toLowerCase() ?? ''}`.trim(),
+      ].filter(Boolean)
+    : [];
+  return (
+    <Dialog
+      open={!!open}
+      onClose={onClose}
+      width="md"
+      eyebrow={source}
+      title={entry?.name ?? ''}
+      icon={
+        entry && (
+          <span className="ui-hud-slot ui-hud-slot--tile ui-hud-slot--large shrink-0" data-kind={kind} style={tileStyle(entryColor(kind, entry))}>
+            <GameIcon name={entry.iconName} kind={kind} size={40} className="ui-hud-slot__icon" />
+          </span>
+        )
+      }
+      footer={
+        <Button variant="primary" onClick={onClose}>
+          Понятно
+        </Button>
+      }
+    >
+      {facts.length > 0 && <p className="mb-3 text-sm text-ink-faint">{facts.join(' · ')}</p>}
+      <Prose className="text-[15px] text-ink-muted">{entry?.description || 'Без описания.'}</Prose>
+    </Dialog>
+  );
+};
 
 /** A round figure under the scores: initiative, hit points and hit die, armour, speed, sanity. */
 const Badge: React.FC<{ icon: React.ReactNode; value: React.ReactNode; label: string }> = ({ icon, value, label }) => (
@@ -77,6 +152,10 @@ export const HeroSummary: React.FC<{
   const mastery = sheet.traits.find((t) => t.id === 'g-weapon-mastery')?.description;
   const hitDie = findClass(sheet.build?.class)?.hitDie;
   const features = sheet.traits.filter((t) => t.id !== 'g-proficiencies' && t.id !== 'g-weapon-mastery');
+  const [open, setOpen] = useState<{ entry: SummaryEntry; kind: IconKind } | null>(null);
+  const show = (entry: SummaryEntry, kind: IconKind) => setOpen({ entry, kind });
+  // An attack comes from a weapon of the kit; everything else names the feature that granted it.
+  const source = open && (open.kind === 'attack' ? 'Оружие из снаряжения' : sheet.build ? describeGrant(sheet.build, open.entry.grant) : undefined);
 
   return (
     <Panel className={cx('ui-scroll flex min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden px-5 py-5', className)}>
@@ -114,12 +193,12 @@ export const HeroSummary: React.FC<{
         <Badge icon={<IconSanity width={13} height={13} />} value={maxSanityOf(sheet)} label="Рассудок" />
       </div>
 
-      <IconBlock title="Атаки" kind="attack" entries={sheet.attacks} />
-      <IconBlock title="Действия" kind="ability" entries={sheet.abilities.filter((a) => a.actionType !== 'passive')} />
-      <IconBlock title="Пассивные умения" kind="ability" entries={sheet.abilities.filter((a) => a.actionType === 'passive')} />
-      <IconBlock title="Заговоры" kind="spell" entries={sheet.spells.filter((s) => s.level === 0)} />
-      <IconBlock title="Заклинания" kind="spell" entries={sheet.spells.filter((s) => s.level > 0 && s.prepared)} />
-      <IconBlock title="Особенности" kind="item" entries={features} />
+      <IconBlock title="Атаки" kind="attack" entries={sheet.attacks} onOpen={show} />
+      <IconBlock title="Действия" kind="ability" entries={sheet.abilities.filter((a) => a.actionType !== 'passive')} onOpen={show} />
+      <IconBlock title="Пассивные умения" kind="ability" entries={sheet.abilities.filter((a) => a.actionType === 'passive')} onOpen={show} />
+      <IconBlock title="Заговоры" kind="spell" entries={sheet.spells.filter((s) => s.level === 0)} onOpen={show} />
+      <IconBlock title="Заклинания" kind="spell" entries={sheet.spells.filter((s) => s.level > 0 && s.prepared)} onOpen={show} />
+      <IconBlock title="Особенности" kind="item" entries={features} onOpen={show} />
 
       {(proficiencies || skills.length > 0 || mastery) && (
         <section>
@@ -133,6 +212,7 @@ export const HeroSummary: React.FC<{
           {mastery && <Prose className="mt-2 text-[13px] text-ink-muted">{`**Мастерство:**\n\n${mastery}`}</Prose>}
         </section>
       )}
+      <EntryCard open={open} source={source ?? undefined} onClose={() => setOpen(null)} />
     </Panel>
   );
 };
