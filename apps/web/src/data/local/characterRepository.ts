@@ -17,6 +17,16 @@ export interface RepositoryChange {
 type Listener = (change: RepositoryChange) => void;
 
 /**
+ * Stored documents were valid when written, but the schema may have moved on since (a retired
+ * setting, a new default). Reads pass them through the schema so the UI always sees the current
+ * shape; a document that no longer parses is shown as stored rather than hidden.
+ */
+const normalize = (doc: Character): Character => {
+  const parsed = CharacterSchema.safeParse(doc);
+  return parsed.success ? parsed.data : doc;
+};
+
+/**
  * The device's copy of the player's characters. All reads of the UI and all writes go through here;
  * the sync engine reconciles it with the server in the background.
  *
@@ -56,12 +66,12 @@ export class CharacterRepository {
   /** Characters that are not deleted, oldest first (the order they were created in). */
   async list(): Promise<Character[]> {
     const rows = await this.db.characters.orderBy('createdAt').toArray();
-    return rows.filter((row) => !row.deleted).map((row) => row.doc);
+    return rows.filter((row) => !row.deleted).map((row) => normalize(row.doc));
   }
 
   async get(id: string): Promise<Character | undefined> {
     const row = await this.db.characters.get(id);
-    return row && !row.deleted ? row.doc : undefined;
+    return row && !row.deleted ? normalize(row.doc) : undefined;
   }
 
   async has(id: string): Promise<boolean> {

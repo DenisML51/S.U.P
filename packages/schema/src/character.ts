@@ -83,9 +83,11 @@ export const ItemTypeSchema = z.enum(['armor', 'weapon', 'ammunition', 'item']);
 export const WeaponClassSchema = z.enum(['melee', 'ranged']);
 export const ResistanceLevelSchema = z.enum(['resistance', 'vulnerability', 'immunity', 'none']);
 /** The universe a character comes from; drives the visual theme of the sheet. */
-export const SETTINGS = ['high-fantasy', 'grimdark', 'sci-fi', 'dark-fantasy'] as const;
+export const SETTINGS = ['high-fantasy', 'sci-fi', 'dark-fantasy'] as const;
 export const SettingSchema = z.enum(SETTINGS);
 export const DEFAULT_SETTING: z.infer<typeof SettingSchema> = 'high-fantasy';
+/** Settings that were merged into another one; documents saved with them read as their successor. */
+const RETIRED_SETTINGS: Record<string, z.infer<typeof SettingSchema>> = { grimdark: 'dark-fantasy' };
 
 export const HistoryEntryTypeSchema = z.enum(['health', 'sanity', 'resource', 'inventory', 'exp', 'other']);
 
@@ -319,7 +321,7 @@ export const CharacterSchema = passthroughObject({
 
   name: text(shortString.trim().min(1)),
   /** Absent on older sheets: they read as `DEFAULT_SETTING`. */
-  setting: text(SettingSchema.optional()),
+  setting: text(z.preprocess((v) => (typeof v === 'string' ? (RETIRED_SETTINGS[v] ?? v) : v), SettingSchema.optional())),
   race: shortTextOr(),
   subrace: optionalShortText,
   class: shortTextOr(),

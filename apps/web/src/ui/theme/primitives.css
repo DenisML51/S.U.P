@@ -13,7 +13,7 @@
      keeps one font-size meaning one visual size in every setting. */
   font-size-adjust: ex-height 0.5;
 }
-/* Section titles and buttons: grimdark carves them in capitals. */
+/* Section titles and buttons follow the setting's title case. */
 .ui-title,
 .ui-button {
   text-transform: var(--title-transform, none);
@@ -88,7 +88,6 @@
   mix-blend-mode: multiply;
 }
 
-
 /* Inset: wells for values and inputs. */
 .ui-panel--inset {
   background-color: rgb(var(--c-inset));
@@ -101,32 +100,10 @@
 }
 
 /* Chamfered settings cut the corners of plates. */
-[data-setting='grimdark'] .ui-panel:not(.ui-panel--inset) {
-  clip-path: polygon(
-    var(--chamfer) 0,
-    calc(100% - var(--chamfer)) 0,
-    100% var(--chamfer),
-    100% calc(100% - var(--chamfer)),
-    calc(100% - var(--chamfer)) 100%,
-    var(--chamfer) 100%,
-    0 calc(100% - var(--chamfer)),
-    0 var(--chamfer)
-  );
-}
+
 /* Grimdark plates: blackened iron under a heavy brass rim. Lists are plates too (a cogitator's
    slate, not a scroll), so the paper variant only shifts the iron a shade. */
-[data-setting='grimdark'] .ui-panel--paper::before { display: none; }
-[data-setting='grimdark'] .ui-panel:not(.ui-panel--inset) {
-  border-width: 2px;
-  border-color: rgb(var(--c-frame) / 0.7);
-  background-image:
-    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.018) 0 1px, transparent 1px 3px),
-    linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-surface)) 55%, rgb(var(--c-bg)));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    inset 0 0 0 1px rgb(0 0 0 / 0.6),
-    var(--shadow-panel);
-}
+
 /* Sci-fi plates are matte terminal panes: an even graphite surface under a hairline, square
    corners, no sheen, glow or ornament. Structure comes from rules and type, not from frames. */
 [data-setting='sci-fi'] .ui-panel,
@@ -221,9 +198,6 @@
 }
 .ui-button--danger:not(:disabled):hover { background: rgb(var(--c-danger) / 0.16); }
 
-[data-setting='grimdark'] .ui-button {
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-}
 /* Sci-fi: the primary command is a solid block of signal blue, the rest are hairline keys. */
 [data-setting='sci-fi'] .ui-button { font-size: 0.82em; letter-spacing: 0.1em; }
 [data-setting='sci-fi'] .ui-button--primary {
@@ -349,14 +323,7 @@
 [data-setting='sci-fi'] .ui-rule::before,
 [data-setting='sci-fi'] .ui-rule::after { background: rgb(var(--c-line)); }
 /* Grimdark: a double iron rule, as cut into a cathedral frieze. */
-[data-setting='grimdark'] .ui-rule::before,
-[data-setting='grimdark'] .ui-rule::after,
-[data-setting='grimdark'] .ui-rule--left::after {
-  height: 5px;
-  background: none;
-  border-top: 2px solid rgb(var(--c-frame) / 0.65);
-  border-bottom: 1px solid rgb(var(--c-frame) / 0.35);
-}
+
 [data-setting='sci-fi'] .ui-rule--left::after {
   height: 3px;
   background:
@@ -373,7 +340,7 @@
 /* ------------------------------------------------------------------ Interactive surfaces */
 /*
  * Hover and the active state differ by setting, not only by colour: gilt corners unfold in high
- * fantasy, a scan line runs along the edge in sci-fi, a red seal slides in for grimdark, darkness
+ * fantasy, a scan line runs along the edge in sci-fi, darkness
  * creeps from the edges in dark fantasy. `.ui-fx` is the effect layer the Panel renders.
  */
 .ui-interactive {
@@ -416,18 +383,6 @@
 }
 [data-setting='sci-fi'] .ui-interactive:hover .ui-fx,
 [data-setting='sci-fi'] .ui-interactive[data-active='true'] .ui-fx { transform: scaleY(1); }
-
-[data-setting='grimdark'] .ui-fx {
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: rgb(var(--c-accent));
-  transform: scaleY(0);
-  transform-origin: top;
-}
-[data-setting='grimdark'] .ui-interactive:hover .ui-fx,
-[data-setting='grimdark'] .ui-interactive[data-active='true'] .ui-fx { transform: scaleY(1); }
-[data-setting='grimdark'] .ui-interactive:hover,
-[data-setting='grimdark'] .ui-interactive[data-active='true'] { border-color: rgb(var(--c-frame-bright) / 0.85); }
 
 [data-setting='dark-fantasy'] .ui-fx {
   box-shadow: inset 0 0 40px rgb(var(--c-accent) / 0.35), inset 0 0 80px rgb(0 0 0 / 0.6);
@@ -489,7 +444,7 @@
 }
 .ui-panel--paper .ui-input::placeholder { color: rgb(var(--c-paper-ink) / 0.45); }
 
-/* The ribbon: a cloth bookmark in fantasy, a purity seal in grimdark, a status tab in sci-fi. */
+/* The ribbon: a cloth bookmark in fantasy, a status tab in sci-fi. */
 .ui-ledger__ribbon {
   position: absolute;
   top: -1px;
@@ -501,14 +456,7 @@
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
   box-shadow: 0 2px 4px rgb(0 0 0 / 0.3);
 }
-[data-setting='grimdark'] .ui-ledger__ribbon {
-  width: 28px;
-  height: 56px;
-  background:
-    radial-gradient(circle at 50% 22%, rgb(var(--c-accent)) 0 9px, rgb(0 0 0 / 0.25) 9.5px 10.5px, transparent 11px),
-    repeating-linear-gradient(180deg, rgb(var(--c-paper)) 0 3px, rgb(var(--c-paper-muted)) 3px 4px);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 75% 90%, 50% 100%, 25% 90%, 0 100%);
-}
+
 [data-setting='sci-fi'] .ui-ledger__ribbon { display: none; }
 [data-setting='dark-fantasy'] .ui-ledger__ribbon { background: rgb(var(--c-accent)); }
 .ui-panel--paper .ui-icon-button { color: rgb(var(--c-paper-ink) / 0.6); }
@@ -591,30 +539,6 @@
 
 /* Grimdark: an Administratum form. The heading is stamped on a dark iron band across the top of
    the vellum, the purity seal hangs over it, rows are ruled twice. */
-[data-setting='grimdark'] .ui-ledger__head {
-  margin-bottom: 0.35rem;
-  padding-top: 0.7rem;
-  padding-bottom: 0.6rem;
-  color: rgb(var(--c-ink));
-  background:
-    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.02) 0 1px, transparent 1px 3px),
-    linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-surface)));
-  border-bottom: 2px solid rgb(var(--c-frame) / 0.75);
-  box-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
-}
-[data-setting='grimdark'] .ui-ledger__head svg { color: rgb(var(--c-frame-bright)); }
-[data-setting='grimdark'] .ui-ledger__row { border-bottom: 3px double rgb(var(--c-paper-muted) / 0.4); }
-[data-setting='grimdark'] .ui-ledger__row:last-child { border-bottom: 0; }
-[data-setting='grimdark'] .ui-ledger__title { text-transform: none; }
-[data-setting='grimdark'] .ui-panel--paper .ui-button--secondary {
-  border-color: rgb(var(--c-paper-ink) / 0.55);
-  background: rgb(var(--c-paper-muted) / 0.12);
-}
-[data-setting='grimdark'] .ui-panel--paper .ui-button--secondary:not(:disabled):hover {
-  background: rgb(var(--c-accent));
-  border-color: rgb(var(--c-accent));
-  color: rgb(var(--c-accent-ink));
-}
 
 /* Dark fantasy: rules drawn by hand, thick where the pen touched down and fading out. */
 [data-setting='dark-fantasy'] .ui-ledger__row {
@@ -669,12 +593,7 @@
 }
 [data-setting='sci-fi'] .ui-toast--error { border-left-color: rgb(var(--c-danger)); }
 /* Grimdark: an iron plate with a red seal strip. */
-[data-setting='grimdark'] .ui-toast {
-  border-width: 2px;
-  border-color: rgb(var(--c-frame) / 0.6);
-  border-left: 5px solid rgb(var(--c-accent));
-  background: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-surface)));
-}
+
 /* Dark fantasy: worn, dark at the edges. */
 [data-setting='dark-fantasy'] .ui-toast { box-shadow: inset 0 0 26px rgb(0 0 0 / 0.7), 0 14px 30px -12px rgb(0 0 0 / 0.8); }
 
@@ -713,7 +632,6 @@
   border-color: rgb(var(--segment-tone));
 }
 [data-setting='sci-fi'] .ui-segmented__option { --segment-tone: var(--c-accent); }
-[data-setting='grimdark'] .ui-segmented__option { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.75rem; }
 
 .ui-switch {
   position: relative;
@@ -738,8 +656,6 @@
 }
 [aria-checked='true'] > .ui-switch { background: rgb(var(--c-accent) / 0.25); border-color: rgb(var(--c-accent) / 0.8); }
 [aria-checked='true'] > .ui-switch::after { transform: translateX(0.95rem); background: rgb(var(--c-frame-bright)); }
-[data-setting='grimdark'] .ui-switch,
-[data-setting='grimdark'] .ui-switch::after,
 [data-setting='sci-fi'] .ui-switch,
 [data-setting='sci-fi'] .ui-switch::after { border-radius: 0; }
 
@@ -845,15 +761,6 @@
 [data-setting='high-fantasy'] .ui-dialog__foot { border-top-color: rgb(var(--c-frame) / 0.25); }
 
 /* Grimdark: the heading is stamped on an iron band, as on the ledgers. */
-[data-setting='grimdark'] .ui-dialog__head {
-  margin-bottom: 1rem;
-  padding-top: 1.1rem;
-  background:
-    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.02) 0 1px, transparent 1px 3px),
-    linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-bg)));
-  border-bottom: 2px solid rgb(var(--c-frame) / 0.75);
-}
-[data-setting='grimdark'] .ui-dialog__eyebrow { color: rgb(var(--c-accent)); opacity: 1; font-weight: 600; }
 
 /* Sci-fi: a terminal window. A hairline under the header led by a short tab of blue. */
 [data-setting='sci-fi'] .ui-dialog__head {
@@ -897,12 +804,7 @@
 [data-setting='sci-fi'] .ui-dialog .ui-keyfacts dt { color: rgb(var(--c-ink-muted)); opacity: 1; }
 [data-setting='sci-fi'] .ui-keyfacts dd { font-family: var(--font-numeric); }
 /* Grimdark: figures stamped between bronze brackets. */
-[data-setting='grimdark'] .ui-dialog .ui-keyfacts > div {
-  padding: 0.2rem 0.8rem;
-  border-left: 2px solid rgb(var(--c-frame) / 0.8);
-  border-right: 2px solid rgb(var(--c-frame) / 0.8);
-}
-[data-setting='grimdark'] .ui-dialog .ui-keyfacts > div:last-child { flex: 0 1 auto; min-width: 0; }
+
 .ui-segmented--compact .ui-segmented__option { padding: 0 0.55rem; font-size: 0.8rem; }
 
 /* ------------------------------------------------------------------ Profile */
@@ -1005,14 +907,7 @@
 [data-setting='high-fantasy'] .ui-hud-slot[data-active] {
   box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), inset 0 0 0 2px rgb(var(--c-frame-bright) / 0.4), 0 0 14px rgb(var(--c-frame) / 0.35);
 }
-[data-setting='grimdark'] .ui-hud-slot {
-  border-width: 2px;
-  border-color: rgb(var(--c-frame) / 0.55);
-  background: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-inset)));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), inset 0 0 0 1px rgb(0 0 0 / 0.6);
-}
-[data-setting='grimdark'] .ui-hud-slot:hover,
-[data-setting='grimdark'] .ui-hud-slot[data-active] { border-color: rgb(var(--c-accent)); }
+
 /* Sci-fi: flat square keys; the picture is a flat glyph, no shadow or vignette. */
 [data-setting='sci-fi'] .ui-hud-slot {
   background: rgb(var(--c-inset));
@@ -1048,11 +943,7 @@
   color: rgb(var(--c-ink-muted));
   border-bottom: 1px solid rgb(var(--c-line) / 0.6);
 }
-[data-setting='grimdark'] .ui-hud-panel__head {
-  background: linear-gradient(180deg, rgb(var(--c-frame) / 0.22), rgb(var(--c-frame) / 0.08));
-  border-bottom: 2px solid rgb(var(--c-frame) / 0.5);
-  color: rgb(var(--c-ink));
-}
+
 [data-setting='sci-fi'] .ui-hud-panel__head {
   font-family: var(--font-display);
   letter-spacing: 0.14em;
@@ -1110,8 +1001,7 @@
   border-radius: 999px;
 }
 .ui-hud-chip--empty .ui-hud-chip__count { color: rgb(var(--c-danger)); border-color: rgb(var(--c-danger) / 0.6); }
-[data-setting='sci-fi'] .ui-hud-chip__count,
-[data-setting='grimdark'] .ui-hud-chip__count { border-radius: 0; }
+[data-setting='sci-fi'] .ui-hud-chip__count { border-radius: 0; }
 
 /* The portrait: the hero's face in the setting's frame; the frame tells their state. */
 .ui-hud-portrait {
@@ -1150,15 +1040,7 @@
   box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), 0 0 0 1px rgb(var(--portrait-frame) / 0.25), var(--shadow-panel);
 }
 [data-setting='high-fantasy'] .ui-hud-portrait > button { border-radius: 1rem; }
-[data-setting='grimdark'] .ui-hud-portrait {
-  border: 0;
-  padding: 3px;
-  background: rgb(var(--portrait-frame) / 0.75);
-  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
-}
-[data-setting='grimdark'] .ui-hud-portrait > button {
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-}
+
 /* Sci-fi: a square feed in a hairline; its state shows as a solid bar along the bottom. */
 [data-setting='sci-fi'] .ui-hud-portrait {
   --portrait-frame: var(--c-line);
@@ -1234,7 +1116,7 @@
   color: rgb(var(--c-ink));
 }
 [data-setting='high-fantasy'] .ui-vbar__track { border-radius: 999px; border-color: rgb(var(--c-frame) / 0.6); }
-[data-setting='grimdark'] .ui-vbar__track { border-width: 2px; }
+
 /* Sci-fi reads a bar as cells, like a suit's power gauge. */
 [data-setting='sci-fi'] .ui-vbar__track::after {
   content: '';
@@ -1285,8 +1167,7 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   background: linear-gradient(135deg, rgb(var(--c-frame-bright)) 0 50%, rgb(var(--c-accent)) 50% 100%);
 }
 .ui-swatch--selected { box-shadow: 0 0 0 2px rgb(var(--c-bg)), 0 0 0 3px rgb(var(--c-frame-bright)); }
-[data-setting='sci-fi'] .ui-swatch,
-[data-setting='grimdark'] .ui-swatch { border-radius: 0; }
+[data-setting='sci-fi'] .ui-swatch { border-radius: 0; }
 
 /* ------------------------------------------------------------------ Dice tray */
 .ui-die {
@@ -1320,9 +1201,8 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 }
 [data-setting='sci-fi'] .ui-die--in { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
 [data-setting='sci-fi'] .ui-die--in .ui-die__count { color: rgb(var(--c-ink)); background: rgb(var(--c-bg-deep)); }
-[data-setting='grimdark'] .ui-die { clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
-[data-setting='sci-fi'] .ui-die__count,
-[data-setting='grimdark'] .ui-die__count { border-radius: 0; }
+
+[data-setting='sci-fi'] .ui-die__count { border-radius: 0; }
 
 .ui-die-face {
   display: grid;
@@ -1401,21 +1281,10 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 
 /* ------------------------------------------------------------------ Grimdark details */
 /* Entry names are rubricated like an Administratum ledger: the first letter in seal crimson. */
-[data-setting='grimdark'] .ui-ledger__title::first-letter { color: rgb(var(--c-danger)); }
-[data-setting='grimdark'] .ui-section-title { color: rgb(var(--c-frame-bright)); font-size: 1.3rem; }
-[data-setting='grimdark'] .ui-corner { color: rgb(var(--c-frame)); }
+
 /* Proficiency is a stamped square, crimson when held. */
-[data-setting='grimdark'] .ui-prof-mark { transform: none; }
-[data-setting='grimdark'] .ui-prof-mark.bg-frame-bright { background: rgb(var(--c-danger)); border-color: rgb(var(--c-danger)); }
-[data-setting='grimdark'] .ui-prof-mark.outline { outline-color: rgb(var(--c-frame-bright) / 0.8); }
+
 /* The open section of the rail: a crimson banner hung from a brass rod. */
-[data-setting='grimdark'] .ui-rail__item[aria-current='page'] {
-  color: rgb(var(--c-frame-bright));
-  background: linear-gradient(90deg, rgb(var(--c-accent) / 0.45), rgb(var(--c-accent) / 0.12));
-}
-[data-setting='grimdark'] .ui-rail__item[aria-current='page'] .ui-rail__mark { width: 3px; background: rgb(var(--c-frame-bright)); }
-[data-setting='grimdark'] .ui-rail__item { text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-display); }
-[data-setting='grimdark'] .ui-stat__label { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em; }
 
 /* ------------------------------------------------------------------ Dark fantasy details */
 /* Plates are engraved: a tarnished brass rim and a second hairline cut a few pixels inside it,
@@ -1565,7 +1434,7 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 
 /* ------------------------------------------------------------------ Option tiles */
 /* An option of a choice (a feat, a spell, a lineage): quiet until chosen; the chosen look is the
-   setting's own selection (a solid block in sci-fi, a seal edge in grimdark, a gilt frame in
+   setting's own selection (a solid block in sci-fi, a gilt frame in
    fantasy). */
 .ui-option {
   position: relative;
@@ -1599,16 +1468,11 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   box-shadow: none;
 }
 [data-setting='sci-fi'] .ui-option[aria-pressed='true'] .ui-option__meta { color: rgb(var(--c-accent-ink) / 0.75); }
-[data-setting='grimdark'] .ui-option[aria-pressed='true'] {
-  border-color: rgb(var(--c-frame-bright) / 0.8);
-  background: linear-gradient(90deg, rgb(var(--c-accent) / 0.35), rgb(var(--c-accent) / 0.08));
-  box-shadow: inset 3px 0 0 rgb(var(--c-danger));
-}
+
 [data-setting='dark-fantasy'] .ui-option[aria-pressed='true'] {
   background: rgb(var(--c-frame) / 0.16);
   box-shadow: inset 0 0 0 3px rgb(var(--c-surface)), inset 0 0 0 4px rgb(var(--c-frame-bright) / 0.4);
 }
-
 
 /* Text inside a solid sci-fi selection takes the selection's ink. */
 [data-setting='sci-fi'] .ui-option[aria-pressed='true'] :is(.text-ink, .text-ink-muted, .text-ink-faint) { color: rgb(var(--c-accent-ink) / 0.85); }
@@ -1664,10 +1528,7 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-steps__item[aria-current='step'] .ui-steps__mark { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame-bright)); }
 [data-setting='sci-fi'] .ui-steps__mark { border-radius: 0; }
 [data-setting='sci-fi'] .ui-steps__item[aria-current='step'] .ui-steps__mark { background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
-[data-setting='grimdark'] .ui-steps__mark { border-radius: 0; transform: rotate(45deg); }
-[data-setting='grimdark'] .ui-steps__mark > * { transform: rotate(-45deg); }
-[data-setting='grimdark'] .ui-steps__item[aria-current='step'] .ui-steps__mark { background: rgb(var(--c-accent)); border-color: rgb(var(--c-frame-bright)); color: rgb(var(--c-accent-ink)); }
-[data-setting='grimdark'] .ui-steps__label,
+
 [data-setting='dark-fantasy'] .ui-steps__label,
 [data-setting='high-fantasy'] .ui-steps__label { font-family: var(--font-display); font-size: 1rem; }
 
@@ -1747,9 +1608,8 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 }
 [data-setting='sci-fi'] .ui-summary__badge,
 [data-setting='sci-fi'] .ui-summary__portrait { border-radius: 0; box-shadow: none; }
-[data-setting='grimdark'] .ui-summary__badge { border-radius: 0; transform: rotate(45deg); }
-[data-setting='grimdark'] .ui-summary__badge > * { transform: rotate(-45deg); }
-/* Fantasy keys are softened like enamelled tokens; grimdark iron and sci-fi keys stay square. */
+
+/* Fantasy keys are softened like enamelled tokens; sci-fi keys stay square. */
 [data-setting='high-fantasy'] .ui-hud-slot,
 [data-setting='high-fantasy'] .ui-hud-slot--tile { border-radius: 9px; }
 [data-setting='dark-fantasy'] .ui-hud-slot,
@@ -1766,4 +1626,4 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 }
 .ui-panel--paper .ui-damage-block { background: rgb(var(--c-paper-muted) / 0.12); border-color: rgb(var(--c-paper-muted) / 0.4); }
 [data-setting='sci-fi'] .ui-damage-block { border-left-color: rgb(var(--c-accent)); }
-[data-setting='grimdark'] .ui-damage-block { border-left-color: rgb(var(--c-danger)); }
+

@@ -2,7 +2,6 @@ import React from 'react';
 import type { Setting } from '@itd/schema';
 import { useSetting } from '../theme/SettingScope';
 import { starPath } from './highFantasy';
-import { AquilaGlyph } from './grimdark';
 
 /** Small heraldic mark of each setting, drawn in `currentColor` on a 32×32 grid. */
 const EMBLEMS: Record<Setting, React.ReactNode> = {
@@ -14,8 +13,6 @@ const EMBLEMS: Record<Setting, React.ReactNode> = {
       <path d="M16 24C11 24 8 21 7.5 17.5 11.5 17.5 15 20 16 24ZM16 21C21 21 24 18 24.5 14.5 20.5 14.5 17 17 16 21Z" fill="currentColor" />
     </>
   ),
-  // The double-headed eagle of the Imperium.
-  grimdark: <AquilaGlyph />,
   // A hexagonal node with an inner ring.
   'sci-fi': (
     <>

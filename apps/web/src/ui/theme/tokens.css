@@ -58,54 +58,6 @@
   --shadow-panel: 0 18px 40px -18px rgb(0 0 0 / 0.75);
 }
 
-/* ------------------------------------------------------------------ Grimdark */
-/* The Imperium of Man: blackened iron, worn brass, bone-white script and the crimson of purity
-   seals. Headings are carved Roman capitals; lists are iron cogitator plates, never parchment. */
-[data-setting='grimdark'] {
-  --font-display: 'Forum', 'Times New Roman', serif;
-  --font-numeric: 'Forum', 'Times New Roman', serif;
-  --display-tracking: 0.08em;
-  --display-weight: 400;
-  --title-transform: uppercase;
-
-  --c-bg: 11 11 12;
-  --c-bg-deep: 4 4 5;
-  --c-surface: 22 22 24;
-  --c-surface-2: 34 33 35;
-  --c-inset: 9 9 10;
-  --c-line: 60 56 52;
-  --c-frame: 112 98 76;
-  --c-frame-bright: 188 156 96;
-  --c-ink: 226 218 200;
-  --c-ink-muted: 160 150 132;
-  --c-ink-faint: 104 98 90;
-  --c-accent: 152 30 27;
-  --c-accent-ink: 240 228 206;
-  --c-paper: 24 23 25;
-  --c-paper-ink: 226 218 200;
-  --c-paper-muted: 118 106 90;
-
-  --c-hp: 170 32 28;
-  --c-temp-hp: 188 156 96;
-  --c-sanity: 108 130 98;
-  --c-xp: 188 156 96;
-  --c-armor: 150 152 154;
-  --c-success: 110 136 84;
-  --c-danger: 186 40 34;
-  --c-warning: 206 150 60;
-
-  --c-act-action: 188 156 96;
-  --c-act-bonus: 112 138 96;
-  --c-act-reaction: 186 52 40;
-  --c-act-passive: 128 124 136;
-
-  --radius: 0px;
-  --chamfer: 6px;
-  --panel-texture: var(--grain);
-  --panel-texture-opacity: 0.45;
-  --shadow-panel: 0 20px 44px -16px rgb(0 0 0 / 0.85);
-}
-
 /* ------------------------------------------------------------------ Sci-fi */
 /* A ship's data terminal: matte graphite, hairline rules, one signal blue. Selection is a solid
    block of colour, not a glow; warm orange is kept for alerts. */
