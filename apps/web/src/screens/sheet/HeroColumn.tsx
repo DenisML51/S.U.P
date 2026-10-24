@@ -43,7 +43,8 @@ export const HeroColumn: React.FC<{ character: Character; onShowConditions: () =
     <aside className="flex h-full w-[340px] shrink-0 flex-col border-r border-line/70 bg-surface/40">
       {/* Art with the name over its lower edge */}
       <div className="relative h-[210px] shrink-0 overflow-hidden">
-        <CharacterArt source={character} kind="full" className="absolute inset-0 h-full w-full" />
+        {/* The portrait suits this wide band better than the tall full art: the face stays in frame. */}
+        <CharacterArt source={character} kind="portrait" position="50% 12%" className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent" />
         <button
           type="button"
