@@ -1,7 +1,6 @@
 import React from 'react';
-import type { Setting } from '@itd/schema';
 import { SETTING_ART } from './art';
-import { SETTING_LIST } from './theme/settings';
+import { SETTING_LIST, type Theme } from './theme/settings';
 import { SettingScope } from './theme/SettingScope';
 import { cx } from './primitives';
 
@@ -9,7 +8,7 @@ import { cx } from './primitives';
  * Screen atmosphere of each setting. All of them are mounted at once and cross-fade, so moving
  * between characters of different settings morphs the atmosphere instead of swapping it.
  */
-export const SettingBackdrop: React.FC<{ setting: Setting; className?: string; strength?: number; frame?: boolean }> = ({
+export const SettingBackdrop: React.FC<{ setting: Theme; className?: string; strength?: number; frame?: boolean }> = ({
   setting,
   className,
   frame,

@@ -5,6 +5,7 @@
 @import './ui/theme/settings/dark-fantasy.css';
 @import './ui/theme/settings/cyberpunk.css';
 @import './ui/theme/settings/lovecraft.css';
+@import './ui/theme/service.css';
 
 @tailwind base;
 @tailwind components;

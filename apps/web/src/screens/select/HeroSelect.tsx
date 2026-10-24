@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { DEFAULT_SETTING, type CharacterPreview } from '@itd/schema';
+import type { CharacterPreview } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { CharacterArt, fullArtSrc } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
@@ -8,8 +8,8 @@ import { ConfirmDialog } from '../../ui/Dialog';
 import { Button, IconButton, Meter, Panel, cx } from '../../ui/primitives';
 import { SETTING_ART } from '../../ui/art';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
-import { SettingScope } from '../../ui/theme/SettingScope';
-import { settingOf, SETTING_INFO } from '../../ui/theme/settings';
+import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
+import { settingOf, SETTING_INFO, type Theme } from '../../ui/theme/settings';
 import {
   IconCreate,
   IconExport,
@@ -48,8 +48,9 @@ interface HeroSelectProps {
 }
 
 /**
- * The first screen after signing in: heroes as a row of cards, the focused one in front. The whole
- * screen takes the focused hero's setting, so browsing previews each universe before entering.
+ * The first screen after signing in: heroes as a row of cards, the focused one in front. The
+ * atmosphere takes the focused hero's setting, so browsing previews each universe before entering;
+ * the controls are the service's own and stay the same over every world.
  */
 export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings }) => {
   const heroes = useCharacterStore((s) => s.charactersList);
@@ -69,7 +70,9 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
   });
   const focusIndex = Math.min(index, slots.length - 1);
   const focused = slots[focusIndex]!;
-  const setting = focused.kind === 'hero' ? settingOf(focused.hero) : DEFAULT_SETTING;
+  // The world of the hero in front tints the atmosphere; the new-hero slot belongs to no world.
+  const world: Theme = focused.kind === 'hero' ? settingOf(focused.hero) : 'service';
+  useDocumentSetting('service');
 
   const [pendingDelete, setPendingDelete] = useState<CharacterPreview | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -106,29 +109,32 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
   const background = focused.kind === 'hero' ? fullArtSrc(focused.hero) : undefined;
 
   return (
-    <SettingScope setting={setting} className="ui-service ui-morph relative h-screen overflow-clip bg-bg">
-      {/* Atmosphere: the focused hero's art, blurred into the backdrop. */}
-      <AnimatePresence>
-        {background && (
-          <motion.img
-            key={background}
-            src={background}
-            alt=""
-            aria-hidden
-            className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover"
-            style={{ filter: 'blur(36px) saturate(0.7) brightness(0.4)' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.8 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.7 }}
-          />
-        )}
-      </AnimatePresence>
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: 'radial-gradient(ellipse at 50% 45%, transparent 20%, rgb(var(--c-bg-deep) / 0.92) 75%)' }}
-      />
-      <SettingBackdrop setting={setting} />
+    <SettingScope setting="service" className="relative h-screen overflow-clip bg-bg">
+      {/* Atmosphere in the focused hero's world: its colours, its backdrop and the hero's art blurred
+          into it. The account's controls over it are the service's own. */}
+      <SettingScope setting={world} className="ui-morph ui-atmosphere pointer-events-none absolute inset-0 isolate bg-bg">
+        <AnimatePresence>
+          {background && (
+            <motion.img
+              key={background}
+              src={background}
+              alt=""
+              aria-hidden
+              className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover"
+              style={{ filter: 'blur(36px) saturate(0.7) brightness(0.4)' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.8 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.7 }}
+            />
+          )}
+        </AnimatePresence>
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse at 50% 45%, transparent 20%, rgb(var(--c-bg-deep) / 0.92) 75%)' }}
+        />
+        <SettingBackdrop setting={world} />
+      </SettingScope>
 
       <div className="relative z-10 flex h-full flex-col">
         <motion.header
@@ -148,18 +154,22 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
 
         <main className="relative flex min-h-0 flex-1 items-center justify-center">
           <Carousel slots={slots} index={focusIndex} onFocus={setIndex} onPlay={play} onCreate={onCreate} />
-          <IconButton label="Предыдущий герой" className="absolute left-16" size={44} onClick={() => step(-1)} disabled={focusIndex === 0}>
-            <IconPrev width={26} height={26} />
-          </IconButton>
-          <IconButton
-            label="Следующий герой"
-            className="absolute right-16"
-            size={44}
-            onClick={() => step(1)}
-            disabled={focusIndex === slots.length - 1}
-          >
-            <IconNext width={26} height={26} />
-          </IconButton>
+          {/* Moving along the row and the hero's own actions belong to the hero: they wear its world,
+              which outranks the service theme (the service's type stays, as everywhere on this screen). */}
+          <SettingScope setting={world} className="ui-service ui-morph contents">
+            <IconButton label="Предыдущий герой" className="absolute left-16" size={44} onClick={() => step(-1)} disabled={focusIndex === 0}>
+              <IconPrev width={26} height={26} />
+            </IconButton>
+            <IconButton
+              label="Следующий герой"
+              className="absolute right-16"
+              size={44}
+              onClick={() => step(1)}
+              disabled={focusIndex === slots.length - 1}
+            >
+              <IconNext width={26} height={26} />
+            </IconButton>
+          </SettingScope>
         </main>
 
         <motion.footer
@@ -175,7 +185,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
             <input ref={fileInput} type="file" accept=".json,application/json" className="hidden" onChange={onImport} />
           </div>
 
-          <div className="flex flex-col items-center gap-4">
+          <SettingScope setting={world} className="ui-service ui-morph flex flex-col items-center gap-4">
             {focused.kind === 'hero' ? (
               <Button variant="primary" size="lg" className="min-w-[220px]" onClick={() => play(focused.hero)}>
                 Играть
@@ -186,18 +196,18 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
               </Button>
             )}
             <Strip slots={slots} index={focusIndex} onFocus={setIndex} />
-          </div>
+          </SettingScope>
 
-          <div className="flex w-64 justify-end gap-1">
+          <div className="flex w-64 justify-end">
             {focused.kind === 'hero' && (
-              <>
+              <SettingScope setting={world} className="ui-service ui-morph flex gap-1">
                 <IconButton label="Экспорт в файл" onClick={() => void exportToJSON(focused.hero.id)}>
                   <IconExport width={20} height={20} />
                 </IconButton>
                 <IconButton label="Удалить героя" onClick={() => setPendingDelete(focused.hero)}>
                   <IconTrash width={20} height={20} />
                 </IconButton>
-              </>
+              </SettingScope>
             )}
           </div>
         </motion.footer>
@@ -214,7 +224,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
         }
         confirmLabel="Удалить"
         danger
-        service
+        setting="service"
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => {
           if (pendingDelete) void deleteCharacter(pendingDelete.id);
@@ -346,7 +356,7 @@ const NewHeroCard: React.FC<{ focused: boolean; onClick: () => void }> = ({ focu
     aria-label="Создать нового героя"
     className="flex h-full w-full flex-col items-center justify-center gap-4 text-center"
   >
-    <span className="grid h-20 w-20 place-items-center rounded-full border border-frame/50 text-frame-bright">
+    <span className="ui-new-hero-mark grid h-20 w-20 place-items-center rounded-full border border-frame/50 text-frame-bright">
       <IconCreate width={36} height={36} />
     </span>
     <span className="ui-display text-2xl">Новый герой</span>
@@ -365,10 +375,9 @@ const Strip: React.FC<{ slots: Slot[]; index: number; onFocus: (index: number) =
         aria-label={slot.kind === 'hero' ? slot.hero.name : 'Новый герой'}
         onClick={() => onFocus(i)}
         className={cx(
-          'ui-morph h-11 w-11 overflow-hidden border transition-all',
+          'ui-strip-thumb h-11 w-11 overflow-hidden border transition-all',
           i === index ? 'scale-110 border-frame-bright' : 'border-line opacity-60 hover:opacity-100',
         )}
-        style={{ borderRadius: 'var(--radius)' }}
       >
         {slot.kind === 'hero' ? (
           <CharacterArt source={slot.hero} kind="portrait" className="h-full w-full" />

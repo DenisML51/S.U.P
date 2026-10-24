@@ -1,16 +1,16 @@
 import React from 'react';
-import type { Setting } from '@itd/schema';
+import type { Theme } from './theme/settings';
 import { SETTING_ART } from './art';
 import { useSetting } from './theme/SettingScope';
 
 /** The ornament set of the nearest setting scope, or of the one asked for. */
-export const useSettingArt = (setting?: Setting) => {
+export const useSettingArt = (setting?: Theme) => {
   const scope = useSetting();
   return SETTING_ART[setting ?? scope];
 };
 
 /** The setting's corner pieces on all four corners of the positioned parent; nothing in sci-fi. */
-export const Corners: React.FC<{ setting?: Setting }> = ({ setting }) => {
+export const Corners: React.FC<{ setting?: Theme }> = ({ setting }) => {
   const corner = useSettingArt(setting).corner;
   if (!corner) return null;
   return (

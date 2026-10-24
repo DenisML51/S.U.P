@@ -10,10 +10,9 @@ import { CombatScreen } from './screens/combat/CombatScreen';
 import { CreationScreen } from './screens/create/CreationScreen';
 import { SettingScope } from './ui/theme/SettingScope';
 import { Toasts } from './ui/Toasts';
-import { DEFAULT_SETTING } from '@itd/schema';
 
 const Loading: React.FC = () => (
-  <SettingScope setting={DEFAULT_SETTING} className="grid h-screen place-items-center bg-bg">
+  <SettingScope setting="service" className="grid h-screen place-items-center bg-bg">
     <span className="ui-display animate-pulse text-2xl text-frame-bright">S.U.P.</span>
   </SettingScope>
 );

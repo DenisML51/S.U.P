@@ -663,7 +663,8 @@
     border-color: rgb(var(--c-frame) / 0.6);
     box-shadow: inset 0 0 0 4px rgb(var(--c-bg)), inset 0 0 0 5px rgb(var(--c-frame) / 0.25), var(--shadow-panel);
   }
-  & > .ui-world .ui-world__name { font-weight: 600; letter-spacing: 0.04em; }
+  /* Small caps run wide: the name is set a size down to stay on one line, as the others do. */
+  & > .ui-world .ui-world__name { font-size: 1.7rem; font-weight: 600; letter-spacing: 0.02em; }
   & > .ui-world .ui-corner { width: 40px; height: 40px; opacity: 0.6; transition: width 400ms, height 400ms, opacity 400ms; }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-corner { width: 58px; height: 58px; opacity: 1; }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { transform: translateY(-3px); filter: drop-shadow(0 0 16px rgb(var(--c-frame-bright) / 0.65)); }

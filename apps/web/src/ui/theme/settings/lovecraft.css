@@ -685,9 +685,10 @@
 /* ------------------------------------------------------------------ The film */
 /* The whole screen is a reel of old film: grain that never holds still, dust and a hair now and
    then, a scratch running down the frame, the exposure trembling. Laid over everything, it takes
-   no clicks. The sheet, combat and creation put the setting on <html>; hero select on its root. */
+   no clicks. The sheet, combat and creation put the setting on <html>; hero select keeps it to its
+   atmosphere, under the cards, and fainter. */
 html[data-setting='lovecraft'] body::after,
-[data-setting='lovecraft'].ui-service::after {
+.ui-atmosphere[data-setting='lovecraft']::after {
   content: '';
   position: fixed;
   inset: -100px;
@@ -700,9 +701,9 @@ html[data-setting='lovecraft'] body::after,
   opacity: 0.07;
   animation: lc-grain 0.6s steps(6) infinite, lc-exposure 4.3s steps(1) infinite;
 }
-[data-setting='lovecraft'].ui-service::after { position: absolute; }
+.ui-atmosphere[data-setting='lovecraft']::after { position: absolute; opacity: 0.035; animation: lc-grain 0.6s steps(6) infinite; }
 html[data-setting='lovecraft'] body::before,
-[data-setting='lovecraft'].ui-service::before {
+.ui-atmosphere[data-setting='lovecraft']::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -713,7 +714,7 @@ html[data-setting='lovecraft'] body::before,
     radial-gradient(ellipse 75% 70% at 50% 50%, transparent 60%, rgb(0 0 0 / 0.35));
   animation: lc-scratch 7s steps(1) infinite;
 }
-[data-setting='lovecraft'].ui-service::before { position: absolute; }
+.ui-atmosphere[data-setting='lovecraft']::before { position: absolute; }
 :root {
   /* Film grain: grey noise, light and dark specks alike, so it shows on the darkest frame. */
   --lc-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncG type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncB type='linear' slope='2.2' intercept='-.6'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
@@ -774,8 +775,8 @@ html[data-setting='lovecraft'] body::before,
   [data-setting='lovecraft'] :is(.lc-glow, .lc-chart__mark, .lc-haze, .lc-fog, .ui-meter__fill, .ui-vbar__fill) { animation: none; }
   html[data-setting='lovecraft'] body::after,
   html[data-setting='lovecraft'] body::before,
-  [data-setting='lovecraft'].ui-service::after,
-  [data-setting='lovecraft'].ui-service::before { animation: none; }
+  .ui-atmosphere[data-setting='lovecraft']::after,
+  .ui-atmosphere[data-setting='lovecraft']::before { animation: none; }
 }
 
 /* ------------------------------------------------------------------ Level ready */

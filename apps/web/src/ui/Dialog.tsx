@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { Setting } from '@itd/schema';
+import type { Theme } from './theme/settings';
 import { useSetting, SettingScope } from './theme/SettingScope';
 import { Button, IconButton, Panel, Rule, cx } from './primitives';
 import { IconClose } from './icons';
@@ -25,10 +25,8 @@ interface DialogProps {
       the size of the new one. */
   swapKey?: string;
   width?: 'sm' | 'md' | 'lg' | 'xl';
-  /** The setting to wear when the dialog is opened outside any screen's scope (app settings). */
-  setting?: Setting;
-  /** Set in the service's own type rather than the setting's display face (app settings, hero select). */
-  service?: boolean;
+  /** The theme to wear instead of the surrounding one: `'service'` for the service's own dialogs. */
+  setting?: Theme;
   /** Paper suits reading (descriptions); plate suits forms. */
   variant?: 'plate' | 'paper';
   className?: string;
@@ -91,7 +89,6 @@ export const Dialog: React.FC<DialogProps> = ({
   width = 'md',
   variant = 'plate',
   setting: ownSetting,
-  service,
   className,
 }) => {
   const scopeSetting = useSetting();
@@ -127,7 +124,7 @@ export const Dialog: React.FC<DialogProps> = ({
       {open && (
         <SettingScope
           setting={setting}
-          className={cx('fixed inset-0 z-[200] flex items-start justify-center px-6 pt-[9vh]', service && 'ui-service')}
+          className={cx('fixed inset-0 z-[200] flex items-start justify-center px-6 pt-[9vh]')}
         >
           <motion.div
             className="absolute inset-0 bg-bg-deep/80"
@@ -233,16 +230,15 @@ export const ConfirmDialog: React.FC<{
   message: React.ReactNode;
   confirmLabel: string;
   danger?: boolean;
-  setting?: Setting;
-  service?: boolean;
+  setting?: Theme;
   onConfirm: () => void;
   onCancel: () => void;
-}> = ({ open, title, message, confirmLabel, danger = false, setting, service, onConfirm, onCancel }) => (
+}> = ({ open, title, message, confirmLabel, danger = false, setting, onConfirm, onCancel }) => (
   <Dialog
     open={open}
     onClose={onCancel}
     setting={setting}
-    service={service}
+
     title={title}
     width="sm"
     footer={
