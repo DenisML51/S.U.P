@@ -1,5 +1,6 @@
 import { byClassLevel, modifierOf } from '../../helpers';
-import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
+import type { BuildContext, ClassDef, FeatureDef, KitOption, SkillId, SubclassDef } from '../../types';
+import { ARTISAN_TOOL_NAMES } from '../equipment';
 import { FULL_CASTER_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
 
 /** Жрец of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
@@ -256,6 +257,221 @@ const war: SubclassDef = {
 };
 
 // ------------------------------------------------------------------------------------------------
+// Domains of the supplement books
+// ------------------------------------------------------------------------------------------------
+
+const KNOWLEDGE_SKILLS: { id: SkillId; name: string }[] = [
+  { id: 'history', name: 'История' },
+  { id: 'nature', name: 'Природа' },
+  { id: 'religion', name: 'Религия' },
+  { id: 'arcana', name: 'Тайная магия' },
+];
+
+const knowledge: SubclassDef = {
+  id: 'knowledge-domain',
+  name: 'Домен знаний',
+  description: 'Служитель учения и понимания: эксперт в древних знаниях, читающий мысли и творящий прорицания силой своего бога.',
+  source: 'Forgotten Realms: Heroes of Faerûn',
+  alwaysPrepared: {
+    3: ['command', 'comprehend-languages', 'detect-magic', 'detect-thoughts', 'identify', 'mind-spike'],
+    5: ['dispel-magic', 'nondetection', 'tongues'],
+    7: ['arcane-eye', 'banishment', 'confusion'],
+    9: ['legend-lore', 'scrying', 'synaptic-static'],
+  },
+  levels: {
+    3: [
+      {
+        id: 'knowledge.blessings-of-knowledge',
+        name: 'Благословенные знания',
+        description: 'Вы владеете одним видом инструментов ремесленника на выбор и двумя навыками из списка: История, Природа, Религия, Тайная магия. В выбранных навыках у вас Экспертность.',
+        iconName: 'gift-of-knowledge',
+        choices: [
+          { id: 'tool', label: 'Инструменты ремесленника', count: 1, options: { from: 'tools', list: ARTISAN_TOOL_NAMES } },
+          {
+            id: 'skills',
+            label: 'Навыки с Экспертностью (2)',
+            count: 2,
+            options: {
+              from: 'options',
+              options: KNOWLEDGE_SKILLS.map(({ id, name }) => ({
+                id,
+                name,
+                description: `Владение и Экспертность: ${name}.`,
+                effects: [
+                  { type: 'skill', skill: id },
+                  { type: 'expertise', skill: id },
+                ],
+              })),
+            },
+          },
+        ],
+      },
+      channelOption(
+        'knowledge.mind-magic',
+        'Магия разума',
+        'Действием «Магия» вы тратите Проведение божественности и сотворяете одно подготовленное заклинание Прорицания из списка заклинаний домена знаний — без ячейки и без материальных компонентов. Подходят: «Обнаружение магии», «Обнаружение мыслей», «Опознание», «Понимание языков», «Пронзание разума», «Языки», «Магический глаз», «Знание легенд», «Наблюдение».',
+        { iconName: 'third-eye', color: '#8fb3e0' },
+      ),
+    ],
+    6: [
+      {
+        id: 'knowledge.unfettered-mind',
+        name: 'Разум освобождённый',
+        description: 'Вы получаете телепатию на 60 футов и можете одновременно поддерживать связь с числом существ, равным модификатору Мудрости (минимум 1). Вы владеете спасбросками Интеллекта; если уже владели — выберите спасбросок другой характеристики (отметьте его на листе сами).',
+        action: 'passive',
+        effects: [{ type: 'save', attribute: 'intelligence' }],
+        iconName: 'psychic-waves',
+      },
+    ],
+    17: [
+      {
+        id: 'knowledge.divine-foresight',
+        name: 'Божественное предзнание',
+        description: 'Бонусным действием вы заглядываете в будущее: в течение часа все ваши тесты к20 совершаются с преимуществом. Раз в продолжительный отдых; использование можно вернуть, потратив ячейку 6-го круга или выше (без действия).',
+        action: 'bonus',
+        resource: { id: 'knowledge.divine-foresight', name: 'Божественное предзнание', max: 1, recharge: 'long', iconName: 'all-seeing-eye' },
+        iconName: 'all-seeing-eye',
+        color: '#8fb3e0',
+      },
+    ],
+  },
+};
+
+const grave: SubclassDef = {
+  id: 'grave-domain',
+  name: 'Домен упокоения',
+  description: 'Страж грани между жизнью и смертью: добивает раненых, проклинает врагов, не даёт союзникам умереть раньше срока и упокаивает нежить.',
+  source: 'Ravenloft: The Horrors Within',
+  alwaysPrepared: {
+    3: ['detect-evil-and-good', 'false-life', 'gentle-repose', 'ray-of-enfeeblement', 'spare-the-dying'],
+    5: ['revivify', 'vampiric-touch'],
+    7: ['blight', 'death-ward'],
+    9: ['dispel-evil-and-good', 'raise-dead'],
+  },
+  levels: {
+    3: [
+      {
+        id: 'grave.circle-of-mortality',
+        name: 'Круговорот жизни и смерти',
+        description:
+          '- **Толчок к смерти.** Раз в ход, нанося урон заклинанием или атакой существу, у которого хитов меньше максимума, вы добавляете 1к4 некротического урона (1к6 с 11-го уровня).\n- **Возвращение к жизни.** «Уход за умирающим» вы творите бонусным действием. Когда заклинание или Проведение божественности восстанавливает хиты существу с 0 хитов, вы не бросаете кости, а берёте максимум каждой (2к4 → 8).',
+        action: 'passive',
+        damage: (ctx) => (ctx.classLevel >= 11 ? '1d6' : '1d4'),
+        damageType: 'Некротический',
+        iconName: 'life-in-the-balance',
+        color: '#8a7fb8',
+      },
+      channelOption(
+        'grave.path-to-the-grave',
+        'Путь к могиле',
+        'Бонусным действием вы показываете священный символ и тратите Проведение божественности: видимое существо в пределах 30 футов проклято до начала вашего следующего хода и совершает броски атаки и спасброски с помехой. Когда вы или видимый вами союзник попадаете по нему атакой, вы можете снять проклятие (без действия), и эта атака наносит дополнительный некротический урон или урон излучением, равный уровню жреца.',
+        { action: 'bonus', damage: (ctx) => String(ctx.classLevel), damageType: 'Некротический', iconName: 'cursed-star', color: '#8a7fb8' },
+      ),
+    ],
+    6: [
+      {
+        id: 'grave.sentinel-at-deaths-door',
+        name: 'Страж на пороге смерти',
+        description: 'Когда атака попадает по вам или по Окровавленному существу, которое вы видите в пределах 60 футов, вы можете реакцией уменьшить её урон вдвое (с округлением вниз); критическое попадание при этом теряет все особые эффекты. Использований — модификатор Мудрости (минимум 1) за продолжительный отдых.',
+        action: 'reaction',
+        resource: { id: 'grave.sentinel-at-deaths-door', name: 'Страж на пороге смерти', max: modifierOf('wisdom'), recharge: 'long', iconName: 'checked-shield' },
+        iconName: 'checked-shield',
+      },
+    ],
+    17: [
+      channelOption(
+        'grave.improved-necromancy',
+        'Усовершенствованная некромантия',
+        'Творя заклинание Некромантии 5-го круга или ниже, нацеленное только на одно существо, или одно из заклинаний домена упокоения, вы можете потратить Проведение божественности и выбрать ещё одну цель в пределах дистанции. Расходуемые или имеющие цену материальные компоненты нужны на каждую цель.',
+        { action: 'passive', iconName: 'skull-staff' },
+      ),
+      {
+        id: 'grave.keeper-of-souls',
+        name: 'Хранитель душ',
+        description: 'Когда враг умирает в пределах 60 футов от вас, вы или другое существо в пределах 60 футов восстанавливаете хиты, равные удвоенному уровню жреца. Не работает, пока вы Недееспособны. Раз в короткий или продолжительный отдых; использование можно вернуть, потратив ячейку 6-го круга или выше (без действия).',
+        action: 'passive',
+        resource: { id: 'grave.keeper-of-souls', name: 'Хранитель душ', max: 1, recharge: 'shortOrLong', iconName: 'spectre' },
+        damage: (ctx) => String(2 * ctx.classLevel),
+        damageType: 'Лечение',
+        iconName: 'spectre',
+        color: '#7fc98a',
+      },
+    ],
+  },
+};
+
+const arcana: SubclassDef = {
+  id: 'arcana-domain',
+  name: 'Домен магии',
+  description: 'Хранитель тайн магии, который несёт её как дар: усиливает свои заклинания Проведением божественности, знает заговоры волшебника и под конец — его величайшие заклинания.',
+  source: 'Arcana Unleashed',
+  alwaysPrepared: {
+    3: ['detect-magic', 'magic-missile', 'magic-weapon', 'nystuls-magic-aura'],
+    5: ['counterspell', 'dispel-magic'],
+    7: ['arcane-eye', 'leomunds-secret-chest'],
+    9: ['bigbys-hand', 'teleportation-circle'],
+  },
+  levels: {
+    3: [
+      channelOption(
+        'arcana.empowering-spell',
+        'Изменение магии: укрепляющее заклинание',
+        'Сотворяя заклинание, вы можете потратить Проведение божественности (без действия): одна из целей заклинания получает временные хиты — 2к8 + уровень жреца.',
+        { action: 'passive', damage: (ctx) => `2d8+${ctx.classLevel}`, iconName: 'magic-shield', color: '#9b8fe0' },
+      ),
+      channelOption(
+        'arcana.persisting-spell',
+        'Изменение магии: упорное заклинание',
+        'Сотворяя заклинание, требующее спасброска, вы можете потратить Проведение божественности (без действия): если видимое вами существо преуспевает в спасброске, бросьте 1к6 и вычтите результат из этого спасброска.',
+        { action: 'passive', damage: '1d6', iconName: 'divided-spiral', color: '#9b8fe0' },
+      ),
+      {
+        id: 'arcana.arcane-initiate',
+        name: 'Изучающий магию',
+        description: 'Вы владеете навыком Тайная магия или другим навыком из списка жреца 1-го уровня. Вы узнаёте два заговора волшебника; они считаются для вас заклинаниями жреца. Повышая уровень жреца, один из них можно заменить другим заговором волшебника.',
+        iconName: 'crystal-wand',
+        choices: [
+          { id: 'skill', label: 'Навык', count: 1, options: { from: 'skills', list: ['arcana', 'history', 'insight', 'medicine', 'persuasion', 'religion'] } },
+          {
+            id: 'cantrips',
+            label: 'Заговоры волшебника (2)',
+            count: 2,
+            pool: 'arcana-cantrips',
+            spellAbility: 'wisdom',
+            options: { from: 'spells', lists: ['wizard'], maxLevel: 0 },
+          },
+        ],
+      },
+    ],
+    6: [
+      {
+        id: 'arcana.dispelling-recovery',
+        name: 'Рассеивающее восстановление',
+        description: 'Сразу после того, как вы сотворили заклинание, восстанавливающее хиты или снимающее состояние, вы можете тем же действием, бонусным действием или реакцией сотворить «Рассеивание магии» без ячейки. Раз в короткий или продолжительный отдых; использование можно вернуть, потратив Проведение божественности (без действия).',
+        action: 'passive',
+        resource: { id: 'arcana.dispelling-recovery', name: 'Рассеивающее восстановление', max: 1, recharge: 'shortOrLong', iconName: 'prism' },
+        iconName: 'prism',
+      },
+    ],
+    17: [
+      {
+        id: 'arcana.arcane-mastery',
+        name: 'Магическая искусность',
+        description: 'Вы узнаёте по одному заклинанию волшебника 6, 7, 8 и 9-го кругов; они всегда подготовлены. Повышая уровень жреца, одно из них можно заменить другим заклинанием волшебника того же круга (замену отметьте на листе).',
+        iconName: 'book-aura',
+        choices: [6, 7, 8, 9].map((circle) => ({
+          id: `spell-${circle}`,
+          label: `Заклинание волшебника ${circle}-го круга`,
+          count: 1,
+          spellAbility: 'wisdom' as const,
+          options: { from: 'spells' as const, lists: ['wizard' as const], minLevel: circle, maxLevel: circle },
+        })),
+      },
+    ],
+  },
+};
+
+// ------------------------------------------------------------------------------------------------
 // The class
 // ------------------------------------------------------------------------------------------------
 
@@ -393,8 +609,9 @@ export const CLERIC: ClassDef = {
   ],
   mentalStrength: 65,
   subclassLevel: 3,
-  subclasses: [life, light, trickery, war],
+  subclasses: [life, light, trickery, war, knowledge, grave, arcana],
   startingEquipment: CLERIC_KITS,
+  replaceable: [{ pool: 'arcana-cantrips', label: 'Замена заговора волшебника' }],
   spellcasting: {
     ability: 'wisdom',
     list: 'cleric',
@@ -502,5 +719,8 @@ export const CLERIC_ICONS = {
     'light-domain': 'sun',
     'trickery-domain': 'mirror-mirror',
     'war-domain': 'spartan-helmet',
+    'knowledge-domain': 'gift-of-knowledge',
+    'grave-domain': 'grim-reaper',
+    'arcana-domain': 'magic-swirl',
   } as Record<string, string>,
 };

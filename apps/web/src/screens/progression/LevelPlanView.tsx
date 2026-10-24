@@ -157,6 +157,7 @@ export const LevelPlanView: React.FC<{
                 onClick={() => chooseSubclass(subclass.id)}
               >
                 <span className="ui-display text-[1.02rem] leading-tight">{subclass.name}</span>
+                {subclass.source && <span className="ui-option__meta">{subclass.source}</span>}
                 <span className="mt-1 text-[13px] leading-snug text-ink-muted">{subclass.description}</span>
               </button>
             ))}

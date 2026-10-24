@@ -1,4 +1,4 @@
-import { byClassLevel } from '../../helpers';
+import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
 import { THIRD_CASTER_SLOTS, abilityScoreImprovement, epicBoon, subclassHeading, weaponMasteryChoice } from './shared';
 
@@ -336,6 +336,185 @@ const thief: SubclassDef = {
 };
 
 // ------------------------------------------------------------------------------------------------
+// Subclasses of the supplement books
+// ------------------------------------------------------------------------------------------------
+
+const BLOODTHIRST = 'scion-of-the-three.bloodthirst';
+
+/** The three dead gods of Dread Allegiance: resistance and a cantrip cast with Intelligence. */
+const DEAD_THREE: { id: string; name: string; damageType: string; resistance: string; cantrip: string; cantripName: string }[] = [
+  { id: 'bhaal', name: 'Баал', damageType: 'Яд', resistance: 'урону ядом', cantrip: 'blade-ward', cantripName: 'Защита от оружия' },
+  { id: 'bane', name: 'Бэйн', damageType: 'Психический', resistance: 'психическому урону', cantrip: 'minor-illusion', cantripName: 'Малая иллюзия' },
+  { id: 'myrkul', name: 'Миркул', damageType: 'Некротический', resistance: 'некротическому урону', cantrip: 'chill-touch', cantripName: 'Леденящее прикосновение' },
+];
+
+const scionOfTheThree: SubclassDef = {
+  id: 'scion-of-the-three',
+  name: 'Наследник троицы',
+  description: 'Плут, одарённый Мёртвой троицей — Баалом, Бэйном и Миркулом: телепортируется к раненым врагам, сеет страх и злобу.',
+  source: 'Forgotten Realms: Heroes of Faerûn',
+  levels: {
+    3: [
+      {
+        id: 'scion-of-the-three.bloodthirst',
+        name: 'Кровожадность',
+        description:
+          'Когда видимый вами враг в пределах 30 футов получает урон и после этого окровавлен (но не убит мгновенно), вы можете реакцией телепортироваться в видимое незанятое пространство в пределах 5 футов от него, а затем совершить одну рукопашную атаку. Использований — модификатор Интеллекта (минимум 1) за продолжительный отдых.',
+        action: 'reaction',
+        resource: { id: BLOODTHIRST, name: 'Кровожадность', max: modifierOf('intelligence'), recharge: 'long', iconName: 'bleeding-wound' },
+        iconName: 'bleeding-wound',
+        color: '#b0413e',
+      },
+      {
+        id: 'scion-of-the-three.dread-allegiance',
+        name: 'Ужасная преданность',
+        description:
+          'Вы выбираете одного из Троицы и получаете сопротивление урону и заговор (творится Интеллектом): Баал — яд, «Защита от оружия»; Бэйн — психический, «Малая иллюзия»; Миркул — некротический, «Леденящее прикосновение». После продолжительного отдыха божество можно сменить.',
+        iconName: 'pentacle',
+        choices: [
+          {
+            id: 'deity',
+            label: 'Божество Троицы',
+            count: 1,
+            hint: 'Можно сменить после продолжительного отдыха.',
+            options: {
+              from: 'options',
+              options: DEAD_THREE.map((god) => ({
+                id: god.id,
+                name: god.name,
+                description: `Сопротивление ${god.resistance}; заговор «${god.cantripName}» (Интеллект).`,
+                effects: [
+                  { type: 'resistance' as const, damageType: god.damageType },
+                  { type: 'spell' as const, spell: god.cantrip, alwaysPrepared: true, ability: 'intelligence' as const },
+                ],
+              })),
+            },
+          },
+        ],
+      },
+    ],
+    9: [
+      {
+        id: 'scion-of-the-three.strike-of-fear',
+        name: 'Удар страха',
+        description:
+          'Вы получаете вариант Хитрого удара **Удар страха** (стоимость 1к6): цель совершает спасбросок Мудрости, иначе испугана на 1 минуту и повторяет спасбросок в конце каждого своего хода. Пока она испугана так, ваши броски атаки по ней совершаются с преимуществом.',
+        action: 'passive',
+        saveAttribute: 'wisdom',
+        saveDC: dexDC,
+        iconName: 'terror',
+      },
+    ],
+    13: [
+      {
+        id: 'scion-of-the-three.aura-of-malevolence',
+        name: 'Аура злобы',
+        description:
+          'Телепортируясь Кровожадностью, вы выбираете существ в пределах 10 футов от места, откуда или куда переместились (на выбор). Каждое получает урон, равный модификатору Интеллекта, того типа, что дало божество Ужасной преданности; этот урон игнорирует сопротивление.',
+        action: 'passive',
+        iconName: 'death-zone',
+      },
+    ],
+    17: [
+      {
+        id: 'scion-of-the-three.dread-incarnate',
+        name: 'Воплощение ужаса',
+        description:
+          '**Головорез.** Завершив короткий отдых, вы восстанавливаете одно использование Кровожадности.\n\n**Убийственный замысел.** В бросках урона Коварной атаки результаты «1» и «2» на костях считаются «3».',
+        action: 'passive',
+        iconName: 'crowned-skull',
+      },
+    ],
+  },
+};
+
+const TOKENS = 'phantom.tokens-of-the-departed';
+
+const phantom: SubclassDef = {
+  id: 'phantom',
+  name: 'Фантом',
+  description: 'Плут на грани жизни и смерти: призрачные знания, стенания мертвецов в ударах и сувениры отлетевших душ.',
+  source: 'Ravenloft: The Horrors Within',
+  levels: {
+    3: [
+      {
+        id: 'phantom.whispers-of-the-dead',
+        name: 'Шёпот мёртвых',
+        description:
+          'Завершив короткий или продолжительный отдых, вы можете получить владение одним навыком или инструментом, которым ещё не владеете. Владение пропадает, когда вы снова используете это умение и выбираете другое.',
+        iconName: 'human-ear',
+      },
+      {
+        id: 'phantom.wails-from-the-grave',
+        name: 'Могильные стенания',
+        description:
+          'Сразу после того, как в свой ход вы наносите урон Коварной атакой, вы можете выбрать второе видимое существо в пределах 30 футов от первого: оно получает некротический урон — половина костей Коварной атаки (с округлением вверх). Использований — модификатор Ловкости (минимум 1) за продолжительный отдых.',
+        action: 'passive',
+        resource: { id: 'phantom.wails-from-the-grave', name: 'Могильные стенания', max: modifierOf('dexterity'), recharge: 'long', iconName: 'screaming' },
+        damage: (ctx) => `${Math.ceil(Math.ceil(ctx.classLevel / 2) / 2)}d6`,
+        damageType: 'Некротический',
+        iconName: 'screaming',
+        color: '#6c8a7a',
+      },
+    ],
+    9: [
+      {
+        id: 'phantom.tokens-of-the-departed',
+        name: 'Сувениры усопших',
+        description: [
+          'У вас есть сувениры усопших — Крошечные предметы с частицей силы мёртвых; отойдя от сувенира дальше чем на 30 футов, вы находите его на себе. Сувениров не больше 2 (3 с 13-го уровня, 4 с 17-го); новый сверх лимита уничтожает один из старых. Завершив продолжительный отдых с менее чем двумя сувенирами, вы доводите их число до двух.',
+          '- **Получение.** Когда видимое вами существо в пределах 30 футов умирает, вы можете реакцией получить новый сувенир.',
+          '- **Перезвон смерти.** Нанеся урон Коварной атакой в свой ход, вы можете уничтожить сувенир и сразу применить Могильные стенания, не тратя их использования.',
+          '- **Сущность жизни.** Пока у вас есть сувенир, спасброски от смерти и спасброски Телосложения вы совершаете с преимуществом.',
+          '- **Вопрос к духам.** Действием «Магия» вы уничтожаете сувенир и творите «Гадание» без компонентов (заклинательная характеристика — Телосложение). Если вы знаете, чей это сувенир, вместо этого можете задать его духу один вопрос — он отвечает кратко на языке, который знал при жизни.',
+        ].join('\n'),
+        action: 'reaction',
+        resource: {
+          id: TOKENS,
+          name: 'Сувениры усопших',
+          max: byClassLevel({ 9: 2, 13: 3, 17: 4 }),
+          recharge: 'none',
+          description: 'Максимум сувениров; продолжительный отдых доводит их число до двух.',
+          iconName: 'spectre',
+        },
+        effects: [{ type: 'spell', spell: 'augury', alwaysPrepared: true, ability: 'constitution', resourceId: TOKENS, note: 'Вопрос к духам: тратит сувенир' }],
+        iconName: 'spectre',
+      },
+      {
+        id: 'phantom.voice-of-the-dead',
+        name: 'Голос мёртвых',
+        description:
+          'Вы можете сотворить «Разговор с мёртвыми» без компонентов, используя Ловкость как заклинательную характеристику; возможность возвращается после короткого или продолжительного отдыха. Целью вместо трупа может быть ваш сувенир усопшего — тогда отвечает его дух.',
+        resource: { id: 'phantom.voice-of-the-dead', name: 'Голос мёртвых', max: 1, recharge: 'shortOrLong', iconName: 'skull-staff' },
+        effects: [{ type: 'spell', spell: 'speak-with-dead', alwaysPrepared: true, ability: 'dexterity', resourceId: 'phantom.voice-of-the-dead' }],
+        iconName: 'skull-staff',
+      },
+    ],
+    13: [
+      {
+        id: 'phantom.ghost-walk',
+        name: 'Призрачная походка',
+        description:
+          'Бонусным действием вы принимаете призрачную форму на 10 минут (или пока не прекратите её без действия):\n\n- **Полёт.** Скорость полёта 10 футов, вы можете парить.\n- **Зыбкий силуэт.** Броски атаки по вам совершаются с помехой.\n- **Бестелесное перемещение.** Вы проходите сквозь существ и предметы как по труднопроходимой местности; закончив ход внутри них, получаете 1к10 силового урона.\n\nРаз в продолжительный отдых; использование можно вернуть, уничтожив сувенир усопшего (без действия).',
+        action: 'bonus',
+        resource: { id: 'phantom.ghost-walk', name: 'Призрачная походка', max: 1, recharge: 'long' },
+        iconName: 'wing-cloak',
+      },
+    ],
+    17: [
+      {
+        id: 'phantom.deaths-friend',
+        name: 'Друг смерти',
+        description:
+          '**Скорбный вой.** Используя Могильные стенания, вы можете нанести их некротический урон и первому, и второму существу.\n\n**Притяжение смерти.** Бросая инициативу без единого сувенира усопшего, вы получаете один.',
+        action: 'passive',
+        iconName: 'death-skull',
+      },
+    ],
+  },
+};
+
+// ------------------------------------------------------------------------------------------------
 // The class
 // ------------------------------------------------------------------------------------------------
 
@@ -378,7 +557,7 @@ export const ROGUE: ClassDef = {
   ],
   mentalStrength: 50,
   subclassLevel: 3,
-  subclasses: [arcaneTrickster, assassin, soulknife, thief],
+  subclasses: [arcaneTrickster, assassin, soulknife, thief, scionOfTheThree, phantom],
   startingEquipment: ROGUE_KITS,
   levels: {
     1: [
@@ -419,7 +598,7 @@ export const ROGUE: ClassDef = {
       },
     ],
     3: [
-      subclassHeading('rogue', 'Подкласс плута', 'Вы выбираете подкласс: Мистический ловкач, Убийца, Клинок душ или Вор.'),
+      subclassHeading('rogue', 'Подкласс плута', 'Вы выбираете подкласс плута, который даёт умения на 3, 9, 13 и 17 уровнях.'),
       {
         id: 'rogue.steady-aim',
         name: 'Точное прицеливание',
@@ -531,5 +710,7 @@ export const ROGUE_ICONS = {
     assassin: 'hooded-assassin',
     soulknife: 'energy-sword',
     thief: 'lockpicks',
+    'scion-of-the-three': 'tentacles-skull',
+    phantom: 'ghost',
   } as Record<string, string>,
 };

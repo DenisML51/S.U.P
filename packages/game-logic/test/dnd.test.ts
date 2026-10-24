@@ -220,7 +220,7 @@ describe('hero creation from presets', () => {
       backgroundKitId: soldier.equipment[0]!.id,
     });
     expect(draft.class).toBe('Паладин');
-    expect(draft.subclass).toBe('Клятва мести');
+    expect(draft.subclass).toBe('Клятва возмездия');
     expect(draft.experience).toBe(900);
     expect(draft.currentHP).toBe(draft.maxHP);
     expect(draft.currency.gold).toBe(kitA.gold + backgroundGold);

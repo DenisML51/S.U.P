@@ -15,8 +15,11 @@ export interface SettingArt {
   bullet: (filled: boolean) => React.ReactNode;
   /** The setting's heraldic mark: a solid game picture, drawn in `currentColor`. */
   Emblem: React.FC<React.SVGProps<SVGSVGElement>>;
-  /** Screen atmosphere behind the content. */
-  Backdrop: React.FC;
+  /**
+   * Screen atmosphere behind the content. `frame: false` leaves out the flourishes on the screen
+   * corners (combat, where the bar has its own ornaments).
+   */
+  Backdrop: React.FC<{ frame?: boolean }>;
   /** Laid over the experience bar when a new level can be taken: the setting's own marvel. */
   LevelReady: React.FC;
   /** Drawn round the emblem of the setting's world card, if the setting has such a thing. */

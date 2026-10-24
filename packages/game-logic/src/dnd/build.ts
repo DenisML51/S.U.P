@@ -955,7 +955,7 @@ export function describeGrant(build: Build, grant: string | undefined): string |
     granted?.source === 'feat'
       ? `Черта «${granted.feature.name}»`
       : granted?.source === 'maneuver'
-        ? 'Приём мастера боевых искусств'
+        ? 'Приём мастера боя'
         : granted?.source === 'catalog'
           ? `${catalogOf(granted.feature)} «${granted.feature.name}»`
           : via?.source === 'feat'
@@ -1232,7 +1232,13 @@ export function choiceOptions(build: Build, level: number, open: OpenChoice): Op
       return LANGUAGES.map((name) => ({ id: name, name, description: '', iconName: 'scroll-unfurled', disabled: known.has(name) && !ownPicks.has(name) ? 'Уже знаете' : undefined }));
     }
     case 'options':
-      return source.options.map((o) => ({ id: o.id, name: o.name, description: o.description }));
+      // Options sharing a pool across levels (Arcane Shots) are not offered again once taken.
+      return source.options.map((o) => ({
+        id: o.id,
+        name: o.name,
+        description: o.description,
+        disabled: taken.has(o.id) && !ownPicks.has(o.id) ? 'Уже есть' : undefined,
+      }));
   }
 }
 

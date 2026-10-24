@@ -147,7 +147,7 @@ describe('ranger', () => {
 
   it('builds every subclass to level 20 without missing content', () => {
     const ranger = DND.classes.find((c) => c.id === 'ranger')!;
-    expect(ranger.subclasses.map((s) => s.id)).toEqual(['beast-master', 'fey-wanderer', 'gloom-stalker', 'hunter']);
+    expect(ranger.subclasses.filter((s) => !s.source).map((s) => s.id)).toEqual(['beast-master', 'fey-wanderer', 'gloom-stalker', 'hunter']);
     for (const subclass of ranger.subclasses) {
       const b = build({ level: 20, subclass: subclass.id });
       expect(unexpectedMissing(b)).toEqual([]);

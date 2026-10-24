@@ -1,5 +1,5 @@
-import { byClassLevel } from '../../helpers';
-import type { ClassDef, FeatureDef, SubclassDef } from '../../types';
+import { byClassLevel, modifierOf } from '../../helpers';
+import type { BuildContext, ChoiceDef, ClassDef, FeatureDef, OptionDef, SubclassDef } from '../../types';
 import { ARTISAN_TOOL_NAMES, FIGHTER_KITS } from '../equipment';
 import {
   THIRD_CASTER_SLOTS,
@@ -29,7 +29,7 @@ const extraAttack = (level: number, attacks: number, name: string): FeatureDef =
 
 const battleMaster: SubclassDef = {
   id: 'battle-master',
-  name: 'Мастер боевых искусств',
+  name: 'Мастер боя',
   description: 'Тактик, превращающий бой в науку: кости превосходства питают приёмы, которые сбивают, обезоруживают и направляют союзников.',
   levels: {
     3: [
@@ -339,6 +339,299 @@ const psiWarrior: SubclassDef = {
 };
 
 // ------------------------------------------------------------------------------------------------
+// Supplement subclasses
+// ------------------------------------------------------------------------------------------------
+
+/** "Up to Charisma modifier allies (at least one) in a 30-foot Emanation (60 feet from level 18)". */
+const BANNERET_ALLIES = 'до (модификатор Харизмы, минимум 1) союзников в эманации 30 футов (60 футов с 18-го уровня)';
+
+const banneret: SubclassDef = {
+  id: 'banneret',
+  name: 'Баннерет',
+  source: 'Forgotten Realms: Heroes of Faerûn',
+  description: 'Рыцарь-предводитель: его Второе дыхание и Всплеск действий поднимают в бой и лечат весь отряд.',
+  levels: {
+    3: [
+      {
+        id: 'banneret.knightly-envoy',
+        name: 'Посланник рыцарства',
+        description:
+          '**Понимание.** Вы можете сотворять «Понимание языков», но только как ритуал; заклинательная характеристика — Харизма.\n\n**Полиглот.** Вы изучаете один язык. После продолжительного отдыха его можно заменить другим, который вы слышали, читали или видели на языке жестов за последние 24 часа.\n\n**Поставленная речь.** Вы получаете владение одним навыком: Выступление, Запугивание, Проницательность или Убеждение.',
+        effects: [{ type: 'spell', spell: 'comprehend-languages', alwaysPrepared: true, ability: 'charisma', note: 'Только как ритуал' }],
+        choices: [
+          { id: 'language', label: 'Язык', count: 1, options: { from: 'languages' } },
+          { id: 'skill', label: 'Навык', count: 1, options: { from: 'skills', list: ['performance', 'intimidation', 'insight', 'persuasion'] } },
+        ],
+        iconName: 'scroll-quill',
+      },
+      {
+        id: 'banneret.group-recovery',
+        name: 'Групповое оздоровление',
+        description: `Восстанавливая хиты Вторым дыханием, вы можете выбрать ${BANNERET_ALLIES}: каждый восстанавливает 1к4 + уровень воина хитов. Раз в короткий или продолжительный отдых.`,
+        action: 'passive',
+        damage: (ctx) => `1d4+${ctx.classLevel}`,
+        damageType: 'Лечение',
+        resource: { id: 'banneret.group-recovery', name: 'Групповое оздоровление', max: 1, recharge: 'shortOrLong', iconName: 'rally-the-troops' },
+        iconName: 'rally-the-troops',
+        color: '#7fb069',
+      },
+    ],
+    7: [
+      {
+        id: 'banneret.team-tactics',
+        name: 'Групповая тактика',
+        description: 'Союзники, выбранные для Группового оздоровления, совершают с преимуществом все тесты к20 до начала вашего следующего хода.',
+        action: 'passive',
+        iconName: 'knight-banner',
+      },
+    ],
+    10: [
+      {
+        id: 'banneret.rallying-surge',
+        name: 'Воодушевляющий всплеск',
+        description: `Используя Всплеск действий, вы можете выбрать ${BANNERET_ALLIES}. Каждый может сразу реакцией либо совершить одну атаку оружием или безоружный удар, либо переместиться на половину своей скорости, не провоцируя атак.`,
+        action: 'passive',
+        iconName: 'sword-brandish',
+      },
+    ],
+    15: [
+      {
+        id: 'banneret.team-resilience',
+        name: 'Устойчивость команды',
+        description:
+          'Когда союзник, которого вы видите в пределах 60 футов, проваливает спасбросок, вы можете реакцией потратить использование Неукротимого: союзник перебрасывает спасбросок с бонусом, равным вашему уровню воина, и обязан взять новый результат.',
+        action: 'reaction',
+        usesResource: { id: 'fighter.indomitable' },
+        iconName: 'shield-reflect',
+      },
+    ],
+    18: [
+      {
+        id: 'banneret.inspiring-commander',
+        name: 'Вдохновляющий командир',
+        description:
+          '**Усиленное воодушевление.** Групповое оздоровление и Воодушевляющий всплеск действуют в эманации 60 футов.\n\n**Непоколебимая храбрость.** У вас иммунитет к состояниям «Испуганный» и «Очарованный».',
+        action: 'passive',
+        iconName: 'crowned-heart',
+      },
+    ],
+  },
+};
+
+const ARCANE_SHOT = 'arcane-archer.arcane-shot';
+const ARCANE_SHOTS_POOL = 'arcane-shots';
+/** Arcane Shot die by fighter level: d6, d8 from 10, d10 from 15, d12 from 18. */
+const arcaneDie = byClassLevel({ 3: 6, 10: 8, 15: 10, 18: 12 });
+const arcaneDice = (n: number) => (ctx: BuildContext) => `${n}d${arcaneDie(ctx)}`;
+const arcaneDC = (ctx: BuildContext) => 8 + ctx.proficiencyBonus + ctx.modifier('intelligence');
+
+/** One Arcane Shot option: a pick of the shared pool that puts its shot onto the sheet. */
+const arcaneShot = (
+  id: string,
+  name: string,
+  description: string,
+  extra: Pick<FeatureDef, 'damage' | 'damageType' | 'saveAttribute' | 'iconName' | 'color'>,
+): OptionDef => ({
+  id,
+  name,
+  description,
+  features: [
+    {
+      id: `arcane-archer.${id}`,
+      name,
+      description: `${description}\n\nТратит использование Чародейного выстрела; раз в ход, при дальнобойной атаке оружием со свойством «Боеприпас».`,
+      action: 'passive',
+      usesResource: { id: ARCANE_SHOT },
+      ...(extra.saveAttribute ? { saveDC: arcaneDC } : {}),
+      ...extra,
+    },
+  ],
+});
+
+const ARCANE_SHOT_OPTIONS: OptionDef[] = [
+  arcaneShot(
+    'bursting-arrow',
+    'Взрывной выстрел',
+    'Сразу после того, как атака нанесла урон существу, оно и все существа в эманации 10 футов от него получают силовой урон в 2 Кости чародейного выстрела.',
+    { damage: arcaneDice(2), damageType: 'Силовой', iconName: 'spiky-explosion', color: '#b36bd6' },
+  ),
+  arcaneShot(
+    'banishing-arrow',
+    'Изгоняющий выстрел',
+    'Цель попадания получает дополнительно 1 Кость чародейного выстрела психического урона и совершает спасбросок Харизмы. При провале она изгнана в демиплан: недееспособна, скорость 0; в конце своего следующего хода возвращается на прежнее место (или в ближайшее свободное).',
+    { damage: arcaneDice(1), damageType: 'Психический', saveAttribute: 'charisma', iconName: 'magic-portal' },
+  ),
+  arcaneShot(
+    'seeking-arrow',
+    'Ищущий выстрел',
+    'Без броска атаки: выберите существо, которое вы видели за последнюю минуту. Снаряд летит к нему, огибая углы и игнорируя укрытие на половину и на три четверти. Если цель в пределах максимальной дистанции оружия, она совершает спасбросок Ловкости: при провале вы узнаёте, где она, и она получает урон как от попадания плюс 2 Кости чародейного выстрела силового урона, при успехе — половину.',
+    { damage: arcaneDice(2), damageType: 'Силовой', saveAttribute: 'dexterity', iconName: 'crosshair' },
+  ),
+  arcaneShot(
+    'enfeebling-arrow',
+    'Ослабляющий выстрел',
+    'Цель попадания получает дополнительно 1 Кость чародейного выстрела некротического урона и совершает спасбросок Телосложения. При провале она отравлена до конца своего следующего хода, и урон каждой её попавшей атаки уменьшается на бросок 1 Кости чародейного выстрела.',
+    { damage: arcaneDice(1), damageType: 'Некротический', saveAttribute: 'constitution', iconName: 'death-skull' },
+  ),
+  arcaneShot(
+    'piercing-arrow',
+    'Пронзающий выстрел',
+    'Без броска атаки: снаряд становится нематериальным и пролетает линию длиной 30 футов и шириной 1 фут, игнорируя укрытие. Каждое существо на линии совершает спасбросок Ловкости: при провале получает урон как от попадания плюс 2 Кости чародейного выстрела колющего урона, при успехе — половину.',
+    { damage: arcaneDice(2), damageType: 'Колющий', saveAttribute: 'dexterity', iconName: 'arrow-cluster' },
+  ),
+  arcaneShot(
+    'shadow-arrow',
+    'Тьмяной выстрел',
+    'Цель попадания получает дополнительно 1 Кость чародейного выстрела психического урона и совершает спасбросок Мудрости, иначе ослеплена до конца своего следующего хода.',
+    { damage: arcaneDice(1), damageType: 'Психический', saveAttribute: 'wisdom', iconName: 'blindfold' },
+  ),
+  arcaneShot(
+    'grasping-arrow',
+    'Удерживающий выстрел',
+    'Цель попадания получает дополнительно 1 Кость чародейного выстрела рубящего урона и совершает спасбросок Силы, иначе опутана колючими ветвями на 1 минуту или до вашего следующего Удерживающего выстрела. Действием цель или существо рядом с ней может совершить проверку Силы (Атлетика) против СЛ выстрела и при успехе освободить её.',
+    { damage: arcaneDice(1), damageType: 'Рубящий', saveAttribute: 'strength', iconName: 'thorny-vine' },
+  ),
+  arcaneShot(
+    'beguiling-arrow',
+    'Чарующий выстрел',
+    'Цель попадания получает дополнительно 2 Кости чародейного выстрела психического урона и совершает спасбросок Мудрости, иначе очарована вами или союзником в пределах 30 футов от неё (на ваш выбор) до конца своего следующего хода. Очарование кончается, если источник атакует цель, наносит ей урон или вынуждает её совершить спасбросок.',
+    { damage: arcaneDice(2), damageType: 'Психический', saveAttribute: 'wisdom', iconName: 'charm' },
+  ),
+];
+
+const arcaneShotChoice = (count: number): ChoiceDef => ({
+  id: 'arcane-shots',
+  label: count > 1 ? `Чародейные выстрелы (${count})` : 'Чародейный выстрел',
+  count,
+  pool: ARCANE_SHOTS_POOL,
+  options: { from: 'options', options: ARCANE_SHOT_OPTIONS },
+});
+
+const newArcaneShot = (level: number): FeatureDef => ({
+  id: `arcane-archer.arcane-shot-${level}`,
+  name: 'Новый чародейный выстрел',
+  description: 'Вы изучаете ещё один вариант Чародейного выстрела и можете заменить один известный вариант другим.',
+  hidden: true,
+  choices: [arcaneShotChoice(1)],
+});
+
+const arcaneArcher: SubclassDef = {
+  id: 'arcane-archer',
+  name: 'Чародейный стрелок',
+  source: 'Arcana Unleashed',
+  description: 'Стрелок эльфийской школы, вплетающий магию в каждый выстрел: снаряды изгоняют, ослепляют, взрываются и находят цель за углом.',
+  levels: {
+    3: [
+      {
+        id: 'arcane-archer.lore',
+        name: 'Знания чародейных стрелков',
+        description:
+          '**Заговор.** Вы изучаете «Искусство друидов» или «Фокусы»; заклинательная характеристика — Интеллект.\n\n**Навыки.** Вы получаете владение навыками Природа и Тайная магия. Если вы уже владели одним из них (или обоими), возьмите взамен другой навык из списка воина 1-го уровня.',
+        effects: [
+          { type: 'skill', skill: 'nature' },
+          { type: 'skill', skill: 'arcana' },
+        ],
+        choices: [
+          {
+            id: 'cantrip',
+            label: 'Заговор',
+            count: 1,
+            options: {
+              from: 'options',
+              options: [
+                {
+                  id: 'druidcraft',
+                  name: 'Искусство друидов',
+                  description: 'Заговор друида, творится Интеллектом.',
+                  effects: [{ type: 'spell', spell: 'druidcraft', alwaysPrepared: true, ability: 'intelligence' }],
+                },
+                {
+                  id: 'prestidigitation',
+                  name: 'Фокусы',
+                  description: 'Заговор волшебника, творится Интеллектом.',
+                  effects: [{ type: 'spell', spell: 'prestidigitation', alwaysPrepared: true, ability: 'intelligence' }],
+                },
+              ],
+            },
+          },
+        ],
+        iconName: 'book-aura',
+      },
+      {
+        id: ARCANE_SHOT,
+        name: 'Чародейный выстрел',
+        description:
+          'Раз в ход, совершая дальнобойную атаку оружием со свойством «Боеприпас», вы можете применить к ней известный вам вариант Чародейного выстрела (если вариант без броска атаки — решаете при попадании и уроне). Вы знаете 2 варианта, ещё по одному на 7, 10, 15 и 18-м уровнях; изучая новый, можно заменить известный. Использований — модификатор Интеллекта (минимум 1), восстанавливаются после короткого или продолжительного отдыха. Кость чародейного выстрела: к6, к8 с 10-го уровня, к10 с 15-го, к12 с 18-го. СЛ = 8 + бонус мастерства + модификатор Интеллекта.',
+        action: 'passive',
+        saveDC: arcaneDC,
+        resource: {
+          id: ARCANE_SHOT,
+          name: 'Чародейный выстрел',
+          max: modifierOf('intelligence'),
+          recharge: 'shortOrLong',
+          description: 'Кость чародейного выстрела: к6, к8 с 10-го уровня, к10 с 15-го, к12 с 18-го.',
+          iconName: 'high-shot',
+        },
+        choices: [arcaneShotChoice(2)],
+        iconName: 'high-shot',
+        color: '#8a7cf0',
+      },
+    ],
+    7: [
+      {
+        id: 'arcane-archer.curving-shot',
+        name: 'Странствующая стрела',
+        description:
+          'Промахнувшись дальнобойной атакой оружием со свойством «Боеприпас», вы можете сразу бонусным действием перенаправить снаряд в другое видимое существо в пределах дистанции оружия и не далее 60 футов от первой цели.',
+        action: 'bonus',
+        iconName: 'target-arrows',
+      },
+      {
+        id: 'arcane-archer.magic-ammunition',
+        name: 'Магические боеприпасы',
+        description:
+          'Действием «Магия» вы заряжаете немагический снаряд одним из свойств и стреляете им в видимую твёрдую поверхность в пределах дистанции оружия; снаряд крепится к ней, пока действует эффект, затем разрушается (действием «Магия» его можно открепить и закончить эффект раньше).\n\n- **Затемняющий:** тени заполняют эманацию 15 футов на 1 минуту, гасят немагический огонь; существа в ней получают −5 к проверкам Мудрости (Восприятие) и пассивному Восприятию.\n- **Открывающий:** громкий щелчок (слышен за 300 футов); в эманации 15 футов размыкается по одному немагическому замку на каждом объекте, заклинившее расклинивается, засовы снимаются.\n- **Лозовой:** вырастает лоза длиной 120 футов, по которой можно лазать; усыхает через 10 минут.\n\nРаз в короткий или продолжительный отдых; использование можно вернуть, потратив использование Второго дыхания.',
+        action: 'action',
+        resource: { id: 'arcane-archer.magic-ammunition', name: 'Магические боеприпасы', max: 1, recharge: 'shortOrLong', iconName: 'vine-whip' },
+        iconName: 'vine-whip',
+      },
+      newArcaneShot(7),
+    ],
+    10: [
+      {
+        id: 'arcane-archer.ready-shot',
+        name: 'Заготовленный выстрел',
+        description: 'Совершая бросок инициативы, вы восстанавливаете одно потраченное использование Чародейного выстрела.',
+        action: 'passive',
+        iconName: 'hourglass',
+      },
+      newArcaneShot(10),
+    ],
+    15: [
+      {
+        id: 'arcane-archer.indomitable-teleport',
+        name: 'Неукротимая телепортация',
+        description: 'Когда благодаря Неукротимому вы преуспеваете в спасброске, вы можете телепортироваться в видимое свободное пространство в пределах 60 футов.',
+        action: 'passive',
+        iconName: 'teleport',
+      },
+      newArcaneShot(15),
+    ],
+    18: [
+      {
+        id: 'arcane-archer.masterful-archery',
+        name: 'Мастерская стрельба',
+        description:
+          'Когда видимое вами существо промахивается по вам атакой, вы можете реакцией переместиться на половину скорости, не провоцируя атак, а затем в рамках той же реакции совершить дальнобойную атаку по нему, если оно в пределах дистанции оружия.',
+        action: 'reaction',
+        iconName: 'archer',
+      },
+      newArcaneShot(18),
+    ],
+  },
+};
+
+// ------------------------------------------------------------------------------------------------
 // The class
 // ------------------------------------------------------------------------------------------------
 
@@ -363,8 +656,11 @@ export const FIGHTER: ClassDef = {
   ],
   mentalStrength: 55,
   subclassLevel: 3,
-  subclasses: [battleMaster, champion, eldritchKnight, psiWarrior],
-  replaceable: [{ pool: 'maneuvers', label: 'Замена приёма' }],
+  subclasses: [battleMaster, champion, eldritchKnight, psiWarrior, banneret, arcaneArcher],
+  replaceable: [
+    { pool: 'maneuvers', label: 'Замена приёма' },
+    { pool: ARCANE_SHOTS_POOL, label: 'Замена чародейного выстрела' },
+  ],
   startingEquipment: FIGHTER_KITS,
   levels: {
     1: [
@@ -420,7 +716,7 @@ export const FIGHTER: ClassDef = {
       {
         id: 'fighter.subclass',
         name: 'Подкласс воина',
-        description: 'Вы выбираете подкласс: Мастер боевых искусств, Чемпион, Мистический рыцарь или Пси-воин.',
+        description: 'Вы выбираете подкласс: Мастер боя, Чемпион, Мистический рыцарь, Пси-воин, Баннерет или Чародейный стрелок.',
         hidden: true,
       },
     ],
@@ -443,11 +739,11 @@ export const FIGHTER: ClassDef = {
     9: [
       {
         id: 'fighter.indomitable',
-        name: 'Упорный',
+        name: 'Неукротимый',
         description:
           'Провалив спасбросок, вы можете перебросить его с бонусом, равным уровню воина, и должны использовать новый результат. Раз в продолжительный отдых (дважды с 13-го уровня, трижды с 17-го).',
         action: 'passive',
-        resource: { id: 'fighter.indomitable', name: 'Упорный', max: byClassLevel({ 9: 1, 13: 2, 17: 3 }), recharge: 'long', iconName: 'checked-shield' },
+        resource: { id: 'fighter.indomitable', name: 'Неукротимый', max: byClassLevel({ 9: 1, 13: 2, 17: 3 }), recharge: 'long', iconName: 'checked-shield' },
         iconName: 'checked-shield',
       },
       {

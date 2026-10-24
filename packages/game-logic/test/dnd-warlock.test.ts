@@ -163,7 +163,7 @@ describe('warlock', () => {
 
   it('builds every patron to level 20 without missing content', () => {
     const warlock = DND.classes.find((c) => c.id === 'warlock')!;
-    expect(warlock.subclasses.map((s) => s.id)).toEqual(['archfey-patron', 'celestial-patron', 'fiend-patron', 'great-old-one-patron']);
+    expect(warlock.subclasses.filter((s) => !s.source).map((s) => s.id)).toEqual(['archfey-patron', 'celestial-patron', 'fiend-patron', 'great-old-one-patron']);
     for (const subclass of warlock.subclasses) {
       const b = build({ level: 20, subclass: subclass.id });
       expect(unexpectedMissing(b)).toEqual([]);

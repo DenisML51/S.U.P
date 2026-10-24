@@ -238,7 +238,7 @@ export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => 
             <h4 className="ui-display mb-2 text-[1.05rem] text-ink">Подклассы с {classDef.subclassLevel}-го уровня</h4>
             <div className="mb-6 grid grid-cols-4 gap-1.5">
               {classDef.subclasses.map((subclass) => (
-                <div key={subclass.id} className="ui-origin cursor-default" title={subclass.description}>
+                <div key={subclass.id} className="ui-origin cursor-default" title={[subclass.source, subclass.description].filter(Boolean).join(' · ')}>
                   <GameIcon name={DND_ICONS.subclasses[subclass.id]} kind="ability" size={34} className="ui-origin__icon" />
                   <span className="ui-origin__name">{subclass.name}</span>
                 </div>

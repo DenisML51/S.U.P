@@ -323,6 +323,8 @@ export interface SubclassDef {
   id: string;
   name: string;
   description: string;
+  /** The book of a subclass outside the Player's Handbook ("Forgotten Realms", "Ravenloft", "Arcana Unleashed"). */
+  source?: string;
   /** Features by class level. */
   levels: Record<number, FeatureDef[]>;
   spellcasting?: SpellcastingDef;

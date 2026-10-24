@@ -218,7 +218,7 @@ export const CombatScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenS
     <SheetDialogsProvider>
       <SettingScope setting={setting} className="relative h-screen overflow-clip bg-bg">
         {/* The setting's atmosphere (the star atlas of high fantasy…) behind the bar, not the hero's art. */}
-        <SettingBackdrop setting={setting} strength={0.85} />
+        <SettingBackdrop setting={setting} strength={0.85} frame={false} />
         <CombatHud character={character} onOpenSettings={onOpenSettings} />
         <SheetDialogHost />
         <SlotPrompt />

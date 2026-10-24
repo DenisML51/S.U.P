@@ -120,7 +120,7 @@ describe('cleric', () => {
 
   it('builds every domain at level 20 with nothing missing but spells still being written', () => {
     const cleric = DND.classes.find((c) => c.id === 'cleric')!;
-    expect(cleric.subclasses.map((s) => s.id)).toEqual(['life-domain', 'light-domain', 'trickery-domain', 'war-domain']);
+    expect(cleric.subclasses.filter((s) => !s.source).map((s) => s.id)).toEqual(['life-domain', 'light-domain', 'trickery-domain', 'war-domain']);
     for (const subclass of cleric.subclasses) {
       const { character, missing } = run(build({ level: 20, subclass: subclass.id }));
       expect(character.subclass).toBe(subclass.name);

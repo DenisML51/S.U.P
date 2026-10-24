@@ -92,7 +92,7 @@ describe('Monk', () => {
 
   it('applies every subclass at level 20 with nothing missing', () => {
     const monk = DND.classes.find((c) => c.id === 'monk')!;
-    expect(monk.subclasses.map((s) => s.id).sort()).toEqual([
+    expect(monk.subclasses.filter((s) => !s.source).map((s) => s.id).sort()).toEqual([
       'warrior-of-mercy',
       'warrior-of-shadow',
       'warrior-of-the-elements',

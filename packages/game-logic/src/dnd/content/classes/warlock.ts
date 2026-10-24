@@ -325,6 +325,210 @@ const greatOldOne: SubclassDef = {
 };
 
 // ------------------------------------------------------------------------------------------------
+// Patrons of other books
+// ------------------------------------------------------------------------------------------------
+
+const FORM_OF_DREAD = 'undead.form-of-dread';
+
+const undead: SubclassDef = {
+  id: 'undead-patron',
+  name: 'Нежить',
+  source: 'Ravenloft: The Horrors Within',
+  description: 'Договор с существом, обманувшим смерть, — личом, вампиром или иной нежитью: облик ужаса, некротическая магия и отказ умирать.',
+  alwaysPrepared: {
+    3: ['bane', 'blindness-deafness', 'phantasmal-force', 'ray-of-sickness'],
+    5: ['speak-with-dead', 'summon-undead'],
+    7: ['greater-invisibility', 'phantasmal-killer'],
+    9: ['antilife-shell', 'cloudkill'],
+  },
+  levels: {
+    3: [
+      {
+        id: 'undead.form-of-dread',
+        name: 'Аватар ужаса',
+        description:
+          'Бонусным действием вы на 1 минуту принимаете облик аватара покровителя; облик кончается раньше, если вы становитесь недееспособны или прекращаете его (без действия). Использований — модификатор Харизмы (минимум 1) за продолжительный отдых. В облике:\n\n- **Отпечаток жизни:** при превращении вы получаете 1к10 + уровень колдуна временных хитов;\n- **Бесстрашный облик:** иммунитет к испугу (испуг на вас сразу оканчивается);\n- **Ужасающий аватар:** раз в ход, попав по существу броском атаки, вы можете заставить его совершить спасбросок Мудрости — при провале оно испугано до конца вашего следующего хода.',
+        action: 'bonus',
+        resource: { id: FORM_OF_DREAD, name: 'Аватар ужаса', max: modifierOf('charisma'), recharge: 'long' },
+        damage: (ctx) => `1d10+${ctx.classLevel}`,
+        saveAttribute: 'wisdom',
+        saveDC: spellDC,
+        iconName: 'dread-skull',
+        color: '#7d8a6a',
+      },
+    ],
+    6: [
+      {
+        id: 'undead.grave-touched',
+        name: 'Прикосновение могилы',
+        description:
+          '- **Магический некроз:** некротический урон ваших атак, заклинаний и умений колдуна игнорирует сопротивление; раз в ход урон сотворяемого заклинания можно сделать некротическим.\n- **Чудовищный некроз:** раз в ход, когда в облике аватара вы попадаете атакой и наносите некротический урон, бросьте одну дополнительную кость урона.\n- **Выносливость неживых:** вы не получаете истощения от удушья, голода и жажды, не нуждаетесь во сне, и магия не может вас усыпить.',
+        action: 'passive',
+        iconName: 'death-skull',
+      },
+    ],
+    10: [
+      {
+        id: 'undead.necrotic-husk',
+        name: 'Некротическая оболочка',
+        description: 'У вас сопротивление некротическому урону, а в облике Аватара ужаса — иммунитет к нему.',
+        effects: [{ type: 'resistance', damageType: 'Некротический' }],
+        iconName: 'skull-staff',
+      },
+      {
+        id: 'undead.unholy-revival',
+        name: 'Нечестивое оживление',
+        description:
+          'Когда ваши хиты опускаются до 0, но вы не убиты мгновенно, выберите существ в эманации 30 футов: они совершают спасбросок Телосложения и получают 2к10 + модификатор Харизмы некротического урона (половину при успехе). Затем ваши хиты становятся равны 2 × уровень колдуна, и вы получаете 1 уровень истощения. Раз в короткий или продолжительный отдых.',
+        action: 'passive',
+        resource: { id: 'undead.unholy-revival', name: 'Нечестивое оживление', max: 1, recharge: 'shortOrLong' },
+        damage: (ctx) => plus('2d10', ctx.modifier('charisma')),
+        damageType: 'Некротический',
+        saveAttribute: 'constitution',
+        saveDC: spellDC,
+        iconName: 'death-zone',
+        color: '#7d8a6a',
+      },
+    ],
+    14: [
+      {
+        id: 'undead.mortal-dread',
+        name: 'Совершенный ужас',
+        description:
+          'В облике Аватара ужаса вы также получаете:\n\n- **Защита ужасом:** сопротивление дробящему, колющему и рубящему урону;\n- **Призрачный полёт:** скорость полёта, равная скорости, и парение; вы проходите сквозь существ и предметы как через труднопроходимую местность, а закончив ход внутри них, получаете 1к10 силового урона;\n- **Осквернённая магия:** заклинания колдуна школ Вызова и Некромантии вы творите без вербального, соматического и материального компонентов (кроме материальных с ценой или расходуемых).',
+        action: 'passive',
+        iconName: 'spectre',
+      },
+    ],
+  },
+};
+
+/** Domain spells of the four PHB cleric domains, which the Vestige patron borrows by warlock level. */
+const VESTIGE_DOMAINS: { id: string; name: string; of: string; spells: Record<number, string[]> }[] = [
+  {
+    id: 'war',
+    name: 'Война',
+    of: 'Войны',
+    spells: {
+      3: ['guiding-bolt', 'magic-weapon', 'shield-of-faith', 'spiritual-weapon'],
+      5: ['crusaders-mantle', 'spirit-guardians'],
+      7: ['fire-shield', 'freedom-of-movement'],
+      9: ['hold-monster', 'steel-wind-strike'],
+    },
+  },
+  {
+    id: 'life',
+    name: 'Жизнь',
+    of: 'Жизни',
+    spells: {
+      3: ['aid', 'bless', 'cure-wounds', 'lesser-restoration'],
+      5: ['mass-healing-word', 'revivify'],
+      7: ['aura-of-life', 'death-ward'],
+      9: ['greater-restoration', 'mass-cure-wounds'],
+    },
+  },
+  {
+    id: 'trickery',
+    name: 'Обман',
+    of: 'Обмана',
+    spells: {
+      3: ['charm-person', 'disguise-self', 'invisibility', 'pass-without-trace'],
+      5: ['hypnotic-pattern', 'nondetection'],
+      7: ['confusion', 'dimension-door'],
+      9: ['dominate-person', 'modify-memory'],
+    },
+  },
+  {
+    id: 'light',
+    name: 'Свет',
+    of: 'Света',
+    spells: {
+      3: ['burning-hands', 'faerie-fire', 'scorching-ray', 'see-invisibility'],
+      5: ['daylight', 'fireball'],
+      7: ['arcane-eye', 'wall-of-fire'],
+      9: ['flame-strike', 'scrying'],
+    },
+  },
+];
+
+const vestige: SubclassDef = {
+  id: 'vestige-patron',
+  name: 'Предтеча',
+  source: 'Arcana Unleashed',
+  description: 'Договор с умирающим забытым богом, который ищет былой мощи: заклинания домена и спутник-предтеча, сражающийся рядом.',
+  levels: {
+    3: [
+      {
+        id: 'vestige.vestige-spells',
+        name: 'Заклинания Предтечи',
+        description:
+          'Выберите домен жреца: Война, Жизнь, Обман или Свет. Его заклинания считаются для вас заклинаниями колдуна и всегда подготовлены, начиная с того уровня колдуна, который указан в таблице домена (3, 5, 7 и 9).',
+        iconName: 'holy-symbol',
+        choices: [
+          {
+            id: 'domain',
+            label: 'Домен Предтечи',
+            count: 1,
+            options: {
+              from: 'options',
+              options: VESTIGE_DOMAINS.map((domain) => ({
+                id: domain.id,
+                name: domain.name,
+                description: `Заклинания домена ${domain.of} всегда подготовлены: четыре с 3-го уровня колдуна и по два с 5, 7 и 9-го.`,
+                effects: (ctx: BuildContext) =>
+                  Object.entries(domain.spells)
+                    .filter(([level]) => ctx.classLevel >= Number(level))
+                    .flatMap(([, spells]) => spells.map((spell) => ({ type: 'spell' as const, spell, alwaysPrepared: true }))),
+              })),
+            },
+          },
+        ],
+      },
+      {
+        id: 'vestige.vestige-companion',
+        name: 'Спутник-предтеча',
+        description:
+          'Предтеча обретает тело со статистикой «Спутника-предтечи»; вы выбираете его тип (Исчадие, Небожитель или Нежить) и облик. Он дружелюбен к вам и союзникам и исчезает, если вы умираете.\n\n- **В бою** он действует в ваш ход, сам двигается и тратит реакцию, но совершает только Уклонение, если вы бонусным действием не прикажете иное; вместо одной из атак действия Атака вы можете приказать ему Удар предтечи. Если вы недееспособны, он действует сам.\n- **Исчезновение:** при 0 хитов он исчезает; ритуал в 1 минуту призывает его снова с полными хитами в пределах 5 футов. Действием Магия его можно отослать в карманное измерение и вернуть в пределах 30 футов.\n- После продолжительного отдыха его можно призвать заново в другой форме и с другим типом.',
+        action: 'bonus',
+        iconName: 'crowned-skull',
+      },
+    ],
+    6: [
+      {
+        id: 'vestige.vestiges-might',
+        name: 'Мощь предтечи',
+        description:
+          'Спутник-предтеча восстанавливает Божественную силу после короткого или продолжительного отдыха и когда вы используете Магическую искусность. Пока вы в пределах 30 футов от него, у вас сопротивление тем же видам урона, что и у него.',
+        action: 'passive',
+        iconName: 'aura',
+      },
+    ],
+    10: [
+      {
+        id: 'vestige.vestige-restoration',
+        name: 'Восстановление предтечи',
+        description:
+          'Когда хиты Спутника-предтечи опускаются до 0, вы можете реакцией потратить ячейку Магии договора: вместо этого его хиты становятся максимальными, и он телепортируется в видимое свободное пространство в пределах 30 футов. Раз в продолжительный отдых.',
+        action: 'reaction',
+        resource: { id: 'vestige.vestige-restoration', name: 'Восстановление предтечи', max: 1, recharge: 'long' },
+        iconName: 'regeneration',
+      },
+    ],
+    14: [
+      {
+        id: 'vestige.semblance-of-life',
+        name: 'Подобие жизни',
+        description:
+          'Действием Магия вы на 1 час превращаете Спутника-предтечу в пределах 90 футов в Духа исчадия, Духа небожителя или Духа нежити (по его типу) с уровнем заклинания, равным половине уровня колдуна (вниз, максимум 9). Он сохраняет личность, Божественную силу, хиты и кости хитов и получает временные хиты, равные хитам формы духа; превращение кончается, когда они заканчиваются, или через 1 час. Раз в продолжительный отдых.',
+        action: 'action',
+        resource: { id: 'vestige.semblance-of-life', name: 'Подобие жизни', max: 1, recharge: 'long' },
+        iconName: 'angel-outfit',
+      },
+    ],
+  },
+};
+
+// ------------------------------------------------------------------------------------------------
 // The class
 // ------------------------------------------------------------------------------------------------
 
@@ -342,7 +546,7 @@ export const WARLOCK: ClassDef = {
   ],
   mentalStrength: 40,
   subclassLevel: 3,
-  subclasses: [archfey, celestial, fiend, greatOldOne],
+  subclasses: [archfey, celestial, fiend, greatOldOne, undead, vestige],
   startingEquipment: WARLOCK_KITS,
   replaceable: [{ pool: INVOCATIONS_POOL, label: 'Замена воззвания' }],
   spellcasting: {
@@ -432,5 +636,7 @@ export const WARLOCK_ICONS = {
     'celestial-patron': 'angel-wings',
     'fiend-patron': 'imp',
     'great-old-one-patron': 'tentacles-skull',
+    'undead-patron': 'grim-reaper',
+    'vestige-patron': 'sun-priest',
   } as Record<string, string>,
 };
