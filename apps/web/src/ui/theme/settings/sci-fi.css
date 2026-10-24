@@ -613,3 +613,25 @@
   [data-setting='sci-fi'] > :is(.ui-world:hover, .ui-world[aria-pressed='true']) :is(.ui-world__emblem),
   [data-setting='sci-fi'] > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { animation: none; }
 }
+
+/* ------------------------------------------------------------------ World flourish */
+/* The terminal re-scans: a bright line sweeps down the screen trailing a fading grid. */
+.ui-flourish--sci-fi {
+  & > i:first-child {
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 28vh;
+    background:
+      linear-gradient(180deg, transparent, rgb(62 152 240 / 0.12) 85%, rgb(150 196 236 / 0.9) 99%, rgb(220 240 255) 100%),
+      repeating-linear-gradient(90deg, rgb(62 152 240 / 0.08) 0 1px, transparent 1px 32px);
+    box-shadow: 0 2px 18px rgb(62 152 240 / 0.7);
+    animation: sf-flourish-scan 0.75s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+  }
+  & > i:not(:first-child) { display: none; }
+}
+@keyframes sf-flourish-scan {
+  0% { opacity: 1; transform: translateY(-30vh); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(102vh); }
+}

@@ -6,6 +6,7 @@ import { Button, Panel, cx } from '../../ui/primitives';
 import { IconCheck, IconDice, IconPrev, IconQuill } from '../../ui/icons';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
+import { Flourish } from '../../ui/Flourish';
 import { WorldCard } from './WorldCard';
 import { HeroSummary } from './HeroSummary';
 import { TrainingChoice } from './parts';
@@ -82,6 +83,9 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
   const dnd = useDndCreation(setting, onDone);
   const custom = useCreation(setting, onDone);
   useDocumentSetting(setting);
+  /** The flourish of the world just chosen, while it plays. */
+  const [flourish, setFlourish] = React.useState<{ setting: Setting; x: number; y: number; key: number } | null>(null);
+  const endFlourish = React.useCallback(() => setFlourish(null), []);
 
   const common: Step[] = [
     {
@@ -98,7 +102,8 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
               key={id}
               setting={id}
               selected={worldChosen && setting === id}
-              onSelect={() => {
+              onSelect={(origin) => {
+                if (!(worldChosen && setting === id)) setFlourish({ setting: id, ...origin, key: Date.now() });
                 setSetting(id);
                 setWorldChosen(true);
               }}
@@ -218,7 +223,12 @@ export const CreationScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => 
   );
 
   return (
-    <SettingScope setting={setting} className={cx('ui-morph flex h-screen overflow-clip bg-bg', !worldChosen && 'ui-service')}>
+    <SettingScope
+      setting={setting}
+      className={cx('ui-morph flex h-screen overflow-clip bg-bg', !worldChosen && 'ui-service')}
+      data-flourish={flourish?.setting}
+    >
+      {flourish && <Flourish key={flourish.key} setting={flourish.setting} x={flourish.x} y={flourish.y} onEnd={endFlourish} />}
       {/* The steps appear once the world is behind: choosing a world is a stage of its own. */}
       <AnimatePresence initial={false}>
         {index > 0 && (
