@@ -227,3 +227,16 @@ describe('hero creation from presets', () => {
     expect(draft.limbs.every((l) => l.maxHP > 0)).toBe(true);
   });
 });
+
+describe('armour class from features', () => {
+  it('adds Defense while armoured only', async () => {
+    const { createDndHero } = await import('../src');
+    const base = build({ class: 'fighter', choices: { 'class:fighter.fighting-style/style': ['defense'] } });
+    const armoured = createDndHero({ name: 'Т', build: base, classKitId: 'a', backgroundKitId: 'a' });
+    const plain = createDndHero({ name: 'Т', build: { ...base, choices: {} }, classKitId: 'a', backgroundKitId: 'a' });
+    expect(armoured.armorClass).toBe(plain.armorClass + 1);
+    const unarmoured = createDndHero({ name: 'Т', build: base, classKitId: 'c', backgroundKitId: 'b' });
+    // No armour: 10 + Dexterity (13 → +1), and Defense does not apply.
+    expect(unarmoured.armorClass).toBe(11);
+  });
+});

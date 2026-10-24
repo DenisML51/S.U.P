@@ -1,5 +1,6 @@
 import { proficiencyBonus } from '../helpers';
 import type { AttributeId, ChoiceDef, Effect, FeatDef, OptionDef, SkillId, SpellListId } from '../types';
+import { MUSICAL_INSTRUMENT_NAMES } from './equipment';
 
 /**
  * Feats of the 2024 Player's Handbook: origin feats, general feats, Fighting Style feats and Epic
@@ -121,7 +122,7 @@ const ARTISAN_TOOLS = [
   'Инструменты ткача',
 ];
 
-const MUSICAL_INSTRUMENTS = ['Барабан', 'Виола', 'Волынка', 'Лира', 'Лютня', 'Рожок', 'Свирель', 'Флейта', 'Цимбалы', 'Шалмей'];
+const MUSICAL_INSTRUMENTS = MUSICAL_INSTRUMENT_NAMES;
 
 const SPELLCASTING_TEXT = 'Умение «Использование заклинаний» или «Магия договора»';
 
@@ -976,6 +977,7 @@ const FIGHTING_STYLES: FeatDef[] = [
     category: 'fightingStyle',
     prerequisite: STYLE,
     description: 'Пока на вас лёгкий, средний или тяжёлый доспех, вы получаете +1 к КД.',
+    effects: [{ type: 'armorClass', amount: 1, armored: true }],
     iconName: 'chest-armor',
   },
   {

@@ -1,6 +1,8 @@
 import type { Ability, Build, Character, CharacterDraft, InventoryItem, Resistance, Resource, Spell, Trait } from '@itd/schema';
 import { ATTRIBUTES_LIST, SKILLS_LIST } from '../content/attributes';
+import { spellColor } from '../content/combat';
 import { abilityModifier } from '../rules/abilities';
+import { calculateArmorClass } from '../rules/armor';
 import { DND } from './content';
 import { proficiencyForLevel, resolveAmount } from './helpers';
 import type {
@@ -209,6 +211,16 @@ export function collect(build: Build, level = build.level, scores?: Record<strin
     out.effects.push({ effect: { type: 'proficiency', category: 'tool', value: background.tool }, owner });
     const feat = findFeat(background.feat);
     if (feat) visitFeature(feat, 'background', 1, 'feat');
+    // Every 2024 hero speaks Common and two more languages of the player's choice.
+    visitFeature(
+      synthetic('origin.languages', 'Языки', 'Вы знаете Общий язык и ещё два языка на выбор.', {
+        effects: [{ type: 'proficiency', category: 'language', value: 'Общий' }],
+        choices: [{ id: 'languages', label: 'Языки (2)', count: 2, options: { from: 'languages' } }],
+      }),
+      'background',
+      1,
+      'background',
+    );
   }
 
   // Class and subclass levels.
@@ -242,12 +254,12 @@ export function collect(build: Build, level = build.level, scores?: Record<strin
           out.effects.push({ effect: { type: 'spell', spell, alwaysPrepared: true }, owner });
         }
       }
-      if (casting?.mode === 'known') visitKnownSpells(casting, classLevel);
+      if (casting?.mode === 'known') visitKnownSpells(casting, classLevel, subclass?.spellcasting ? subclass.name : classDef.name);
     }
   }
 
   /** A caster who learns spells picks the new ones on the level they come. */
-  function visitKnownSpells(casting: SpellcastingDef, classLevel: number) {
+  function visitKnownSpells(casting: SpellcastingDef, classLevel: number, owner: string) {
     const at = (l: number) => contextFor(l, scores ?? baseScores(build));
     const cantrips = (l: number) => (l < 1 ? 0 : resolveAmount(casting.cantrips ?? 0, at(l)));
     const prepared = (l: number) => (l < 1 ? 0 : resolveAmount(casting.prepared, at(l)));
@@ -263,7 +275,7 @@ export function collect(build: Build, level = build.level, scores?: Record<strin
       choices.push({ id: 'spells', label: `Заклинания (${newSpells})`, count: newSpells, pool: 'known-spells', spellAbility: casting.ability, options: { from: 'spells', lists: [casting.list], minLevel: 1, maxLevel } });
     }
     visitFeature(
-      synthetic(`spells-${classLevel}`, 'Новые заклинания', 'Вы изучаете новые заклинания.', { choices }),
+      synthetic(`spells-${classLevel}`, owner, 'Вы изучаете новые заклинания.', { choices }),
       'casting',
       classLevel,
       'subclass',
@@ -327,6 +339,17 @@ const hash = (value: string): string => {
 };
 
 export const grantedId = (granted: GrantedFeature): string => `g-${granted.feature.id}-${hash(granted.key)}`;
+
+/** Picture of a passive trait whose content has none: where it comes from. */
+const SOURCE_ICONS: Record<SourceKind, string> = {
+  species: 'dna1',
+  background: 'scroll-unfurled',
+  class: 'sparkles',
+  subclass: 'sparkles',
+  feat: 'sparkles',
+  option: 'sparkles',
+  maneuver: 'crossed-swords',
+};
 
 const CATEGORY_TITLES: Record<string, string> = { armor: 'Доспехи', weapon: 'Оружие', tool: 'Инструменты', language: 'Языки' };
 
@@ -479,7 +502,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
         grant: granted.key,
       });
     } else {
-      traits.push({ id, name: feature.name, description: feature.description, grant: granted.key });
+      traits.push({ id, name: feature.name, description: feature.description, iconName: feature.iconName ?? SOURCE_ICONS[granted.source], grant: granted.key });
     }
   }
 
@@ -492,7 +515,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
         return values.length > 0 ? `**${title}:** ${values.join(', ')}` : null;
       })
       .filter(Boolean);
-    traits.push({ id: 'g-proficiencies', name: 'Владения', description: lines.join('\n\n'), grant: 'build' });
+    traits.push({ id: 'g-proficiencies', name: 'Владения', description: lines.join('\n\n'), iconName: 'checked-shield', grant: 'build' });
   }
   if (collected.masteries.length > 0) {
     const lines = collected.masteries.map((id) => {
@@ -500,7 +523,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
       const mastery = DND.masteries.find((m) => m.id === weapon.mastery);
       return `- **${weapon.name}** — ${mastery?.name ?? weapon.mastery}`;
     });
-    traits.push({ id: 'g-weapon-mastery', name: 'Оружейное мастерство', description: lines.join('\n'), grant: 'build' });
+    traits.push({ id: 'g-weapon-mastery', name: 'Оружейное мастерство', description: lines.join('\n'), iconName: 'crossed-swords', grant: 'build' });
   }
 
   // Spells: the class list for a preparing caster, then every spell granted by a feature.
@@ -559,6 +582,10 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
     currentHP,
     speed,
     initiativeBonus: initiative || undefined,
+    armorClassBonus: {
+      always: ofType('armorClass').filter((e) => !e.armored).reduce((sum, e) => sum + e.amount, 0),
+      armored: ofType('armorClass').filter((e) => e.armored).reduce((sum, e) => sum + e.amount, 0),
+    },
     resistances,
     resources: [...resources, ...character.resources.filter((r) => !r.grant && !resources.some((g) => g.id === r.id))],
     abilities: [...abilities, ...character.abilities.filter((a) => !a.grant)],
@@ -572,7 +599,8 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
     attacks: character.attacks.map((attack) => weaponAttackFor(attack, character.inventory, scores, proficiency)),
     build,
   };
-  return { character: result, missing: [...new Set(missing)] };
+  // Armour class follows the worn gear and the bonuses just written.
+  return { character: { ...result, armorClass: calculateArmorClass(result) }, missing: [...new Set(missing)] };
 }
 
 /** Attack and damage bonus of a preset weapon: proficiency plus Strength, Dexterity for finesse or ranged. */
@@ -635,6 +663,12 @@ export interface OptionView {
   meta?: string;
   /** Why it cannot be picked. */
   disabled?: string;
+  /** Heading the option is filed under in a long list (spell level, feat category, weapon kind). */
+  group?: string;
+  /** Game-icons id of the picture shown on the option's card. */
+  iconName?: string;
+  /** Colour of the picture (a spell's damage type). */
+  color?: string;
 }
 
 const LANGUAGES = [
@@ -642,6 +676,13 @@ const LANGUAGES = [
   'Полуросликов', 'Эльфийский', 'Бездны', 'Глубинная речь', 'Друидический', 'Инфернальный', 'Небесный',
   'Первичный', 'Сильван', 'Подземный', 'Воровской жаргон',
 ];
+
+const ACTION_NAMES: Record<string, string> = {
+  action: 'Действие',
+  bonus: 'Бонусное действие',
+  reaction: 'Реакция',
+  passive: 'Без действия',
+};
 
 const FEAT_CATEGORY_NAMES: Record<string, string> = {
   origin: 'Черта происхождения',
@@ -713,6 +754,8 @@ export function choiceOptions(build: Build, level: number, open: OpenChoice): Op
           name: feat.name,
           description: feat.description,
           meta: FEAT_CATEGORY_NAMES[feat.category],
+          group: FEAT_CATEGORY_NAMES[feat.category],
+          iconName: feat.iconName,
           disabled: ownPicks.has(feat.id) ? undefined : featBlocker(feat, build, collected, scores, level, open),
         }));
     case 'maneuvers':
@@ -720,6 +763,9 @@ export function choiceOptions(build: Build, level: number, open: OpenChoice): Op
         id: m.id,
         name: m.name,
         description: m.description,
+        meta: ACTION_NAMES[m.action ?? 'passive'],
+        group: ACTION_NAMES[m.action ?? 'passive'],
+        iconName: m.iconName,
         disabled: taken.has(m.id) ? 'Уже изучен' : undefined,
       }));
     case 'spells': {
@@ -738,6 +784,9 @@ export function choiceOptions(build: Build, level: number, open: OpenChoice): Op
           name: s.name,
           description: s.description,
           meta: `${s.level === 0 ? 'Заговор' : `${s.level} круг`} · ${s.school}`,
+          group: s.level === 0 ? 'Заговоры' : `${s.level} круг`,
+          iconName: s.iconName,
+          color: spellColor(s),
           disabled: (known.has(s.id) || taken.has(s.id)) && !ownPicks.has(s.id) ? 'Уже известно' : undefined,
         }));
     }
@@ -764,13 +813,20 @@ export function choiceOptions(build: Build, level: number, open: OpenChoice): Op
             name: w.name,
             description: mastery?.description ?? '',
             meta: `${mastery?.name ?? w.mastery} · ${w.damage} ${w.damageType.toLowerCase()}`,
+            group: `${w.category === 'simple' ? 'Простое' : 'Воинское'} ${w.kind === 'melee' ? 'рукопашное' : 'дальнобойное'}`,
             disabled: taken.has(w.id) ? 'Уже выбрано' : undefined,
           };
         });
     case 'tools':
       return (source.list ?? DND.gear.filter((g) => g.kind === 'tool').map((g) => g.name)).map((name) => ({ id: name, name, description: '' }));
-    case 'languages':
-      return LANGUAGES.map((name) => ({ id: name, name, description: '' }));
+    case 'languages': {
+      const known = new Set(
+        collected.effects
+          .filter(({ effect, owner }) => effect.type === 'proficiency' && effect.category === 'language' && !owner.key.startsWith(open.key))
+          .map(({ effect }) => (effect as Extract<Effect, { type: 'proficiency' }>).value),
+      );
+      return LANGUAGES.map((name) => ({ id: name, name, description: '', disabled: known.has(name) && !ownPicks.has(name) ? 'Уже знаете' : undefined }));
+    }
     case 'options':
       return source.options.map((o) => ({ id: o.id, name: o.name, description: o.description }));
   }
