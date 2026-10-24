@@ -293,6 +293,13 @@ const WorldSigil: React.FC = () => (
   </svg>
 );
 
+/** The choice is answered in stone: the rose window's tracery draws itself round the chosen card in candlelight and fades. */
+const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <div className="df-flourish" style={{ left: x, top: y }}>
+    <RoseWindow />
+  </div>
+);
+
 export const DARK_FANTASY_ART: SettingArt = {
   corner: { viewBox: '0 0 24 24', art: <GothicCorner /> },
   crest: { viewBox: '0 0 120 24', art: <ArchCrest /> },
@@ -306,4 +313,5 @@ export const DARK_FANTASY_ART: SettingArt = {
   Backdrop,
   LevelReady,
   WorldSigil,
+  Flourish,
 };

@@ -685,35 +685,34 @@
 }
 
 /* ------------------------------------------------------------------ World flourish */
-/* The atlas opens: a gilt ring spreads from the card like the rim of an astrolabe, a second one
-   after it, and a soft light blooms and fades. */
+/* The atlas answers: the astrolabe of the background draws itself in gilt round the chosen card,
+   turning into place, and fades; a soft light blooms under it. */
 .ui-flourish--high-fantasy {
   &::before {
     inset: 0;
-    background: radial-gradient(circle at var(--fx-x) var(--fx-y), rgb(240 214 150 / 0.28), transparent 45%);
-    animation: hf-flourish-bloom 1.1s ease-out forwards;
+    background: radial-gradient(circle at var(--fx-x) var(--fx-y), rgb(240 214 150 / 0.16), transparent 42%);
+    animation: hf-flourish-bloom 1.5s ease-out forwards;
   }
-  & > i {
-    left: var(--fx-x);
-    top: var(--fx-y);
-    width: 20px;
-    height: 20px;
-    border: 1px solid rgb(228 204 146 / 0.9);
-    border-radius: 50%;
-    box-shadow: 0 0 12px rgb(228 204 146 / 0.5), inset 0 0 12px rgb(228 204 146 / 0.3);
-    transform: translate(-50%, -50%);
-    animation: hf-flourish-ring 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  & > i { display: none; }
+  .hf-flourish {
+    position: absolute;
+    width: 80vmin;
+    aspect-ratio: 1;
+    color: rgb(228 204 146);
+    filter: drop-shadow(0 0 5px rgb(240 214 150 / 0.6));
+    animation: hf-flourish-astrolabe 1.5s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
   }
-  & > i:nth-child(2) { animation-delay: 0.16s; border-style: dashed; }
-  & > i:nth-child(3) { display: none; }
+  .hf-flourish :is(path, circle, ellipse) { stroke-dasharray: 2600; stroke-dashoffset: 2600; animation: hf-flourish-draw 1s ease-out forwards; }
 }
 @keyframes hf-flourish-bloom {
   0% { opacity: 0; }
   25% { opacity: 1; }
   100% { opacity: 0; }
 }
-@keyframes hf-flourish-ring {
-  0% { opacity: 0; width: 20px; height: 20px; }
-  15% { opacity: 1; }
-  100% { opacity: 0; width: 220vmax; height: 220vmax; }
+@keyframes hf-flourish-astrolabe {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.75) rotate(-30deg); }
+  20% { opacity: 0.95; }
+  70% { opacity: 0.7; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05) rotate(0deg); }
 }
+@keyframes hf-flourish-draw { to { stroke-dashoffset: 0; } }

@@ -248,6 +248,13 @@ const LevelReady: React.FC = () => (
   </svg>
 );
 
+/** The atlas answers the choice: the astrolabe draws itself round the chosen card, turns into place and fades. */
+const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <div className="hf-flourish" style={{ left: x, top: y }}>
+    <Astrolabe />
+  </div>
+);
+
 export const HIGH_FANTASY_ART: SettingArt = {
   corner: { viewBox: '0 0 32 32', art: <VineCorner /> },
   crest: { viewBox: '0 0 120 24', art: <StarCrest /> },
@@ -260,4 +267,5 @@ export const HIGH_FANTASY_ART: SettingArt = {
   Emblem: GiLaurelCrown,
   Backdrop,
   LevelReady,
+  Flourish,
 };

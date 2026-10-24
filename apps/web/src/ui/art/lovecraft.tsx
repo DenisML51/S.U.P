@@ -404,6 +404,32 @@ const WorldSigil: React.FC = () => (
   </svg>
 );
 
+/** An isobath-like closed line round the origin at about `r`, bent by slow waves of its own. */
+const contour = (r: number) => {
+  const waves = [2, 3, 5].map((k) => ({ k, amp: (r * (0.04 + Math.random() * 0.08)) / Math.sqrt(k), phase: Math.random() * Math.PI * 2 }));
+  const points = Array.from({ length: 72 }, (_, i) => {
+    const a = (i / 72) * Math.PI * 2;
+    const radius = r + waves.reduce((sum, { k, amp, phase }) => sum + amp * Math.sin(k * a + phase), 0);
+    return `${(Math.cos(a) * radius * 1.2).toFixed(1)} ${(Math.sin(a) * radius).toFixed(1)}`;
+  });
+  return `M${points.join('L')}Z`;
+};
+
+/**
+ * Something stirs under the sea: rings like the chart's isobaths spread out from the chosen card one
+ * after another, uneven, as over a thing rising in deep water.
+ */
+const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => {
+  const rings = React.useMemo(() => Array.from({ length: 7 }, (_, i) => contour(56 + i * 7)), []);
+  return (
+    <svg className="lc-ripples" style={{ left: x, top: y }} viewBox="-200 -200 400 400" fill="none" aria-hidden>
+      {rings.map((d, i) => (
+        <path key={i} d={d} style={{ animationDelay: `${i * 0.11}s` }} />
+      ))}
+    </svg>
+  );
+};
+
 /** A short number for a hero, the way a conductor marks a seat: three digits of the id's hash. */
 const seatNumber = (id: string) => {
   let hash = 0;
@@ -438,4 +464,5 @@ export const LOVECRAFT_ART: SettingArt = {
   LevelReady,
   WorldSigil,
   HeroReadout,
+  Flourish,
 };

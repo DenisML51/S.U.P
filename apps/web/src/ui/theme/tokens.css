@@ -14,6 +14,8 @@
 [data-setting] {
   color: rgb(var(--c-ink));
   font-family: var(--font-body);
+  /* Tokens not every setting sets: reset here, or a nested scope would inherit its parent's. */
+  --title-transform: none;
 }
 
 /* The service's own type. The hero select screen, the login and the service's dialogs keep it

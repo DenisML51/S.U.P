@@ -665,32 +665,68 @@
 }
 
 /* ------------------------------------------------------------------ World flourish */
-/* The feed tears: the whole screen jumps and splits into red and cyan for a moment, bands of noise
-   flash across it. */
-[data-flourish='cyberpunk'] { animation: cp-screen-glitch 0.45s steps(1) 1; }
+/* The feed crashes and reboots: the screen tears into shifted slices in two waves, splits into red
+   and cyan, flips to negative for a frame; blocks of corrupted data invert what lies under them and
+   bands of noise run across. */
+[data-flourish='cyberpunk'] { animation: cp-screen-glitch 0.8s steps(1) 1; }
 .ui-flourish--cyberpunk {
+  &::before {
+    inset: 0;
+    background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 3px);
+    animation: cp-flourish-flicker 0.8s steps(1) forwards;
+  }
   & > i {
     left: 0;
     right: 0;
-    height: 6vh;
-    mix-blend-mode: screen;
-    animation: cp-flourish-band 0.45s steps(1) forwards;
+    mix-blend-mode: difference;
+    animation: cp-flourish-band 0.8s steps(1) forwards;
   }
-  & > i:nth-child(1) { top: 18%; background: rgb(255 98 88 / 0.35); }
-  & > i:nth-child(2) { top: 52%; height: 3vh; background: rgb(86 240 250 / 0.35); animation-delay: 0.08s; }
-  & > i:nth-child(3) { top: 77%; height: 9vh; background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.18) 0 1px, transparent 1px 3px); animation-delay: 0.15s; }
+  & > i:nth-child(1) { top: 14%; height: 7vh; background: rgb(255 98 88); }
+  & > i:nth-child(2) { top: 48%; height: 2vh; background: rgb(86 240 250); animation-delay: 0.12s; }
+  & > i:nth-child(3) { top: 71%; height: 11vh; background: rgb(252 236 12); animation-delay: 0.3s; }
+  .ui-flourish__p {
+    display: block;
+    left: calc(50% + var(--dx) * 50%);
+    top: calc(var(--dy) * 100%);
+    width: calc(20px + var(--size) * 160px);
+    height: calc(6px + var(--size) * 28px);
+    background: rgb(var(--glitch, 86 240 250));
+    mix-blend-mode: difference;
+    opacity: 0;
+    animation: cp-flourish-block 0.8s steps(1) forwards;
+    animation-delay: calc(var(--delay) * 0.4s);
+  }
+  .ui-flourish__p:nth-child(3n) { --glitch: 255 98 88; }
+  .ui-flourish__p:nth-child(5n) { --glitch: 252 236 12; }
 }
 @keyframes cp-screen-glitch {
-  0% { transform: translate(0); filter: none; }
-  15% { transform: translate(-6px, 2px); filter: drop-shadow(5px 0 rgb(255 60 60 / 0.8)) drop-shadow(-5px 0 rgb(60 240 255 / 0.8)); }
-  30% { transform: translate(5px, -2px); clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%, 0 38%, 100% 38%, 100% 100%, 0 100%); }
-  45% { transform: translate(-3px, 0); filter: drop-shadow(-4px 0 rgb(255 60 60 / 0.8)) drop-shadow(4px 0 rgb(60 240 255 / 0.8)); clip-path: none; }
-  60% { transform: translate(2px, 1px); filter: none; }
-  80%, 100% { transform: none; filter: none; }
+  0% { transform: none; filter: none; }
+  8% { transform: translate(-10px, 3px) skewX(-2deg); filter: drop-shadow(6px 0 rgb(255 60 60 / 0.85)) drop-shadow(-6px 0 rgb(60 240 255 / 0.85)); clip-path: polygon(0 0, 100% 0, 100% 22%, 0 22%, 0 31%, 100% 31%, 100% 100%, 0 100%); }
+  16% { transform: translate(8px, -2px); filter: invert(1) hue-rotate(180deg); clip-path: none; }
+  22% { transform: translate(-4px, 0); filter: drop-shadow(-8px 0 rgb(255 60 60 / 0.85)) drop-shadow(8px 0 rgb(60 240 255 / 0.85)); clip-path: polygon(0 0, 100% 0, 100% 58%, 0 58%, 0 66%, 100% 66%, 100% 100%, 0 100%); }
+  30% { transform: none; filter: none; clip-path: none; }
+  48% { transform: translate(14px, 0) skewX(3deg); filter: contrast(1.6) drop-shadow(-5px 0 rgb(255 60 60 / 0.8)); clip-path: polygon(0 0, 100% 0, 100% 40%, 0 40%, 0 44%, 100% 44%, 100% 100%, 0 100%); }
+  56% { transform: translate(-6px, 2px); filter: drop-shadow(5px 0 rgb(60 240 255 / 0.8)); clip-path: none; }
+  64% { transform: translate(2px, 0); filter: saturate(2) hue-rotate(-30deg); }
+  74%, 100% { transform: none; filter: none; clip-path: none; }
 }
 @keyframes cp-flourish-band {
-  0% { opacity: 1; transform: translateX(-4%); }
-  30% { opacity: 0; }
-  45% { opacity: 1; transform: translateX(5%); }
-  70%, 100% { opacity: 0; transform: none; }
+  0% { opacity: 1; transform: translateX(-6%); }
+  12% { opacity: 0; }
+  20% { opacity: 1; transform: translateX(8%); }
+  32% { opacity: 0; }
+  48% { opacity: 1; transform: translateX(-3%) scaleY(0.5); }
+  60%, 100% { opacity: 0; transform: none; }
+}
+@keyframes cp-flourish-block {
+  0% { opacity: 1; }
+  10% { opacity: 0; }
+  18% { opacity: 1; transform: translateX(-30px); }
+  28%, 100% { opacity: 0; }
+}
+@keyframes cp-flourish-flicker {
+  0%, 30% { opacity: 1; }
+  40% { opacity: 0; }
+  48% { opacity: 1; }
+  60%, 100% { opacity: 0; }
 }

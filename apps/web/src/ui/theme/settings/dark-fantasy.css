@@ -598,28 +598,34 @@
 }
 
 /* ------------------------------------------------------------------ World flourish */
-/* A candle is snuffed: the dark closes in from the edges, a blood-red glow wells up from below,
-   and the dark draws back. */
+/* Answered in stone: the rose window of the background draws itself in brass round the chosen card,
+   lit from within by candlelight, and fades into the dark. */
 .ui-flourish--dark-fantasy {
   &::before {
     inset: 0;
-    opacity: 1;
-    box-shadow: inset 0 0 0 0 rgb(0 0 0 / 0.95);
-    animation: df-flourish-dark 1.2s ease-in-out forwards;
-  }
-  &::after {
-    inset: 0;
-    background: radial-gradient(70% 45% at 50% 110%, rgb(150 22 18 / 0.45), transparent 70%);
-    animation: df-flourish-blood 1.2s ease-in-out forwards;
+    background: radial-gradient(circle at var(--fx-x) var(--fx-y), rgb(232 150 70 / 0.2), rgb(120 20 16 / 0.12) 30%, transparent 55%);
+    animation: df-flourish-glow 1.6s ease-out forwards;
   }
   & > i { display: none; }
+  .df-flourish {
+    position: absolute;
+    width: 74vmin;
+    aspect-ratio: 1;
+    color: rgb(212 176 120);
+    filter: drop-shadow(0 0 6px rgb(232 150 70 / 0.7));
+    animation: df-flourish-window 1.6s ease-out forwards;
+  }
+  .df-flourish :is(path, circle) { stroke-dasharray: 2600; stroke-dashoffset: 2600; animation: df-flourish-draw 1.1s ease-in-out forwards; }
 }
-@keyframes df-flourish-dark {
-  0% { box-shadow: inset 0 0 0 0 rgb(0 0 0 / 0.95); }
-  45% { box-shadow: inset 0 0 40vmax 22vmax rgb(0 0 0 / 0.95); }
-  100% { box-shadow: inset 0 0 0 0 rgb(0 0 0 / 0.95); }
+@keyframes df-flourish-glow {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
 }
-@keyframes df-flourish-blood {
-  0%, 100% { opacity: 0; }
-  50% { opacity: 1; }
+@keyframes df-flourish-window {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+  20% { opacity: 0.9; }
+  70% { opacity: 0.7; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
 }
+@keyframes df-flourish-draw { to { stroke-dashoffset: 0; } }

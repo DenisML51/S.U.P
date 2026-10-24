@@ -1650,6 +1650,14 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   display: block;
   opacity: 0;
 }
+/* The loose particles start at the card; settings that use them show them. */
+.ui-flourish__p {
+  position: absolute;
+  left: var(--fx-x);
+  top: var(--fx-y);
+  display: none;
+}
+.ui-flourish > svg { position: absolute; inset: 0; }
 @media (prefers-reduced-motion: reduce) {
   .ui-flourish { display: none; }
   [data-flourish] { animation: none !important; }

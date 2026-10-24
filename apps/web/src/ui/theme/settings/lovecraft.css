@@ -754,29 +754,54 @@ html[data-setting='lovecraft'] body::before,
 }
 
 /* ------------------------------------------------------------------ World flourish */
-/* Lightning over the sea: two cold flashes, one after the other, then the thunder shakes the
-   screen. */
-[data-flourish='lovecraft'] { animation: lc-thunder 0.6s ease-out 0.35s 1; }
+/* Something stirs under the sea: uneven rings like the chart's isobaths spread out from the chosen
+   card one after another; then a deep rumble — the screen is punched in, shakes and settles, and a
+   wave of dark passes over it. */
+[data-flourish='lovecraft'] { animation: lc-thunder 1.2s cubic-bezier(0.2, 0.6, 0.3, 1) 0.15s 1 both; }
 .ui-flourish--lovecraft {
-  &::before {
+  &::after {
     inset: 0;
-    background: radial-gradient(120% 90% at 60% 0%, rgb(220 236 226 / 0.85), rgb(170 200 186 / 0.35) 55%, rgb(120 160 140 / 0.12));
-    animation: lc-lightning 0.75s linear forwards;
+    background: radial-gradient(ellipse at var(--fx-x) var(--fx-y), transparent 20%, rgb(0 0 0 / 0.7));
+    animation: lc-shock 1.4s ease-out forwards;
   }
   & > i { display: none; }
+  .lc-ripples {
+    position: absolute;
+    width: 120vmin;
+    height: 120vmin;
+    transform: translate(-50%, -50%);
+    overflow: visible;
+  }
+  .lc-ripples path {
+    stroke: rgb(164 150 114);
+    stroke-width: 1;
+    /* Fine as the chart's own lines however far they spread. */
+    vector-effect: non-scaling-stroke;
+    opacity: 0;
+    filter: drop-shadow(0 0 3px rgb(106 148 106 / 0.8));
+    animation: lc-ripple 1.5s cubic-bezier(0.15, 0.6, 0.3, 1) forwards;
+  }
 }
-@keyframes lc-lightning {
+@keyframes lc-ripple {
+  0% { opacity: 0; transform: scale(0.3); }
+  15% { opacity: 0.9; }
+  100% { opacity: 0; transform: scale(2.4); }
+}
+@keyframes lc-shock {
   0% { opacity: 0; }
-  6% { opacity: 0.9; }
-  12% { opacity: 0.08; }
-  20% { opacity: 0.7; }
-  32% { opacity: 0.25; }
+  30% { opacity: 1; }
   100% { opacity: 0; }
 }
+/* The rumble: a punch inwards, then a shaking that dies away. */
 @keyframes lc-thunder {
-  0%, 100% { transform: none; }
-  15% { transform: translate(-3px, 2px); }
-  30% { transform: translate(3px, -1px); }
-  45% { transform: translate(-2px, 1px); }
-  60% { transform: translate(1px, 0); }
+  0% { transform: none; }
+  6% { transform: scale(1.016) translate(0, 3px); }
+  14% { transform: scale(1.005) translate(-7px, -3px); }
+  22% { transform: translate(6px, 3px); }
+  30% { transform: translate(-5px, -2px); }
+  40% { transform: translate(4px, 2px); }
+  52% { transform: translate(-3px, -1px); }
+  66% { transform: translate(2px, 1px); }
+  80% { transform: translate(-1px, 0); }
+  100% { transform: none; }
 }
