@@ -111,6 +111,8 @@ export const ResourceSchema = passthroughObject({
   description: longTextOr(),
   spellSlotLevel: optionalNumber,
   color: optionalShortText,
+  /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const CurrencySchema = passthroughObject({
@@ -152,6 +154,8 @@ export const InventoryItemSchema = passthroughObject({
   ammunitionType: optionalShortText,
   iconName: optionalShortText,
   color: optionalShortText,
+  /** Id of the preset weapon, armour or gear the item was made from (D&D 2024 tables). */
+  ref: optionalShortText,
 });
 
 export const AttackSchema = passthroughObject({
@@ -184,6 +188,8 @@ export const AbilitySchema = passthroughObject({
   damageComponents: optionalList(DamageComponentSchema),
   iconName: optionalShortText,
   color: optionalShortText,
+  /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const LimbSchema = passthroughObject({
@@ -198,6 +204,8 @@ export const TraitSchema = passthroughObject({
   id: nestedId,
   name: shortText,
   description: longTextOr(),
+  /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const SpellSchema = passthroughObject({
@@ -217,10 +225,16 @@ export const SpellSchema = passthroughObject({
   damageType: optionalShortText,
   damageComponents: optionalList(DamageComponentSchema),
   prepared: flag(false),
+  /** Granted by a feature (oath spells): always prepared and not counted against the limit. */
+  alwaysPrepared: optionalFlag,
+  /** Spellcasting ability of a spell granted outside the class list (species, feats). */
+  ability: optionalShortText,
   resourceId: optionalNestedId,
   resourceCost: optionalNumber,
   iconName: optionalShortText,
   color: optionalShortText,
+  /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const HistoryEntrySchema = passthroughObject({
@@ -234,6 +248,8 @@ export const ResistanceSchema = passthroughObject({
   id: nestedId,
   type: shortText,
   level: ResistanceLevelSchema,
+  /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
+  grant: optionalShortText,
 });
 
 export const ActionCountersSchema = passthroughObject({
@@ -244,6 +260,35 @@ export const ActionCountersSchema = passthroughObject({
 
 const numberMap = (maxKeyLength: number) =>
   text(z.record(z.string().max(maxKeyLength), numeric(num)).default({}));
+
+/**
+ * The preset choices a hero was built from (D&D 2024). The sheet's granted entries (abilities,
+ * traits, resources, spells marked with `grant`) are derived from it and rebuilt on every level-up;
+ * everything else on the sheet stays the player's.
+ */
+export const BuildSchema = passthroughObject({
+  ruleset: z.literal('dnd2024'),
+  species: shortTextOr(),
+  background: shortTextOr(),
+  class: shortTextOr(),
+  subclass: optionalShortText,
+  abilityMethod: text(z.enum(['pointBuy', 'roll', 'manual']).default('manual')),
+  /** Scores before any increase. */
+  baseAttributes: numberMap(64),
+  /** The background's +2/+1 or +1/+1/+1. */
+  backgroundBonuses: numberMap(64),
+  /** Picks by choice path (`class:fighter.fighting-style/style`). */
+  choices: text(z.record(z.string().max(500), z.array(shortString).max(50)).default({})),
+  /** Hit points gained on each level after the first. */
+  hitPoints: list(
+    passthroughObject({
+      level: numeric(int.min(2).max(20)),
+      method: z.enum(['average', 'roll']),
+      value: numeric(int.min(1).max(20)),
+    }),
+  ),
+  level: numeric(int.min(1).max(20).default(1)),
+});
 
 /** Uploaded artwork, referenced by asset id (see the API's /assets). */
 export const AssetIdSchema = z.uuid();
@@ -320,6 +365,7 @@ export const CharacterSchema = passthroughObject({
   avatar: text(z.string().max(LIMITS.avatar).optional()),
   history: text(z.array(HistoryEntrySchema).max(LIMITS.history).default([])),
   actionLimits: text(ActionCountersSchema.optional()),
+  build: text(BuildSchema.optional()),
   spentActions: text(ActionCountersSchema.optional()),
 });
 
@@ -344,6 +390,7 @@ export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 export type Resistance = z.infer<typeof ResistanceSchema>;
 export type ActionCounters = z.infer<typeof ActionCountersSchema>;
 export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
+export type Build = z.infer<typeof BuildSchema>;
 export type Character = z.infer<typeof CharacterSchema>;
 
 /** A character before it has an identity: what the creation wizard produces. */

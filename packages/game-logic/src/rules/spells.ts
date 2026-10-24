@@ -17,11 +17,28 @@ export const UNLIMITED_PREPARED = 99;
 
 export const spellLevelName = (level: number): string => (level === 0 ? 'Заговоры' : `${level} круг`);
 
-export const preparedCount = (character: Pick<Character, 'spells'>, level: number): number =>
-  character.spells.filter((spell) => spell.level === level && spell.prepared).length;
+/**
+ * Key of `maxPreparedSpells` holding one limit for all levelled spells together (a 2024 paladin
+ * prepares N spells of any level). Cantrips are never counted against it.
+ */
+export const TOTAL_PREPARED = 'total';
+
+const hasTotalLimit = (character: Pick<Character, 'maxPreparedSpells'>, level: number): boolean =>
+  level > 0 && character.maxPreparedSpells[TOTAL_PREPARED] !== undefined;
+
+/** Prepared spells counting against the limit of a level; always-prepared spells never count. */
+export const preparedCount = (character: Pick<Character, 'spells' | 'maxPreparedSpells'>, level: number): number =>
+  character.spells.filter(
+    (spell) =>
+      spell.prepared &&
+      !spell.alwaysPrepared &&
+      (hasTotalLimit(character, level) ? spell.level > 0 : spell.level === level),
+  ).length;
 
 export const maxPrepared = (character: Pick<Character, 'maxPreparedSpells'>, level: number): number =>
-  character.maxPreparedSpells[String(level)] ?? UNLIMITED_PREPARED;
+  hasTotalLimit(character, level)
+    ? character.maxPreparedSpells[TOTAL_PREPARED]!
+    : (character.maxPreparedSpells[String(level)] ?? UNLIMITED_PREPARED);
 
 /**
  * Why a spell cannot be prepared right now, or `null` if it can. A sheet that lists no known
@@ -29,11 +46,14 @@ export const maxPrepared = (character: Pick<Character, 'maxPreparedSpells'>, lev
  */
 export function preparationBlocker(character: Character, spell: Spell): string | null {
   if (spell.prepared) return null;
+  if (spell.alwaysPrepared) return 'Всегда подготовлено';
   if (character.knownSchools.length > 0 && spell.school && !character.knownSchools.includes(spell.school)) {
     return `Школа «${spell.school}» не изучена`;
   }
   if (preparedCount(character, spell.level) >= maxPrepared(character, spell.level)) {
-    return `Подготовлено максимум заклинаний: ${spellLevelName(spell.level).toLowerCase()}`;
+    return hasTotalLimit(character, spell.level)
+      ? 'Подготовлено максимум заклинаний'
+      : `Подготовлено максимум заклинаний: ${spellLevelName(spell.level).toLowerCase()}`;
   }
   return null;
 }
@@ -41,7 +61,7 @@ export function preparationBlocker(character: Character, spell: Spell): string |
 /** Prepares or unprepares a spell; preparing is refused while `preparationBlocker` has a reason. */
 export function togglePrepared(character: Character, spellId: string): Character {
   const spell = character.spells.find((s) => s.id === spellId);
-  if (!spell || (!spell.prepared && preparationBlocker(character, spell))) return character;
+  if (!spell || spell.alwaysPrepared || (!spell.prepared && preparationBlocker(character, spell))) return character;
   return {
     ...character,
     spells: character.spells.map((s) => (s.id === spellId ? { ...s, prepared: !s.prepared } : s)),
