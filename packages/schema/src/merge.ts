@@ -136,3 +136,18 @@ export function mergeCharacters(base: Character | null, local: Character, remote
     conflicts,
   };
 }
+
+/**
+ * Undoes the edits that took a character from `before` to `after`, on its `current` version: a
+ * three-way merge with `after` as the ancestor. A field changed since `after` (on another device) keeps
+ * that change, also when the undone edits touched it too; the log entries `logIds` the edits wrote go.
+ */
+export function revertCharacter(
+  before: Character,
+  after: Character,
+  current: Character,
+  logIds: ReadonlySet<string> = new Set(),
+): Character {
+  const { merged } = mergeCharacters(after, current, before);
+  return { ...merged, history: merged.history.filter((entry) => !logIds.has(entry.id)) };
+}
