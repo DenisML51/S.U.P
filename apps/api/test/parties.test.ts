@@ -84,6 +84,8 @@ describe('parties', () => {
 
     const lore = '## Пролог\nТуман над гаванью.';
     expect((await call(app, master, 'PATCH', `/parties/${partyId}`, { lore })).statusCode).toBe(204);
+    const shown = asMaster.heroes.find((h) => h.characterId === masterHero.id)!.id;
+    expect((await call(app, master, 'PATCH', `/parties/${partyId}/heroes/${shown}`, { hidden: false })).statusCode).toBe(204);
     const asPlayer = await view(app, player, partyId);
     expect(asPlayer.role).toBe('player');
     expect(asPlayer.lore).toBe(lore);
@@ -158,6 +160,37 @@ describe('parties', () => {
     await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [npcId, allyId] });
     const sides = (await view(app, player, partyId)).combat!.combatants.map((c) => [c.name, c.hostile, c.vitals]);
     expect(sides).toEqual(expect.arrayContaining([['Гуль', true, null], ['Проводник', false, null]]));
+  });
+
+  it('keeps the master’s heroes from the players until shown, but not out of a fight', async () => {
+    const app = await ctx.app();
+    const { master, player, partyId } = await table(app);
+    const names = async (user: User) => (await view(app, user, partyId)).heroes.map((hero) => hero.name);
+    const strangers = async () =>
+      (await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>().find((p) => p.id === partyId)!.heroCount;
+
+    expect(await names(master)).toEqual(['Страж', 'Охотник']);
+    expect((await view(app, master, partyId)).heroes.map((hero) => hero.hidden)).toEqual([true, false]);
+    expect(await names(player)).toEqual(['Охотник']);
+    expect(await strangers()).toBe(1);
+
+    const [guard, hunter] = (await view(app, master, partyId)).heroes;
+    const reveal = (user: User, heroId: string, hidden: boolean) =>
+      call(app, user, 'PATCH', `/parties/${partyId}/heroes/${heroId}`, { hidden });
+    expect((await reveal(player, guard!.id, false)).statusCode).toBe(403);
+    // Only the master's own heroes can be hidden.
+    expect((await reveal(master, hunter!.id, true)).statusCode).toBe(404);
+
+    expect((await reveal(master, guard!.id, false)).statusCode).toBe(204);
+    expect(await names(player)).toEqual(['Страж', 'Охотник']);
+    expect(await strangers()).toBe(2);
+
+    // Hidden again, the hero still stands in the fight it was brought into.
+    expect((await reveal(master, guard!.id, true)).statusCode).toBe(204);
+    await call(app, master, 'POST', `/parties/${partyId}/combat`, { heroIds: [guard!.id, hunter!.id] });
+    const seen = await view(app, player, partyId);
+    expect(seen.heroes.map((hero) => hero.name)).toEqual(['Охотник']);
+    expect(seen.combat!.combatants.map((c) => c.name).sort()).toEqual(['Охотник', 'Страж']);
   });
 
   it('runs a fight: initiative, turn order, turns passed once', async () => {

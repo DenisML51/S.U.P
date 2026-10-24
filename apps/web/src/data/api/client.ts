@@ -189,6 +189,8 @@ export const api = {
       apiClient.request<void>(`/parties/${encode(id)}/members/${encode(userId)}`, { method: 'DELETE' }),
     addHero: (id: string, characterId: string) =>
       apiClient.request<{ id: string }>(`/parties/${encode(id)}/heroes`, { method: 'POST', body: { characterId } }),
+    setHeroHidden: (id: string, heroId: string, hidden: boolean) =>
+      apiClient.request<void>(`/parties/${encode(id)}/heroes/${encode(heroId)}`, { method: 'PATCH', body: { hidden } }),
     removeHero: (id: string, heroId: string) =>
       apiClient.request<void>(`/parties/${encode(id)}/heroes/${encode(heroId)}`, { method: 'DELETE' }),
     createNpc: (id: string, body: CreateNpcRequest) =>

@@ -49,6 +49,8 @@ interface PartyState {
   removeMember(id: string, userId: string): Promise<boolean>;
   addHero(id: string, characterId: string): Promise<boolean>;
   removeHero(id: string, heroId: string): Promise<boolean>;
+  /** The master shows one of their heroes to the players, or hides it again. */
+  setHeroHidden(id: string, heroId: string, hidden: boolean): Promise<boolean>;
   createNpc(id: string, input: CreateNpcRequest): Promise<boolean>;
   updateNpc(id: string, npcId: string, input: UpdateNpcRequest): Promise<boolean>;
   removeNpc(id: string, npcId: string): Promise<boolean>;
@@ -229,6 +231,7 @@ export const usePartyStore = create<PartyState>((set, get) => {
     removeMember: (id, userId) => change(id, () => api.parties.removeMember(id, userId)),
     addHero: (id, characterId) => change(id, () => api.parties.addHero(id, characterId)),
     removeHero: (id, heroId) => change(id, () => api.parties.removeHero(id, heroId)),
+    setHeroHidden: (id, heroId, hidden) => change(id, () => api.parties.setHeroHidden(id, heroId, hidden)),
     createNpc: (id, input) => change(id, () => api.parties.createNpc(id, input)),
     updateNpc: (id, npcId, input) => change(id, () => api.parties.updateNpc(id, npcId, input)),
     removeNpc: (id, npcId) => change(id, () => api.parties.removeNpc(id, npcId)),

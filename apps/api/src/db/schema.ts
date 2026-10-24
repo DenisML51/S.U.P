@@ -3,6 +3,7 @@ import type { CharacterSummary } from '@itd/schema';
 import {
   type AnyPgColumn,
   bigint,
+  boolean,
   check,
   customType,
   foreignKey,
@@ -181,6 +182,8 @@ export const partyHeroes = pgTable(
     partyId: uuid('party_id').notNull(),
     userId: uuid('user_id').notNull(),
     characterId: text('character_id').notNull(),
+    /** A master's hero kept from the players until the master shows it. */
+    hidden: boolean('hidden').notNull().default(false),
     addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

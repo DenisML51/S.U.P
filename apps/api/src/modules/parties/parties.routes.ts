@@ -15,6 +15,7 @@ import {
   SendMessageRequestSchema,
   StartCombatRequestSchema,
   UpdateNpcRequestSchema,
+  UpdatePartyHeroRequestSchema,
   UpdatePartyRequestSchema,
 } from '@itd/schema';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -126,6 +127,16 @@ export const partyRoutes: FastifyPluginAsyncZod<PartyRoutesOptions> = async (
     { schema: { params: PartyHeroParamsSchema } },
     async (request, reply) => {
       await parties.removeHero(request.userId, request.params.id, request.params.heroId);
+      return reply.status(204).send();
+    },
+  );
+
+  app.patch(
+    '/parties/:id/heroes/:heroId',
+    { schema: { params: PartyHeroParamsSchema, body: UpdatePartyHeroRequestSchema } },
+    async (request, reply) => {
+      const { id, heroId } = request.params;
+      await parties.setHeroHidden(request.userId, id, heroId, request.body.hidden);
       return reply.status(204).send();
     },
   );

@@ -5,7 +5,15 @@ import { assetUrl } from '../../data/api/client';
 import { usePartyStore } from '../../store/usePartyStore';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
-import { IconArmor, IconClose, IconCombat, IconCreate, IconInitiative } from '../../ui/icons';
+import {
+  IconArmor,
+  IconClose,
+  IconCombat,
+  IconCreate,
+  IconHidden,
+  IconInitiative,
+  IconShown,
+} from '../../ui/icons';
 import { IconButton, Meter, Panel, cx } from '../../ui/primitives';
 import { formatBonus } from './partyView';
 
@@ -15,7 +23,7 @@ const PEEK = { x: 22, y: -12, turn: 2.5 } as const;
 /** Cards beyond this many lie hidden under the stack. */
 const SHOWN_IN_STACK = 4;
 
-type GroupId = 'heroes' | 'allies' | 'enemies';
+type GroupId = 'heroes' | 'master' | 'allies' | 'enemies';
 
 interface Card {
   key: string;
@@ -23,7 +31,8 @@ interface Card {
 }
 
 /**
- * The table's cards in stacks — the heroes, and for the master the NPCs by side. A stack lies with
+ * The master's table in stacks: the players' heroes, the master's own (each kept from the players
+ * until the master shows it), and the NPCs by side. A stack lies with
  * its cards one behind another; clicking it lays them out in a line (the others stay stacked), and
  * clicking its name gathers them back.
  */
@@ -36,31 +45,36 @@ export const TableDecks: React.FC<{
   onRemoveHero: (hero: PartyHeroDto) => void;
   onNpc: (npc?: PartyNpcDto) => void;
 }> = ({ party, userId, canBring, onBring, onPlay, onRemoveHero, onNpc }) => {
-  const isMaster = party.role === 'master';
   const [open, setOpen] = useState<GroupId | null>(null);
+  const setHeroHidden = usePartyStore((s) => s.setHeroHidden);
   const names = new Map(party.members.map((member) => [member.userId, member.displayName]));
   const npcs = party.npcs ?? [];
+  const fighting = new Set(party.combat?.combatants.map((c) => c.refId));
 
-  const heroCards: Card[] = party.heroes.map((hero) => ({
-    key: hero.id,
-    render: (mode) => (
-      <HeroCard
-        hero={hero}
-        label={
-          hero.ownerId === userId
-            ? 'ваш герой'
-            : hero.ownerId === party.masterId
-              ? 'герой мастера'
-              : (names.get(hero.ownerId) ?? '')
-        }
-        mine={hero.ownerId === userId}
-        mode={mode}
-        canRemove={isMaster || hero.ownerId === userId}
-        onPlay={() => onPlay(hero)}
-        onRemove={() => onRemoveHero(hero)}
-      />
-    ),
-  }));
+  const heroCard = (hero: PartyHeroDto): Card => {
+    const mine = hero.ownerId === userId;
+    // A hidden hero still shows in a fight it takes part in.
+    const seen = hero.hidden
+      ? fighting.has(hero.id)
+        ? 'скрыт · виден в бою'
+        : 'скрыт от игроков'
+      : 'виден игрокам';
+    return {
+      key: hero.id,
+      render: (mode) => (
+        <HeroCard
+          hero={hero}
+          label={mine ? seen : (names.get(hero.ownerId) ?? '')}
+          mine={mine}
+          mode={mode}
+          canRemove
+          onPlay={() => onPlay(hero)}
+          onRemove={() => onRemoveHero(hero)}
+          onToggleHidden={mine ? () => void setHeroHidden(party.id, hero.id, !hero.hidden) : undefined}
+        />
+      ),
+    };
+  };
   const npcCards = (hostile: boolean): Card[] =>
     npcs
       .filter((npc) => (npc.disposition === 'hostile') === hostile)
@@ -74,43 +88,38 @@ export const TableDecks: React.FC<{
     title: string;
     cards: Card[];
     add?: { label: string; hint: string; onAdd: () => void };
+    empty?: string;
   }[] = [
     {
       id: 'heroes',
       title: 'Отряд',
-      cards: heroCards,
+      cards: party.heroes.filter((hero) => hero.ownerId !== party.masterId).map(heroCard),
+      empty: 'Герои игроков появятся здесь',
+    },
+    {
+      id: 'master',
+      title: 'Герои мастера',
+      cards: party.heroes.filter((hero) => hero.ownerId === party.masterId).map(heroCard),
       add: canBring
         ? {
-            label: isMaster ? 'Добавить героя' : 'Привести героя',
-            hint: isMaster ? 'Ваши герои — под вашим управлением' : 'Один герой за столом',
+            label: 'Добавить героя',
+            hint: 'Под вашим управлением; игроки увидят, когда покажете',
             onAdd: onBring,
           }
         : undefined,
     },
-    ...(isMaster
-      ? [
-          {
-            id: 'enemies' as const,
-            title: 'Враги',
-            cards: npcCards(true),
-            add: {
-              label: 'Быстрый НПС',
-              hint: 'Хиты, КБ и инициатива — видите только вы',
-              onAdd: () => onNpc(),
-            },
-          },
-          {
-            id: 'allies' as const,
-            title: 'Союзники',
-            cards: npcCards(false),
-            add: {
-              label: 'Быстрый НПС',
-              hint: 'Друзья отряда; цифры видите только вы',
-              onAdd: () => onNpc(),
-            },
-          },
-        ]
-      : []),
+    {
+      id: 'enemies',
+      title: 'Враги',
+      cards: npcCards(true),
+      add: { label: 'Быстрый НПС', hint: 'Хиты, КБ и инициатива — видите только вы', onAdd: () => onNpc() },
+    },
+    {
+      id: 'allies',
+      title: 'Союзники',
+      cards: npcCards(false),
+      add: { label: 'Быстрый НПС', hint: 'Друзья отряда; цифры видите только вы', onAdd: () => onNpc() },
+    },
   ];
 
   const toggle = (id: GroupId) => setOpen((current) => (current === id ? null : id));
@@ -120,6 +129,7 @@ export const TableDecks: React.FC<{
       title={group.title}
       cards={group.cards}
       add={group.add}
+      empty={group.empty}
       mode={mode}
       onToggle={() => toggle(group.id)}
     />
@@ -129,19 +139,23 @@ export const TableDecks: React.FC<{
   // One stack laid out takes the row; the others shrink to small stacks beside it.
   return (
     <LayoutGroup>
-      <div className="ui-decks flex min-h-0 flex-1 items-start gap-10">
-        {spread ? (
-          <>
-            {deck(spread, 'spread')}
-            {groups.length > 1 && (
-              <div className="flex shrink-0 flex-col gap-5">
+      {/* The room sizes the cards so that all stacks fit side by side. */}
+      <div className="ui-decks-room flex min-h-0 flex-1">
+        <div
+          className="ui-decks flex min-h-0 flex-1 items-start gap-8"
+          style={{ '--groups': groups.length } as React.CSSProperties}
+        >
+          {spread ? (
+            <>
+              {deck(spread, 'spread')}
+              <div className="flex shrink-0 flex-col gap-4">
                 {groups.filter((group) => group !== spread).map((group) => deck(group, 'small'))}
               </div>
-            )}
-          </>
-        ) : (
-          groups.map((group) => deck(group, 'stack'))
-        )}
+            </>
+          ) : (
+            groups.map((group) => deck(group, 'stack'))
+          )}
+        </div>
       </div>
     </LayoutGroup>
   );
@@ -155,9 +169,11 @@ const Deck: React.FC<{
   title: string;
   cards: Card[];
   add?: { label: string; hint: string; onAdd: () => void };
+  /** Said in place of a stack with nothing in it and nothing to add. */
+  empty?: string;
   mode: DeckMode;
   onToggle: () => void;
-}> = ({ title, cards, add, mode, onToggle }) => {
+}> = ({ title, cards, add, empty, mode, onToggle }) => {
   const spread = mode === 'spread';
   const small = mode === 'small';
   // Under the cursor the cards part a little: the stack invites a click.
@@ -212,7 +228,16 @@ const Deck: React.FC<{
         </span>
       </motion.button>
 
-      {spread ? (
+      {all.length === 0 ? (
+        <div
+          className={cx(
+            'ui-deck__card ui-deck__empty grid place-items-center px-4 text-center text-xs text-ink-faint',
+            small ? 'mt-2' : 'mt-4',
+          )}
+        >
+          {!small && empty}
+        </div>
+      ) : spread ? (
         <Line count={all.length}>
           {all.map((card) => (
             <motion.div
@@ -373,8 +398,11 @@ const HeroCard: React.FC<{
   canRemove: boolean;
   onPlay: () => void;
   onRemove: () => void;
-}> = ({ hero, label, mine, mode, canRemove, onPlay, onRemove }) => {
+  /** The master's own hero: shown to the players or kept from them. */
+  onToggleHidden?: () => void;
+}> = ({ hero, label, mine, mode, canRemove, onPlay, onRemove, onToggleHidden }) => {
   const spread = mode === 'spread';
+  const hidden = hero.hidden;
   const origin = describeOrigin(hero);
   const vitals = hero.vitals;
   const playable = mine && spread;
@@ -390,14 +418,21 @@ const HeroCard: React.FC<{
         <CharacterArt
           source={{ name: hero.name, images: hero.portrait ? { portrait: hero.portrait } : undefined }}
           kind="portrait"
-          className="absolute inset-0 h-full w-full"
+          className={cx('absolute inset-0 h-full w-full', hidden && 'ui-hero-card__art--hidden')}
           position="50% 20%"
         />
         {mode !== 'small' && (
           <>
             <span className="absolute inset-0 bg-gradient-to-t from-bg-deep from-15% via-bg-deep/60 via-40% to-transparent to-65%" />
             <span className="relative mt-auto block space-y-1.5 p-4">
-              <span className="block truncate text-[10px] uppercase tracking-[0.2em] text-frame-bright/80">
+              <span
+                className={cx(
+                  'flex items-center gap-1.5 truncate text-[10px] uppercase tracking-[0.2em]',
+                  hidden ? 'text-ink-faint' : 'text-frame-bright/80',
+                )}
+              >
+                {onToggleHidden &&
+                  (hidden ? <IconHidden width={12} height={12} /> : <IconShown width={12} height={12} />)}
                 {label}
               </span>
               <span className="ui-display ui-card-name block truncate leading-tight text-ink">
@@ -431,6 +466,19 @@ const HeroCard: React.FC<{
           </>
         )}
       </Panel>
+      {spread && onToggleHidden && (
+        <IconButton
+          label={hidden ? 'Показать игрокам' : 'Скрыть от игроков'}
+          size={28}
+          onClick={onToggleHidden}
+          className={cx(
+            '!absolute left-2 top-2 z-[2] transition-opacity group-hover:opacity-100 focus-visible:opacity-100',
+            hidden ? 'opacity-100' : 'opacity-0',
+          )}
+        >
+          {hidden ? <IconShown width={14} height={14} /> : <IconHidden width={14} height={14} />}
+        </IconButton>
+      )}
       {spread && canRemove && (
         <IconButton
           label={mine ? 'Забрать героя из партии' : 'Убрать героя из партии'}
