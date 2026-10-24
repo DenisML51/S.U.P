@@ -16,6 +16,12 @@ import { AuthService } from './modules/auth/auth.service';
 import { AccessTokenSigner } from './modules/auth/crypto';
 import { characterRoutes } from './modules/characters/characters.routes';
 import { CharactersService } from './modules/characters/characters.service';
+import { CombatService } from './modules/parties/combat.service';
+import { MessagesService } from './modules/parties/messages.service';
+import { PartyAccess } from './modules/parties/partyAccess';
+import { PartyQueries } from './modules/parties/parties.queries';
+import { partyRoutes } from './modules/parties/parties.routes';
+import { PartiesService } from './modules/parties/parties.service';
 import { RealtimeHub } from './modules/realtime/hub';
 import { PostgresChangeNotifier } from './modules/realtime/pgNotifier';
 import { realtimeRoutes } from './modules/realtime/realtime.routes';
@@ -27,6 +33,10 @@ export interface AppServices {
   auth: AuthService;
   assets: AssetsService;
   characters: CharactersService;
+  parties: PartiesService;
+  combat: CombatService;
+  partyQueries: PartyQueries;
+  messages: MessagesService;
   /** Sockets of this process. */
   hub: RealtimeHub;
   /** Cross-process change bus; the app forwards it into `hub`. */
@@ -37,6 +47,9 @@ export function createServices(config: Config, { db, sql }: DatabaseConnection):
   const hub = new RealtimeHub();
   const notifier = new PostgresChangeNotifier(sql, (error) => console.error('change notification failed', error));
   const signer = new AccessTokenSigner(config.JWT_SECRET, config.ACCESS_TOKEN_TTL_SECONDS);
+  const partyAccess = new PartyAccess(db, notifier);
+  const combat = new CombatService(partyAccess);
+  const parties = new PartiesService(db, partyAccess, combat, (error) => console.error('party update failed', error));
   return {
     hub,
     notifier,
@@ -44,7 +57,11 @@ export function createServices(config: Config, { db, sql }: DatabaseConnection):
       refreshTokenTtlDays: config.REFRESH_TOKEN_TTL_DAYS,
       registrationEnabled: config.REGISTRATION_ENABLED,
     }),
-    characters: new CharactersService(db, notifier),
+    characters: new CharactersService(db, notifier, [parties]),
+    parties,
+    combat,
+    partyQueries: new PartyQueries(db),
+    messages: new MessagesService(db, notifier),
     assets: new AssetsService(db),
   };
 }
@@ -103,6 +120,13 @@ export async function buildApp(
 
       await api.register(authRoutes, { auth: services.auth, hub: services.hub, cookieSecure: config.COOKIE_SECURE });
       await api.register(characterRoutes, { auth: services.auth, characters: services.characters });
+      await api.register(partyRoutes, {
+        auth: services.auth,
+        parties: services.parties,
+        combat: services.combat,
+        queries: services.partyQueries,
+        messages: services.messages,
+      });
       await api.register(assetRoutes, { auth: services.auth, assets: services.assets });
       await api.register(realtimeRoutes, { auth: services.auth, hub: services.hub });
     },

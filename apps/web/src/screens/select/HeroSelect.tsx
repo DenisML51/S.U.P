@@ -44,6 +44,7 @@ type Slot = { kind: 'hero'; hero: CharacterPreview } | { kind: 'new' };
 
 interface HeroSelectProps {
   onCreate: () => void;
+  onHome: () => void;
   onOpenSettings: () => void;
 }
 
@@ -52,7 +53,7 @@ interface HeroSelectProps {
  * atmosphere takes the focused hero's setting, so browsing previews each universe before entering;
  * the controls are the service's own and stay the same over every world.
  */
-export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings }) => {
+export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpenSettings }) => {
   const heroes = useCharacterStore((s) => s.charactersList);
   const loadCharacter = useCharacterStore((s) => s.loadCharacter);
   const deleteCharacter = useCharacterStore((s) => s.deleteCharacter);
@@ -89,7 +90,8 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (pendingDelete || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
-      if (event.key === 'ArrowLeft') step(-1);
+      if (event.key === 'Escape') onHome();
+      else if (event.key === 'ArrowLeft') step(-1);
       else if (event.key === 'ArrowRight') step(1);
       else if (event.key === 'Enter') {
         if (focused.kind === 'hero') play(focused.hero);
@@ -98,7 +100,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [focused, onCreate, pendingDelete, play, step]);
+  }, [focused, onCreate, onHome, pendingDelete, play, step]);
 
   const onImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -143,7 +145,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onOpenSettings
           animate={{ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.15 } }}
           exit={{ opacity: 0, y: -12, transition: { duration: 0.25 } }}
         >
-          <Wordmark />
+          <Wordmark onHome={onHome} />
           <div className="flex items-center gap-3">
             <SyncBadge />
             <IconButton label="Настройки" onClick={onOpenSettings}>

@@ -21,6 +21,10 @@ async function main() {
   const assetTimer = setInterval(collectAssets, ASSET_GC_INTERVAL_MS);
   assetTimer.unref();
   void collectAssets();
+  void services.characters
+    .backfillSummaries()
+    .then((filled) => filled > 0 && app.log.info({ filled }, 'character summaries filled'))
+    .catch((error: unknown) => app.log.error({ err: error }, 'character summary backfill failed'));
 
   let shuttingDown = false;
   const shutdown = async (signal: string) => {

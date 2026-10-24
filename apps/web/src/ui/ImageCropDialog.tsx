@@ -3,12 +3,13 @@ import { Dialog } from './Dialog';
 import { Segmented } from './forms';
 import { Button } from './primitives';
 
-export type CropPreset = 'portrait' | 'full';
+export type CropPreset = 'portrait' | 'full' | 'cover';
 
 /** Frames to cut a picture to: the shape it is shown in and the largest side worth keeping. */
 const PRESETS: Record<CropPreset, { label: string; aspect: number; maxSide: number }> = {
   portrait: { label: 'Портрет · 1:1', aspect: 1, maxSide: 640 },
   full: { label: 'Арт карточки · 2:3', aspect: 2 / 3, maxSide: 1600 },
+  cover: { label: 'Обложка · 16:9', aspect: 16 / 9, maxSide: 1920 },
 };
 
 /** The frame as fractions of the picture, so it stays put whatever size the picture is drawn at. */
@@ -69,6 +70,8 @@ export const ImageCropDialog: React.FC<{
 }> = ({ source, title, preset: initialPreset, onCancel, onCropped }) => {
   const image = useRef<HTMLImageElement>(null);
   const [preset, setPreset] = useState(initialPreset);
+  // A cover is always wide; a hero's picture is either of the hero shapes.
+  const shapes: CropPreset[] = initialPreset === 'cover' ? ['cover'] : ['portrait', 'full'];
   const [frame, setFrame] = useState<Frame | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -152,18 +155,22 @@ export const ImageCropDialog: React.FC<{
       title={title}
       width="lg"
       footerStart={
-        <Segmented
-          label="Форма рамки"
-          value={preset}
-          onChange={(next) => {
-            setPreset(next);
-            refit(next);
-          }}
-          options={(Object.keys(PRESETS) as CropPreset[]).map((id) => ({
-            value: id,
-            label: PRESETS[id].label,
-          }))}
-        />
+        shapes.length > 1 ? (
+          <Segmented
+            label="Форма рамки"
+            value={preset}
+            onChange={(next) => {
+              setPreset(next);
+              refit(next);
+            }}
+            options={shapes.map((id) => ({
+              value: id,
+              label: PRESETS[id].label,
+            }))}
+          />
+        ) : (
+          <span className="text-sm text-ink-faint">{PRESETS[preset].label}</span>
+        )
       }
       footer={
         <>

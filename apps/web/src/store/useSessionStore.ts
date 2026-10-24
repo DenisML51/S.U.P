@@ -10,6 +10,8 @@ import { sessionManager } from '../data/session/sessionManager';
 import type { SyncStatus } from '../data/sync/syncEngine';
 import { createWorkspace, type Workspace } from '../data/workspace';
 import { useCharacterStore } from './useCharacterStore';
+import { useChatStore } from './useChatStore';
+import { usePartyStore } from './usePartyStore';
 
 export type SessionStatus = 'booting' | 'anonymous' | 'authenticated';
 
@@ -59,6 +61,8 @@ export const useSessionStore = create<SessionState>((set, get) => {
       }
     });
     await useCharacterStore.getState().attachWorkspace(current);
+    usePartyStore.getState().attach(current);
+    useChatStore.getState().attach(current);
     current.start(online);
   };
 
@@ -80,6 +84,8 @@ export const useSessionStore = create<SessionState>((set, get) => {
     unsubscribeSync = null;
     workspace?.dispose();
     workspace = null;
+    usePartyStore.getState().attach(null);
+    useChatStore.getState().attach(null);
     void useCharacterStore.getState().attachWorkspace(null);
   };
 

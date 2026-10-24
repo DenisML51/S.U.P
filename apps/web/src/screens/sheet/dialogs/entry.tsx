@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DetailsPane } from '../../../ui/DetailsPane';
 import { Dialog } from '../../../ui/Dialog';
 import { Button } from '../../../ui/primitives';
+import { useCharacterStore } from '../../../store/useCharacterStore';
 import { useEntryPresentation } from './context';
 import { DeleteButton } from './parts';
 
@@ -50,8 +51,14 @@ export const EntryView: React.FC<
     primary?: React.ReactNode;
     children?: React.ReactNode;
   }
-> = ({ open, onClose, what, onDelete, name, eyebrow, icon, onEdit, primary, children }) => {
+> = ({ open, onClose, what, onDelete: remove, name, eyebrow, icon, onEdit, primary: action, children }) => {
   const presentation = useEntryPresentation();
+  // Out of the hero's turn in a party's fight the card is for reading only.
+  const locked = useCharacterStore((s) => s.turnLock) !== null;
+  const onDelete = locked ? undefined : remove;
+  const primary = locked ? undefined : action;
+  const edit = (button: React.ReactNode) =>
+    locked ? <span className="text-xs text-ink-faint">Действовать можно в свой ход</span> : button;
   if (presentation.mode === 'pane') {
     return (
       <DetailsPane
@@ -64,9 +71,11 @@ export const EntryView: React.FC<
         actions={
           <>
             {primary}
-            <Button variant={primary ? 'secondary' : 'primary'} onClick={presentation.edit}>
-              Изменить
-            </Button>
+            {edit(
+              <Button variant={primary ? 'secondary' : 'primary'} onClick={presentation.edit}>
+                Изменить
+              </Button>,
+            )}
           </>
         }
       >
@@ -86,13 +95,15 @@ export const EntryView: React.FC<
       footerStart={onDelete && <DeleteButton what={what} name={name} onDelete={onDelete} />}
       footer={
         <>
-          <Button
-            variant={primary ? 'secondary' : 'primary'}
-            onClick={onEdit}
-            data-autofocus={primary ? undefined : true}
-          >
-            Изменить
-          </Button>
+          {edit(
+            <Button
+              variant={primary ? 'secondary' : 'primary'}
+              onClick={onEdit}
+              data-autofocus={primary ? undefined : true}
+            >
+              Изменить
+            </Button>,
+          )}
           {primary}
         </>
       }
@@ -127,35 +138,43 @@ export const EntryForm: React.FC<
   onCancel,
   width = 'lg',
   children,
-}) => (
-  <Dialog
-    open={open}
-    onClose={onClose}
-    swapKey="edit"
-    width={width}
-    eyebrow={eyebrow}
-    title={name.trim() || 'Без названия'}
-    footerStart={!isNew && onDelete && <DeleteButton what={what} name={name} onDelete={onDelete} />}
-    footer={
-      <>
-        <Button variant="ghost" onClick={onCancel}>
-          Отмена
-        </Button>
-        <Button variant="primary" disabled={!canSave} onClick={onSave}>
-          {isNew ? 'Добавить' : 'Сохранить'}
-        </Button>
-      </>
-    }
-  >
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (canSave) onSave();
-      }}
+}) => {
+  const locked = useCharacterStore((s) => s.turnLock) !== null;
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      swapKey="edit"
+      width={width}
+      eyebrow={eyebrow}
+      title={name.trim() || 'Без названия'}
+      footerStart={!isNew && onDelete && <DeleteButton what={what} name={name} onDelete={onDelete} />}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onCancel}>
+            Отмена
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!canSave || locked}
+            onClick={onSave}
+            title={locked ? 'Действовать можно в свой ход' : undefined}
+          >
+            {isNew ? 'Добавить' : 'Сохранить'}
+          </Button>
+        </>
+      }
     >
-      {children}
-      <button type="submit" hidden />
-    </form>
-  </Dialog>
-);
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (canSave && !locked) onSave();
+        }}
+      >
+        {children}
+        <button type="submit" hidden />
+      </form>
+    </Dialog>
+  );
+};

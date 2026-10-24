@@ -5,7 +5,7 @@ import type { ChangeNotifier } from './hub';
 const CHANNEL = 'itd_changes';
 
 interface ChangeEvent {
-  userId: string;
+  userIds: readonly string[];
   message: WsServerMessage;
 }
 
@@ -19,8 +19,9 @@ export class PostgresChangeNotifier implements ChangeNotifier {
     private readonly onError: (error: unknown) => void = () => {},
   ) {}
 
-  publish(userId: string, message: WsServerMessage): void {
-    const event: ChangeEvent = { userId, message };
+  publish(userIds: readonly string[], message: WsServerMessage): void {
+    if (userIds.length === 0) return;
+    const event: ChangeEvent = { userIds, message };
     this.sql`select pg_notify(${CHANNEL}, ${JSON.stringify(event)})`.catch(this.onError);
   }
 
@@ -29,7 +30,7 @@ export class PostgresChangeNotifier implements ChangeNotifier {
     const { unlisten } = await this.sql.listen(CHANNEL, (payload) => {
       try {
         const event = JSON.parse(payload) as ChangeEvent;
-        target.publish(event.userId, event.message);
+        target.publish(event.userIds, event.message);
       } catch (error) {
         this.onError(error);
       }

@@ -1,4 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavStore } from './store/useNavStore';
+import { usePartyStore } from './store/usePartyStore';
+import { HomeScreen } from './screens/home/HomeScreen';
+import { PartyFormScreen } from './screens/party/PartyFormScreen';
+import { PartyScreen } from './screens/party/PartyScreen';
+import { useFightCall } from './screens/party/useFightCall';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
@@ -23,12 +29,25 @@ const App: React.FC = () => {
   const character = useCharacterStore((s) => s.character);
   const viewMode = useCharacterStore((s) => s.viewMode);
   const isLoaded = useCharacterStore((s) => s.isLoaded);
-  const [creating, setCreating] = useState(false);
+  const place = useNavStore((s) => s.place);
+  const go = useNavStore((s) => s.go);
+  const creation = useNavStore((s) => s.creation);
+  const startCreation = useNavStore((s) => s.startCreation);
+  const endCreation = useNavStore((s) => s.endCreation);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const openSettings = () => setSettingsOpen(true);
+
+  /** Creation ends with the new hero open (or nothing, if it was left); a party's new hero takes its seat. */
+  const finishCreation = () => {
+    const created = useCharacterStore.getState().character;
+    if (created && creation?.partyId) void usePartyStore.getState().addHero(creation.partyId, created.id);
+    endCreation();
+  };
 
   useEffect(() => {
     void boot();
   }, [boot]);
+  useFightCall();
 
   const signedIn = status === 'authenticated';
 
@@ -41,25 +60,26 @@ const App: React.FC = () => {
     screen = <AuthScreen />;
     screenKey = 'auth';
   } else if (character && viewMode === 'tabs') {
-    screen = (
-      <>
-        <SheetScreen onOpenSettings={() => setSettingsOpen(true)} />
-      </>
-    );
+    screen = <SheetScreen onOpenSettings={openSettings} />;
     screenKey = 'sheet';
   } else if (character) {
-    screen = (
-      <>
-        <CombatScreen onOpenSettings={() => setSettingsOpen(true)} />
-      </>
-    );
+    screen = <CombatScreen onOpenSettings={openSettings} />;
     screenKey = 'combat';
-  } else if (creating) {
-    screen = <CreationScreen onDone={() => setCreating(false)} />;
+  } else if (creation) {
+    screen = <CreationScreen world={creation.world} onDone={finishCreation} />;
     screenKey = 'create';
-  } else {
-    screen = <HeroSelect onCreate={() => setCreating(true)} onOpenSettings={() => setSettingsOpen(true)} />;
+  } else if (place.screen === 'party') {
+    screen = <PartyScreen partyId={place.partyId} onOpenSettings={openSettings} />;
+    screenKey = `party-${place.partyId}`;
+  } else if (place.screen === 'party-form') {
+    screen = <PartyFormScreen partyId={place.partyId} />;
+    screenKey = `party-form-${place.partyId ?? 'new'}`;
+  } else if (place.screen === 'heroes') {
+    screen = <HeroSelect onCreate={() => startCreation()} onHome={() => go({ screen: 'home' })} onOpenSettings={openSettings} />;
     screenKey = 'select';
+  } else {
+    screen = <HomeScreen onOpenSettings={openSettings} />;
+    screenKey = 'home';
   }
 
   return (

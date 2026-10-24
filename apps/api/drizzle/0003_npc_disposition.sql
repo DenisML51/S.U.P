@@ -1,0 +1,1 @@
+ALTER TABLE "party_npcs" ADD COLUMN "disposition" text DEFAULT 'hostile' NOT NULL;

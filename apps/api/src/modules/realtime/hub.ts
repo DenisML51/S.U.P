@@ -1,8 +1,8 @@
 import type { WsServerMessage } from '@itd/schema';
 
-/** What services need from realtime: tell a user's devices that something changed. */
+/** What services need from realtime: tell users' devices that something changed. */
 export interface ChangeNotifier {
-  publish(userId: string, message: WsServerMessage): void;
+  publish(userIds: readonly string[], message: WsServerMessage): void;
 }
 
 export interface RealtimeConnection {
@@ -27,8 +27,10 @@ export class RealtimeHub implements ChangeNotifier {
     };
   }
 
-  publish(userId: string, message: WsServerMessage): void {
-    for (const connection of this.connections.get(userId) ?? []) connection.send(message);
+  publish(userIds: readonly string[], message: WsServerMessage): void {
+    for (const userId of userIds) {
+      for (const connection of this.connections.get(userId) ?? []) connection.send(message);
+    }
   }
 
   /** Closes every socket of a user, e.g. after a password change. */

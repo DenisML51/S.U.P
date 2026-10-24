@@ -1,0 +1,200 @@
+/* ================================================================== Home and parties
+ * Pieces of the home page and the party screens. Shapes and motion only: colours come from the
+ * scope's tokens, so a party's table wears its world and the home page the service.
+ */
+
+/* ---------------------------------------------------------------- Home: the hand of hero cards */
+.ui-home-card {
+  border-radius: calc(var(--radius) * 0.75);
+  border: 1px solid rgb(var(--c-frame) / 0.5);
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.85);
+  transform: translate(calc(-50% + var(--fan-x)), calc(-50% + var(--fan-y))) rotate(var(--fan-r));
+  transform-origin: 50% 120%;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s;
+  filter: brightness(0.72) saturate(0.85);
+}
+.group:hover .ui-home-card,
+.group:focus-visible .ui-home-card {
+  transform: translate(calc(-50% + var(--fan-x) * 1.25), calc(-52% + var(--fan-y))) rotate(calc(var(--fan-r) * 1.3));
+  filter: brightness(0.95) saturate(1);
+}
+
+.ui-home-join {
+  border-top: 1px solid rgb(var(--c-line) / 0.6);
+}
+[data-setting='service'] .ui-home-join:not([data-world] *) {
+  border-top-color: var(--divider);
+}
+
+/* An invite code reads like a code: spaced capitals in the numeric face. */
+.ui-invite-input {
+  font-family: var(--font-numeric);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+.ui-invite-input::placeholder {
+  letter-spacing: 0.32em;
+}
+
+/* ---------------------------------------------------------------- Party cover */
+.ui-party-cover {
+  border-radius: calc(var(--radius) * 0.6);
+}
+
+/* ---------------------------------------------------------------- Heroes at the table */
+.ui-party-tile {
+  height: 100%;
+  max-height: 22rem;
+  min-height: 15rem;
+  aspect-ratio: 3 / 4;
+}
+
+/* Quiet rows of the side panel: a tint under the cursor, nothing moves. */
+.ui-party-row {
+  border-radius: calc(var(--radius) * 0.5);
+  transition: background-color 0.2s;
+}
+.ui-party-row:hover {
+  background: rgb(var(--c-frame) / 0.08);
+}
+
+.ui-npc-face {
+  border-radius: calc(var(--radius) * 0.5);
+  box-shadow: inset 0 0 0 1px var(--npc-side);
+}
+.ui-npc-face--hostile { --npc-side: rgb(var(--c-danger) / 0.7); }
+.ui-npc-face--friendly { --npc-side: rgb(var(--c-success) / 0.65); }
+
+.ui-invite-code {
+  letter-spacing: 0.16em;
+}
+
+/* ---------------------------------------------------------------- Initiative strip */
+.ui-initiative__portrait {
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  border-radius: calc(var(--radius) * 0.6);
+  background: rgb(var(--c-inset));
+  box-shadow: 0 8px 18px -10px rgb(0 0 0 / 0.9);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s, box-shadow 0.3s, filter 0.3s;
+}
+/* Sides of the fight: enemies edged in danger, allied NPCs in the colour of success. */
+.ui-initiative__token--hostile .ui-initiative__portrait {
+  border-color: rgb(var(--c-danger) / 0.65);
+}
+.ui-initiative__token--ally .ui-initiative__portrait {
+  border-color: rgb(var(--c-success) / 0.6);
+}
+.ui-initiative__token--waiting .ui-initiative__portrait {
+  filter: grayscale(0.7) brightness(0.6);
+  border-style: dashed;
+}
+.ui-initiative__token--current .ui-initiative__portrait {
+  transform: translateY(-4px) scale(1.08);
+  border-color: rgb(var(--c-frame-bright));
+  box-shadow:
+    0 0 0 2px rgb(var(--c-accent) / 0.55),
+    0 0 22px -2px rgb(var(--c-accent) / 0.55),
+    0 12px 24px -12px rgb(0 0 0 / 0.9);
+}
+button.ui-initiative__token:hover .ui-initiative__portrait {
+  border-color: rgb(var(--c-frame-bright) / 0.8);
+}
+.ui-initiative__badge {
+  height: 1.35rem;
+  border-radius: 999px;
+  background: rgb(var(--c-bg-deep));
+  border: 1px solid rgb(var(--c-frame) / 0.6);
+  color: rgb(var(--c-frame-bright));
+  z-index: 1;
+}
+.ui-initiative__token--current + .ui-initiative__badge {
+  background: rgb(var(--c-accent));
+  border-color: rgb(var(--c-accent));
+  color: rgb(var(--c-accent-ink));
+}
+
+/* ---------------------------------------------------------------- Picking combatants */
+.ui-pick {
+  border: 1px solid rgb(var(--c-line) / 0.8);
+  border-radius: calc(var(--radius) * 0.6);
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.ui-pick:hover {
+  border-color: rgb(var(--c-frame) / 0.8);
+}
+.ui-pick--on {
+  border-color: rgb(var(--c-frame-bright) / 0.85);
+  background: rgb(var(--c-frame) / 0.1);
+}
+.ui-pick__check {
+  border: 1px solid rgb(var(--c-frame) / 0.7);
+  border-radius: 999px;
+}
+.ui-pick--on .ui-pick__check {
+  background: rgb(var(--c-accent));
+  border-color: rgb(var(--c-accent));
+  color: rgb(var(--c-accent-ink));
+}
+
+
+/* ---------------------------------------------------------------- Stacks of cards at the table */
+.ui-decks {
+  --card-h: clamp(13rem, 36vh, 19rem);
+  --card-w: calc(var(--card-h) * 0.75);
+}
+.ui-deck__card {
+  width: var(--card-w);
+  height: var(--card-h);
+}
+.ui-deck__stack:focus-visible {
+  outline: 2px solid rgb(var(--c-frame-bright) / 0.6);
+  outline-offset: 6px;
+}
+.ui-deck__stack:hover .ui-deck__card:first-child {
+  filter: brightness(1.08);
+}
+.ui-npc-card--hostile { box-shadow: inset 0 -3px 0 rgb(var(--c-danger) / 0.7); }
+.ui-npc-card--friendly { box-shadow: inset 0 -3px 0 rgb(var(--c-success) / 0.6); }
+.ui-npc-card--down { filter: grayscale(0.85) brightness(0.7); }
+.ui-deck--small {
+  --card-h: 7.5rem;
+  --card-w: calc(var(--card-h) * 0.75);
+}
+
+/* ---------------------------------------------------------------- Out of turn */
+/* The combat bar waits for the hero's turn: it stays readable (hints, cards) but reads as resting. */
+.ui-turn-locked {
+  filter: saturate(0.45) brightness(0.75);
+  transition: filter 0.4s;
+}
+
+.ui-companion {
+  border: 1px solid rgb(var(--c-frame) / 0.5);
+  border-radius: calc(var(--radius) * 0.75);
+  box-shadow: 0 14px 30px -16px rgb(0 0 0 / 0.9);
+}
+/* A card's name keeps to the card's size: smaller cards of a full table still show whole names. */
+.ui-card-name {
+  font-size: clamp(1rem, calc(var(--card-w, 15rem) * 0.105), 1.35rem);
+}
+
+/* ---------------------------------------------------------------- Table talk */
+.ui-chat__line {
+  border-radius: calc(var(--radius) * 0.5);
+  background: rgb(var(--c-inset) / 0.55);
+  border-left: 2px solid transparent;
+}
+.ui-chat__line--master {
+  border-left-color: rgb(var(--c-frame) / 0.7);
+}
+/* A private word: tinted in the accent, so it is never taken for something the table heard. */
+.ui-chat__line--private {
+  background: rgb(var(--c-accent) / 0.1);
+  border-left-color: rgb(var(--c-accent) / 0.8);
+}
+.ui-chat__compose {
+  border-top: 1px solid rgb(var(--c-line) / 0.6);
+}
+.ui-chat__input--private {
+  border-color: rgb(var(--c-accent) / 0.7);
+}
