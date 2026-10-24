@@ -124,7 +124,7 @@ export const Hotbar: React.FC<{ character: Character; inCombat: boolean }> = ({ 
   const acts = useActs({ inCombat });
   const inventory = useInventory();
   const dialogs = useSheetDialogs();
-  const { tip, bind, clear } = useHudTip<Slot>();
+  const { tip, bind, hold, clear } = useHudTip<Slot>();
 
   const use = (slot: Slot) => {
     if (slot.kind === 'attack') {
@@ -181,7 +181,7 @@ export const Hotbar: React.FC<{ character: Character; inCombat: boolean }> = ({ 
           </div>
         </Panel>
       ))}
-      <HudTip rect={hinted ? tip.rect : null} tipKey={hinted?.key ?? ''}>
+      <HudTip rect={hinted ? tip.rect : null} tipKey={hinted?.key ?? ''} hold={hold}>
         {hinted && <SlotHint slot={hinted} />}
       </HudTip>
     </div>

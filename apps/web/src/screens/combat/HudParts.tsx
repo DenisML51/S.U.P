@@ -41,9 +41,9 @@ interface Hint {
 
 /** Small hints of the HUD: a title and a line or two. */
 function useHint() {
-  const { tip, bind } = useHudTip<Hint>();
+  const { tip, bind, hold } = useHudTip<Hint>();
   const view = (
-    <HudTip rect={tip?.rect ?? null} tipKey={tip?.value.key ?? ''} width={240} className="text-center">
+    <HudTip rect={tip?.rect ?? null} tipKey={tip?.value.key ?? ''} width={240} className="text-center" hold={hold}>
       {tip && (
         <>
           <div className="ui-display text-base leading-tight text-ink">{tip.value.title}</div>
