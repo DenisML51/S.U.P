@@ -623,19 +623,37 @@
 }
 
 /* ------------------------------------------------------------------ World card */
-/* Jacking in: on hover the reticle locks onto the emblem segment by segment, the picture tears
-   once, scan lines sweep and the name splits into red and cyan. */
+/* Jacking in: the feed tears for a moment — ragged bars of red, cyan and yellow noise jump across
+   the card — then it holds, live: fine scan lines over it, a hazard tag in its corner, the reticle
+   locked onto the emblem segment by segment and the name split into red and cyan. */
 [data-setting='cyberpunk'] {
   & > .ui-world { border-color: rgb(var(--c-frame) / 0.7); clip-path: var(--cut-shape); }
+  /* The tear: three bars of noise, shown once. */
   & > .ui-world::after {
     content: '';
     position: absolute;
     inset: 0;
-    z-index: -1;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: screen;
+    background:
+      linear-gradient(rgb(255 98 88 / 0.55), rgb(255 98 88 / 0.55)) 0 26% / 70% 3% no-repeat,
+      linear-gradient(rgb(86 240 250 / 0.5), rgb(86 240 250 / 0.5)) 100% 58% / 55% 1.5% no-repeat,
+      linear-gradient(rgb(252 236 12 / 0.45), rgb(252 236 12 / 0.45)) 20% 77% / 40% 2% no-repeat;
+  }
+  /* Live: scan lines and a hazard tag in the top right corner. */
+  & > .ui-world::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
     pointer-events: none;
     opacity: 0;
     background:
-      linear-gradient(180deg, transparent, rgb(var(--c-neon) / 0.18) 48%, rgb(var(--c-neon) / 0.45) 50%, transparent 52%) 0 -100% / 100% 60% no-repeat;
+      repeating-linear-gradient(-45deg, rgb(252 236 12) 0 4px, transparent 4px 9px) calc(100% - 1.6rem) 0.9rem / 3.5rem 6px no-repeat,
+      repeating-linear-gradient(0deg, rgb(0 0 0 / 0.22) 0 1px, transparent 1px 3px);
+    transition: opacity 300ms 250ms;
   }
   & > .ui-world .ui-world__name { font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
   & > .ui-world .ui-world__emblem { color: rgb(var(--c-frame-bright)); }
@@ -644,7 +662,8 @@
   .cp-sigil__ring { transform-origin: 0 0; }
   .cp-sigil__lock { opacity: 0; transition: opacity 200ms 300ms; }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) { border-color: rgb(var(--c-frame-bright)); transform: none; animation: cp-glitch 300ms steps(2) 1; }
-  & > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { opacity: 1; animation: cp-world-scan 900ms ease-out forwards; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::after { animation: cp-world-tear 0.5s steps(1) forwards; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true'])::before { opacity: 1; }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { color: rgb(var(--c-accent)); }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__name { color: rgb(var(--c-ink)); text-shadow: -2px 0 rgb(var(--c-frame-bright) / 0.8), 2px 0 rgb(var(--c-neon) / 0.7); }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .cp-sigil { opacity: 1; }
@@ -652,9 +671,12 @@
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .cp-sigil__seg { animation: cp-lock 500ms steps(2) both; }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .cp-sigil__lock { opacity: 1; }
 }
-@keyframes cp-world-scan {
-  from { background-position: 0 -100%; }
-  to { background-position: 0 220%; }
+@keyframes cp-world-tear {
+  0% { opacity: 1; transform: translateX(-6%); }
+  20% { opacity: 0; }
+  35% { opacity: 1; transform: translateX(8%) scaleY(1.6); }
+  55% { opacity: 0.6; transform: translateX(-3%); }
+  70%, 100% { opacity: 0; transform: none; }
 }
 @keyframes cp-lock {
   0% { opacity: 0; }
