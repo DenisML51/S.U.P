@@ -581,11 +581,11 @@
       repeating-linear-gradient(0deg, rgb(var(--c-accent) / 0.08) 0 1px, transparent 1px 24px);
   }
   .ui-world__name { font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
-  .ui-world:is(:hover, [aria-pressed='true']) { border-color: rgb(var(--c-accent) / 0.7); transform: none; }
-  .ui-world:is(:hover, [aria-pressed='true'])::before { inset: 10px; opacity: 1; }
-  .ui-world:is(:hover, [aria-pressed='true'])::after { opacity: 1; animation: sf-world-scan 900ms ease-out forwards; }
-  .ui-world:is(:hover, [aria-pressed='true']) .ui-world__emblem { color: rgb(var(--c-accent)); animation: sf-world-flicker 600ms steps(1) both; }
-  .ui-world:is(:hover, [aria-pressed='true']) .ui-world__name { letter-spacing: 0.16em; }
+  .ui-world:hover { border-color: rgb(var(--c-accent) / 0.7); transform: none; }
+  .ui-world:hover::before { inset: 10px; opacity: 1; }
+  .ui-world:hover::after { opacity: 1; animation: sf-world-scan 900ms ease-out forwards; }
+  .ui-world:hover .ui-world__emblem { color: rgb(var(--c-accent)); animation: sf-world-flicker 600ms steps(1) both; }
+  .ui-world:hover .ui-world__name { letter-spacing: 0.16em; }
 }
 
 @keyframes sf-world-scan {
@@ -601,6 +601,6 @@
   70%, 100% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='sci-fi'] .ui-world:is(:hover, [aria-pressed='true']) :is(.ui-world__emblem),
-  [data-setting='sci-fi'] .ui-world:is(:hover, [aria-pressed='true'])::after { animation: none; }
+  [data-setting='sci-fi'] .ui-world:hover :is(.ui-world__emblem),
+  [data-setting='sci-fi'] .ui-world:hover::after { animation: none; }
 }
