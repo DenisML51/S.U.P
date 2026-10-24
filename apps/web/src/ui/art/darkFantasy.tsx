@@ -156,13 +156,11 @@ const SIGIL_RUNES = [
 ];
 
 /**
- * A ring of runes round the world card's emblem: faint until the card is looked at, then they burn
- * one after another like embers while the ring turns slowly, as a ward drawn on a crypt floor.
+ * Runes set in a ring round the world card's emblem, with no circle drawn: faint until the card is
+ * looked at, then they burn one after another like embers while the ring turns slowly.
  */
 const WorldSigil: React.FC = () => (
   <svg viewBox="-110 -110 220 220" fill="none" aria-hidden className="df-sigil">
-    <circle r="96" stroke="currentColor" strokeWidth="0.6" opacity="0.5" />
-    <circle r="78" stroke="currentColor" strokeWidth="0.4" opacity="0.35" strokeDasharray="2 5" />
     <g className="df-sigil__ring">
       {SIGIL_RUNES.map((d, i) => {
         const angle = (i * 360) / SIGIL_RUNES.length;
