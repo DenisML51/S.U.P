@@ -24,4 +24,6 @@ export interface SettingArt {
   LevelReady: React.FC;
   /** Drawn round the emblem of the setting's world card, if the setting has such a thing. */
   WorldSigil?: React.FC;
+  /** Laid round the focused hero card on hero select, outside its frame, if the setting reads one. */
+  HeroReadout?: React.FC<{ id: string; level: number; hp: number; maxHp: number }>;
 }

@@ -9,6 +9,9 @@ import '@fontsource/tektur/500.css';
 import '@fontsource/tektur/600.css';
 import '@fontsource/old-standard-tt/400.css';
 import '@fontsource/old-standard-tt/700.css';
+import '@fontsource/oswald/400.css';
+import '@fontsource/oswald/500.css';
+import '@fontsource/oswald/600.css';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 
 export interface SettingInfo {
@@ -25,6 +28,7 @@ export const SETTING_INFO: Record<Setting, SettingInfo> = {
   'high-fantasy': { id: 'high-fantasy', label: 'High Fantasy' },
   'sci-fi': { id: 'sci-fi', label: 'Sci-Fi' },
   'dark-fantasy': { id: 'dark-fantasy', label: 'Dark Fantasy' },
+  cyberpunk: { id: 'cyberpunk', label: 'Cyberpunk' },
 };
 
 export const SETTING_LIST = Object.values(SETTING_INFO);

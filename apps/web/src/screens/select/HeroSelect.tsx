@@ -6,6 +6,7 @@ import { CharacterArt, fullArtSrc } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { ConfirmDialog } from '../../ui/Dialog';
 import { Button, IconButton, Meter, Panel, cx } from '../../ui/primitives';
+import { SETTING_ART } from '../../ui/art';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope } from '../../ui/theme/SettingScope';
 import { settingOf, SETTING_INFO } from '../../ui/theme/settings';
@@ -296,8 +297,10 @@ const nameSize = (name: string) => (name.length > 22 ? 'text-[1.45rem]' : name.l
 const HeroCard: React.FC<{ hero: CharacterPreview; focused: boolean; onClick: () => void }> = ({ hero, focused, onClick }) => {
   const origin = describeOrigin(hero);
   const setting = settingOf(hero);
+  const { HeroReadout } = SETTING_ART[setting];
   return (
     <SettingScope setting={setting} className="ui-hero-card relative h-full" data-focused={focused || undefined}>
+      {HeroReadout && <HeroReadout id={hero.id} level={hero.level} hp={hero.currentHP} maxHp={hero.maxHP} />}
       <Panel
         as="button"
         interactive

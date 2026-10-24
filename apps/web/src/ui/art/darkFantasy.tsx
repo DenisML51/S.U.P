@@ -5,8 +5,8 @@ import type { SettingArt } from './types';
 /**
  * Dark fantasy ornament: a hunter's reliquary (Bloodborne's Yharnam, the Imperium's iron, Dragon
  * Age's tooled leather). Tarnished brass engraved in double rules, gothic spikes and rivets at the
- * corners, a pointed arch over major panels, the cross pattée and daggers; fog, candle-dark and a
- * cathedral window around the screen.
+ * corners, a pointed arch over major panels, the cross pattée and daggers; behind the screen a
+ * great rose window engraved in brass, candlelight, fog and embers.
  */
 
 /** Engraved corner, 24×24: a double rule, a spike pointing inwards, a rivet where the rules meet. */
@@ -41,42 +41,161 @@ const CrossRule: React.FC = () => (
   </svg>
 );
 
-/** A lancet window with a rose above it, the stone tracery of a cathedral, 200×320. */
-const CathedralWindow: React.FC = () => (
-  <svg viewBox="0 0 200 320" fill="none" stroke="currentColor" aria-hidden className="h-full w-full">
-    <path d="M10 318V130C10 60 60 14 100 2 140 14 190 60 190 130V318" strokeWidth="2" />
-    <path d="M22 318V134C22 72 64 30 100 18 136 30 178 72 178 134V318" strokeWidth="0.8" />
-    <path d="M100 18V318M22 200H178" strokeWidth="0.8" />
-    <path d="M40 318V214C40 196 60 184 70 180 80 184 100 196 100 214M100 214C100 196 120 184 130 180 140 184 160 196 160 214V318" strokeWidth="0.8" />
-    <circle cx="100" cy="110" r="44" strokeWidth="1.2" />
-    <circle cx="100" cy="110" r="14" strokeWidth="0.8" />
-    {Array.from({ length: 8 }, (_, i) => {
-      const angle = (i * Math.PI) / 4;
-      const [c, s] = [Math.cos(angle), Math.sin(angle)];
+/** A repeatable pseudo-random sequence, so the embers rise the same on every render. */
+const random = (seed: number) => () => {
+  seed = (seed * 16807) % 2147483647;
+  return seed / 2147483647;
+};
+
+/** Points of a polar position, rounded for the path. */
+const polar = (r: number, degrees: number) => {
+  const a = ((degrees - 90) * Math.PI) / 180;
+  return [(r * Math.cos(a)).toFixed(1), (r * Math.sin(a)).toFixed(1)] as const;
+};
+
+/**
+ * One light of the rose, pointing up from the centre, 12 of them turned round it: a lancet divided
+ * by a mullion into two smaller lancets, an oculus in the head of the arch.
+ */
+const LIGHT =
+  'M-34 -146L-58 -248C-58 -292 -22 -318 0 -330 22 -318 58 -292 58 -248L34 -146Z' +
+  'M-27 -156 -48 -246C-48 -284 -18 -306 0 -316 18 -306 48 -284 48 -246L27 -156' +
+  'M0 -154V-252' +
+  'M-22 -166-38 -232C-38 -250 -26 -262 -18 -266 -10 -262 -4 -252 -4 -236V-166' +
+  'M22 -166 38 -232C38 -250 26 -262 18 -266 10 -262 4 -252 4 -236V-166';
+
+/** A cusped trefoil between the heads of two lights. */
+const Trefoil: React.FC<{ angle: number }> = ({ angle }) => (
+  <g transform={`rotate(${angle}) translate(0 -310)`}>
+    <circle cx="0" cy="-8" r="7" />
+    <circle cx="-7" cy="4" r="7" />
+    <circle cx="7" cy="4" r="7" />
+  </g>
+);
+
+/**
+ * A gothic rose window, 760 units across, centred on the origin, engraved in fine lines: a double
+ * rim set with roundels, twelve divided lancets round a cusped ring, a six-petalled rose at the
+ * heart with the cross of the order in it.
+ */
+const RoseWindow: React.FC = () => (
+  <svg viewBox="-380 -380 760 760" fill="none" stroke="currentColor" aria-hidden className="h-full w-full">
+    <circle r="374" strokeWidth="1.4" />
+    <circle r="364" strokeWidth="0.6" />
+    {Array.from({ length: 36 }, (_, i) => {
+      const [x, y] = polar(350, i * 10);
       return (
         <g key={i}>
-          <path d={`M${100 + 14 * c} ${110 + 14 * s}L${100 + 44 * c} ${110 + 44 * s}`} strokeWidth="0.8" />
-          <circle cx={100 + 30 * Math.cos(angle + Math.PI / 8)} cy={110 + 30 * Math.sin(angle + Math.PI / 8)} r="6" strokeWidth="0.6" />
+          <circle cx={x} cy={y} r="10" strokeWidth="0.8" />
+          <circle cx={x} cy={y} r="3" strokeWidth="0.6" />
         </g>
       );
     })}
+    <circle r="336" strokeWidth="1" />
+    <circle r="330" strokeWidth="0.5" />
+    {Array.from({ length: 12 }, (_, i) => (
+      <path key={i} d={LIGHT} transform={`rotate(${i * 30})`} strokeWidth="0.9" />
+    ))}
+    {Array.from({ length: 12 }, (_, i) => (
+      <circle key={i} cx={polar(284, i * 30)[0]} cy={polar(284, i * 30)[1]} r="10" strokeWidth="0.7" />
+    ))}
+    {Array.from({ length: 12 }, (_, i) => (
+      <Trefoil key={i} angle={i * 30 + 15} />
+    ))}
+    {/* The cusped ring the lights stand on. */}
+    <circle r="140" strokeWidth="1.1" />
+    <circle r="128" strokeWidth="0.6" />
+    {Array.from({ length: 24 }, (_, i) => {
+      const [x1, y1] = polar(128, i * 15);
+      const [x2, y2] = polar(128, i * 15 + 15);
+      return <path key={i} d={`M${x1} ${y1}A16 16 0 0 0 ${x2} ${y2}`} strokeWidth="0.6" />;
+    })}
+    {Array.from({ length: 12 }, (_, i) => {
+      const [x1, y1] = polar(62, i * 30);
+      const [x2, y2] = polar(110, i * 30);
+      return <path key={i} d={`M${x1} ${y1}L${x2} ${y2}`} strokeWidth="0.6" />;
+    })}
+    {/* The heart: six petals drawn by circles through the centre, the cross of the order. */}
+    <circle r="62" strokeWidth="1" />
+    {Array.from({ length: 6 }, (_, i) => {
+      const [x, y] = polar(31, i * 60);
+      return <circle key={i} cx={x} cy={y} r="31" strokeWidth="0.6" />;
+    })}
+    <path d="M-4 -26h8l-2 16 16-2v8l-16-2 2 16h-8l2-16-16 2v-8l16 2Z" strokeWidth="1" />
+  </svg>
+);
+
+/** Embers rising through the dark, each on its own drift and time. */
+const EMBERS = (() => {
+  const next = random(57);
+  return Array.from({ length: 14 }, () => ({
+    left: `${(next() * 100).toFixed(1)}%`,
+    size: 1 + Math.round(next() * 1.5),
+    duration: `${(18 + next() * 16).toFixed(1)}s`,
+    delay: `${(-next() * 34).toFixed(1)}s`,
+    drift: `${Math.round((next() - 0.5) * 90)}px`,
+  }));
+})();
+
+/**
+ * Screen corner, 120×120: an engraved double rule fading out along each edge, a pointed arch of
+ * tracery across the corner with a spike pointing in, a rivet where the rules meet.
+ */
+const ScreenCorner: React.FC = () => (
+  <svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-hidden>
+    <defs>
+      <linearGradient id="df-fade-x" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0.35" stopColor="currentColor" />
+        <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+      </linearGradient>
+      <linearGradient id="df-fade-y" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0.35" stopColor="currentColor" />
+        <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+      </linearGradient>
+    </defs>
+    <path d="M0.75 0.75H120" stroke="url(#df-fade-x)" strokeWidth="1.5" />
+    <path d="M0.75 0.75V120" stroke="url(#df-fade-y)" strokeWidth="1.5" />
+    <path d="M6 6H100" stroke="url(#df-fade-x)" strokeWidth="0.7" opacity="0.7" />
+    <path d="M6 6V100" stroke="url(#df-fade-y)" strokeWidth="0.7" opacity="0.7" />
+    <path d="M6 54C6 30 18 14 30 10 34 9 42 7 54 6" stroke="currentColor" strokeWidth="1" />
+    <path d="M6 40C8 26 16 16 26 13M13 26C16 20 20 16 26 13" stroke="currentColor" strokeWidth="0.7" opacity="0.8" />
+    <circle cx="19" cy="19" r="4" stroke="currentColor" strokeWidth="0.8" />
+    <path d="M22 22 34 34 26 30 30 26Z" fill="currentColor" />
+    <path d="M54 6 58 3.5 62 6 58 8.5ZM6 54 3.5 58 6 62 8.5 58Z" fill="currentColor" />
+    <circle cx="3" cy="3" r="2.2" fill="currentColor" />
+    <circle cx="3" cy="3" r="0.8" fill="rgb(var(--c-bg-deep))" />
   </svg>
 );
 
 /**
- * Candle-dark: darkness pressing in from the edges, fog drifting along the floor, a cold red rising
- * under it, a cathedral window high on the wall and an engraved double frame around everything.
+ * Inside a cathedral at night: a great rose window engraved in brass, half out of sight at the
+ * left, candlelight breathing behind it; fog along the floor, embers rising, the dark pressing in
+ * from the edges and an engraved frame closing the screen.
  */
-const Backdrop: React.FC = () => (
+const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => (
   <div className="absolute inset-0 text-frame">
-    <div className="absolute right-[8vw] top-[-6vh] h-[62vh] w-[38vh] opacity-[0.1]">
-      <CathedralWindow />
+    <div className="df-candlelight absolute inset-0" />
+    <div className="absolute left-0 top-1/2 aspect-square h-[100%] -translate-x-[34%] -translate-y-1/2 opacity-[0.26]">
+      <RoseWindow />
     </div>
-    <div className="ui-fog absolute inset-x-[-20%] bottom-[-8vh] h-[42vh]" />
-    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-accent/20 to-transparent" />
-    <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 220px 70px rgb(0 0 0 / 0.88)' }} />
-    <div className="absolute inset-3 border border-frame/45" />
-    <div className="absolute inset-[18px] border border-frame/20" />
+    <div className="ui-fog absolute inset-x-[-20%] bottom-[-8%] h-[40%]" />
+    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-accent/15 to-transparent" />
+    {EMBERS.map(({ left, size, duration, delay, drift }) => (
+      <span
+        key={left}
+        className="df-ember"
+        style={{ left, width: size, height: size, animationDuration: duration, animationDelay: delay, ['--drift' as string]: drift }}
+      />
+    ))}
+    <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 200px 60px rgb(0 0 0 / 0.85)' }} />
+    {frame &&
+      (['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map(
+        (position) => (
+          <div key={position} className={`absolute m-4 ${position}`}>
+            <ScreenCorner />
+          </div>
+        ),
+      )}
   </div>
 );
 

@@ -1,0 +1,665 @@
+/* ================================================================== Cyberpunk
+ * "The merc's optics": Cyberpunk 2077. Black with a red cast, salmon-red hairlines and type, the
+ * street's yellow for what is pressed and chosen, a cold cyan for data and for the glitch. Main
+ * panes are cut at opposite corners and tagged with hazard stripes; tall condensed capitals; hover
+ * tears the picture for an instant into red and cyan, the way a cheap optic does.
+ */
+
+[data-setting='cyberpunk'] {
+  /* The setting's own display face; the service's type may stand in for --font-display, never for it. */
+  --setting-display: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-display: var(--setting-display);
+  /* The light a world card is lit by. */
+  --world-light: rgb(var(--c-frame-bright) / 0.32);
+  --font-numeric: 'Oswald', 'Arial Narrow', sans-serif;
+  --display-tracking: 0.06em;
+  --display-weight: 500;
+  --title-transform: uppercase;
+
+  --c-bg: 10 9 13;
+  --c-bg-deep: 5 4 7;
+  --c-surface: 17 14 19;
+  --c-surface-2: 28 20 26;
+  --c-inset: 8 7 10;
+  --c-line: 76 34 38;
+  --c-frame: 150 54 54;
+  --c-frame-bright: 255 98 88;
+  --c-ink: 238 232 222;
+  --c-ink-muted: 178 138 134;
+  --c-ink-faint: 114 84 86;
+  --c-accent: 252 236 12;
+  --c-accent-ink: 12 10 6;
+  --c-paper: 17 14 19;
+  --c-paper-ink: 238 232 222;
+  --c-paper-muted: 150 110 110;
+
+  /* The cyan of data, of a scan, of the glitch. */
+  --c-neon: 86 240 250;
+
+  --c-hp: 255 82 74;
+  --c-temp-hp: 86 240 250;
+  --c-sanity: 190 112 255;
+  --c-xp: 252 236 12;
+  --c-armor: 86 240 250;
+  --c-success: 80 230 160;
+  --c-danger: 255 66 66;
+  --c-warning: 252 170 30;
+
+  --c-act-action: 255 98 88;
+  --c-act-bonus: 86 240 250;
+  --c-act-reaction: 252 236 12;
+  --c-act-passive: 150 126 134;
+
+  --radius: 0px;
+  --chamfer: 0px;
+  --panel-texture: none;
+  --panel-texture-opacity: 0;
+  --shadow-panel: 0 18px 36px -20px rgb(0 0 0 / 0.95);
+
+  /* The cut of a main pane's corners, and the smaller cut of a button. */
+  --cut: 16px;
+  --cut-button: 8px;
+  /* Two opposite corners cut: the shape of the city's screens. */
+  --cut-shape: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+  /* Hazard stripes. */
+  --stripes: repeating-linear-gradient(-45deg, rgb(var(--c-accent)) 0 4px, transparent 4px 9px);
+
+  /* ---------------------------------------------------------------- Panels */
+  /* Black panes under a dark red hairline; a bright corner tick marks the top left. */
+  .ui-panel,
+  .ui-panel--paper {
+    background-color: rgb(var(--c-surface) / 0.94);
+    border-color: rgb(var(--c-line));
+    box-shadow: var(--shadow-panel);
+  }
+  .ui-panel:not(.ui-panel--inset) { backdrop-filter: blur(6px); }
+  .ui-panel::before { display: none; }
+  .ui-panel::after {
+    content: '';
+    display: block;
+    inset: -1px auto auto -1px;
+    width: 14px;
+    height: 14px;
+    z-index: 1;
+    opacity: 1;
+    mix-blend-mode: normal;
+    background: none;
+    border-top: 2px solid rgb(var(--c-frame-bright));
+    border-left: 2px solid rgb(var(--c-frame-bright));
+  }
+  .ui-panel--inset { background-color: rgb(var(--c-inset)); box-shadow: none; }
+  .ui-panel--inset::after { display: none; }
+
+  /* A main pane: two opposite corners cut, the cuts drawn as hairlines, hazard stripes on the
+     top edge. */
+  :is(.ui-details, .ui-dialog) { clip-path: var(--cut-shape); border-color: rgb(var(--c-frame) / 0.7); }
+  :is(.ui-details, .ui-dialog)::before {
+    content: '';
+    display: block;
+    inset: 0;
+    z-index: 2;
+    opacity: 1;
+    mix-blend-mode: normal;
+    pointer-events: none;
+    background:
+      linear-gradient(to bottom right, transparent calc(50% - 0.8px), rgb(var(--c-frame-bright)) 50%, transparent calc(50% + 0.8px)) top left / var(--cut) var(--cut) no-repeat,
+      linear-gradient(to bottom right, transparent calc(50% - 0.8px), rgb(var(--c-frame-bright)) 50%, transparent calc(50% + 0.8px)) bottom right / var(--cut) var(--cut) no-repeat;
+  }
+  :is(.ui-details, .ui-dialog)::after {
+    inset: 0 1.25rem auto auto;
+    width: 4.5rem;
+    height: 6px;
+    border: 0;
+    z-index: 2;
+    background: var(--stripes);
+    opacity: 0.85;
+  }
+
+  /* ---------------------------------------------------------------- Type and rules */
+  .ui-section-title { color: rgb(var(--c-frame-bright)); font-size: 1.3rem; letter-spacing: 0.08em; }
+  .ui-rule::before,
+  .ui-rule::after { background: rgb(var(--c-line)); }
+  /* A rule led by a slash of yellow. */
+  .ui-rule--left::after {
+    height: 4px;
+    background:
+      linear-gradient(110deg, transparent 0 3px, rgb(var(--c-accent)) 3px 7px, transparent 7px 10px, rgb(var(--c-accent)) 10px 14px, transparent 14px) left center / 16px 4px no-repeat,
+      linear-gradient(rgb(var(--c-frame) / 0.7), rgb(var(--c-frame) / 0.7)) 20px center / 100% 1px no-repeat;
+  }
+  .ui-label { font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--c-frame-bright) / 0.8); }
+
+  /* ---------------------------------------------------------------- Interactive surfaces */
+  /* The pane under the cursor warms to red; the selected one carries a yellow edge. */
+  .ui-interactive:hover { border-color: rgb(var(--c-frame-bright) / 0.7); background-color: rgb(var(--c-surface-2)); }
+  .ui-interactive[data-active='true'] { border-color: rgb(var(--c-accent) / 0.7); }
+  .ui-fx {
+    inset: 0;
+    background: linear-gradient(90deg, rgb(var(--c-frame-bright) / 0.14), transparent 55%);
+    box-shadow: inset 3px 0 0 rgb(var(--c-frame-bright));
+    transition: opacity 120ms;
+  }
+  .ui-interactive[data-active='true'] .ui-fx { box-shadow: inset 3px 0 0 rgb(var(--c-accent)); }
+
+  /* ---------------------------------------------------------------- Buttons */
+  /* Keys with two opposite corners cut. The rim is the button's own background, the fill is laid
+     1px inside it by ::before, so the cuts keep their hairline. Hover tears the key for an instant. */
+  .ui-button {
+    --rim: rgb(var(--c-frame));
+    --fill: rgb(var(--c-surface));
+    --shape: polygon(var(--cut-button) 0, 100% 0, 100% calc(100% - var(--cut-button)), calc(100% - var(--cut-button)) 100%, 0 100%, 0 var(--cut-button));
+    isolation: isolate;
+    border: 0;
+    font-size: 0.86em;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--rim);
+    clip-path: var(--shape);
+    color: rgb(var(--c-frame-bright));
+    transition: background-color 120ms, color 120ms, filter 120ms;
+  }
+  .ui-button::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    clip-path: var(--shape);
+    background: var(--fill);
+  }
+  .ui-button:not(:disabled):hover { animation: cp-glitch 260ms steps(2) 1; }
+  .ui-button:focus-visible { outline: none; --rim: rgb(var(--c-neon)); }
+  .ui-button:disabled { opacity: 0.35; }
+  /* The command: a solid block of street yellow. */
+  .ui-button--primary { --rim: rgb(var(--c-accent)); --fill: rgb(var(--c-accent)); color: rgb(var(--c-accent-ink)); box-shadow: none; font-weight: 600; }
+  .ui-button--primary:not(:disabled):hover { --fill: rgb(255 246 120); --rim: rgb(255 246 120); }
+  .ui-button--secondary:not(:disabled):hover { --rim: rgb(var(--c-frame-bright)); --fill: linear-gradient(rgb(var(--c-frame-bright) / 0.16), rgb(var(--c-frame-bright) / 0.16)), rgb(var(--c-surface)); color: rgb(var(--c-ink)); }
+  .ui-button--danger { --rim: rgb(var(--c-danger)); --fill: linear-gradient(rgb(var(--c-danger) / 0.12), rgb(var(--c-danger) / 0.12)), rgb(var(--c-surface)); color: rgb(var(--c-danger)); }
+  .ui-button--danger:not(:disabled):hover { --fill: rgb(var(--c-danger)); color: rgb(var(--c-bg-deep)); }
+  .ui-button--ghost { --rim: transparent; --fill: transparent; clip-path: none; color: rgb(var(--c-ink-muted)); }
+  .ui-button--ghost::before { display: none; }
+  .ui-button--ghost:not(:disabled):hover { color: rgb(var(--c-neon)); background: none; }
+  .ui-button--row { --cut-button: 5px; font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; }
+
+  /* Square keys; the pressed one is a yellow block. */
+  .ui-icon-button { color: rgb(var(--c-frame-bright) / 0.85); }
+  .ui-icon-button:not(:disabled):hover { color: rgb(var(--c-neon)); border-color: rgb(var(--c-frame)); background: rgb(var(--c-surface-2)); }
+  .ui-icon-button[aria-pressed='true'] { color: rgb(var(--c-accent-ink)); border-color: rgb(var(--c-accent)); background: rgb(var(--c-accent)); }
+
+  /* ---------------------------------------------------------------- Tabs */
+  /* Condensed capitals; the open one is lit white over a yellow bar with a slash at its end. */
+  .ui-tabs { gap: 1.25rem; border-bottom-color: rgb(var(--c-line)); }
+  .ui-tabs__tab {
+    font-family: var(--font-display);
+    font-size: 0.86rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgb(var(--c-frame-bright) / 0.7);
+    transition: color 120ms;
+  }
+  .ui-tabs__tab:hover { color: rgb(var(--c-frame-bright)); }
+  .ui-tabs__tab[aria-selected='true'] { color: rgb(var(--c-ink)); text-shadow: -1px 0 rgb(var(--c-frame-bright) / 0.6), 1px 0 rgb(var(--c-neon) / 0.45); }
+  .ui-tabs__tab::after { height: 3px; background: rgb(var(--c-accent)); clip-path: polygon(0 0, 100% 0, calc(100% - 3px) 100%, 0 100%); }
+  .ui-tabs__count { font-family: var(--font-numeric); font-size: 0.7rem; color: rgb(var(--c-neon) / 0.8); }
+
+  /* ---------------------------------------------------------------- Lists */
+  /* A shard listing: the header in red capitals over a hairline, rows on dark red rules; the row
+     under the cursor warms to red, a worn item or prepared spell carries a cyan edge, the record
+     open beside the list is marked in yellow. */
+  .ui-ledger__ribbon { display: none; }
+  .ui-ledger__head { padding-top: 0.9rem; padding-bottom: 0.7rem; border-bottom: 1px solid rgb(var(--c-frame) / 0.6); }
+  .ui-ledger__head h2 { font-size: 1.1rem; letter-spacing: 0.1em; color: rgb(var(--c-frame-bright)); }
+  .ui-ledger__head > svg { color: rgb(var(--c-accent)); }
+  .ui-ledger__list { padding-left: 0; padding-right: 0; }
+  .ui-ledger__row {
+    position: relative;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    border-bottom: 1px solid rgb(var(--c-line) / 0.7);
+    transition: background-color 120ms;
+  }
+  .ui-ledger__row:hover { background: linear-gradient(90deg, rgb(var(--c-frame-bright) / 0.12), transparent 70%); }
+  .ui-ledger__row:hover .ui-ledger__title { text-decoration: none; }
+  .ui-ledger__row::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 2px;
+    background: rgb(var(--c-neon));
+    opacity: 0;
+  }
+  .ui-ledger__row[data-active]::before { opacity: 1; }
+  .ui-ledger__row--dim { opacity: 1; }
+  .ui-ledger__row--dim .ui-ledger__title { color: rgb(var(--c-ink-muted)); }
+  .ui-ledger__row[data-selected] { background: linear-gradient(90deg, rgb(var(--c-accent) / 0.16), rgb(var(--c-accent) / 0.03) 80%); }
+  .ui-ledger__row[data-selected]::before { width: 4px; opacity: 1; background: rgb(var(--c-accent)); }
+  .ui-ledger__row[data-selected] .ui-ledger__title { color: rgb(var(--c-accent)); }
+  .ui-ledger__bullet > svg { color: rgb(var(--c-frame-bright)); }
+  .ui-ledger__row[data-active] .ui-ledger__bullet > svg { color: rgb(var(--c-neon)); }
+  .ui-ledger__row[data-selected] .ui-ledger__bullet > svg { color: rgb(var(--c-accent)); }
+  .ui-ledger--log .ui-ledger__bullet > svg { color: rgb(var(--c-ink-faint)); }
+  .ui-ledger__title { font-family: var(--font-body); font-size: 0.98rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .ui-ledger__meta { color: rgb(var(--c-ink-muted)); }
+  .ui-ledger__group {
+    padding: 1rem 1.5rem 0.4rem;
+    font-family: var(--font-display);
+    letter-spacing: 0.14em;
+    color: rgb(var(--c-neon));
+    opacity: 1;
+  }
+  .ui-ledger__add { margin: 0; padding: 0.75rem 1.5rem; border: 0; border-radius: 0; background: transparent; color: rgb(var(--c-ink-faint)); }
+  .ui-ledger__add:hover { color: rgb(var(--c-accent)); background: rgb(var(--c-surface-2)); }
+
+  /* ---------------------------------------------------------------- Details pane */
+  /* A scan readout: the code line in cyan, the name in red capitals with a torn shadow, the
+     figures as cells under a red tick. */
+  .ui-details__head {
+    padding-top: 1.5rem;
+    background: linear-gradient(180deg, rgb(var(--c-frame-bright) / 0.08), transparent);
+    mask-image: none;
+  }
+  .ui-details__eyebrow { font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.1em; color: rgb(var(--c-neon)); }
+  .ui-details__title { font-size: 1.6rem; letter-spacing: 0.05em; color: rgb(var(--c-ink)); text-shadow: -2px 0 rgb(var(--c-frame-bright) / 0.55), 2px 0 rgb(var(--c-neon) / 0.35); }
+  .ui-details__rule { display: none; }
+  .ui-details__facts { gap: 4px; background: none; border: 0; }
+  .ui-details__fact { padding: 0.45rem 0.6rem; background: rgb(var(--c-surface-2)); box-shadow: inset 0 2px 0 rgb(var(--c-frame-bright)); }
+  .ui-details__fact dt { font-family: var(--font-display); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--c-ink-muted)); }
+  .ui-details__fact dd { font-family: var(--font-numeric); font-size: 1.02rem; }
+  .ui-details__foot { border-top-color: rgb(var(--c-line)); }
+  .ui-damage-block { border-left-color: rgb(var(--c-frame-bright)); background: linear-gradient(90deg, rgb(var(--c-frame-bright) / 0.1), transparent 70%), rgb(var(--c-inset)); }
+
+  /* ---------------------------------------------------------------- Figures */
+  /* Attribute panes: the label in red capitals, the figure white. */
+  .ui-stat__label { font-family: var(--font-display); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--c-frame-bright) / 0.85); }
+  .ui-stat:hover::after { border-color: rgb(var(--c-accent)); }
+  /* Gauges are cells, like the HUD's health readout. */
+  .ui-meter { border-color: rgb(var(--c-line)); }
+  .ui-meter__fill { background: rgb(var(--meter-color)); box-shadow: 0 0 8px rgb(var(--meter-color) / 0.45); }
+  .ui-meter__extra { background: rgb(var(--meter-extra-color) / 0.55); }
+  .ui-meter--ticks::after { background-image: repeating-linear-gradient(90deg, transparent 0 calc(4% - 2px), rgb(var(--c-inset)) calc(4% - 2px) 4%); }
+  .ui-prof-mark { transform: skewX(-12deg); }
+
+  /* ---------------------------------------------------------------- Level and experience */
+  .ui-level__emblem,
+  .ui-level__plate { border-color: rgb(var(--c-line)); background: rgb(var(--c-surface-2) / 0.6); }
+  .ui-level__emblem { color: rgb(var(--c-frame-bright)); }
+  .ui-level__plate { position: relative; }
+  .ui-level__plate::before { content: ''; position: absolute; top: -1px; left: -1px; width: 14px; height: 3px; background: rgb(var(--c-accent)); }
+  .ui-level__unit { font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.2em; color: rgb(var(--c-frame-bright) / 0.8); }
+  .ui-level__number { font-size: 1.9rem; font-weight: 500; color: rgb(var(--c-ink)); }
+  .ui-level:hover .ui-level__plate { border-color: rgb(var(--c-accent)); }
+  .ui-level:hover .ui-level__emblem { color: rgb(var(--c-neon)); }
+  .ui-xp__label { font-family: var(--font-display); letter-spacing: 0.14em; color: rgb(var(--c-frame-bright) / 0.8); }
+  .ui-xp__track { height: 8px; border-color: rgb(var(--c-line)); }
+  .ui-xp__fill { background: rgb(var(--c-accent)); }
+  .ui-xp__track::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(4% - 2px), rgb(var(--c-inset)) calc(4% - 2px) 4%);
+  }
+  .ui-xp__value { font-family: var(--font-numeric); font-size: 0.8rem; }
+
+  .ui-hud-xp { height: 8px; border-color: rgb(var(--c-line)); }
+  .ui-hud-xp__fill { background: rgb(var(--c-accent)); }
+  .ui-hud-xp::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(2% - 2px), rgb(var(--c-inset)) calc(2% - 2px) 2%);
+  }
+
+  /* ---------------------------------------------------------------- Rail and hero column */
+  .ui-rail { background: rgb(var(--c-bg-deep) / 0.88); border-right-color: rgb(var(--c-frame) / 0.5); }
+  .ui-rail__item { font-family: var(--font-display); letter-spacing: 0.06em; color: rgb(var(--c-frame-bright) / 0.65); }
+  .ui-rail__label { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.12em; }
+  .ui-rail__item:not([aria-current]):hover { color: rgb(var(--c-frame-bright)); background: rgb(var(--c-surface-2)); }
+  /* The open section is lit yellow on a warm red band. */
+  .ui-rail__item[aria-current='page'] { color: rgb(var(--c-accent)); background: linear-gradient(90deg, rgb(var(--c-frame-bright) / 0.2), transparent); }
+  .ui-rail__item[aria-current='page'] .ui-rail__mark { width: 3px; background: rgb(var(--c-accent)); }
+  .ui-rail__divider { background: rgb(var(--c-frame) / 0.4); }
+  .ui-hero-column { background: rgb(var(--c-surface) / 0.55); border-right-color: rgb(var(--c-line)); }
+
+  /* ---------------------------------------------------------------- Fields and controls */
+  .ui-input { background: rgb(var(--c-inset)); border-color: rgb(var(--c-line)); }
+  .ui-input:focus { border-color: rgb(var(--c-neon)); box-shadow: inset 0 -2px 0 rgb(var(--c-neon)); }
+  .ui-segmented { --segment-tone: var(--c-accent); border-color: rgb(var(--c-line)); }
+  .ui-segmented__option { --segment-tone: var(--c-accent); font-family: var(--font-display); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .ui-segmented__option[aria-checked='true'] { color: rgb(var(--c-accent-ink)); background: rgb(var(--segment-tone)); border-color: rgb(var(--segment-tone)); }
+  .ui-switch,
+  .ui-switch::after { border-radius: 0; }
+  [aria-checked='true'] > .ui-switch { background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+  [aria-checked='true'] > .ui-switch::after { background: rgb(var(--c-accent-ink)); }
+  .ui-popover__option[data-active] { box-shadow: inset 2px 0 0 rgb(var(--c-accent)); }
+  .ui-swatch { border-radius: 0; }
+
+  .ui-keyfield {
+    --shape: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    padding: 1px;
+    background: rgb(var(--c-frame));
+    clip-path: var(--shape);
+  }
+  .ui-keyfield:focus-within { background: rgb(var(--c-neon)); }
+  .ui-keyfield > .ui-input { height: calc(2rem - 2px) !important; border: 0; clip-path: var(--shape); font-family: var(--font-numeric); }
+  .ui-keyfield > .ui-input:focus { box-shadow: none; }
+  .ui-number { border-color: rgb(var(--c-line)); }
+  .ui-number input { font-family: var(--font-numeric); }
+  .ui-number button { color: rgb(var(--c-frame-bright)); }
+  .ui-number button:not(:disabled):hover { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); }
+
+  /* ---------------------------------------------------------------- Toasts */
+  /* A message on the optics: a yellow edge, a corner cut. */
+  .ui-toast {
+    background: rgb(var(--c-surface) / 0.98);
+    border-color: rgb(var(--c-frame) / 0.6);
+    border-left: 3px solid rgb(var(--c-accent));
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+    box-shadow: 0 14px 30px -12px rgb(0 0 0 / 0.8);
+  }
+  .ui-toast--error { border-left-color: rgb(var(--c-danger)); }
+
+  /* ---------------------------------------------------------------- Dialogs */
+  .ui-dialog__head { margin-bottom: 1rem; border-bottom: 1px solid rgb(var(--c-frame) / 0.5); }
+  .ui-dialog__title { font-size: 1.45rem; letter-spacing: 0.06em; color: rgb(var(--c-ink)); }
+  .ui-dialog__eyebrow { color: rgb(var(--c-neon)); opacity: 1; letter-spacing: 0.18em; }
+  .ui-dialog__foot { border-top-color: rgb(var(--c-line)); }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts { gap: 0.5rem; }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts > div {
+    padding: 0.45rem 0.9rem 0.55rem;
+    background: rgb(var(--c-surface-2));
+    box-shadow: inset 0 2px 0 rgb(var(--c-frame-bright));
+  }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts dt { color: rgb(var(--c-ink-muted)); opacity: 1; }
+  .ui-keyfacts dd { font-family: var(--font-numeric); }
+
+  .ui-chip { font-family: var(--font-display); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  .ui-chip[aria-pressed='true'] { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+
+  /* ---------------------------------------------------------------- Choices */
+  .ui-option:not(:disabled):hover { border-color: rgb(var(--c-frame-bright) / 0.7); }
+  /* The chosen option is locked on: a yellow rim and edge over a faint yellow wash. */
+  .ui-option[aria-pressed='true'] {
+    color: rgb(var(--c-accent));
+    background: linear-gradient(90deg, rgb(var(--c-accent) / 0.16), rgb(var(--c-accent) / 0.05));
+    border-color: rgb(var(--c-accent) / 0.85);
+    box-shadow: inset 3px 0 0 rgb(var(--c-accent));
+  }
+  .ui-option[aria-pressed='true'] .ui-option__meta { color: rgb(var(--c-ink-muted)); }
+  .ui-tag { border-radius: 0; font-family: var(--font-display); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .ui-steps__mark { border-radius: 0; transform: skewX(-10deg); }
+  .ui-steps__item[aria-current='step'] .ui-steps__mark { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+  .ui-steps__label { font-family: var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; }
+  .ui-origin { border-radius: 0; }
+  .ui-origin__icon { filter: none; color: rgb(var(--c-frame-bright)); }
+  .ui-origin[aria-pressed='true'] { background: rgb(var(--c-accent) / 0.12); border-color: rgb(var(--c-accent)); box-shadow: inset 0 -3px 0 rgb(var(--c-accent)); }
+  .ui-origin[aria-pressed='true'] .ui-origin__icon { color: rgb(var(--c-accent)); filter: none; }
+  .ui-summary__badge,
+  .ui-summary__portrait { border-radius: 0; box-shadow: none; }
+
+  /* ---------------------------------------------------------------- Combat */
+  .ui-hud-slot { background: rgb(var(--c-inset)); border-color: rgb(var(--c-line)); box-shadow: none; }
+  .ui-hud-slot__icon { filter: none; }
+  .ui-hud-slot:hover,
+  .ui-hud-slot[data-active] { border-color: rgb(var(--c-accent)); background: rgb(var(--c-surface-2)); }
+  .ui-hud-slot:not(.ui-hud-slot--small):not(.ui-hud-slot--large):hover { transform: none; animation: cp-glitch 260ms steps(2) 1; }
+  .ui-hud-slot__level,
+  .ui-hud-slot__count { text-shadow: none; font-family: var(--font-numeric); font-size: 0.7rem; }
+  .ui-hud-slot__count { bottom: 0; right: 0; padding: 1px 3px; color: rgb(var(--c-ink)); background: rgb(var(--c-bg-deep) / 0.85); }
+  .ui-hud-slot--tile {
+    background: color-mix(in srgb, var(--tile-color) 34%, rgb(var(--c-inset)));
+    border-color: color-mix(in srgb, var(--tile-color) 60%, rgb(var(--c-line)));
+    box-shadow: none;
+  }
+  .ui-hud-slot--tile .ui-hud-slot__icon { filter: none; }
+  .ui-hud-panel__head {
+    font-family: var(--font-display);
+    letter-spacing: 0.14em;
+    color: rgb(var(--c-frame-bright));
+    border-bottom-color: rgb(var(--c-line));
+    background: linear-gradient(rgb(var(--c-accent)), rgb(var(--c-accent))) 0.9rem 100% / 1.75rem 2px no-repeat;
+  }
+  .ui-hud-chip__count { border-radius: 0; }
+  .ui-hud-portrait {
+    --portrait-frame: var(--c-frame);
+    padding: 0;
+    border-width: 1px;
+    border-color: rgb(var(--c-frame-bright) / 0.7);
+    box-shadow: inset 0 -3px 0 rgb(var(--c-accent)), var(--shadow-panel);
+  }
+  .ui-hud-portrait--shielded { border-color: rgb(var(--c-neon) / 0.8); }
+  .ui-hud-portrait--down { border-color: rgb(var(--c-danger)); box-shadow: inset 0 -3px 0 rgb(var(--c-danger)); }
+  .ui-hud-portrait__temp { border-radius: 0; }
+  .ui-vbar__track::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0 7px, rgb(var(--c-inset)) 7px 9px);
+    pointer-events: none;
+  }
+  .ui-die--in { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); border-color: rgb(var(--c-accent)); }
+  .ui-die--in .ui-die__count { color: rgb(var(--c-ink)); background: rgb(var(--c-bg-deep)); }
+  .ui-die__count { border-radius: 0; }
+  .ui-crop__corner--nw,
+  .ui-crop__corner--ne,
+  .ui-crop__corner--sw,
+  .ui-crop__corner--se { border-color: rgb(var(--c-accent)); }
+
+  /* ---------------------------------------------------------------- Hero cards (hero select) */
+  /* The hero on a wanted screen: a red hairline, scan lines over the picture, a yellow tag cut
+     into the top corner; focused, the frame burns brighter and the picture tears once. */
+  &.ui-hero-card > .ui-panel {
+    border-color: rgb(var(--c-frame-bright) / 0.45);
+    box-shadow: 0 0 24px -8px rgb(var(--c-frame-bright) / 0.4), var(--shadow-panel);
+    transition: border-color 300ms, box-shadow 300ms;
+  }
+  &.ui-hero-card[data-focused] > .ui-panel {
+    border-color: rgb(var(--c-frame-bright) / 0.9);
+    box-shadow: 0 0 36px -6px rgb(var(--c-frame-bright) / 0.55), var(--shadow-panel);
+    animation: cp-glitch 320ms steps(2) 1;
+  }
+  &.ui-hero-card .ui-fx,
+  &.ui-hero-card .ui-interactive[data-active='true'] .ui-fx {
+    inset: 0;
+    z-index: 1;
+    box-shadow: none;
+    background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.22) 0 1px, transparent 1px 3px);
+    opacity: 1;
+  }
+  &.ui-hero-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    width: 26px;
+    height: 26px;
+    pointer-events: none;
+    background: rgb(var(--c-accent));
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+    opacity: 0;
+    transition: opacity 300ms;
+  }
+  &.ui-hero-card[data-focused]::after { opacity: 1; }
+
+  /* ---------------------------------------------------------------- Atmosphere */
+  /* A red haze rising from the street, a cold cyan from the signs above. */
+  .cp-haze {
+    background:
+      radial-gradient(70% 45% at 70% 110%, rgb(var(--c-frame-bright) / 0.32), transparent 70%),
+      radial-gradient(50% 40% at 10% -5%, rgb(var(--c-neon) / 0.14), transparent 70%),
+      linear-gradient(180deg, rgb(var(--c-bg-deep)), rgb(var(--c-bg)));
+  }
+  .cp-reticle-turn { transform-origin: 0 0; animation: cp-turn 120s linear infinite; }
+  .cp-scanlines {
+    background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.28) 0 1px, transparent 1px 3px);
+    mix-blend-mode: multiply;
+  }
+  /* A band of the picture tears aside for a moment and snaps back. */
+  .cp-tear {
+    opacity: 0;
+    background:
+      linear-gradient(90deg, transparent 8%, rgb(var(--c-neon) / 0.35) 8% 30%, transparent 30% 46%, rgb(var(--c-frame-bright) / 0.4) 46% 71%, transparent 71%);
+    mix-blend-mode: screen;
+    animation: cp-tear 7s steps(1) infinite;
+  }
+  /* The optics' HUD in the screen's margins: thin condensed type in red, figures in cyan. */
+  .cp-hud { position: absolute; inset: 0; color: rgb(var(--c-frame-bright)); font-family: var(--setting-display); text-shadow: 0 0 6px rgb(var(--c-frame-bright) / 0.6); }
+  .ui-world .cp-hud { display: none; }
+  .cp-heading { filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.6)); }
+  .cp-heading text { font-family: var(--setting-display); }
+  .cp-status { display: grid; gap: 7px; font-size: 11px; letter-spacing: 0.14em; }
+  .cp-status__row { display: grid; grid-template-columns: 4.2rem 4.6rem auto; align-items: center; }
+  .cp-status__label { color: rgb(var(--c-frame-bright)); }
+  .cp-status__value { color: rgb(var(--c-neon)); text-shadow: 0 0 6px rgb(var(--c-neon) / 0.6); }
+  .cp-status__cells { display: flex; gap: 2px; }
+  .cp-status__cells i { width: 7px; height: 9px; background: rgb(var(--c-frame-bright) / 0.3); transform: skewX(-15deg); }
+  .cp-status__cells i[data-on] { background: rgb(var(--c-frame-bright)); box-shadow: 0 0 5px rgb(var(--c-frame-bright) / 0.7); }
+  .cp-status__row:last-child .cp-status__cells i[data-on] { background: rgb(var(--c-accent)); }
+  .cp-dump { height: 9.5rem; overflow: hidden; font-size: 10px; line-height: 1.45; letter-spacing: 0.12em; color: rgb(var(--c-frame-bright) / 0.8); mask-image: linear-gradient(transparent, #000 25%, #000 75%, transparent); }
+  .cp-dump span { color: rgb(var(--c-neon)); }
+  .cp-dump__scroll { animation: cp-dump 28s linear infinite; }
+  .cp-range { color: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.6)); }
+  .cp-range text { font-family: var(--setting-display); }
+  .cp-range__caret { animation: cp-range 9s ease-in-out infinite alternate; }
+  .cp-rec { display: flex; align-items: center; gap: 6px; font-size: 11px; letter-spacing: 0.18em; }
+  .cp-rec i { width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--c-frame-bright)); box-shadow: 0 0 6px rgb(var(--c-frame-bright)); animation: cp-blink 1.6s steps(1) infinite; }
+
+  /* The readout round the focused hero card: lock brackets off its corners, terminal lines. */
+  .cp-readout {
+    position: absolute;
+    inset: -14px;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 250ms, inset 300ms cubic-bezier(0.2, 1.4, 0.4, 1);
+    --bracket: rgb(var(--c-frame-bright));
+    background:
+      linear-gradient(var(--bracket), var(--bracket)) top left / 16px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) top left / 2px 16px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) top right / 16px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) top right / 2px 16px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom left / 16px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom left / 2px 16px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom right / 16px 2px no-repeat,
+      linear-gradient(var(--bracket), var(--bracket)) bottom right / 2px 16px no-repeat;
+  }
+  &.ui-hero-card[data-focused] .cp-readout { opacity: 1; inset: -18px; }
+  .cp-readout__line {
+    position: absolute;
+    font-family: var(--setting-display);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    white-space: nowrap;
+    color: rgb(var(--c-frame-bright));
+  }
+  .cp-readout__line--tl { bottom: calc(100% + 4px); left: 0; color: rgb(var(--c-neon)); }
+  .cp-readout__line--tr { bottom: calc(100% + 4px); right: 0; color: rgb(var(--c-accent)); }
+  .cp-readout__line--bl { top: calc(100% + 4px); left: 0; }
+  .cp-readout__line--br { top: calc(100% + 4px); right: 0; }
+  .cp-readout__cursor { animation: cp-blink 1s steps(1) infinite; }
+  /* The picture behind the glass bows outwards like a tube's (the filter is drawn by the backdrop). */
+  .cp-tube { filter: url(#cp-tube-warp); }
+  /* The tube's glow: the phosphor lit in the middle, falling off into the dark at the edges. */
+  .cp-vignette {
+    box-shadow: inset 0 0 180px 40px rgb(0 0 0 / 0.8);
+    background: radial-gradient(85% 75% at 50% 50%, rgb(90 34 46 / 0.5), transparent 100%);
+  }
+}
+
+/* A tear through the picture: shifted aside with red and cyan ghosts, then back. */
+@keyframes cp-glitch {
+  0% { transform: translateX(0); filter: drop-shadow(-2px 0 rgb(255 98 88 / 0.8)) drop-shadow(2px 0 rgb(86 240 250 / 0.8)); }
+  50% { transform: translateX(-2px); clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%, 0 55%, 100% 55%, 100% 100%, 0 100%); }
+  100% { transform: none; filter: none; }
+}
+@keyframes cp-turn { to { transform: rotate(360deg); } }
+@keyframes cp-blink { 50% { opacity: 0; } }
+@keyframes cp-dump { to { transform: translateY(-50%); } }
+@keyframes cp-range {
+  from { transform: translateY(-60px); }
+  to { transform: translateY(70px); }
+}
+@keyframes cp-tear {
+  0%, 100% { opacity: 0; transform: none; }
+  72% { opacity: 1; transform: translateX(-3%); }
+  73% { opacity: 0.6; transform: translateX(4%) scaleY(0.4); }
+  74% { opacity: 0; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='cyberpunk'] :is(.cp-reticle-turn, .cp-tear, .cp-dump__scroll, .cp-range__caret, .cp-rec i, .cp-readout__cursor, .ui-button, .ui-hud-slot),
+  [data-setting='cyberpunk'].ui-hero-card > .ui-panel { animation: none !important; }
+}
+
+/* ------------------------------------------------------------------ Level ready */
+/* The bar overloads: cells flash in a running wave, the bar tears into red and cyan copies. */
+[data-setting='cyberpunk'] {
+  .ui-xp[data-ready] { border-color: rgb(var(--c-accent) / 0.8); }
+  .cp-cell { opacity: 0; animation: cp-cell 1.2s steps(2) infinite; }
+  .cp-split { opacity: 0; mix-blend-mode: screen; }
+  .cp-split--red { animation: cp-split-red 2.6s steps(1) infinite; }
+  .cp-split--cyan { animation: cp-split-cyan 2.6s steps(1) infinite; }
+  .cp-tag { animation: cp-tag 1s steps(2) infinite; }
+}
+@keyframes cp-cell {
+  0% { opacity: 0.9; }
+  50% { opacity: 0.15; }
+}
+@keyframes cp-split-red {
+  0%, 100% { opacity: 0; transform: none; }
+  40% { opacity: 0.7; transform: translate(-4px, -3px); }
+  43% { opacity: 0; transform: none; }
+}
+@keyframes cp-split-cyan {
+  0%, 100% { opacity: 0; transform: none; }
+  40% { opacity: 0.7; transform: translate(4px, 3px); }
+  43% { opacity: 0; transform: none; }
+}
+@keyframes cp-tag { 50% { opacity: 0.2; } }
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='cyberpunk'] :is(.cp-cell, .cp-split, .cp-tag) { animation: none; }
+  [data-setting='cyberpunk'] .cp-cell { opacity: 0.7; }
+}
+
+/* ------------------------------------------------------------------ World card */
+/* Jacking in: on hover the reticle locks onto the emblem segment by segment, the picture tears
+   once, scan lines sweep and the name splits into red and cyan. */
+[data-setting='cyberpunk'] {
+  .ui-world { border-color: rgb(var(--c-frame) / 0.7); clip-path: var(--cut-shape); }
+  .ui-world::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    background:
+      linear-gradient(180deg, transparent, rgb(var(--c-neon) / 0.18) 48%, rgb(var(--c-neon) / 0.45) 50%, transparent 52%) 0 -100% / 100% 60% no-repeat;
+  }
+  .ui-world__name { font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+  .ui-world__emblem { color: rgb(var(--c-frame-bright)); }
+  .ui-world__sigil { width: 196px; height: 196px; }
+  .cp-sigil { color: rgb(var(--c-frame-bright)); opacity: 0.4; transition: opacity 300ms; }
+  .cp-sigil__ring { transform-origin: 0 0; }
+  .cp-sigil__lock { opacity: 0; transition: opacity 200ms 300ms; }
+  .ui-world:hover { border-color: rgb(var(--c-frame-bright)); transform: none; animation: cp-glitch 300ms steps(2) 1; }
+  .ui-world:hover::after { opacity: 1; animation: cp-world-scan 900ms ease-out forwards; }
+  .ui-world:hover .ui-world__emblem { color: rgb(var(--c-accent)); }
+  .ui-world:hover .ui-world__name { color: rgb(var(--c-ink)); text-shadow: -2px 0 rgb(var(--c-frame-bright) / 0.8), 2px 0 rgb(var(--c-neon) / 0.7); }
+  .ui-world:hover .cp-sigil { opacity: 1; }
+  .ui-world:hover .cp-sigil__ring { animation: cp-turn 18s linear infinite; }
+  .ui-world:hover .cp-sigil__seg { animation: cp-lock 500ms steps(2) both; }
+  .ui-world:hover .cp-sigil__lock { opacity: 1; }
+}
+@keyframes cp-world-scan {
+  from { background-position: 0 -100%; }
+  to { background-position: 0 220%; }
+}
+@keyframes cp-lock {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='cyberpunk'] .ui-world:hover,
+  [data-setting='cyberpunk'] .ui-world:hover :is(.cp-sigil__ring, .cp-sigil__seg),
+  [data-setting='cyberpunk'] .ui-world:hover::after { animation: none; }
+}
