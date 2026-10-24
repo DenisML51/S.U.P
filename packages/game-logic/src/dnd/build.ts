@@ -370,6 +370,11 @@ function spellEntry(def: SpellDef, previous: Spell | undefined, patch: Partial<S
     effect: '',
     damage: def.damage,
     damageType: def.damageType,
+    upcastDamage: def.upcastDamage,
+    cantripScaling: def.cantripScaling,
+    addModifier: def.addModifier,
+    attackRoll: def.attackRoll,
+    saveAttribute: def.saveAttribute,
     prepared: previous?.prepared ?? false,
     resourceId: def.level > 0 ? `slot-${def.level}` : undefined,
     resourceCost: def.level > 0 ? 1 : undefined,
@@ -495,8 +500,11 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
         resourceId: feature.resource?.id ?? feature.usesResource?.id,
         resourceCost: feature.resource || feature.usesResource ? (feature.usesResource?.cost ?? 1) : undefined,
         effect: '',
-        damage: feature.damage,
+        // Numbers that grow with level are written for the current one.
+        damage: typeof feature.damage === 'function' ? feature.damage(ctx) : feature.damage,
         damageType: feature.damageType,
+        saveAttribute: feature.saveAttribute,
+        saveDC: feature.saveDC !== undefined ? resolveAmount(feature.saveDC, ctx) : undefined,
         iconName: previous?.iconName ?? feature.iconName,
         color: previous?.color ?? feature.color,
         grant: granted.key,
@@ -888,4 +896,13 @@ export function unfinishedChoices(build: Build, plan: LevelPlan): OpenChoice[] {
 export function setPicks(build: Build, key: string, picks: string[]): Build {
   const choices = Object.fromEntries(Object.entries(build.choices).filter(([k]) => !k.startsWith(`${key}=`) && !k.startsWith(`${key}:`)));
   return { ...build, choices: { ...choices, [key]: picks } };
+}
+
+/** A feature's numbers as they stand on a level (damage that grows, a save DC), for previews. */
+export function featureNumbers(build: Build, level: number, feature: FeatureDef): { damage?: string; saveDC?: number } {
+  const ctx = contextFor(level, buildScores({ ...build, level }, level));
+  return {
+    damage: typeof feature.damage === 'function' ? feature.damage(ctx) : feature.damage,
+    saveDC: feature.saveDC !== undefined ? resolveAmount(feature.saveDC, ctx) : undefined,
+  };
 }

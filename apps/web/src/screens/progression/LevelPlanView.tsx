@@ -4,6 +4,7 @@ import {
   averageHitPoints,
   buildScores,
   describeGrant,
+  featureNumbers,
   findClass,
   levelPlan,
   rollDie,
@@ -44,15 +45,16 @@ export function planIssues(build: Build, level: number, sources?: SourceKind[]):
 }
 
 /** A gained feature as the card and details show it. */
-const featureEntry = ({ key, feature }: GrantedFeature): EntryInfo => ({
+const featureEntry = (build: Build, { key, feature, level }: GrantedFeature): EntryInfo => ({
   id: key,
   name: feature.name,
   iconName: feature.iconName,
   color: feature.color,
   description: feature.description,
   actionType: feature.action,
-  damage: feature.damage,
+  ...featureNumbers(build, level, feature),
   damageType: feature.damageType,
+  saveAttribute: feature.saveAttribute,
 });
 
 /** Features used in play look like abilities; passive traits like the sheet's features. */
@@ -160,7 +162,7 @@ export const LevelPlanView: React.FC<{
             {features.map((granted) => (
               <EntryCardButton
                 key={granted.key}
-                entry={featureEntry(granted)}
+                entry={featureEntry(build, granted)}
                 kind={featureKind(granted)}
                 source={describeGrant(build, granted.key)}
                 onOpen={() => setOpen(granted)}
@@ -168,7 +170,7 @@ export const LevelPlanView: React.FC<{
             ))}
           </div>
           <EntryDetails
-            open={open && { entry: featureEntry(open), kind: featureKind(open) }}
+            open={open && { entry: featureEntry(build, open), kind: featureKind(open) }}
             source={open ? describeGrant(build, open.key) : undefined}
             onClose={() => setOpen(null)}
           />

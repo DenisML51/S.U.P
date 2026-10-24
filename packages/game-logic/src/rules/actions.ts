@@ -49,6 +49,8 @@ export interface PerformActionRequest {
   ammunitionItemId?: string;
   /** Spend an action of the matching kind from this turn's budget. */
   trackActionEconomy?: boolean;
+  /** Cast a spell with a slot of this level (higher than its own to upcast). */
+  slotLevel?: number;
 }
 
 export type PerformActionFailure =
@@ -124,7 +126,12 @@ export function performAction(character: Character, request: PerformActionReques
     costs.slot = slot;
   }
 
-  const resourceId = 'resourceId' in source ? source.resourceId : undefined;
+  // A spell cast with a chosen slot spends that slot instead of the one of its own level.
+  const chosenSlot =
+    request.kind === 'spell' && request.slotLevel !== undefined
+      ? next.resources.find((r) => r.spellSlotLevel === request.slotLevel)?.id
+      : undefined;
+  const resourceId = chosenSlot ?? ('resourceId' in source ? source.resourceId : undefined);
   if (resourceId) {
     const amount = ('resourceCost' in source ? source.resourceCost : undefined) ?? 1;
     const resource = next.resources.find((r) => r.id === resourceId);

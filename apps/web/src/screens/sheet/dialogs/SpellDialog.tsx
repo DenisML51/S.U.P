@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  ATTRIBUTES_LIST,
   SPELL_SCHOOLS,
   createEntityId,
   preparationBlocker,
@@ -10,10 +11,11 @@ import {
 import type { Character, Spell } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
-import { MarkdownField, NumberField, Segmented, Suggest, Switch } from '../../../ui/forms';
+import { MarkdownField, NumberField, Segmented, Select, Suggest, Switch } from '../../../ui/forms';
 import { Button, Field, Input } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
-import { damageParts } from '../parts/damage';
+import { DamageBlock } from '../../../ui/DamageBlock';
+import { damageParts, hitLabel, spellDamageParts, upcastLabel } from '../parts/damage';
 import { useActs } from '../useActs';
 import { ACTIVE_TYPES } from './AttackDialog';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
@@ -21,7 +23,6 @@ import {
   CardRule,
   CostEditor,
   DamageEditor,
-  DamageFigures,
   FormSection,
   KeyFacts,
   MinorFacts,
@@ -46,6 +47,78 @@ const blankSpell = (): Spell => ({
   effect: '',
   prepared: false,
 });
+
+const SAVE_OPTIONS = ATTRIBUTES_LIST.map((a) => ({ value: a.id as string, label: a.name }));
+
+/**
+ * How a spell reaches its target and grows: a spell attack or a saving throw, dice added per slot
+ * above its circle (or a cantrip growing with level), the spellcasting modifier added or not.
+ */
+const SpellReachEditor: React.FC<{ draft: Spell; set: (patch: Partial<Spell>) => void }> = ({ draft, set }) => {
+  const reach = draft.saveAttribute ? 'save' : draft.attackRoll ? 'attack' : 'none';
+  return (
+    <FormSection label="Попадание и рост">
+      <div className="flex flex-wrap items-center gap-3">
+        <Segmented
+          label="Как попадает"
+          value={reach}
+          onChange={(value) =>
+            set(
+              value === 'attack'
+                ? { attackRoll: 'ranged', saveAttribute: undefined }
+                : value === 'save'
+                  ? { attackRoll: undefined, saveAttribute: draft.saveAttribute ?? 'dexterity' }
+                  : { attackRoll: undefined, saveAttribute: undefined },
+            )
+          }
+          options={[
+            { value: 'none', label: 'Без броска' },
+            { value: 'attack', label: 'Атака заклинанием' },
+            { value: 'save', label: 'Спасбросок' },
+          ]}
+        />
+        {reach === 'attack' && (
+          <Segmented
+            label="Атака"
+            value={draft.attackRoll ?? 'ranged'}
+            onChange={(attackRoll) => set({ attackRoll })}
+            options={[
+              { value: 'melee', label: 'Ближняя' },
+              { value: 'ranged', label: 'Дальняя' },
+            ]}
+          />
+        )}
+        {reach === 'save' && (
+          <Select value={draft.saveAttribute} options={SAVE_OPTIONS} onChange={(saveAttribute) => set({ saveAttribute })} className="w-44" />
+        )}
+      </div>
+      {draft.level > 0 ? (
+        <Field label="Рост за каждый круг ячейки выше" hint="Кости, которые добавляются, например 1d6">
+          {(props) => (
+            <Input
+              {...props}
+              className="font-mono"
+              value={draft.upcastDamage ?? ''}
+              placeholder="1d6"
+              onChange={(e) => set({ upcastDamage: e.target.value.trim() || undefined })}
+            />
+          )}
+        </Field>
+      ) : (
+        <Switch
+          checked={!!draft.cantripScaling}
+          onChange={(cantripScaling) => set({ cantripScaling: cantripScaling || undefined })}
+          label="Кости растут на 5, 11 и 17 уровнях"
+        />
+      )}
+      <Switch
+        checked={!!draft.addModifier}
+        onChange={(addModifier) => set({ addModifier: addModifier || undefined })}
+        label="Прибавлять модификатор заклинательной характеристики"
+      />
+    </FormSection>
+  );
+};
 
 /** A spell from the book: its circle, school and cost; prepared from the card, then cast from it. */
 export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; onClose: () => void }> = ({
@@ -162,6 +235,7 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
               value={draft.damageComponents ?? []}
               onChange={(damageComponents) => set({ damageComponents })}
             />
+            <SpellReachEditor draft={draft} set={set} />
           </div>
           <div className="flex flex-col gap-4">
             <div className="flex items-end justify-between gap-4">
@@ -206,7 +280,8 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
   }
 
   if (!entry) return null;
-  const parts = damageParts(entry);
+  // As it stands now: a cantrip at the hero's level, a spell at its own slot.
+  const parts = spellDamageParts(character, entry);
   const cost = costLabel(character, entry.resourceId, entry.resourceCost);
   const blocker = preparationBlocker(character, entry);
 
@@ -240,14 +315,8 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
         )
       }
     >
-      {(cost || parts.length > 0) && (
-        <KeyFacts
-          facts={[
-            ...(cost ? [{ label: 'Стоимость', value: cost }] : []),
-            ...(parts.length > 0 ? [{ label: 'Урон', value: <DamageFigures parts={parts} /> }] : []),
-          ]}
-        />
-      )}
+      <DamageBlock parts={parts} hit={hitLabel(character, entry, true)} growth={upcastLabel(entry)} className="mb-4" />
+      {cost && <KeyFacts facts={[{ label: 'Стоимость', value: cost }]} />}
       <MinorFacts
         facts={[
           ['Время', entry.castingTime || ACTION_TYPES[entry.actionType].short],

@@ -1754,3 +1754,16 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 [data-setting='high-fantasy'] .ui-hud-slot--tile { border-radius: 9px; }
 [data-setting='dark-fantasy'] .ui-hud-slot,
 [data-setting='dark-fantasy'] .ui-hud-slot--tile { border-radius: 7px; }
+
+/* ------------------------------------------------------------------ Damage block */
+/* What an entry deals, set apart on its card so it is never searched for. */
+.ui-damage-block {
+  padding: 0.75rem 1rem;
+  background: rgb(var(--c-inset) / 0.7);
+  border: 1px solid rgb(var(--c-line));
+  border-left: 3px solid rgb(var(--c-frame-bright) / 0.7);
+  border-radius: var(--radius);
+}
+.ui-panel--paper .ui-damage-block { background: rgb(var(--c-paper-muted) / 0.12); border-color: rgb(var(--c-paper-muted) / 0.4); }
+[data-setting='sci-fi'] .ui-damage-block { border-left-color: rgb(var(--c-accent)); }
+[data-setting='grimdark'] .ui-damage-block { border-left-color: rgb(var(--c-danger)); }

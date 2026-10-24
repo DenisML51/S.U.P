@@ -2,6 +2,7 @@ import {
   CharacterMigrationError,
   CharacterSchema,
   createCharacterDocument,
+  deepEqual,
   migrateCharacter,
   newCharacterId,
   toCharacterPreview,
@@ -12,6 +13,7 @@ import {
 } from '@itd/schema';
 import {
   appendHistory,
+  applyBuild,
   changeResource,
   performAction as performGameAction,
   restoreAllResources,
@@ -277,6 +279,12 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       }
       set({ character, viewMode: 'tabs' });
       rememberOpen(character.id);
+      // A preset hero picks up improvements of the preset content (damage that grows, saves) the
+      // moment it is opened; the rebuild keeps uses, damage taken and preparation.
+      if (character.build) {
+        const rebuilt = applyBuild(character, character.build).character;
+        if (!deepEqual(rebuilt, character)) get().updateCharacter(() => rebuilt);
+      }
     },
 
     createCharacter: async (draft) => {

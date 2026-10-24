@@ -18,6 +18,9 @@ export interface EntryInfo {
   damageType?: string;
   actionType?: ActionType;
   hitBonus?: number;
+  saveAttribute?: string;
+  saveDC?: number;
+  attackRoll?: string;
   level?: number;
   school?: string;
   castingTime?: string;

@@ -251,3 +251,38 @@ describe('where an entry comes from', () => {
     expect(describeGrant(b, 'species:human.resourceful')).toBe('Вид «Человек»');
   });
 });
+
+describe('damage that grows', () => {
+  it('adds dice and modifiers', async () => {
+    const { combineDice } = await import('../src');
+    expect(combineDice('8d6', 1, '1d6', 2)).toBe('10d6');
+    expect(combineDice('1d10', 3)).toBe('3d10');
+    expect(combineDice('3d4+3', 1, '1d4+1', 2)).toBe('5d4+5');
+    expect(combineDice('2d8', 1, '3')).toBe('2d8+3');
+    expect(combineDice('2d8', 1, '-1')).toBe('2d8-1');
+  });
+
+  it('grows cantrips with level and spells with the slot', async () => {
+    const { spellDamageAt } = await import('../src');
+    const hero = applyBuild(fresh(), build({ class: 'paladin', level: 11 })).character;
+    const fireBolt = { ...hero.spells[0]!, level: 0, damage: '1d10', cantripScaling: true, upcastDamage: undefined };
+    expect(spellDamageAt(hero, fireBolt)).toBe('3d10');
+    const cure = hero.spells.find((s) => s.id === 'spell-cure-wounds')!;
+    expect(cure.upcastDamage).toBe('2d8');
+    // Charisma 10 → +0, so only dice: 2d8 at 1st, +2d8 for each slot above.
+    expect(spellDamageAt(hero, cure, 3)).toBe('6d8');
+  });
+
+  it('writes feature damage for the current level', () => {
+    const at = (level: number) => apply(build({ species: 'dragonborn', level, choices: { 'species:dragonborn.ancestry/lineage': ['red'] } }));
+    const breath = (level: number) => at(level).abilities.find((a) => a.name === 'Оружие дыхания');
+    const secondWind = (level: number) => at(level).abilities.find((a) => a.name === 'Второе дыхание')?.damage;
+    expect(secondWind(3)).toBe('1d10+3');
+    expect(breath(1)?.damage).toBe('1d10');
+    expect(breath(5)?.damage).toBe('2d10');
+    expect(breath(17)?.damage).toBe('4d10');
+    // 8 + Constitution 15 (+2) + proficiency 2.
+    expect(breath(1)?.saveDC).toBe(12);
+    expect(breath(1)?.saveAttribute).toBe('dexterity');
+  });
+});

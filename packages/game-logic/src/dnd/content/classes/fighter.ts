@@ -273,6 +273,7 @@ const psiWarrior: SubclassDef = {
           'Раз в ход, попав атакой оружием по существу в пределах 30 футов, вы можете потратить кость псионической энергии: цель получает дополнительный урон силовым полем, равный выпавшему значению + модификатор Интеллекта.',
         action: 'passive',
         usesResource: { id: PSIONIC_ENERGY },
+        damage: (ctx) => `1d${byClassLevel({ 3: 6, 5: 8, 11: 10, 17: 12 })(ctx)}+${Math.max(1, ctx.modifier('intelligence'))}`,
         damageType: 'Силовой',
         iconName: 'psychic-waves',
       },
@@ -377,7 +378,8 @@ export const FIGHTER: ClassDef = {
         description:
           'Бонусным действием вы восстанавливаете 1к10 + уровень воина хитов. Использований 2 (3 с 4-го уровня, 4 с 10-го); короткий отдых возвращает одно, продолжительный — все.',
         action: 'bonus',
-        damage: '1d10',
+        damage: (ctx) => `1d10+${ctx.classLevel}`,
+        damageType: 'Лечение',
         resource: { id: SECOND_WIND, name: 'Второе дыхание', max: byClassLevel({ 1: 2, 4: 3, 10: 4 }), recharge: 'long', iconName: 'heart-plus' },
         iconName: 'heart-plus',
         color: '#7fb069',

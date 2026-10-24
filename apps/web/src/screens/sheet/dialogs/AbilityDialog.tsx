@@ -6,14 +6,14 @@ import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { MarkdownField, Segmented } from '../../../ui/forms';
 import { Button, Field } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
-import { damageParts } from '../parts/damage';
+import { DamageBlock } from '../../../ui/DamageBlock';
+import { damageParts, hitLabel } from '../parts/damage';
 import { useActs } from '../useActs';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
 import {
   CardRule,
   CostEditor,
   DamageEditor,
-  DamageFigures,
   FormSection,
   KeyFacts,
   costLabel,
@@ -160,14 +160,8 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
         )
       }
     >
-      {(cost || parts.length > 0) && (
-        <KeyFacts
-          facts={[
-            ...(cost ? [{ label: 'Стоимость', value: cost }] : []),
-            ...(parts.length > 0 ? [{ label: 'Урон', value: <DamageFigures parts={parts} /> }] : []),
-          ]}
-        />
-      )}
+      <DamageBlock parts={parts} hit={hitLabel(character, entry)} className="mb-4" />
+      {cost && <KeyFacts facts={[{ label: 'Стоимость', value: cost }]} />}
       {entry.effect.trim() && (
         <Prose className={cost || parts.length > 0 ? 'mt-4' : undefined}>{entry.effect}</Prose>
       )}

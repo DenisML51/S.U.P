@@ -22,7 +22,7 @@ import { SectionNotes } from '../parts/EditableText';
 import { useSheetText } from '../useSheetText';
 import { useActs } from '../useActs';
 import { useSheetDialogs } from '../dialogs/context';
-import { damageParts, describeDamage } from '../parts/damage';
+import { describeDamage, spellDamageParts } from '../parts/damage';
 
 type LevelFilter = 'all' | number;
 
@@ -235,7 +235,7 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
                 {spellLevelName(group.level)}
               </LedgerGroup>
               {group.spells.map((spell) => {
-                const parts = damageParts(spell);
+                const parts = spellDamageParts(character, spell);
                 return (
                   <LedgerRow
                     key={spell.id}

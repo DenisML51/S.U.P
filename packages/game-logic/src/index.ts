@@ -20,6 +20,7 @@ export * from './rules/pointBuy';
 export * from './rules/progression';
 export * from './rules/resources';
 export * from './rules/sanity';
+export * from './rules/scaling';
 export * from './rules/sheet';
 export * from './rules/spells';
 

@@ -9,7 +9,7 @@ import {
 import type { ActionType, Character, InventoryItem } from '@itd/schema';
 import { ACTION_TYPES } from '../../ui/actionTypes';
 import type { GameIconId, IconKind } from '../../ui/GameIcon';
-import { damageParts, describeDamage } from '../sheet/parts/damage';
+import { damageFact as damageLine, damageParts, hitLabel, spellDamageParts } from '../sheet/parts/damage';
 import type { EntryKind } from '../sheet/dialogs/context';
 
 export type SlotGroup = 'attacks' | 'abilities' | 'spells' | 'items';
@@ -49,10 +49,7 @@ const costFact = (character: Character, resourceId?: string, cost?: number): [st
   return resource ? ['Стоимость', `${cost ?? 1} ${resource.name} (есть ${resource.current})`] : null;
 };
 
-const damageFact = (entry: Parameters<typeof damageParts>[0]): [string, string] | null => {
-  const parts = damageParts(entry);
-  return parts.length > 0 ? ['Урон', describeDamage(parts)] : null;
-};
+const damageFact = (entry: Parameters<typeof damageParts>[0]) => damageLine(damageParts(entry));
 
 const facts = (...list: ([string, string] | null | false | undefined)[]) =>
   list.filter((f): f is [string, string] => !!f && f[1].trim() !== '');
@@ -116,7 +113,11 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
       iconName: ability.iconName,
       color: ability.color,
       subtitle: 'Умение',
-      facts: facts(costFact(character, ability.resourceId, ability.resourceCost), damageFact(ability)),
+      facts: facts(
+        costFact(character, ability.resourceId, ability.resourceCost),
+        damageFact(ability),
+        ['Попадание', hitLabel(character, ability) ?? ''],
+      ),
       actionType: ability.actionType,
       blocked: blockedBy(
         character,
@@ -147,7 +148,8 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
         ['Дистанция', spell.range],
         ['Длительность', spell.duration],
         costFact(character, spell.resourceId, spell.resourceCost),
-        damageFact(spell),
+        damageLine(spellDamageParts(character, spell)),
+        ['Попадание', hitLabel(character, spell, true) ?? ''],
       ),
       actionType: spell.actionType,
       level: spell.level,
