@@ -283,7 +283,6 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 }
 .ui-hero-figure__art img {
   filter: brightness(0.9) saturate(0.95) contrast(1.04);
-  transition: filter 0.5s;
 }
 /* Bright backgrounds sink into the dark before the fade takes them. */
 .ui-hero-figure__art::after {
@@ -293,9 +292,6 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   background: radial-gradient(ellipse 48% 45% at 50% 46%, transparent 36%, rgb(var(--c-bg-deep) / 0.55) 100%);
   pointer-events: none;
 }
-.ui-hero-figure:hover .ui-hero-figure__art img,
-.ui-hero-figure:focus-visible .ui-hero-figure__art img { filter: brightness(1) saturate(1) contrast(1.04); }
-.ui-hero-figure:focus-visible { outline: none; }
 .ui-hero-figure__glow {
   --glow-fade: radial-gradient(closest-side, #000 35%, transparent 100%);
   filter: blur(48px) saturate(1.2) brightness(0.6);

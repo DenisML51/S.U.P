@@ -142,7 +142,7 @@ const HeroStage: React.FC<{
           animate={{ opacity: 1, x: 0, transition: { duration: 0.8, ease: EASE } }}
           exit={{ opacity: 0, transition: { duration: 0.35 } }}
         >
-          <HeroFigure key={hero.id} hero={hero} onClick={onPlay} />
+          <HeroFigure key={hero.id} hero={hero} />
         </motion.div>
       </SettingScope>
 
@@ -205,15 +205,12 @@ const PORTRAIT_RATIO = 0.8;
  * edges fade out as an ellipse, so a bright or busy background never shows as a box, and a blurred
  * glow of the same picture behind it lets its colours spill softly into the dark.
  */
-const HeroFigure: React.FC<{ hero: CharacterPreview; onClick: () => void }> = ({ hero, onClick }) => {
+const HeroFigure: React.FC<{ hero: CharacterPreview }> = ({ hero }) => {
   const src = fullArtSrc(hero);
   const [ratio, setRatio] = useState(2 / 3);
   const portrait = ratio > PORTRAIT_RATIO;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`Лист: ${hero.name}`}
+    <div
       className="ui-hero-figure relative max-w-full shrink-0"
       style={{ aspectRatio: ratio, height: portrait ? '72%' : '100%', marginTop: portrait ? '10%' : 0 }}
     >
@@ -234,6 +231,6 @@ const HeroFigure: React.FC<{ hero: CharacterPreview; onClick: () => void }> = ({
           <CharacterArt source={hero} kind="full" className="h-full w-full" />
         )}
       </span>
-    </button>
+    </div>
   );
 };
