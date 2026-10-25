@@ -3,28 +3,20 @@
  * scope's tokens, so a party's table wears its world and the home page the service.
  */
 
-/* ---------------------------------------------------------------- Home: the hand of hero cards */
-.ui-home-card {
-  border-radius: calc(var(--radius) * 0.75);
-  border: 1px solid rgb(var(--c-frame) / 0.5);
-  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.85);
-  transform: translate(calc(-50% + var(--fan-x)), calc(-50% + var(--fan-y))) rotate(var(--fan-r));
-  transform-origin: 50% 120%;
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s;
-  filter: brightness(0.72) saturate(0.85);
+/* ---------------------------------------------------------------- Home: invite code */
+.ui-home-code__go {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  color: rgb(var(--c-accent-ink));
+  background: rgb(var(--c-accent));
+  font-size: 1.1rem;
+  transition: opacity 0.2s;
 }
-.group:hover .ui-home-card,
-.group:focus-visible .ui-home-card {
-  transform: translate(calc(-50% + var(--fan-x) * 1.25), calc(-52% + var(--fan-y))) rotate(calc(var(--fan-r) * 1.3));
-  filter: brightness(0.95) saturate(1);
-}
-
-.ui-home-join {
-  border-top: 1px solid rgb(var(--c-line) / 0.6);
-}
-[data-setting='service'] .ui-home-join:not([data-world] *) {
-  border-top-color: var(--divider);
-}
+.ui-home-code__go:disabled { opacity: 0.25; }
 
 /* An invite code reads like a code: spaced capitals in the numeric face. */
 .ui-invite-input {
@@ -273,3 +265,120 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   font-size: 10px;
   letter-spacing: 0;
 }
+
+/* ---------------------------------------------------------------- Home: the place itself */
+/* The service's dark, lit from where the featured hero stands; the menu side falls into shadow. */
+.ui-home-atmosphere {
+  background:
+    radial-gradient(ellipse 55% 70% at 68% 46%, rgb(var(--c-frame-bright) / 0.07), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 50%, transparent 40%, rgb(var(--c-bg-deep) / 0.95) 100%),
+    linear-gradient(to right, rgb(var(--c-bg-deep)) 0%, rgb(var(--c-bg)) 45%, rgb(var(--c-bg)) 100%);
+}
+/* The featured hero: no box. The picture melts away through a smoky mask (figureMask.ts) at its sides
+ * and corners, the top and bottom kept sharp; its own colours glow around it. */
+.ui-hero-figure__art {
+  --figure-sink: rgb(var(--c-bg-deep) / 0.55);
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+}
+.ui-hero-figure__art img {
+  filter: brightness(0.9) saturate(0.95) contrast(1.04);
+}
+/* Bright backgrounds sink into the page's tone at the sides before the fade takes them. */
+.ui-hero-figure__art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, var(--figure-sink), transparent 30%, transparent 70%, var(--figure-sink));
+  pointer-events: none;
+}
+.ui-hero-figure__glow {
+  --glow-fade: radial-gradient(closest-side, #000 35%, transparent 100%);
+  filter: blur(48px) saturate(1.2) brightness(0.6);
+  opacity: 0.55;
+  transform: scale(1.2);
+  mask-image: var(--glow-fade);
+  -webkit-mask-image: var(--glow-fade);
+}
+
+/* ---------------------------------------------------------------- Home: a table as a cover card */
+/* The card is a window onto its world: the frame stays, the picture inside wakes under the cursor. */
+.ui-table-card__body {
+  container-type: size;
+  border-radius: calc(var(--radius) * 0.75);
+  border: 1px solid rgb(var(--c-frame) / 0.35);
+  box-shadow: 0 20px 44px -24px rgb(0 0 0 / 0.9);
+  transition: border-color 0.3s;
+}
+.ui-table-card__picture {
+  filter: brightness(0.62) saturate(0.85);
+  transition: filter 0.5s, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-table-card__body:hover,
+.ui-table-card__body:focus-visible { border-color: rgb(var(--c-frame-bright) / 0.7); outline: none; }
+.ui-table-card__body:hover .ui-table-card__picture,
+.ui-table-card__body:focus-visible .ui-table-card__picture {
+  filter: brightness(0.9) saturate(1);
+  transform: scale(1.04);
+}
+.ui-table-card__state-dot {
+  display: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+/* Squeezed by its neighbours, a cover becomes a strip: the name on the left, the state on the right. */
+@container (max-height: 8.5rem) {
+  .ui-table-card__body .ui-table-card__meta { display: none; }
+  .ui-table-card__body .ui-table-card__content { justify-content: center; padding: 0 9rem 0 1.5rem; }
+  .ui-table-card__body .ui-table-card__name { margin-top: 0; font-size: 1.5rem; }
+  .ui-table-card__body .ui-table-card__state { top: 50%; transform: translateY(-50%); }
+}
+/* Half a column wide (two columns of tables): a smaller name, the state still in its corner. */
+@container (max-width: 24rem) {
+  .ui-table-card__body .ui-table-card__content { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .ui-table-card__body .ui-table-card__name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    font-size: 1.45rem;
+  }
+}
+@container (max-width: 24rem) and (max-height: 8.5rem) {
+  .ui-table-card__body .ui-table-card__content { padding-right: 3rem; }
+  .ui-table-card__body .ui-table-card__name { -webkit-line-clamp: 2; font-size: 1.2rem; line-height: 1.15; }
+  /* The state shrinks to its colour: a dot (or the crossed swords of a fight), named on hover. */
+  .ui-table-card__body .ui-table-card__state { padding: 0.4rem; background: none; backdrop-filter: none; }
+  .ui-table-card__body .ui-table-card__state-label { display: none; }
+  .ui-table-card__body .ui-table-card__state-dot { display: block; }
+}
+
+
+
+/* ---------------------------------------------------------------- Home: the dark takes the art's colour */
+/* The hero's art meets the page in its own edge colour (quieted, capped at a deep grey) instead of black:
+ * a bright sky no longer ends in a hard cut. The tone sits right under the fading edge and spreads a little
+ * to the left; it flows over when the hero changes. */
+@property --hub-tone {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgb(12 14 13);
+}
+.ui-hub { transition: --hub-tone 0.9s ease; }
+.ui-hero-figure__halo {
+  position: absolute;
+  inset: -6% -40%;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--hub-tone) 70%, transparent) 30%,
+    color-mix(in srgb, var(--hub-tone) 30%, transparent) 65%,
+    transparent
+  );
+}
+.ui-hub-lift {
+  background: linear-gradient(to right, color-mix(in srgb, var(--hub-tone) 22%, transparent), transparent 50%);
+}
+.ui-hub .ui-hero-figure__art { --figure-sink: color-mix(in srgb, var(--hub-tone) 55%, transparent); }

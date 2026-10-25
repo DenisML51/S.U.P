@@ -21,23 +21,7 @@ import {
 } from '../../ui/icons';
 import { Wordmark } from './Wordmark';
 import { SyncBadge } from './SyncBadge';
-
-const LAST_CHARACTER_KEY = 'itd.lastCharacterId';
-
-const rememberLast = (id: string) => {
-  try {
-    localStorage.setItem(LAST_CHARACTER_KEY, id);
-  } catch {
-    // Not remembered; the list starts at the first hero next time.
-  }
-};
-const readLast = (): string | null => {
-  try {
-    return localStorage.getItem(LAST_CHARACTER_KEY);
-  } catch {
-    return null;
-  }
-};
+import { readLastHero as readLast, rememberLastHero as rememberLast } from '../home/lastHero';
 
 /** Index of the "new hero" slot that ends the row. */
 type Slot = { kind: 'hero'; hero: CharacterPreview } | { kind: 'new' };
@@ -190,7 +174,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
           <SettingScope setting={world} className="ui-service ui-morph flex flex-col items-center gap-4">
             {focused.kind === 'hero' ? (
               <Button variant="primary" size="lg" className="min-w-[220px]" onClick={() => play(focused.hero)}>
-                Играть
+                Лист
               </Button>
             ) : (
               <Button variant="primary" size="lg" className="min-w-[220px]" icon={<IconCreate width={18} height={18} />} onClick={onCreate}>
@@ -318,7 +302,7 @@ const HeroCard: React.FC<{ hero: CharacterPreview; focused: boolean; onClick: ()
         interactive
         active={focused}
         onClick={onClick}
-        aria-label={focused ? `Играть за ${hero.name}` : hero.name}
+        aria-label={focused ? `Лист: ${hero.name}` : hero.name}
         className="ui-morph flex h-full w-full flex-col overflow-hidden p-0 text-left"
       >
         <CharacterArt source={hero} kind="full" className="absolute inset-0 h-full w-full" />

@@ -1,326 +1,344 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { INVITE_CODE_LENGTH, type InvitePreviewDto, type PartyListItemDto } from '@itd/schema';
+import type { CharacterPreview, PartyListItemDto } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
-import { usePartyStore } from '../../store/usePartyStore';
-import { CharacterArt } from '../../ui/CharacterArt';
-import { IconCombat, IconCreate, IconNext, IconSettings } from '../../ui/icons';
-import { Button, IconButton, Input, Panel, cx } from '../../ui/primitives';
-import { SettingBackdrop } from '../../ui/SettingBackdrop';
-import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
-import { SETTING_INFO, settingOf, type Theme } from '../../ui/theme/settings';
-import { ClosedTableDialog } from '../party/ClosedTableDialog';
-import { InviteDialog } from '../party/InviteDialog';
-import { PartyCover } from '../party/PartyCover';
-import { SyncBadge } from '../select/SyncBadge';
-import { Wordmark } from '../select/Wordmark';
+import { CharacterArt, fullArtSrc } from '../../ui/CharacterArt';
+import { IconCombat, IconCreate } from '../../ui/icons';
+import { Button, cx } from '../../ui/primitives';
+import { SettingScope } from '../../ui/theme/SettingScope';
+import { SETTING_INFO, settingOf } from '../../ui/theme/settings';
+import {
+  HomeHeader,
+  HeroVitals,
+  HomeAtmosphere,
+  InviteCodeField,
+  PartyPicture,
+  heroOrigin,
+  partyRole,
+  partyState,
+  plural,
+  useHomeItems,
+  usePartyEntry,
+} from './homeParts';
+import { rememberLastHero } from './lastHero';
+import { pageTone, readArt, type Rgb } from './artTone';
+import { figureMask } from './figureMask';
 
-const ENTER = { duration: 0.5, ease: [0.22, 1, 0.36, 1] } as const;
-const PANEL_HEIGHT = 'min(66vh, 620px)';
-
-/** "k7mq2x" → "K7MQ-2X": typed codes take the shape they are printed in. */
-const shapeCode = (raw: string) => {
-  const bare = raw
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
-    .slice(0, INVITE_CODE_LENGTH);
-  return bare.length > 4 ? `${bare.slice(0, 4)}-${bare.slice(4)}` : bare;
-};
+const EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
- * The first screen after signing in: one's own heroes, or the tables one sits at. The atmosphere
- * takes the world of whatever is under the cursor.
+ * The first screen after signing in. The hero last played stands on the left, ready to go on; the
+ * tables one sits at are a column of cinematic covers on the right. The page wears the service theme
+ * and never changes with the cursor; each hero and table wears its own world inside its picture.
  */
 export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
   const go = useNavStore((s) => s.go);
-  const [world, setWorld] = useState<Theme>('service');
-  useDocumentSetting('service');
+  const startCreation = useNavStore((s) => s.startCreation);
+  const loadCharacter = useCharacterStore((s) => s.loadCharacter);
+  const { heroes, parties, lastHero: hero } = useHomeItems();
+  const entry = usePartyEntry();
+  // The colour where the hero's art meets the page; the dark around the hero takes a little of it.
+  const [tone, setTone] = useState<Rgb | null>(null);
 
-  const openParty = (partyId: string) => go({ screen: 'party', partyId });
+  const play = (id: string) => {
+    rememberLastHero(id);
+    void loadCharacter(id);
+  };
+  /** Hero select opens on the hero shown here, even when it is only the newest one, not yet played. */
+  const allHeroes = () => {
+    if (hero) rememberLastHero(hero.id);
+    go({ screen: 'heroes' });
+  };
 
   return (
-    <SettingScope setting="service" className="relative h-screen overflow-clip bg-bg">
-      <SettingScope
-        setting={world}
-        className="ui-morph ui-atmosphere pointer-events-none absolute inset-0 isolate bg-bg"
-      >
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(ellipse at 50% 45%, transparent 20%, rgb(var(--c-bg-deep) / 0.92) 75%)',
-          }}
-        />
-        <SettingBackdrop setting={world} />
-      </SettingScope>
+    <SettingScope
+      setting="service"
+      className="ui-hub relative h-screen overflow-clip bg-bg"
+      style={tone ? ({ '--hub-tone': `rgb(${tone.join(' ')})` } as React.CSSProperties) : undefined}
+    >
+      <HomeAtmosphere />
+      <div className="ui-hub-lift pointer-events-none absolute inset-0" aria-hidden />
 
       <div className="relative z-10 flex h-full flex-col">
-        <motion.header
-          className="flex items-center justify-between px-24 pt-10"
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0, transition: { ...ENTER, delay: 0.1 } }}
-          exit={{ opacity: 0, y: -12, transition: { duration: 0.25 } }}
-        >
-          <Wordmark />
-          <div className="flex items-center gap-3">
-            <SyncBadge />
-            <IconButton label="Настройки" onClick={onOpenSettings}>
-              <IconSettings width={22} height={22} />
-            </IconButton>
-          </div>
-        </motion.header>
+        <HomeHeader onOpenSettings={onOpenSettings} />
 
-        <main className="flex min-h-0 flex-1 items-center justify-center px-24">
-          <div
-            className="grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-8"
-            style={{ height: PANEL_HEIGHT }}
+        <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-16 px-24 pb-12 pt-6">
+          {/* ---------------------------------------------------------------- The hero */}
+          <motion.section
+            className="relative min-h-0"
+            initial={{ opacity: 0, x: -24 }}
+            animate={{ opacity: 1, x: 0, transition: { duration: 0.6, ease: EASE, delay: 0.15 } }}
+            exit={{ opacity: 0, x: -24, transition: { duration: 0.25 } }}
           >
-            <motion.div
-              className="min-h-0"
-              initial={{ opacity: 0, x: -24 }}
-              animate={{ opacity: 1, x: 0, transition: { ...ENTER, delay: 0.15 } }}
-              exit={{ opacity: 0, x: -24, transition: { duration: 0.25 } }}
-            >
-              <HeroesPanel onOpen={() => go({ screen: 'heroes' })} onWorld={setWorld} />
-            </motion.div>
-            <motion.div
-              className="min-h-0"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0, transition: { ...ENTER, delay: 0.22 } }}
-              exit={{ opacity: 0, x: 24, transition: { duration: 0.25 } }}
-            >
-              <PartiesPanel
-                onOpen={openParty}
-                onFound={() => go({ screen: 'party-form' })}
-                onWorld={setWorld}
+            {hero ? (
+              <HeroStage
+                hero={hero}
+                count={heroes.length}
+                onPlay={() => play(hero.id)}
+                onAll={allHeroes}
+                onTone={setTone}
               />
-            </motion.div>
-          </div>
+            ) : (
+              <div className="flex h-full flex-col justify-end pb-6">
+                <div className="text-[11px] uppercase tracking-[0.26em] text-ink-faint">Одиночная игра</div>
+                <div className="ui-display mt-2 text-[3rem] leading-tight text-ink">Первый герой</div>
+                <p className="mt-2 max-w-sm text-ink-muted">
+                  Выберите мир и соберите героя: лист, бой и кубики — всё здесь.
+                </p>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="mt-6 w-fit"
+                  icon={<IconCreate width={18} height={18} />}
+                  onClick={() => startCreation()}
+                >
+                  Создать героя
+                </Button>
+              </div>
+            )}
+          </motion.section>
+
+          {/* ---------------------------------------------------------------- The tables */}
+          <motion.section
+            className="flex min-h-0 flex-col"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0, transition: { duration: 0.6, ease: EASE, delay: 0.22 } }}
+            exit={{ opacity: 0, x: 24, transition: { duration: 0.25 } }}
+          >
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.26em] text-ink-faint">Игра с мастером</div>
+                <div className="mt-1 text-[1.6rem] font-semibold leading-tight text-ink">Партии</div>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<IconCreate width={15} height={15} />}
+                onClick={() => go({ screen: 'party-form' })}
+              >
+                Собрать партию
+              </Button>
+            </div>
+
+            {parties?.length ? (
+              <TableShelf parties={parties} onOpen={entry.enter} />
+            ) : (
+              <div className="min-h-0 flex-1">
+                {parties && (
+                  <p className="max-w-sm pt-6 text-sm leading-relaxed text-ink-muted">
+                    Соберите свою партию и станьте мастером — или сядьте за чужой стол по коду, который даст
+                    мастер.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="mt-5 flex items-center gap-4">
+              <span className="shrink-0 text-sm text-ink-muted">Код приглашения</span>
+              <InviteCodeField onFound={entry.showInvite} className="flex-1" />
+            </div>
+          </motion.section>
         </main>
-        <div className="h-24 shrink-0" aria-hidden />
       </div>
+      {entry.dialogs}
     </SettingScope>
   );
 };
 
 // ------------------------------------------------------------------------------------------------
 
-/** One's own heroes: their cards fanned like a hand, the most recent in front. */
-const HeroesPanel: React.FC<{ onOpen: () => void; onWorld: (world: Theme) => void }> = ({
+const HeroStage: React.FC<{
+  hero: CharacterPreview;
+  /** How many heroes one has, shown on the button to all of them. */
+  count: number;
+  onPlay: () => void;
+  onAll: () => void;
+  onTone: (tone: Rgb | null) => void;
+}> = ({ hero, count, onPlay, onAll, onTone }) => {
+  const setting = settingOf(hero);
+  // The hero's world dresses the picture and the words; the buttons stay the page's own (service).
+  return (
+    <div className="relative h-full">
+      <SettingScope setting={setting} className="contents">
+        <motion.div
+          className="absolute -top-14 bottom-0 right-0 flex w-[80%] justify-end"
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0, transition: { duration: 0.8, ease: EASE } }}
+          exit={{ opacity: 0, transition: { duration: 0.35 } }}
+        >
+          <HeroFigure key={hero.id} hero={hero} onTone={onTone} />
+        </motion.div>
+      </SettingScope>
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0">
+        <SettingScope setting={setting}>
+          <div className="text-[11px] uppercase tracking-[0.24em] text-frame-bright/80">
+            {SETTING_INFO[setting].label}
+          </div>
+          <div className="ui-display mt-2 max-w-[34rem] text-[3.2rem] leading-[1.02] text-ink">
+            {hero.name}
+          </div>
+          <div className="mt-2 text-ink-muted">{heroOrigin(hero)}</div>
+          <HeroVitals hero={hero} className="mt-4" />
+        </SettingScope>
+        <div className="pointer-events-auto mt-7 flex items-center gap-3">
+          <Button variant="primary" size="lg" className="min-w-[200px]" onClick={onPlay}>
+            Лист
+          </Button>
+          <Button variant="secondary" size="lg" onClick={onAll}>
+            Все герои
+            <span className="text-ink-faint">{count}</span>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/** A cover is never taller than this, so one or two tables stay covers rather than walls. */
+const COVER_MAX_REM = 15;
+/** Below this a cover becomes a strip: name and state only (see .ui-table-card__body). */
+const COVER_MIN_REM = 5.5;
+
+/**
+ * The tables share the column's height instead of scrolling: up to three stand one above another;
+ * more pair up in two columns, the first spanning both when the count is odd. Only a crowd that
+ * would squeeze the covers under strip height ever scrolls.
+ */
+const TableShelf: React.FC<{ parties: PartyListItemDto[]; onOpen: (party: PartyListItemDto) => void }> = ({
+  parties,
   onOpen,
-  onWorld,
 }) => {
-  const heroes = useCharacterStore((s) => s.charactersList);
-  const hand = heroes.slice(-5);
-  const front = hand.at(-1);
+  const columns = parties.length > 3 ? 2 : 1;
+  const rows = Math.ceil(parties.length / columns);
+  const wide = columns === 2 && parties.length % 2 === 1;
   return (
-    <Panel
-      as="button"
-      interactive
-      onClick={onOpen}
-      onMouseEnter={() => onWorld(front ? settingOf(front) : 'service')}
-      onMouseLeave={() => onWorld('service')}
-      className="group flex h-full w-full flex-col overflow-hidden p-0 text-left"
-    >
-      <div className="relative min-h-0 flex-1">
-        {hand.map((hero, index) => {
-          const offset = index - (hand.length - 1) / 2;
-          return (
-            <SettingScope
-              key={hero.id}
-              setting={settingOf(hero)}
-              className="ui-home-card absolute left-1/2 top-[50%] aspect-[2/3] h-[70%] overflow-hidden"
-              style={
-                {
-                  '--fan-x': `${offset * 26}%`,
-                  '--fan-r': `${offset * 5}deg`,
-                  '--fan-y': `${Math.abs(offset) * 3}%`,
-                  zIndex: index,
-                } as React.CSSProperties
-              }
-            >
-              <CharacterArt source={hero} kind="full" className="h-full w-full" />
-            </SettingScope>
-          );
-        })}
-        {hand.length === 0 && (
-          <span className="absolute inset-0 grid place-items-center text-ink-faint">
-            <IconCreate width={48} height={48} />
-          </span>
-        )}
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-bg-deep/90 to-transparent" />
-      </div>
-      <div className="relative flex items-end justify-between gap-4 px-8 pb-7">
-        <div>
-          <div className="text-[11px] uppercase tracking-[0.22em] text-ink-faint">Одиночная игра</div>
-          <div className="ui-display mt-1 text-[2rem] leading-tight text-ink">Мои герои</div>
-          <div className="mt-1 text-sm text-ink-muted">
-            {heroes.length === 0
-              ? 'Создайте первого героя'
-              : `${heroes.length} ${heroWord(heroes.length)} · листы, бой, кубики`}
-          </div>
-        </div>
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-frame/40 text-frame-bright transition-transform group-hover:translate-x-1">
-          <IconNext width={20} height={20} />
-        </span>
-      </div>
-    </Panel>
-  );
-};
-
-const heroWord = (count: number) => {
-  const tens = count % 100;
-  const ones = count % 10;
-  if (tens >= 11 && tens <= 14) return 'героев';
-  if (ones === 1) return 'герой';
-  if (ones >= 2 && ones <= 4) return 'героя';
-  return 'героев';
-};
-
-// ------------------------------------------------------------------------------------------------
-
-/** The tables one sits at, founding a new one, and taking a seat by an invite code. */
-const PartiesPanel: React.FC<{
-  onOpen: (partyId: string) => void;
-  onFound: () => void;
-  onWorld: (world: Theme) => void;
-}> = ({ onOpen, onFound, onWorld }) => {
-  const list = usePartyStore((s) => s.list);
-  const preview = usePartyStore((s) => s.preview);
-  const [code, setCode] = useState('');
-  const [checking, setChecking] = useState(false);
-  const [invite, setInvite] = useState<{ code: string; preview: InvitePreviewDto } | null>(null);
-  /** A player's table between sessions: closed, but their hero can be taken back from it. */
-  const [waiting, setWaiting] = useState<PartyListItemDto | null>(null);
-  const complete = code.replace('-', '').length === INVITE_CODE_LENGTH;
-
-  const check = async () => {
-    if (!complete || checking) return;
-    setChecking(true);
-    const found = await preview(code);
-    setChecking(false);
-    if (found) setInvite({ code, preview: found });
-  };
-
-  return (
-    <Panel className="flex h-full flex-col overflow-hidden p-0">
-      <div className="flex items-end justify-between gap-4 px-8 pt-7">
-        <div>
-          <div className="text-[11px] uppercase tracking-[0.22em] text-ink-faint">Игра с мастером</div>
-          <div className="ui-display mt-1 text-[2rem] leading-tight text-ink">Партии</div>
-        </div>
-        <Button variant="secondary" size="sm" icon={<IconCreate width={15} height={15} />} onClick={onFound}>
-          Собрать партию
-        </Button>
-      </div>
-
+    <div className="mt-5 min-h-0 flex-1">
       <div
-        className="ui-scroll mt-5 min-h-0 flex-1 space-y-2.5 overflow-y-auto px-8 pb-2"
-        onMouseLeave={() => onWorld('service')}
+        className="ui-scroll grid h-full gap-3 overflow-y-auto"
+        style={{
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${rows}, minmax(${COVER_MIN_REM}rem, 1fr))`,
+          maxHeight: `calc(${rows * COVER_MAX_REM}rem + ${(rows - 1) * 0.75}rem)`,
+        }}
       >
-        {list?.map((party) => (
-          <PartyRow
+        {parties.map((party, index) => (
+          <motion.div
             key={party.id}
-            party={party}
-            onOpen={() => (party.role === 'player' && !party.inSession ? setWaiting(party) : onOpen(party.id))}
-            onHover={() => onWorld(party.setting)}
-          />
+            className={cx('min-h-0', wide && index === 0 && 'col-span-2')}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              transition: { duration: 0.5, ease: EASE, delay: 0.3 + index * 0.06 },
+            }}
+          >
+            <TableCard party={party} onOpen={() => onOpen(party)} />
+          </motion.div>
         ))}
-        {list?.length === 0 && (
-          <div className="grid h-full place-items-center text-center">
-            <p className="max-w-sm text-sm leading-relaxed text-ink-muted">
-              Соберите свою партию и станьте мастером — или войдите за чужой стол по коду, который даст
-              мастер.
-            </p>
-          </div>
-        )}
-        {list === null && <div className="h-full animate-pulse rounded-[var(--radius)] bg-inset/40" />}
       </div>
-
-      <form
-        className="ui-home-join flex items-center gap-3 px-8 py-5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void check();
-        }}
-      >
-        <label htmlFor="invite-code" className="shrink-0 text-sm text-ink-muted">
-          Код приглашения
-        </label>
-        <Input
-          id="invite-code"
-          value={code}
-          onChange={(e) => setCode(shapeCode(e.target.value))}
-          placeholder="XXXX-XXXX"
-          autoComplete="off"
-          spellCheck={false}
-          className="ui-invite-input min-w-0 flex-1 text-center"
-        />
-        <Button type="submit" variant="primary" size="sm" disabled={!complete || checking}>
-          Войти
-        </Button>
-      </form>
-
-      <ClosedTableDialog party={waiting} onClose={() => setWaiting(null)} />
-      <InviteDialog
-        invite={invite}
-        onClose={() => setInvite(null)}
-        onEntered={(partyId) => {
-          setInvite(null);
-          setCode('');
-          onOpen(partyId);
-        }}
-      />
-    </Panel>
+    </div>
   );
 };
 
-/** A table in the list, worn in its own world. */
-const PartyRow: React.FC<{ party: PartyListItemDto; onOpen: () => void; onHover: () => void }> = ({
-  party,
-  onOpen,
-  onHover,
-}) => (
-  <SettingScope setting={party.setting}>
-    <Panel
-      as="button"
-      interactive
-      ornate={false}
+/** A table as a cover in its own world, its name and state laid over the picture. */
+const TableCard: React.FC<{ party: PartyListItemDto; onOpen: () => void }> = ({ party, onOpen }) => (
+  <SettingScope setting={party.setting} className="h-full">
+    <button
+      type="button"
       onClick={onOpen}
-      onMouseEnter={onHover}
-      onFocus={onHover}
-      className="ui-morph flex w-full items-center gap-4 p-2.5 pr-5 text-left"
+      className="ui-table-card__body relative block h-full w-full overflow-hidden text-left"
     >
-      <PartyCover
-        assetId={party.coverAssetId}
-        setting={party.setting}
-        className="aspect-video w-32 shrink-0"
-      />
-      <span className="min-w-0 flex-1">
-        <span className="block text-[10px] uppercase tracking-[0.2em] text-frame-bright/80">
+      <PartyPicture party={party} className="ui-table-card__picture absolute inset-0" />
+      <span className="absolute inset-0 bg-gradient-to-r from-bg-deep/95 via-bg-deep/60 to-transparent" />
+      <span className="ui-table-card__content relative flex h-full flex-col justify-end p-6">
+        <span className="ui-table-card__meta text-[10px] uppercase tracking-[0.22em] text-frame-bright/85">
           {SETTING_INFO[party.setting].label}
         </span>
-        <span className="ui-display ui-title mt-0.5 block truncate text-[1.3rem] leading-tight text-ink">
+        <span className="ui-display ui-title ui-table-card__name mt-1 truncate text-[1.9rem] leading-tight text-ink">
           {party.name}
         </span>
-        <span className="mt-0.5 block truncate text-xs text-ink-muted">
-          {party.role === 'master' ? 'Вы мастер' : `Мастер ${party.masterName}`} · за столом{' '}
-          {party.memberCount}
+        <span className="ui-table-card__meta mt-1 flex items-center gap-2 text-sm text-ink-muted">
+          {partyRole(party)} · {party.memberCount}{' '}
+          {plural(party.memberCount, 'участник', 'участника', 'участников')}
         </span>
       </span>
-      {!party.inSession && <span className="shrink-0 text-xs text-ink-faint">ждёт сессии</span>}
-      {party.inCombat && (
-        <span className="flex shrink-0 items-center gap-1.5 text-xs text-danger" title="Идёт бой">
-          <IconCombat width={16} height={16} />
-          Бой
-        </span>
-      )}
       <span
-        className={cx('shrink-0 text-xs', party.role === 'master' ? 'text-frame-bright' : 'text-ink-faint')}
+        className={cx(
+          'ui-table-card__state absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-bg-deep/75 px-3 py-1 text-xs backdrop-blur',
+          party.inCombat ? 'text-danger' : party.inSession ? 'text-success' : 'text-ink-faint',
+        )}
+        title={partyState(party)}
       >
-        {party.role === 'master' ? 'Мастер' : 'Игрок'}
+        {party.inCombat ? (
+          <IconCombat width={14} height={14} />
+        ) : (
+          <span className="ui-table-card__state-dot" />
+        )}
+        <span className="ui-table-card__state-label">{partyState(party)}</span>
       </span>
-    </Panel>
+    </button>
   </SettingScope>
 );
+
+/** Wider than this, a picture is a portrait (a face) rather than a figure: shown smaller and whole. */
+const PORTRAIT_RATIO = 0.8;
+
+/**
+ * The hero's art standing on the stage at its own proportions, never cropped to the stage's. Its
+ * edges fade out as an ellipse, so a bright or busy background never shows as a box, and a blurred
+ * glow of the same picture behind it lets its colours spill softly into the dark.
+ */
+const HeroFigure: React.FC<{ hero: CharacterPreview; onTone: (tone: Rgb | null) => void }> = ({
+  hero,
+  onTone,
+}) => {
+  const src = fullArtSrc(hero);
+  const [ratio, setRatio] = useState(2 / 3);
+  const [brightTop, setBrightTop] = useState(false);
+  const mask = useMemo(() => figureMask(brightTop), [brightTop]);
+  const portrait = ratio > PORTRAIT_RATIO;
+  useEffect(() => {
+    if (!src) onTone(null);
+  }, [src, onTone]);
+  return (
+    <div
+      className="ui-hero-figure relative max-w-full shrink-0"
+      style={{ aspectRatio: ratio, height: portrait ? '72%' : '100%', marginTop: portrait ? '10%' : 0 }}
+    >
+      <span className="ui-hero-figure__halo" aria-hidden />
+      {src && (
+        <img
+          src={src}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="ui-hero-figure__glow absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+      <span
+        className="ui-hero-figure__art absolute inset-0"
+        style={{ maskImage: mask, WebkitMaskImage: mask }}
+      >
+        {src ? (
+          <img
+            src={src}
+            alt={hero.name}
+            draggable={false}
+            className="h-full w-full object-cover object-top"
+            onLoad={(event) => {
+              const { naturalWidth: width, naturalHeight: height } = event.currentTarget;
+              if (width && height) setRatio(Math.min(1.25, Math.max(0.5, width / height)));
+              const reading = readArt(event.currentTarget);
+              setBrightTop(reading?.brightTop ?? false);
+              onTone(reading && pageTone(reading.edge));
+            }}
+          />
+        ) : (
+          <CharacterArt source={hero} kind="full" className="h-full w-full" />
+        )}
+      </span>
+    </div>
+  );
+};

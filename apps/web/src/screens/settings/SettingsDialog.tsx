@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { applyFullscreen, type AppSettings } from '../../data/settings';
 import type { SyncStatus } from '../../data/sync/syncEngine';
@@ -8,6 +8,7 @@ import { ConfirmDialog, Dialog } from '../../ui/Dialog';
 import { Switch } from '../../ui/forms';
 import { Button, cx } from '../../ui/primitives';
 import { IconExit, IconSync } from '../../ui/icons';
+import type { Theme } from '../../ui/theme/settings';
 
 const syncLine = (sync: SyncStatus, offline: boolean): { text: string; tone: string } => {
   if (offline || sync.state === 'offline') return { text: 'Нет связи: изменения сохраняются на устройстве', tone: 'text-warning' };
@@ -28,6 +29,12 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
   const { user, sync, offline, syncNow, logout } = useSessionStore();
   const [busy, setBusy] = useState(false);
   const [unsynced, setUnsynced] = useState(0);
+  // The dialog wears the screen it is opened over: a world's own look inside a sheet, a fight or a
+  // table, the service's elsewhere, so it never mixes the two.
+  const [theme, setTheme] = useState<Theme>('service');
+  useEffect(() => {
+    if (open) setTheme((document.documentElement.dataset.setting as Theme | undefined) ?? 'service');
+  }, [open]);
   const line = syncLine(sync, offline);
 
   const set = (patch: Partial<AppSettings>) => {
@@ -57,7 +64,7 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
       <Dialog
         open={open}
         onClose={onClose}
-        setting="service"
+        setting={theme}
         title="Настройки"
         width="md"
         footer={
@@ -122,6 +129,7 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
             hint="Лист рассчитан на весь экран без прокрутки"
           />
         </section>
+
       </Dialog>
 
       <ConfirmDialog
@@ -130,7 +138,7 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
         message={`${unsynced} изменений ещё не отправлены на сервер. После выхода они пропадут с этого устройства.`}
         confirmLabel="Выйти"
         danger
-        setting="service"
+        setting={theme}
         onCancel={() => setUnsynced(0)}
         onConfirm={() => {
           setUnsynced(0);

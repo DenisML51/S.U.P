@@ -1,0 +1,88 @@
+/* ================================================================== Gate: boot, lock screen, entering
+ * Service theme. One soft light in the middle of the dark, a d20 drawn in fine lines turning slowly
+ * behind the name.
+ */
+
+.ui-gate__atmosphere {
+  background:
+    radial-gradient(ellipse 42% 52% at 50% 48%, rgb(var(--c-frame-bright) / 0.075), transparent 72%),
+    radial-gradient(ellipse 120% 95% at 50% 50%, transparent 45%, rgb(var(--c-bg-deep) / 0.95) 100%);
+}
+
+/* ---------------------------------------------------------------- The die */
+.ui-gate__die {
+  width: min(92vh, 1000px);
+  height: min(92vh, 1000px);
+  opacity: 0.12;
+}
+.ui-d20 line {
+  stroke: rgb(var(--c-frame-bright));
+  stroke-width: 0.0028; /* about a pixel at the gate's size */
+  stroke-linecap: round;
+  fill: none;
+}
+.ui-d20--draw line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ui-d20-draw 1.4s cubic-bezier(0.45, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--i) * 22ms);
+}
+@keyframes ui-d20-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ---------------------------------------------------------------- The name */
+.ui-gate__name {
+  font-size: 4.5rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  /* The tracking after the last letter would push the name off centre. */
+  margin-right: -0.14em;
+  color: rgb(var(--c-ink));
+}
+.ui-gate__rule {
+  position: relative;
+  display: block;
+  width: 14rem;
+  height: 1px;
+  margin-top: 1.5rem;
+  overflow: hidden;
+  background: linear-gradient(to right, transparent, rgb(var(--c-frame-bright) / 0.35), transparent);
+}
+/* A light runs along the hairline for as long as the gate stands: the loading sign. */
+.ui-gate__rule--loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(to right, transparent, rgb(var(--c-frame-bright) / 0.95), transparent);
+  animation: ui-gate-sweep 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes ui-gate-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+.ui-gate__tagline {
+  margin-top: 1.1rem;
+  margin-right: -0.32em;
+  font-size: 0.7rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgb(var(--c-ink-faint));
+}
+
+/* ---------------------------------------------------------------- The lock screen hint */
+.ui-gate__hint {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: rgb(var(--c-ink-faint));
+  animation: ui-gate-breathe 3.2s ease-in-out infinite;
+}
+@keyframes ui-gate-breathe {
+  50% { color: rgb(var(--c-ink-muted)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-d20--draw line { animation: none; stroke-dashoffset: 0; }
+  .ui-gate__rule--loading::after, .ui-gate__hint { animation: none; }
+}
