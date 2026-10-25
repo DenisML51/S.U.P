@@ -101,28 +101,23 @@ const App: React.FC = () => {
 
   return (
     <MotionConfig reducedMotion="user">
-      {/* Screens crossfade as overlapping layers: the next one mounts at once while the old one plays
-          its exit. With `mode="wait"` an exit interrupted by a nested one (a dialog closing as the page
-          left) never finished, so the next screen never mounted and the page stayed black. */}
-      <div className="relative h-screen overflow-clip">
-        <AnimatePresence>
-          <motion.div
-            key={screenKey}
-            className="absolute inset-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: { duration: 0.25 } }}
-            // The gate lets its name ride away before the page fades.
-            exit={{
-              opacity: 0,
-              pointerEvents: 'none',
-              transition:
-                screenKey === 'gate' ? { duration: 0.35, delay: 0.35 } : { duration: 0.3, delay: 0.1 },
-            }}
-          >
-            {screen}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+      {/* One screen at a time: the old one plays its exit (cards fly apart, the sheet folds away)
+          before the next one assembles itself. */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={screenKey}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: 0.25 } }}
+          // The gate lets its name ride away before the page fades.
+          exit={{
+            opacity: 0,
+            transition:
+              screenKey === 'gate' ? { duration: 0.35, delay: 0.35 } : { duration: 0.3, delay: 0.1 },
+          }}
+        >
+          {screen}
+        </motion.div>
+      </AnimatePresence>
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <Toasts />
     </MotionConfig>
