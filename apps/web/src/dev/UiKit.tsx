@@ -12,7 +12,7 @@ import { GameIcon, tileStyle } from '../ui/GameIcon';
 import { Rail, RailButton, RailDivider } from '../ui/Rail';
 import { SettingBackdrop } from '../ui/SettingBackdrop';
 import { Toasts } from '../ui/Toasts';
-import { LevelReady, SettingEmblem } from '../ui/ornaments';
+import { LevelReady, SettingEmblem, useSettingArt } from '../ui/ornaments';
 import {
   IconArmor,
   IconAttacks,
@@ -32,6 +32,16 @@ import {
  * Design showcase, opened with `?kit`: one screen of the sheet and every primitive, in the setting
  * chosen at the top. It renders the real components, so what is approved here is what ships.
  */
+
+/** The current setting's level token (status medallion), shown at the rank the samples use. */
+const LevelDemo: React.FC = () => {
+  const { StatusLevel } = useSettingArt();
+  return StatusLevel ? (
+    <span className="ui-level relative inline-flex h-[5.3rem] w-[4rem] items-center justify-center">
+      <StatusLevel level={20} />
+    </span>
+  ) : null;
+};
 
 interface SampleSpell {
   id: string;
@@ -408,7 +418,10 @@ const ComponentsSample: React.FC = () => {
       </Board>
 
       <Board title="Новый уровень">
-        {/* The experience plaque of the status cluster in its "ready" state. */}
+        {/* The setting's level token (status medallion) and the experience plaque in its "ready" state. */}
+        <div className="flex items-center justify-center py-3">
+          <LevelDemo />
+        </div>
         <div className="ui-status pt-2">
           <span className="ui-xp" data-ready>
             <span className="ui-xp__label">Новый уровень</span>

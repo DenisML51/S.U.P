@@ -14,6 +14,10 @@ import '@fontsource/oswald/500.css';
 import '@fontsource/oswald/600.css';
 import '@fontsource/poiret-one/400.css';
 import '@fontsource/pt-mono/400.css';
+import '@fontsource/cinzel/400.css';
+import '@fontsource/cinzel/500.css';
+import '@fontsource/cinzel/600.css';
+import '@fontsource/forum/400.css';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 
 export interface SettingInfo {
@@ -32,6 +36,7 @@ export const SETTING_INFO: Record<Setting, SettingInfo> = {
   'dark-fantasy': { id: 'dark-fantasy', label: 'Dark Fantasy' },
   cyberpunk: { id: 'cyberpunk', label: 'Cyberpunk' },
   lovecraft: { id: 'lovecraft', label: 'Lovecraft' },
+  'elden-ring': { id: 'elden-ring', label: 'Elden Ring' },
 };
 
 export const SETTING_LIST = Object.values(SETTING_INFO);

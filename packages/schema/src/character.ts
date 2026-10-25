@@ -83,7 +83,7 @@ export const ItemTypeSchema = z.enum(['armor', 'weapon', 'ammunition', 'item']);
 export const WeaponClassSchema = z.enum(['melee', 'ranged']);
 export const ResistanceLevelSchema = z.enum(['resistance', 'vulnerability', 'immunity', 'none']);
 /** The universe a character comes from; drives the visual theme of the sheet. */
-export const SETTINGS = ['high-fantasy', 'sci-fi', 'dark-fantasy', 'cyberpunk', 'lovecraft'] as const;
+export const SETTINGS = ['high-fantasy', 'sci-fi', 'dark-fantasy', 'cyberpunk', 'lovecraft', 'elden-ring'] as const;
 export const SettingSchema = z.enum(SETTINGS);
 export const DEFAULT_SETTING: z.infer<typeof SettingSchema> = 'high-fantasy';
 /** Settings that were merged into another one; documents saved with them read as their successor. */

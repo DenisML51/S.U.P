@@ -63,6 +63,7 @@ describe('CharacterSchema', () => {
     expect(CharacterSchema.parse({ ...minimal, setting: 'sci-fi' }).setting).toBe('sci-fi');
     expect(CharacterSchema.parse({ ...minimal, setting: 'cyberpunk' }).setting).toBe('cyberpunk');
     expect(CharacterSchema.parse({ ...minimal, setting: 'lovecraft' }).setting).toBe('lovecraft');
+    expect(CharacterSchema.parse({ ...minimal, setting: 'elden-ring' }).setting).toBe('elden-ring');
     expect(CharacterSchema.parse(minimal).setting).toBeUndefined();
     expect(CharacterSchema.safeParse({ ...minimal, setting: 'steampunk' }).success).toBe(false);
   });
