@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LevelUpDialog } from '../../progression/LevelUpDialog';
 import { AbilityDialog } from './AbilityDialog';
 import { AttackDialog } from './AttackDialog';
+import { BodyDialog } from './BodyDialog';
 import { DiceDialog } from './DiceDialog';
 import { ItemDialog } from './ItemDialog';
 import { ProfileDialog } from './ProfileDialog';
@@ -67,6 +68,8 @@ export const SheetDialogHost: React.FC = () => {
       return <AttributeDialog key={key} open={open} id={current.id} onClose={close} />;
     case 'armor':
       return <ArmorDialog key={key} open={open} onClose={close} />;
+    case 'body':
+      return <BodyDialog key={key} open={open} onClose={close} />;
     case 'profile':
       return <ProfileDialog key={key} open={open} onClose={close} />;
     case 'limb':

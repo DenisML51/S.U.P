@@ -820,6 +820,9 @@
 
 .ui-hud-chip--empty { opacity: 0.5; }
 
+/* A mark laid over the portrait: smaller, and solid enough to read over the art. */
+.ui-hud-chip--mini { width: 1.9rem; height: 1.9rem; backdrop-filter: blur(4px); background-color: rgb(var(--c-bg-deep) / 0.75); }
+
 .ui-hud-chip__count {
   position: absolute;
   top: -7px;

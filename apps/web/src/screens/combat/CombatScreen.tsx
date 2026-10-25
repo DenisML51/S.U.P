@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { initiativeModifier, resetTurn } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useParty, usePartyOfCharacter } from '../../store/usePartyStore';
+import { useNavStore } from '../../store/useNavStore';
 import { useSessionStore } from '../../store/useSessionStore';
 import { CombatChat } from '../party/CombatChat';
 import { PartyCombatBar } from '../party/PartyCombatBar';
 import { useTurnLock } from '../party/useTurnLock';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { Button, IconButton } from '../../ui/primitives';
-import { IconDice, IconPrev, IconSettings } from '../../ui/icons';
+import { IconDice, IconExit, IconPrev, IconSettings } from '../../ui/icons';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { settingOf } from '../../ui/theme/settings';
 import { SheetDialogsProvider, useSheetDialogs } from '../sheet/dialogs/context';
@@ -78,6 +79,8 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
   onOpenSettings,
 }) => {
   const setViewMode = useCharacterStore((s) => s.setViewMode);
+  const goToCharacterList = useCharacterStore((s) => s.goToCharacterList);
+  const go = useNavStore((s) => s.go);
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const dialogs = useSheetDialogs();
   const roll = useRolls();
@@ -93,6 +96,24 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
   )?.initiative;
   const inCombat = party ? partyFight !== null : combat.inCombat;
   useTurnLock(character.id);
+
+  // The master plays several heroes: when the turn passes to another of the user's own heroes, the
+  // screen follows it. The turn already under way when the screen opens stays with the hero picked.
+  const loadCharacter = useCharacterStore((s) => s.loadCharacter);
+  const turnId = partyFight?.phase === 'active' ? partyFight.currentCombatantId : null;
+  const followedTurn = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!party) return;
+    if (followedTurn.current === undefined || turnId === followedTurn.current) {
+      followedTurn.current = turnId;
+      return;
+    }
+    followedTurn.current = turnId;
+    const current = partyFight?.combatants.find((c) => c.id === turnId);
+    if (current?.kind !== 'hero') return;
+    const hero = party.heroes.find((h) => h.id === current.refId && h.ownerId === userId);
+    if (hero && hero.characterId !== character.id) void loadCharacter(hero.characterId, 'hotbar');
+  }, [party, partyFight, turnId, userId, character.id, loadCharacter]);
   const locked = useCharacterStore((s) => s.turnLock) !== null;
 
   const start = () => {
@@ -180,6 +201,18 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
         </div>
         <div className="ml-auto flex items-center gap-1">
           <SyncStatus className="mr-2" />
+          {/* The master runs the table: one click back to it from any of their heroes' fights. */}
+          {party?.role === 'master' && (
+            <IconButton
+              label="Стол партии"
+              onClick={() => {
+                goToCharacterList();
+                go({ screen: 'party', partyId: party.id });
+              }}
+            >
+              <IconExit width={20} height={20} />
+            </IconButton>
+          )}
           <IconButton label="Кубики" onClick={() => dialogs.open({ kind: 'dice' })}>
             <IconDice width={20} height={20} />
           </IconButton>
@@ -217,10 +250,13 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
         transition={{ ...ENTER, delay: 0.05 }}
       >
         <VitalBars character={character} />
-        <Portrait character={character} />
+        {/* The turn's actions stand over the hero's face. */}
+        <div className="flex flex-col items-center gap-2">
+          <ActionTokens character={character} />
+          <Portrait character={character} />
+        </div>
         <div className="flex min-w-0 max-w-[76rem] flex-1 flex-col gap-2.5">
           <div className="flex flex-wrap items-stretch justify-center gap-3">
-            <ActionTokens character={character} />
             <ResourceStrip character={character} />
             <CombatStats
               character={character}
@@ -244,7 +280,9 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
  */
 export const CombatScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
   const character = useCharacterStore((s) => s.character);
-  const setting = settingOf(character);
+  // At a party's table the fight is in the party's world, whatever the hero's own setting.
+  const partySetting = usePartyOfCharacter(character?.id)?.setting;
+  const setting = partySetting ?? settingOf(character);
   useDocumentSetting(setting);
 
   // Messages rise above the combat bar instead of covering it.
