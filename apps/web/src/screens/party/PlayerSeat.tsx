@@ -4,6 +4,7 @@ import type { PartyDto, PartyHeroDto } from '@itd/schema';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { IconArmor, IconCombat, IconCreate, IconInitiative } from '../../ui/icons';
+import { Corners } from '../../ui/ornaments';
 import { Button, Meter, Panel, SectionTitle } from '../../ui/primitives';
 import { formatBonus } from './partyView';
 
@@ -29,6 +30,7 @@ export const Companions: React.FC<{ party: PartyDto; userId: string | undefined 
             >
               <span className="ui-companion relative block h-40 w-40 overflow-hidden">
                 <CharacterArt source={art(hero)} kind="portrait" className="h-full w-full" />
+                <Corners />
               </span>
               <span className="ui-display block w-full truncate text-lg leading-tight text-ink">{hero.name}</span>
               <span className="-mt-1.5 block w-full truncate text-[11px] text-ink-faint">
@@ -67,7 +69,7 @@ export const MyHero: React.FC<{
   const vitals = hero.vitals;
   return (
     <Panel className="relative flex min-h-[16rem] flex-1 flex-col overflow-hidden p-0">
-      <CharacterArt source={art(hero)} kind="portrait" className="absolute inset-0 h-full w-full" position="50% 20%" />
+      <CharacterArt source={art(hero)} kind="portrait" className="absolute inset-0 h-full w-full" position="50% 12%" />
       <span className="absolute inset-0 bg-gradient-to-t from-bg-deep from-25% via-bg-deep/70 via-50% to-transparent" />
       <div className="relative mt-auto space-y-3 p-5">
         <div>
@@ -94,14 +96,14 @@ export const MyHero: React.FC<{
             </span>
           </div>
         )}
-        <div className="flex gap-2">
-          <Button variant={inCombat ? 'secondary' : 'primary'} size="sm" className="flex-1" onClick={() => onOpen('sheet')}>
+        <div className="flex flex-col gap-2">
+          <Button variant={inCombat ? 'secondary' : 'primary'} size="sm" className="w-full" onClick={() => onOpen('sheet')}>
             Лист героя
           </Button>
           <Button
             variant={inCombat ? 'primary' : 'secondary'}
             size="sm"
-            className="flex-1"
+            className="w-full"
             icon={<IconCombat width={15} height={15} />}
             onClick={() => onOpen('combat')}
           >

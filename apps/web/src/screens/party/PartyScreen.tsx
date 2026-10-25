@@ -277,7 +277,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
             />
             {/* A player's own hero waits in the corner: the way into its sheet and its fight. */}
             {!isMaster && (
-              <div className="flex h-[17rem] shrink-0 flex-col">
+              <div className="flex h-[20rem] shrink-0 flex-col">
                 <MyHero
                   hero={myHeroes[0]}
                   inCombat={party.combat !== null}
