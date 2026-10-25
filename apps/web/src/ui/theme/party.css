@@ -304,6 +304,7 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 /* ---------------------------------------------------------------- Home: a table as a cover card */
 /* The card is a window onto its world: the frame stays, the picture inside wakes under the cursor. */
 .ui-table-card__body {
+  container-type: size;
   border-radius: calc(var(--radius) * 0.75);
   border: 1px solid rgb(var(--c-frame) / 0.35);
   box-shadow: 0 20px 44px -24px rgb(0 0 0 / 0.9);
@@ -319,6 +320,39 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 .ui-table-card__body:focus-visible .ui-table-card__picture {
   filter: brightness(0.9) saturate(1);
   transform: scale(1.04);
+}
+.ui-table-card__state-dot {
+  display: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+/* Squeezed by its neighbours, a cover becomes a strip: the name on the left, the state on the right. */
+@container (max-height: 8.5rem) {
+  .ui-table-card__body .ui-table-card__meta { display: none; }
+  .ui-table-card__body .ui-table-card__content { justify-content: center; padding: 0 9rem 0 1.5rem; }
+  .ui-table-card__body .ui-table-card__name { margin-top: 0; font-size: 1.5rem; }
+  .ui-table-card__body .ui-table-card__state { top: 50%; transform: translateY(-50%); }
+}
+/* Half a column wide (two columns of tables): a smaller name, the state still in its corner. */
+@container (max-width: 24rem) {
+  .ui-table-card__body .ui-table-card__content { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .ui-table-card__body .ui-table-card__name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    font-size: 1.45rem;
+  }
+}
+@container (max-width: 24rem) and (max-height: 8.5rem) {
+  .ui-table-card__body .ui-table-card__content { padding-right: 3rem; }
+  .ui-table-card__body .ui-table-card__name { -webkit-line-clamp: 2; font-size: 1.2rem; line-height: 1.15; }
+  /* The state shrinks to its colour: a dot (or the crossed swords of a fight), named on hover. */
+  .ui-table-card__body .ui-table-card__state { padding: 0.4rem; background: none; backdrop-filter: none; }
+  .ui-table-card__body .ui-table-card__state-label { display: none; }
+  .ui-table-card__body .ui-table-card__state-dot { display: block; }
 }
 
 
