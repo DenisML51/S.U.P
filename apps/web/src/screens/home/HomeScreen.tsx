@@ -83,7 +83,9 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
       <div className="ui-hub-lift pointer-events-none absolute inset-0" aria-hidden />
 
       {/* ---------------------------------------------------------------- The art, behind everything */}
-      <motion.div className="absolute inset-y-0 left-[42%] right-0" {...enter({ x: 40 }, 0.1)}>
+      {/* The art's area is the right 58% on a wide screen; on a narrow one it keeps at least 44rem and
+          runs on under the menu, so the hero is not shrunk while there is height to spare. */}
+      <motion.div className="absolute inset-y-0 left-[max(0px,min(42%,calc(100%-44rem)))] right-0" {...enter({ x: 40 }, 0.1)}>
         {hero ? (
           <HeroFigure key={hero.id} hero={hero} onTone={setTone} />
         ) : (
