@@ -1,7 +1,7 @@
 import type { PartyDto, PartyListItemDto, PartyMessagesDto, WsServerMessage } from '@itd/schema';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { characters } from '../src/db/schema';
+import { characters, partyCombats } from '../src/db/schema';
 import { nextTurn, turnOrder } from '../src/modules/parties/turnOrder';
 import { makeCharacter, registerUser, useTestApp } from './helpers';
 
@@ -451,6 +451,57 @@ describe('Call of Cthulhu at the table', () => {
     ).json<{ id: string }>().id;
     expect((await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${orc}`, { currentHP: -5 })).statusCode).toBe(204);
     expect((await call(app, master, 'PATCH', `/parties/${partyId}`, { rules: 'coc7' })).statusCode).toBe(409);
+  });
+
+  it('keeps the rules a fight started with when a hero of other rules sits down mid-fight', async () => {
+    const app = await ctx.app();
+    const { master, partyId } = await cocTable(app, null);
+    const cultist = (
+      await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Культист', maxHP: 10, armorClass: 0, initiativeBonus: 45, coc: {} })
+    ).json<{ id: string }>().id;
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [cultist] })).statusCode).toBe(204);
+
+    // A D&D hero joins the table: the running fight still goes by DEX.
+    const fighter = await saveHero(app, master, { name: 'Воин' });
+    expect((await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: fighter.id })).statusCode).toBe(201);
+    expect((await view(app, master, partyId)).combatRules).toBe('coc7');
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat/roll-npcs`)).statusCode).toBe(204);
+    expect((await view(app, master, partyId)).combat!.combatants.find((c) => c.kind === 'npc')!.initiative).toBe(45);
+
+    // A fight started before fights kept their rules goes by the table as it is now.
+    await ctx.db.update(partyCombats).set({ rules: null });
+    expect((await view(app, master, partyId)).combatRules).toBeNull();
+
+    // Once it is over, the next one goes by the heroes at the table: d20.
+    expect((await call(app, master, 'DELETE', `/parties/${partyId}/combat`)).statusCode).toBe(204);
+    expect((await view(app, master, partyId)).combatRules).toBeNull();
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [cultist] })).statusCode).toBe(204);
+    const seat = (await view(app, master, partyId)).heroes.find((hero) => hero.name === 'Воин')!;
+    expect((await call(app, master, 'DELETE', `/parties/${partyId}/heroes/${seat.id}`)).statusCode).toBe(204);
+    expect((await view(app, master, partyId)).combatRules).toBeNull();
+  });
+
+  it('saves an NPC hurt below 0 before the Call of Cthulhu floor came, raising it to the floor', async () => {
+    const app = await ctx.app();
+    const { master, partyId } = await cocTable(app, null);
+    const fighter = await saveHero(app, master, { name: 'Воин' });
+    expect((await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: fighter.id })).statusCode).toBe(201);
+    const orc = (
+      await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Орк', maxHP: 15, armorClass: 13, initiativeBonus: 1 })
+    ).json<{ id: string }>().id;
+    const patch = (body: object) => call(app, master, 'PATCH', `/parties/${partyId}/npcs/${orc}`, body);
+    expect((await patch({ currentHP: -3 })).statusCode).toBe(204);
+
+    // The D&D hero leaves: every hero is an investigator, so the floor is 0 now.
+    const seat = (await view(app, master, partyId)).heroes.find((hero) => hero.name === 'Воин')!;
+    expect((await call(app, master, 'DELETE', `/parties/${partyId}/heroes/${seat.id}`)).statusCode).toBe(204);
+    expect((await view(app, master, partyId)).combatRules).toBe('coc7');
+
+    // A rename sends the hit points back as they were: saved, raised to the floor.
+    expect((await patch({ name: 'Орк-вожак', currentHP: -3 })).statusCode).toBe(204);
+    expect((await view(app, master, partyId)).npcs!.find((npc) => npc.id === orc)).toMatchObject({ name: 'Орк-вожак', currentHP: 0 });
+    // New hit points below the floor are still refused.
+    expect((await patch({ currentHP: -2 })).statusCode).toBe(400);
   });
 });
 

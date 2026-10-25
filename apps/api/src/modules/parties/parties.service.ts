@@ -380,10 +380,14 @@ export class PartiesService implements CharacterChangeListener {
       const maxHP = input.maxHP ?? row.maxHp;
       const coc: NpcCocStats | null = input.coc !== undefined ? input.coc : row.coc;
       const cocFloor = coc !== null || (await combatRulesOf(tx, partyId)) === 'coc7';
-      // Given hit points must fit; kept ones follow a lowered maximum.
+      // New hit points must fit; kept ones (left out or sent back as they are) follow a lowered maximum
+      // and a raised floor, so an NPC hurt below 0 before the floor came is still saved.
       let currentHP = input.currentHP;
-      if (currentHP !== undefined) assertNpcHP(currentHP, maxHP, cocFloor);
-      else if (row.currentHp > maxHP) currentHP = maxHP;
+      if (currentHP !== undefined && currentHP !== row.currentHp) assertNpcHP(currentHP, maxHP, cocFloor);
+      else {
+        const kept = Math.min(maxHP, Math.max(npcMinHP(cocFloor), row.currentHp));
+        currentHP = kept !== row.currentHp ? kept : undefined;
+      }
 
       await tx
         .update(partyNpcs)

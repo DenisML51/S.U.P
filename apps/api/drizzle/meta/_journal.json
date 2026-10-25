@@ -78,6 +78,13 @@
       "when": 1792946794816,
       "tag": "0010_npc_coc",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792949460394,
+      "tag": "0011_fight_rules",
+      "breakpoints": true
     }
   ]
 }
