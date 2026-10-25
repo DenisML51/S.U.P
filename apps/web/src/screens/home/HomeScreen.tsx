@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { CharacterPreview, PartyListItemDto } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
@@ -22,6 +22,8 @@ import {
   usePartyEntry,
 } from './homeParts';
 import { rememberLastHero } from './lastHero';
+import { pageTone, readArt, type Rgb } from './artTone';
+import { figureMask } from './figureMask';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -36,6 +38,8 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
   const loadCharacter = useCharacterStore((s) => s.loadCharacter);
   const { heroes, parties, lastHero: hero } = useHomeItems();
   const entry = usePartyEntry();
+  // The colour where the hero's art meets the page; the dark around the hero takes a little of it.
+  const [tone, setTone] = useState<Rgb | null>(null);
 
   const play = (id: string) => {
     rememberLastHero(id);
@@ -48,8 +52,13 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
   };
 
   return (
-    <SettingScope setting="service" className="relative h-screen overflow-clip bg-bg">
+    <SettingScope
+      setting="service"
+      className="ui-hub relative h-screen overflow-clip bg-bg"
+      style={tone ? ({ '--hub-tone': `rgb(${tone.join(' ')})` } as React.CSSProperties) : undefined}
+    >
       <HomeAtmosphere />
+      <div className="ui-hub-lift pointer-events-none absolute inset-0" aria-hidden />
 
       <div className="relative z-10 flex h-full flex-col">
         <HomeHeader onOpenSettings={onOpenSettings} />
@@ -63,7 +72,13 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
             exit={{ opacity: 0, x: -24, transition: { duration: 0.25 } }}
           >
             {hero ? (
-              <HeroStage hero={hero} count={heroes.length} onPlay={() => play(hero.id)} onAll={allHeroes} />
+              <HeroStage
+                hero={hero}
+                count={heroes.length}
+                onPlay={() => play(hero.id)}
+                onAll={allHeroes}
+                onTone={setTone}
+              />
             ) : (
               <div className="flex h-full flex-col justify-end pb-6">
                 <div className="text-[11px] uppercase tracking-[0.26em] text-ink-faint">Одиночная игра</div>
@@ -139,7 +154,8 @@ const HeroStage: React.FC<{
   count: number;
   onPlay: () => void;
   onAll: () => void;
-}> = ({ hero, count, onPlay, onAll }) => {
+  onTone: (tone: Rgb | null) => void;
+}> = ({ hero, count, onPlay, onAll, onTone }) => {
   const setting = settingOf(hero);
   // The hero's world dresses the picture and the words; the buttons stay the page's own (service).
   return (
@@ -151,7 +167,7 @@ const HeroStage: React.FC<{
           animate={{ opacity: 1, x: 0, transition: { duration: 0.8, ease: EASE } }}
           exit={{ opacity: 0, transition: { duration: 0.35 } }}
         >
-          <HeroFigure key={hero.id} hero={hero} />
+          <HeroFigure key={hero.id} hero={hero} onTone={onTone} />
         </motion.div>
       </SettingScope>
 
@@ -274,15 +290,24 @@ const PORTRAIT_RATIO = 0.8;
  * edges fade out as an ellipse, so a bright or busy background never shows as a box, and a blurred
  * glow of the same picture behind it lets its colours spill softly into the dark.
  */
-const HeroFigure: React.FC<{ hero: CharacterPreview }> = ({ hero }) => {
+const HeroFigure: React.FC<{ hero: CharacterPreview; onTone: (tone: Rgb | null) => void }> = ({
+  hero,
+  onTone,
+}) => {
   const src = fullArtSrc(hero);
   const [ratio, setRatio] = useState(2 / 3);
+  const [brightTop, setBrightTop] = useState(false);
+  const mask = useMemo(() => figureMask(brightTop), [brightTop]);
   const portrait = ratio > PORTRAIT_RATIO;
+  useEffect(() => {
+    if (!src) onTone(null);
+  }, [src, onTone]);
   return (
     <div
       className="ui-hero-figure relative max-w-full shrink-0"
       style={{ aspectRatio: ratio, height: portrait ? '72%' : '100%', marginTop: portrait ? '10%' : 0 }}
     >
+      <span className="ui-hero-figure__halo" aria-hidden />
       {src && (
         <img
           src={src}
@@ -292,7 +317,10 @@ const HeroFigure: React.FC<{ hero: CharacterPreview }> = ({ hero }) => {
           className="ui-hero-figure__glow absolute inset-0 h-full w-full object-cover"
         />
       )}
-      <span className="ui-hero-figure__art absolute inset-0">
+      <span
+        className="ui-hero-figure__art absolute inset-0"
+        style={{ maskImage: mask, WebkitMaskImage: mask }}
+      >
         {src ? (
           <img
             src={src}
@@ -302,6 +330,9 @@ const HeroFigure: React.FC<{ hero: CharacterPreview }> = ({ hero }) => {
             onLoad={(event) => {
               const { naturalWidth: width, naturalHeight: height } = event.currentTarget;
               if (width && height) setRatio(Math.min(1.25, Math.max(0.5, width / height)));
+              const reading = readArt(event.currentTarget);
+              setBrightTop(reading?.brightTop ?? false);
+              onTone(reading && pageTone(reading.edge));
             }}
           />
         ) : (
