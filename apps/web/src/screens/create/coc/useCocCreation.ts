@@ -122,7 +122,12 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
   const counted = (kind: RollKind, free = false) => {
     if (rolledKinds.includes(kind)) {
       if (!free) setRerolls((n) => n + 1);
-    } else setRolledKinds([...rolledKinds, kind]);
+    } else setRolledKinds((kinds) => [...kinds, kind]);
+  };
+  /** EDU checks the rules wiped out (EDU changed): throwing them again is not a re-roll. */
+  const resetEduGains = () => {
+    setEduGains(null);
+    setRolledKinds((kinds) => kinds.filter((k) => k !== 'edu'));
   };
 
   const pulp = variant === 'pulp';
@@ -328,7 +333,7 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
   /** EDU improvement checks are rolled against EDU as it stands: they start over once it changes. */
   const setBaseAndChecks = (next: Characteristics) => {
     setBase(next);
-    if (next.edu !== base.edu) setEduGains(null);
+    if (next.edu !== base.edu) resetEduGains();
   };
 
   return {
@@ -345,8 +350,9 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
       if (v !== variant) {
         // Luck is rolled by the edition's formula (3D6×5 or (2D6+6)×5): a new edition needs a new throw.
         setLuckRolls([]);
+        setRolledKinds((kinds) => kinds.filter((k) => k !== 'luck'));
         // The core characteristic comes or goes with Pulp: EDU checks rolled against it start over.
-        if (core?.id === 'edu') setEduGains(null);
+        if (core?.id === 'edu') resetEduGains();
       }
     },
     era,
@@ -380,7 +386,7 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     rollCore: (id: CharacteristicId) => {
       const { value, die } = rollCoreCharacteristicDetailed();
       setCore({ id, value });
-      if (id === 'edu' || core?.id === 'edu') setEduGains(null);
+      if (id === 'edu' || core?.id === 'edu') resetEduGains();
       counted('core');
       thrown('core', die);
     },
@@ -388,14 +394,14 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     setMethod: (m: CharacteristicMethod) => {
       setMethodState(m);
       setBase(m === 'pointBuy' ? POINT_BUY_START : m === 'manual' ? { ...POINT_BUY_START } : EMPTY);
-      setEduGains(null);
+      resetEduGains();
     },
     base,
     setBase: setBaseAndChecks,
     rollAll: () => {
       const { values, dice } = rollCharacteristicsDetailed();
       setBase(values);
-      setEduGains(null);
+      resetEduGains();
       counted('characteristics');
       thrown('characteristics', dice);
     },
@@ -414,7 +420,7 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     setAge: (a: number) => {
       setAgeState(Math.max(15, Math.min(89, Math.round(a))));
       setAgeLoss({});
-      setEduGains(null);
+      resetEduGains();
       setLuckRolls((r) => r.slice(0, 1));
     },
     rules,
