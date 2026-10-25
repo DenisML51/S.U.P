@@ -7,6 +7,7 @@
 @import './ui/theme/settings/cyberpunk.css';
 @import './ui/theme/settings/lovecraft.css';
 @import './ui/theme/service.css';
+@import './ui/theme/gate.css';
 
 @tailwind base;
 @tailwind components;
