@@ -14,7 +14,7 @@ import {
   type Difficulty,
 } from '@itd/game-logic/coc';
 import { IconCheck, IconMinus, IconPlus } from '../../ui/icons';
-import { Button, cx } from '../../ui/primitives';
+import { cx } from '../../ui/primitives';
 import { Segmented } from '../../ui/forms';
 import { canBuyWithLuck, canPush, target, useCoc, useCocAnywhere, type RollRecord } from './context';
 import { InfoButton } from './details';
