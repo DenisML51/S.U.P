@@ -351,6 +351,8 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
           difficulty: mods.difficulty,
           bonus: mods.bonus,
           penalty: mods.penalty,
+          band,
+          damageRolled: ownDamage,
         });
         // Dice are rolled here, once: the edit that logs them runs twice (screen and stored copy).
         const hit =

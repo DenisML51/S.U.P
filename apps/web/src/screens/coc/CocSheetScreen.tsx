@@ -5,6 +5,7 @@ import { useCharacterStore } from '../../store/useCharacterStore';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { settingOf } from '../../ui/theme/settings';
 import { SyncStatus } from '../../ui/SyncStatus';
+import { Button } from '../../ui/primitives';
 import { useTurnLock } from '../party/useTurnLock';
 import { SheetDialogsProvider, useSheetDialogs } from '../sheet/dialogs/context';
 import { SheetDialogHost } from '../sheet/dialogs/SheetDialogHost';
@@ -47,19 +48,42 @@ export const CocSheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpe
   const setting = settingOf(character);
   useDocumentSetting(setting);
   useTurnLock(character?.id);
+  const turnLock = useCharacterStore((s) => s.turnLock);
   const update = useCallback(
     (edit: (doc: Character) => Character, log?: HistoryEvent, options?: UpdateOptions) =>
       updateCharacter(edit, { log, quiet: options?.quiet }),
     [updateCharacter],
   );
 
-  if (!character?.coc) return null;
+  if (!character) return null;
+  if (!character.coc)
+    return (
+      <SettingScope setting={setting} className="grid h-screen place-items-center bg-bg px-6">
+        <div className="flex max-w-md flex-col items-center gap-4 text-center">
+          <h1 className="ui-display text-2xl">{character.name}</h1>
+          <p className="text-ink-muted">
+            Лист сыщика пуст: у героя правил «Зова Ктулху» нет характеристик и навыков. Обычно так
+            бывает с героем, созданным не до конца или в старой версии приложения. Создайте сыщика
+            заново или вернитесь к списку.
+          </p>
+          <Button variant="primary" onClick={goToCharacterList}>
+            К выбору героя
+          </Button>
+        </div>
+      </SettingScope>
+    );
   return (
     <SheetDialogsProvider>
       <SettingScope setting={setting} className="h-screen overflow-clip bg-bg">
         {/* One provider per investigator: the master's screen following the turn to another hero
             starts clean, without the last hero's roll, round or picks. */}
-        <CocSheetProvider key={character.id} character={character} update={update} renderRoll={renderRoll}>
+        <CocSheetProvider
+          key={character.id}
+          character={character}
+          update={update}
+          renderRoll={renderRoll}
+          turnLock={turnLock}
+        >
           {viewMode === 'hotbar' ? (
             <CombatWithDialogs onOpenSettings={onOpenSettings} />
           ) : (

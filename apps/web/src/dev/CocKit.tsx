@@ -15,7 +15,7 @@ import { SettingBackdrop } from '../ui/SettingBackdrop';
 import { Segmented } from '../ui/forms';
 import { Button, Panel, SectionTitle } from '../ui/primitives';
 import { Toasts } from '../ui/Toasts';
-import { CocSheetProvider, useCoc } from '../screens/coc/context';
+import { CocSheetProvider, useCoc, type RollRecord } from '../screens/coc/context';
 import { CocSheetView } from '../screens/coc/CocSheet';
 import { CharacteristicsGrid, DerivedStrip, RollResult, SkillList, Track } from '../screens/coc/parts';
 import { madnessStage } from '../screens/coc/InsanityVeil';
@@ -158,16 +158,15 @@ const Journal: React.FC = () => {
 /** Parts of the kit on their own, so each can be judged apart from the screen. */
 const PartsSample: React.FC = () => {
   const { last, character } = useCoc();
-  const mods = { difficulty: 'regular' as const, dice: 0 };
   return (
     <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-8 px-10 py-10">
       <div className="flex flex-col gap-4">
         <SectionTitle>Характеристики и производные</SectionTitle>
-        <CharacteristicsGrid mods={mods} />
+        <CharacteristicsGrid />
         <DerivedStrip />
         <SectionTitle>Навыки (две колонки)</SectionTitle>
         <Panel variant="paper" ornate={false} className="px-6 py-4">
-          <SkillList mods={mods} filter="" />
+          <SkillList filter="" />
         </Panel>
       </div>
       <div className="flex flex-col gap-4">
@@ -189,6 +188,9 @@ const PartsSample: React.FC = () => {
   );
 };
 
+/** The roll's toast; one function for the showcase's life, so a re-render does not raise the toast again. */
+const renderRoll = (record: RollRecord) => <RollResult record={record} />;
+
 /** `?coc=<setting>`: the Call of Cthulhu kit in every setting, on a working sample investigator. */
 export const CocKit: React.FC = () => {
   const [setting, setSetting] = useState<Setting>(
@@ -203,11 +205,7 @@ export const CocKit: React.FC = () => {
 
   return (
     <SettingScope setting={setting} className="min-h-screen bg-bg">
-      <CocSheetProvider
-        character={character}
-        update={update}
-        renderRoll={(record) => <RollResult record={record} />}
-      >
+      <CocSheetProvider character={character} update={update} renderRoll={renderRoll}>
         <header className="ui-service flex flex-wrap items-center gap-6 border-b border-line px-6 py-3">
           <span className="text-sm text-ink-muted">Витрина: Зов Ктулху</span>
           <Segmented

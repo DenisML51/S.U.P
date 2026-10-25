@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog } from '../../ui/Dialog';
 import { Button, Input, Panel, TextArea } from '../../ui/primitives';
 import { NumberField } from '../../ui/forms';
@@ -36,9 +36,16 @@ export const PickerDialog: React.FC<{
   }, [options, query]);
   const groups = useMemo(() => [...new Set(shown.map((o) => o.group ?? ''))], [shown]);
   const pick = options.find((o) => o.id === chosen);
-  const take = () => {
-    if (!chosen) return;
-    onPick(chosen);
+  // Every opening starts clean: no choice left over from the last time, however it was closed.
+  useEffect(() => {
+    if (open) {
+      setChosen(null);
+      setQuery('');
+    }
+  }, [open]);
+  const take = (id = chosen) => {
+    if (!id || !options.some((o) => o.id === id)) return;
+    onPick(id);
     setChosen(null);
     setQuery('');
     onClose();
@@ -56,7 +63,7 @@ export const PickerDialog: React.FC<{
           <Button variant="ghost" onClick={onClose}>
             Отмена
           </Button>
-          <Button variant="primary" disabled={!chosen} onClick={take}>
+          <Button variant="primary" disabled={!pick} onClick={() => take()}>
             {confirmLabel}
           </Button>
         </>
@@ -67,6 +74,7 @@ export const PickerDialog: React.FC<{
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Поиск"
+        aria-label="Поиск"
         className="mb-3 w-full"
         data-autofocus
       />
@@ -89,11 +97,8 @@ export const PickerDialog: React.FC<{
                     key={o.id}
                     type="button"
                     onClick={() => setChosen(o.id)}
-                    onDoubleClick={() => {
-                      setChosen(o.id);
-                      onPick(o.id);
-                      onClose();
-                    }}
+                    onDoubleClick={() => take(o.id)}
+                    aria-pressed={o.id === chosen}
                     className="flex w-full items-baseline gap-3 border-b border-line/50 px-2 py-2 text-left hover:bg-surface-2/60 data-[on]:bg-accent/15"
                     data-on={o.id === chosen || undefined}
                   >
@@ -162,6 +167,7 @@ export const ItemDialog: React.FC<{
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Фонарь, отмычки, фляга виски…"
+          aria-label="Название вещи"
           data-autofocus
         />
         <label className="flex items-center gap-3 text-sm text-ink-muted">
@@ -175,6 +181,7 @@ export const ItemDialog: React.FC<{
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Заметка (необязательно)"
+          aria-label="Заметка"
           rows={3}
         />
       </div>
