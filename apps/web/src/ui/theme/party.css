@@ -356,3 +356,35 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 }
 
 
+
+/* ---------------------------------------------------------------- Home: the dark takes the art's colour */
+/* The hero's art meets the page in its own edge colour (quieted, capped at a deep grey) instead of black:
+ * a bright sky no longer ends in a hard cut. The tone sits right under the fading edge and spreads a little
+ * to the left; it flows over when the hero changes. */
+@property --hub-tone {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgb(12 14 13);
+}
+.ui-hub { transition: --hub-tone 0.9s ease; }
+.ui-hero-figure__halo {
+  position: absolute;
+  inset: -14% -42%;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    var(--hub-tone) 30%,
+    color-mix(in srgb, var(--hub-tone) 60%, transparent) 62%,
+    transparent
+  );
+}
+.ui-hub-lift {
+  background: linear-gradient(to right, color-mix(in srgb, var(--hub-tone) 35%, transparent), transparent 55%);
+}
+.ui-hub .ui-hero-figure__art::after {
+  background: radial-gradient(
+    ellipse 48% 45% at 50% 46%,
+    transparent 36%,
+    color-mix(in srgb, var(--hub-tone) 55%, transparent) 100%
+  );
+}
