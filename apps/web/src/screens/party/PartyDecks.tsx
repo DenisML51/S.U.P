@@ -47,7 +47,6 @@ export const TableDecks: React.FC<{
 }> = ({ party, userId, canBring, onBring, onPlay, onRemoveHero, onNpc }) => {
   const [open, setOpen] = useState<GroupId | null>(null);
   const setHeroHidden = usePartyStore((s) => s.setHeroHidden);
-  const names = new Map(party.members.map((member) => [member.userId, member.displayName]));
   const npcs = party.npcs ?? [];
   const fighting = new Set(party.combat?.combatants.map((c) => c.refId));
 
@@ -64,7 +63,8 @@ export const TableDecks: React.FC<{
       render: (mode) => (
         <HeroCard
           hero={hero}
-          label={mine ? seen : (names.get(hero.ownerId) ?? '')}
+          // Players' heroes carry no owner name on the card; the master's own show whether players see them.
+          label={mine ? seen : ''}
           mine={mine}
           mode={mode}
           canRemove
@@ -427,23 +427,31 @@ const HeroCard: React.FC<{
           <>
             <span className="absolute inset-0 bg-gradient-to-t from-bg-deep from-15% via-bg-deep/60 via-40% to-transparent to-65%" />
             <span className="relative mt-auto block space-y-1.5 p-4">
+              {(label || onToggleHidden) && (
+                <span
+                  className={cx(
+                    'flex items-center gap-1.5 truncate text-[10px] uppercase tracking-[0.2em]',
+                    hidden ? 'text-ink-faint' : 'text-frame-bright/80',
+                  )}
+                >
+                  {onToggleHidden &&
+                    (hidden ? <IconHidden width={12} height={12} /> : <IconShown width={12} height={12} />)}
+                  {label}
+                </span>
+              )}
               <span
                 className={cx(
-                  'flex items-center gap-1.5 truncate text-[10px] uppercase tracking-[0.2em]',
-                  hidden ? 'text-ink-faint' : 'text-frame-bright/80',
+                  'ui-display ui-card-name block leading-tight text-ink',
+                  spread ? 'line-clamp-2' : 'truncate',
                 )}
               >
-                {onToggleHidden &&
-                  (hidden ? <IconHidden width={12} height={12} /> : <IconShown width={12} height={12} />)}
-                {label}
-              </span>
-              <span className="ui-display ui-card-name block truncate leading-tight text-ink">
                 {hero.name}
               </span>
               <span className="block truncate text-xs text-ink-muted">
                 {[origin.calling || origin.race, `${hero.level} ур.`].filter(Boolean).join(' · ')}
               </span>
-              {vitals && (
+              {/* Hit points can be wide (520/520) and would shove the armour plate: only on a laid-out card. */}
+              {spread && vitals && (
                 <span className="flex items-center gap-2.5 pt-1">
                   <span className="min-w-0 flex-1">
                     <Meter
@@ -565,7 +573,13 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
             style={{ objectPosition: '50% 20%' }}
           />
         ) : (
-          <span className="ui-display absolute inset-0 grid place-items-center bg-inset text-[5rem] text-frame/15">
+          <span
+            className={cx(
+              'ui-display absolute inset-0 grid place-items-center bg-inset text-frame/15',
+              // The big initial is for a laid-out card; in a stack it would dwarf the little card.
+              spread ? 'text-[5rem]' : 'text-4xl',
+            )}
+          >
             {npc.name.charAt(0).toUpperCase()}
           </span>
         )}
@@ -583,7 +597,14 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
               {hostile ? 'враг' : 'союзник'}
               {inFight && <span className="text-ink-muted"> · в бою</span>}
             </span>
-            <span className="ui-display ui-card-name block truncate leading-tight text-ink">{npc.name}</span>
+            <span
+              className={cx(
+                'ui-display ui-card-name block leading-tight text-ink',
+                spread ? 'line-clamp-2' : 'truncate',
+              )}
+            >
+              {npc.name}
+            </span>
             <span className="flex items-center gap-3 text-xs text-ink-muted">
               <span className="flex items-center gap-1" title="Класс брони">
                 <IconArmor width={13} height={13} className="text-armor" />
