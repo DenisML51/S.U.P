@@ -106,7 +106,7 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
       {flourish && <Flourish key={flourish.key} setting={flourish.setting} x={flourish.x} y={flourish.y} onEnd={endFlourish} />}
       <SettingBackdrop setting={shown} strength={step === 'world' ? 0.6 : 0.45} />
 
-      <header className="relative z-10 flex items-center gap-4 px-24 pt-8">
+      <header className="relative z-10 flex items-center gap-4 px-24 pt-14">
         <Button
           variant="ghost"
           size="sm"

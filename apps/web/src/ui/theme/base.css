@@ -364,6 +364,11 @@
   transition: color 600ms ease, background-color 600ms ease, border-color 600ms ease;
 }
 
+/* An atmosphere not on screen keeps still, so a dozen mounted at once cost nothing. */
+[data-dormant] *,
+[data-dormant] *::before,
+[data-dormant] *::after { animation-play-state: paused !important; }
+
 /* Row actions ("Атака", "Сотворить"): small and quiet in every setting. Display faces are kept
    for primary buttons; in a list they would shout over the content. */
 .ui-button--row,
@@ -1658,7 +1663,6 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-world-lore { display: flex; flex-direction: column; align-items: center; gap: 0.55rem; text-align: center; }
 .ui-world-lore__tagline { font-family: var(--setting-display); font-size: 1.75rem; line-height: 1.15; color: rgb(var(--c-frame-bright)); text-shadow: 0 2px 10px rgb(0 0 0 / 0.8); }
 .ui-world-lore__text { line-height: 1.5; color: rgb(var(--c-ink-muted)); text-shadow: 0 1px 6px rgb(0 0 0 / 0.9); }
-.ui-world-lore__sources { font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
 
 /* ------------------------------------------------------------------ Combat HUD ornament */
 /* The HUD's panels are small: their corner pieces are drawn smaller to keep the pictures clear. */

@@ -491,7 +491,32 @@
 
   /* ---------------------------------------------------------------- Combat */
   .ui-hud-slot,
-  .ui-hud-slot--tile { border-radius: 3px; }
+  /* An entry's picture is struck into a plate of forged iron: sooted and rubbed bright in streaks,
+     a rivet at each corner, the picture raised in the metal. Its colour is only an ember glowing
+     at the foot of the plate. */
+  .ui-hud-slot--tile {
+    --rivet: radial-gradient(circle, rgb(176 156 130) 0 1.1px, rgb(20 16 12) 1.8px, transparent 2.4px);
+    color: rgb(222 208 184);
+    border-radius: 2px;
+    border-color: rgb(14 11 9);
+    background:
+      var(--rivet) 1px 1px / 10px 10px no-repeat,
+      var(--rivet) calc(100% - 1px) 1px / 10px 10px no-repeat,
+      var(--rivet) 1px calc(100% - 1px) / 10px 10px no-repeat,
+      var(--rivet) calc(100% - 1px) calc(100% - 1px) / 10px 10px no-repeat,
+      radial-gradient(90% 60% at 50% 110%, color-mix(in srgb, var(--tile-color) 55%, transparent), transparent 72%),
+      var(--df-wear) center / 300px,
+      var(--df-soot) center / 420px,
+      linear-gradient(160deg, rgb(82 76 70), rgb(42 38 34) 45%, rgb(20 17 15));
+    box-shadow:
+      inset 0 1px 0 rgb(255 240 220 / 0.18),
+      inset 0 -1px 0 rgb(0 0 0 / 0.6),
+      inset 0 0 0 3px rgb(0 0 0 / 0.25),
+      inset 0 0 12px rgb(0 0 0 / 0.65),
+      0 2px 4px rgb(0 0 0 / 0.7);
+  }
+  .ui-hud-slot--tile .ui-hud-slot__icon { filter: drop-shadow(0 -1px 0 rgb(0 0 0 / 0.85)) drop-shadow(0 1px 0 rgb(255 236 210 / 0.22)); }
+  .ui-hud-slot--tile:hover { box-shadow: inset 0 1px 0 rgb(255 240 220 / 0.18), inset 0 0 0 3px rgb(0 0 0 / 0.25), inset 0 -12px 16px -6px rgb(var(--c-candle) / 0.4), 0 0 10px -2px rgb(var(--c-candle) / 0.4); }
   /* Empty keys are iron wells; a key with a picture keeps the colour of its tile. */
   .ui-hud-slot:not(.ui-hud-slot--tile) {
     background: rgb(var(--c-inset));

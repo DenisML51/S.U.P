@@ -304,8 +304,8 @@ export const CreationScreen: React.FC<{
       <div className="relative flex min-w-0 flex-1 flex-col">
         {step.stage ? (
           // A stage step (the world, the path): its question on top, its choices centred in the room left.
-          <main className="relative flex min-h-0 flex-1 flex-col px-10 pt-8">
-            {index === 0 && <div className="absolute left-24 top-8">{backToHeroes}</div>}
+          <main className="relative flex min-h-0 flex-1 flex-col px-10 pt-14">
+            {index === 0 && <div className="absolute left-24 top-14">{backToHeroes}</div>}
             <h2 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">{step.question}</h2>
             <div className="flex min-h-0 flex-1 items-center">{content}</div>
           </main>

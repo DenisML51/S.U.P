@@ -109,7 +109,6 @@ export const WorldCarousel: React.FC<{
           >
             <span className="ui-world-lore__tagline">{WORLD_LORE[focused].tagline}</span>
             <span className="ui-world-lore__text">{WORLD_LORE[focused].description}</span>
-            <span className="ui-world-lore__sources">{WORLD_LORE[focused].inspirations.join(' · ')}</span>
           </motion.div>
         </AnimatePresence>
       </div>

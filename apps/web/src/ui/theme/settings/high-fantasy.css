@@ -564,7 +564,20 @@
   /* ---------------------------------------------------------------- Combat */
   /* Keys are softened like enamelled tokens. */
   .ui-hud-slot,
-  .ui-hud-slot--tile { border-radius: 9px; }
+  /* An entry's picture is enamel set in gold, as a jewel in its bezel: the painted tile with a gilt
+     rim, a hairline of gold inside it and the gloss of glaze across its top. */
+  .ui-hud-slot--tile {
+    border-radius: 9px;
+    border-color: rgb(var(--c-frame-bright) / 0.85);
+    background:
+      radial-gradient(80% 42% at 50% 6%, rgb(255 255 255 / 0.28), transparent 70%),
+      radial-gradient(120% 95% at 50% 12%, color-mix(in srgb, var(--tile-color) 80%, #fff), color-mix(in srgb, var(--tile-color) 50%, #000) 48%, color-mix(in srgb, var(--tile-color) 14%, #000) 100%);
+    box-shadow:
+      inset 0 0 0 1px rgb(40 30 12 / 0.8),
+      inset 0 0 0 2px rgb(var(--c-frame-bright) / 0.35),
+      inset 0 -10px 14px rgb(0 0 0 / 0.4),
+      0 2px 5px rgb(0 0 0 / 0.55);
+  }
   .ui-hud-slot {
     border-color: rgb(var(--c-frame) / 0.6);
     box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), inset 0 0 0 2px rgb(var(--c-frame) / 0.22), inset 0 -10px 16px rgb(0 0 0 / 0.3);
