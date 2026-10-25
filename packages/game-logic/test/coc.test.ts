@@ -32,12 +32,14 @@ import {
   rollCharacteristicsDetailed,
   rollLuckDetailed,
   rollPercentile,
+  sanityCheck,
   sanityLoss,
   skillDef,
   successLevel,
   takeDamage,
   wealthOf,
   weaponDamage,
+  weaponDamageDetailed,
   type Characteristics,
 } from '../src/coc';
 
@@ -227,6 +229,15 @@ describe('Call of Cthulhu sanity, wounds and development', () => {
     expect(sanityLoss({ ...doc, sanity: 3 }, 6)).toMatchObject({ sanity: 0, permanent: true });
   });
 
+  it('keeps the dice of a sanity loss with the loss they make', () => {
+    const doc = { ...investigator(), sanity: 70 };
+    const failed = sanityCheck(doc, '0/1d6', () => 0.9);
+    expect(failed.check.success).toBe(false);
+    expect(failed.lossDice).toEqual([{ sides: 6, value: 6 }]);
+    expect(failed.loss).toBe(6);
+    expect(sanityCheck(doc, '0/1d6', () => 0.15).lossDice).toEqual([]);
+  });
+
   it('turns half the hit points at once into a major wound, and 0 with it into dying', () => {
     const doc = investigator();
     expect(takeDamage(doc, 5)).toMatchObject({ currentHP: 7, majorWound: false });
@@ -343,6 +354,24 @@ describe('Call of Cthulhu mechanics on the sheet', () => {
     });
     expect(weaponDamage({ damage: '1d3+DB' }, '-1', 'regular', low).total).toBe(0);
     expect(weaponDamage({ damage: '4d6/2d6/1d6' }, '0', 'regular', low).total).toBe(4);
+  });
+
+  it('shows the dice behind a hit, the same throw as the plain damage', () => {
+    const low = () => 0;
+    expect(weaponDamageDetailed({ damage: '1d3+DB' }, '+1d4', 'regular', low)).toEqual({
+      total: 2,
+      formula: '1d3+1d4',
+      dice: [
+        { sides: 3, value: 1, source: 'weapon' },
+        { sides: 4, value: 1, source: 'bonus' },
+      ],
+    });
+    const impaled = weaponDamageDetailed({ damage: '1d10', impale: true }, '0', 'extreme', low);
+    expect(impaled.total).toBe(weaponDamage({ damage: '1d10', impale: true }, '0', 'extreme', low).total);
+    expect(impaled.dice).toEqual([
+      { sides: 10, value: 10, source: 'weapon' },
+      { sides: 10, value: 1, source: 'impale' },
+    ]);
   });
 });
 

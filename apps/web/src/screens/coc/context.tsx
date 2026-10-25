@@ -13,7 +13,8 @@ import {
   malfunctions,
   sanityCheck,
   spendLuck,
-  weaponDamage,
+  weaponDamageDetailed,
+  type DamageDie,
   type Difficulty,
   type SkillCheck,
 } from '@itd/game-logic/coc';
@@ -45,9 +46,16 @@ export interface RollRecord extends RollRequest {
   luckSpent?: number;
   jammed?: boolean;
   /** After a sanity roll: what it cost and what it set off. */
-  sanity?: { loss: number; needsIntRoll: boolean; indefinite: boolean; permanent: boolean };
-  /** An attack's damage, once rolled. */
-  damage?: { total: number; formula: string };
+  sanity?: {
+    loss: number;
+    needsIntRoll: boolean;
+    indefinite: boolean;
+    permanent: boolean;
+    /** The dice of the loss, to show them thrown. */
+    dice?: { sides: number; value: number }[];
+  };
+  /** An attack's damage, once rolled, with the dice behind it. */
+  damage?: { total: number; formula: string; dice?: DamageDie[] };
   serial: number;
 }
 
@@ -205,7 +213,7 @@ export const CocSheetProvider: React.FC<{
     if (!last || last.kind !== 'attack' || !last.check.success || last.damage) return;
     const weapon = character.attacks.find((a) => a.id === last.id);
     if (!weapon) return;
-    const damage = weaponDamage(weapon, damageBonus, last.check.level);
+    const damage = weaponDamageDetailed(weapon, damageBonus, last.check.level);
     setLast({ ...last, damage });
     update(
       (doc) => doc,
@@ -229,6 +237,7 @@ export const CocSheetProvider: React.FC<{
           needsIntRoll: result.needsIntRoll,
           indefinite: result.indefinite,
           permanent: result.permanent,
+          dice: result.lossDice,
         },
       });
       update(

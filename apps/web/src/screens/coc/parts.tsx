@@ -19,6 +19,7 @@ import { Segmented } from '../../ui/forms';
 import { LandedValue, RollingDice, useLanded } from '../../ui/RollingDie';
 import { canBuyWithLuck, canPush, target, useCoc, useCocAnywhere, type RollRecord } from './context';
 import { InfoButton } from './details';
+import { useCountRollShown, useRollVerdict } from './verdict';
 
 // ------------------------------------------------------------------------------------------------
 // Roll modifiers
@@ -336,19 +337,66 @@ const ToastButton: React.FC<{
 );
 
 /**
+ * A roll that follows the check (the damage of a hit, the loss of a sanity roll): its dice tumble in
+ * the plate's ink, the bonus dice of damage a shade lighter, then the sum comes in large, and the
+ * note under it small. A flat amount without dice shows at once.
+ */
+const FollowUpThrow: React.FC<{
+  dice?: { sides: number; value: number; source?: string }[];
+  total: number;
+  note?: string;
+}> = ({ dice = [], total, note }) => {
+  const [landed, setLanded] = useState(dice.length === 0);
+  return (
+    <div className="mt-2">
+      <div className="flex items-center gap-3">
+        {dice.length > 0 && (
+          <RollingDice
+            size={dice.length > 4 ? '2rem' : '2.6rem'}
+            stagger={120}
+            onLanded={() => setLanded(true)}
+            dice={dice.map((die) => ({
+              sides: die.sides,
+              value: die.value,
+              className: cx('ui-rolling-die--ink', die.source === 'bonus' && 'opacity-70'),
+            }))}
+          />
+        )}
+        <LandedValue landed={landed} className="ui-display ui-numeric text-3xl leading-none">
+          {total}
+        </LandedValue>
+      </div>
+      {note && (
+        <LandedValue landed={landed} className="mt-1 text-sm opacity-80">
+          {note}
+        </LandedValue>
+      )}
+    </div>
+  );
+};
+
+/**
  * The latest roll, drawn inside the app's toast in the setting's plate: the dice (the kept tens die
  * marked), how far it reached on the ladder of success, a jam, and what may follow by the rules — a
  * push, Luck, the damage of a hit, the INT roll after a shock.
  */
 export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
   const { push, buyWithLuck, rollDamage, character, roll } = useCocAnywhere();
+  useCountRollShown();
   const { check } = record;
   const kept = check.total === 100 ? 0 : check.total - check.units;
   const luck = character.coc?.luck ?? 0;
   // The d10s tumble first; the total, the level and the ladder come once the last one is down.
   const [landed, markLanded] = useLanded(record.serial);
+  const verdict = useRollVerdict(record.serial);
   return (
-    <div className="coc-roll" data-level={check.level}>
+    <div
+      className="coc-roll"
+      data-level={check.level}
+      data-landed={landed || undefined}
+      // A setting may stamp the level across the plate (the Lovecraft telegram does).
+      data-stamp={record.luckSpent ? SUCCESS_LABELS.regular : SUCCESS_LABELS[check.level]}
+    >
       {/* By importance: the dice and the total first and large; the roll's name, level and the rest below. */}
       <div className="coc-roll__head !items-center">
         <div className="coc-roll__dice !mt-0 flex-wrap items-center">
@@ -379,14 +427,30 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
           {record.pushed && <span className="opacity-60"> · повтор</span>}
         </div>
         <div
-          className="text-[13px]"
+          className="coc-roll__level text-[13px]"
           style={{ color: `rgb(var(--c-${check.success ? 'success' : 'danger'}))` }}
         >
           <LandedValue landed={landed}>
             {record.luckSpent ? `Успех за ${record.luckSpent} удачи` : SUCCESS_LABELS[check.level]}
-            <span className="opacity-60"> · нужно ≤ {target(record)}</span>
+            <span className="coc-roll__stop opacity-60"> · </span>
+            <span className="opacity-60">нужно ≤ {target(record)}</span>
           </LandedValue>
         </div>
+        {verdict && landed && (
+          <div
+            className="coc-roll__verdict mt-1 text-[13px] font-semibold"
+            style={{
+              color: verdict.tone === 'neutral' ? undefined : `rgb(var(--c-${verdict.tone}))`,
+            }}
+          >
+            {verdict.parts.map((part, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span className="coc-roll__stop"> · </span>}
+                {part}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
       </div>
       {record.kind !== 'sanity' && (
         <div className="coc-ladder">
@@ -410,6 +474,9 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
           Провал: худший исход, Хранитель решает, чем он обернётся.
         </div>
       )}
+      {record.sanity && landed && (
+        <FollowUpThrow key={`san-${record.serial}`} dice={record.sanity.dice} total={record.sanity.loss} />
+      )}
       {record.sanity && (
         <div className="mt-2 text-sm opacity-80">
           Потеряно <b>{record.sanity.loss}</b> рассудка.
@@ -426,10 +493,12 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
         </div>
       )}
       {record.damage && (
-        <div className="mt-2 flex items-baseline gap-2 text-sm opacity-80">
-          Урон <span className="ui-display ui-numeric text-2xl">{record.damage.total}</span> (
-          {record.damage.formula})
-        </div>
+        <FollowUpThrow
+          key={`dmg-${record.serial}`}
+          dice={record.damage.dice}
+          total={record.damage.total}
+          note={`Урон (${record.damage.formula})`}
+        />
       )}
       <div className="coc-roll__actions">
         {canPush(record) && (

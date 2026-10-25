@@ -249,6 +249,59 @@ export const reloadWeapon =
   (doc) =>
     patchAttack(doc, id, (a) => (a.magazine === undefined ? {} : { ammo: a.magazine }));
 
+/** A die behind a hit's damage: the weapon's, the damage bonus's, or the impale's extra roll. */
+export interface DamageDie {
+  sides: number;
+  value: number;
+  source: 'weapon' | 'bonus' | 'impale';
+}
+
+/** A hit's damage with every die behind it, for a table that shows the throw. */
+export interface DetailedDamage {
+  total: number;
+  formula: string;
+  /** In the order they count; maxed dice of an extreme success show their maximum. */
+  dice: DamageDie[];
+}
+
+/**
+ * Damage of a hit with its dice. The first range band counts ("4d6/2d6/1d6" up close). An extreme
+ * success deals the maximum; with an impaling weapon another roll of the weapon's dice is added on top.
+ */
+export function weaponDamageDetailed(
+  attack: Pick<Attack, 'damage' | 'impale'>,
+  damageBonus: string,
+  level: SkillCheck['level'],
+  random: RandomSource = Math.random,
+): DetailedDamage {
+  const [band] = attack.damage.split('/');
+  const halfDb = /\+½DB/i.test(band);
+  const fullDb = !halfDb && /\+DB/i.test(band);
+  const dice = band.replace(/\+½?DB/i, '').trim();
+  const db = damageBonus === '0' ? '' : damageBonus.replace(/^\+/, '');
+  const highest = () => 0.999999;
+  const thrown: DamageDie[] = [];
+  const weaponRoll = (source: RandomSource, kind: DamageDie['source']) => {
+    const roll = rollFormula(dice, source);
+    thrown.push(...roll.rolls.map((r) => ({ sides: r.sides, value: r.value, source: kind })));
+    return roll.total;
+  };
+  const dbValue = (source: RandomSource) => {
+    if (!db || (!fullDb && !halfDb)) return 0;
+    const roll = rollFormula(db, source);
+    thrown.push(...roll.rolls.map((r) => ({ sides: r.sides, value: r.value, source: 'bonus' as const })));
+    return halfDb ? Math.trunc(roll.total / 2) : roll.total;
+  };
+  const extreme = level === 'extreme' || level === 'critical';
+  const total = extreme
+    ? weaponRoll(highest, 'weapon') + dbValue(highest) + (attack.impale ? weaponRoll(random, 'impale') : 0)
+    : weaponRoll(random, 'weapon') + dbValue(random);
+  const formula = [dice, fullDb && db && `${db.startsWith('-') ? '' : '+'}${db}`, halfDb && db && `+½(${db})`]
+    .filter(Boolean)
+    .join('');
+  return { total: Math.max(0, total), formula, dice: thrown };
+}
+
 /**
  * Damage of a hit. The first range band counts ("4d6/2d6/1d6" up close). An extreme success deals the
  * maximum; with an impaling weapon another roll of the weapon's dice is added on top.
@@ -259,27 +312,8 @@ export function weaponDamage(
   level: SkillCheck['level'],
   random: RandomSource = Math.random,
 ): { total: number; formula: string } {
-  const [band] = attack.damage.split('/');
-  const halfDb = /\+½DB/i.test(band);
-  const fullDb = !halfDb && /\+DB/i.test(band);
-  const dice = band.replace(/\+½?DB/i, '').trim();
-  const db = damageBonus === '0' ? '' : damageBonus.replace(/^\+/, '');
-  const highest = () => 0.999999;
-  const dbValue = (source: RandomSource) => {
-    if (!db || (!fullDb && !halfDb)) return 0;
-    const value = rollFormula(db, source).total;
-    return halfDb ? Math.trunc(value / 2) : value;
-  };
-  const extreme = level === 'extreme' || level === 'critical';
-  const total = extreme
-    ? rollFormula(dice, highest).total +
-      dbValue(highest) +
-      (attack.impale ? rollFormula(dice, random).total : 0)
-    : rollFormula(dice, random).total + dbValue(random);
-  const formula = [dice, fullDb && db && `${db.startsWith('-') ? '' : '+'}${db}`, halfDb && db && `+½(${db})`]
-    .filter(Boolean)
-    .join('');
-  return { total: Math.max(0, total), formula };
+  const { total, formula } = weaponDamageDetailed(attack, damageBonus, level, random);
+  return { total, formula };
 }
 
 // ------------------------------------------------------------------------------------------------

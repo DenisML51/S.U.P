@@ -45,7 +45,13 @@ const RollToast: React.FC<{
   const dieTone = tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : undefined;
   // By importance: the dice and the total first and large, the label, breakdown and follow-up below.
   return (
-    <div className="flex min-w-[240px] max-w-[22rem] flex-col gap-2">
+    <div
+      className="ui-roll-toast flex min-w-[240px] max-w-[22rem] flex-col gap-2"
+      data-tone={tone}
+      data-landed={landed || undefined}
+      // A setting may stamp a natural 20 or 1 across the plate (the Lovecraft telegram does).
+      data-stamp={tone === 'crit' ? 'Критический' : tone === 'fumble' ? 'Провал' : undefined}
+    >
       <div className="flex items-center gap-4">
         {shown.length > 0 && (
           <span className="flex max-w-[16rem] flex-wrap items-center gap-1.5">
@@ -83,7 +89,11 @@ const RollToast: React.FC<{
       <div className="flex items-end gap-3">
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-sm text-ink">{label}</span>
-          <motion.span className="text-xs text-ink-muted" initial={false} animate={reveal}>
+          <motion.span
+            className="ui-roll-toast__detail text-xs text-ink-muted"
+            initial={false}
+            animate={reveal}
+          >
             {detail}
           </motion.span>
         </span>

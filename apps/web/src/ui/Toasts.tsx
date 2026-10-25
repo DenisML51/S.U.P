@@ -41,10 +41,19 @@ export const Toasts: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.97, transition: { duration: 0.18 } }}
             transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-            className={cx('ui-toast pointer-events-auto cursor-pointer', t.type === 'error' && 'ui-toast--error')}
+            className={cx(
+              'ui-toast pointer-events-auto cursor-pointer',
+              t.type === 'error' && 'ui-toast--error',
+              t.type === 'success' && 'ui-toast--success',
+            )}
           >
-            {ICON[t.type]}
-            <span className="min-w-0 text-left">{resolveValue(t.message, t)}</span>
+            {/* The body keeps icon and message in a row, so a setting may stack a head above it. */}
+            <div className="ui-toast__body flex min-w-0 items-center gap-3">
+              {ICON[t.type]}
+              <span className={cx('min-w-0 text-left', typeof t.message === 'string' && 'ui-toast__text')}>
+                {resolveValue(t.message, t)}
+              </span>
+            </div>
           </motion.div>
         ))}
       </AnimatePresence>
