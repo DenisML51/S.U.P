@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import type { Build, Character } from '@itd/schema';
+import type { DndBuild, Character } from '@itd/schema';
 import {
   startingSkills,
 } from '../src';
@@ -17,7 +17,7 @@ import {
 } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
-const build = (patch: Partial<Build> = {}): Build => ({
+const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -32,7 +32,7 @@ const build = (patch: Partial<Build> = {}): Build => ({
 });
 
 const fresh = (): Character => makeCharacter({ skills: startingSkills(), maxHP: 10, currentHP: 10 });
-const apply = (b: Build, character = fresh()) => applyBuild(character, b).character;
+const apply = (b: DndBuild, character = fresh()) => applyBuild(character, b).character;
 
 describe('D&D content', () => {
   it('has unique ids within each kind', () => {

@@ -1,5 +1,11 @@
+import type { Build, DndBuild } from '@itd/schema';
 import type { RuleSystem } from '../systems';
 import { applyBuild, describeGrant, featureOrigins } from './build';
+
+const dnd = (build: Build): DndBuild => {
+  if (build.ruleset !== 'dnd2024') throw new Error(`Not a D&D 2024 build: ${build.ruleset}`);
+  return build;
+};
 
 /** D&D 2024 as the generic screens see it. */
 export const DND_2024: RuleSystem = {
@@ -9,13 +15,13 @@ export const DND_2024: RuleSystem = {
     { id: 'background', title: 'Предыстория' },
     { id: 'class', title: 'Класс' },
   ],
-  rebuild: (character, build) => applyBuild(character, build).character,
+  rebuild: (character, build) => applyBuild(character, dnd(build)).character,
   featureOrigins: (build) =>
     new Map(
-      [...featureOrigins(build)].map(([key, origin]) => [
+      [...featureOrigins(dnd(build))].map(([key, origin]) => [
         key,
         { part: origin.part, parent: origin.parent, label: origin.source === 'feat' ? 'Черта' : undefined },
       ]),
     ),
-  describeGrant,
+  describeGrant: (build, grant) => describeGrant(dnd(build), grant),
 };

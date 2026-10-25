@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { Build, Character } from '@itd/schema';
+import type { DndBuild, Character } from '@itd/schema';
 import { startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, levelPlan } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
 /** Ranger: Wisdom 15 (+2); rogue: Dexterity 17 (+3), Intelligence 14 (+2); sorcerer: Charisma 17 (+3). */
-const ATTRIBUTES: Record<string, Pick<Build, 'background' | 'baseAttributes' | 'backgroundBonuses'>> = {
+const ATTRIBUTES: Record<string, Pick<DndBuild, 'background' | 'baseAttributes' | 'backgroundBonuses'>> = {
   ranger: {
     background: 'guide',
     baseAttributes: { strength: 10, dexterity: 15, constitution: 14, intelligence: 8, wisdom: 14, charisma: 8 },
@@ -23,7 +23,7 @@ const ATTRIBUTES: Record<string, Pick<Build, 'background' | 'baseAttributes' | '
   },
 };
 
-const build = (cls: string, subclass: string, level: number, choices: Build['choices'] = {}): Build => ({
+const build = (cls: string, subclass: string, level: number, choices: DndBuild['choices'] = {}): DndBuild => ({
   ruleset: 'dnd2024',
   species: 'human',
   class: cls,
@@ -36,8 +36,8 @@ const build = (cls: string, subclass: string, level: number, choices: Build['cho
 });
 
 const fresh = (): Character => makeCharacter({ skills: startingSkills(), maxHP: 10, currentHP: 10, inventory: [] });
-const applied = (b: Build) => applyBuild(fresh(), b);
-const apply = (b: Build) => applied(b).character;
+const applied = (b: DndBuild) => applyBuild(fresh(), b);
+const apply = (b: DndBuild) => applied(b).character;
 const resource = (c: Character, id: string) => c.resources.find((r) => r.id === id);
 const ability = (c: Character, name: string) => c.abilities.find((a) => a.name === name);
 const trait = (c: Character, name: string) => c.traits.find((t) => t.name === name);

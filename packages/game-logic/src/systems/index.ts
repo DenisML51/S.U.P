@@ -33,6 +33,7 @@ export interface RuleSystem {
  */
 const LOADERS: { [Id in RulesetId]: () => Promise<RuleSystem> } = {
   dnd2024: () => import('../dnd').then((m) => m.DND_2024),
+  coc7: () => import('../coc').then((m) => m.COC_7),
 };
 
 const loaded = new Map<RulesetId, RuleSystem>();

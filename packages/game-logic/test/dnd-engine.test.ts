@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Build, Character } from '@itd/schema';
+import type { DndBuild, Character } from '@itd/schema';
 import {
   armorClassOf,
   initiativeModifier,
@@ -21,7 +21,7 @@ import { makeCharacter } from './helpers';
 
 /** Engine mechanics shared by the classes: replacing picks, catalogs, attacks, armour without armour. */
 
-const build = (patch: Partial<Build> = {}): Build => ({
+const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -36,10 +36,10 @@ const build = (patch: Partial<Build> = {}): Build => ({
 });
 
 const fresh = (): Character => makeCharacter({ skills: startingSkills(), maxHP: 10, currentHP: 10 });
-const apply = (b: Build, character = fresh()) => applyBuild(character, b).character;
+const apply = (b: DndBuild, character = fresh()) => applyBuild(character, b).character;
 
 describe('replacing picks on a level-up', () => {
-  const master = (level: number, choices: Build['choices'] = {}) =>
+  const master = (level: number, choices: DndBuild['choices'] = {}) =>
     build({ subclass: 'battle-master', level, choices: { 'subclass:battle-master.combat-superiority/maneuvers': ['maneuver.ambush', 'maneuver.bait-and-switch', 'maneuver.riposte'], ...choices } });
 
   it('offers to give up one maneuver from level 4 on, without requiring it', () => {

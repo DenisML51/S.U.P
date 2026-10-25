@@ -36,7 +36,7 @@ export default tseslint.config(
   {
     files: ['packages/game-logic/src/{rules,content,systems}/**/*.ts', 'packages/game-logic/src/index.ts'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [{ regex: '/dnd(/(?!meta$).*)?$', message: 'Rules systems load on demand: use loadRuleSystem / rulesOf.' }] }],
+      'no-restricted-imports': ['error', { patterns: [{ regex: '/(dnd|coc)(/(?!meta$).*)?$', message: 'Rules systems load on demand: use loadRuleSystem / rulesOf.' }] }],
     },
   },
   {

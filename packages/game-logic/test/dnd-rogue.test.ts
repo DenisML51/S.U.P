@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Build, Character } from '@itd/schema';
+import type { DndBuild, Character } from '@itd/schema';
 import { startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, collect, levelPlan, weaponProficient } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
-const build = (patch: Partial<Build> = {}): Build => ({
+const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -20,8 +20,8 @@ const build = (patch: Partial<Build> = {}): Build => ({
 });
 
 const fresh = (): Character => makeCharacter({ skills: startingSkills(), maxHP: 10, currentHP: 10 });
-const applied = (b: Build) => applyBuild(fresh(), b);
-const apply = (b: Build) => applied(b).character;
+const applied = (b: DndBuild) => applyBuild(fresh(), b);
+const apply = (b: DndBuild) => applied(b).character;
 const sneak = (c: Character) => c.abilities.find((a) => a.name === 'Коварная атака');
 
 describe('rogue', () => {

@@ -1,4 +1,4 @@
-import type { Build, Character, CharacterDraft, InventoryItem } from '@itd/schema';
+import type { DndBuild, Character, CharacterDraft, InventoryItem } from '@itd/schema';
 import { attributeScore } from '../rules/abilities';
 import { isShield } from '../rules/armor';
 import { buildNewCharacter, startingAttributes, startingSkills } from '../rules/creation';
@@ -13,9 +13,9 @@ import { DND_ICONS, armorIcon, gearIcon } from './content/icons';
 import type { KitOption } from './types';
 
 /** A starting kit option of the build's class or background, by its id. */
-export const classKit = (build: Pick<Build, 'class'>, id: string | undefined): KitOption | undefined =>
+export const classKit = (build: Pick<DndBuild, 'class'>, id: string | undefined): KitOption | undefined =>
   findClass(build.class)?.startingEquipment.find((kit) => kit.id === id);
-export const backgroundKit = (build: Pick<Build, 'background'>, id: string | undefined): KitOption | undefined =>
+export const backgroundKit = (build: Pick<DndBuild, 'background'>, id: string | undefined): KitOption | undefined =>
   findBackground(build.background)?.equipment.find((kit) => kit.id === id);
 
 /** Gear that is used up in play: it gets a count, and the hotbar offers it among the items. */
@@ -97,7 +97,7 @@ export function kitItems(kit: KitOption): InventoryItem[] {
 
 export interface DndHeroInput {
   name: string;
-  build: Build;
+  build: DndBuild;
   classKitId?: string;
   backgroundKitId?: string;
 }
@@ -147,7 +147,7 @@ export const PREPARED_AT_CREATION = 'creation:prepared';
  * The pick of starting prepared spells, as a choice the creation screen can show: from the class
  * list for a preparing caster, from the spellbook for a wizard.
  */
-export function preparedSpellsChoice(build: Build): OpenChoice | null {
+export function preparedSpellsChoice(build: DndBuild): OpenChoice | null {
   const casting = spellcastingOf(build);
   if (casting?.mode !== 'prepared' && casting?.mode !== 'spellbook') return null;
   const level = build.level;
@@ -197,7 +197,7 @@ export function rollAbilityScores(random: () => number = Math.random): number[] 
 }
 
 /** An empty D&D 2024 build: nothing chosen, every score 8 for point buy. */
-export const emptyBuild = (): Build => ({
+export const emptyBuild = (): DndBuild => ({
   ruleset: 'dnd2024',
   species: '',
   background: '',
@@ -211,13 +211,13 @@ export const emptyBuild = (): Build => ({
 });
 
 /** Picks under a root of the build (`species`, `background`, `class`…) are forgotten when it changes. */
-export const withoutPicks = (build: Build, ...roots: string[]): Build => ({
+export const withoutPicks = (build: DndBuild, ...roots: string[]): DndBuild => ({
   ...build,
   choices: Object.fromEntries(Object.entries(build.choices).filter(([key]) => !roots.some((root) => key.startsWith(`${root}:`)))),
 });
 
 /** The background's ability increases are valid as +2/+1 to two of its scores or +1 to all three. */
-export function validBackgroundBonuses(build: Build): boolean {
+export function validBackgroundBonuses(build: DndBuild): boolean {
   const background = findBackground(build.background);
   if (!background) return false;
   const values = Object.entries(build.backgroundBonuses).filter(([, v]) => v > 0);

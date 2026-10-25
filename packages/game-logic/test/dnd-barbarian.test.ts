@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Build, Character } from '@itd/schema';
+import type { DndBuild, Character } from '@itd/schema';
 import { armorClassOf, startingSkills } from '../src';
 import { DND, applyBuild, createDndHero, levelPlan, setPicks } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
-const build = (patch: Partial<Build> = {}): Build => ({
+const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -19,7 +19,7 @@ const build = (patch: Partial<Build> = {}): Build => ({
 });
 
 const fresh = (): Character => makeCharacter({ skills: startingSkills(), maxHP: 10, currentHP: 10 });
-const apply = (b: Build) => applyBuild(fresh(), b).character;
+const apply = (b: DndBuild) => applyBuild(fresh(), b).character;
 const ability = (c: Character, name: string) => c.abilities.find((a) => a.name === name);
 /** Spells other agents are still writing. */
 const PENDING = new Set(['spell:beast-sense']);

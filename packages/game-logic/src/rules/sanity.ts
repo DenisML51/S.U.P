@@ -1,5 +1,6 @@
 import type { Character } from '@itd/schema';
 import { CLASSES } from '../content/classes';
+import { cocMaxSanity } from '../coc/meta';
 import { DND_CLASS_META } from '../dnd/meta';
 import { DEFAULT_MENTAL_STRENGTH, MAX_SANITY_CAP } from '../content/progression';
 import { DEFAULT_ATTRIBUTE_SCORE, attributeScore } from './abilities';
@@ -24,14 +25,21 @@ export function calculateMaxSanity(classId: string, wisdom: number, level: numbe
   return Math.min(MAX_SANITY_CAP, Math.max(0, total));
 }
 
-/** Maximum sanity the rules give the hero, before the sheet's own bonus. */
-export const baseMaxSanityOf = (character: Pick<Character, 'class' | 'attributes' | 'level' | 'build'>): number =>
-  calculateMaxSanity(character.build?.class ?? character.class, attributeScore(character, 'wisdom'), character.level, !!character.build?.class);
+type SanitySource = Pick<Character, 'class' | 'attributes' | 'level' | 'build'> & Partial<Pick<Character, 'coc'>>;
+
+/**
+ * Maximum sanity the rules give the hero, before the sheet's own bonus: an investigator's is
+ * 99 less Cthulhu Mythos; anyone else's comes from the class, Wisdom and level.
+ */
+export function baseMaxSanityOf(character: SanitySource): number {
+  const build = character.build;
+  if (build?.ruleset === 'coc7') return cocMaxSanity(character.coc);
+  const presetClass = build?.ruleset === 'dnd2024' ? build.class : undefined;
+  return calculateMaxSanity(presetClass ?? character.class, attributeScore(character, 'wisdom'), character.level, !!presetClass);
+}
 
 /** Maximum sanity including the sheet's bonus (a relic, a gift). */
-export const maxSanityOf = (
-  character: Pick<Character, 'class' | 'attributes' | 'level' | 'build'> & Partial<Pick<Character, 'maxSanityBonus'>>,
-): number => Math.max(0, baseMaxSanityOf(character) + (character.maxSanityBonus ?? 0));
+export const maxSanityOf = (character: SanitySource & Partial<Pick<Character, 'maxSanityBonus'>>): number => Math.max(0, baseMaxSanityOf(character) + (character.maxSanityBonus ?? 0));
 
 export const clampSanity = (value: number, maxSanity: number): number => Math.min(maxSanity, Math.max(0, value));
 
