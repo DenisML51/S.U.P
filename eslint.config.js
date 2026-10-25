@@ -41,7 +41,7 @@ export default tseslint.config(
   },
   {
     files: ['apps/web/src/**/*.{ts,tsx}'],
-    ignores: ['apps/web/src/screens/create/**', 'apps/web/src/screens/progression/**'],
+    ignores: ['apps/web/src/screens/create/**', 'apps/web/src/screens/progression/**', 'apps/web/src/screens/coc/**', 'apps/web/src/dev/**'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [{ regex: '^@itd/game-logic/', message: 'Only the screens of a system import it; the rest use rulesOf from @itd/game-logic.' }] }],
     },

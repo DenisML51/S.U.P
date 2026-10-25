@@ -10,6 +10,8 @@ zodConfig({ jitless: true });
 
 /** Development-only design-system showcase, opened with `?kit`. Not part of the production bundle's main chunk. */
 const UiKit = lazy(() => import('./dev/UiKit').then((m) => ({ default: m.UiKit })));
+/** The same for the Call of Cthulhu kit, opened with `?coc`. */
+const CocKit = lazy(() => import('./dev/CocKit').then((m) => ({ default: m.CocKit })));
 const devPage = import.meta.env.DEV ? new URLSearchParams(window.location.search) : null;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -18,6 +20,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       {devPage?.has('kit') ? (
         <Suspense fallback={null}>
           <UiKit />
+        </Suspense>
+      ) : devPage?.has('coc') ? (
+        <Suspense fallback={null}>
+          <CocKit />
         </Suspense>
       ) : (
         <App />

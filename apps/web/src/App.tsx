@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
-import { RULESETS } from '@itd/schema';
+import type { RulesetId } from '@itd/schema';
 import { loadRuleSystem } from '@itd/game-logic';
 import { useNavStore } from './store/useNavStore';
 import { usePartyStore } from './store/usePartyStore';
@@ -31,18 +31,31 @@ const CreationScreen = lazy(() => SCREENS.create().then((m) => ({ default: m.Cre
 const PartyScreen = lazy(() => SCREENS.party().then((m) => ({ default: m.PartyScreen })));
 const PartyFormScreen = lazy(() => SCREENS.partyForm().then((m) => ({ default: m.PartyFormScreen })));
 const HeroSelect = lazy(() => SCREENS.heroes().then((m) => ({ default: m.HeroSelect })));
+/** Each rules system's own screens (and styles), fetched only for players who have its heroes. */
+const SYSTEM_SCREENS: Partial<Record<RulesetId, () => Promise<unknown>>> = {
+  coc7: () => import('./screens/coc/CocSheetScreen'),
+};
+const CocSheetScreen = lazy(() => import('./screens/coc/CocSheetScreen').then((m) => ({ default: m.CocSheetScreen })));
 const SettingsDialog = lazy(() => import('./screens/settings/SettingsDialog').then((m) => ({ default: m.SettingsDialog })));
 
-/** Fetches what later screens need without holding up the first one; failures retry on open. */
-function preloadInBackground(signedIn: boolean) {
-  const later = (load: () => Promise<unknown>) => void load().catch(() => undefined);
-  const idle = window.requestIdleCallback ?? ((run: () => void) => window.setTimeout(run, 200));
-  idle(() => {
-    Object.values(SCREENS).forEach(later);
-    // The rules systems are the heaviest part: only once there is an account to play with.
-    if (signedIn) RULESETS.forEach((id) => later(() => loadRuleSystem(id)));
-  });
-}
+const later = (load: () => Promise<unknown>) => void load().catch(() => undefined);
+const idle = (run: () => void) => (window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 200)))(run);
+
+/** Fetches the shared screens without holding up the first one; failures retry on open. */
+const preloadScreens = () => idle(() => Object.values(SCREENS).forEach(later));
+
+/**
+ * The rules systems are the heaviest part: only those of the player's own heroes are fetched ahead,
+ * with their screens. Anyone else's (a hero at the table) loads when it is opened.
+ */
+const preloadSystems = (rulesets: RulesetId[]) =>
+  idle(() =>
+    rulesets.forEach((id) => {
+      later(() => loadRuleSystem(id));
+      const screens = SYSTEM_SCREENS[id];
+      if (screens) later(screens);
+    }),
+  );
 
 const App: React.FC = () => {
   const status = useSessionStore((s) => s.status);
@@ -76,7 +89,13 @@ const App: React.FC = () => {
   useTableCalls();
 
   const signedIn = status === 'authenticated';
-  useEffect(() => preloadInBackground(signedIn), [signedIn]);
+  useEffect(() => {
+    preloadScreens();
+  }, []);
+  const rulesets = useCharacterStore((s) => [...new Set(s.charactersList.flatMap((c) => (c.ruleset ? [c.ruleset] : [])))].sort().join(','));
+  useEffect(() => {
+    if (signedIn && rulesets) preloadSystems(rulesets.split(',') as RulesetId[]);
+  }, [signedIn, rulesets]);
 
   let screen: React.ReactNode;
   let screenKey: string;
@@ -85,6 +104,10 @@ const App: React.FC = () => {
     const phase: GatePhase = signedIn ? 'entering' : status === 'booting' || !introDone ? 'boot' : 'locked';
     screen = <Gate phase={phase} onIntroDone={endIntro} />;
     screenKey = 'gate';
+  } else if (character?.build?.ruleset === 'coc7') {
+    // Investigators have their own sheet; their combat view comes with stage 7.6.
+    screen = <CocSheetScreen onOpenSettings={openSettings} />;
+    screenKey = 'coc-sheet';
   } else if (character && viewMode === 'tabs') {
     screen = <SheetScreen onOpenSettings={openSettings} />;
     screenKey = 'sheet';

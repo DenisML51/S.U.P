@@ -6,6 +6,7 @@ import { COC_7 } from './system';
 export * from './types';
 export * from './engine';
 export * from './creation';
+export * from './actions';
 export { CHARACTERISTICS, characteristicDef } from './content/characteristics';
 export { SKILLS, SOCIAL_SKILLS, skillDef, skillName } from './content/skills';
 export { OCCUPATIONS, occupationDef } from './content/occupations';

@@ -25,6 +25,9 @@ export interface InvestigatorInput {
   backstory?: Partial<CocSheet['backstory']>;
 }
 
+/** Specialities every investigator's sheet lists. */
+export const STANDARD_SPECIALITIES = ['fighting:brawl', 'firearms:handgun', 'firearms:rifle-shotgun'];
+
 /** A sheet entry for a weapon from the table. */
 export function weaponAttack(weapon: WeaponDef): Attack {
   return {
@@ -67,11 +70,9 @@ export function createInvestigator(input: InvestigatorInput): CharacterDraft {
     listed.add(id);
     skills.push({ id, value: input.skills[id] ?? skillBase(id, c), check: false, occupation: occupation.has(id) || undefined });
   };
-  for (const skill of sheetSkills(build.era)) {
-    if (!skill.specialities) add(skill.id);
-    // The sheet keeps the specialities everyone has (Brawl, Handgun, Rifle) and the ones raised.
-    else for (const s of skill.specialities) if (s.base !== undefined && s.base >= 20) add(`${skill.id}:${s.id}`);
-  }
+  for (const skill of sheetSkills(build.era)) if (!skill.specialities) add(skill.id);
+  // The paper sheet prints these specialities; others appear once the investigator has them.
+  for (const id of STANDARD_SPECIALITIES) add(id);
   for (const id of Object.keys(input.skills)) if (skillDef(id)) add(id);
 
   const creditRating = input.skills['credit-rating'] ?? 0;
