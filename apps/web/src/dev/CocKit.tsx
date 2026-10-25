@@ -27,7 +27,14 @@ function sampleInvestigator(): Character {
   const doc = createCharacterDocument(
     createInvestigator({
       name: 'Харви Уолтерс',
-      build: { ruleset: 'coc7', variant: 'classic', era: '1920s', occupation: 'professor', talents: [], age: 42 },
+      build: {
+        ruleset: 'coc7',
+        variant: 'classic',
+        era: '1920s',
+        occupation: 'professor',
+        talents: [],
+        age: 42,
+      },
       characteristics: HARVEY,
       luck: 55,
       skills: {
@@ -61,8 +68,18 @@ function sampleInvestigator(): Character {
     currentHP: 9,
     coc: {
       ...doc.coc!,
-      skills: doc.coc!.skills.map((s) => (s.id === 'spot-hidden' || s.id === 'history' ? { ...s, check: true } : s)),
-      spells: [{ id: 'elder-sign', name: 'Старший знак', cost: 'ПМ и 1 рассудка', castingTime: '1 раунд', description: '' }],
+      skills: doc.coc!.skills.map((s) =>
+        s.id === 'spot-hidden' || s.id === 'history' ? { ...s, check: true } : s,
+      ),
+      spells: [
+        {
+          id: 'elder-sign',
+          name: 'Старший знак',
+          cost: 'ПМ и 1 рассудка',
+          castingTime: '1 раунд',
+          description: '',
+        },
+      ],
     },
   };
 }
@@ -84,7 +101,10 @@ const MadnessControls: React.FC<{ reset: () => void }> = ({ reset }) => {
   const { character, update } = useCoc();
   const stage = madnessStage(character);
   const clear = (doc: Character) =>
-    [CONDITION_IDS.temporaryInsanity, CONDITION_IDS.indefiniteInsanity].reduce((d, id) => recoverFrom(id)(d), doc);
+    [CONDITION_IDS.temporaryInsanity, CONDITION_IDS.indefiniteInsanity].reduce(
+      (d, id) => recoverFrom(id)(d),
+      doc,
+    );
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-sm text-ink-muted">Безумие: ступень {stage}</span>
@@ -94,7 +114,15 @@ const MadnessControls: React.FC<{ reset: () => void }> = ({ reset }) => {
       <Button size="sm" onClick={() => update((doc) => ({ ...clear(doc), sanity: 12 }))}>
         Низкий рассудок
       </Button>
-      <Button size="sm" onClick={() => update((doc) => ({ ...clear(doc), conditions: [...doc.conditions, CONDITION_IDS.temporaryInsanity] }))}>
+      <Button
+        size="sm"
+        onClick={() =>
+          update((doc) => ({
+            ...clear(doc),
+            conditions: [...doc.conditions, CONDITION_IDS.temporaryInsanity],
+          }))
+        }
+      >
         Временное
       </Button>
       <Button
@@ -149,7 +177,13 @@ const PartsSample: React.FC = () => {
           <Track label="Магия" value={character.coc!.magicPoints} max={14} tone="accent" />
         </Panel>
         <SectionTitle>Результат броска</SectionTitle>
-        {last ? <RollResult record={last} floating={false} /> : <p className="text-sm text-ink-muted">Бросьте навык или характеристику — результат появится здесь и в углу листа.</p>}
+        {last ? (
+          <RollResult record={last} floating={false} />
+        ) : (
+          <p className="text-sm text-ink-muted">
+            Бросьте навык или характеристику — результат появится здесь и в углу листа.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -157,7 +191,9 @@ const PartsSample: React.FC = () => {
 
 /** `?coc=<setting>`: the Call of Cthulhu kit in every setting, on a working sample investigator. */
 export const CocKit: React.FC = () => {
-  const [setting, setSetting] = useState<Setting>(() => (new URLSearchParams(window.location.search).get('coc') as Setting) || 'lovecraft');
+  const [setting, setSetting] = useState<Setting>(
+    () => (new URLSearchParams(window.location.search).get('coc') as Setting) || 'lovecraft',
+  );
   useDocumentSetting(setting);
   const { character, update, reset } = useLocalInvestigator();
   const choose = (next: Setting) => {
@@ -170,7 +206,12 @@ export const CocKit: React.FC = () => {
       <CocSheetProvider character={character} update={update}>
         <header className="ui-service flex flex-wrap items-center gap-6 border-b border-line px-6 py-3">
           <span className="text-sm text-ink-muted">Витрина: Зов Ктулху</span>
-          <Segmented label="Сеттинг" value={setting} onChange={choose} options={SETTING_LIST.map((s) => ({ value: s.id, label: s.label }))} />
+          <Segmented
+            label="Сеттинг"
+            value={setting}
+            onChange={choose}
+            options={SETTING_LIST.map((s) => ({ value: s.id, label: s.label }))}
+          />
           <MadnessControls reset={reset} />
         </header>
         <div className="relative h-[900px] overflow-hidden">

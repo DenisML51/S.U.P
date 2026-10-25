@@ -52,7 +52,9 @@ export function weaponAttack(weapon: WeaponDef): Attack {
 export const talentTraits = (build: CocBuild): Trait[] =>
   build.talents.flatMap((id) => {
     const talent = talentDef(id);
-    return talent ? [{ id: `talent-${id}`, name: talent.name, description: talent.description, grant: `talent:${id}` }] : [];
+    return talent
+      ? [{ id: `talent-${id}`, name: talent.name, description: talent.description, grant: `talent:${id}` }]
+      : [];
   });
 
 /**
@@ -68,7 +70,12 @@ export function createInvestigator(input: InvestigatorInput): CharacterDraft {
   const add = (id: string) => {
     if (listed.has(id)) return;
     listed.add(id);
-    skills.push({ id, value: input.skills[id] ?? skillBase(id, c), check: false, occupation: occupation.has(id) || undefined });
+    skills.push({
+      id,
+      value: input.skills[id] ?? skillBase(id, c),
+      check: false,
+      occupation: occupation.has(id) || undefined,
+    });
   };
   for (const skill of sheetSkills(build.era)) if (!skill.specialities) add(skill.id);
   // The paper sheet prints these specialities; others appear once the investigator has them.

@@ -360,7 +360,9 @@
   color: rgb(var(--c-paper-ink));
   border: 1px solid rgb(var(--c-frame));
   clip-path: var(--deco-shape);
-  box-shadow: inset 0 0 0 3px rgb(var(--c-paper)), inset 0 0 0 4px rgb(var(--c-frame) / 0.6);
+  box-shadow:
+    inset 0 0 0 3px rgb(var(--c-paper)),
+    inset 0 0 0 4px rgb(var(--c-frame) / 0.6);
 }
 [data-setting='lovecraft'] .coc-char__label,
 [data-setting='lovecraft'] .coc-char__part,
@@ -494,17 +496,23 @@
 [data-setting='elden-ring'] .coc-char {
   background: linear-gradient(180deg, rgb(var(--c-surface-2) / 0.85), rgb(var(--c-surface) / 0.85));
   border: 1px solid rgb(var(--c-frame) / 0.75);
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4), inset 0 0 18px rgb(var(--c-accent) / 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.4),
+    inset 0 0 18px rgb(var(--c-accent) / 0.08);
 }
 [data-setting='elden-ring'] .coc-char:hover {
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4), inset 0 0 24px rgb(var(--c-accent) / 0.2);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.4),
+    inset 0 0 24px rgb(var(--c-accent) / 0.2);
 }
 [data-setting='elden-ring'] .coc-char__value {
   color: rgb(var(--c-frame-bright));
 }
 [data-setting='elden-ring'] .coc-roll {
   border-color: rgb(var(--c-frame));
-  box-shadow: 0 0 30px -10px rgb(var(--c-accent) / 0.45), var(--shadow-panel);
+  box-shadow:
+    0 0 30px -10px rgb(var(--c-accent) / 0.45),
+    var(--shadow-panel);
 }
 
 /* ================================================================== madness
@@ -540,16 +548,20 @@
   /* Veins in the setting's colour, cut by one image that holds both the noise and the fall-off to a
      clear centre. One mask, no tiles, no compositing of masks: those show seams on the GPU. */
   background: rgb(var(--veil));
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000' viewBox='0 0 1600 1000' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.62' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000' viewBox='0 0 1600 1000' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.62' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000' viewBox='0 0 1600 1000' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.62' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000' viewBox='0 0 1600 1000' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.62' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
   opacity: var(--veil-strength);
   will-change: opacity;
   animation: coc-veil-breathe 9s ease-in-out infinite alternate;
 }
 .coc-veil__noise--b {
   background: rgb(var(--veil) / 0.6);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.68' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.68' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.68' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.68' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
   animation: coc-veil-cross 7s ease-in-out infinite alternate;
 }
 
@@ -561,7 +573,9 @@
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='d' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E"),
     radial-gradient(var(--veil-shape), transparent 62%, rgb(var(--veil) / 0.22) 86%, rgb(0 0 0 / 0.7) 100%);
-  background-size: 256px 256px, 100% 100%;
+  background-size:
+    256px 256px,
+    100% 100%;
   opacity: var(--veil-strength);
   will-change: opacity;
   animation: coc-heartbeat var(--beat) ease-out infinite;
@@ -629,8 +643,13 @@
   transform-origin: 50% 60%;
 }
 
-.coc-veil[data-stage='3'] .coc-veil__shade--l { animation-duration: 7s; }
-.coc-veil[data-stage='3'] .coc-veil__shade--r { animation-duration: 9s; animation-delay: 2s; }
+.coc-veil[data-stage='3'] .coc-veil__shade--l {
+  animation-duration: 7s;
+}
+.coc-veil[data-stage='3'] .coc-veil__shade--r {
+  animation-duration: 9s;
+  animation-delay: 2s;
+}
 .coc-veil[data-stage='3'] .coc-veil__split {
   box-shadow:
     inset 8px 0 32px -10px rgb(255 40 60 / 0.5),
@@ -638,49 +657,121 @@
   animation: coc-split 0.45s steps(3, jump-none) infinite;
 }
 @keyframes coc-veil-breathe {
-  from { opacity: calc(var(--veil-strength) * 0.55); }
-  to { opacity: var(--veil-strength); }
+  from {
+    opacity: calc(var(--veil-strength) * 0.55);
+  }
+  to {
+    opacity: var(--veil-strength);
+  }
 }
 @keyframes coc-veil-cross {
-  from { opacity: calc(var(--veil-strength) * 0.15); }
-  to { opacity: calc(var(--veil-strength) * 0.85); }
+  from {
+    opacity: calc(var(--veil-strength) * 0.15);
+  }
+  to {
+    opacity: calc(var(--veil-strength) * 0.85);
+  }
 }
 @keyframes coc-heartbeat {
-  0% { opacity: calc(var(--veil-strength) * 0.5); }
-  10% { opacity: var(--veil-strength); }
-  22% { opacity: calc(var(--veil-strength) * 0.6); }
-  32% { opacity: calc(var(--veil-strength) * 0.95); }
-  60%, 100% { opacity: calc(var(--veil-strength) * 0.45); }
+  0% {
+    opacity: calc(var(--veil-strength) * 0.5);
+  }
+  10% {
+    opacity: var(--veil-strength);
+  }
+  22% {
+    opacity: calc(var(--veil-strength) * 0.6);
+  }
+  32% {
+    opacity: calc(var(--veil-strength) * 0.95);
+  }
+  60%,
+  100% {
+    opacity: calc(var(--veil-strength) * 0.45);
+  }
 }
 @keyframes coc-tunnel {
-  0%, 60%, 100% { opacity: 0.45; }
-  10%, 32% { opacity: 0.75; }
+  0%,
+  60%,
+  100% {
+    opacity: 0.45;
+  }
+  10%,
+  32% {
+    opacity: 0.75;
+  }
 }
 @keyframes coc-flicker {
-  0%, 93%, 100% { opacity: 0; }
-  94% { opacity: 0.8; }
-  95% { opacity: 0.1; }
-  96% { opacity: 0.6; }
-  97% { opacity: 0; }
+  0%,
+  93%,
+  100% {
+    opacity: 0;
+  }
+  94% {
+    opacity: 0.8;
+  }
+  95% {
+    opacity: 0.1;
+  }
+  96% {
+    opacity: 0.6;
+  }
+  97% {
+    opacity: 0;
+  }
 }
 @keyframes coc-shade-l {
-  0%, 70%, 100% { opacity: 0; transform: translateX(0); }
-  78% { opacity: 0.9; transform: translateX(9vw); }
-  86% { opacity: 0; transform: translateX(3vw); }
+  0%,
+  70%,
+  100% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  78% {
+    opacity: 0.9;
+    transform: translateX(9vw);
+  }
+  86% {
+    opacity: 0;
+    transform: translateX(3vw);
+  }
 }
 @keyframes coc-shade-r {
-  0%, 60%, 100% { opacity: 0; transform: translateX(0); }
-  68% { opacity: 0.8; transform: translateX(-10vw); }
-  76% { opacity: 0; transform: translateX(-4vw); }
+  0%,
+  60%,
+  100% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  68% {
+    opacity: 0.8;
+    transform: translateX(-10vw);
+  }
+  76% {
+    opacity: 0;
+    transform: translateX(-4vw);
+  }
 }
 @keyframes coc-split {
-  0%, 100% { opacity: 0.9; }
-  50% { opacity: 0.45; }
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 @keyframes coc-sway {
-  0%, 100% { transform: rotate(0deg) translateY(0) scale(1); }
-  30% { transform: rotate(0.6deg) translateY(2px) scale(1.004); }
-  70% { transform: rotate(-0.55deg) translateY(-2px) scale(0.997); }
+  0%,
+  100% {
+    transform: rotate(0deg) translateY(0) scale(1);
+  }
+  30% {
+    transform: rotate(0.6deg) translateY(2px) scale(1.004);
+  }
+  70% {
+    transform: rotate(-0.55deg) translateY(-2px) scale(0.997);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -691,12 +782,24 @@
 }
 
 /* Each world's madness has its own colour. */
-[data-setting='lovecraft'] .coc-veil { --veil: var(--c-eldritch); }
-[data-setting='high-fantasy'] .coc-veil { --veil: 150 96 220; }
-[data-setting='dark-fantasy'] .coc-veil { --veil: var(--c-hp); }
-[data-setting='elden-ring'] .coc-veil { --veil: 236 196 60; }
-[data-setting='sci-fi'] .coc-veil { --veil: var(--c-accent); }
-[data-setting='cyberpunk'] .coc-veil { --veil: var(--c-accent); }
+[data-setting='lovecraft'] .coc-veil {
+  --veil: var(--c-eldritch);
+}
+[data-setting='high-fantasy'] .coc-veil {
+  --veil: 150 96 220;
+}
+[data-setting='dark-fantasy'] .coc-veil {
+  --veil: var(--c-hp);
+}
+[data-setting='elden-ring'] .coc-veil {
+  --veil: 236 196 60;
+}
+[data-setting='sci-fi'] .coc-veil {
+  --veil: var(--c-accent);
+}
+[data-setting='cyberpunk'] .coc-veil {
+  --veil: var(--c-accent);
+}
 
 /* Glitch worlds: the veil tears in scanlines instead of veins. */
 [data-setting='sci-fi'] .coc-veil__noise--b,

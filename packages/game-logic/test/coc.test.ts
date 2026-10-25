@@ -9,7 +9,10 @@ import {
   afterIntRoll,
   afterSkillRoll,
   ageRules,
+  addItem,
   applyDamage,
+  castSpell,
+  changeItemCount,
   checkSkill,
   createInvestigator,
   damageBonusOf,
@@ -21,6 +24,7 @@ import {
   heal,
   loseSanity,
   moveRate,
+  parseSpellCost,
   reloadWeapon,
   setCharacteristic,
   rollCharacteristics,
@@ -76,9 +80,11 @@ describe('Call of Cthulhu content', () => {
     for (const occupation of OCCUPATIONS)
       for (const choice of occupation.skills) {
         if ('skill' in choice) expect(resolves(choice.skill), `${occupation.id}: ${choice.skill}`).toBe(true);
-        if ('from' in choice) for (const id of choice.from) expect(resolves(id), `${occupation.id}: ${id}`).toBe(true);
+        if ('from' in choice)
+          for (const id of choice.from) expect(resolves(id), `${occupation.id}: ${id}`).toBe(true);
       }
-    for (const archetype of ARCHETYPES) for (const id of archetype.skills) expect(resolves(id), `${archetype.id}: ${id}`).toBe(true);
+    for (const archetype of ARCHETYPES)
+      for (const id of archetype.skills) expect(resolves(id), `${archetype.id}: ${id}`).toBe(true);
     for (const weapon of WEAPONS) expect(resolves(weapon.skill), `${weapon.id}: ${weapon.skill}`).toBe(true);
   });
 
@@ -86,8 +92,10 @@ describe('Call of Cthulhu content', () => {
     const talents = new Set(TALENTS.map((t) => t.id));
     const occupations = new Set(OCCUPATIONS.map((o) => o.id));
     for (const archetype of ARCHETYPES) {
-      for (const id of archetype.suggestedTalents ?? []) expect(talents.has(id), `${archetype.id}: ${id}`).toBe(true);
-      for (const id of archetype.occupations ?? []) expect(occupations.has(id), `${archetype.id}: ${id}`).toBe(true);
+      for (const id of archetype.suggestedTalents ?? [])
+        expect(talents.has(id), `${archetype.id}: ${id}`).toBe(true);
+      for (const id of archetype.occupations ?? [])
+        expect(occupations.has(id), `${archetype.id}: ${id}`).toBe(true);
     }
   });
 
@@ -110,7 +118,14 @@ describe('Call of Cthulhu creation', () => {
   });
 
   it('derives hit points, magic, sanity, damage bonus and move', () => {
-    expect(derivedOf(harvey)).toMatchObject({ maxHP: 12, maxMP: 14, startingSanity: 70, damageBonus: '0', build: 0, move: 7 });
+    expect(derivedOf(harvey)).toMatchObject({
+      maxHP: 12,
+      maxMP: 14,
+      startingSanity: 70,
+      damageBonus: '0',
+      build: 0,
+      move: 7,
+    });
     expect(derivedOf(harvey, 'pulp').maxHP).toBe(25);
     expect(damageBonusOf(64)).toEqual({ damageBonus: '-2', build: -2 });
     expect(damageBonusOf(165)).toEqual({ damageBonus: '+1d6', build: 2 });
@@ -127,7 +142,15 @@ describe('Call of Cthulhu creation', () => {
 
   it('counts occupation points, taking the better of a choice', () => {
     expect(formulaPoints([{ characteristic: 'edu', times: 4 }], harvey)).toBe(340);
-    expect(formulaPoints([{ characteristic: 'edu', times: 2 }, { characteristic: ['dex', 'str'], times: 2 }], harvey)).toBe(270);
+    expect(
+      formulaPoints(
+        [
+          { characteristic: 'edu', times: 2 },
+          { characteristic: ['dex', 'str'], times: 2 },
+        ],
+        harvey,
+      ),
+    ).toBe(270);
   });
 
   it('writes a valid sheet with every standard skill, money and weapons', () => {
@@ -194,7 +217,11 @@ describe('Call of Cthulhu sanity, wounds and development', () => {
     expect(takeDamage(doc, 5)).toMatchObject({ currentHP: 7, majorWound: false });
     expect(takeDamage(doc, 6)).toMatchObject({ currentHP: 6, majorWound: true });
     expect(takeDamage({ ...doc, currentHP: 4 }, 6)).toMatchObject({ currentHP: 0, dying: true });
-    expect(takeDamage({ ...doc, currentHP: 4 }, 4)).toMatchObject({ currentHP: 0, unconscious: true, dying: false });
+    expect(takeDamage({ ...doc, currentHP: 4 }, 4)).toMatchObject({
+      currentHP: 0,
+      unconscious: true,
+      dying: false,
+    });
     expect(takeDamage(doc, 13).dead).toBe(true);
   });
 
@@ -202,7 +229,12 @@ describe('Call of Cthulhu sanity, wounds and development', () => {
     const doc = investigator();
     const ticked = {
       ...doc,
-      coc: { ...doc.coc!, skills: doc.coc!.skills.map((s) => (s.id === 'library-use' || s.id === 'listen' ? { ...s, check: true } : s)) },
+      coc: {
+        ...doc.coc!,
+        skills: doc.coc!.skills.map((s) =>
+          s.id === 'library-use' || s.id === 'listen' ? { ...s, check: true } : s,
+        ),
+      },
     };
     // library-use 70: roll 90 → +1d10 (6); listen 20: roll 10 → nothing
     const { character, rolls } = developSkills(ticked, sequence(face(90, 100), face(6, 10), face(10, 100)));
@@ -262,7 +294,8 @@ describe('Call of Cthulhu mechanics on the sheet', () => {
 
   it('ticks a skill after a success, but never Credit Rating', () => {
     const doc = investigator();
-    const tick = (id: string) => afterSkillRoll(id, { success: true })(doc).coc!.skills.find((s) => s.id === id)?.check;
+    const tick = (id: string) =>
+      afterSkillRoll(id, { success: true })(doc).coc!.skills.find((s) => s.id === id)?.check;
     expect(tick('library-use')).toBe(true);
     expect(tick('credit-rating')).toBe(false);
     expect(afterSkillRoll('listen', { success: false })(doc)).toBe(doc);
@@ -279,7 +312,9 @@ describe('Call of Cthulhu mechanics on the sheet', () => {
     const revolver = doc.attacks.find((a) => a.skill === 'firearms:handgun')!;
     const fired = fireWeapon(revolver.id, 2)(doc);
     expect(fired.attacks.find((a) => a.id === revolver.id)?.ammo).toBe((revolver.magazine ?? 0) - 2);
-    expect(reloadWeapon(revolver.id)(fired).attacks.find((a) => a.id === revolver.id)?.ammo).toBe(revolver.magazine);
+    expect(reloadWeapon(revolver.id)(fired).attacks.find((a) => a.id === revolver.id)?.ammo).toBe(
+      revolver.magazine,
+    );
   });
 
   it('an extreme hit deals the maximum, and an impaling one rolls the weapon again on top', () => {
@@ -287,8 +322,46 @@ describe('Call of Cthulhu mechanics on the sheet', () => {
     expect(weaponDamage({ damage: '1d10' }, '0', 'regular', low).total).toBe(1);
     expect(weaponDamage({ damage: '1d10' }, '0', 'extreme', low).total).toBe(10);
     expect(weaponDamage({ damage: '1d10', impale: true }, '0', 'extreme', low).total).toBe(11);
-    expect(weaponDamage({ damage: '1d3+DB' }, '+1d4', 'extreme', low)).toEqual({ total: 7, formula: '1d3+1d4' });
+    expect(weaponDamage({ damage: '1d3+DB' }, '+1d4', 'extreme', low)).toEqual({
+      total: 7,
+      formula: '1d3+1d4',
+    });
     expect(weaponDamage({ damage: '1d3+DB' }, '-1', 'regular', low).total).toBe(0);
     expect(weaponDamage({ damage: '4d6/2d6/1d6' }, '0', 'regular', low).total).toBe(4);
+  });
+});
+
+describe('Call of Cthulhu spells and gear', () => {
+  it('reads a spell cost', () => {
+    expect(parseSpellCost('10 ПМ; 1 МОЩ; 1d10 рассудка')).toEqual({
+      mp: 10,
+      variable: false,
+      sanity: '1d10',
+      pow: 1,
+    });
+    expect(parseSpellCost('переменная (ПМ); 5 рассудка')).toMatchObject({
+      mp: 0,
+      variable: true,
+      sanity: '5',
+    });
+    expect(parseSpellCost('1+ ПМ; 1d2 рассудка')).toMatchObject({ mp: 1, variable: true });
+  });
+
+  it('casting spends magic, sanity and POW; missing magic comes out of hit points', () => {
+    const doc = { ...investigator(), sanity: 60 };
+    const cast = castSpell(doc, '10 ПМ; 1 МОЩ; 1d10 рассудка', undefined, () => 0);
+    const after = cast.edit(doc);
+    expect(after.coc!.magicPoints).toBe(4);
+    expect(after.sanity).toBe(59);
+    expect(after.coc!.characteristics.pow).toBe(69);
+    const broke = castSpell({ ...after }, '8 ПМ', undefined, () => 0);
+    expect(broke.shortfall).toBe(4);
+    expect(broke.edit(after)).toMatchObject({ currentHP: 8 });
+  });
+
+  it('keeps count of things carried', () => {
+    const doc = addItem('Фонарь', 1)(investigator());
+    const item = doc.inventory.at(-1)!;
+    expect(changeItemCount(item.id, 2)(doc).inventory.at(-1)?.quantity).toBe(3);
   });
 });
