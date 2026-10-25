@@ -13,6 +13,7 @@ import { Rail, RailButton, RailDivider } from '../ui/Rail';
 import { SettingBackdrop } from '../ui/SettingBackdrop';
 import { Toasts } from '../ui/Toasts';
 import { LevelReady, SettingEmblem, useSettingArt } from '../ui/ornaments';
+import { WorldCard } from '../screens/create/WorldCard';
 import {
   IconArmor,
   IconAttacks,
@@ -265,7 +266,7 @@ const Board: React.FC<{ title: string; children: React.ReactNode; className?: st
 );
 
 /** Every primitive in its states. */
-const ComponentsSample: React.FC = () => {
+const ComponentsSample: React.FC<{ setting: Setting }> = ({ setting }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [segment, setSegment] = useState<'action' | 'bonus' | 'reaction'>('action');
   const [on, setOn] = useState(true);
@@ -438,6 +439,17 @@ const ComponentsSample: React.FC = () => {
         </div>
       </Board>
 
+      <Board title="Карточка мира" className="row-span-2">
+        {/* The setting's world card as hero creation shows it, at rest and chosen. */}
+        <div className="flex justify-center gap-4">
+          {[false, true].map((selected) => (
+            <div key={String(selected)} style={{ height: 380, aspectRatio: '0.62' }}>
+              <WorldCard setting={setting} selected={selected} onSelect={() => undefined} />
+            </div>
+          ))}
+        </div>
+      </Board>
+
       <Board title="Выбор">
         <div className="grid grid-cols-2 gap-2">
           <button type="button" className="ui-option" aria-pressed>
@@ -473,7 +485,7 @@ export const UiKit = () => {
         <SettingBackdrop setting={setting} strength={0.8} />
         <ScreenSample />
       </div>
-      <ComponentsSample />
+      <ComponentsSample setting={setting} />
       <Toasts />
     </SettingScope>
   );

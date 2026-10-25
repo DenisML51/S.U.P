@@ -5,9 +5,8 @@ import type { SettingArt } from './types';
 /**
  * Elden Ring ornament: the Lands Between under the Golden Order. Thin gilt hairlines, sprigs of the
  * Erdtree at the corners, the sigil of the Ring (a vertical axis through interlocking circles)
- * wreathed in its boughs over major panels; behind the screen the map of the Lands Between engraved
- * in gold — coast and lake, woods and marshes, cliffs, mountains and a volcano, castles and the walled
- * capital, roads and sites of grace — the fog of the unexplored drifting over it, a leaf drifting down now and then.
+ * wreathed in its boughs over major panels; behind the screen a warm dark, motes of gold rising and
+ * a leaf drifting down now and then.
  */
 
 /** A repeatable pseudo-random sequence, so the seal and the motes are the same on every render. */
@@ -48,34 +47,6 @@ const leaf = (x: number, y: number, angle: number, size: number) => {
   const mx = (x + tx) / 2;
   const my = (y + ty) / 2;
   return `M${f(x)} ${f(y)}Q${f(mx + nx)} ${f(my + ny)} ${f(tx)} ${f(ty)}Q${f(mx - nx)} ${f(my - ny)} ${f(x)} ${f(y)}Z`;
-};
-
-type Point = [number, number];
-
-/** A line through points, smoothed: each point becomes the control of a curve between its neighbours' midpoints. */
-const smooth = (points: Point[], closed = false) => {
-  if (closed) {
-    const mid = (i: number): Point => {
-      const [x, y] = points[i % points.length];
-      const [nx, ny] = points[(i + 1) % points.length];
-      return [(x + nx) / 2, (y + ny) / 2];
-    };
-    let d = `M${f(mid(0)[0])} ${f(mid(0)[1])}`;
-    for (let i = 1; i <= points.length; i++) {
-      const [x, y] = points[i % points.length];
-      const [mx, my] = mid(i);
-      d += `Q${f(x)} ${f(y)} ${f(mx)} ${f(my)}`;
-    }
-    return `${d}Z`;
-  }
-  let d = `M${f(points[0][0])} ${f(points[0][1])}`;
-  for (let i = 1; i < points.length - 1; i++) {
-    const [x, y] = points[i];
-    const [nx, ny] = points[i + 1];
-    d += `Q${f(x)} ${f(y)} ${f((x + nx) / 2)} ${f((y + ny) / 2)}`;
-  }
-  const [lx, ly] = points[points.length - 1];
-  return `${d}L${f(lx)} ${f(ly)}`;
 };
 
 /**
@@ -160,352 +131,160 @@ const SigilRule: React.FC = () => (
   </svg>
 );
 
+/** A sprig laid along the top edge of the screen corner, running out thin: leaves on both sides of it. */
+const EDGE_SPRIG = {
+  wood: 'M56 13C72 12.2 88 13.4 104 12.6S128 12.4 140 13',
+  leaves: leaf(66, 12.6, -2.75, 7) + leaf(74, 12.8, 2.8, 6.6) + leaf(86, 12.9, -2.85, 6) + leaf(95, 12.8, 2.85, 5.4) + leaf(106, 12.6, -2.9, 4.6) + leaf(115, 12.5, 2.9, 4) + leaf(125, 12.6, -2.95, 3.2),
+};
+
 /**
- * Screen corner, 120×120: the border of the map — a heavy rule and a hairline inside it, fading out
- * along each edge, and in the corner a small leaf drawn in outline with its midrib.
+ * Screen corner, 170×170: the gilt frame of the screen as the Order would set it — a heavy rule and
+ * a hairline inside it, running along each edge and fading out; across the corner a bracket bowed
+ * towards it with a lozenge in its lap; and laid along each edge from there a sprig of the Erdtree,
+ * leaves on both sides, thinning as it runs out.
  */
-// Unwired scaffolding for the Elden Ring setting — drop the `_` when it is placed on screen.
-const _ScreenCorner: React.FC = () => (
-  <svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-hidden>
+const ScreenCorner: React.FC = () => (
+  <svg width="170" height="170" viewBox="0 0 170 170" fill="none" aria-hidden>
     <defs>
-      <linearGradient id="er-fade-x" x1="0" x2="1" y1="0" y2="0">
-        <stop offset="0.25" stopColor="currentColor" />
+      {/* In user space: a gradient sized to a straight line's own box would have no height and draw nothing. */}
+      <linearGradient id="er-fade-x" gradientUnits="userSpaceOnUse" x1="0" x2="170" y1="0" y2="0">
+        <stop offset="0.2" stopColor="currentColor" />
         <stop offset="1" stopColor="currentColor" stopOpacity="0" />
       </linearGradient>
-      <linearGradient id="er-fade-y" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0.25" stopColor="currentColor" />
+      <linearGradient id="er-fade-y" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2="170">
+        <stop offset="0.2" stopColor="currentColor" />
         <stop offset="1" stopColor="currentColor" stopOpacity="0" />
       </linearGradient>
     </defs>
-    <path d="M1 1H120" stroke="url(#er-fade-x)" strokeWidth="1.2" />
-    <path d="M1 1V120" stroke="url(#er-fade-y)" strokeWidth="1.2" />
-    <path d="M6 6H96" stroke="url(#er-fade-x)" strokeWidth="0.5" />
-    <path d="M6 6V96" stroke="url(#er-fade-y)" strokeWidth="0.5" />
-    <path d={leaf(11, 11, Math.PI / 4, 22)} stroke="currentColor" strokeWidth="0.7" />
-    <path d="M11 11 26.5 26.5" stroke="currentColor" strokeWidth="0.5" />
-    <circle cx="1.5" cy="1.5" r="1.5" fill="currentColor" />
+    <path d="M1 1H170" stroke="url(#er-fade-x)" strokeWidth="1.4" />
+    <path d="M1 1V170" stroke="url(#er-fade-y)" strokeWidth="1.4" />
+    <path d="M6 6H150" stroke="url(#er-fade-x)" strokeWidth="0.5" />
+    <path d="M6 6V150" stroke="url(#er-fade-y)" strokeWidth="0.5" />
+    {/* The bracket across the corner, bowed towards it, its ends turned in; the lozenge in its lap. */}
+    <path d="M10 52C10 28 28 10 52 10" stroke="currentColor" strokeWidth="1" />
+    <path d="M16 50C16 31 31 16 50 16" stroke="currentColor" strokeWidth="0.5" />
+    <path d="M52 10c3 0 4 2.4 2.4 4M10 52c0 3 2.4 4 4 2.4" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" />
+    <path d="M22 13.5 30.5 22 22 30.5 13.5 22Z" stroke="currentColor" strokeWidth="0.8" />
+    <path d="M22 18.5 25.5 22 22 25.5 18.5 22Z" fill="currentColor" />
+    <circle cx="1.5" cy="1.5" r="1.8" fill="currentColor" />
+    {/* A sprig along each edge, the one down the side the mirror of the one along the top. */}
+    {[undefined, 'matrix(0 1 1 0 0 0)'].map((transform) => (
+      <g key={transform ?? 'top'} transform={transform}>
+        <path d={EDGE_SPRIG.wood} stroke="url(#er-fade-x)" strokeWidth="0.8" strokeLinecap="round" />
+        <path d={EDGE_SPRIG.leaves} fill="url(#er-fade-x)" />
+      </g>
+    ))}
   </svg>
 );
 
-/* ------------------------------------------------------------------ The map of the Lands Between */
-
-const MAP_W = 1600;
-const MAP_H = 1000;
+interface RootSpec {
+  /** Where it starts, on a 400×200 strip, and the way it sets off (radians, 0 = right, -π/2 = up). */
+  x: number;
+  y: number;
+  angle: number;
+  length: number;
+  /** Half-width at the start. */
+  width: number;
+  /** How it winds: the size of its turns, and where in them it starts. */
+  wind: number;
+  phase: number;
+  /** How hard the tip curls, and which way (sign). */
+  curl: number;
+}
 
 /**
- * A rough outline made a coastline: every edge is split again and again, its middle pushed aside by
- * chance in proportion to its length, so the line frays into bays and headlands at every scale.
+ * The roots of the Erdtree along the foot of the frame, on a 400×200 strip: thick as small trunks
+ * where they come in from the sides and up from below, winding over and under one another along
+ * the bottom, their tips curling.
  */
-const fray = (outline: Point[], seed: number, rounds = 5, rough = 0.32) => {
-  const next = random(seed);
-  let points = outline;
-  for (let round = 0; round < rounds; round++) {
-    const split: Point[] = [];
-    points.forEach(([x, y], i) => {
-      const [nx, ny] = points[(i + 1) % points.length];
-      const length = Math.hypot(nx - x, ny - y);
-      const push = (next() - 0.5) * length * rough;
-      split.push([x, y], [(x + nx) / 2 + (-(ny - y) / length) * push, (y + ny) / 2 + ((nx - x) / length) * push]);
-    });
-    points = split;
-  }
-  return smooth(points, true);
-};
-
-/** The land: the coast of the mainland with the Weeping Peninsula hanging from it, the sea to the west. */
-const LAND = fray(
-  [
-    [560, -400], [540, -40], [510, 60], [440, 130], [480, 220], [410, 300], [440, 390], [370, 470], [430, 550], [530, 610], [570, 690],
-    [530, 770], [580, 850], [650, 880], [690, 1000], [720, 1400], [820, 1400], [860, 1000], [880, 900], [950, 860], [1010, 940], [1040, 1400],
-    [2400, 1400], [2400, -400],
-  ],
-  2024,
-);
-
-/** The lake of Liurnia in the north of the land. */
-const LAKE = fray(
-  [[600, 190], [700, 150], [810, 180], [850, 260], [800, 330], [690, 350], [610, 310]],
-  311,
-  4,
-  0.28,
-);
-
-/** The cliffs of the plateau round the capital, as a line along their brink. */
-const CLIFFS: Point[] = Array.from({ length: 60 }, (_, i) => {
-  const t = i / 59;
-  const a = Math.PI * (0.95 - t * 1.05);
-  return [1250 + Math.cos(a) * 330 + Math.sin(t * 19) * 6, 300 + Math.sin(a) * 210 + Math.cos(t * 23) * 5];
-});
-
-/** Hachures down the cliffs: short strokes falling away from the brink, longer and shorter in turn. */
-const HACHURES = CLIFFS.slice(0, -1)
-  .flatMap(([x, y], i) => {
-    const [nx, ny] = CLIFFS[i + 1];
-    const length = Math.hypot(nx - x, ny - y);
-    const [ox, oy] = [(ny - y) / length, -(nx - x) / length];
-    return [0, 0.33, 0.66].map((t, j) => {
-      const px = x + (nx - x) * t;
-      const py = y + (ny - y) * t;
-      const reach = 10 + ((i * 3 + j) % 3) * 5;
-      return `M${f(px)} ${f(py)}l${f(-ox * reach)} ${f(-oy * reach)}`;
-    });
-  })
-  .join('');
-
-/** Woods of Limgrave: clumps of small trees, a crown on a stem each, as map-makers mark them. */
-const WOODS = (() => {
-  const next = random(88);
-  let d = '';
-  // Clumps of trees, each a scatter round its own centre.
-  const clumps: Point[] = [[640, 600], [760, 590], [700, 700], [800, 740], [620, 760]];
-  for (const [cx, cy] of clumps) {
-    for (let i = 0; i < 16; i++) {
-      const a = next() * Math.PI * 2;
-      const reach = Math.sqrt(next()) * 42;
-      const x = cx + Math.cos(a) * reach * 1.4;
-      const y = cy + Math.sin(a) * reach;
-      const r = 1.8 + next() * 1.4;
-      d += `M${f(x - r)} ${f(y)}a${f(r)} ${f(r)} 0 1 1 ${f(2 * r)} 0M${f(x)} ${f(y)}v${f(r * 0.9)}`;
-    }
-  }
-  return d;
-})();
-
-/** The dragon peaks of Caelid: a peak drawn for each, its far side hatched in shadow. */
-const PEAKS = (() => {
-  const next = random(530);
-  let d = '';
-  for (let i = 0; i < 9; i++) {
-    const x = 1360 + (i % 3) * 52 + next() * 22;
-    const y = 560 + Math.floor(i / 3) * 40 + next() * 12;
-    const h = 22 + next() * 16;
-    const w = 18 + next() * 8;
-    d += `M${f(x - w)} ${f(y)}L${f(x)} ${f(y - h)}L${f(x + w)} ${f(y)}`;
-    // Shadow on the far face: strokes from its edge down towards the foot of the ridge line.
-    for (let k = 1; k <= 3; k++) {
-      const t = k / 4;
-      d += `M${f(x + w * t)} ${f(y - h * (1 - t))}L${f(x + w * t * 0.45)} ${f(Math.min(y, y - h * (1 - t) + h * t * 0.55))}`;
-    }
-  }
-  return d;
-})();
-
-/** The sea marked as old charts mark it: a few short strokes of swell, scattered. */
-const SWELL = (() => {
-  const next = random(902);
-  let d = '';
-  for (let i = 0; i < 22; i++) {
-    const x = 40 + next() * 300;
-    const y = 220 + next() * 720;
-    d += `M${f(x)} ${f(y)}q6 -4 12 0t12 0`;
-  }
-  return d;
-})();
-
-/** Roads between the sites of grace, from the peninsula north to the capital and east to Caelid. */
-const ROADS =
-  'M760 990C750 940 770 900 740 860S700 780 690 720 650 640 640 580 600 470 640 420 760 400 860 420 1000 430 1110 380' +
-  'M690 720C760 700 860 690 960 700S1160 730 1300 760';
-
-/** Sites of grace along the roads. */
-const GRACES: Point[] = [[752, 930], [690, 720], [645, 560], [860, 420], [1110, 380], [960, 700], [1300, 760]];
-
-/** The river that drains the lake westwards to the sea, winding. */
-const RIVER = 'M606 292C584 300 566 322 548 334S512 344 498 362 470 388 444 398';
-
-/** The capital's walls as a map draws a great city: two rings of wall, towers on the outer, a dome in the middle. */
-const CAPITAL = (() => {
-  const wall = (r: number, seed: number) => fray(Array.from({ length: 10 }, (_, i): Point => [Math.cos((i / 10) * Math.PI * 2) * r, Math.sin((i / 10) * Math.PI * 2) * r * 0.7]), seed, 3, 0.12);
-  const towers = Array.from({ length: 12 }, (_, i) => {
-    const a = (i / 12) * Math.PI * 2;
-    const [x, y] = [Math.cos(a) * 48, Math.sin(a) * 48 * 0.7];
-    return `M${f(x - 2.5)} ${f(y + 3)}V${f(y - 3)}H${f(x + 2.5)}V${f(y + 3)}`;
-  }).join('');
-  const dome = 'M-12 0A12 12 0 0 1 12 0ZM0 -12V-24M-3 -20H3M-18 0H18';
-  return { walls: wall(48, 61) + wall(30, 62), towers, dome };
-})();
-
-/** A castle on the coast of Limgrave: a crenellated wall between two towers with pointed roofs, a gate in it. */
-const CASTLE = 'M-16 0V-12h4v-4h4v4h4v-4h4v4h4v-4h4v4h4V0' + 'M-24 0V-24l4 -8 4 8V0M16 0V-28l4 -9 4 9V0' + 'M-3 0v-6a3 3 0 0 1 6 0v6M-28 0H28';
-
-/** The academy on its island in the lake: the island's shore, a tower with a spire and a ring about it. */
-const ACADEMY = {
-  island: fray(Array.from({ length: 7 }, (_, i): Point => [Math.cos((i / 7) * Math.PI * 2) * 20, Math.sin((i / 7) * Math.PI * 2) * 12]), 73, 3, 0.2),
-  tower: 'M-4 2V-18l4 -10 4 10V2M-8 -10H8M-4 -4H4',
-};
-
-/** A volcano with smoke rising from its crater, its far slope hatched. */
-const VOLCANO =
-  'M-40 0L-12 -40H12L40 0M-12 -40A12 3.5 0 0 0 12 -40' +
-  'M2 -44C-6 -54 8 -60 0 -72S8 -88 -2 -100M-6 -44C-14 -52 -6 -60 -14 -68' +
-  'M18 -28 10 -6M26 -18 20 -2M14 -36 4 -16';
-
-/** The mountaintops of the giants: tall peaks, snow lying down to a ragged line on each. */
-const SNOW_PEAKS = (() => {
-  const next = random(1201);
-  let d = '';
-  for (let i = 0; i < 7; i++) {
-    const x = 1300 + i * 38 + next() * 18;
-    const y = 190 + (i % 2) * 30 + next() * 10;
-    const h = 52 + next() * 26;
-    const w = 26 + next() * 10;
-    d += `M${f(x - w)} ${f(y)}L${f(x)} ${f(y - h)}L${f(x + w)} ${f(y)}`;
-    // The snow line, a zig-zag across the peak a third of the way down.
-    const sy = y - h * 0.62;
-    const sw = w * 0.38;
-    d += `M${f(x - sw)} ${f(sy)}l${f(sw * 0.4)} 5l${f(sw * 0.35)} -4l${f(sw * 0.45)} 6l${f(sw * 0.4)} -5l${f(sw * 0.4)} 4`;
-  }
-  return d;
-})();
-
-/** The scarlet rot's marshes in Caelid: tufts of reed over a line of standing water, scattered. */
-const MARSH = (() => {
-  const next = random(4004);
-  let d = '';
-  for (let i = 0; i < 26; i++) {
-    const x = 1150 + next() * 300;
-    const y = 830 + next() * 110;
-    d += `M${f(x)} ${f(y)}h14M${f(x + 3)} ${f(y)}v-5M${f(x + 7)} ${f(y)}v-8M${f(x + 11)} ${f(y)}v-5`;
-  }
-  return d;
-})();
-
-/** The names of the lands and places, as the map sets them: spaced capitals, the lesser smaller. */
-const NAMES: { x: number; y: number; size: number; text: string }[] = [
-  { x: 720, y: 650, size: 22, text: 'Лимгрейв' },
-  { x: 700, y: 262, size: 15, text: 'Озеро Лиурния' },
-  { x: 770, y: 925, size: 12, text: 'Полуостров Плача' },
-  { x: 1460, y: 768, size: 22, text: 'Каэлид' },
-  { x: 1300, y: 805, size: 11, text: 'Топи алой гнили' },
-  { x: 1110, y: 285, size: 16, text: 'Плато Альтус' },
-  { x: 1250, y: 395, size: 13, text: 'Лейнделл, Королевская столица' },
-  { x: 940, y: 225, size: 11, text: 'Гора Гельмир' },
-  { x: 1420, y: 262, size: 13, text: 'Вершины Великанов' },
-  { x: 530, y: 545, size: 11, text: 'Грозовая Завеса' },
-  { x: 1440, y: 680, size: 11, text: 'Драконьи пики' },
+const ROOTS: RootSpec[] = [
+  { x: -40, y: 168, angle: -0.04, length: 330, width: 15, wind: 0.32, phase: 0, curl: -1.9 },
+  { x: 440, y: 176, angle: Math.PI + 0.04, length: 320, width: 14, wind: 0.34, phase: 2.4, curl: 2 },
+  { x: -30, y: 196, angle: -0.12, length: 250, width: 11, wind: 0.4, phase: 4.6, curl: -2.4 },
+  { x: 430, y: 200, angle: Math.PI + 0.14, length: 230, width: 10, wind: 0.42, phase: 1.1, curl: 2.3 },
+  { x: 150, y: 222, angle: -0.6, length: 170, width: 10, wind: 0.5, phase: 3.3, curl: -2.6 },
+  { x: 270, y: 224, angle: -2.6, length: 160, width: 9, wind: 0.5, phase: 5.8, curl: 2.6 },
 ];
 
 /**
- * The map of the Lands Between as the Tarnished carry it, engraved in gold on the dark: the coast
- * with the sea lined along it and its swell marked as old charts do; the lake of Liurnia with the
- * academy on its island and the river out of it; a castle on the coast of Limgrave among its woods;
- * the plateau's cliffs hatched, a smoking volcano, the snowy mountaintops of the giants; the walled
- * capital; mountains and the rot's marshes in Caelid; roads in dashes, the sites of grace, the names
- * of the lands — and the marker of where you stand.
+ * One root as a tapering shape: its spine winds this way and that in turns of two sizes, and curls
+ * at the tip; the outline stands off the spine by the root's width, thinning to the tip. Along it
+ * runs the grain of the bark, two lines inside the outline that run out before the tip.
  */
-// Unwired scaffolding for the Elden Ring setting — drop the `_` when it is placed on screen.
-const _LandsMap: React.FC<{ names?: boolean }> = ({ names = true }) => (
-  <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden className="h-full w-full">
-    <defs>
-      <clipPath id="er-map-lake">
-        <path d={LAKE} />
-      </clipPath>
-    </defs>
-    {/* The sea lined along the coast: each pair of strokes, the dark one inside the gold, leaves two fine lines. */}
-    {[54, 36, 20].map((w) => (
-      <g key={w}>
-        <path d={LAND} strokeWidth={w + 1} opacity={0.5} />
-        <path d={LAND} strokeWidth={w} stroke="rgb(var(--c-bg))" />
+const root = ({ x, y, angle, length, width, wind, phase, curl }: RootSpec) => {
+  const SAMPLES = 72;
+  const step = length / SAMPLES;
+  const spine: { x: number; y: number; nx: number; ny: number; w: number }[] = [];
+  let px = x;
+  let py = y;
+  for (let i = 0; i <= SAMPLES; i++) {
+    const t = i / SAMPLES;
+    const theta = angle + wind * Math.sin(phase + t * 6) * (1 - t * 0.4) + wind * 0.4 * Math.sin(phase * 2 + t * 14) + curl * t ** 3.4;
+    spine.push({ x: px, y: py, nx: -Math.sin(theta), ny: Math.cos(theta), w: width * (1 - t) ** 0.75 + 0.6 });
+    px += Math.cos(theta) * step;
+    py += Math.sin(theta) * step;
+  }
+  const side = (k: number, from = 0, to = SAMPLES) =>
+    spine.slice(from, to + 1).map((p) => `${f(p.x + p.nx * p.w * k)} ${f(p.y + p.ny * p.w * k)}`);
+  const outline = `M${side(1).join('L')}L${side(-1).reverse().join('L')}Z`;
+  const grain = `M${side(0.45, 0, 54).join('L')}M${side(-0.3, 4, 46).join('L')}M${side(0.05, 10, 30).join('L')}`;
+  return { outline, grain };
+};
+
+const ROOT_PATHS = ROOTS.map(root);
+
+/**
+ * The roots of the Erdtree along the foot of the frame, as the kraken rises at Lovecraft's: small
+ * trunks outlined in gold over the dark, winding over and under one another, the grain of the bark
+ * along them.
+ */
+const Roots: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 400 200" fill="none" stroke="currentColor" strokeLinejoin="round" aria-hidden className={className}>
+    {ROOT_PATHS.map(({ outline, grain }, i) => (
+      <g key={i}>
+        <path d={outline} fill="rgb(var(--c-bg-deep))" strokeWidth="1.2" />
+        <path d={grain} strokeWidth="0.55" opacity="0.65" />
       </g>
     ))}
-    <path d={SWELL} strokeWidth="0.6" opacity="0.6" />
-    <path d={LAND} fill="rgb(var(--c-bg))" stroke="none" />
-    <path d={LAND} strokeWidth="1.3" />
-    <g clipPath="url(#er-map-lake)">
-      {[40, 24, 10].map((w) => (
-        <g key={w}>
-          <path d={LAKE} strokeWidth={w + 1} opacity={0.5} />
-          <path d={LAKE} strokeWidth={w} stroke="rgb(var(--c-bg))" />
-        </g>
-      ))}
-    </g>
-    <path d={LAKE} strokeWidth="1" />
-    <path d={RIVER} strokeWidth="4.2" />
-    <path d={RIVER} strokeWidth="2.8" stroke="rgb(var(--c-bg))" />
-    <g transform="translate(790 205)">
-      <path d={ACADEMY.island} fill="rgb(var(--c-bg))" strokeWidth="0.9" />
-      <path d={ACADEMY.tower} strokeWidth="0.9" />
-    </g>
-    <path d={smooth(CLIFFS)} strokeWidth="1.1" />
-    <path d={HACHURES} strokeWidth="0.6" opacity="0.8" />
-    <path d={WOODS} strokeWidth="0.6" opacity="0.75" />
-    <path d={PEAKS} strokeWidth="0.8" opacity="0.85" />
-    <path d={SNOW_PEAKS} strokeWidth="0.9" opacity="0.9" />
-    <path d={MARSH} strokeWidth="0.6" opacity="0.75" />
-    <g transform="translate(940 205)">
-      <path d={VOLCANO} strokeWidth="0.9" />
-    </g>
-    <g transform="translate(520 520)">
-      <path d={CASTLE} strokeWidth="0.9" />
-    </g>
-    <g transform="translate(1250 330)">
-      <path d={CAPITAL.walls} strokeWidth="0.9" />
-      <path d={CAPITAL.towers} strokeWidth="0.8" />
-      <path d={CAPITAL.dome} strokeWidth="0.9" />
-    </g>
-    <path d={ROADS} strokeWidth="0.9" strokeDasharray="6 7" opacity="0.85" />
-    {GRACES.map(([x, y], i) => (
-      <g key={i} transform={`translate(${x} ${y})`} className="er-map__grace" style={{ animationDelay: `${-i * 1.3}s` }}>
-        <circle r="2.4" fill="currentColor" stroke="none" />
-        <path d={Array.from({ length: 8 }, (_, k) => {
-          const a = (k / 8) * Math.PI * 2;
-          const outer = k % 2 ? 7 : 10;
-          return `M${f(Math.cos(a) * 4.5)} ${f(Math.sin(a) * 4.5)}L${f(Math.cos(a) * outer)} ${f(Math.sin(a) * outer)}`;
-        }).join('')} strokeWidth="0.8" />
-      </g>
-    ))}
-    <g transform="translate(700 800)" className="er-map__you">
-      <circle r="14" strokeWidth="0.8" className="er-map__you-ring" />
-      <path d="M0 -8 6 7 0 3 -6 7Z" fill="currentColor" stroke="none" />
-    </g>
-    {names &&
-      NAMES.map(({ x, y, size, text }) => (
-        <text
-          key={text}
-          x={x}
-          y={y}
-          textAnchor="middle"
-          fontSize={size}
-          className="er-map__name"
-          fill="currentColor"
-          stroke="none"
-        >
-          {text}
-        </text>
-      ))}
-    {names && (
-      <g className="er-map__name" fill="currentColor" stroke="none" textAnchor="middle">
-        <text x="200" y="150" fontSize="30">
-          Междуземье
-        </text>
-        <path d="M80 168H320M110 176H290" stroke="currentColor" strokeWidth="0.6" fill="none" />
-      </g>
-    )}
   </svg>
 );
 
-/** Motes of gold rising through the dark, each on its own drift and time. */
-// Unwired scaffolding for the Elden Ring setting — drop the `_` when it is placed on screen.
-const _MOTES = (() => {
+/**
+ * Motes of gold rising through the dark at three depths: far ones many, fine and slow to cross the
+ * screen; nearer ones fewer and larger; the nearest few big, soft and out of focus, drifting most.
+ */
+const MOTE_DEPTHS = [
+  { depth: 'far', count: 10, size: [1, 1.6], time: [26, 40] },
+  { depth: 'mid', count: 8, size: [1.8, 2.8], time: [18, 28] },
+  { depth: 'near', count: 3, size: [5, 9], time: [14, 22] },
+] as const;
+
+const MOTES = (() => {
   const next = random(617);
-  return Array.from({ length: 8 }, () => ({
-    left: `${(next() * 100).toFixed(1)}%`,
-    size: 1 + Math.round(next() * 1.5),
-    duration: `${(16 + next() * 16).toFixed(1)}s`,
-    delay: `${(-next() * 32).toFixed(1)}s`,
-    drift: `${Math.round((next() - 0.5) * 90)}px`,
-  }));
+  return MOTE_DEPTHS.flatMap(({ depth, count, size, time }) =>
+    Array.from({ length: count }, () => ({
+      depth,
+      left: `${(next() * 100).toFixed(1)}%`,
+      size: size[0] + next() * (size[1] - size[0]),
+      duration: `${(time[0] + next() * (time[1] - time[0])).toFixed(1)}s`,
+      delay: `${(-next() * time[1]).toFixed(1)}s`,
+      // Which way it drifts as it rises; how far is the depth's (fixed in the keyframes, so the
+      // compositor can run them).
+      side: next() < 0.5 ? 'l' : 'r',
+    })),
+  );
 })();
 
 /** Leaves of the Erdtree drifting down, each on its own time, drift and tumble. */
 const LEAVES = (() => {
   const next = random(2203);
-  return Array.from({ length: 13 }, () => ({
+  return Array.from({ length: 6 }, () => ({
     left: `${(4 + next() * 92).toFixed(1)}%`,
     size: 4 + Math.round(next() * 3),
-    duration: `${(20 + next() * 18).toFixed(1)}s`,
+    duration: `${(22 + next() * 18).toFixed(1)}s`,
     delay: `${(-next() * 40).toFixed(1)}s`,
-    drift: `${Math.round(-60 - next() * 150)}px`,
+    // How far aside it drifts as it falls: a little or a long way.
+    reach: next() < 0.5 ? 'short' : 'long',
     spin: `${(4 + next() * 3.5).toFixed(1)}s`,
   }));
 })();
@@ -519,12 +298,13 @@ const Leaf: React.FC = () => (
 );
 
 /**
- * Behind the interface: a warm depth of grace, and the leaves of the Erdtree drifting down through
- * it, each tumbling in perspective as it falls.
+ * Behind the interface: a near-black dark, and light falling into it from high at the right in
+ * slow shafts, as the Erdtree's light falls through its crown; a faint haze drifting; motes of gold rising at three depths and leaves of the tree
+ * drifting down through it; darkness at the edges and the screen set in a gilt frame at its corners.
  */
-const Backdrop: React.FC<{ frame?: boolean }> = () => (
+const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => (
   <div className="absolute inset-0 overflow-hidden text-frame">
-    <svg width="0" height="0" aria-hidden>
+    <svg width="0" height="0" className="absolute" aria-hidden>
       <defs>
         <linearGradient id="er-leaf-gold" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="rgb(255 234 170)" />
@@ -532,67 +312,137 @@ const Backdrop: React.FC<{ frame?: boolean }> = () => (
         </linearGradient>
       </defs>
     </svg>
-    <div className="er-sky absolute inset-0" />
-    <div className="er-grace-soft absolute inset-0" />
-    {LEAVES.map(({ left, size, duration, delay, drift, spin }) => (
-      <span key={left + delay} className="er-leaf-fall" style={{ animationDuration: duration, animationDelay: delay, ['--drift' as string]: drift }}>
+    <svg width="0" height="0" className="absolute" aria-hidden>
+      <Filters />
+    </svg>
+    <div className="er-depth absolute inset-0" />
+    <div className="er-haze absolute inset-[-20%]" />
+    <Roots className="er-roots absolute inset-x-0 bottom-0 w-full" />
+    <div className="er-shafts absolute inset-0">
+      <i />
+      <i />
+    </div>
+    {/* One animation to a mote, on fixed keyframes: rising and drifting its own way. */}
+    {MOTES.map(({ depth, left, size, duration, delay, side }) => (
+      <i
+        key={left + delay}
+        className={`er-mote er-mote--${depth} er-mote--${side}`}
+        style={{ left, width: size, height: size, animationDuration: duration, animationDelay: delay }}
+      />
+    ))}
+    {LEAVES.map(({ left, size, duration, delay, reach, spin }) => (
+      <span key={left + delay} className={`er-leaf-fall er-leaf-fall--${reach}`} style={{ animationDuration: duration, animationDelay: delay }}>
         <span className="er-leaf" style={{ left, width: size * 1.3, height: size * 1.9, animationDuration: spin, animationDelay: delay }}>
           <Leaf />
         </span>
       </span>
     ))}
-    <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 240px 30px rgb(6 4 2 / 0.82)' }} />
+    <div className="er-vignette absolute inset-0" />
     <div className="er-grain absolute inset-[-10%]" />
+    {frame &&
+      (['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map((position) => (
+        <div key={position} className={`er-screen-corner absolute m-4 ${position}`}>
+          <ScreenCorner />
+        </div>
+      ))}
   </div>
 );
 
-const READY_W = 272;
-const READY_H = 36;
+/** Runes rising off the bar when a level can be taken: where along it, and when. */
+const READY_RUNES = (() => {
+  const next = random(808);
+  return Array.from({ length: 16 }, (_, i) => ({
+    left: `${(3 + (i / 15) * 94 + (next() - 0.5) * 4).toFixed(1)}%`,
+    delay: `${(-next() * 2.8).toFixed(2)}s`,
+    duration: `${(2.2 + next() * 1.2).toFixed(2)}s`,
+  }));
+})();
 
 /**
- * The level is ready, as at a site of grace: gold light runs along the bar, and above its middle a
- * grace kindles, its wisps curling up, motes rising from it.
+ * The level is ready, as runes are held enough to rest at grace and grow: liquid gold runs slowly
+ * along the whole bar, the bar breathes a warm light, runes rise off it all along and fade, and at
+ * its end a lozenge of gold pulses. Laid out in the bar's own width, so it reads on any bar.
  */
-const LevelReady: React.FC = () => {
-  const mid = READY_H / 2;
-  return (
-    <svg viewBox={`0 0 ${READY_W} ${READY_H}`} preserveAspectRatio="xMidYMid meet" fill="none" aria-hidden className="er-ready">
-      <defs>
-        <clipPath id="er-ready-bar">
-          <rect x="6" y={mid - 3} width={READY_W - 12} height="6" />
-        </clipPath>
-        <linearGradient id="er-ready-light" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0" stopColor="rgb(var(--c-grace))" stopOpacity="0" />
-          <stop offset="0.5" stopColor="rgb(255 246 214)" stopOpacity="0.95" />
-          <stop offset="1" stopColor="rgb(var(--c-grace))" stopOpacity="0" />
-        </linearGradient>
-        <radialGradient id="er-ready-flame">
-          <stop offset="0" stopColor="rgb(255 248 220)" />
-          <stop offset="0.4" stopColor="rgb(var(--c-grace))" stopOpacity="0.8" />
-          <stop offset="1" stopColor="rgb(var(--c-grace))" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <g clipPath="url(#er-ready-bar)">
-        <rect className="er-ready__light" x="-90" y={mid - 3} width="90" height="6" fill="url(#er-ready-light)" />
-      </g>
-      <g transform={`translate(${READY_W / 2} ${mid - 5})`}>
-        <ellipse className="er-ready__flame" rx="9" ry="7" fill="url(#er-ready-flame)" />
-        <path className="er-ready__wisp" d="M0 0C-2 -4 2 -7 0 -11" stroke="rgb(var(--c-grace))" strokeWidth="0.7" strokeLinecap="round" />
-        <path className="er-ready__wisp er-ready__wisp--late" d="M-2 0C-5 -3 -3 -6 -5 -10" stroke="rgb(var(--c-grace))" strokeWidth="0.6" strokeLinecap="round" />
-        <path className="er-ready__wisp er-ready__wisp--later" d="M2 0C5 -3 3 -6 5 -9" stroke="rgb(var(--c-grace))" strokeWidth="0.6" strokeLinecap="round" />
-      </g>
-    </svg>
-  );
+const LevelReady: React.FC = () => (
+  <span className="er-ready" aria-hidden>
+    <span className="er-ready__bar">
+      <i className="er-ready__sheen" />
+    </span>
+    {READY_RUNES.map(({ left, delay, duration }) => (
+      <i key={left} className="er-ready__rune" style={{ left, animationDelay: delay, animationDuration: duration }} />
+    ))}
+    <i className="er-ready__key" />
+  </span>
+);
+
+/** An arch pointed at the top: two arcs of `radius` struck from the far springers, on jambs down to `foot`. */
+const pointedArch = (half: number, spring: number, foot: number, radius: number) => {
+  const apex = spring - Math.sqrt(radius ** 2 - (radius - half) ** 2);
+  return `M${-half} ${foot}V${spring}A${radius} ${radius} 0 0 1 0 ${f(apex)}A${radius} ${radius} 0 0 1 ${half} ${spring}V${foot}`;
 };
 
+/** A sprig climbing a jamb of the arch, leaves on both sides, thinning as it rises. */
+const JAMB_SPRIG = {
+  wood: 'M-80 66C-79 44-81 22-80 0S-79 -24-80 -34',
+  leaves: Array.from({ length: 6 }, (_, i) => {
+    const y = 58 - i * 17;
+    const side = i % 2 ? 1 : -1;
+    return leaf(-80, y, -Math.PI / 2 + side * 0.55, 9 - i * 0.8);
+  }).join(''),
+};
+
+/** The fog of a boss's gate: pale swirls, thick and thin by turns, on a tile that repeats seamlessly. */
+const GATE_FOG =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.011 0.016' numOctaves='3' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.97 0 0 0 0 0.9 0 0 0 2.6 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E";
+
+/** The doorway of the world card's arch, as a mask the size of the arch's box. */
+const DOOR_MASK = `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='-100 -150 200 230' preserveAspectRatio='none'><path fill='white' d='${pointedArch(64, -36, 66, 96)}Z'/></svg>`,
+)}")`;
+
 /**
- * The sigil of the Ring round the world card's emblem, large and fine; looked at, its lines draw
- * themselves in gold one after another.
+ * Round the world card's emblem, a gilt arch pointed as the doors of the royal capital are: a double
+ * hairline on its jambs and arch, a lozenge for its keystone, a sprig of the Erdtree climbing each
+ * jamb, a step under it; and inside, rising from its foot, the light of a grace. When the world is
+ * chosen, the doorway fills with the wall of fog that stands before a boss.
  */
 const WorldSigil: React.FC = () => (
-  <svg viewBox="-110 -140 220 280" fill="none" aria-hidden className="er-sigil">
-    <g className="er-sigil__lines">
-      <RingSigil r={96} strokeWidth={0.9} />
+  <>
+    {/* The fog is laid over the doorway as page layers, not drawn in the arch, so it rises on the compositor. */}
+    <span className="er-arch__fog" style={{ maskImage: DOOR_MASK, WebkitMaskImage: DOOR_MASK, ['--fog' as string]: `url("${GATE_FOG}")` }}>
+      <i />
+      <i />
+    </span>
+    <WorldArch />
+  </>
+);
+
+const WorldArch: React.FC = () => (
+  <svg viewBox="-100 -150 200 230" fill="none" aria-hidden className="er-arch">
+    <defs>
+      <radialGradient id="er-arch-grace" cx="0" cy="66" r="110" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 66) scale(1 1.3) translate(0 -66)">
+        <stop offset="0" stopColor="rgb(255 226 160)" stopOpacity="0.55" />
+        <stop offset="0.4" stopColor="rgb(255 200 110)" stopOpacity="0.16" />
+        <stop offset="1" stopColor="rgb(255 200 110)" stopOpacity="0" />
+      </radialGradient>
+    </defs>
+    <path d={`${pointedArch(64, -36, 66, 96)}Z`} fill="url(#er-arch-grace)" className="er-arch__grace" />
+    <g stroke="currentColor" className="er-arch__lines">
+      <path d={pointedArch(70, -36, 66, 104)} strokeWidth="1.3" />
+      <path d={pointedArch(64, -36, 66, 96)} strokeWidth="0.5" />
+      <path d="M-90 66H90M-84 72H84" strokeWidth="0.8" />
+      {[-1, 1].map((side) => (
+        <g key={side} transform={side > 0 ? 'scale(-1 1)' : undefined}>
+          <path d={JAMB_SPRIG.wood} strokeWidth="0.7" strokeLinecap="round" />
+          <path d={JAMB_SPRIG.leaves} fill="currentColor" stroke="none" />
+          <path d="M-70 -36H-58" strokeWidth="0.7" />
+        </g>
+      ))}
+    </g>
+    <g transform={`translate(0 ${f(-36 - Math.sqrt(104 ** 2 - 34 ** 2))})`} className="er-arch__key">
+      <path d="M0 -9 7 0 0 9 -7 0Z" fill="rgb(var(--c-bg))" stroke="currentColor" strokeWidth="0.9" />
+      <path d="M0 -4 3 0 0 4 -3 0Z" fill="currentColor" />
+      <path d="M0 -9V-20" stroke="currentColor" strokeWidth="0.7" />
     </g>
   </svg>
 );

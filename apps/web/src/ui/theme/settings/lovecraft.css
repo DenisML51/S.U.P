@@ -585,7 +585,26 @@
 
   /* ---------------------------------------------------------------- Combat */
   .ui-hud-slot,
-  .ui-hud-slot--tile { border-radius: 2px; }
+  /* An entry's picture is a plate from a museum's catalogue: a card of yellowed stock in a fine brass
+     frame, foxed, the picture printed in black ink as an engraving is; its colour is the tab in the
+     corner, as a card is marked in the index. */
+  .ui-hud-slot--tile {
+    color: rgb(var(--c-paper-ink) / 0.88);
+    border-radius: 1px;
+    border-color: rgb(var(--c-frame));
+    background:
+      linear-gradient(135deg, var(--tile-color) 0 8px, transparent 8.5px) top left / 14px 14px no-repeat,
+      var(--foxing),
+      radial-gradient(ellipse 70% 60% at 40% 30%, rgb(255 246 220 / 0.22), transparent 70%),
+      radial-gradient(ellipse at center, rgb(var(--c-paper)), color-mix(in srgb, rgb(var(--c-paper)) 70%, rgb(var(--c-paper-muted))) 100%);
+    box-shadow:
+      inset 0 0 0 2px rgb(var(--c-paper)),
+      inset 0 0 0 3px rgb(var(--c-paper-ink) / 0.45),
+      inset 0 0 12px rgb(var(--c-paper-ink) / 0.35),
+      0 2px 4px rgb(0 0 0 / 0.6);
+  }
+  .ui-hud-slot--tile .ui-hud-slot__icon { filter: drop-shadow(0 0.5px 0 rgb(255 246 220 / 0.5)); }
+  .ui-hud-slot--tile:hover { border-color: rgb(var(--c-frame-bright)); box-shadow: inset 0 0 0 2px rgb(var(--c-paper)), inset 0 0 0 3px rgb(var(--c-paper-ink) / 0.6), inset 0 0 12px rgb(var(--c-eldritch) / 0.35), 0 0 10px -2px rgb(var(--c-eldritch) / 0.5); }
   .ui-hud-slot:not(.ui-hud-slot--tile) {
     background: rgb(var(--c-inset));
     border-color: rgb(var(--c-frame) / 0.6);

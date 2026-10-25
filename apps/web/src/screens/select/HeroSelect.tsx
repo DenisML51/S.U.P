@@ -126,7 +126,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
 
       <div className="relative z-10 flex h-full flex-col">
         <motion.header
-          className="flex items-center justify-between px-24 pt-10"
+          className="flex items-center justify-between px-24 pt-14"
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.15 } }}
           exit={{ opacity: 0, y: -12, transition: { duration: 0.25 } }}
@@ -161,7 +161,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
         </main>
 
         <motion.footer
-          className="flex items-center justify-between gap-6 px-24 pb-10"
+          className="flex items-center justify-between gap-6 px-24 pb-14"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.2 } }}
           exit={{ opacity: 0, y: 12, transition: { duration: 0.25 } }}

@@ -548,6 +548,35 @@
   }
   .ui-hud-slot:hover,
   .ui-hud-slot[data-active] { border-color: rgb(var(--c-frame-bright)); box-shadow: inset 0 0 16px rgb(var(--c-grace) / 0.22), 0 0 12px -2px rgb(var(--c-grace) / 0.4); }
+  /* An entry's picture as the game's own menus show an item or an incantation: a dark sunken cell
+     in a fine gilt frame with a hairline inside it, the picture in pale gold on it. The entry's
+     colour is only the light welling from the foot of the cell, so the kinds stay tellable apart
+     without the tile being painted. Under the hand the gilt brightens and the light rises. */
+  .ui-hud-slot--tile {
+    border-radius: 0;
+    color: rgb(240 226 192);
+    border: 1px solid rgb(var(--c-frame) / 0.7);
+    background:
+      radial-gradient(90% 60% at 50% 104%, color-mix(in srgb, var(--tile-color) 42%, transparent), transparent 72%),
+      radial-gradient(120% 100% at 50% 28%, rgb(var(--c-surface-2)), rgb(var(--c-bg-deep)) 78%);
+    box-shadow:
+      inset 0 0 0 2px rgb(var(--c-bg-deep)),
+      inset 0 0 0 3px rgb(var(--c-frame) / 0.22),
+      inset 0 0 14px rgb(0 0 0 / 0.75),
+      0 2px 5px rgb(0 0 0 / 0.6);
+    transition: border-color 200ms, box-shadow 250ms;
+  }
+  .ui-hud-slot--tile .ui-hud-slot__icon { filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.95)) drop-shadow(0 0 6px rgb(var(--c-grace) / 0.3)); }
+  .ui-hud-slot--tile:hover,
+  .ui-hud-slot--tile[data-active] {
+    border-color: rgb(var(--c-frame-bright));
+    box-shadow:
+      inset 0 0 0 2px rgb(var(--c-bg-deep)),
+      inset 0 0 0 3px rgb(var(--c-frame-bright) / 0.4),
+      inset 0 -12px 18px -6px rgb(var(--c-grace) / 0.3),
+      0 0 12px -2px rgb(var(--c-grace) / 0.45);
+  }
+  .ui-hud-slot--tile:hover .ui-hud-slot__icon { filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.95)) drop-shadow(0 0 8px rgb(var(--c-grace) / 0.6)); }
   .ui-hud-panel__head { font-family: var(--setting-display); font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(var(--c-frame-bright)); }
   .ui-hud-portrait { border-color: rgb(var(--c-frame)); }
 
@@ -587,44 +616,107 @@
   .er-readout__level { font-family: var(--setting-display); font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgb(var(--c-ink-muted)); }
 
   /* ---------------------------------------------------------------- Atmosphere (backdrop) */
-  /* The umber dusk of the Lands Between: deep dark overhead, warming towards the horizon where the
-     Erdtree stands, a cold earth-dark at the foot. */
-  .er-sky {
+  /* Near black, barely warm: the dark of the Lands Between at night. High at the right, just off
+     the screen, the light the shafts fall from — a bloom of clean gold at the corner. */
+  .er-depth {
     background:
-      linear-gradient(185deg, rgb(8 7 5) 2%, rgb(18 14 9) 34%, rgb(32 23 13) 66%, rgb(19 14 9) 88%, rgb(9 7 5));
+      radial-gradient(34% 42% at 94% -6%, rgb(255 214 140 / 0.2), rgb(255 190 100 / 0.06) 42%, transparent 72%),
+      radial-gradient(70% 70% at 84% 6%, rgb(var(--c-grace) / 0.05), transparent 70%),
+      linear-gradient(180deg, rgb(7 6 5), rgb(12 10 8) 55%, rgb(7 6 5));
   }
-  /* A soft warm depth of grace behind the interface — nothing more, so it never looks crude. */
-  .er-grace-soft {
+  /* Shafts of light falling from that corner, as through the crown of a great tree: each a bright
+     core in a soft fall-off, added to the dark as light is (screen), fading as they reach down; two
+     sets breathing out of step, so the light shifts without ever moving. */
+  .er-shafts { pointer-events: none; mix-blend-mode: screen; mask-image: linear-gradient(200deg, #000 4%, rgb(0 0 0 / 0.5) 34%, transparent 66%); }
+  .er-shafts > i {
+    position: absolute;
+    inset: -10%;
+    filter: blur(5px);
+    background: conic-gradient(
+      from 182deg at 90% -16%,
+      transparent 0deg,
+      transparent 3.4deg,
+      rgb(255 222 160 / 0.043) 5.0deg,
+      rgb(255 222 160 / 0.130) 6.0deg,
+      rgb(255 222 160 / 0.043) 7.0deg,
+      transparent 8.6deg,
+      transparent 11.4deg,
+      rgb(255 222 160 / 0.053) 13.6deg,
+      rgb(255 222 160 / 0.160) 15.0deg,
+      rgb(255 222 160 / 0.053) 16.4deg,
+      transparent 18.6deg,
+      transparent 23.7deg,
+      rgb(255 222 160 / 0.030) 25.1deg,
+      rgb(255 222 160 / 0.090) 26.0deg,
+      rgb(255 222 160 / 0.030) 26.9deg,
+      transparent 28.3deg,
+      transparent 360deg
+    );
+    animation: er-shaft 13s ease-in-out infinite;
+  }
+  .er-shafts > i + i {
+    background: conic-gradient(
+      from 182deg at 90% -16%,
+      transparent 0deg,
+      transparent 7.9deg,
+      rgb(255 228 176 / 0.033) 9.2deg,
+      rgb(255 228 176 / 0.100) 10.0deg,
+      rgb(255 228 176 / 0.033) 10.8deg,
+      transparent 12.1deg,
+      transparent 16.9deg,
+      rgb(255 228 176 / 0.047) 18.8deg,
+      rgb(255 228 176 / 0.140) 20.0deg,
+      rgb(255 228 176 / 0.047) 21.2deg,
+      transparent 23.1deg,
+      transparent 28.9deg,
+      rgb(255 228 176 / 0.023) 30.2deg,
+      rgb(255 228 176 / 0.070) 31.0deg,
+      rgb(255 228 176 / 0.023) 31.8deg,
+      transparent 33.1deg,
+      transparent 360deg
+    );
+    animation-delay: -6.5s;
+  }
+  /* The faintest haze low down, neutral, drifting: air, not colour. */
+  .er-haze {
     background:
-      radial-gradient(46% 42% at 50% 36%, rgb(var(--c-grace) / 0.1), transparent 62%),
-      radial-gradient(90% 60% at 50% 118%, rgb(44 28 13 / 0.45), transparent 72%);
+      radial-gradient(40% 18% at 30% 82%, rgb(140 128 108 / 0.05), transparent 70%),
+      radial-gradient(46% 20% at 74% 90%, rgb(140 128 108 / 0.045), transparent 70%);
+    filter: blur(20px);
+    animation: er-haze 48s ease-in-out infinite alternate;
   }
-  /* The map engraved in gold, seen in the dark; its names in the setting's capitals, spaced wide. */
-  .er-map { color: rgb(206 172 104); opacity: 0.32; }
-  .er-map__name { font-family: var(--setting-display); letter-spacing: 0.32em; text-transform: uppercase; }
-  /* Sites of grace kindle in turn; the marker of where you stand pulses. */
-  .er-map__grace { color: rgb(255 226 160); animation: er-grace 7s ease-in-out infinite; }
-  .er-map__you { color: rgb(240 222 190); }
-  .er-map__you-ring { transform-box: fill-box; transform-origin: center; animation: er-you 3s ease-out infinite; }
-  /* The fog of the unexplored: soft banks drifting slowly over the land. */
-  .er-fog {
+  /* The roots of the Erdtree, outlined in the gilt of the frame. They grow only along the foot of a
+     world card: on the screen the gilt corners stand there. */
+  .er-roots { display: none; color: rgb(214 176 104); pointer-events: none; }
+  /* Darkness gathering at the edges, so the content always reads over it. */
+  .er-vignette {
     background:
-      radial-gradient(22% 18% at 62% 30%, rgb(150 132 104 / 0.1), transparent 70%),
-      radial-gradient(26% 20% at 88% 70%, rgb(150 132 104 / 0.12), transparent 70%),
-      radial-gradient(30% 22% at 20% 78%, rgb(140 124 100 / 0.08), transparent 70%);
-    filter: blur(14px);
-    animation: er-drift 60s ease-in-out infinite alternate;
+      linear-gradient(0deg, rgb(4 4 3 / 0.5), transparent 24%),
+      radial-gradient(ellipse 88% 82% at 50% 45%, transparent 52%, rgb(3 3 2 / 0.85));
   }
-  /* Motes of gold rising through the dark and drifting aside. */
+  /* Motes of gold rising through the dark at three depths; the nearest are out of focus. One
+     animation each, on fixed keyframes (no custom properties), rising and drifting its own way. */
   .er-mote {
     position: absolute;
-    bottom: -2%;
+    bottom: -3%;
+    display: block;
     border-radius: 50%;
     background: rgb(255 230 170);
     box-shadow: 0 0 5px rgb(var(--c-grace) / 0.9);
     opacity: 0;
-    animation: er-mote linear infinite;
+    will-change: transform, opacity;
+    animation: er-mote-mid-l linear infinite;
   }
+  .er-mote--mid.er-mote--r { animation-name: er-mote-mid-r; }
+  .er-mote--far { box-shadow: 0 0 3px rgb(var(--c-grace) / 0.8); animation-name: er-mote-far-l; }
+  .er-mote--far.er-mote--r { animation-name: er-mote-far-r; }
+  .er-mote--near {
+    background: radial-gradient(circle, rgb(255 236 186), rgb(255 210 130 / 0.5) 45%, transparent 72%);
+    box-shadow: none;
+    filter: blur(1.5px);
+    animation-name: er-mote-near-l;
+  }
+  .er-mote--near.er-mote--r { animation-name: er-mote-near-r; }
   /* Leaves of the Erdtree: each falls the height of the screen in its own layer, drifting aside, and
      tumbles in the air as it goes — in perspective, so it keeps its form instead of flattening. */
   .er-leaf-fall {
@@ -633,8 +725,10 @@
     pointer-events: none;
     transform: translateY(-8%);
     perspective: 480px;
-    animation: er-fall linear infinite;
+    will-change: transform;
+    animation: er-fall-short linear infinite;
   }
+  .er-leaf-fall--long { animation-name: er-fall-long; }
   .er-leaf {
     position: absolute;
     top: 0;
@@ -651,8 +745,9 @@
     opacity: 0.045;
     mix-blend-mode: overlay;
   }
-  .er-screen-corner { color: rgb(var(--c-frame-bright)); opacity: 0.8; filter: url(#er-gilt); }
-  .er-screen-corner > svg { width: 150px; height: 150px; }
+  /* The screen's gilt frame at its corners: in relief, with a dark under it to lift it off the dark. */
+  .er-screen-corner { color: rgb(var(--c-frame-bright)); opacity: 0.75; filter: url(#er-gilt) drop-shadow(0 1px 2px rgb(0 0 0 / 0.9)); }
+  .er-screen-corner > svg { width: 170px; height: 170px; }
 }
 
 @property --er-sweep {
@@ -677,9 +772,13 @@
   from { transform: translateX(-4%); }
   to { transform: translateX(4%); }
 }
-@keyframes er-fall {
+@keyframes er-fall-short {
   from { transform: translate(0, -8%); }
-  to { transform: translate(var(--drift), 108%); }
+  to { transform: translate(-90px, 108%); }
+}
+@keyframes er-fall-long {
+  from { transform: translate(0, -8%); }
+  to { transform: translate(-200px, 108%); }
 }
 /* The leaf tumbles in three axes in perspective, so it turns over with form instead of flipping flat. */
 @keyframes er-leaf-tumble {
@@ -687,77 +786,178 @@
   50% { transform: rotateY(180deg) rotateX(-14deg) rotateZ(10deg); }
   100% { transform: rotateY(360deg) rotateX(16deg) rotateZ(-12deg); }
 }
-@keyframes er-mote {
+@keyframes er-mote-far-l {
+  0% { opacity: 0; transform: translate(0, 0); }
+  12% { opacity: 0.55; }
+  70% { opacity: 0.22; }
+  100% { opacity: 0; transform: translate(-24px, -105vh); }
+}
+@keyframes er-mote-far-r {
+  0% { opacity: 0; transform: translate(0, 0); }
+  12% { opacity: 0.55; }
+  70% { opacity: 0.22; }
+  100% { opacity: 0; transform: translate(24px, -105vh); }
+}
+@keyframes er-mote-mid-l {
   0% { opacity: 0; transform: translate(0, 0); }
   12% { opacity: 0.8; }
-  70% { opacity: 0.3; }
-  100% { opacity: 0; transform: translate(var(--drift), -60vh); }
+  70% { opacity: 0.32; }
+  100% { opacity: 0; transform: translate(-44px, -70vh); }
+}
+@keyframes er-mote-mid-r {
+  0% { opacity: 0; transform: translate(0, 0); }
+  12% { opacity: 0.8; }
+  70% { opacity: 0.32; }
+  100% { opacity: 0; transform: translate(44px, -70vh); }
+}
+@keyframes er-mote-near-l {
+  0% { opacity: 0; transform: translate(0, 0); }
+  12% { opacity: 0.32; }
+  70% { opacity: 0.13; }
+  100% { opacity: 0; transform: translate(-80px, -60vh); }
+}
+@keyframes er-mote-near-r {
+  0% { opacity: 0; transform: translate(0, 0); }
+  12% { opacity: 0.32; }
+  70% { opacity: 0.13; }
+  100% { opacity: 0; transform: translate(80px, -60vh); }
+}
+/* The gate's fog rises a tile's height and starts again; the tile is seamless, so the turn never shows. */
+@keyframes er-fog-rise { to { transform: translateY(-150px); } }
+@keyframes er-fog-rise-slow { to { transform: translateY(-200px); } }
+@keyframes er-shaft {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@keyframes er-haze {
+  from { transform: translate(-3%, 1%); }
+  to { transform: translate(3%, -1%); }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='elden-ring'] :is(.er-map__grace, .er-map__you-ring, .er-fog) { animation: none; }
-  [data-setting='elden-ring'] :is(.er-leaf-fall, .er-mote) { display: none; }
+    [data-setting='elden-ring'] :is(.er-leaf-fall, .er-mote) { display: none; }
+    [data-setting='elden-ring'] :is(.er-shafts > i, .er-haze, .er-arch__fog > i) { animation: none; }
 }
 
 /* ------------------------------------------------------------------ Level ready */
-/* As at a site of grace: gold light runs along the bar, a grace kindles over its middle, wisps
-   curling up from it; the plaque warms from below. */
+/* Runes enough to grow: liquid gold runs slowly along the whole bar, the bar breathes a warm light,
+   runes rise off it all along and fade, a lozenge of gold pulses at its end; the plaque warms from
+   below. The effect box overhangs the bar by 14px above and below and 6px at the sides. */
 [data-setting='elden-ring'] {
   .ui-xp[data-ready] { animation: er-plaque 3.2s ease-in-out infinite; }
-  .er-ready__light { animation: er-ready-light 2.8s ease-in-out infinite; }
-  .er-ready__flame { transform-box: fill-box; transform-origin: center; animation: er-ready-flame 2.2s ease-in-out infinite; }
-  .er-ready__wisp { stroke-dasharray: 14; stroke-dashoffset: 14; animation: er-ready-wisp 2.6s ease-out infinite; }
-  .er-ready__wisp--late { animation-delay: 0.8s; }
-  .er-ready__wisp--later { animation-delay: 1.6s; }
+  .ui-xp[data-ready] .ui-xp__fill { background: linear-gradient(90deg, rgb(150 112 50), rgb(236 204 136) 70%, rgb(255 238 190)); }
+  .er-ready { position: absolute; inset: 0; display: block; }
+  .er-ready__bar {
+    position: absolute;
+    inset: 14px 6px;
+    overflow: hidden;
+    animation: er-ready-glow 3.2s ease-in-out infinite;
+  }
+  .er-ready__sheen {
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgb(255 246 214 / 0.75) 50%, transparent);
+    mix-blend-mode: screen;
+    animation: er-ready-sheen 3.6s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+  }
+  .er-ready__rune {
+    position: absolute;
+    top: calc(50% - 1px);
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: rgb(255 236 186);
+    box-shadow: 0 0 4px rgb(var(--c-grace)), 0 0 8px rgb(var(--c-grace) / 0.6);
+    opacity: 0;
+    animation: er-ready-rune ease-out infinite;
+  }
+  .er-ready__key {
+    position: absolute;
+    top: 50%;
+    right: 1px;
+    width: 9px;
+    height: 9px;
+    background: linear-gradient(135deg, rgb(255 240 200), rgb(214 170 90));
+    border: 1px solid rgb(var(--c-bg-deep));
+    transform: translateY(-50%) rotate(45deg);
+    box-shadow: 0 0 6px rgb(var(--c-grace) / 0.8);
+    animation: er-ready-key 1.8s ease-in-out infinite;
+  }
 }
 @keyframes er-plaque {
-  50% { box-shadow: inset 0 -14px 20px -12px rgb(255 210 120 / 0.35), 0 14px 30px -12px rgb(0 0 0 / 0.8); }
+  50% { box-shadow: inset 0 -14px 20px -12px rgb(255 210 120 / 0.3), 0 14px 30px -12px rgb(0 0 0 / 0.8); }
 }
-@keyframes er-ready-light {
-  from { transform: translateX(0); }
-  to { transform: translateX(362px); }
+@keyframes er-ready-glow {
+  0%, 100% { box-shadow: 0 0 4px rgb(255 210 120 / 0.25); }
+  50% { box-shadow: 0 0 12px rgb(255 210 120 / 0.6); }
 }
-@keyframes er-ready-flame {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.2); }
+@keyframes er-ready-sheen {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
 }
-@keyframes er-ready-wisp {
-  0% { stroke-dashoffset: 14; opacity: 0; }
-  30% { opacity: 1; }
-  100% { stroke-dashoffset: -14; opacity: 0; }
+@keyframes er-ready-rune {
+  0% { opacity: 0; transform: translateY(0) scale(1); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-18px) scale(0.5); }
+}
+@keyframes er-ready-key {
+  0%, 100% { box-shadow: 0 0 4px rgb(255 210 120 / 0.5); filter: brightness(0.9); }
+  50% { box-shadow: 0 0 12px rgb(255 210 120); filter: brightness(1.2); }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='elden-ring'] :is(.er-ready__light, .er-ready__flame, .er-ready__wisp, .ui-xp[data-ready]) { animation: none; }
+  [data-setting='elden-ring'] :is(.er-ready__bar, .er-ready__sheen, .er-ready__key, .ui-xp[data-ready]) { animation: none; }
+  [data-setting='elden-ring'] .er-ready__rune { display: none; }
 }
 
 /* ------------------------------------------------------------------ World card */
-/* The map round the capital behind the card's emblem. Looked at, its light swells, the Ring's lines draw
-   themselves round the emblem in gold and the emblem kindles. */
+/* A window into the dark of the Lands Between: the light falling into it in shafts, the motes
+   rising, the laurels standing in a gilt arch. Looked at, the light swells, a grace kindles at the
+   foot of the arch, the gilt warms and the laurels kindle. */
 [data-setting='elden-ring'] {
   & > .ui-world { gap: 3.6rem; border-color: rgb(var(--c-frame) / 0.5); box-shadow: inset 0 0 0 3px rgb(var(--c-bg-deep) / 0.6), inset 0 0 0 4px rgb(var(--c-frame) / 0.15), inset 0 0 80px rgb(0 0 0 / 0.7), var(--shadow-panel); }
   & > .ui-world .ui-world__name { font-size: 1.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--c-frame-bright)); }
   & > .ui-world .ui-world__emblem { color: rgb(var(--c-frame-bright)); transition: color 1s, filter 1.4s; }
   & > .ui-world .er-screen-corner { display: none; }
-  /* A piece of the map round the capital behind the emblem, the Erdtree over it; no names on the card. */
-  & > .ui-world .er-map { inset: -10% -120% -10% -60%; }
-  & > .ui-world .er-map__name { display: none; }
-  & > .ui-world .ui-world__sigil { width: 180px; height: 230px; }
-  .er-sigil { color: rgb(var(--c-frame)); opacity: 0.4; transition: opacity 700ms, color 700ms; }
-  .er-sigil__lines :is(path, circle) { stroke-dasharray: 700; stroke-dashoffset: 0; }
+  & > .ui-world .er-shafts { opacity: 0.7; transition: opacity 1.4s; }
+  /* The card is small: the near and middle motes are enough on it. */
+  & > .ui-world :is(.er-mote--far, .er-leaf-fall) { display: none; }
+  /* Along the foot of the card the roots of the Erdtree, filling it, fading upwards; looked at, they
+     rise a little and their gilt warms. */
+  & > .ui-world .er-roots {
+    display: block;
+    opacity: 0.7;
+    mask-image: linear-gradient(0deg, #000 50%, transparent 92%);
+    transform: translateY(8%);
+    transition: transform 3s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 2s;
+  }
+  /* The gilt arch round the emblem; the grace inside it low until the card is looked at. */
+  & > .ui-world .ui-world__sigil { width: 196px; height: 225px; transform: translate(-50%, -63%); }
+  .er-arch { color: rgb(var(--c-frame)); transition: color 900ms; }
+  .er-arch__lines { filter: url(#er-gilt) drop-shadow(0 1px 2px rgb(0 0 0 / 0.9)); transition: filter 900ms; }
+  /* The fog of a boss's gate in the doorway, there only when the world is chosen: pale swirls rising
+     in two layers at their own pace, lit faintly from within. */
+  .er-arch__fog { position: absolute; inset: 0; overflow: hidden; opacity: 0; transition: opacity 1.6s; mask-size: 100% 100%; -webkit-mask-size: 100% 100%; }
+  .er-arch__fog > i {
+    position: absolute;
+    inset: 0 0 auto;
+    height: calc(100% + 150px);
+    background-image: var(--fog);
+    background-size: 150px 150px;
+    will-change: transform;
+    animation: er-fog-rise 14s linear infinite;
+  }
+  .er-arch__fog > i + i { height: calc(100% + 200px); background-size: 200px 200px; opacity: 0.7; animation-name: er-fog-rise-slow; animation-duration: 23s; }
+  .er-arch__grace { opacity: 0.35; transition: opacity 1.4s; }
+  .er-arch__key { transition: filter 900ms; }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) { transform: none; }
-  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-map { opacity: 0.5; }
-  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-sigil { opacity: 1; color: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 4px rgb(var(--c-grace) / 0.7)); }
-  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-sigil__lines :is(path, circle) { animation: er-sigil-draw 1.6s cubic-bezier(0.4, 0, 0.2, 1) both; }
-  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-sigil__lines :nth-child(2) { animation-delay: 0.1s; }
-  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-sigil__lines :nth-child(3) { animation-delay: 0.25s; }
-  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-sigil__lines :nth-child(n + 4) { animation-delay: 0.4s; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-shafts { opacity: 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-roots { transform: translateY(0); opacity: 0.9; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-arch { color: rgb(var(--c-frame-bright)); }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-arch__lines { filter: url(#er-gilt) drop-shadow(0 0 5px rgb(var(--c-grace) / 0.55)); }
+  & > .ui-world[aria-pressed='true'] .er-arch__fog { opacity: 0.85; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-arch__grace { opacity: 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .er-arch__key { filter: drop-shadow(0 0 6px rgb(var(--c-grace))); }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { color: rgb(255 228 160); filter: drop-shadow(0 0 14px rgb(var(--c-grace) / 0.6)) drop-shadow(0 4px 10px rgb(0 0 0 / 0.7)); }
-}
-@keyframes er-sigil-draw {
-  from { stroke-dashoffset: 700; }
-  to { stroke-dashoffset: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-setting='elden-ring'] > .ui-world :is(.er-sigil__lines path, .er-sigil__lines circle) { animation: none; }
 }
 
 /* ------------------------------------------------------------------ World flourish */

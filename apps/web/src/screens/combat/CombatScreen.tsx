@@ -280,9 +280,13 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
  */
 export const CombatScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
   const character = useCharacterStore((s) => s.character);
-  // At a party's table the fight is in the party's world, whatever the hero's own setting.
-  const partySetting = usePartyOfCharacter(character?.id)?.setting;
-  const setting = partySetting ?? settingOf(character);
+  // While the party's table is open (a session or a fight running) the fight is in the party's world,
+  // whatever the hero's own setting; between sessions the hero is on their own, in their own world.
+  // The live view decides once it has come; until then the list's word for it.
+  const listed = usePartyOfCharacter(character?.id);
+  const party = useParty(listed?.id);
+  const atTable = party ? party.sessionStartedAt !== null || party.combat !== null : !!(listed?.inSession || listed?.inCombat);
+  const setting = listed && atTable ? listed.setting : settingOf(character);
   useDocumentSetting(setting);
 
   // Messages rise above the combat bar instead of covering it.
