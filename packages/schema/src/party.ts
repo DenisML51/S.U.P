@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AssetIdSchema, EntityIdSchema, SettingSchema, type Setting } from './character';
+import { AssetIdSchema, EntityIdSchema, RULESETS, SettingSchema, type Setting } from './character';
 
 /**
  * Parties: a master's table that players join with an invite code. Contracts of the party API and
@@ -89,7 +89,7 @@ const LoreSchema = z.string().trim().max(50_000, 'Летопись не длин
  * The rules a table plays by: a rules system, or the table's own (heroes without a preset build).
  * `null` on a table: any rules (tables made before the choice existed).
  */
-export const PARTY_RULES = ['dnd2024', 'coc7', 'custom'] as const;
+export const PARTY_RULES = [...RULESETS, 'custom'] as const;
 export const PartyRulesSchema = z.enum(PARTY_RULES);
 export type PartyRules = z.infer<typeof PartyRulesSchema>;
 

@@ -9,7 +9,7 @@ import { IconCreate } from '../../ui/icons';
 import { Button, Panel, cx } from '../../ui/primitives';
 import { SettingScope } from '../../ui/theme/SettingScope';
 import { SETTING_INFO, settingOf } from '../../ui/theme/settings';
-import { RULES_TITLE } from '../../ui/RulesetCards';
+import { RULES_TITLE } from '../../systems';
 import { heroRank } from '../home/homeParts';
 
 /**
