@@ -55,7 +55,9 @@ export class RealtimeClient {
 
   /** Reconnect right away, e.g. when the browser reports it is back online. */
   reconnectNow(): void {
-    if (this.stopped || this.socket?.readyState === WebSocket.OPEN) return;
+    // A socket still opening is about to do just that; a second one would leave the first behind.
+    const state = this.socket?.readyState;
+    if (this.stopped || state === WebSocket.OPEN || state === WebSocket.CONNECTING) return;
     clearTimeout(this.reconnectTimer);
     this.attempt = 0;
     this.connect();
@@ -72,6 +74,8 @@ export class RealtimeClient {
 
     socket.onopen = async () => {
       const token = await this.getToken();
+      // Replaced or stopped while the token was fetched: this socket has no future.
+      if (this.socket !== socket) return socket.close(1000, 'replaced');
       if (!token) return socket.close(1000, 'no session');
       send({ type: 'auth', token });
       clearInterval(this.pingTimer);
@@ -98,8 +102,10 @@ export class RealtimeClient {
     };
 
     socket.onclose = () => {
+      // Only the current socket's end matters: a replaced one must not stop the pings or reconnect.
+      if (this.socket !== socket) return;
       clearInterval(this.pingTimer);
-      if (this.socket === socket) this.socket = null;
+      this.socket = null;
       this.scheduleReconnect();
     };
     // Errors are followed by `close`; reconnection is handled there.
