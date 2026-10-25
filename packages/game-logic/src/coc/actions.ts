@@ -363,7 +363,7 @@ export const forgetSpell =
 // ------------------------------------------------------------------------------------------------
 
 export const addItem =
-  (name: string, quantity?: number): Edit =>
+  (name: string, quantity?: number, description = ''): Edit =>
   (doc) => ({
     ...doc,
     inventory: [
@@ -375,7 +375,7 @@ export const addItem =
         equipped: false,
         weight: 0,
         cost: 0,
-        description: '',
+        description,
         quantity,
       },
     ],

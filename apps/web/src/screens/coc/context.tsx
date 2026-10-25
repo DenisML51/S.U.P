@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import type { HistoryEvent } from '@itd/game-logic';
 import {
   SUCCESS_LABELS,
@@ -9,25 +10,31 @@ import {
   damageBonusOf,
   loseSanity,
   luckToSucceed,
+  malfunctions,
   sanityCheck,
   spendLuck,
+  weaponDamage,
   type Difficulty,
   type SkillCheck,
 } from '@itd/game-logic/coc';
 import type { Character } from '@itd/schema';
 
-/** What was rolled: a skill (ticked on success), a characteristic, Luck, Sanity or an attack. */
+/** What was rolled: a skill (ticked on success), a characteristic, Luck, Sanity, an attack, INT. */
 export type RollKind = 'skill' | 'characteristic' | 'luck' | 'sanity' | 'attack' | 'int';
 
 export interface RollRequest {
   label: string;
   value: number;
   kind: RollKind;
-  /** Skill id (ticks it on success) or attack id. */
+  /** Skill id, or the attack's id for an attack. */
   id?: string;
+  /** The skill a success ticks (an attack's weapon skill). */
+  skill?: string;
   difficulty?: Difficulty;
   bonus?: number;
   penalty?: number;
+  /** A gun jams on a roll at or above this. */
+  malfunction?: number;
 }
 
 export interface RollRecord extends RollRequest {
@@ -36,21 +43,31 @@ export interface RollRecord extends RollRequest {
   pushed?: boolean;
   /** Luck bought this result. */
   luckSpent?: number;
+  jammed?: boolean;
   /** After a sanity roll: what it cost and what it set off. */
   sanity?: { loss: number; needsIntRoll: boolean; indefinite: boolean; permanent: boolean };
+  /** An attack's damage, once rolled. */
+  damage?: { total: number; formula: string };
   serial: number;
+}
+
+/** Options of one edit: `quiet` keeps it out of the app's own messages (a roll tells it itself). */
+export interface UpdateOptions {
+  quiet?: boolean;
 }
 
 export interface CocSheetApi {
   character: Character;
   /** One edit of the sheet, with its line in the journal. */
-  update: (edit: (doc: Character) => Character, log?: HistoryEvent) => void;
+  update: (edit: (doc: Character) => Character, log?: HistoryEvent, options?: UpdateOptions) => void;
   last: RollRecord | null;
   roll: (request: RollRequest) => RollRecord;
   /** The same roll again, at the risk the Keeper names; only after a failure, only once. */
   push: () => void;
   /** Turns the last failed roll into a success for as much Luck as it missed by. */
   buyWithLuck: () => void;
+  /** The damage of the last roll, when it was a hit. */
+  rollDamage: () => void;
   /** A sanity roll with its cost ("0/1d6"); the loss and any insanity go onto the sheet. */
   sanityRoll: (label: string, spec: string) => void;
   dismiss: () => void;
@@ -58,6 +75,8 @@ export interface CocSheetApi {
 }
 
 const CocSheetContext = createContext<CocSheetApi | null>(null);
+/** The latest api for the roll's toast, which is drawn outside the provider. */
+const ApiRef = createContext<React.MutableRefObject<CocSheetApi | null> | null>(null);
 
 export const useCoc = (): CocSheetApi => {
   const api = useContext(CocSheetContext);
@@ -65,12 +84,21 @@ export const useCoc = (): CocSheetApi => {
   return api;
 };
 
+/** The api inside the roll's toast (drawn by the app's toaster, outside the provider) or the sheet. */
+export const useCocAnywhere = (): CocSheetApi => {
+  const ref = useContext(ApiRef);
+  const api = useContext(CocSheetContext);
+  const found = ref?.current ?? api;
+  if (!found) throw new Error('useCocAnywhere outside CocSheetProvider');
+  return found;
+};
+
 /** Luck cannot buy Luck, Sanity or pushed rolls (7th edition). */
 export const canBuyWithLuck = (record: RollRecord, luck: number): boolean =>
   !record.check.success &&
   !record.pushed &&
   record.check.level !== 'fumble' &&
-  !['luck', 'sanity'].includes(record.kind) &&
+  !['luck', 'sanity', 'int'].includes(record.kind) &&
   luckToSucceed(record.check.total, target(record)) <= luck;
 
 export const canPush = (record: RollRecord): boolean =>
@@ -88,46 +116,60 @@ export const target = (record: Pick<RollRecord, 'value' | 'difficulty'>): number
       : record.value;
 
 const describe = (record: RollRecord): string =>
-  `${record.label}${record.pushed ? ' (повтор)' : ''}: ${record.check.total} из ${target(record)} — ${SUCCESS_LABELS[record.check.level]}`;
+  `${record.label}${record.pushed ? ' (повтор)' : ''}: ${record.check.total} из ${target(record)} — ${
+    SUCCESS_LABELS[record.check.level]
+  }${record.jammed ? ', осечка' : ''}`;
+
+/** The one toast that carries the latest roll; a new roll or a follow-up replaces its content. */
+const ROLL_TOAST = 'coc-roll';
+
+const tickFor = (request: RollRequest) =>
+  request.skill ?? (request.kind === 'skill' ? request.id : undefined);
 
 /**
  * Everything an investigator's screens do goes through here: the sheet in the app (backed by the
- * store) and the design showcase (backed by local state) work the same way.
+ * store) and the design showcase (backed by local state) work the same way. The latest roll shows
+ * as the app's toast, with what may follow it by the rules.
  */
 export const CocSheetProvider: React.FC<{
   character: Character;
   update: CocSheetApi['update'];
+  /** Draws the roll's toast; the sheet passes it, so the provider stays free of the parts. */
+  renderRoll?: (record: RollRecord) => React.ReactNode;
   children: React.ReactNode;
-}> = ({ character, update, children }) => {
+}> = ({ character, update, renderRoll, children }) => {
   const [last, setLast] = useState<RollRecord | null>(null);
-  const [serial, setSerial] = useState(0);
+  const serial = useRef(0);
 
-  const record = useCallback(
-    (request: RollRequest, extra: Partial<RollRecord> = {}): RollRecord => {
-      const check = checkSkill(request.value, {
-        difficulty: request.difficulty,
-        bonus: request.bonus,
-        penalty: request.penalty,
-      });
-      const next = { ...request, check, serial: serial + 1, ...extra };
-      setSerial((n) => n + 1);
-      setLast(next);
-      return next;
-    },
-    [serial],
-  );
+  const record = useCallback((request: RollRequest, extra: Partial<RollRecord> = {}): RollRecord => {
+    const check = checkSkill(request.value, {
+      difficulty: request.difficulty,
+      bonus: request.bonus,
+      penalty: request.penalty,
+    });
+    serial.current += 1;
+    const next: RollRecord = {
+      ...request,
+      check,
+      jammed: malfunctions(check.total, request.malfunction),
+      serial: serial.current,
+      ...extra,
+    };
+    setLast(next);
+    return next;
+  }, []);
 
   const roll = useCallback<CocSheetApi['roll']>(
     (request) => {
       const next = record(request);
+      const skill = tickFor(request);
       update(
         (doc) => {
-          let edited =
-            request.kind === 'skill' && request.id ? afterSkillRoll(request.id, next.check)(doc) : doc;
-          if (request.kind === 'int') edited = afterIntRoll(next.check.success)(edited);
-          return edited;
+          const edited = skill ? afterSkillRoll(skill, next.check)(doc) : doc;
+          return request.kind === 'int' ? afterIntRoll(next.check.success)(edited) : edited;
         },
         { message: describe(next), type: 'other' },
+        { quiet: true },
       );
       return next;
     },
@@ -137,50 +179,75 @@ export const CocSheetProvider: React.FC<{
   const push = useCallback(() => {
     if (!last || !canPush(last)) return;
     const next = record(last, { pushed: true });
-    update((doc) => (last.kind === 'skill' && last.id ? afterSkillRoll(last.id, next.check)(doc) : doc), {
-      message: describe(next),
-      type: 'other',
-    });
+    const skill = tickFor(last);
+    update(
+      (doc) => (skill ? afterSkillRoll(skill, next.check)(doc) : doc),
+      { message: describe(next), type: 'other' },
+      { quiet: true },
+    );
   }, [last, record, update]);
 
   const buyWithLuck = useCallback(() => {
     if (!last || !canBuyWithLuck(last, character.coc?.luck ?? 0)) return;
     const cost = luckToSucceed(last.check.total, target(last));
-    const check: SkillCheck = { ...last.check, level: 'regular', success: true };
-    setLast({ ...last, check, luckSpent: cost });
-    update((doc) => spendLuck(cost)(doc), {
-      message: `${last.label}: потрачено ${cost} удачи — успех`,
-      type: 'other',
-    });
+    setLast({ ...last, check: { ...last.check, level: 'regular', success: true }, luckSpent: cost });
+    update(
+      (doc) => spendLuck(cost)(doc),
+      { message: `${last.label}: потрачено ${cost} удачи — успех`, type: 'other' },
+      { quiet: true },
+    );
   }, [last, character.coc?.luck, update]);
+
+  const c = cocCharacteristics(character);
+  const damageBonus = damageBonusOf(c.str + c.siz).damageBonus;
+
+  const rollDamage = useCallback(() => {
+    if (!last || last.kind !== 'attack' || !last.check.success || last.damage) return;
+    const weapon = character.attacks.find((a) => a.id === last.id);
+    if (!weapon) return;
+    const damage = weaponDamage(weapon, damageBonus, last.check.level);
+    setLast({ ...last, damage });
+    update(
+      (doc) => doc,
+      { message: `${weapon.name}: урон ${damage.total} (${damage.formula})`, type: 'other' },
+      { quiet: true },
+    );
+  }, [last, character.attacks, damageBonus, update]);
 
   const sanityRoll = useCallback(
     (label: string, spec: string) => {
       const result = sanityCheck(character, spec);
-      const next: RollRecord = {
+      serial.current += 1;
+      setLast({
         label,
         value: character.sanity,
         kind: 'sanity',
         check: result.check,
-        serial: serial + 1,
+        serial: serial.current,
         sanity: {
           loss: result.loss,
           needsIntRoll: result.needsIntRoll,
           indefinite: result.indefinite,
           permanent: result.permanent,
         },
-      };
-      setSerial((n) => n + 1);
-      setLast(next);
-      update(loseSanity(result.loss).edit, {
-        message: `${label} (${spec}): ${result.check.total} из ${character.sanity} — потеряно ${result.loss} рассудка`,
-        type: 'sanity',
       });
+      update(
+        loseSanity(result.loss).edit,
+        {
+          message: `${label} (${spec}): ${result.check.total} из ${character.sanity} — потеряно ${result.loss} рассудка`,
+          type: 'sanity',
+        },
+        { quiet: true },
+      );
     },
-    [character, serial, update],
+    [character, update],
   );
 
-  const c = cocCharacteristics(character);
+  const dismiss = useCallback(() => {
+    setLast(null);
+    toast.dismiss(ROLL_TOAST);
+  }, []);
+
   const api = useMemo<CocSheetApi>(
     () => ({
       character,
@@ -189,11 +256,28 @@ export const CocSheetProvider: React.FC<{
       roll,
       push,
       buyWithLuck,
+      rollDamage,
       sanityRoll,
-      dismiss: () => setLast(null),
-      damageBonus: damageBonusOf(c.str + c.siz).damageBonus,
+      dismiss,
+      damageBonus,
     }),
-    [character, update, last, roll, push, buyWithLuck, sanityRoll, c.str, c.siz],
+    [character, update, last, roll, push, buyWithLuck, rollDamage, sanityRoll, dismiss, damageBonus],
   );
+  const apiRef = useRef<CocSheetApi | null>(api);
+  useEffect(() => {
+    apiRef.current = api;
+  });
+
+  // The toast follows the latest roll and the luck it may spend; leaving the sheet takes it away.
+  const luck = character.coc?.luck;
+  useEffect(() => {
+    if (!last || !renderRoll) return;
+    toast(() => <ApiRef.Provider value={apiRef}>{renderRoll(last)}</ApiRef.Provider>, {
+      id: ROLL_TOAST,
+      duration: last.check.success || last.pushed || last.luckSpent ? 7000 : 12000,
+    });
+  }, [last, luck, renderRoll]);
+  useEffect(() => () => toast.dismiss(ROLL_TOAST), []);
+
   return <CocSheetContext.Provider value={api}>{children}</CocSheetContext.Provider>;
 };

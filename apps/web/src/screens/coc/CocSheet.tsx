@@ -29,7 +29,8 @@ import {
 } from '../../ui/icons';
 import { useCoc } from './context';
 import { InsanityVeil, madnessStage } from './InsanityVeil';
-import { RollResult, Track } from './parts';
+import { Track } from './parts';
+import { CocDetailsLayout, CocSelectionProvider, useCocSelection } from './details';
 import { GearSection, InvestigatorSection, SanitySection, StorySection, WeaponsSection } from './sections';
 import './coc.css';
 
@@ -47,7 +48,11 @@ const SECTIONS: { id: CocSection; label: string; Icon: React.FC<React.SVGProps<S
 const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
 
 /** Who the investigator is and what changes minute to minute: hit points, magic, sanity, luck. */
-const InvestigatorColumn: React.FC<{ footer?: React.ReactNode }> = ({ footer }) => {
+const InvestigatorColumn: React.FC<{ footer?: React.ReactNode; onProfile?: () => void }> = ({
+  footer,
+  onProfile,
+}) => {
+  const { open } = useCocSelection();
   const { character, update, roll } = useCoc();
   const coc = character.coc!;
   const build = character.build?.ruleset === 'coc7' ? character.build : undefined;
@@ -69,7 +74,16 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode }> = ({ footer }) 
           className="absolute inset-0 h-full w-full"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent" />
-        <span className="absolute inset-x-5 bottom-3">
+        {onProfile && (
+          <button
+            type="button"
+            onClick={onProfile}
+            className="absolute inset-0"
+            aria-label="Профиль: имя, сеттинг, портрет и арт"
+            title="Профиль: имя, сеттинг, портрет и арт"
+          />
+        )}
+        <span className="pointer-events-none absolute inset-x-5 bottom-3">
           <span
             className="ui-display block text-[1.7rem] leading-tight text-ink"
             role="heading"
@@ -135,14 +149,16 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode }> = ({ footer }) 
         {conditions.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {conditions.map((c) => (
-              <span
+              <button
                 key={c!.id}
+                type="button"
+                onClick={() => open('condition', c!.id)}
                 title={c!.description}
-                className="border border-danger/50 bg-surface-2/70 px-2.5 py-1 text-xs text-danger"
+                className="border border-danger/50 bg-surface-2/70 px-2.5 py-1 text-xs text-danger hover:border-danger"
                 style={{ borderRadius: 'var(--radius)' }}
               >
                 {c!.name}
-              </span>
+              </button>
             ))}
           </div>
         )}
@@ -161,12 +177,30 @@ export const CocSheetView: React.FC<{
   onCombat?: () => void;
   onDice?: () => void;
   onSettings?: () => void;
+  /** Opens the profile dialog (name, setting, portrait and art). */
+  onProfile?: () => void;
   journal?: React.ReactNode;
   footer?: React.ReactNode;
   /** The showcase pins the result inside its frame instead of the window corner. */
   className?: string;
-}> = ({ onBack, onCombat, onDice, onSettings, journal, footer, className }) => {
-  const { character, last } = useCoc();
+}> = (props) => (
+  <CocSelectionProvider>
+    <SheetLayout {...props} />
+  </CocSelectionProvider>
+);
+
+const SheetLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
+  onBack,
+  onCombat,
+  onDice,
+  onSettings,
+  onProfile,
+  journal,
+  footer,
+  className,
+}) => {
+  const { character } = useCoc();
+  const { close } = useCocSelection();
   const [section, setSection] = useState<CocSection>('investigator');
   const stage = madnessStage(character);
 
@@ -197,7 +231,10 @@ export const CocSheetView: React.FC<{
                   label={label}
                   Icon={Icon}
                   active={section === id}
-                  onClick={() => setSection(id)}
+                  onClick={() => {
+                    setSection(id);
+                    close();
+                  }}
                 />
               ))}
             </div>
@@ -222,7 +259,7 @@ export const CocSheetView: React.FC<{
           animate={{ x: 0, opacity: 1 }}
           transition={{ ...ENTER, delay: 0.06 }}
         >
-          <InvestigatorColumn footer={footer} />
+          <InvestigatorColumn footer={footer} onProfile={onProfile} />
         </motion.div>
         <motion.main
           className="min-w-0 flex-1 px-10 py-8"
@@ -230,27 +267,28 @@ export const CocSheetView: React.FC<{
           animate={{ y: 0, opacity: 1 }}
           transition={{ ...ENTER, delay: 0.14 }}
         >
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={section}
-              className="ui-scroll ui-scroll--bare -m-4 h-[calc(100%+2rem)] overflow-y-auto p-4 pb-7"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-            >
-              {section === 'investigator' && <InvestigatorSection />}
-              {section === 'weapons' && <WeaponsSection />}
-              {section === 'sanity' && <SanitySection />}
-              {section === 'gear' && <GearSection />}
-              {section === 'story' && <StorySection />}
-              {section === 'journal' && journal}
-            </motion.div>
-          </AnimatePresence>
+          <CocDetailsLayout>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={section}
+                className="ui-scroll ui-scroll--bare -m-4 h-[calc(100%+2rem)] overflow-y-auto p-4 pb-7"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+              >
+                {section === 'investigator' && <InvestigatorSection />}
+                {section === 'weapons' && <WeaponsSection />}
+                {section === 'sanity' && <SanitySection />}
+                {section === 'gear' && <GearSection />}
+                {section === 'story' && <StorySection />}
+                {section === 'journal' && journal}
+              </motion.div>
+            </AnimatePresence>
+          </CocDetailsLayout>
         </motion.main>
       </motion.div>
       <InsanityVeil stage={stage} />
-      {last && <RollResult key={last.serial} record={last} />}
     </div>
   );
 };

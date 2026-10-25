@@ -167,6 +167,23 @@ export const PartyPicture: React.FC<{ party: PartyListItemDto; className?: strin
   );
 };
 
+/** The rules a hero is played by, as its card names them. */
+export const rulebookLabel = (hero: CharacterPreview): string =>
+  hero.ruleset === 'coc7'
+    ? hero.investigator?.pulp
+      ? 'Pulp Cthulhu'
+      : 'Зов Ктулху'
+    : hero.ruleset === 'dnd2024'
+      ? 'D&D 2024'
+      : 'Свои правила';
+
+/** The rulebook's name on a hero's card, in the setting's tag. */
+export const RulebookMark: React.FC<{ hero: CharacterPreview; className?: string }> = ({ hero, className }) => (
+  <span className={cx('ui-tag ui-rulebook', className)} style={{ '--tag-tone': 'var(--c-frame-bright)' } as React.CSSProperties}>
+    {rulebookLabel(hero)}
+  </span>
+);
+
 /** What the big number of a hero's card is: the level, or an investigator's age. */
 export const heroRank = (hero: CharacterPreview): { label: string; value: number } =>
   hero.investigator ? { label: 'Лет', value: hero.investigator.age } : { label: 'Ур.', value: hero.level };
@@ -179,7 +196,8 @@ export const HeroVitals: React.FC<{ hero: CharacterPreview; className?: string; 
 }) => {
   const rank = heroRank(hero);
   return (
-    <div className={cx('flex items-center gap-4', className)}>
+    <div className={cx('flex flex-wrap items-center gap-x-4 gap-y-2', className)}>
+      <RulebookMark hero={hero} />
       <div className="flex items-baseline gap-1.5">
         <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">{rank.label}</span>
         <span className="ui-display ui-numeric text-2xl text-frame-bright">{rank.value}</span>

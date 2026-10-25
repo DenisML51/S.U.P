@@ -40,6 +40,41 @@
     background-color 0.15s,
     transform 0.15s;
 }
+/* The card is a roll button under its text; the text lets clicks through to it. */
+.coc-char__roll {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.coc-char > span {
+  pointer-events: none;
+}
+.coc-char > .coc-char__info {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.5rem;
+  z-index: 2;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.coc-char:hover > .coc-char__info,
+.coc-char:focus-within > .coc-char__info {
+  opacity: 1;
+}
+.coc-info {
+  opacity: 0.55;
+}
+.coc-info:hover {
+  opacity: 1;
+}
+.coc-skill .coc-info {
+  opacity: 0;
+}
+.coc-skill:hover .coc-info,
+.coc-skill:focus-within .coc-info {
+  opacity: 0.6;
+}
 .coc-char:hover {
   border-color: rgb(var(--c-frame-bright));
   background: rgb(var(--c-surface-2));
@@ -117,7 +152,7 @@
 .coc-skill {
   break-inside: avoid;
   display: grid;
-  grid-template-columns: 1.15rem minmax(0, 1fr) auto auto;
+  grid-template-columns: 1.15rem minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 0.55rem;
   padding: 0.28rem 0;
@@ -235,17 +270,12 @@
 
 /* ----------------------------------------------------------------- d100 result */
 
+/* The roll lives inside the app's toast: the setting's plate frames it. */
 .coc-roll {
-  position: fixed;
-  right: 1.5rem;
-  bottom: 1.5rem;
-  z-index: 40;
-  width: 22rem;
-  padding: 1rem 1.1rem 0.9rem;
-  background: rgb(var(--c-surface));
-  border: 1px solid rgb(var(--c-frame));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-panel);
+  width: 21rem;
+  max-width: calc(100vw - 4rem);
+  padding: 0.15rem 0;
+  cursor: default;
 }
 .coc-roll__head {
   display: flex;
@@ -264,20 +294,21 @@
   gap: 0.3rem;
   margin-top: 0.35rem;
 }
+/* Inside the toast everything takes the plate's own ink, so it reads on paper and on metal alike. */
 .coc-die {
   display: grid;
   place-items: center;
   min-width: 2.1rem;
   height: 1.7rem;
   padding: 0 0.3rem;
-  border: 1px solid rgb(var(--c-line));
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
   font-family: var(--font-numeric);
   font-size: 0.9rem;
-  color: rgb(var(--c-ink-muted));
+  opacity: 0.5;
 }
 .coc-die[data-kept] {
-  border-color: rgb(var(--c-frame-bright));
-  color: rgb(var(--c-ink));
+  border-color: color-mix(in srgb, currentColor 70%, transparent);
+  opacity: 1;
 }
 .coc-die[data-units] {
   border-style: dashed;
@@ -292,22 +323,34 @@
 }
 .coc-ladder__step {
   padding: 0.3rem 0.1rem;
-  background: rgb(var(--c-surface-2) / 0.6);
-  color: rgb(var(--c-ink-faint));
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  opacity: 0.55;
 }
 .coc-ladder__step b {
   display: block;
   font-family: var(--font-numeric);
   font-size: 0.95rem;
   font-weight: 400;
-  color: rgb(var(--c-ink-muted));
 }
 .coc-ladder__step[data-reached] {
-  background: rgb(var(--c-accent) / 0.22);
-  color: rgb(var(--c-ink));
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, currentColor 55%, transparent);
+  opacity: 1;
 }
-.coc-ladder__step[data-reached] b {
-  color: rgb(var(--c-ink));
+.coc-roll__action {
+  font-size: 0.85rem;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 4px;
+  opacity: 0.85;
+}
+.coc-roll__action:hover {
+  opacity: 1;
+  text-decoration-color: currentColor;
+}
+.coc-roll__action--strong {
+  font-weight: 600;
+  opacity: 1;
 }
 .coc-roll[data-level='fumble'] .coc-roll__total,
 .coc-roll[data-level='failure'] .coc-roll__total {
@@ -320,7 +363,7 @@
 .coc-roll__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.4rem 1.1rem;
   margin-top: 0.8rem;
 }
 
@@ -388,13 +431,6 @@
 [data-setting='lovecraft'] .coc-pip {
   border-radius: 50%;
 }
-[data-setting='lovecraft'] .coc-roll {
-  background: var(--mahogany);
-  border-color: rgb(var(--c-frame-bright));
-}
-[data-setting='lovecraft'] .coc-ladder__step[data-reached] {
-  background: rgb(var(--c-eldritch) / 0.28);
-}
 
 /* High fantasy — gilded parchment: cards are vellum tablets with gold edges, numbers in Garamond. */
 [data-setting='high-fantasy'] .coc-char {
@@ -420,13 +456,6 @@
   height: 0.6rem;
   margin: 1px;
 }
-[data-setting='high-fantasy'] .coc-roll {
-  border-color: rgb(var(--c-frame-bright));
-  box-shadow:
-    inset 0 0 0 3px rgb(var(--c-surface)),
-    inset 0 0 0 4px rgb(var(--c-frame) / 0.5),
-    var(--shadow-panel);
-}
 
 /* Sci-fi — a data readout: flat matte cells, a lit left edge, values in Tektur. */
 [data-setting='sci-fi'] .coc-char {
@@ -442,13 +471,6 @@
   height: 0.45rem;
   width: 0.9rem;
 }
-[data-setting='sci-fi'] .coc-roll {
-  border-color: rgb(var(--c-accent) / 0.7);
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
-}
-[data-setting='sci-fi'] .coc-ladder__step[data-reached] {
-  background: rgb(var(--c-accent) / 0.25);
-}
 
 /* Dark fantasy — iron and wax: heavy dark cards with a blood-red rule, a wax seal for the tick. */
 [data-setting='dark-fantasy'] .coc-char {
@@ -463,10 +485,6 @@
   border-color: rgb(var(--c-hp));
   border-radius: 50%;
   color: rgb(var(--c-ink));
-}
-[data-setting='dark-fantasy'] .coc-roll {
-  background: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-bg)));
-  border-color: rgb(var(--c-frame));
 }
 
 /* Cyberpunk — neon on black: cut corners, a glowing value, a scanline tick. */
@@ -486,11 +504,6 @@
 [data-setting='cyberpunk'] .coc-pip[data-on] {
   box-shadow: 0 0 6px rgb(var(--coc-pip-tone, var(--c-hp)) / 0.8);
 }
-[data-setting='cyberpunk'] .coc-roll {
-  background: rgb(var(--c-bg));
-  border-color: rgb(var(--c-accent));
-  box-shadow: 0 0 24px -6px rgb(var(--c-accent) / 0.5);
-}
 
 /* Elden Ring — tarnished gold on grey stone: a thin gold frame, the value in Cinzel, a grace glow. */
 [data-setting='elden-ring'] .coc-char {
@@ -507,12 +520,6 @@
 }
 [data-setting='elden-ring'] .coc-char__value {
   color: rgb(var(--c-frame-bright));
-}
-[data-setting='elden-ring'] .coc-roll {
-  border-color: rgb(var(--c-frame));
-  box-shadow:
-    0 0 30px -10px rgb(var(--c-accent) / 0.45),
-    var(--shadow-panel);
 }
 
 /* ================================================================== madness

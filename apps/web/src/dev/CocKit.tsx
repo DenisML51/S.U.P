@@ -178,7 +178,7 @@ const PartsSample: React.FC = () => {
         </Panel>
         <SectionTitle>Результат броска</SectionTitle>
         {last ? (
-          <RollResult record={last} floating={false} />
+          <RollResult record={last} />
         ) : (
           <p className="text-sm text-ink-muted">
             Бросьте навык или характеристику — результат появится здесь и в углу листа.
@@ -203,7 +203,11 @@ export const CocKit: React.FC = () => {
 
   return (
     <SettingScope setting={setting} className="min-h-screen bg-bg">
-      <CocSheetProvider character={character} update={update}>
+      <CocSheetProvider
+        character={character}
+        update={update}
+        renderRoll={(record) => <RollResult record={record} />}
+      >
         <header className="ui-service flex flex-wrap items-center gap-6 border-b border-line px-6 py-3">
           <span className="text-sm text-ink-muted">Витрина: Зов Ктулху</span>
           <Segmented
