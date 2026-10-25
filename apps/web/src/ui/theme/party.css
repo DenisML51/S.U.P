@@ -274,16 +274,12 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
     radial-gradient(ellipse 120% 90% at 50% 50%, transparent 40%, rgb(var(--c-bg-deep) / 0.95) 100%),
     linear-gradient(to right, rgb(var(--c-bg-deep)) 0%, rgb(var(--c-bg)) 45%, rgb(var(--c-bg)) 100%);
 }
-/* The featured hero: no box. The picture melts away at its sides and corners, while the top and the
- * bottom stay sharp but for a thin edge; its own colours glow around it. */
+/* The featured hero: no box. The picture melts away through a smoky mask (figureMask.ts) at its sides
+ * and corners, the top and bottom kept sharp; its own colours glow around it. */
 .ui-hero-figure__art {
   --figure-sink: rgb(var(--c-bg-deep) / 0.55);
-  --figure-sides: linear-gradient(to right, transparent, rgb(0 0 0 / 0.5) 9%, #000 24%, #000 76%, rgb(0 0 0 / 0.5) 91%, transparent);
-  --figure-ends: linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.6) 6%, #000 14%, #000 74%, rgb(0 0 0 / 0.55) 88%, transparent);
-  mask-image: var(--figure-sides), var(--figure-ends);
-  mask-composite: intersect;
-  -webkit-mask-image: var(--figure-sides), var(--figure-ends);
-  -webkit-mask-composite: source-in;
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
 }
 .ui-hero-figure__art img {
   filter: brightness(0.9) saturate(0.95) contrast(1.04);

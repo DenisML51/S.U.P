@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { CharacterPreview, PartyListItemDto } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
@@ -22,7 +22,8 @@ import {
   usePartyEntry,
 } from './homeParts';
 import { rememberLastHero } from './lastHero';
-import { edgeTone, pageTone, type Rgb } from './artTone';
+import { pageTone, readArt, type Rgb } from './artTone';
+import { figureMask } from './figureMask';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -295,6 +296,8 @@ const HeroFigure: React.FC<{ hero: CharacterPreview; onTone: (tone: Rgb | null) 
 }) => {
   const src = fullArtSrc(hero);
   const [ratio, setRatio] = useState(2 / 3);
+  const [brightTop, setBrightTop] = useState(false);
+  const mask = useMemo(() => figureMask(brightTop), [brightTop]);
   const portrait = ratio > PORTRAIT_RATIO;
   useEffect(() => {
     if (!src) onTone(null);
@@ -314,7 +317,10 @@ const HeroFigure: React.FC<{ hero: CharacterPreview; onTone: (tone: Rgb | null) 
           className="ui-hero-figure__glow absolute inset-0 h-full w-full object-cover"
         />
       )}
-      <span className="ui-hero-figure__art absolute inset-0">
+      <span
+        className="ui-hero-figure__art absolute inset-0"
+        style={{ maskImage: mask, WebkitMaskImage: mask }}
+      >
         {src ? (
           <img
             src={src}
@@ -324,8 +330,9 @@ const HeroFigure: React.FC<{ hero: CharacterPreview; onTone: (tone: Rgb | null) 
             onLoad={(event) => {
               const { naturalWidth: width, naturalHeight: height } = event.currentTarget;
               if (width && height) setRatio(Math.min(1.25, Math.max(0.5, width / height)));
-              const edge = edgeTone(event.currentTarget);
-              onTone(edge && pageTone(edge));
+              const reading = readArt(event.currentTarget);
+              setBrightTop(reading?.brightTop ?? false);
+              onTone(reading && pageTone(reading.edge));
             }}
           />
         ) : (

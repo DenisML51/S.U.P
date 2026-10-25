@@ -1,7 +1,7 @@
 /** A colour as [red, green, blue], 0–255. */
 export type Rgb = [number, number, number];
 
-/** Where the hero's art fades into the page (matches `--figure-sides`/`--figure-ends` in party.css). */
+/** Where the hero's art fades into the page (see figureMask.ts). */
 const FADE = { side: [0.06, 0.26], ends: [0.12, 0.8] };
 const SAMPLE_W = 32;
 const SAMPLE_H = 48;
@@ -11,12 +11,21 @@ const median = (values: number[]) => {
   return sorted[Math.floor(sorted.length / 2)] ?? 0;
 };
 
+/** Above this mean lightness its top edge would read as a straight cut against the dark page. */
+const BRIGHT_TOP = 0.3;
+
+export interface ArtReading {
+  /** The colour where the picture meets the page: the median of the bands along its sides. */
+  edge: Rgb;
+  /** Whether its top is light (a sky): such a picture needs a softer top and rounder corners. */
+  brightTop: boolean;
+}
+
 /**
- * The colour where a picture meets the page: the median of the bands along its sides, where it
- * fades out. The middle (a face, a cloak) is left out, so it never tints the page by itself.
- * Null when the picture cannot be read (not loaded, or from another origin).
+ * Reads a picture where it meets the page. The middle (a face, a cloak) is left out, so it never
+ * tints the page by itself. Null when the picture cannot be read (not loaded, or from another origin).
  */
-export const edgeTone = (image: HTMLImageElement): Rgb | null => {
+export const readArt = (image: HTMLImageElement): ArtReading | null => {
   try {
     const canvas = document.createElement('canvas');
     canvas.width = SAMPLE_W;
@@ -26,20 +35,26 @@ export const edgeTone = (image: HTMLImageElement): Rgb | null => {
     context.drawImage(image, 0, 0, SAMPLE_W, SAMPLE_H);
     const { data } = context.getImageData(0, 0, SAMPLE_W, SAMPLE_H);
     const channels: [number[], number[], number[]] = [[], [], []];
+    let top = 0;
+    let topCount = 0;
     for (let y = 0; y < SAMPLE_H; y++) {
       for (let x = 0; x < SAMPLE_W; x++) {
+        const i = (y * SAMPLE_W + x) * 4;
+        if (data[i + 3] < 128) continue;
         const u = (x + 0.5) / SAMPLE_W;
         const v = (y + 0.5) / SAMPLE_H;
+        if (v < FADE.ends[0]) {
+          top += (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
+          topCount++;
+        }
         const fromSide = Math.min(u, 1 - u);
         if (fromSide < FADE.side[0] || fromSide > FADE.side[1] || v < FADE.ends[0] || v > FADE.ends[1])
           continue;
-        const i = (y * SAMPLE_W + x) * 4;
-        if (data[i + 3] < 128) continue;
         channels.forEach((channel, c) => channel.push(data[i + c]));
       }
     }
     if (!channels[0].length) return null;
-    return channels.map(median) as Rgb;
+    return { edge: channels.map(median) as Rgb, brightTop: topCount > 0 && top / topCount > BRIGHT_TOP };
   } catch {
     return null;
   }
