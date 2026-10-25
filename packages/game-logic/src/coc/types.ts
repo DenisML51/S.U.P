@@ -117,7 +117,7 @@ export interface WeaponDef {
   ammo?: number;
   /** A roll at or above this jams the gun. */
   malfunction?: number;
-  /** Impaling: an extreme success adds the maximum of the damage. */
+  /** Impaling: an extreme success deals the maximum damage plus another normal roll of the weapon's dice. */
   impale?: boolean;
   /** Price in the 1920s and today, in dollars. */
   price?: { '1920s'?: number; modern?: number };

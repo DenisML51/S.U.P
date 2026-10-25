@@ -2,6 +2,7 @@ import type { Character, CocBuild, CocSheet, CocSkill } from '@itd/schema';
 import { rollDie, rollFormula, type RandomSource } from '../rules/dice';
 import { CHARACTERISTICS } from './content/characteristics';
 import { SKILLS, skillDef, skillName } from './content/skills';
+import { cocMaxSanity } from './meta';
 import type { CharacteristicId, CocEra, CocVariant, PointsFormula, SkillBase, SkillDef } from './types';
 
 /**
@@ -209,10 +210,17 @@ const RANK: Record<SuccessLevel, number> = {
 export const half = (value: number): number => Math.floor(value / 2);
 export const fifth = (value: number): number => Math.floor(value / 5);
 
-/** What a roll achieved against a value: 01 is critical; 100 (96+ under 50) is a fumble. */
-export function successLevel(roll: number, value: number): SuccessLevel {
+/** The number a roll must meet for the difficulty: the value, its half or its fifth. */
+export const targetOf = (value: number, difficulty: Difficulty = 'regular'): number =>
+  difficulty === 'extreme' ? fifth(value) : difficulty === 'hard' ? half(value) : value;
+
+/**
+ * What a roll achieved against a value: 01 is critical; 100 is a fumble, and so is 96+ when the
+ * number needed (`target`, the value after the difficulty) is under 50.
+ */
+export function successLevel(roll: number, value: number, target = value): SuccessLevel {
   if (roll === 1) return 'critical';
-  if (roll === 100 || (value < 50 && roll >= 96)) return 'fumble';
+  if (roll === 100 || (target < 50 && roll >= 96)) return 'fumble';
   if (roll <= fifth(value)) return 'extreme';
   if (roll <= half(value)) return 'hard';
   if (roll <= value) return 'regular';
@@ -261,8 +269,8 @@ export function checkSkill(
   random: RandomSource = Math.random,
 ): SkillCheck {
   const roll = rollPercentile(options.bonus ?? 0, options.penalty ?? 0, random);
-  const level = successLevel(roll.total, value);
   const difficulty = options.difficulty ?? 'regular';
+  const level = successLevel(roll.total, value, targetOf(value, difficulty));
   return { ...roll, value, difficulty, level, success: passes(level, difficulty) };
 }
 
@@ -380,6 +388,8 @@ export interface SanityResult {
   /** A fifth of the day's sanity is gone. */
   indefinite: boolean;
   permanent: boolean;
+  /** Already insane (temporary or indefinite) and losing more: a new bout of madness begins. */
+  boutTriggered: boolean;
   /** The dice of the loss as thrown (all at their maximum on a fumble), for a table that shows them. */
   lossDice?: { sides: number; value: number }[];
 }
@@ -404,11 +414,17 @@ export function sanityCheck(
   };
 }
 
+/** Temporary or indefinite insanity is on: any further loss of sanity brings a bout. */
+export const isUnderlyingInsane = (character: Pick<Character, 'conditions'>): boolean =>
+  character.conditions.includes(CONDITION_IDS.temporaryInsanity) ||
+  character.conditions.includes(CONDITION_IDS.indefiniteInsanity);
+
 /** What losing this much sanity now does, by the day's start and the investigator's state. */
 export function sanityLoss(character: Character, loss: number): Omit<SanityResult, 'check'> {
   const sanity = Math.max(0, character.sanity - loss);
   const dayStart = character.coc?.sanityAtDayStart ?? character.sanity;
   return {
+    boutTriggered: loss > 0 && isUnderlyingInsane(character),
     loss,
     sanity,
     needsIntRoll: loss >= 5,
@@ -425,6 +441,10 @@ export interface DamageResult {
   /** More damage in one blow than the maximum hit points: death. */
   dead: boolean;
 }
+
+/** Armour takes its points off every blow (never below zero). */
+export const absorbArmor = (damage: number, armor = 0): number =>
+  Math.max(0, Math.max(0, damage) - Math.max(0, armor));
 
 /** One blow: half the maximum at once is a major wound; at 0 a major wound means dying. */
 export function takeDamage(
@@ -455,30 +475,104 @@ export interface DevelopmentRoll {
 }
 
 /**
- * The development phase: every ticked skill rolls d100; over its value (or 96+) it gains 1d10.
- * Ticks are cleared either way.
+ * The development phase rolled: every ticked skill rolls d100; over its value (or 96+) it gains
+ * 1d10. Skills that never improve (Credit Rating, Cthulhu Mythos) are skipped even when ticked.
  */
+export function rollDevelopment(character: Character, random: RandomSource = Math.random): DevelopmentRoll[] {
+  const rolls: DevelopmentRoll[] = [];
+  for (const skill of character.coc?.skills ?? []) {
+    if (!skill.check || skillDef(skill.id)?.skill.noImprovement) continue;
+    const roll = rollDie(100, random);
+    const gain = roll > skill.value || roll >= 96 ? rollDie(10, random) : 0;
+    const sanityGain =
+      skill.value < 90 && skill.value + gain >= 90 ? rollDie(6, random) + rollDie(6, random) : 0;
+    rolls.push({ id: skill.id, roll, gain, sanityGain });
+  }
+  return rolls;
+}
+
+/**
+ * The development phase applied from rolls already made, the same every time it runs: the gains go
+ * onto their skills, every tick is cleared, sanity rises by the gains but never above 99 − Mythos.
+ */
+export const applyDevelopment =
+  (rolls: DevelopmentRoll[]) =>
+  (character: Character): Character => {
+    const coc = character.coc;
+    if (!coc) return character;
+    const gains = new Map(rolls.map((r) => [r.id, r.gain]));
+    const skills = coc.skills.map((skill) =>
+      skill.check || gains.has(skill.id)
+        ? { ...skill, value: skill.value + (gains.get(skill.id) ?? 0), check: false }
+        : skill,
+    );
+    const next = { ...coc, skills };
+    const gain = rolls.reduce((total, r) => total + r.sanityGain, 0);
+    const sanity =
+      gain > 0 ? Math.max(character.sanity, Math.min(cocMaxSanity(next), character.sanity + gain)) : character.sanity;
+    return { ...character, sanity, coc: next };
+  };
+
+/** The development phase: every ticked skill rolled (`rollDevelopment`) and applied (`applyDevelopment`). */
 export function developSkills(
   character: Character,
   random: RandomSource = Math.random,
 ): { character: Character; rolls: DevelopmentRoll[] } {
-  const coc = character.coc;
-  if (!coc) return { character, rolls: [] };
-  const rolls: DevelopmentRoll[] = [];
-  const skills = coc.skills.map((skill) => {
-    if (!skill.check) return skill;
-    const roll = rollDie(100, random);
-    const gain = roll > skill.value || roll >= 96 ? rollDie(10, random) : 0;
-    const value = skill.value + gain;
-    const sanityGain = skill.value < 90 && value >= 90 ? rollDie(6, random) + rollDie(6, random) : 0;
-    rolls.push({ id: skill.id, roll, gain, sanityGain });
-    return { ...skill, value, check: false };
-  });
-  const sanityGain = rolls.reduce((sum, r) => sum + r.sanityGain, 0);
-  return {
-    character: { ...character, sanity: character.sanity + sanityGain, coc: { ...coc, skills } },
-    rolls,
-  };
+  if (!character.coc) return { character, rolls: [] };
+  const rolls = rollDevelopment(character, random);
+  return { character: applyDevelopment(rolls)(character), rolls };
+}
+
+/** How far luck recovers: a Pulp hero's up to the luck rolled at creation, anyone else's up to 99. */
+export function luckCap(character: Pick<Character, 'build' | 'coc'>): number {
+  const pulp = character.build?.ruleset === 'coc7' && character.build.variant === 'pulp';
+  const starting = character.coc?.startingLuck;
+  return pulp && starting !== undefined ? Math.max(0, Math.min(99, starting)) : 99;
+}
+
+/**
+ * Luck recovery (an optional rule of the development phase): a d100 over the current Luck gains
+ * 1d10, never past `luckCap`. `die` is the d10 as thrown, when the roll passed.
+ */
+export function rollLuckRecovery(
+  character: Pick<Character, 'build' | 'coc'>,
+  random: RandomSource = Math.random,
+): { roll: number; gain: number; die?: number } {
+  const luck = character.coc?.luck ?? 0;
+  const roll = rollDie(100, random);
+  if (roll <= luck) return { roll, gain: 0 };
+  const die = rollDie(10, random);
+  return { roll, gain: Math.max(0, Math.min(die, luckCap(character) - luck)), die };
+}
+
+export interface WeeklyRecovery {
+  /** Only a major wound heals by the week; without one there is nothing to roll. */
+  needed: boolean;
+  check?: SkillCheck;
+  /** Hit points regained: 1d3 on a success, 2d3 on an extreme one. */
+  gain: number;
+  /** The d3s of the gain as thrown. */
+  dice: number[];
+  /** An extreme success: the major wound is erased. */
+  clearsMajorWound: boolean;
+}
+
+/**
+ * A week of rest with a major wound (Keeper Rulebook): a CON roll at the end of the week; a success
+ * regains 1d3 hit points, an extreme success 2d3 and erases the major wound. Poor conditions give a
+ * penalty die, good care a bonus die. Without a major wound healing is 1 point a day (`heal`).
+ */
+export function weeklyRecovery(
+  character: Pick<Character, 'coc' | 'conditions'>,
+  random: RandomSource = Math.random,
+  options: { bonus?: number; penalty?: number } = {},
+): WeeklyRecovery {
+  if (!character.conditions.includes(CONDITION_IDS.majorWound))
+    return { needed: false, gain: 0, dice: [], clearsMajorWound: false };
+  const check = checkSkill(cocCharacteristics(character).con, options, random);
+  const extreme = check.level === 'extreme' || check.level === 'critical';
+  const dice = !check.success ? [] : Array.from({ length: extreme ? 2 : 1 }, () => rollDie(3, random));
+  return { needed: true, check, gain: sum(dice), dice, clearsMajorWound: extreme };
 }
 
 // ------------------------------------------------------------------------------------------------

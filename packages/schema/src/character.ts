@@ -433,6 +433,8 @@ export const CocSheetSchema = passthroughObject({
   startingSanity: optionalNumber,
   /** Sanity when the current day began: losing a fifth of it in a day means indefinite insanity. */
   sanityAtDayStart: optionalNumber,
+  /** Points of armour worn (0–20), taken off every blow; absent means none (sheets saved before it). */
+  armor: numeric(int.min(0).max(20).optional()),
   residence: shortTextOr(),
   birthplace: shortTextOr(),
   cash: numberOr(0),

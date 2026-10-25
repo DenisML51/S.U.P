@@ -34,9 +34,51 @@ export interface RollModifiers {
   penalty: number;
   /** Why, for people ("в упор: +1 бонусная"). */
   reasons: string[];
+  /** The shot cannot be made at all (the target is beyond the weapon's reach). */
+  impossible?: boolean;
+  /** A shotgun's damage band at this range, for `weaponDamageDetailed` (0 up close). */
+  band?: number;
 }
 
-export type FirearmRange = 'base' | 'long' | 'veryLong';
+/** Up to the base range, up to twice it, up to four times it, and beyond reach. */
+export type FirearmRange = 'base' | 'long' | 'veryLong' | 'beyond';
+
+/** The yards of a weapon's range: one number, or a shotgun's bands ("10/20/50 ярд."); none for touch or STR/5. */
+export function rangeBands(spec: string | undefined): number[] {
+  const parts = (spec ?? '').replace(/ярд\.?/i, '').split('/').map((part) => part.trim());
+  return parts.every((part) => /^\d+$/.test(part)) ? parts.map(Number) : [];
+}
+
+export interface RangeOf {
+  range: FirearmRange;
+  /** The damage band (always 0 for a weapon with one). */
+  band: number;
+  /** How many damage bands the weapon has: more than one for shotguns. */
+  bands: number;
+}
+
+/**
+ * Where a distance in yards falls for a weapon's range. One range: up to it regular, up to twice
+ * hard, up to four times extreme, past that impossible. A shotgun's bands ("10/20/50") are `base`,
+ * `long` and `veryLong` in turn, but make no roll harder (`firearmModifiers` with `bands`): each
+ * band farther deals the next, smaller damage, and past the last it cannot reach. Undefined when the
+ * range is not in yards (touch, thrown by STR).
+ */
+export function firearmRangeOf(distance: number, spec: string | undefined): RangeOf | undefined {
+  const bands = rangeBands(spec);
+  if (bands.length === 0) return undefined;
+  if (bands.length > 1) {
+    const band = bands.findIndex((yards) => distance <= yards);
+    const steps: FirearmRange[] = ['base', 'long', 'veryLong'];
+    return band < 0
+      ? { range: 'beyond', band: bands.length - 1, bands: bands.length }
+      : { range: steps[Math.min(band, steps.length - 1)], band, bands: bands.length };
+  }
+  const [base] = bands;
+  const range: FirearmRange =
+    distance <= base ? 'base' : distance <= base * 2 ? 'long' : distance <= base * 4 ? 'veryLong' : 'beyond';
+  return { range, band: 0, bands: 1 };
+}
 
 export interface FirearmSituation {
   /** Within a fifth of the shooter's DEX in feet: a bonus die. */
@@ -45,8 +87,13 @@ export interface FirearmSituation {
   aimed?: boolean;
   /** Shots fired this round with a handgun: more than one gives every shot a penalty die. */
   shots?: number;
-  /** Beyond the weapon's range is hard, beyond twice is extreme (three times the most). */
+  /**
+   * Up to the weapon's base range is regular, up to twice it hard, up to four times extreme, beyond
+   * that impossible. For a shotgun (`bands` > 1) the range picks the damage band instead.
+   */
   range?: FirearmRange;
+  /** Damage bands of the weapon ("4d6/2d6/1d6" is 3): a shotgun loses dice with range, not accuracy. */
+  bands?: number;
   /** Shooting into a melee: a penalty die. */
   intoMelee?: boolean;
   /** The target dived for cover (a successful Dodge this round): a penalty die. */
@@ -84,10 +131,27 @@ export function firearmModifiers(s: FirearmSituation): RollModifiers {
     penalty++;
     reasons.push('цель скрыта или мала: штрафная кость');
   }
-  const difficulty: Difficulty = s.range === 'veryLong' ? 'extreme' : s.range === 'long' ? 'hard' : 'regular';
-  if (difficulty !== 'regular') reasons.push(difficulty === 'hard' ? 'дальняя дистанция: трудный бросок' : 'очень дальняя: экстремальный');
+  const bands = Math.max(1, s.bands ?? 1);
+  const impossible = s.range === 'beyond';
+  if (impossible) reasons.push('вне досягаемости: выстрел невозможен');
+  let difficulty: Difficulty = 'regular';
+  let band: number | undefined;
+  if (bands > 1) {
+    band = Math.min(bands - 1, s.range === 'veryLong' || impossible ? 2 : s.range === 'long' ? 1 : 0);
+    if (band > 0) reasons.push(`дробь рассеялась: урон ${band + 1}-й дистанции`);
+  } else if (!impossible) {
+    difficulty = s.range === 'veryLong' ? 'extreme' : s.range === 'long' ? 'hard' : 'regular';
+    if (difficulty !== 'regular') reasons.push(difficulty === 'hard' ? 'дальняя дистанция: трудный бросок' : 'очень дальняя: экстремальный');
+  }
   const net = bonus - penalty;
-  return { difficulty, bonus: Math.max(0, Math.min(2, net)), penalty: Math.max(0, Math.min(2, -net)), reasons };
+  return {
+    difficulty,
+    bonus: Math.max(0, Math.min(2, net)),
+    penalty: Math.max(0, Math.min(2, -net)),
+    reasons,
+    ...(impossible ? { impossible } : {}),
+    ...(band !== undefined ? { band } : {}),
+  };
 }
 
 export interface MeleeSituation {
@@ -120,13 +184,13 @@ export function meleeModifiers(s: MeleeSituation): RollModifiers {
 export type ManoeuvreChance = { possible: false; reason: string } | ({ possible: true } & RollModifiers);
 
 /**
- * A fighting manoeuvre (disarm, knock down, grab, push) against a target's Build: one smaller gives
- * a penalty die, two smaller makes it hard, three or more is impossible.
+ * A fighting manoeuvre (disarm, knock down, grab, push) against a target's Build: a penalty die for
+ * each point the target's Build is bigger (one or two), three or more bigger is impossible.
  */
 export function manoeuvreChance(attackerBuild: number, targetBuild: number): ManoeuvreChance {
   const gap = targetBuild - attackerBuild;
   if (gap >= 3) return { possible: false, reason: 'Цель слишком велика: комплекция больше на 3 и более' };
-  if (gap === 2) return { possible: true, difficulty: 'hard', bonus: 0, penalty: 0, reasons: ['цель крупнее на 2: трудный бросок'] };
+  if (gap === 2) return { possible: true, difficulty: 'regular', bonus: 0, penalty: 2, reasons: ['цель крупнее на 2: две штрафные кости'] };
   if (gap === 1) return { possible: true, difficulty: 'regular', bonus: 0, penalty: 1, reasons: ['цель крупнее на 1: штрафная кость'] };
   return { possible: true, difficulty: 'regular', bonus: 0, penalty: 0, reasons: [] };
 }

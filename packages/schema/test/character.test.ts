@@ -83,6 +83,14 @@ describe('CharacterSchema', () => {
     expect(CharacterSchema.safeParse({ ...minimal, images: { full: 'not-an-id' } }).success).toBe(false);
   });
 
+  it("reads an investigator's armour, absent on sheets saved before it", () => {
+    const coc = { characteristics: { str: 50 } };
+    expect(CharacterSchema.parse({ ...minimal, coc }).coc?.armor).toBeUndefined();
+    expect(CharacterSchema.parse({ ...minimal, coc: { ...coc, armor: '2' } }).coc?.armor).toBe(2);
+    expect(CharacterSchema.safeParse({ ...minimal, coc: { ...coc, armor: 21 } }).success).toBe(false);
+    expect(CharacterSchema.safeParse({ ...minimal, coc: { ...coc, armor: 1.5 } }).success).toBe(false);
+  });
+
   it('rejects a numeric field that holds text', () => {
     expect(CharacterSchema.safeParse({ ...minimal, maxHP: 'много' }).success).toBe(false);
   });
