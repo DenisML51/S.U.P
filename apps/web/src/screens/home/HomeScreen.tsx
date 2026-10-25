@@ -99,7 +99,9 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
       <div className="relative z-10 flex h-full flex-col">
         <HomeHeader onOpenSettings={onOpenSettings} />
 
-        <main className="flex min-h-0 w-[42%] max-w-[46rem] flex-1 flex-col pb-[clamp(1.5rem,4.5vh,3rem)] pl-24 pr-6 pt-[clamp(1rem,3.5vh,2.5rem)]">
+        {/* The menu keeps its own width rather than the art's share of the screen: on a narrow window
+            it no longer squeezes, and the art simply runs on underneath it. */}
+        <main className="flex min-h-0 w-full max-w-[46rem] flex-1 flex-col pb-[clamp(1.5rem,4.5vh,3rem)] pl-24 pr-6 pt-[clamp(1rem,3.5vh,2.5rem)]">
           {/* ---------------------------------------------------------------- The hero */}
           <motion.section {...enter({ x: -24 }, 0.15)}>
             {hero ? (
