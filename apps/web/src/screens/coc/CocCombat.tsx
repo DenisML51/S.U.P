@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 import {
   COC_CONDITIONS,
   CONDITION_IDS,
@@ -7,12 +8,17 @@ import {
   cocCharacteristics,
   derivedOf,
   displaySkillName,
+  absorbArmor,
+  applyHitDamage,
   firearmModifiers,
+  firearmRangeOf,
+  fireWeapon,
   initiativeOf,
   manoeuvreChance,
   meleeModifiers,
-  newRound,
   opposedResult,
+  rangeBands,
+  reloadWeapon,
   skillName,
   skillValue,
   castSpell,
@@ -20,9 +26,10 @@ import {
   changeMagic,
   heal,
   setLuck,
+  weaponDamageDetailed,
+  type Defence,
   type FirearmRange,
   type RollModifiers,
-  type RoundState,
   type SuccessLevel,
 } from '@itd/game-logic/coc';
 import { maxSanityOf } from '@itd/game-logic';
@@ -33,7 +40,7 @@ import { useNavStore } from '../../store/useNavStore';
 import { useSessionStore } from '../../store/useSessionStore';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { Button, IconButton, Panel, cx } from '../../ui/primitives';
-import { NumberField, Segmented } from '../../ui/forms';
+import { NumberField, Segmented, Select } from '../../ui/forms';
 import { Dialog } from '../../ui/Dialog';
 import { IconDice, IconExit, IconPrev, IconSettings } from '../../ui/icons';
 import { SyncStatus } from '../../ui/SyncStatus';
@@ -48,27 +55,32 @@ import { setRollVerdict, useRollShown, type RollVerdict } from './verdict';
 import { InsanityVeil, madnessStage } from './InsanityVeil';
 import { Track } from './parts';
 import { PickerDialog } from './picker';
+import {
+  BIG_TARGET_BUILD,
+  diveForCover,
+  enterRound,
+  fightBackSkill,
+  freshRound,
+  idleRound,
+  meleeWeapons,
+  readRound,
+  shotsPerRound,
+  shotsToFire,
+  syncWithTable,
+  withBigTarget,
+  type CocRound,
+} from './combatRules';
 
 const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
 
 /** The round of this investigator, kept with the tab like the D&D fight is. */
-function useRound(
-  characterId: string,
-): [
-  RoundState & { inCombat: boolean; initiative: number | null },
-  (next: RoundState & { inCombat: boolean; initiative: number | null }) => void,
-] {
+function useRound(characterId: string): [CocRound, React.Dispatch<React.SetStateAction<CocRound>>] {
   const key = `itd.coc-round.${characterId}`;
-  const [state, setState] = useState(() => {
+  const [state, setState] = useState<CocRound>(() => {
     try {
-      return {
-        ...newRound(0),
-        inCombat: false,
-        initiative: null as number | null,
-        ...JSON.parse(sessionStorage.getItem(key) ?? '{}'),
-      };
+      return readRound(sessionStorage.getItem(key));
     } catch {
-      return { ...newRound(0), inCombat: false, initiative: null as number | null };
+      return idleRound();
     }
   });
   useEffect(() => {
@@ -147,14 +159,32 @@ const BarButton: React.FC<{
 
 const LEVELS: SuccessLevel[] = ['failure', 'regular', 'hard', 'extreme', 'critical'];
 
+const RANGE_LABELS: Record<FirearmRange, string> = {
+  base: 'обычная',
+  long: 'дальняя',
+  veryLong: 'очень дальняя',
+  beyond: 'вне досягаемости',
+};
+
+/** The defences of the bar: the two opposed ones, and diving for cover from a shot. */
+type DefenceMode = Defence | 'cover';
+
+/** One shot of the last volley, with the damage rolled for it when it hit. */
+interface ShotOutcome {
+  total: number;
+  level: SuccessLevel;
+  jammed: boolean;
+  damage?: { total: number; formula: string };
+}
+
+/** Fighting back with fists, when no melee weapon is picked. */
+const BRAWL = 'brawl';
+
 /** Spells shown on the bar itself; the rest wait behind «Заклинания (N)». */
 const INLINE_SPELLS = 2;
 
 /** An opposed roll told as a telegram reads it: what the defence did, then what the blow did. */
-function verdictOf(
-  winner: 'attacker' | 'defender' | 'none',
-  defence: 'dodge' | 'fightBack',
-): Omit<RollVerdict, 'serial'> {
+function verdictOf(winner: 'attacker' | 'defender' | 'none', defence: Defence): Omit<RollVerdict, 'serial'> {
   if (winner === 'none') return { parts: ['Никто не преуспел', 'удар не нанесён'], tone: 'neutral' };
   if (winner === 'defender')
     return defence === 'fightBack'
@@ -174,7 +204,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   onOpenSettings,
   onDice,
 }) => {
-  const { character, update, roll, last } = useCoc();
+  const { character, update, roll, last, damageBonus } = useCoc();
   const setViewMode = useCharacterStore((s) => s.setViewMode);
   const goToCharacterList = useCharacterStore((s) => s.goToCharacterList);
   const go = useNavStore((s) => s.go);
@@ -187,10 +217,21 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   const [round, setRound] = useRound(character.id);
   const inCombat = party ? partyFight !== null : round.inCombat;
 
+  // At a table the round follows the table's fight: another fight (or none) starts clean, so an aim
+  // or a spent action never carries over from the last one, and the round number is the table's.
+  const atTable = !!party;
+  const fightStart = partyFight?.startedAt ?? null;
+  const fightRound = partyFight?.round ?? 0;
+  useEffect(() => {
+    if (!atTable) return;
+    setRound((r) => syncWithTable(r, fightStart ? { startedAt: fightStart, round: fightRound } : null));
+  }, [atTable, fightStart, fightRound, setRound]);
+
   const c = cocCharacteristics(character);
   const build = character.build?.ruleset === 'coc7' ? character.build : undefined;
   const derived = derivedOf(c, build?.variant, build?.age);
   const coc = character.coc!;
+  const armor = coc.armor ?? 0;
 
   const [weaponId, setWeaponId] = useState<string>(() => character.attacks[0]?.id ?? '');
   const weapon = character.attacks.find((a) => a.id === weaponId) ?? character.attacks[0];
@@ -202,6 +243,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
     intoMelee: boolean;
     cover: boolean;
     hidden: boolean;
+    bigTarget: boolean;
   }>({
     pointBlank: false,
     shots: 1,
@@ -209,73 +251,183 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
     intoMelee: false,
     cover: false,
     hidden: false,
+    bigTarget: false,
   });
+  /** Yards to the target, for a weapon whose range is in yards. */
+  const [distance, setDistance] = useState(10);
   const [melee, setMelee] = useState({ outnumbering: false, hampered: false });
   const [targetBuild, setTargetBuild] = useState(0);
+  const [targetId, setTargetId] = useState<string | undefined>(undefined);
   const [skillPicker, setSkillPicker] = useState(false);
   const [gunReady, setGunReady] = useState(false);
   const [amount, setAmount] = useState(1);
+  const [throughArmor, setThroughArmor] = useState(true);
+  const [volley, setVolley] = useState<{ weaponId: string; shots: ShotOutcome[] } | null>(null);
+
+  // The master may pick a foe of the fight: its Build (when its sheet has one) settles a big target
+  // and a manoeuvre; players, who do not see the NPCs' numbers, mark a big target themselves.
+  const targets = (partyFight?.combatants ?? [])
+    .filter((x) => x.kind === 'npc')
+    .map((x) => ({ combatant: x, build: party?.npcs?.find((n) => n.id === x.refId)?.coc?.build }));
+  const knownTargets = targets.filter((t) => t.build !== undefined);
+  const pickTarget = (id: string) => {
+    setTargetId(id);
+    const found = knownTargets.find((t) => t.combatant.id === id);
+    if (found?.build === undefined) return;
+    setTargetBuild(found.build);
+    setShot((s) => ({ ...s, bigTarget: found.build! >= BIG_TARGET_BUILD }));
+  };
+
+  const maxShots = weapon ? shotsPerRound(weapon.uses) : 1;
+  const shotsAsked = Math.min(Math.max(1, shot.shots), maxShots);
+  const shotsNow = weapon ? shotsToFire(shotsAsked, maxShots, weapon.ammo) : 0;
+  const rangeAt = firearm && weapon ? firearmRangeOf(distance, weapon.range) : undefined;
+  const reach = weapon ? rangeBands(weapon.range) : [];
+  const farthest = reach.length > 1 ? reach[reach.length - 1] : reach.length === 1 ? reach[0] * 4 : undefined;
+  const range = rangeAt?.range ?? shot.range;
 
   const aimed = !!weapon && round.aimedWith === weapon.id;
   const mods: RollModifiers = firearm
-    ? firearmModifiers({
-        pointBlank: shot.pointBlank,
-        aimed,
-        shots: shot.shots,
-        range: shot.range,
-        intoMelee: shot.intoMelee,
-        targetDivedForCover: shot.cover,
-        targetHidden: shot.hidden,
-      })
+    ? withBigTarget(
+        firearmModifiers({
+          pointBlank: shot.pointBlank,
+          aimed,
+          shots: Math.max(1, shotsNow),
+          range,
+          bands: rangeAt?.bands ?? weapon?.damage.split('/').length ?? 1,
+          intoMelee: shot.intoMelee,
+          targetDivedForCover: shot.cover,
+          targetHidden: shot.hidden,
+        }),
+        shot.bigTarget,
+      )
     : meleeModifiers({ defenderReactedThisRound: melee.outnumbering ? 1 : 0, hampered: melee.hampered });
 
-  const spendAction = () => setRound({ ...round, actionUsed: true, aimedWith: undefined });
-  const cast = (spell: { name: string; cost: string }) => {
-    const result = castSpell(character, spell.cost);
-    update(result.edit, { message: `Сотворено «${spell.name}»`, type: 'sanity' });
-    spendAction();
+  const actionDone = inCombat && round.actionUsed;
+  /** Actions wait for the hero's turn at a table and for a new round; defences and wounds never do. */
+  const noAction = actionDone || locked;
+  const actionNote = locked
+    ? turnLock
+    : actionDone
+      ? 'Действие раунда потрачено — защищаться ещё можно'
+      : null;
+  /** An action of the round, refused with the reason out of the hero's turn (as the D&D sheet does). */
+  const onTurn = (run: () => void) => {
+    if (turnLock) toast.error(turnLock, { id: 'turn-lock' });
+    else if (actionDone) toast.error('Действие раунда уже потрачено', { id: 'turn-lock' });
+    else run();
   };
 
-  const attack = () => {
-    if (!weapon) return;
-    const value = weapon.skill ? skillValue(character, weapon.skill) : 0;
-    const shots = firearm ? Math.max(1, shot.shots) : 1;
-    roll({
-      label: weapon.name,
-      value,
-      kind: 'attack',
-      id: weapon.id,
-      skill: weapon.skill,
-      malfunction: weapon.malfunction,
-      ...mods,
+  const spendAction = () => setRound((r) => ({ ...r, actionUsed: true, aimedWith: undefined }));
+  const cast = (spell: { name: string; cost: string }) =>
+    onTurn(() => {
+      const result = castSpell(character, spell.cost);
+      update(result.edit, { message: `Сотворено «${spell.name}»`, type: 'sanity' });
+      spendAction();
     });
-    if (weapon.ammo !== undefined) {
-      update((doc) => ({
-        ...doc,
-        attacks: doc.attacks.map((a) =>
-          a.id === weapon.id && a.ammo !== undefined ? { ...a, ammo: Math.max(0, a.ammo - shots) } : a,
-        ),
-      }));
-    }
-    spendAction();
-  };
 
-  const defend = (mode: 'dodge' | 'fightBack') => {
-    const id = mode === 'dodge' ? 'dodge' : 'fighting:brawl';
-    roll({
-      label: mode === 'dodge' ? 'Уклонение' : 'Контратака',
-      value: skillValue(character, id),
-      kind: 'skill',
-      id,
+  /**
+   * The attack: every shot of a volley is its own roll with the volley's penalty die, a round
+   * leaves the gun with each, and a jam ends the volley. A volley's hits and a shotgun's farther
+   * bands roll their damage here (the roll's toast knows one hit at the closest band only).
+   */
+  const attack = () =>
+    onTurn(() => {
+      if (!weapon || mods.impossible) return;
+      const fired = firearm ? shotsNow : 1;
+      if (fired === 0) return;
+      const value = weapon.skill ? skillValue(character, weapon.skill) : 0;
+      const band = mods.band ?? 0;
+      const ownDamage = fired > 1 || band > 0;
+      const shots: ShotOutcome[] = [];
+      for (let i = 0; i < fired; i++) {
+        const record = roll({
+          label: fired > 1 ? `${weapon.name} · выстрел ${i + 1}` : weapon.name,
+          value,
+          kind: 'attack',
+          id: weapon.id,
+          skill: weapon.skill,
+          malfunction: weapon.malfunction,
+          difficulty: mods.difficulty,
+          bonus: mods.bonus,
+          penalty: mods.penalty,
+        });
+        // Dice are rolled here, once: the edit that logs them runs twice (screen and stored copy).
+        const hit =
+          ownDamage && record.check.success && !record.jammed
+            ? weaponDamageDetailed(weapon, damageBonus, record.check.level, Math.random, band)
+            : undefined;
+        shots.push({
+          total: record.check.total,
+          level: record.check.level,
+          jammed: !!record.jammed,
+          ...(hit ? { damage: { total: hit.total, formula: hit.formula } } : {}),
+        });
+        if (record.jammed) break;
+      }
+      if (weapon.ammo !== undefined) update(fireWeapon(weapon.id, shots.length), undefined, { quiet: true });
+      const hits = shots.filter((x) => x.damage);
+      if (ownDamage && hits.length > 0) {
+        const total = hits.reduce((sum, x) => sum + x.damage!.total, 0);
+        update(
+          (doc) => doc,
+          {
+            message: `${weapon.name}: ${hits.length > 1 ? `${hits.length} попадания, ` : ''}урон ${hits
+              .map((x) => `${x.damage!.total} (${x.damage!.formula})`)
+              .join(' + ')}${hits.length > 1 ? ` = ${total}` : ''}`,
+            type: 'other',
+          },
+          { quiet: true },
+        );
+      }
+      setVolley(ownDamage ? { weaponId: weapon.id, shots } : null);
+      spendAction();
     });
-    setRound({ ...round, reactions: round.reactions + 1 });
-    setDefence(mode);
-  };
-  const [defence, setDefence] = useState<'dodge' | 'fightBack' | null>(null);
+
+  const melees = meleeWeapons(character.attacks);
+  const [fightWithId, setFightWithId] = useState<string | null>(null);
+  // Fighting back is made with the melee weapon in hand unless another is picked; Brawl without one.
+  const fightWith =
+    fightWithId === BRAWL
+      ? undefined
+      : (melees.find((a) => a.id === fightWithId) ?? (weapon && !firearm ? melees.find((a) => a.id === weapon.id) : undefined));
+  const fightBackId = fightBackSkill(fightWith);
+
+  const [defence, setDefence] = useState<{ mode: DefenceMode; serial: number } | null>(null);
   const [incoming, setIncoming] = useState<SuccessLevel | null>(null);
-  const defending = last && defence && (last.label === 'Уклонение' || last.label === 'Контратака');
-  const verdict = defending && incoming ? opposedResult(incoming, last.check.level, defence) : null;
-  const told = verdict && defence ? verdictOf(verdict, defence) : null;
+  const defend = (mode: DefenceMode) => {
+    const id = mode === 'fightBack' ? fightBackId : 'dodge';
+    const record = roll(
+      mode === 'fightBack' && fightWith
+        ? // With a weapon the roll is its attack: a won fight back rolls that weapon's damage.
+          { label: `Контратака · ${fightWith.name}`, value: skillValue(character, id), kind: 'attack', id: fightWith.id, skill: id }
+        : {
+            label: mode === 'dodge' ? 'Уклонение' : mode === 'cover' ? 'Укрыться от выстрела' : 'Контратака',
+            value: skillValue(character, id),
+            kind: 'skill',
+            id,
+          },
+    );
+    if (mode === 'cover') {
+      if (inCombat) setRound(diveForCover);
+    } else {
+      setRound((r) => ({ ...r, reactions: r.reactions + 1 }));
+    }
+    // Each defence answers its own attack: the last one's level must not decide this one.
+    setIncoming(null);
+    setDefence({ mode, serial: record.serial });
+  };
+  const defending = last && defence && last.serial === defence.serial ? defence.mode : null;
+  const verdict =
+    defending && defending !== 'cover' && incoming ? opposedResult(incoming, last!.check.level, defending) : null;
+  const told: Omit<RollVerdict, 'serial'> | null =
+    defending === 'cover'
+      ? last!.check.success
+        ? { parts: ['Вы укрылись', 'стрелку штрафная кость'], tone: 'success' }
+        : { parts: ['Укрыться не успели', 'выстрел как обычно'], tone: 'danger' }
+      : verdict && defending
+        ? verdictOf(verdict, defending)
+        : null;
   // The verdict goes onto the defence roll's telegram; a new roll leaves it behind.
   const toldSerial = told && last ? last.serial : null;
   const toldText = told?.parts.join('|');
@@ -302,17 +454,25 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
 
   const start = () => {
     const initiative = initiativeOf(c.dex, gunReady);
-    setRound({ ...newRound(1), inCombat: true, initiative });
+    setRound(freshRound(`solo:${Date.now()}`, 1, initiative));
     update((doc) => doc, {
       message: `Бой начался · порядок хода ${initiative} (ЛВК${gunReady ? ' +50' : ''})`,
       type: 'other',
     });
   };
-  const nextRound = () =>
-    setRound({ ...newRound(round.round + 1, round.aimedWith), inCombat: true, initiative: round.initiative });
+  const nextRound = () => setRound((r) => enterRound(r, r.round + 1));
   const finish = () => {
-    setRound({ ...newRound(0), inCombat: false, initiative: null });
+    setRound(idleRound());
     update((doc) => doc, { message: 'Бой окончен', type: 'other' });
+  };
+
+  const takeHit = () => {
+    const worn = throughArmor ? armor : 0;
+    const taken = absorbArmor(amount, worn);
+    update(throughArmor ? applyHitDamage(amount) : applyDamage(amount), {
+      message: worn > 0 ? `Урон ${amount} − броня ${amount - taken} = ${taken}` : `Урон ${amount}`,
+      type: 'health',
+    });
   };
 
   const conditions = character.conditions
@@ -328,15 +488,8 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
     [coc.skills],
   );
 
-  const actionDone = inCombat && round.actionUsed;
-  /** Actions wait for the hero's turn at a table and for a new round; defences and wounds never do. */
-  const noAction = actionDone || locked;
-  const actionNote = locked
-    ? turnLock
-    : actionDone
-      ? 'Действие раунда потрачено — защищаться ещё можно'
-      : null;
-  const firearmReady = weapon && weapon.ammo !== undefined && weapon.ammo <= 0;
+  const outOfAmmo = !!weapon && weapon.ammo !== undefined && weapon.ammo <= 0;
+  const shownVolley = volley && volley.weaponId === weapon?.id ? volley.shots : null;
 
   return (
     <div className="relative h-full overflow-hidden">
@@ -358,11 +511,11 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               party={party}
               characterId={character.id}
               onMyTurn={() => {
-                setRound({
-                  ...newRound(round.round + 1, round.aimedWith),
-                  inCombat: true,
-                  initiative: round.initiative,
-                });
+                // The round was entered when it began; the turn itself only says so.
+                if (partyFight)
+                  setRound((r) =>
+                    syncWithTable(r, { startedAt: partyFight.startedAt, round: partyFight.round }),
+                  );
                 update((doc) => doc, { message: 'Ваш ход', type: 'other' }, { quiet: true });
               }}
             />
@@ -460,8 +613,10 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               size="sm"
               variant="danger"
               className="flex-1"
-              title="Половина хитов за раз — серьёзная рана; 0 хитов — без сознания или при смерти"
-              onClick={() => update(applyDamage(amount), { message: `Урон ${amount}`, type: 'health' })}
+              title={`Половина хитов за раз — серьёзная рана; 0 хитов — без сознания или при смерти${
+                throughArmor && armor > 0 ? `. Броня снимает ${armor}` : ''
+              }`}
+              onClick={takeHit}
             >
               Урон
             </Button>
@@ -473,6 +628,22 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               Лечение
             </Button>
           </div>
+          {armor > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-faint">
+              <Chip
+                on={throughArmor}
+                onClick={() => setThroughArmor(!throughArmor)}
+                title="Броня снимает свои очки с каждого удара оружием; падения, огонь и заклинания идут мимо неё"
+              >
+                Броня {armor}
+              </Chip>
+              {throughArmor && (
+                <span>
+                  удар {amount} → {absorbArmor(amount, armor)} (поглощено {amount - absorbArmor(amount, armor)})
+                </span>
+              )}
+            </div>
+          )}
           <Track
             label="Магия"
             value={coc.magicPoints}
@@ -560,6 +731,22 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               );
             })}
           </div>
+          {knownTargets.length > 0 && (
+            <label className="flex items-center gap-2 text-xs text-ink-faint">
+              <span className="shrink-0">Цель</span>
+              <Select
+                value={targetId}
+                onChange={pickTarget}
+                placeholder="не выбрана"
+                options={knownTargets.map((t) => ({
+                  value: t.combatant.id,
+                  label: t.combatant.name,
+                  hint: `комплекция ${t.build}`,
+                }))}
+                className="flex-1 text-sm"
+              />
+            </label>
+          )}
           {firearm ? (
             <div className="flex flex-col gap-2 border-t border-line/50 pt-3">
               <div className="flex flex-wrap gap-1.5">
@@ -588,29 +775,54 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 <Chip on={shot.hidden} onClick={() => setShot({ ...shot, hidden: !shot.hidden })}>
                   Скрыта
                 </Chip>
+                <Chip
+                  on={shot.bigTarget}
+                  onClick={() => setShot({ ...shot, bigTarget: !shot.bigTarget })}
+                  title={`Комплекция цели ${BIG_TARGET_BUILD} и больше: бонусная кость`}
+                >
+                  Крупная цель
+                </Chip>
               </div>
-              <Segmented
-                label="Выстрелов"
-                value={String(shot.shots) as '1' | '2' | '3'}
-                onChange={(v) => setShot({ ...shot, shots: Number(v) })}
-                options={[
-                  { value: '1', label: '1 выстрел' },
-                  { value: '2', label: '2' },
-                  { value: '3', label: '3' },
-                ]}
-                className="ui-segmented--compact"
-              />
-              <Segmented
-                label="Дистанция"
-                value={shot.range}
-                onChange={(range) => setShot({ ...shot, range })}
-                options={[
-                  { value: 'base', label: 'Обычная' },
-                  { value: 'long', label: 'Дальняя' },
-                  { value: 'veryLong', label: 'Оч. дальняя' },
-                ]}
-                className="ui-segmented--compact"
-              />
+              {maxShots > 1 && (
+                <Segmented
+                  label="Выстрелов"
+                  value={String(shotsAsked)}
+                  onChange={(v) => setShot({ ...shot, shots: Number(v) })}
+                  options={Array.from({ length: maxShots }, (_, i) => ({
+                    value: String(i + 1),
+                    label: i === 0 ? '1 выстрел' : String(i + 1),
+                  }))}
+                  className="ui-segmented--compact"
+                />
+              )}
+              {rangeAt ? (
+                <div className="flex items-center gap-2">
+                  <NumberField
+                    label="Дистанция, ярд."
+                    value={distance}
+                    min={0}
+                    max={9999}
+                    onChange={(v) => setDistance(Math.max(0, v))}
+                    className="w-28"
+                  />
+                  <span className={cx('text-xs', range === 'beyond' ? 'text-danger' : 'text-ink-muted')}>
+                    {RANGE_LABELS[range]}
+                    {weapon?.range ? ` · ${weapon.range}` : ''}
+                  </span>
+                </div>
+              ) : (
+                <Segmented
+                  label="Дистанция"
+                  value={shot.range === 'beyond' ? 'base' : shot.range}
+                  onChange={(next) => setShot({ ...shot, range: next })}
+                  options={[
+                    { value: 'base', label: 'Обычная' },
+                    { value: 'long', label: 'Дальняя' },
+                    { value: 'veryLong', label: 'Оч. дальняя' },
+                  ]}
+                  className="ui-segmented--compact"
+                />
+              )}
             </div>
           ) : (
             <div className="flex flex-wrap gap-1.5 border-t border-line/50 pt-3">
@@ -626,18 +838,39 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
             </div>
           )}
           <p className="min-h-[1rem] text-xs text-ink-faint">
-            {[...mods.reasons, aimed && 'прицелился: бонусная кость'].filter(Boolean).join(' · ') ||
-              'Без модификаторов'}
+            {mods.reasons.join(' · ') || 'Без модификаторов'}
           </p>
+          {mods.impossible && (
+            <p className="text-xs text-danger" role="status">
+              {farthest !== undefined ? `Цель дальше ${farthest} ярд.` : 'Цель вне досягаемости'} — из этого
+              оружия её не достать
+            </p>
+          )}
           <Button
             variant="primary"
             size="lg"
             className="w-full"
-            disabled={!weapon || noAction || !!firearmReady}
+            disabled={!weapon || noAction || outOfAmmo || !!mods.impossible}
             onClick={attack}
           >
-            {firearmReady ? 'Нет патронов' : `Атаковать${weapon ? ` · ${weapon.damage}` : ''}`}
+            {outOfAmmo
+              ? 'Нет патронов'
+              : mods.impossible
+                ? 'Вне досягаемости'
+                : `${shotsNow > 1 ? `Выстрелить ${shotsNow} раза` : 'Атаковать'}${weapon ? ` · ${weapon.damage}` : ''}`}
           </Button>
+          {shownVolley && (
+            <ol className="flex flex-col gap-0.5 text-xs" aria-label="Выстрелы">
+              {shownVolley.map((x, i) => (
+                <li key={i} className={x.damage ? 'text-ink' : 'text-ink-faint'}>
+                  {shownVolley.length > 1 ? `Выстрел ${i + 1}: ` : ''}
+                  {x.total} — {SUCCESS_LABELS[x.level].toLowerCase()}
+                  {x.jammed ? ', осечка' : ''}
+                  {x.damage ? ` · урон ${x.damage.total} (${x.damage.formula})` : ''}
+                </li>
+              ))}
+            </ol>
+          )}
           {firearm && weapon && (
             <div className="flex gap-2">
               <Button
@@ -645,10 +878,12 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 className="flex-1"
                 disabled={noAction}
                 title="Бонусная кость на следующий выстрел"
-                onClick={() => {
-                  setRound({ ...round, actionUsed: true, aimedWith: weapon.id });
-                  update((doc) => doc, { message: `Прицеливается: ${weapon.name}`, type: 'other' });
-                }}
+                onClick={() =>
+                  onTurn(() => {
+                    setRound((r) => ({ ...r, actionUsed: true, aimedWith: weapon.id }));
+                    update((doc) => doc, { message: `Прицеливается: ${weapon.name}`, type: 'other' });
+                  })
+                }
               >
                 Прицелиться
               </Button>
@@ -657,18 +892,12 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                   size="sm"
                   className="flex-1"
                   disabled={noAction}
-                  onClick={() => {
-                    update(
-                      (doc) => ({
-                        ...doc,
-                        attacks: doc.attacks.map((a) =>
-                          a.id === weapon.id ? { ...a, ammo: a.magazine } : a,
-                        ),
-                      }),
-                      { message: `${weapon.name}: перезаряжено`, type: 'inventory' },
-                    );
-                    spendAction();
-                  }}
+                  onClick={() =>
+                    onTurn(() => {
+                      update(reloadWeapon(weapon.id), { message: `${weapon.name}: перезаряжено`, type: 'inventory' });
+                      spendAction();
+                    })
+                  }
                 >
                   Перезарядить
                 </Button>
@@ -711,11 +940,34 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 hint="ничья — в вашу пользу"
                 onClick={() => defend('dodge')}
               />
+              <div className="flex flex-col items-center gap-1">
+                <BarButton
+                  label="Контратака"
+                  value={skillValue(character, fightBackId)}
+                  hint={fightWith ? fightWith.name : 'ничья — атакующему'}
+                  onClick={() => defend('fightBack')}
+                />
+                {melees.length > 0 && (
+                  <Select
+                    value={fightWith?.id ?? BRAWL}
+                    onChange={setFightWithId}
+                    options={[
+                      { value: BRAWL, label: 'Драка', hint: String(skillValue(character, 'fighting:brawl')) },
+                      ...melees.map((a) => ({
+                        value: a.id,
+                        label: a.name,
+                        hint: String(skillValue(character, fightBackSkill(a))),
+                      })),
+                    ]}
+                    className="w-[6.5rem] py-0.5 text-[11px]"
+                  />
+                )}
+              </div>
               <BarButton
-                label="Контратака"
-                value={skillValue(character, 'fighting:brawl')}
-                hint="ничья — атакующему"
-                onClick={() => defend('fightBack')}
+                label="Укрыться"
+                value={skillValue(character, 'dodge')}
+                hint="от выстрела: теряете атаку"
+                onClick={() => defend('cover')}
               />
             </BarGroup>
             <BarGroup title="Манёвр">
@@ -739,18 +991,21 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 value={skillValue(character, 'fighting:brawl')}
                 hint="обезоружить, сбить, схватить"
                 disabled={!manoeuvre.possible || noAction}
-                onClick={() => {
-                  if (!manoeuvre.possible) return;
-                  roll({
-                    label: 'Манёвр',
-                    value: skillValue(character, 'fighting:brawl'),
-                    kind: 'skill',
-                    id: 'fighting:brawl',
-                    difficulty: manoeuvre.difficulty,
-                    penalty: manoeuvre.penalty,
-                  });
-                  spendAction();
-                }}
+                onClick={() =>
+                  onTurn(() => {
+                    if (!manoeuvre.possible) return;
+                    roll({
+                      label: 'Манёвр',
+                      value: skillValue(character, 'fighting:brawl'),
+                      kind: 'skill',
+                      id: 'fighting:brawl',
+                      difficulty: manoeuvre.difficulty,
+                      bonus: manoeuvre.bonus,
+                      penalty: manoeuvre.penalty,
+                    });
+                    spendAction();
+                  })
+                }
               />
             </BarGroup>
             <BarGroup title="Ещё">
@@ -758,7 +1013,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 label="Навык"
                 hint="любой навык"
                 disabled={noAction}
-                onClick={() => setSkillPicker(true)}
+                onClick={() => onTurn(() => setSkillPicker(true))}
               />
               <BarButton
                 label="Удача"
@@ -791,7 +1046,17 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               {actionNote}
             </p>
           )}
-          {defending && (
+          {defending === 'cover' && last && (
+            <Panel ornate={false} className="mt-2 px-4 py-2 text-center text-sm">
+              <span role="status" className={last.check.success ? 'text-success' : 'text-danger'}>
+                {last.check.success
+                  ? 'Вы укрылись — стрелок бросает со штрафной костью'
+                  : 'Укрыться не успели — выстрел без штрафа'}
+              </span>
+              <span className="ml-2 text-ink-muted">· следующая атака потеряна</span>
+            </Panel>
+          )}
+          {defending && defending !== 'cover' && last && (
             <Panel
               ornate={false}
               className="mt-2 flex flex-wrap items-center justify-center gap-1.5 px-4 py-2 text-sm"
@@ -816,7 +1081,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                   )}
                 >
                   {verdict === 'defender'
-                    ? defence === 'fightBack'
+                    ? defending === 'fightBack'
                       ? 'Контратака удалась — вы наносите урон'
                       : 'Вы увернулись'
                     : verdict === 'attacker'
@@ -871,10 +1136,12 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
         subtitle="Бросок навыка в бою — действие раунда"
         options={skills}
         confirmLabel="Бросить"
-        onPick={(id) => {
-          roll({ label: skillName(id), value: skillValue(character, id), kind: 'skill', id });
-          spendAction();
-        }}
+        onPick={(id) =>
+          onTurn(() => {
+            roll({ label: skillName(id), value: skillValue(character, id), kind: 'skill', id });
+            spendAction();
+          })
+        }
       />
       <InsanityVeil stage={madnessStage(character)} />
     </div>
