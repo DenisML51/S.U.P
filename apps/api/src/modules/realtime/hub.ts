@@ -33,6 +33,11 @@ export class RealtimeHub implements ChangeNotifier {
     }
   }
 
+  /** Whether the user has a socket open on this process. */
+  has(userId: string): boolean {
+    return this.connections.has(userId);
+  }
+
   /** Closes every socket of a user, e.g. after a password change. */
   disconnectUser(userId: string, reason: string): void {
     for (const connection of this.connections.get(userId) ?? []) connection.close(4001, reason);

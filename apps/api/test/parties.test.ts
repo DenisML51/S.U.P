@@ -399,4 +399,20 @@ describe('sessions', () => {
     const sheet = (await call(app, player, 'GET', `/characters/${playerHero.id}`)).json<{ data: { currentHP: number } }>();
     expect(sheet.data.currentHP).toBe(3);
   });
+
+  it('lets a player take their hero back between sessions, by the seat the list names', async () => {
+    const app = await ctx.app();
+    const { master, player, partyId, playerHero } = await table(app);
+    await call(app, master, 'DELETE', `/parties/${partyId}/session`);
+
+    const [listed] = (await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>();
+    expect(listed).toMatchObject({ inSession: false, myCharacterIds: [playerHero.id] });
+    expect(listed!.myHeroes).toEqual([{ id: expect.any(String), characterId: playerHero.id }]);
+
+    expect((await call(app, player, 'DELETE', `/parties/${partyId}/heroes/${listed!.myHeroes[0]!.id}`)).statusCode).toBe(204);
+    const after = (await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>();
+    expect(after[0]).toMatchObject({ myCharacterIds: [], myHeroes: [] });
+    // Still at the table, without a hero, until they leave too.
+    expect((await view(app, master, partyId)).members.map((m) => m.userId)).toContain(player.user.id);
+  });
 });

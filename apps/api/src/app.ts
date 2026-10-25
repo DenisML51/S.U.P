@@ -24,6 +24,7 @@ import { partyRoutes } from './modules/parties/parties.routes';
 import { PartiesService } from './modules/parties/parties.service';
 import { RealtimeHub } from './modules/realtime/hub';
 import { PostgresChangeNotifier } from './modules/realtime/pgNotifier';
+import { PresenceService } from './modules/realtime/presence';
 import { realtimeRoutes } from './modules/realtime/realtime.routes';
 
 /** Character documents embed avatars as data URLs; the schema caps one at ~4 MB. */
@@ -39,6 +40,7 @@ export interface AppServices {
   messages: MessagesService;
   /** Sockets of this process. */
   hub: RealtimeHub;
+  presence: PresenceService;
   /** Cross-process change bus; the app forwards it into `hub`. */
   notifier: PostgresChangeNotifier;
 }
@@ -53,6 +55,7 @@ export function createServices(config: Config, { db, sql }: DatabaseConnection):
   return {
     hub,
     notifier,
+    presence: new PresenceService(db, notifier),
     auth: new AuthService(db, signer, {
       refreshTokenTtlDays: config.REFRESH_TOKEN_TTL_DAYS,
       registrationEnabled: config.REGISTRATION_ENABLED,
@@ -103,6 +106,7 @@ export async function buildApp(
   app.addHook('onClose', async () => {
     await stopForwarding();
     services.hub.closeAll();
+    services.presence.dispose();
   });
 
   await app.register(
@@ -128,7 +132,7 @@ export async function buildApp(
         messages: services.messages,
       });
       await api.register(assetRoutes, { auth: services.auth, assets: services.assets });
-      await api.register(realtimeRoutes, { auth: services.auth, hub: services.hub });
+      await api.register(realtimeRoutes, { auth: services.auth, hub: services.hub, presence: services.presence });
     },
     { prefix: '/api' },
   );

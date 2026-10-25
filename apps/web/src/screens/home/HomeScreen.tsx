@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { INVITE_CODE_LENGTH, type InvitePreviewDto, type PartyListItemDto } from '@itd/schema';
-import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
 import { usePartyStore } from '../../store/usePartyStore';
@@ -11,6 +10,7 @@ import { Button, IconButton, Input, Panel, cx } from '../../ui/primitives';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO, settingOf, type Theme } from '../../ui/theme/settings';
+import { ClosedTableDialog } from '../party/ClosedTableDialog';
 import { InviteDialog } from '../party/InviteDialog';
 import { PartyCover } from '../party/PartyCover';
 import { SyncBadge } from '../select/SyncBadge';
@@ -191,6 +191,8 @@ const PartiesPanel: React.FC<{
   const [code, setCode] = useState('');
   const [checking, setChecking] = useState(false);
   const [invite, setInvite] = useState<{ code: string; preview: InvitePreviewDto } | null>(null);
+  /** A player's table between sessions: closed, but their hero can be taken back from it. */
+  const [waiting, setWaiting] = useState<PartyListItemDto | null>(null);
   const complete = code.replace('-', '').length === INVITE_CODE_LENGTH;
 
   const check = async () => {
@@ -221,11 +223,7 @@ const PartiesPanel: React.FC<{
           <PartyRow
             key={party.id}
             party={party}
-            onOpen={() =>
-              party.role === 'player' && !party.inSession
-                ? toast('Сессия не идёт — стол откроется, когда мастер её начнёт', { id: 'session-closed' })
-                : onOpen(party.id)
-            }
+            onOpen={() => (party.role === 'player' && !party.inSession ? setWaiting(party) : onOpen(party.id))}
             onHover={() => onWorld(party.setting)}
           />
         ))}
@@ -264,6 +262,7 @@ const PartiesPanel: React.FC<{
         </Button>
       </form>
 
+      <ClosedTableDialog party={waiting} onClose={() => setWaiting(null)} />
       <InviteDialog
         invite={invite}
         onClose={() => setInvite(null)}

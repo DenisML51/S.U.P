@@ -39,6 +39,18 @@ export const users = pgTable(
   (t) => [uniqueIndex('users_email_key').on(t.email)],
 );
 
+/**
+ * Who has the app open: a user is online while one of their realtime sockets is (renewed on every
+ * ping, so a crashed API process lets it lapse). Kept apart from `users`, whose row is the lock of
+ * character writes.
+ */
+export const userPresence = pgTable('user_presence', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  onlineUntil: timestamp('online_until', { withTimezone: true }).notNull(),
+});
+
 export const refreshTokens = pgTable(
   'refresh_tokens',
   {

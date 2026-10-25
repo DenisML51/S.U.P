@@ -18,8 +18,8 @@ import { IconButton, Meter, Panel, cx } from '../../ui/primitives';
 import { formatBonus } from './partyView';
 
 const SPRING = { type: 'spring', stiffness: 260, damping: 30 } as const;
-/** How far each card behind peeks out of a stack. */
-const PEEK = { x: 22, y: -12, turn: 2.5 } as const;
+/** How far each card behind peeks out of a stack (party.css reserves room for three: keep `--stack-peek` in step). */
+const PEEK = { x: 11, y: -6, turn: 1.2 } as const;
 /** Cards beyond this many lie hidden under the stack. */
 const SHOWN_IN_STACK = 4;
 
@@ -140,9 +140,11 @@ export const TableDecks: React.FC<{
   return (
     <LayoutGroup>
       {/* The room sizes the cards so that all stacks fit side by side. */}
-      <div className="ui-decks-room flex min-h-0 flex-1">
+      {/* On a narrow screen the stacks wrap onto a second row (and the room scrolls) rather than
+          shrinking the cards past reading or spilling over the chat beside the table. */}
+      <div className={cx('ui-decks-room flex min-h-0 flex-1', !spread && 'ui-decks-room--wrap')}>
         <div
-          className="ui-decks flex min-h-0 flex-1 items-start gap-8"
+          className={cx('ui-decks flex min-h-0 flex-1 items-start gap-8', !spread && 'flex-wrap gap-y-6')}
           style={{ '--groups': groups.length } as React.CSSProperties}
         >
           {spread ? (
@@ -178,7 +180,7 @@ const Deck: React.FC<{
   const small = mode === 'small';
   // Under the cursor the cards part a little: the stack invites a click.
   const [hover, setHover] = useState(false);
-  const fan = hover ? 1.7 : 1;
+  const fan = hover ? 2.2 : 1;
   const all: Card[] = add
     ? [
         ...cards,
@@ -212,18 +214,18 @@ const Deck: React.FC<{
         onClick={onToggle}
         className="ui-deck__title group flex items-baseline gap-2 self-start"
         aria-expanded={spread}
-        title={spread ? 'Собрать в стопку' : 'Разложить'}
+        title={spread ? 'Собрать в стопку' : `${title}: разложить`}
       >
         <span
           className={cx(
-            'ui-display ui-title ui-section-title leading-none text-frame-bright',
-            small ? 'text-base' : 'text-[1.35rem]',
+            'ui-display ui-title ui-section-title min-w-0 truncate leading-none text-frame-bright',
+            small ? 'text-base' : 'ui-deck__title-text',
           )}
         >
           {title}
         </span>
-        <span className="ui-numeric text-sm text-ink-faint">{cards.length}</span>
-        <span className="text-xs text-ink-faint opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="ui-numeric shrink-0 text-sm text-ink-faint">{cards.length}</span>
+        <span className="min-w-0 shrink-[1000] overflow-hidden whitespace-nowrap text-xs text-ink-faint opacity-0 transition-opacity group-hover:opacity-100">
           {spread ? 'собрать' : 'разложить'}
         </span>
       </motion.button>
