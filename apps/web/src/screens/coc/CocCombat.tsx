@@ -363,7 +363,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                   inCombat: true,
                   initiative: round.initiative,
                 });
-                update((doc) => doc, { message: 'Ваш ход', type: 'other' });
+                update((doc) => doc, { message: 'Ваш ход', type: 'other' }, { quiet: true });
               }}
             />
           ) : (
