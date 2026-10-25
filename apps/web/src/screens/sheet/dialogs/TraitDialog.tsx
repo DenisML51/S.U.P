@@ -1,5 +1,5 @@
 import React from 'react';
-import { createEntityId, describeGrant, removeById, upsertById } from '@itd/game-logic';
+import { createEntityId, removeById, rulesOf, upsertById } from '@itd/game-logic';
 import type { Character, Trait } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { MarkdownField } from '../../../ui/forms';
@@ -78,7 +78,7 @@ export const TraitDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
 
   if (!entry) return null;
   // Where a granted feature comes from ("Воин, 1 уровень"); the player's own are just theirs.
-  const origin = entry.grant ? (character.build && describeGrant(character.build, entry.grant)) || 'Особенность' : 'Своя особенность';
+  const origin = entry.grant ? (character.build && rulesOf(character.build).describeGrant(character.build, entry.grant)) || 'Особенность' : 'Своя особенность';
   return (
     <EntryView
       open={open}

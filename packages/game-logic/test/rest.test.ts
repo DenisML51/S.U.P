@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Resource } from '@itd/schema';
-import { HIT_DICE_ID, applyBuild, longRest, shortRest } from '../src';
+import { longRest, shortRest } from '../src';
+import { HIT_DICE_ID, applyBuild } from '../src/dnd';
 import { makeCharacter, sequence } from './helpers';
 
 const pool = (id: string, patch: Partial<Resource>): Resource => ({

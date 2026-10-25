@@ -309,12 +309,20 @@ const numberMap = (maxKeyLength: number) =>
   text(z.record(z.string().max(maxKeyLength), numeric(num)).default({}));
 
 /**
+ * Rules systems a hero can be built by. Each one has its own build engine and preset content in
+ * `@itd/game-logic` (loaded on demand); a system whose choices differ from D&D's turns `BuildSchema`
+ * into a union discriminated by `ruleset`.
+ */
+export const RULESETS = ['dnd2024'] as const;
+export type RulesetId = (typeof RULESETS)[number];
+
+/**
  * The preset choices a hero was built from (D&D 2024). The sheet's granted entries (abilities,
  * traits, resources, spells marked with `grant`) are derived from it and rebuilt on every level-up;
  * everything else on the sheet stays the player's.
  */
 export const BuildSchema = passthroughObject({
-  ruleset: z.literal('dnd2024'),
+  ruleset: z.enum(RULESETS),
   species: shortTextOr(),
   background: shortTextOr(),
   class: shortTextOr(),

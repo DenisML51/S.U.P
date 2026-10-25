@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { findBackground, findClass, findSubclass, pointsRemaining } from '@itd/game-logic';
+import { pointsRemaining } from '@itd/game-logic';
+import { findBackground, findClass, findSubclass } from '@itd/game-logic/dnd';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 import { Button, Panel, cx } from '../../ui/primitives';
 import { IconCheck, IconDice, IconPrev, IconQuill } from '../../ui/icons';

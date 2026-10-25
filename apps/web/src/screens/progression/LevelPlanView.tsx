@@ -2,16 +2,18 @@ import React, { useState } from 'react';
 import {
   abilityModifier,
   averageHitPoints,
+  rollDie,
+} from '@itd/game-logic';
+import {
   buildScores,
   describeGrant,
   featureNumbers,
   findClass,
   levelPlan,
-  rollDie,
   unfinishedChoices,
   type GrantedFeature,
   type SourceKind,
-} from '@itd/game-logic';
+} from '@itd/game-logic/dnd';
 import type { Build } from '@itd/schema';
 import type { IconKind } from '../../ui/GameIcon';
 import { Segmented } from '../../ui/forms';

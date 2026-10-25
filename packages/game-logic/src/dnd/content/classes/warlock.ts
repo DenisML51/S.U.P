@@ -544,7 +544,6 @@ export const WARLOCK: ClassDef = {
     { type: 'proficiency', category: 'armor', value: 'Лёгкие доспехи' },
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
   ],
-  mentalStrength: 40,
   subclassLevel: 3,
   subclasses: [archfey, celestial, fiend, greatOldOne, undead, vestige],
   startingEquipment: WARLOCK_KITS,

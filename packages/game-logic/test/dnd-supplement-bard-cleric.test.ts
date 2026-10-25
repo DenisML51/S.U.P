@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Build, Character } from '@itd/schema';
-import { DND, applyBuild, choiceOptions, levelPlan, setPicks, startingSkills } from '../src';
+import { startingSkills } from '../src';
+import { DND, applyBuild, choiceOptions, levelPlan, setPicks } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
 const fresh = (): Character => makeCharacter({ skills: startingSkills(), maxHP: 10, currentHP: 10 });

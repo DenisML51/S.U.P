@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { applyBuild, findClass } from '@itd/game-logic';
+import { applyBuild, findClass } from '@itd/game-logic/dnd';
 import type { Build, Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { Dialog } from '../../ui/Dialog';

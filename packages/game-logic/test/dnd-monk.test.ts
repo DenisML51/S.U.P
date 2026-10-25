@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Build, Character } from '@itd/schema';
-import { DND, applyBuild, armorClassOf, createDndHero, levelPlan, startingSkills } from '../src';
+import { armorClassOf, startingSkills } from '../src';
+import { DND, applyBuild, createDndHero, levelPlan } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
 const build = (patch: Partial<Build> = {}): Build => ({

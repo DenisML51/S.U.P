@@ -1,6 +1,6 @@
 import type { Character } from '@itd/schema';
 import { CLASSES } from '../content/classes';
-import { DND_CLASSES } from '../dnd/content';
+import { DND_CLASS_META } from '../dnd/meta';
 import { DEFAULT_MENTAL_STRENGTH, MAX_SANITY_CAP } from '../content/progression';
 import { DEFAULT_ATTRIBUTE_SCORE, attributeScore } from './abilities';
 
@@ -13,9 +13,9 @@ export const getSanityModifierFromWisdom = (wisdom: number): number =>
  * class of the S.U.P. lists by id (their ids may repeat preset ones, like `ranger`), or a preset by name.
  */
 const mentalStrengthOf = (classId: string, preset = false): number =>
-  (preset ? DND_CLASSES.find((c) => c.id === classId)?.mentalStrength : undefined) ??
+  (preset ? DND_CLASS_META.find((c) => c.id === classId)?.mentalStrength : undefined) ??
   CLASSES.find((c) => c.id === classId)?.mentalStrength ??
-  DND_CLASSES.find((c) => c.id === classId || c.name === classId)?.mentalStrength ??
+  DND_CLASS_META.find((c) => c.id === classId || c.name === classId)?.mentalStrength ??
   DEFAULT_MENTAL_STRENGTH;
 
 export function calculateMaxSanity(classId: string, wisdom: number, level: number, preset = false): number {

@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { Build, Character } from '@itd/schema';
-import { DND, applyBuild, choiceOptions, collect, levelPlan, startingSkills } from '../src';
+import { startingSkills } from '../src';
+import { DND, applyBuild, choiceOptions, collect, levelPlan } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
 const build = (patch: Partial<Build> = {}): Build => ({

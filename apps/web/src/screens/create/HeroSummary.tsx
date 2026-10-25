@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import {
   ATTRIBUTES_LIST,
-  DND_ICONS,
   SKILLS_LIST,
   abilityModifier,
   armorClassOf,
-  describeGrant,
-  findClass,
   formatModifier,
   initiativeModifier,
   maxSanityOf,
 } from '@itd/game-logic';
+import {
+  DND_ICONS,
+  describeGrant,
+  findClass,
+} from '@itd/game-logic/dnd';
 import type { CharacterDraft, CharacterImages, Setting } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
 import { SettingEmblem } from '../../ui/ornaments';
