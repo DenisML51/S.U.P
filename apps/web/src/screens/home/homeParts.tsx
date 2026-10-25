@@ -17,7 +17,7 @@ import { ClosedTableDialog } from '../party/ClosedTableDialog';
 import { InviteDialog } from '../party/InviteDialog';
 import { readLastHero } from './lastHero';
 
-export const HOME_EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.22, 1, 0.36, 1] as const;
 
 /** One's heroes and tables, and the hero the page features: the one last played, else the newest. */
 export const useHomeItems = () => {
@@ -148,15 +148,6 @@ export const HomeAtmosphere: React.FC = () => (
   <div className="ui-home-atmosphere pointer-events-none absolute inset-0" aria-hidden />
 );
 
-/** A picture melting into the screen: each side fades over the given share of the picture (%). */
-export const meltMask = ({ left = 0, right = 0, top = 0, bottom = 0 }) => {
-  const mask = [
-    `linear-gradient(to right, transparent, #000 ${left}%, #000 ${100 - right}%, transparent)`,
-    `linear-gradient(to bottom, transparent, #000 ${top}%, #000 ${100 - bottom}%, transparent)`,
-  ].join(', ');
-  return { maskImage: mask, WebkitMaskImage: mask, maskComposite: 'intersect', WebkitMaskComposite: 'source-in' } as React.CSSProperties;
-};
-
 /** A table's cover, wide; without one, its world's engraving with the emblem. */
 export const PartyPicture: React.FC<{ party: PartyListItemDto; className?: string }> = ({ party, className }) => {
   const src = coverSrc(party);
@@ -197,7 +188,7 @@ export const HomeHeader: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
   <motion.header
     className="relative z-20 flex items-center justify-between px-24 pt-10"
     initial={{ opacity: 0, y: -12 }}
-    animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: HOME_EASE, delay: 0.1 } }}
+    animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE, delay: 0.1 } }}
     exit={{ opacity: 0, y: -12, transition: { duration: 0.25 } }}
   >
     <Wordmark />
