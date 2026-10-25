@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import './index.css';
 
 /** Development-only design-system showcase, opened with `?kit`. Not part of the production bundle's main chunk. */
@@ -9,12 +10,14 @@ const devPage = import.meta.env.DEV ? new URLSearchParams(window.location.search
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {devPage?.has('kit') ? (
-      <Suspense fallback={null}>
-        <UiKit />
-      </Suspense>
-    ) : (
-      <App />
-    )}
+    <ErrorBoundary>
+      {devPage?.has('kit') ? (
+        <Suspense fallback={null}>
+          <UiKit />
+        </Suspense>
+      ) : (
+        <App />
+      )}
+    </ErrorBoundary>
   </React.StrictMode>,
 );
