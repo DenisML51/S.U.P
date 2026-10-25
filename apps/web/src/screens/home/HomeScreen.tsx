@@ -4,7 +4,7 @@ import type { CharacterPreview, PartyListItemDto } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
 import { CharacterArt, fullArtSrc } from '../../ui/CharacterArt';
-import { IconCombat, IconCreate } from '../../ui/icons';
+import { IconCombat, IconCreate, IconImport } from '../../ui/icons';
 import { Button, cx } from '../../ui/primitives';
 import { SettingScope } from '../../ui/theme/SettingScope';
 import { SETTING_INFO, settingOf } from '../../ui/theme/settings';
@@ -56,6 +56,8 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
   const startCreation = useNavStore((s) => s.startCreation);
   const resumable = useHasSoloDraft();
   const loadCharacter = useCharacterStore((s) => s.loadCharacter);
+  const importFromJSON = useCharacterStore((s) => s.importFromJSON);
+  const fileInput = useRef<HTMLInputElement>(null);
   const { heroes, parties, lastHero: hero } = useHomeItems();
   const entry = usePartyEntry();
   // The colour where the hero's art meets the page; the dark around the hero takes a little of it.
@@ -71,6 +73,12 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
     go({ screen: 'heroes' });
   };
   const create = () => startCreation();
+  /** A hero brought from a file (an export from here) opens on its sheet, as from hero select. */
+  const onImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (file) await importFromJSON(file).catch(() => {});
+  };
   const newParty = () => go({ screen: 'party-form' });
 
   return (
@@ -129,6 +137,17 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
                   hint="Выберите мир и соберите героя: лист, бой и кубики — всё здесь"
                   onClick={create}
                 />
+                {/* A hero kept in a file can come in instead of being made anew. */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-3"
+                  icon={<IconImport width={16} height={16} />}
+                  onClick={() => fileInput.current?.click()}
+                >
+                  Импорт из файла
+                </Button>
+                <input ref={fileInput} type="file" accept=".json,application/json" className="hidden" onChange={onImport} />
               </>
             )}
           </motion.section>
