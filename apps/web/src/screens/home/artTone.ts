@@ -1,8 +1,8 @@
 /** A colour as [red, green, blue], 0–255. */
 export type Rgb = [number, number, number];
 
-/** The ellipse the hero's art fades out along (matches `--figure-fade` in party.css). */
-const FADE = { cx: 0.5, cy: 0.46, rx: 0.48, ry: 0.45 };
+/** Where the hero's art fades into the page (matches `--figure-sides`/`--figure-ends` in party.css). */
+const FADE = { side: [0.06, 0.26], ends: [0.12, 0.8] };
 const SAMPLE_W = 32;
 const SAMPLE_H = 48;
 
@@ -12,8 +12,8 @@ const median = (values: number[]) => {
 };
 
 /**
- * The colour where a picture meets the page: the median of the band just inside the ellipse its
- * edges fade along. The middle (a face, a cloak) is left out, so it never tints the page by itself.
+ * The colour where a picture meets the page: the median of the bands along its sides, where it
+ * fades out. The middle (a face, a cloak) is left out, so it never tints the page by itself.
  * Null when the picture cannot be read (not loaded, or from another origin).
  */
 export const edgeTone = (image: HTMLImageElement): Rgb | null => {
@@ -28,10 +28,11 @@ export const edgeTone = (image: HTMLImageElement): Rgb | null => {
     const channels: [number[], number[], number[]] = [[], [], []];
     for (let y = 0; y < SAMPLE_H; y++) {
       for (let x = 0; x < SAMPLE_W; x++) {
-        const dx = ((x + 0.5) / SAMPLE_W - FADE.cx) / FADE.rx;
-        const dy = ((y + 0.5) / SAMPLE_H - FADE.cy) / FADE.ry;
-        const distance = Math.hypot(dx, dy);
-        if (distance < 0.62 || distance > 1) continue;
+        const u = (x + 0.5) / SAMPLE_W;
+        const v = (y + 0.5) / SAMPLE_H;
+        const fromSide = Math.min(u, 1 - u);
+        if (fromSide < FADE.side[0] || fromSide > FADE.side[1] || v < FADE.ends[0] || v > FADE.ends[1])
+          continue;
         const i = (y * SAMPLE_W + x) * 4;
         if (data[i + 3] < 128) continue;
         channels.forEach((channel, c) => channel.push(data[i + c]));
@@ -77,5 +78,5 @@ const toRgb = ([h, s, l]: [number, number, number]): Rgb => {
  */
 export const pageTone = (edge: Rgb, maxLightness = 0.3): Rgb => {
   const [h, s, l] = toHsl(edge);
-  return toRgb([h, Math.min(s, 0.4) * 0.7, Math.min(l * 0.7, maxLightness)]);
+  return toRgb([h, Math.min(s, 0.4) * 0.7, Math.min(l * 0.5, maxLightness)]);
 };

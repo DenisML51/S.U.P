@@ -274,22 +274,26 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
     radial-gradient(ellipse 120% 90% at 50% 50%, transparent 40%, rgb(var(--c-bg-deep) / 0.95) 100%),
     linear-gradient(to right, rgb(var(--c-bg-deep)) 0%, rgb(var(--c-bg)) 45%, rgb(var(--c-bg)) 100%);
 }
-/* The featured hero: no box, the picture fades out as an ellipse; its own colours glow around it. */
+/* The featured hero: no box. The picture melts away at its sides and corners, while the top and the
+ * bottom stay sharp but for a thin edge; its own colours glow around it. */
 .ui-hero-figure__art {
-  /* The ellipse dies out before every edge (centre 46% down, radii under the nearest distances). */
-  --figure-fade: radial-gradient(ellipse 48% 45% at 50% 46%, #000 50%, rgb(0 0 0 / 0.5) 75%, transparent 100%);
-  mask-image: var(--figure-fade);
-  -webkit-mask-image: var(--figure-fade);
+  --figure-sink: rgb(var(--c-bg-deep) / 0.55);
+  --figure-sides: linear-gradient(to right, transparent, rgb(0 0 0 / 0.5) 9%, #000 24%, #000 76%, rgb(0 0 0 / 0.5) 91%, transparent);
+  --figure-ends: linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.6) 6%, #000 14%, #000 74%, rgb(0 0 0 / 0.55) 88%, transparent);
+  mask-image: var(--figure-sides), var(--figure-ends);
+  mask-composite: intersect;
+  -webkit-mask-image: var(--figure-sides), var(--figure-ends);
+  -webkit-mask-composite: source-in;
 }
 .ui-hero-figure__art img {
   filter: brightness(0.9) saturate(0.95) contrast(1.04);
 }
-/* Bright backgrounds sink into the dark before the fade takes them. */
+/* Bright backgrounds sink into the page's tone at the sides before the fade takes them. */
 .ui-hero-figure__art::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 48% 45% at 50% 46%, transparent 36%, rgb(var(--c-bg-deep) / 0.55) 100%);
+  background: linear-gradient(to right, var(--figure-sink), transparent 30%, transparent 70%, var(--figure-sink));
   pointer-events: none;
 }
 .ui-hero-figure__glow {
@@ -369,22 +373,16 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 .ui-hub { transition: --hub-tone 0.9s ease; }
 .ui-hero-figure__halo {
   position: absolute;
-  inset: -14% -42%;
+  inset: -6% -40%;
   pointer-events: none;
   background: radial-gradient(
     closest-side,
-    var(--hub-tone) 30%,
-    color-mix(in srgb, var(--hub-tone) 60%, transparent) 62%,
+    color-mix(in srgb, var(--hub-tone) 70%, transparent) 30%,
+    color-mix(in srgb, var(--hub-tone) 30%, transparent) 65%,
     transparent
   );
 }
 .ui-hub-lift {
-  background: linear-gradient(to right, color-mix(in srgb, var(--hub-tone) 35%, transparent), transparent 55%);
+  background: linear-gradient(to right, color-mix(in srgb, var(--hub-tone) 22%, transparent), transparent 50%);
 }
-.ui-hub .ui-hero-figure__art::after {
-  background: radial-gradient(
-    ellipse 48% 45% at 50% 46%,
-    transparent 36%,
-    color-mix(in srgb, var(--hub-tone) 55%, transparent) 100%
-  );
-}
+.ui-hub .ui-hero-figure__art { --figure-sink: color-mix(in srgb, var(--hub-tone) 55%, transparent); }
