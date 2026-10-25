@@ -366,6 +366,23 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   height: 1px;
   background: linear-gradient(to right, rgb(var(--c-frame) / 0.45), rgb(var(--c-frame) / 0.12) 70%, transparent);
 }
+/* Under the tables lies a drift of dark smoke, so the hero's art running underneath on a narrow
+ * window never mixes with the text: overlapping soft clouds give it ragged, uneven edges, not a box. */
+.ui-hub-smoke { position: relative; isolation: isolate; }
+.ui-hub-smoke::before {
+  content: '';
+  position: absolute;
+  inset: -2.5rem -4rem -1.5rem -3.5rem;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 46% at 28% 30%, rgb(var(--c-bg-deep) / 0.9), transparent 72%),
+    radial-gradient(52% 40% at 72% 22%, rgb(var(--c-bg-deep) / 0.78), transparent 70%),
+    radial-gradient(60% 44% at 40% 62%, rgb(var(--c-bg-deep) / 0.88), transparent 74%),
+    radial-gradient(48% 38% at 80% 70%, rgb(var(--c-bg-deep) / 0.7), transparent 70%),
+    radial-gradient(55% 34% at 35% 94%, rgb(var(--c-bg-deep) / 0.82), transparent 72%);
+  filter: blur(16px);
+}
 /* The list fades at the edge it scrolls past, so a row cut by the column reads as "more", not a slip. */
 .ui-table-list {
   container-type: inline-size;
