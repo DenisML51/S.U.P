@@ -78,7 +78,8 @@ export const PickerDialog: React.FC<{
         className="mb-3 w-full"
         data-autofocus
       />
-      <div className="grid max-h-[52vh] grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] gap-4">
+      {/* On a phone the description goes under the list, which keeps the larger share of the height. */}
+      <div className="grid max-h-[52vh] grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] gap-4 max-sm:max-h-[60dvh] max-sm:grid-cols-1 max-sm:grid-rows-[minmax(0,1fr)_auto] max-sm:gap-3">
         <div className="ui-scroll min-h-0 overflow-y-auto pr-1">
           {shown.length === 0 && (
             <p className="py-6 text-center text-sm text-ink-faint">Ничего не нашлось.</p>
@@ -99,7 +100,7 @@ export const PickerDialog: React.FC<{
                     onClick={() => setChosen(o.id)}
                     onDoubleClick={() => take(o.id)}
                     aria-pressed={o.id === chosen}
-                    className="flex w-full items-baseline gap-3 border-b border-line/50 px-2 py-2 text-left hover:bg-surface-2/60 data-[on]:bg-accent/15"
+                    className="flex w-full items-baseline gap-3 border-b border-line/50 px-2 py-2 text-left hover:bg-surface-2/60 data-[on]:bg-accent/15 max-lg:py-2.5"
                     data-on={o.id === chosen || undefined}
                   >
                     <span className="min-w-0 flex-1 truncate">{o.name}</span>
@@ -109,7 +110,11 @@ export const PickerDialog: React.FC<{
             </div>
           ))}
         </div>
-        <Panel variant="inset" ornate={false} className="ui-scroll min-h-0 overflow-y-auto px-4 py-3 text-sm">
+        <Panel
+          variant="inset"
+          ornate={false}
+          className="ui-scroll min-h-0 overflow-y-auto px-4 py-3 text-sm max-sm:max-h-[22dvh]"
+        >
           {pick ? (
             <>
               <div className="ui-display mb-1 text-lg">{pick.name}</div>

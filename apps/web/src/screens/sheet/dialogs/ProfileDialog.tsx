@@ -102,8 +102,9 @@ export const ProfileDialog: React.FC<{ open: boolean; onClose: () => void }> = (
           </>
         }
       >
-        <div className="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-8">
-          <div className="grid grid-rows-[minmax(0,1fr)_auto] gap-4">
+        <div className="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-8 max-sm:grid-cols-1 max-sm:gap-5">
+          {/* On a phone the pictures stand side by side above the fields. */}
+          <div className="grid grid-rows-[minmax(0,1fr)_auto] gap-4 max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:grid-rows-1 max-sm:items-end">
             <ImageSlot
               label="Полный арт"
               kind="full"
