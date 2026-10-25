@@ -121,22 +121,26 @@ export const HomeMosaic: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
 
 const FeatureTile: React.FC<{ hero: CharacterPreview; onPlay: () => void }> = ({ hero, onPlay }) => {
   const setting = settingOf(hero);
+  // The tile wears the hero's world; the button over it is the page's own (service), so it sits
+  // outside the world's scope.
   return (
-    <SettingScope setting={setting} className="h-full">
-      <Panel as="div" className="ui-mosaic-tile relative flex h-full flex-col overflow-hidden p-0">
-        <CharacterArt source={hero} kind="full" className="absolute inset-0 h-full w-full" position="50% 12%" />
-        <div className="absolute inset-0 bg-gradient-to-t from-bg-deep from-15% via-bg-deep/50 via-45% to-transparent to-70%" />
-        <div className="relative mt-auto p-6">
-          <div className="text-[11px] uppercase tracking-[0.22em] text-frame-bright/85">Продолжить · {SETTING_INFO[setting].label}</div>
-          <div className="ui-display mt-2 text-[2.4rem] leading-[1.04] text-ink">{hero.name}</div>
-          <div className="mt-1.5 text-sm text-ink-muted">{heroOrigin(hero)}</div>
-          <HeroVitals hero={hero} className="mt-3" />
-          <Button variant="primary" size="lg" className="mt-5 w-full" onClick={onPlay}>
-            Лист
-          </Button>
-        </div>
-      </Panel>
-    </SettingScope>
+    <div className="relative h-full">
+      <SettingScope setting={setting} className="h-full">
+        <Panel as="div" className="ui-mosaic-tile relative flex h-full flex-col overflow-hidden p-0">
+          <CharacterArt source={hero} kind="full" className="absolute inset-0 h-full w-full" position="50% 12%" />
+          <div className="absolute inset-0 bg-gradient-to-t from-bg-deep from-25% via-bg-deep/50 via-50% to-transparent to-75%" />
+          <div className="relative mt-auto p-6 pb-24">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-frame-bright/85">Продолжить · {SETTING_INFO[setting].label}</div>
+            <div className="ui-display mt-2 text-[2.4rem] leading-[1.04] text-ink">{hero.name}</div>
+            <div className="mt-1.5 text-sm text-ink-muted">{heroOrigin(hero)}</div>
+            <HeroVitals hero={hero} className="mt-3" />
+          </div>
+        </Panel>
+      </SettingScope>
+      <Button variant="primary" size="lg" className="absolute inset-x-6 bottom-6" onClick={onPlay}>
+        Лист
+      </Button>
+    </div>
   );
 };
 

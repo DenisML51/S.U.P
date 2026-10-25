@@ -2,17 +2,13 @@ import React from 'react';
 import type { HomeLayout } from '../../data/settings';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { HomeCinema } from './HomeCinema';
-import { HomeHand } from './HomeHand';
 import { HomeHub } from './HomeHub';
 import { HomeMenu } from './HomeMenu';
 import { HomeMosaic } from './HomeMosaic';
-import { HomeShelf } from './HomeShelf';
 
 const LAYOUTS: Record<HomeLayout, React.FC<{ onOpenSettings: () => void }>> = {
   hub: HomeHub,
   menu: HomeMenu,
-  shelf: HomeShelf,
-  hand: HomeHand,
   mosaic: HomeMosaic,
   cinema: HomeCinema,
 };

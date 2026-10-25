@@ -5,7 +5,6 @@ import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
 import { usePartyStore } from '../../store/usePartyStore';
 import { assetUrl } from '../../data/api/client';
-import { fullArtSrc } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { SettingEmblem } from '../../ui/ornaments';
 import { IconButton, Input, Meter, cx } from '../../ui/primitives';
@@ -14,30 +13,20 @@ import { SyncBadge } from '../select/SyncBadge';
 import { Wordmark } from '../select/Wordmark';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope } from '../../ui/theme/SettingScope';
-import { SETTING_INFO, settingOf, type Theme } from '../../ui/theme/settings';
 import { ClosedTableDialog } from '../party/ClosedTableDialog';
 import { InviteDialog } from '../party/InviteDialog';
 import { readLastHero } from './lastHero';
 
 export const HOME_EASE = [0.22, 1, 0.36, 1] as const;
 
-/** Something on the home page that has a world of its own: one's hero or a table one sits at. */
-export type HomeItem = { kind: 'hero'; hero: CharacterPreview } | { kind: 'party'; party: PartyListItemDto };
-
-export const itemKey = (item: HomeItem) => (item.kind === 'hero' ? `hero:${item.hero.id}` : `party:${item.party.id}`);
-export const itemWorld = (item: HomeItem | undefined): Theme =>
-  !item ? 'service' : item.kind === 'hero' ? settingOf(item.hero) : item.party.setting;
-
-/** One's heroes and tables, and the item the page opens on: the hero last played, else the first thing there is. */
+/** One's heroes and tables, and the hero the page features: the one last played, else the newest. */
 export const useHomeItems = () => {
   const heroes = useCharacterStore((s) => s.charactersList);
   const parties = usePartyStore((s) => s.list);
   return useMemo(() => {
-    const heroItems: HomeItem[] = heroes.map((hero) => ({ kind: 'hero', hero }));
-    const partyItems: HomeItem[] = (parties ?? []).map((party) => ({ kind: 'party', party }));
     const last = readLastHero();
     const lastHero = heroes.find((hero) => hero.id === last) ?? heroes.at(-1);
-    return { heroes, parties, heroItems, partyItems, lastHero };
+    return { heroes, parties, lastHero };
   }, [heroes, parties]);
 };
 
@@ -148,8 +137,6 @@ export const heroOrigin = (hero: CharacterPreview) => {
 };
 
 const coverSrc = (party: PartyListItemDto) => (party.coverAssetId ? assetUrl(party.coverAssetId) : undefined);
-export const itemImage = (item: HomeItem | undefined) =>
-  !item ? undefined : item.kind === 'hero' ? fullArtSrc(item.hero) : coverSrc(item.party);
 
 // ------------------------------------------------------------------------------------------------
 
@@ -204,8 +191,6 @@ export const HeroVitals: React.FC<{ hero: CharacterPreview; className?: string }
     </span>
   </div>
 );
-
-export const worldLabel = (item: HomeItem) => SETTING_INFO[itemWorld(item) as keyof typeof SETTING_INFO]?.label ?? '';
 
 /** The service name and the account, the same over every layout of the page. */
 export const HomeHeader: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => (
