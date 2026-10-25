@@ -5,6 +5,7 @@ import {
   type CharacterDraft,
   type CharacterImages,
   type Resistance,
+  type RulesetId,
   type Setting,
 } from './character';
 
@@ -24,6 +25,8 @@ export interface CharacterPreview {
   /** Legacy embedded portrait. */
   avatar?: string;
   resistances?: Resistance[];
+  /** Rules system of a preset hero; absent for the player's own. */
+  ruleset?: RulesetId;
 }
 
 export const toCharacterPreview = (character: Character): CharacterPreview => ({
@@ -40,6 +43,7 @@ export const toCharacterPreview = (character: Character): CharacterPreview => ({
   images: character.images,
   avatar: character.avatar,
   resistances: character.resistances,
+  ruleset: character.build?.ruleset,
 });
 
 export const newCharacterId = (): string => crypto.randomUUID();

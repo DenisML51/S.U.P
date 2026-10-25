@@ -224,6 +224,7 @@ export const CONDITION_IDS = {
   temporaryInsanity: 'temporary-insanity',
   indefiniteInsanity: 'indefinite-insanity',
   permanentInsanity: 'permanent-insanity',
+  dead: 'dead',
 } as const;
 
 export const COC_CONDITIONS: { id: string; name: string; description: string }[] = [
@@ -233,6 +234,7 @@ export const COC_CONDITIONS: { id: string; name: string; description: string }[]
   { id: CONDITION_IDS.temporaryInsanity, name: 'Временное безумие', description: 'Приступ, затем 1d10 часов подверженности: новые приступы от любой потери рассудка.' },
   { id: CONDITION_IDS.indefiniteInsanity, name: 'Бессрочное безумие', description: 'Потеряна пятая часть рассудка за день. Месяцы лечения или опасных заблуждений.' },
   { id: CONDITION_IDS.permanentInsanity, name: 'Неизлечимое безумие', description: 'Рассудок на нуле: сыщик больше не играет.' },
+  { id: CONDITION_IDS.dead, name: 'Мёртв', description: 'Урон за один удар больше максимума хитов, или проваленный бросок при смерти.' },
 ];
 
 const characteristicsOf = (coc: CocSheet): Characteristics =>

@@ -6,14 +6,23 @@ import {
   OCCUPATIONS,
   TALENTS,
   WEAPONS,
+  afterIntRoll,
+  afterSkillRoll,
   ageRules,
+  applyDamage,
   checkSkill,
   createInvestigator,
   damageBonusOf,
   derivedOf,
   developSkills,
+  fireWeapon,
   formulaPoints,
+  gainMythos,
+  heal,
+  loseSanity,
   moveRate,
+  reloadWeapon,
+  setCharacteristic,
   rollCharacteristics,
   rollPercentile,
   sanityLoss,
@@ -21,6 +30,7 @@ import {
   successLevel,
   takeDamage,
   wealthOf,
+  weaponDamage,
   type Characteristics,
 } from '../src/coc';
 
@@ -216,5 +226,69 @@ describe('Call of Cthulhu as a rules system', () => {
     expect(rebuilt.maxHP).toBe(25);
     expect(rebuilt.currentHP).toBe(22);
     expect(rebuilt.traits.map((t) => t.id)).toEqual(['talent-tough-guy', 'own']);
+  });
+});
+
+describe('Call of Cthulhu mechanics on the sheet', () => {
+  it('wounds: major wound, unconscious, dying and dead go onto the sheet; healing takes them off', () => {
+    const doc = investigator();
+    const wounded = applyDamage(6)(doc);
+    expect(wounded).toMatchObject({ currentHP: 6, conditions: ['major-wound'] });
+    const dying = applyDamage(6)(wounded);
+    expect(dying.conditions).toEqual(['major-wound', 'dying']);
+    const saved = heal(1)(dying);
+    expect(saved).toMatchObject({ currentHP: 1, conditions: ['major-wound'] });
+    expect(heal(99)(saved).conditions).toEqual([]);
+    expect(applyDamage(13)(doc).conditions).toContain('dead');
+  });
+
+  it('sanity: the loss, indefinite and temporary insanity go onto the sheet', () => {
+    const base = investigator();
+    const doc = { ...base, sanity: 60, coc: { ...base.coc!, sanityAtDayStart: 60 } };
+    const big = loseSanity(13);
+    expect(big.outcome(doc)).toMatchObject({ needsIntRoll: true, indefinite: true });
+    const after = afterIntRoll(true)(big.edit(doc));
+    expect(after.sanity).toBe(47);
+    expect(after.conditions).toEqual(['indefinite-insanity', 'temporary-insanity']);
+    expect(afterIntRoll(false)(loseSanity(5).edit(doc)).conditions).toEqual([]);
+  });
+
+  it('Mythos lowers the sanity cap, and sanity with it', () => {
+    const doc = { ...investigator(), sanity: 94 };
+    const after = gainMythos(10)(doc);
+    expect(after.coc!.skills.find((s) => s.id === 'cthulhu-mythos')?.value).toBe(14);
+    expect(after.sanity).toBe(85);
+  });
+
+  it('ticks a skill after a success, but never Credit Rating', () => {
+    const doc = investigator();
+    const tick = (id: string) => afterSkillRoll(id, { success: true })(doc).coc!.skills.find((s) => s.id === id)?.check;
+    expect(tick('library-use')).toBe(true);
+    expect(tick('credit-rating')).toBe(false);
+    expect(afterSkillRoll('listen', { success: false })(doc)).toBe(doc);
+  });
+
+  it('a new CON or SIZ changes the hit points, keeping the damage', () => {
+    const doc = { ...investigator(), currentHP: 10 };
+    const after = setCharacteristic('con', 80)(doc);
+    expect(after).toMatchObject({ maxHP: 14, currentHP: 12 });
+  });
+
+  it('guns spend rounds and reload', () => {
+    const doc = investigator();
+    const revolver = doc.attacks.find((a) => a.skill === 'firearms:handgun')!;
+    const fired = fireWeapon(revolver.id, 2)(doc);
+    expect(fired.attacks.find((a) => a.id === revolver.id)?.ammo).toBe((revolver.magazine ?? 0) - 2);
+    expect(reloadWeapon(revolver.id)(fired).attacks.find((a) => a.id === revolver.id)?.ammo).toBe(revolver.magazine);
+  });
+
+  it('an extreme hit deals the maximum, and an impaling one rolls the weapon again on top', () => {
+    const low = () => 0;
+    expect(weaponDamage({ damage: '1d10' }, '0', 'regular', low).total).toBe(1);
+    expect(weaponDamage({ damage: '1d10' }, '0', 'extreme', low).total).toBe(10);
+    expect(weaponDamage({ damage: '1d10', impale: true }, '0', 'extreme', low).total).toBe(11);
+    expect(weaponDamage({ damage: '1d3+DB' }, '+1d4', 'extreme', low)).toEqual({ total: 7, formula: '1d3+1d4' });
+    expect(weaponDamage({ damage: '1d3+DB' }, '-1', 'regular', low).total).toBe(0);
+    expect(weaponDamage({ damage: '4d6/2d6/1d6' }, '0', 'regular', low).total).toBe(4);
   });
 });
