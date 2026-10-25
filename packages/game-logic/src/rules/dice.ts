@@ -80,10 +80,15 @@ export interface FormulaRoll {
   bonus: number;
 }
 
-export function rollFormula(formula: string, random: RandomSource = Math.random): FormulaRoll {
+export interface RollOptions {
+  /** A critical hit: every die of the formula is rolled twice as many times; flat bonuses are not doubled. */
+  critical?: boolean;
+}
+
+export function rollFormula(formula: string, random: RandomSource = Math.random, options: RollOptions = {}): FormulaRoll {
   const { dice, bonus } = parseDiceFormula(formula);
   const rolls = dice.flatMap((group) =>
-    Array.from({ length: group.count }, () => ({ sides: group.sides, value: rollDie(group.sides, random), type: group.type })),
+    Array.from({ length: options.critical ? group.count * 2 : group.count }, () => ({ sides: group.sides, value: rollDie(group.sides, random), type: group.type })),
   );
   return { total: rolls.reduce((sum, r) => sum + r.value, bonus), rolls, bonus };
 }

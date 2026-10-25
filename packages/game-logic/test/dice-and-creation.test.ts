@@ -57,6 +57,13 @@ describe('rolling', () => {
     expect(result.total).toBe(8);
   });
 
+  it('doubles the dice of a critical hit but not the bonus', () => {
+    const result = rollFormula('2d6+3', () => 0, { critical: true });
+    expect(result.rolls).toHaveLength(4);
+    expect(result.bonus).toBe(3);
+    expect(result.total).toBe(7);
+  });
+
   it('rolls initiative with Dexterity and the sheet bonus', () => {
     expect(rollInitiative(makeCharacter({ initiativeBonus: 1 }), () => 0.5)).toEqual({ roll: 11, mod: 3, bonus: 1, total: 15 });
   });

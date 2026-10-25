@@ -5,7 +5,7 @@ import { useCharacterStore } from '../../store/useCharacterStore';
 import { damageParts, spellDamageParts } from './parts/damage';
 import { useConcentrationPrompt } from './Concentration';
 import { useSlotPrompt } from './SlotPrompt';
-import { useRolls } from './useRolls';
+import { useRolls, type DamageComponents } from './useRolls';
 
 /**
  * What the hero does with an entry of the sheet: attack, use an ability, cast a spell. The same
@@ -28,10 +28,19 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     else run();
   };
 
+  /**
+   * What an entry rolls once it is used. With an attack roll the hit comes first and its damage is
+   * rolled from the hit's toast; a saving throw or an effect that always lands rolls straight away.
+   */
+  const strike = (label: string, hitBonus: number | undefined, parts: DamageComponents) => {
+    if (hitBonus !== undefined) roll.attack(label, hitBonus, parts);
+    else roll.damage(label, parts);
+  };
+
   const attack = (entry: Attack) => {
-    if ((entry.usesAmmunition || inCombat) && !performAction({ kind: 'attack', id: entry.id, trackActionEconomy: inCombat })?.ok) return;
-    roll.check(`${entry.name}: попадание`, entry.hitBonus);
-    roll.damage(`${entry.name}: урон`, damageParts(entry));
+    // The roll tells what happened; spending the action or the arrow shows no message of its own.
+    if ((entry.usesAmmunition || inCombat) && !performAction({ kind: 'attack', id: entry.id, trackActionEconomy: inCombat }, { quiet: true })?.ok) return;
+    strike(entry.name, entry.hitBonus, damageParts(entry));
   };
 
   /** An entry that needs concentration asks first when it would end another one. */
@@ -42,21 +51,25 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
   };
 
   const use = (entry: Ability) => {
+    const parts = damageParts(entry);
+    const hitBonus = entry.saveAttribute ? undefined : entry.hitBonus;
+    const rolls = hitBonus !== undefined || parts.length > 0;
     if (entry.resourceId || entry.concentration || inCombat) {
-      if (!performAction({ kind: 'ability', id: entry.id, trackActionEconomy: inCombat })?.ok) return;
+      if (!performAction({ kind: 'ability', id: entry.id, trackActionEconomy: inCombat }, { quiet: rolls })?.ok) return;
     } else {
       logHistory(`Способность: ${entry.name}`);
     }
-    if (entry.hitBonus !== undefined) roll.check(`${entry.name}: попадание`, entry.hitBonus);
-    roll.damage(entry.name, damageParts(entry));
+    if (rolls) strike(entry.name, hitBonus, parts);
   };
 
   const castWith = (spell: Spell, slotLevel?: number) => {
     if (!character) return;
-    if (!performAction({ kind: 'spell', id: spell.id, trackActionEconomy: inCombat, slotLevel })?.ok) return;
+    const parts = spellDamageParts(character, spell, slotLevel ?? spell.level);
+    const hitBonus = spell.attackRoll ? spellAttackBonusFor(character, spell) : undefined;
+    const rolls = hitBonus !== undefined || parts.length > 0;
+    if (!performAction({ kind: 'spell', id: spell.id, trackActionEconomy: inCombat, slotLevel }, { quiet: rolls })?.ok) return;
     const upcast = slotLevel !== undefined && slotLevel > spell.level ? ` (${slotLevel} круг)` : '';
-    if (spell.attackRoll) roll.check(`${spell.name}: попадание`, spellAttackBonusFor(character, spell));
-    roll.damage(`${spell.name}${upcast}`, spellDamageParts(character, spell, slotLevel ?? spell.level));
+    if (rolls) strike(`${spell.name}${upcast}`, hitBonus, parts);
   };
 
   const castFrom = (spell: Spell) => {
