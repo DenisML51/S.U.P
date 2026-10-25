@@ -19,6 +19,7 @@ import { ConcentrationPrompt } from '../sheet/Concentration';
 import { SlotPrompt } from '../sheet/SlotPrompt';
 import { foldRepeats } from '../sheet/parts/history';
 import { useRolls } from '../sheet/useRolls';
+import { SyncStatus } from '../../ui/SyncStatus';
 import { Hotbar } from './Hotbar';
 import { ActionTokens, CombatStats, ExperienceBar, Portrait, ResourceStrip, VitalBars } from './HudParts';
 
@@ -177,7 +178,8 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
             </AnimatePresence>
           )}
         </div>
-        <div className="ml-auto flex gap-1">
+        <div className="ml-auto flex items-center gap-1">
+          <SyncStatus className="mr-2" />
           <IconButton label="Кубики" onClick={() => dialogs.open({ kind: 'dice' })}>
             <IconDice width={20} height={20} />
           </IconButton>

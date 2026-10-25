@@ -4,6 +4,7 @@ import type { Character } from '@itd/schema';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { IconCondition, IconEdit } from '../../ui/icons';
+import { SyncStatus } from '../../ui/SyncStatus';
 import { useSheetDialogs } from './dialogs/context';
 import { ResourceList, StatusCluster } from './parts/StatusCluster';
 import { useRolls } from './useRolls';
@@ -101,6 +102,10 @@ export const HeroColumn: React.FC<{ character: Character; onShowConditions: () =
             Состояний нет — отметить
           </button>
         )}
+      </div>
+      {/* Pinned under the scroll: whether the sheet's edits are reaching the server, visible while playing. */}
+      <div className="shrink-0 border-t border-line/70 px-4 py-2">
+        <SyncStatus />
       </div>
     </aside>
   );
