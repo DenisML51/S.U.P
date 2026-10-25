@@ -120,6 +120,29 @@ describe('mergeCharacters', () => {
     });
   });
 
+  describe('string-set fields', () => {
+    it('keeps conditions added on both devices', () => {
+      const start = { ...base, conditions: ['Отравлен'] };
+      const local = { ...start, conditions: ['Отравлен', 'Испуган'] };
+      const remote = { ...start, conditions: ['Отравлен', 'Ошеломлён'] };
+
+      const { merged, conflicts } = mergeCharacters(start, local, remote);
+
+      expect([...merged.conditions].sort()).toEqual(['Испуган', 'Отравлен', 'Ошеломлён']);
+      expect(conflicts).toEqual([]);
+    });
+
+    it('honours a condition removed on one device without resurrecting it', () => {
+      const start = { ...base, conditions: ['Отравлен', 'Испуган'] };
+      const local = { ...start, conditions: ['Отравлен'] };
+      const remote = { ...start, conditions: ['Отравлен', 'Испуган', 'Ошеломлён'] };
+
+      const { merged } = mergeCharacters(start, local, remote);
+
+      expect([...merged.conditions].sort()).toEqual(['Отравлен', 'Ошеломлён']);
+    });
+  });
+
   it('unions history from both devices, newest first and capped', () => {
     const shared = Array.from({ length: HISTORY_LIMIT }, (_, i) => entry(`old_${i}`, 1_000 - i));
     const local = { ...base, history: [entry('local', 3_000), ...shared] };
