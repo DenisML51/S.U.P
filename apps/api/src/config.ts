@@ -23,8 +23,16 @@ const EnvSchema = z
     /** Allow self-service sign-up. When off, accounts are created with the `create-user` CLI. */
     REGISTRATION_ENABLED: booleanFlag.default(true),
     RATE_LIMIT_ENABLED: booleanFlag.default(true),
-    /** Trust X-Forwarded-* headers. Enable only when the API is reachable solely through a proxy. */
-    TRUST_PROXY: booleanFlag.default(false),
+    /**
+     * Proxies in front of the API whose X-Forwarded-* headers are trusted: a hop count (`1` for the
+     * web container's nginx, `2` with a TLS proxy before it). The client's address is the one the
+     * outermost trusted proxy saw, so a made-up X-Forwarded-For cannot dodge the rate limits.
+     * `true` trusts every hop (only when the outermost proxy overwrites the header); `false` none.
+     */
+    TRUST_PROXY: z
+      .union([z.enum(['true', 'false']), z.coerce.number().int().min(0).max(10)])
+      .transform((value) => (value === 'true' ? true : value === 'false' || value === 0 ? false : value))
+      .default(false),
     /** Comma-separated origins allowed to call the API cross-origin. Not needed behind the web proxy. */
     CORS_ORIGINS: z.string().optional(),
   })
