@@ -515,6 +515,8 @@
 
 .coc-veil {
   --veil: var(--c-danger);
+  /* Every layer of the veil is cut by the same ellipse, so their edges never stack into rings. */
+  --veil-shape: ellipse 72% 66% at 50% 50%;
   --veil-strength: 0.75;
   --beat: 1.25s;
   --tunnel: 2.5px;
@@ -539,19 +541,19 @@
   inset: -6%;
   /* Veins in the setting's colour: the noise cuts the colour, the ellipse keeps it to the borders. */
   background: rgb(var(--veil));
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(ellipse 72% 66% at 50% 50%, transparent 62%, black 100%);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(var(--veil-shape), transparent 62%, black 100%);
   -webkit-mask-size: 900px 900px, 100% 100%;
   -webkit-mask-composite: source-in;
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(ellipse 72% 66% at 50% 50%, transparent 62%, black 100%);
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(var(--veil-shape), transparent 62%, black 100%);
   mask-size: 900px 900px, 100% 100%;
   mask-composite: intersect;
   opacity: var(--veil-strength);
   animation: coc-veil-drift 18s ease-in-out infinite alternate;
 }
 .coc-veil__noise--b {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='800'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 1.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(ellipse 70% 64% at 50% 50%, transparent 66%, black 100%);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='800'%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 1.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(var(--veil-shape), transparent 66%, black 100%);
   -webkit-mask-size: 800px 800px, 100% 100%;
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='800'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 1.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(ellipse 70% 64% at 50% 50%, transparent 66%, black 100%);
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='800'%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 1.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(var(--veil-shape), transparent 66%, black 100%);
   mask-size: 800px 800px, 100% 100%;
   filter: brightness(0.55);
   animation:
@@ -565,9 +567,9 @@
   inset: 0;
   /* Grain over the gradient dithers it: a dark gradient fading in and out bands into blocks otherwise. */
   background:
-    var(--grain),
-    radial-gradient(ellipse 72% 66% at 50% 50%, transparent 58%, rgb(var(--veil) / 0.3) 84%, rgb(0 0 0 / 0.92) 100%);
-  background-size: 220px 220px, 100% 100%;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='d' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E"),
+    radial-gradient(var(--veil-shape), transparent 58%, rgb(var(--veil) / 0.3) 84%, rgb(0 0 0 / 0.92) 100%);
+  background-size: 256px 256px, 100% 100%;
   opacity: var(--veil-strength);
   will-change: opacity;
   animation: coc-heartbeat var(--beat) ease-out infinite;
@@ -579,8 +581,8 @@
   inset: 0;
   -webkit-backdrop-filter: blur(var(--tunnel, 0px)) saturate(0.55);
   backdrop-filter: blur(var(--tunnel, 0px)) saturate(0.55);
-  -webkit-mask-image: radial-gradient(ellipse 70% 64% at 50% 50%, transparent 56%, black 92%);
-  mask-image: radial-gradient(ellipse 70% 64% at 50% 50%, transparent 56%, black 92%);
+  -webkit-mask-image: radial-gradient(var(--veil-shape), transparent 56%, black 92%);
+  mask-image: radial-gradient(var(--veil-shape), transparent 56%, black 92%);
   animation: coc-tunnel var(--beat) ease-out infinite;
 }
 .coc-veil[data-stage='3'] .coc-veil__tunnel {
@@ -709,9 +711,9 @@
 /* Glitch worlds: the veil tears in scanlines instead of veins. */
 [data-setting='sci-fi'] .coc-veil__noise--b,
 [data-setting='cyberpunk'] .coc-veil__noise--b {
-  -webkit-mask-image: repeating-linear-gradient(0deg, black 0 2px, transparent 2px 5px), radial-gradient(ellipse 70% 64% at 50% 50%, transparent 66%, black 100%);
+  -webkit-mask-image: repeating-linear-gradient(0deg, black 0 2px, transparent 2px 5px), radial-gradient(var(--veil-shape), transparent 66%, black 100%);
   -webkit-mask-size: auto, 100% 100%;
-  mask-image: repeating-linear-gradient(0deg, black 0 2px, transparent 2px 5px), radial-gradient(ellipse 70% 64% at 50% 50%, transparent 66%, black 100%);
+  mask-image: repeating-linear-gradient(0deg, black 0 2px, transparent 2px 5px), radial-gradient(var(--veil-shape), transparent 66%, black 100%);
   mask-size: auto, 100% 100%;
   filter: none;
   animation: coc-veil-cross 0.9s steps(3, jump-none) infinite alternate;
