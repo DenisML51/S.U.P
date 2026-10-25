@@ -20,9 +20,11 @@ import {
   partyHeroes,
   partyMembers,
   partyNpcs,
+  userPresence,
   users,
   type PartyNpcRow,
 } from '../../db/schema';
+import { isOnline } from '../realtime/presence';
 import { sessionClosed } from '../../lib/errors';
 import { CODE_WAITS, partyNotFound } from './partyAccess';
 import { turnOrder, type TurnEntry } from './turnOrder';
@@ -158,6 +160,11 @@ export class PartyQueries {
           select array_agg(${partyHeroes.characterId}) from ${partyHeroes}
           where ${partyHeroes.partyId} = ${parties.id} and ${partyHeroes.userId} = ${userId}
         ), '{}')`,
+        myHeroes: sql<{ id: string; characterId: string }[]>`coalesce((
+          select json_agg(json_build_object('id', ${partyHeroes.id}, 'characterId', ${partyHeroes.characterId}))
+          from ${partyHeroes}
+          where ${partyHeroes.partyId} = ${parties.id} and ${partyHeroes.userId} = ${userId}
+        ), '[]')`,
       })
       .from(partyMembers)
       .innerJoin(parties, eq(parties.id, partyMembers.partyId))
@@ -193,9 +200,11 @@ export class PartyQueries {
               displayName: users.displayName,
               role: partyMembers.role,
               joinedAt: partyMembers.joinedAt,
+              online: isOnline,
             })
             .from(partyMembers)
             .innerJoin(users, eq(users.id, partyMembers.userId))
+            .leftJoin(userPresence, eq(userPresence.userId, partyMembers.userId))
             .where(eq(partyMembers.partyId, partyId))
             .orderBy(desc(sql`${partyMembers.role} = 'master'`), asc(partyMembers.joinedAt)),
           heroesOf(tx, partyId),

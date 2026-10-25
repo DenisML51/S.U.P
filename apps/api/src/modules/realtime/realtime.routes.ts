@@ -2,6 +2,7 @@ import { ErrorCode, WsClientMessageSchema, type WsServerMessage } from '@itd/sch
 import type { FastifyPluginAsync } from 'fastify';
 import type { AuthService } from '../auth/auth.service';
 import type { RealtimeHub } from './hub';
+import type { PresenceService } from './presence';
 
 const AUTH_TIMEOUT_MS = 5_000;
 /** Clients ping every ~25 s; a socket silent for longer than this is considered dead. */
@@ -11,13 +12,14 @@ const MAX_MESSAGE_BYTES = 8 * 1024;
 interface RealtimeRoutesOptions {
   auth: AuthService;
   hub: RealtimeHub;
+  presence: PresenceService;
 }
 
 /**
  * `GET /api/ws`. The access token travels in the first message rather than the URL, so it never
  * ends up in proxy access logs. The socket only receives notifications; data is pulled over HTTP.
  */
-export const realtimeRoutes: FastifyPluginAsync<RealtimeRoutesOptions> = async (app, { auth, hub }) => {
+export const realtimeRoutes: FastifyPluginAsync<RealtimeRoutesOptions> = async (app, { auth, hub, presence }) => {
   app.get('/ws', { websocket: true }, (socket, request) => {
     const send = (message: WsServerMessage) => {
       if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message));
@@ -28,6 +30,11 @@ export const realtimeRoutes: FastifyPluginAsync<RealtimeRoutesOptions> = async (
     };
 
     let unregister: (() => void) | null = null;
+    let userId: string | null = null;
+    const presenceFailed = (error: unknown) => request.log.warn({ err: error }, 'presence update failed');
+    /** Set while the token is checked, so a second auth message cannot register the socket twice. */
+    let authenticating = false;
+    let closed = false;
     let idleTimer: NodeJS.Timeout | undefined;
     const touch = () => {
       clearTimeout(idleTimer);
@@ -48,22 +55,34 @@ export const realtimeRoutes: FastifyPluginAsync<RealtimeRoutesOptions> = async (
       if (!parsed?.success) return send({ type: 'error', error: ErrorCode.validation, message: 'Некорректное сообщение' });
 
       const message = parsed.data;
-      if (message.type === 'ping') return send({ type: 'pong' });
+      if (message.type === 'ping') {
+        if (userId) void presence.renew(userId).catch(presenceFailed);
+        return send({ type: 'pong' });
+      }
 
-      if (unregister) return;
-      const userId = await auth.authenticate(message.token);
-      if (!userId) return fail(4001, 'Токен недействителен');
+      if (unregister || authenticating) return;
+      authenticating = true;
+      const verified = await auth.authenticate(message.token);
+      authenticating = false;
+      // Closed while the token was checked: nothing to register.
+      if (closed) return;
+      if (!verified) return fail(4001, 'Токен недействителен');
 
       clearTimeout(authTimer);
+      userId = verified;
+      const firstSocket = !hub.has(userId);
       unregister = hub.add(userId, { send, close: (code, reason) => socket.close(code, reason) });
       request.log.debug({ userId }, 'realtime connection authenticated');
       send({ type: 'ready', userId });
+      if (firstSocket) void presence.connected(userId).catch(presenceFailed);
     });
 
     socket.on('close', () => {
+      closed = true;
       clearTimeout(authTimer);
       clearTimeout(idleTimer);
       unregister?.();
+      if (userId && !hub.has(userId)) presence.disconnected(userId, presenceFailed);
     });
   });
 };

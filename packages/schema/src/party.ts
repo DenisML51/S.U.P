@@ -174,6 +174,8 @@ export interface PartyListItemDto {
   inSession: boolean;
   /** The viewer's characters in the party. */
   myCharacterIds: string[];
+  /** The same heroes as seats at the table, so a player can take one away while the table is closed. */
+  myHeroes: { id: string; characterId: string }[];
   updatedAt: string;
 }
 
@@ -182,6 +184,8 @@ export interface PartyMemberDto {
   displayName: string;
   role: PartyRole;
   joinedAt: string;
+  /** Has the app open right now (a live connection). */
+  online: boolean;
 }
 
 /** Hit points and armour: shown to the master and to the hero's owner only. */
