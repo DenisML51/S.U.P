@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   COC_CONDITIONS,
@@ -19,12 +19,14 @@ import { maxSanityOf } from '@itd/game-logic';
 import { useNavStore } from '../../store/useNavStore';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { Rail, RailButton, RailDivider } from '../../ui/Rail';
-import { Button, cx } from '../../ui/primitives';
+import { Button, IconButton, cx } from '../../ui/primitives';
+import { useAtLeast } from '../../ui/useBreakpoint';
 import { NumberField } from '../../ui/forms';
 import {
   IconAttacks,
   IconAttributes,
   IconCharacter,
+  IconClose,
   IconCombat,
   IconDice,
   IconHistory,
@@ -56,10 +58,14 @@ const SECTIONS: { id: CocSection; label: string; Icon: React.FC<React.SVGProps<S
 const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
 
 /** Who the investigator is and what changes minute to minute: hit points, magic, sanity, luck. */
-const InvestigatorColumn: React.FC<{ footer?: React.ReactNode; onProfile?: () => void }> = ({
-  footer,
-  onProfile,
-}) => {
+const InvestigatorColumn: React.FC<{
+  footer?: React.ReactNode;
+  onProfile?: () => void;
+  /** Its width and edge: the fixed column beside the section by default, the drawer's own on a narrow screen. */
+  className?: string;
+  /** In a drawer: the button that puts it away. */
+  onClose?: () => void;
+}> = ({ footer, onProfile, className = 'w-[340px] border-r', onClose }) => {
   const { open } = useCocSelection();
   const { character, update, roll, present } = useCoc();
   const coc = character.coc!;
@@ -100,7 +106,7 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode; onProfile?: () =>
     .filter(Boolean);
 
   return (
-    <aside className="flex h-full w-[340px] shrink-0 flex-col border-r border-line/70 bg-surface/40">
+    <aside className={cx('flex h-full shrink-0 flex-col border-line/70 bg-surface/40', className)}>
       <div className="relative h-[210px] shrink-0 overflow-hidden">
         <CharacterArt
           source={character}
@@ -117,6 +123,11 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode; onProfile?: () =>
             aria-label="Профиль: имя, сеттинг, портрет и арт"
             title="Профиль: имя, сеттинг, портрет и арт"
           />
+        )}
+        {onClose && (
+          <IconButton label="Свернуть" size={40} onClick={onClose} className="absolute right-3 top-3 bg-bg/60">
+            <IconClose width={18} height={18} />
+          </IconButton>
         )}
         <span className="pointer-events-none absolute inset-x-5 bottom-3">
           <span
@@ -270,7 +281,26 @@ export const CocSheetView: React.FC<{
   </CocSelectionProvider>
 );
 
-const SheetLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
+const SheetLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = (props) => {
+  // Below the desktop width there is no room for the rail and the column beside the section.
+  const desktop = useAtLeast('desktop');
+  return desktop ? <WideLayout {...props} /> : <NarrowLayout {...props} />;
+};
+
+/** The chosen section's content. */
+const SectionBody: React.FC<{ section: CocSection; journal?: React.ReactNode }> = ({ section, journal }) => (
+  <>
+    {section === 'investigator' && <InvestigatorSection />}
+    {section === 'weapons' && <WeaponsSection />}
+    {section === 'sanity' && <SanitySection />}
+    {section === 'gear' && <GearSection />}
+    {section === 'story' && <StorySection />}
+    {section === 'journal' && journal}
+  </>
+);
+
+/** The desktop sheet: the rail, the investigator's column, the section beside them. */
+const WideLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
   onBack,
   onCombat,
   onDice,
@@ -360,17 +390,166 @@ const SheetLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
               >
-                {section === 'investigator' && <InvestigatorSection />}
-                {section === 'weapons' && <WeaponsSection />}
-                {section === 'sanity' && <SanitySection />}
-                {section === 'gear' && <GearSection />}
-                {section === 'story' && <StorySection />}
-                {section === 'journal' && journal}
+                <SectionBody section={section} journal={journal} />
               </motion.div>
             </AnimatePresence>
           </CocDetailsLayout>
         </motion.main>
       </motion.div>
+      <InsanityVeil stage={stage} />
+    </div>
+  );
+};
+
+/**
+ * The sheet on a phone or a tablet: a header with the investigator's vital numbers (the whole column
+ * slides out of it as a drawer), the section across the width scrolling down, the sections as tabs
+ * along the bottom.
+ */
+const NarrowLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
+  onBack,
+  onCombat,
+  onDice,
+  onSettings,
+  onProfile,
+  journal,
+  footer,
+  className,
+}) => {
+  const { character } = useCoc();
+  const { close } = useCocSelection();
+  const [section, setSection] = useState<CocSection>('investigator');
+  const [drawer, setDrawer] = useState(false);
+  const stage = madnessStage(character);
+  const atTable = useNavStore((s) => s.place.screen === 'party');
+  const coc = character.coc!;
+  const maxMP = Math.floor(cocCharacteristics(character).pow / 5);
+
+  useEffect(() => {
+    if (!drawer) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setDrawer(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawer]);
+
+  return (
+    <div className={cx('coc-sheet coc-touch relative flex h-full flex-col', className)}>
+      <header className="flex shrink-0 items-center gap-1 border-b border-line/70 bg-surface/40 px-4 py-1.5">
+        <IconButton
+          label={atTable ? 'К столу партии' : 'К выбору героя'}
+          size={40}
+          onClick={onBack ?? (() => undefined)}
+          className="-ml-2 shrink-0"
+        >
+          <IconPrev width={20} height={20} />
+        </IconButton>
+        <button
+          type="button"
+          onClick={() => setDrawer(true)}
+          aria-expanded={drawer}
+          aria-label={`${character.name}: хиты, магия, рассудок, удача, состояния`}
+          className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 text-left"
+        >
+          <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-frame/70">
+            <CharacterArt
+              source={character}
+              kind="portrait"
+              position="50% 15%"
+              className="absolute inset-0 h-full w-full"
+            />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="ui-display block truncate text-lg leading-tight text-ink" role="heading" aria-level={1}>
+              {character.name}
+            </span>
+            <span className="flex gap-3 overflow-hidden whitespace-nowrap text-xs tabular-nums text-ink-muted">
+              <span>
+                хиты <b className="font-normal text-hp">{character.currentHP}</b>/{character.maxHP}
+              </span>
+              <span>
+                рассудок <b className="font-normal text-sanity">{character.sanity}</b>
+              </span>
+              <span className="max-sm:hidden">
+                магия <b className="font-normal text-accent">{coc.magicPoints}</b>/{maxMP}
+              </span>
+              <span className="max-sm:hidden">
+                удача <b className="font-normal text-xp">{coc.luck}</b>
+              </span>
+              {character.conditions.length > 0 && (
+                <span className="text-danger">◆ {character.conditions.length}</span>
+              )}
+            </span>
+          </span>
+        </button>
+        <IconButton label="Боевой режим" size={40} onClick={onCombat ?? (() => undefined)} className="shrink-0">
+          <IconCombat width={20} height={20} />
+        </IconButton>
+        <IconButton label="Кубики" size={40} onClick={onDice ?? (() => undefined)} className="shrink-0">
+          <IconDice width={20} height={20} />
+        </IconButton>
+        <IconButton
+          label="Настройки"
+          size={40}
+          onClick={onSettings ?? (() => undefined)}
+          className="-mr-2 shrink-0"
+        >
+          <IconSettings width={20} height={20} />
+        </IconButton>
+      </header>
+
+      <main className="ui-scroll ui-scroll--bare min-h-0 flex-1 overflow-y-auto px-4 pb-8 pt-4">
+        <CocDetailsLayout className="">
+          <SectionBody section={section} journal={journal} />
+        </CocDetailsLayout>
+      </main>
+
+      <nav className="ui-rail coc-tabbar grid shrink-0 grid-cols-6" aria-label="Разделы листа">
+        {SECTIONS.map(({ id, label, Icon }) => (
+          <RailButton
+            key={id}
+            label={label}
+            Icon={Icon}
+            active={section === id}
+            onClick={() => {
+              setSection(id);
+              close();
+            }}
+          />
+        ))}
+      </nav>
+
+      <AnimatePresence>
+        {drawer && (
+          <motion.div
+            key="drawer"
+            className="fixed inset-0 z-[150]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.2 } }}
+          >
+            <div className="absolute inset-0 bg-bg-deep/75" onClick={() => setDrawer(false)} aria-hidden />
+            <motion.div
+              className="absolute inset-y-0 left-0 w-[min(340px,calc(100vw-3rem))] bg-bg shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Сыщик"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={ENTER}
+            >
+              <InvestigatorColumn
+                footer={footer}
+                onProfile={onProfile}
+                onClose={() => setDrawer(false)}
+                className="coc-touch w-full border-r"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <InsanityVeil stage={stage} />
     </div>
   );

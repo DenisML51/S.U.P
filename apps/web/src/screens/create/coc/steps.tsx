@@ -65,7 +65,11 @@ const TileGrid: React.FC<{
   onSelect: (id: string) => void;
   columns: number;
 }> = ({ items, selected, onSelect, columns }) => (
-  <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+  // Below the desktop width the tiles keep their size and fill as many columns as there is room for.
+  <div
+    className="grid grid-cols-[repeat(var(--tiles),minmax(0,1fr))] gap-1.5 max-lg:grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))]"
+    style={{ '--tiles': columns } as React.CSSProperties}
+  >
     {items.map((item) => (
       <button
         key={item.id}
@@ -212,7 +216,7 @@ export const ArchetypeStep: React.FC<{ creation: CocCreation }> = ({ creation })
         <div className="mt-5 border-t border-line/60 pt-5">
           <h3 className="ui-display ui-title text-center text-[1.5rem] text-frame-bright">{info.name}</h3>
           <p className="mx-auto mt-1 max-w-2xl text-center text-sm text-ink-muted">{info.description}</p>
-          <div className="mx-auto mt-5 grid max-w-3xl grid-cols-2 gap-6">
+          <div className="mx-auto mt-5 grid max-w-3xl grid-cols-2 gap-6 max-lg:grid-cols-[repeat(auto-fit,minmax(min(16rem,100%),1fr))]">
             <Facts
               facts={[
                 ['Навыки архетипа', info.skills.map(skillName).join(', ')],
@@ -300,7 +304,7 @@ export const CharacteristicsStep: React.FC<{ creation: CocCreation }> = ({ creat
           </span>
         )}
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 max-lg:grid-cols-[repeat(auto-fill,minmax(min(8.5rem,100%),1fr))]">
         {CHARACTERISTICS.map((c, index) => {
           const value = creation.base[c.id];
           const final = creation.characteristics[c.id];
@@ -485,7 +489,7 @@ export const OccupationStep: React.FC<{ creation: CocCreation }> = ({ creation }
         <div className="mt-5 border-t border-line/60 pt-5">
           <h3 className="ui-display ui-title text-center text-[1.5rem] text-frame-bright">{info.name}</h3>
           <p className="mx-auto mt-1 max-w-2xl text-center text-sm text-ink-muted">{info.description}</p>
-          <div className="mx-auto mt-5 grid max-w-4xl grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-6">
+          <div className="mx-auto mt-5 grid max-w-4xl grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-6 max-lg:grid-cols-[repeat(auto-fit,minmax(min(16rem,100%),1fr))]">
             <Facts
               facts={[
                 ['Очки профессии', `${formulaText(info.points)} = ${creation.budgets.occupation}`],
@@ -718,7 +722,7 @@ export const TalentsStep: React.FC<{ creation: CocCreation }> = ({ creation }) =
       <p className="text-center text-sm text-ink-muted">
         Выберите таланты: {creation.talents.length} из {need}. ✦ — подходят архетипу.
       </p>
-      <div className="grid grid-cols-4 gap-5">
+      <div className="grid grid-cols-4 gap-5 max-lg:grid-cols-[repeat(auto-fit,minmax(min(12rem,100%),1fr))]">
         {TALENT_GROUPS.map((group) => (
           <div key={group.id} className="flex flex-col gap-1.5">
             <span className="ui-label">{group.title}</span>
@@ -765,7 +769,7 @@ const STORY: { field: keyof CocSheet['backstory']; title: string; hint: string }
 
 export const StoryStep: React.FC<{ creation: CocCreation }> = ({ creation }) => (
   <div className="mx-auto flex max-w-4xl flex-col gap-4">
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-2 gap-4 max-lg:grid-cols-[repeat(auto-fit,minmax(min(14rem,100%),1fr))]">
       <Input
         value={creation.residence}
         onChange={(e) => creation.setResidence(e.target.value)}
@@ -777,7 +781,7 @@ export const StoryStep: React.FC<{ creation: CocCreation }> = ({ creation }) => 
         placeholder="Где родился"
       />
     </div>
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-2 gap-4 max-lg:grid-cols-[repeat(auto-fit,minmax(min(14rem,100%),1fr))]">
       {STORY.map((s) => (
         <label key={s.field} className="flex flex-col gap-1">
           <span className="ui-label">{s.title}</span>
@@ -801,7 +805,7 @@ export const GearStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
       <p className="text-center text-sm text-ink-muted">
         Что сыщик носит с собой? Удар рукой есть у всех. Остальное — по средствам и по закону.
       </p>
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-[repeat(auto-fit,minmax(min(14rem,100%),1fr))]">
         {groups.map((group) => (
           <div key={group} className="flex flex-col gap-1">
             <span className="ui-label">{group}</span>
@@ -820,7 +824,7 @@ export const GearStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
                       )
                     }
                     className={cx(
-                      'flex justify-between gap-3 border-b border-line/40 py-1 text-left text-sm',
+                      'flex justify-between gap-3 border-b border-line/40 py-1 text-left text-sm max-lg:py-2.5',
                       on ? 'text-frame-bright' : 'text-ink-muted hover:text-ink',
                     )}
                   >

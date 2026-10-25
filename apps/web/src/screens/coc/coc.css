@@ -882,3 +882,106 @@
   background: repeating-linear-gradient(0deg, rgb(var(--veil) / 0.7) 0 2px, transparent 2px 5px);
   animation: coc-veil-cross 0.9s steps(3, jump-none) infinite alternate;
 }
+
+/* ================================================================== narrow screens */
+
+/*
+ * Phones and tablets (docs/MOBILE.md): below 1024px the sheet trades its rail for tabs along the
+ * bottom and its column for a drawer, the fight's panels go one under another, and what the finger
+ * presses grows to 40px. The desktop above it is untouched.
+ */
+
+/* The rail's places laid along the bottom: the mark of the open one runs along their top edge. */
+.coc-tabbar {
+  border-right: 0;
+  border-top: 1px solid rgb(var(--c-line) / 0.7);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.coc-tabbar .ui-rail__item {
+  min-height: 3.5rem;
+  justify-content: center;
+}
+.coc-tabbar .ui-rail__item .ui-rail__mark {
+  top: 0;
+  bottom: auto;
+  left: 25%;
+  right: 25%;
+  width: auto !important;
+  height: 2px;
+}
+
+@media (max-width: 1023.98px) {
+  .coc-skills--wide {
+    columns: 2;
+  }
+  .coc-touch .ui-button--row,
+  .coc-touch .ui-button--sm,
+  .coc-touch .ui-button--md {
+    min-height: 2.5rem;
+  }
+  .coc-touch .ui-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+  }
+  .coc-touch .ui-icon-button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+  .coc-touch .coc-dice-step button {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .coc-touch .coc-skill {
+    min-height: 2.75rem;
+    padding-block: 0.4rem;
+  }
+  /* The "i" stays small to the eye and gets a finger-sized place around it. */
+  .coc-touch .coc-skill .coc-info {
+    position: relative;
+  }
+  .coc-touch .coc-info::after {
+    content: '';
+    position: absolute;
+    inset: -0.65rem;
+  }
+}
+
+@media (max-width: 639.98px) {
+  .coc-chars {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coc-skills,
+  .coc-skills--wide {
+    columns: 1;
+  }
+  .coc-sheet .ui-ledger__head {
+    flex-wrap: wrap;
+    padding-inline: 1rem;
+  }
+  .coc-sheet .ui-ledger__list {
+    padding-inline: 1rem;
+  }
+  /* The difficulty takes the row and its options share it, so «Экстремальная» never pushes it out. */
+  .coc-mods > .ui-segmented {
+    display: flex;
+    width: 100%;
+  }
+  .coc-mods > .ui-segmented .ui-segmented__option {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-inline: 0.3rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Without a hover the cards' "i" is shown all the time: a finger has no other way to find it. */
+@media (hover: none) {
+  .coc-char > .coc-char__info {
+    opacity: 1;
+  }
+  .coc-skill .coc-info {
+    opacity: 0.6;
+  }
+}

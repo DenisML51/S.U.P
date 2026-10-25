@@ -123,7 +123,7 @@ export const Dialog: React.FC<DialogProps> = ({
       {open && (
         <SettingScope
           setting={setting}
-          className={cx('fixed inset-0 z-[200] flex items-center justify-center px-6 py-[5vh]')}
+          className={cx('fixed inset-0 z-[200] flex items-center justify-center px-6 py-[5vh] max-sm:px-4')}
         >
           <motion.div
             className="absolute inset-0 bg-bg-deep/80"

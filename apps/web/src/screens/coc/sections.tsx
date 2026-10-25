@@ -267,7 +267,7 @@ export const InvestigatorSection: React.FC = () => {
               onChange={(e) => setFilter(e.target.value)}
               placeholder="Найти навык"
               aria-label="Найти навык"
-              className="!h-8 w-44 text-sm"
+              className="!h-8 w-44 text-sm max-sm:w-32"
             />
             <DevelopmentPhase />
           </>
@@ -447,9 +447,9 @@ export const SanitySection: React.FC = () => {
   const specOk = isSanitySpec(spec);
 
   return (
-    <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6">
+    <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6 max-md:grid-cols-1">
       <div className="flex flex-col gap-5">
-        <Panel crest className="flex flex-col gap-4 px-6 py-5">
+        <Panel crest className="flex flex-col gap-4 px-6 py-5 max-sm:px-4">
           <div className="flex items-baseline gap-3">
             <SectionTitle className="flex-1">Рассудок</SectionTitle>
             <span className="ui-display ui-numeric text-4xl">{character.sanity}</span>
@@ -521,7 +521,7 @@ export const SanitySection: React.FC = () => {
           <RegainSanity />
         </Panel>
 
-        <Panel ornate={false} className="flex flex-col gap-3 px-6 py-5">
+        <Panel ornate={false} className="flex flex-col gap-3 px-6 py-5 max-sm:px-4">
           <SectionTitle>Безумие</SectionTitle>
           {insanity.map((c) => {
             const on = character.conditions.includes(c.id);
@@ -712,7 +712,7 @@ export const GearSection: React.FC = () => {
   const [adding, setAdding] = useState(false);
   const [cash, setCashText] = useState<string | null>(null);
   return (
-    <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start gap-6">
+    <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start gap-6 max-md:grid-cols-1">
       <div className="flex flex-col gap-3">
         <Ledger title="Снаряжение и вещи" scroll={false}>
           {character.inventory.length === 0 && (
@@ -746,7 +746,7 @@ export const GearSection: React.FC = () => {
           }}
         />
       </div>
-      <Panel ornate={false} className="flex flex-col gap-3 px-6 py-5">
+      <Panel ornate={false} className="flex flex-col gap-3 px-6 py-5 max-sm:px-4">
         <SectionTitle>Деньги</SectionTitle>
         <div className="grid grid-cols-2 items-center gap-y-2 text-sm">
           <span className="text-ink-muted">Средства</span>
@@ -853,9 +853,9 @@ export const StorySection: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       <Talents />
-      <div className="grid grid-cols-2 items-start gap-6">
+      <div className="grid grid-cols-2 items-start gap-6 max-md:grid-cols-1">
         {[STORY_FIELDS.slice(0, 5), STORY_FIELDS.slice(5)].map((column, i) => (
-          <Panel key={i} variant="paper" ornate={false} className="flex flex-col gap-5 px-7 py-6">
+          <Panel key={i} variant="paper" ornate={false} className="flex flex-col gap-5 px-7 py-6 max-sm:px-4 max-sm:py-5">
             {column.map(({ field, title }) => (
               <div key={field}>
                 <div className="ui-display mb-1 text-lg">{title}</div>

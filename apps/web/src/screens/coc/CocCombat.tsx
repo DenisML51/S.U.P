@@ -44,6 +44,7 @@ import { NumberField, Segmented, Select } from '../../ui/forms';
 import { Dialog } from '../../ui/Dialog';
 import { IconDice, IconExit, IconPrev, IconSettings } from '../../ui/icons';
 import { SyncStatus } from '../../ui/SyncStatus';
+import { useAtLeast } from '../../ui/useBreakpoint';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { settingOf } from '../../ui/theme/settings';
 import { foldRepeats } from '../sheet/parts/history';
@@ -127,11 +128,19 @@ const Chip: React.FC<{ on: boolean; onClick: () => void; children: React.ReactNo
   </button>
 );
 
-/** A group of the bottom bar under its small title, groups parted by a rule. */
-const BarGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div className="flex flex-col gap-1.5 border-l border-line/50 px-3 first:border-l-0">
+/**
+ * A group of the bottom bar under its small title, groups parted by a rule; `head` goes between the
+ * title and the buttons. On a narrow screen the groups wrap, a phone gives each its own row.
+ */
+const BarGroup: React.FC<{ title: string; head?: React.ReactNode; children: React.ReactNode }> = ({
+  title,
+  head,
+  children,
+}) => (
+  <div className="flex flex-col gap-1.5 border-l border-line/50 px-3 first:border-l-0 max-lg:border-l-0 max-sm:basis-full">
     <span className="text-center text-[10px] uppercase tracking-[0.18em] text-ink-faint">{title}</span>
-    <div className="flex items-end gap-2">{children}</div>
+    {head}
+    <div className="flex items-end gap-2 max-lg:flex-wrap max-lg:justify-center">{children}</div>
   </div>
 );
 
@@ -147,7 +156,7 @@ const BarButton: React.FC<{
     type="button"
     disabled={disabled}
     onClick={onClick}
-    className="ui-interactive group flex min-w-[6.5rem] flex-col items-center gap-0.5 rounded-[var(--radius)] border border-line/60 px-3 py-1.5 transition-colors hover:border-frame-bright/70 disabled:opacity-35"
+    className="ui-interactive group flex min-w-[6.5rem] flex-col items-center gap-0.5 rounded-[var(--radius)] border border-line/60 px-3 py-1.5 transition-colors hover:border-frame-bright/70 disabled:opacity-35 max-sm:min-w-[5.75rem] max-sm:flex-1"
   >
     <span className="text-sm text-ink">{label}</span>
     {value !== undefined && (
@@ -168,6 +177,12 @@ const RANGE_LABELS: Record<FirearmRange, string> = {
 
 /** The defences of the bar: the two opposed ones, and diving for cover from a shot. */
 type DefenceMode = Defence | 'cover';
+
+/**
+ * What the attack on the investigator is: a blow is dodged or fought back, a shot cannot be dodged
+ * (7th edition) — the only answer to it is diving for cover.
+ */
+type IncomingAttack = 'melee' | 'firearm';
 
 /** One shot of the last volley, with the damage rolled for it when it hit. */
 interface ShotOutcome {
@@ -395,6 +410,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
       : (melees.find((a) => a.id === fightWithId) ?? (weapon && !firearm ? melees.find((a) => a.id === weapon.id) : undefined));
   const fightBackId = fightBackSkill(fightWith);
 
+  const [attackOn, setAttackOn] = useState<IncomingAttack>('melee');
   const [defence, setDefence] = useState<{ mode: DefenceMode; serial: number } | null>(null);
   const [incoming, setIncoming] = useState<SuccessLevel | null>(null);
   const defend = (mode: DefenceMode) => {
@@ -440,14 +456,17 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toldSerial, toldText]);
   useEffect(() => () => setRollVerdict(null), []);
-  // Messages rise above the bottom bar instead of covering it.
+  // Messages rise above the bottom bar instead of covering it; a narrow screen has the bar in the
+  // page's flow, not pinned to the bottom.
+  const desktop = useAtLeast('desktop');
   useEffect(() => {
+    if (!desktop) return;
     const root = document.documentElement;
     root.style.setProperty('--toast-offset', '12.5rem');
     return () => {
       root.style.removeProperty('--toast-offset');
     };
-  }, []);
+  }, [desktop]);
   // When the telegram is already gone, the verdict stays readable under the bar instead.
   const rollToastShown = useRollShown();
   const [spellsOpen, setSpellsOpen] = useState(false);
@@ -494,606 +513,631 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   const shownVolley = volley && volley.weaponId === weapon?.id ? volley.shots : null;
 
   return (
-    <div className="relative h-full overflow-hidden">
+    <div className="coc-touch relative h-full overflow-hidden">
       <SettingBackdrop setting={settingOf(character)} strength={0.55} />
 
-      {/* Top: back to the sheet, the turn order, the tools. */}
-      <header className="relative z-20 flex h-16 items-center gap-4 px-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<IconPrev width={16} height={16} />}
-          onClick={() => setViewMode('tabs')}
-        >
-          Лист
-        </Button>
-        <div className="absolute left-1/2 top-3 -translate-x-1/2">
-          {party ? (
-            <PartyCombatBar
-              party={party}
-              characterId={character.id}
-              onMyTurn={() => {
-                // The round was entered when it began; the turn itself only says so.
-                if (partyFight)
-                  setRound((r) =>
-                    syncWithTable(r, { startedAt: partyFight.startedAt, round: partyFight.round }),
-                  );
-                update((doc) => doc, { message: 'Ваш ход', type: 'other' }, { quiet: true });
-              }}
-            />
-          ) : (
-            <AnimatePresence mode="wait" initial={false}>
-              {round.inCombat ? (
-                <motion.div
-                  key="fight"
-                  className="flex items-center gap-3"
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                >
-                  <span className="ui-display text-lg text-frame-bright">Раунд {round.round}</span>
-                  <span className="text-sm text-ink-muted">порядок {round.initiative}</span>
-                  <Button variant="primary" onClick={nextRound}>
-                    Следующий раунд
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={finish}>
-                    Выйти из боя
-                  </Button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="calm"
-                  className="flex items-center gap-3"
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                >
-                  <Button variant="primary" icon={<IconDice width={18} height={18} />} onClick={start}>
-                    Начать бой · порядок {initiativeOf(c.dex, gunReady)}
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
-        </div>
-        <div className="ml-auto flex items-center gap-1">
-          <SyncStatus className="mr-2" />
-          {party?.role === 'master' && (
-            <IconButton
-              label="Стол партии"
-              onClick={() => {
-                goToCharacterList();
-                go({ screen: 'party', partyId: party.id });
-              }}
-            >
-              <IconExit width={20} height={20} />
-            </IconButton>
-          )}
-          <IconButton label="Кубики" onClick={onDice}>
-            <IconDice width={20} height={20} />
-          </IconButton>
-          <IconButton label="Настройки" onClick={onOpenSettings}>
-            <IconSettings width={20} height={20} />
-          </IconButton>
-        </div>
-      </header>
-
-      {/* Left: the investigator, then the table's talk. */}
-      <motion.div
-        className="absolute left-6 top-20 z-10 flex w-[19rem] flex-col gap-4"
-        initial={{ x: -24, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={ENTER}
-      >
-        <Panel crest className="flex flex-col gap-3 px-5 pb-4 pt-6">
-          <div className="flex items-center gap-3">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-frame/70">
-              <CharacterArt
-                source={character}
-                kind="portrait"
-                position="50% 15%"
-                className="absolute inset-0 h-full w-full"
-              />
-            </div>
-            <div className="min-w-0">
-              <div className="ui-display truncate text-lg leading-tight text-ink">{character.name}</div>
-              <div className="text-[11px] text-ink-faint">
-                ЛВК {c.dex} · движение {derived.move} · БУ {derived.damageBonus}
-              </div>
-            </div>
-          </div>
-          <Track label="Хиты" value={character.currentHP} max={character.maxHP} tone="hp" />
-          <div className="flex items-center gap-2">
-            <NumberField
-              label="Сколько"
-              value={amount}
-              min={1}
-              onChange={(v) => setAmount(Math.max(1, v))}
-              className="w-24"
-            />
-            <Button
-              size="sm"
-              variant="danger"
-              className="flex-1"
-              title={`Половина хитов за раз — серьёзная рана; 0 хитов — без сознания или при смерти${
-                throughArmor && armor > 0 ? `. Броня снимает ${armor}` : ''
-              }`}
-              onClick={takeHit}
-            >
-              Урон
-            </Button>
-            <Button
-              size="sm"
-              className="flex-1"
-              onClick={() => update(heal(amount), { message: `Лечение ${amount}`, type: 'health' })}
-            >
-              Лечение
-            </Button>
-          </div>
-          {armor > 0 && (
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-faint">
-              <Chip
-                on={throughArmor}
-                onClick={() => setThroughArmor(!throughArmor)}
-                title="Броня снимает свои очки с каждого удара оружием; падения, огонь и заклинания идут мимо неё"
-              >
-                Броня {armor}
-              </Chip>
-              {throughArmor && (
-                <span>
-                  удар {amount} → {absorbArmor(amount, armor)} (поглощено {amount - absorbArmor(amount, armor)})
-                </span>
-              )}
-            </div>
-          )}
-          <Track
-            label="Магия"
-            value={coc.magicPoints}
-            max={Math.floor(c.pow / 5)}
-            tone="accent"
-            onChange={(d) => update(changeMagic(d))}
-          />
-          <Track label="Рассудок" value={character.sanity} max={maxSanityOf(character)} tone="sanity" />
-          <Track
-            label="Удача"
-            value={coc.luck}
-            max={99}
-            tone="xp"
-            onChange={(d) => update(setLuck(coc.luck + d))}
-          />
-          {conditions.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {conditions.map((x) => (
-                <span
-                  key={x!.id}
-                  title={x!.description}
-                  className="border border-danger/50 px-2 py-0.5 text-[11px] text-danger"
-                >
-                  {x!.name}
-                </span>
-              ))}
-            </div>
-          )}
-          {(majorWound || dying) && (
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() =>
-                roll({
-                  label: dying ? 'При смерти: бросок ВЫН' : 'Серьёзная рана: бросок ВЫН',
-                  value: c.con,
-                  kind: 'characteristic',
-                })
-              }
-              title={dying ? 'Каждый раунд: провал — смерть' : 'Провал — потеря сознания'}
-            >
-              Бросок ВЫН
-            </Button>
-          )}
-        </Panel>
-        {party && <CombatChat party={party} userId={userId} />}
-      </motion.div>
-
-      {/* Right: the weapon and its shot, then what happened. */}
-      <motion.div
-        className={cx(
-          'absolute right-6 top-20 z-10 flex w-[22rem] flex-col gap-4',
-          locked && 'ui-turn-locked',
-        )}
-        initial={{ x: 24, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ ...ENTER, delay: 0.05 }}
-      >
-        <Panel crest className="flex flex-col gap-3 px-5 pb-5 pt-6">
-          <div className="ui-display ui-title text-center text-lg text-frame-bright">Оружие</div>
-          <div className="flex flex-col gap-1">
-            {character.attacks.map((a) => {
-              const value = a.skill ? skillValue(character, a.skill) : 0;
-              const on = a.id === weapon?.id;
-              return (
-                <button
-                  key={a.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setWeaponId(a.id)}
-                  className={cx(
-                    'flex items-baseline gap-2 px-2 py-1 text-left text-sm transition-colors',
-                    on ? 'text-ink' : 'text-ink-muted hover:text-ink',
-                  )}
-                >
-                  <span className={cx('w-3 text-frame-bright', !on && 'opacity-0')}>◆</span>
-                  <span className="min-w-0 flex-1 truncate">{a.name}</span>
-                  {a.ammo !== undefined && (
-                    <span className="text-xs text-ink-faint">
-                      {a.ammo}/{a.magazine}
-                    </span>
-                  )}
-                  <span className="ui-numeric w-7 text-right text-frame-bright">{value}</span>
-                </button>
-              );
-            })}
-          </div>
-          {knownTargets.length > 0 && (
-            <label className="flex items-center gap-2 text-xs text-ink-faint">
-              <span className="shrink-0">Цель</span>
-              <Select
-                value={targetId}
-                onChange={pickTarget}
-                placeholder="не выбрана"
-                options={knownTargets.map((t) => ({
-                  value: t.combatant.id,
-                  label: t.combatant.name,
-                  hint: `комплекция ${t.build}`,
-                }))}
-                className="flex-1 text-sm"
-              />
-            </label>
-          )}
-          {firearm ? (
-            <div className="flex flex-col gap-2 border-t border-line/50 pt-3">
-              <div className="flex flex-wrap gap-1.5">
-                {!inCombat && (
-                  <Chip
-                    on={gunReady}
-                    onClick={() => setGunReady(!gunReady)}
-                    title="Оружие уже в руке: +50 к порядку хода в первом раунде"
-                  >
-                    Наготове +50
-                  </Chip>
-                )}
-                <Chip
-                  on={shot.pointBlank}
-                  onClick={() => setShot({ ...shot, pointBlank: !shot.pointBlank })}
-                  title={`Ближе ${Math.floor(c.dex / 5)} футов`}
-                >
-                  В упор
-                </Chip>
-                <Chip on={shot.intoMelee} onClick={() => setShot({ ...shot, intoMelee: !shot.intoMelee })}>
-                  В свалку
-                </Chip>
-                <Chip on={shot.cover} onClick={() => setShot({ ...shot, cover: !shot.cover })}>
-                  В укрытии
-                </Chip>
-                <Chip on={shot.hidden} onClick={() => setShot({ ...shot, hidden: !shot.hidden })}>
-                  Скрыта
-                </Chip>
-                <Chip
-                  on={shot.bigTarget}
-                  onClick={() => setShot({ ...shot, bigTarget: !shot.bigTarget })}
-                  title={`Комплекция цели ${BIG_TARGET_BUILD} и больше: бонусная кость`}
-                >
-                  Крупная цель
-                </Chip>
-              </div>
-              {maxShots > 1 && (
-                <Segmented
-                  label="Выстрелов"
-                  value={String(shotsAsked)}
-                  onChange={(v) => setShot({ ...shot, shots: Number(v) })}
-                  options={Array.from({ length: maxShots }, (_, i) => ({
-                    value: String(i + 1),
-                    label: i === 0 ? '1 выстрел' : String(i + 1),
-                  }))}
-                  className="ui-segmented--compact"
-                />
-              )}
-              {rangeAt ? (
-                <div className="flex items-center gap-2">
-                  <NumberField
-                    label="Дистанция, ярд."
-                    value={distance}
-                    min={0}
-                    max={9999}
-                    onChange={(v) => setDistance(Math.max(0, v))}
-                    className="w-28"
-                  />
-                  <span className={cx('text-xs', range === 'beyond' ? 'text-danger' : 'text-ink-muted')}>
-                    {RANGE_LABELS[range]}
-                    {weapon?.range ? ` · ${weapon.range}` : ''}
-                  </span>
-                </div>
-              ) : (
-                <Segmented
-                  label="Дистанция"
-                  value={shot.range === 'beyond' ? 'base' : shot.range}
-                  onChange={(next) => setShot({ ...shot, range: next })}
-                  options={[
-                    { value: 'base', label: 'Обычная' },
-                    { value: 'long', label: 'Дальняя' },
-                    { value: 'veryLong', label: 'Оч. дальняя' },
-                  ]}
-                  className="ui-segmented--compact"
-                />
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-1.5 border-t border-line/50 pt-3">
-              <Chip
-                on={melee.outnumbering}
-                onClick={() => setMelee({ ...melee, outnumbering: !melee.outnumbering })}
-              >
-                Цель уже защищалась
-              </Chip>
-              <Chip on={melee.hampered} onClick={() => setMelee({ ...melee, hampered: !melee.hampered })}>
-                Помеха
-              </Chip>
-            </div>
-          )}
-          <p className="min-h-[1rem] text-xs text-ink-faint">
-            {mods.reasons.join(' · ') || 'Без модификаторов'}
-          </p>
-          {mods.impossible && (
-            <p className="text-xs text-danger" role="status">
-              {farthest !== undefined ? `Цель дальше ${farthest} ярд.` : 'Цель вне досягаемости'} — из этого
-              оружия её не достать
-            </p>
-          )}
+      {/* On the desktop the panels float over the backdrop, placed each on its own; below it they
+          go one under another (two abreast on a tablet) in a page that scrolls down. */}
+      <div className="contents max-lg:absolute max-lg:inset-0 max-lg:z-10 max-lg:flex max-lg:flex-wrap max-lg:content-start max-lg:gap-4 max-lg:overflow-y-auto max-lg:px-4 max-lg:pb-6 max-lg:pt-3">
+        {/* Top: back to the sheet, the turn order, the tools. */}
+        <header className="relative z-20 flex h-16 items-center gap-4 px-6 max-lg:h-auto max-lg:basis-full max-lg:flex-wrap max-lg:gap-x-2 max-lg:gap-y-3 max-lg:px-0 max-lg:pt-2">
           <Button
-            variant="primary"
-            size="lg"
-            className="w-full"
-            disabled={!weapon || noAction || outOfAmmo || !!mods.impossible}
-            onClick={attack}
+            variant="ghost"
+            size="sm"
+            icon={<IconPrev width={16} height={16} />}
+            onClick={() => setViewMode('tabs')}
+            className="max-lg:-ml-2"
           >
-            {outOfAmmo
-              ? 'Нет патронов'
-              : mods.impossible
-                ? 'Вне досягаемости'
-                : `${shotsNow > 1 ? `Выстрелить ${shotsNow} раза` : 'Атаковать'}${weapon ? ` · ${weapon.damage}` : ''}`}
+            Лист
           </Button>
-          {shownVolley && (
-            <ol className="flex flex-col gap-0.5 text-xs" aria-label="Выстрелы">
-              {shownVolley.map((x, i) => (
-                <li key={i} className={x.damage ? 'text-ink' : 'text-ink-faint'}>
-                  {shownVolley.length > 1 ? `Выстрел ${i + 1}: ` : ''}
-                  {x.total} — {SUCCESS_LABELS[x.level].toLowerCase()}
-                  {x.jammed ? ', осечка' : ''}
-                  {x.damage ? ` · урон ${x.damage.total} (${x.damage.formula})` : ''}
-                </li>
-              ))}
-            </ol>
-          )}
-          {firearm && weapon && (
-            <div className="flex gap-2">
+          <div className="absolute left-1/2 top-3 -translate-x-1/2 max-lg:static max-lg:order-last max-lg:flex max-lg:w-full max-lg:translate-x-0 max-lg:justify-center">
+            {party ? (
+              <PartyCombatBar
+                party={party}
+                characterId={character.id}
+                onMyTurn={() => {
+                  // The round was entered when it began; the turn itself only says so.
+                  if (partyFight)
+                    setRound((r) =>
+                      syncWithTable(r, { startedAt: partyFight.startedAt, round: partyFight.round }),
+                    );
+                  update((doc) => doc, { message: 'Ваш ход', type: 'other' }, { quiet: true });
+                }}
+              />
+            ) : (
+              <AnimatePresence mode="wait" initial={false}>
+                {round.inCombat ? (
+                  <motion.div
+                    key="fight"
+                    className="flex items-center gap-3 max-lg:flex-wrap max-lg:justify-center"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                  >
+                    <span className="ui-display text-lg text-frame-bright">Раунд {round.round}</span>
+                    <span className="text-sm text-ink-muted">порядок {round.initiative}</span>
+                    <Button variant="primary" onClick={nextRound}>
+                      Следующий раунд
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={finish}>
+                      Выйти из боя
+                    </Button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="calm"
+                    className="flex items-center gap-3"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                  >
+                    <Button variant="primary" icon={<IconDice width={18} height={18} />} onClick={start}>
+                      Начать бой · порядок {initiativeOf(c.dex, gunReady)}
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            )}
+          </div>
+          <div className="ml-auto flex items-center gap-1">
+            <SyncStatus className="mr-2" />
+            {party?.role === 'master' && (
+              <IconButton
+                label="Стол партии"
+                onClick={() => {
+                  goToCharacterList();
+                  go({ screen: 'party', partyId: party.id });
+                }}
+              >
+                <IconExit width={20} height={20} />
+              </IconButton>
+            )}
+            <IconButton label="Кубики" onClick={onDice}>
+              <IconDice width={20} height={20} />
+            </IconButton>
+            <IconButton label="Настройки" onClick={onOpenSettings}>
+              <IconSettings width={20} height={20} />
+            </IconButton>
+          </div>
+        </header>
+
+        {/* Left: the investigator, then the table's talk. */}
+        <motion.div
+          className="absolute left-6 top-20 z-10 flex w-[19rem] flex-col gap-4 max-lg:static max-lg:w-auto max-lg:min-w-[min(100%,18rem)] max-lg:flex-1"
+          initial={{ x: -24, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={ENTER}
+        >
+          <Panel crest className="flex flex-col gap-3 px-5 pb-4 pt-6">
+            <div className="flex items-center gap-3">
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-frame/70">
+                <CharacterArt
+                  source={character}
+                  kind="portrait"
+                  position="50% 15%"
+                  className="absolute inset-0 h-full w-full"
+                />
+              </div>
+              <div className="min-w-0">
+                <div className="ui-display truncate text-lg leading-tight text-ink">{character.name}</div>
+                <div className="text-[11px] text-ink-faint">
+                  ЛВК {c.dex} · движение {derived.move} · БУ {derived.damageBonus}
+                </div>
+              </div>
+            </div>
+            <Track label="Хиты" value={character.currentHP} max={character.maxHP} tone="hp" />
+            <div className="flex items-center gap-2">
+              <NumberField
+                label="Сколько"
+                value={amount}
+                min={1}
+                onChange={(v) => setAmount(Math.max(1, v))}
+                className="w-24"
+              />
+              <Button
+                size="sm"
+                variant="danger"
+                className="flex-1"
+                title={`Половина хитов за раз — серьёзная рана; 0 хитов — без сознания или при смерти${
+                  throughArmor && armor > 0 ? `. Броня снимает ${armor}` : ''
+                }`}
+                onClick={takeHit}
+              >
+                Урон
+              </Button>
               <Button
                 size="sm"
                 className="flex-1"
-                disabled={noAction}
-                title="Бонусная кость на следующий выстрел"
+                onClick={() => update(heal(amount), { message: `Лечение ${amount}`, type: 'health' })}
+              >
+                Лечение
+              </Button>
+            </div>
+            {armor > 0 && (
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-faint">
+                <Chip
+                  on={throughArmor}
+                  onClick={() => setThroughArmor(!throughArmor)}
+                  title="Броня снимает свои очки с каждого удара оружием; падения, огонь и заклинания идут мимо неё"
+                >
+                  Броня {armor}
+                </Chip>
+                {throughArmor && (
+                  <span>
+                    удар {amount} → {absorbArmor(amount, armor)} (поглощено {amount - absorbArmor(amount, armor)})
+                  </span>
+                )}
+              </div>
+            )}
+            <Track
+              label="Магия"
+              value={coc.magicPoints}
+              max={Math.floor(c.pow / 5)}
+              tone="accent"
+              onChange={(d) => update(changeMagic(d))}
+            />
+            <Track label="Рассудок" value={character.sanity} max={maxSanityOf(character)} tone="sanity" />
+            <Track
+              label="Удача"
+              value={coc.luck}
+              max={99}
+              tone="xp"
+              onChange={(d) => update(setLuck(coc.luck + d))}
+            />
+            {conditions.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {conditions.map((x) => (
+                  <span
+                    key={x!.id}
+                    title={x!.description}
+                    className="border border-danger/50 px-2 py-0.5 text-[11px] text-danger"
+                  >
+                    {x!.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {(majorWound || dying) && (
+              <Button
+                size="sm"
+                variant="danger"
                 onClick={() =>
-                  onTurn(() => {
-                    setRound((r) => ({ ...r, actionUsed: true, aimedWith: weapon.id }));
-                    update((doc) => doc, { message: `Прицеливается: ${weapon.name}`, type: 'other' });
+                  roll({
+                    label: dying ? 'При смерти: бросок ВЫН' : 'Серьёзная рана: бросок ВЫН',
+                    value: c.con,
+                    kind: 'characteristic',
                   })
                 }
+                title={dying ? 'Каждый раунд: провал — смерть' : 'Провал — потеря сознания'}
               >
-                Прицелиться
+                Бросок ВЫН
               </Button>
-              {weapon.magazine !== undefined && (
+            )}
+          </Panel>
+          {party && <CombatChat party={party} userId={userId} />}
+        </motion.div>
+
+        {/* Right: the weapon and its shot, then what happened. */}
+        <motion.div
+          className={cx(
+            'absolute right-6 top-20 z-10 flex w-[22rem] flex-col gap-4 max-lg:static max-lg:w-auto max-lg:min-w-[min(100%,18rem)] max-lg:flex-1',
+            locked && 'ui-turn-locked',
+          )}
+          initial={{ x: 24, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ ...ENTER, delay: 0.05 }}
+        >
+          <Panel crest className="flex flex-col gap-3 px-5 pb-5 pt-6">
+            <div className="ui-display ui-title text-center text-lg text-frame-bright">Оружие</div>
+            <div className="flex flex-col gap-1">
+              {character.attacks.map((a) => {
+                const value = a.skill ? skillValue(character, a.skill) : 0;
+                const on = a.id === weapon?.id;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setWeaponId(a.id)}
+                    className={cx(
+                      'flex items-baseline gap-2 px-2 py-1 text-left text-sm transition-colors max-lg:py-2.5',
+                      on ? 'text-ink' : 'text-ink-muted hover:text-ink',
+                    )}
+                  >
+                    <span className={cx('w-3 text-frame-bright', !on && 'opacity-0')}>◆</span>
+                    <span className="min-w-0 flex-1 truncate">{a.name}</span>
+                    {a.ammo !== undefined && (
+                      <span className="text-xs text-ink-faint">
+                        {a.ammo}/{a.magazine}
+                      </span>
+                    )}
+                    <span className="ui-numeric w-7 text-right text-frame-bright">{value}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {knownTargets.length > 0 && (
+              <label className="flex items-center gap-2 text-xs text-ink-faint">
+                <span className="shrink-0">Цель</span>
+                <Select
+                  value={targetId}
+                  onChange={pickTarget}
+                  placeholder="не выбрана"
+                  options={knownTargets.map((t) => ({
+                    value: t.combatant.id,
+                    label: t.combatant.name,
+                    hint: `комплекция ${t.build}`,
+                  }))}
+                  className="flex-1 text-sm"
+                />
+              </label>
+            )}
+            {firearm ? (
+              <div className="flex flex-col gap-2 border-t border-line/50 pt-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {!inCombat && (
+                    <Chip
+                      on={gunReady}
+                      onClick={() => setGunReady(!gunReady)}
+                      title="Оружие уже в руке: +50 к порядку хода в первом раунде"
+                    >
+                      Наготове +50
+                    </Chip>
+                  )}
+                  <Chip
+                    on={shot.pointBlank}
+                    onClick={() => setShot({ ...shot, pointBlank: !shot.pointBlank })}
+                    title={`Ближе ${Math.floor(c.dex / 5)} футов`}
+                  >
+                    В упор
+                  </Chip>
+                  <Chip on={shot.intoMelee} onClick={() => setShot({ ...shot, intoMelee: !shot.intoMelee })}>
+                    В свалку
+                  </Chip>
+                  <Chip on={shot.cover} onClick={() => setShot({ ...shot, cover: !shot.cover })}>
+                    В укрытии
+                  </Chip>
+                  <Chip on={shot.hidden} onClick={() => setShot({ ...shot, hidden: !shot.hidden })}>
+                    Скрыта
+                  </Chip>
+                  <Chip
+                    on={shot.bigTarget}
+                    onClick={() => setShot({ ...shot, bigTarget: !shot.bigTarget })}
+                    title={`Комплекция цели ${BIG_TARGET_BUILD} и больше: бонусная кость`}
+                  >
+                    Крупная цель
+                  </Chip>
+                </div>
+                {maxShots > 1 && (
+                  <Segmented
+                    label="Выстрелов"
+                    value={String(shotsAsked)}
+                    onChange={(v) => setShot({ ...shot, shots: Number(v) })}
+                    options={Array.from({ length: maxShots }, (_, i) => ({
+                      value: String(i + 1),
+                      label: i === 0 ? '1 выстрел' : String(i + 1),
+                    }))}
+                    className="ui-segmented--compact"
+                  />
+                )}
+                {rangeAt ? (
+                  <div className="flex items-center gap-2">
+                    <NumberField
+                      label="Дистанция, ярд."
+                      value={distance}
+                      min={0}
+                      max={9999}
+                      onChange={(v) => setDistance(Math.max(0, v))}
+                      className="w-28"
+                    />
+                    <span className={cx('text-xs', range === 'beyond' ? 'text-danger' : 'text-ink-muted')}>
+                      {RANGE_LABELS[range]}
+                      {weapon?.range ? ` · ${weapon.range}` : ''}
+                    </span>
+                  </div>
+                ) : (
+                  <Segmented
+                    label="Дистанция"
+                    value={shot.range === 'beyond' ? 'base' : shot.range}
+                    onChange={(next) => setShot({ ...shot, range: next })}
+                    options={[
+                      { value: 'base', label: 'Обычная' },
+                      { value: 'long', label: 'Дальняя' },
+                      { value: 'veryLong', label: 'Оч. дальняя' },
+                    ]}
+                    className="ui-segmented--compact"
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 border-t border-line/50 pt-3">
+                <Chip
+                  on={melee.outnumbering}
+                  onClick={() => setMelee({ ...melee, outnumbering: !melee.outnumbering })}
+                >
+                  Цель уже защищалась
+                </Chip>
+                <Chip on={melee.hampered} onClick={() => setMelee({ ...melee, hampered: !melee.hampered })}>
+                  Помеха
+                </Chip>
+              </div>
+            )}
+            <p className="min-h-[1rem] text-xs text-ink-faint">
+              {mods.reasons.join(' · ') || 'Без модификаторов'}
+            </p>
+            {mods.impossible && (
+              <p className="text-xs text-danger" role="status">
+                {farthest !== undefined ? `Цель дальше ${farthest} ярд.` : 'Цель вне досягаемости'} — из этого
+                оружия её не достать
+              </p>
+            )}
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full"
+              disabled={!weapon || noAction || outOfAmmo || !!mods.impossible}
+              onClick={attack}
+            >
+              {outOfAmmo
+                ? 'Нет патронов'
+                : mods.impossible
+                  ? 'Вне досягаемости'
+                  : `${shotsNow > 1 ? `Выстрелить ${shotsNow} раза` : 'Атаковать'}${weapon ? ` · ${weapon.damage}` : ''}`}
+            </Button>
+            {shownVolley && (
+              <ol className="flex flex-col gap-0.5 text-xs" aria-label="Выстрелы">
+                {shownVolley.map((x, i) => (
+                  <li key={i} className={x.damage ? 'text-ink' : 'text-ink-faint'}>
+                    {shownVolley.length > 1 ? `Выстрел ${i + 1}: ` : ''}
+                    {x.total} — {SUCCESS_LABELS[x.level].toLowerCase()}
+                    {x.jammed ? ', осечка' : ''}
+                    {x.damage ? ` · урон ${x.damage.total} (${x.damage.formula})` : ''}
+                  </li>
+                ))}
+              </ol>
+            )}
+            {firearm && weapon && (
+              <div className="flex gap-2">
                 <Button
                   size="sm"
                   className="flex-1"
                   disabled={noAction}
+                  title="Бонусная кость на следующий выстрел"
                   onClick={() =>
                     onTurn(() => {
-                      update(reloadWeapon(weapon.id), { message: `${weapon.name}: перезаряжено`, type: 'inventory' });
-                      spendAction();
+                      setRound((r) => ({ ...r, actionUsed: true, aimedWith: weapon.id }));
+                      update((doc) => doc, { message: `Прицеливается: ${weapon.name}`, type: 'other' });
                     })
                   }
                 >
-                  Перезарядить
+                  Прицелиться
                 </Button>
-              )}
-            </div>
-          )}
-        </Panel>
-        <CombatLog character={character} />
-      </motion.div>
-
-      {/* Bottom: the defences and every other action of the round. */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 flex justify-center">
-        <motion.div
-          className={cx('pointer-events-auto', locked && 'ui-turn-locked')}
-          initial={{ y: 24, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ ...ENTER, delay: 0.1 }}
-        >
-          <Panel className="flex items-stretch gap-0 px-2 py-3">
-            {inCombat && (
-              <div className="flex flex-col justify-center gap-1.5 px-4 text-xs">
-                <span
-                  className={cx(round.actionUsed ? 'text-ink-faint line-through' : 'text-act-action')}
-                  title="Одно действие в раунд"
-                >
-                  ◆ действие
-                </span>
-                <span
-                  className="text-act-reaction"
-                  title="Защит в раунде: каждая следующая атака на вас получает бонусную кость"
-                >
-                  ◇ защит: {round.reactions}
-                </span>
-              </div>
-            )}
-            <BarGroup title="Защита">
-              <BarButton
-                label="Уклонение"
-                value={skillValue(character, 'dodge')}
-                hint="ничья — в вашу пользу"
-                onClick={() => defend('dodge')}
-              />
-              <div className="flex flex-col items-center gap-1">
-                <BarButton
-                  label="Контратака"
-                  value={skillValue(character, fightBackId)}
-                  hint={fightWith ? fightWith.name : 'ничья — атакующему'}
-                  onClick={() => defend('fightBack')}
-                />
-                {melees.length > 0 && (
-                  <Select
-                    value={fightWith?.id ?? BRAWL}
-                    onChange={setFightWithId}
-                    options={[
-                      { value: BRAWL, label: 'Драка', hint: String(skillValue(character, 'fighting:brawl')) },
-                      ...melees.map((a) => ({
-                        value: a.id,
-                        label: a.name,
-                        hint: String(skillValue(character, fightBackSkill(a))),
-                      })),
-                    ]}
-                    className="w-[6.5rem] py-0.5 text-[11px]"
-                  />
+                {weapon.magazine !== undefined && (
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    disabled={noAction}
+                    onClick={() =>
+                      onTurn(() => {
+                        update(reloadWeapon(weapon.id), { message: `${weapon.name}: перезаряжено`, type: 'inventory' });
+                        spendAction();
+                      })
+                    }
+                  >
+                    Перезарядить
+                  </Button>
                 )}
               </div>
-              <BarButton
-                label="Укрыться"
-                value={skillValue(character, 'dodge')}
-                hint="от выстрела: теряете атаку"
-                onClick={() => defend('cover')}
-              />
-            </BarGroup>
-            <BarGroup title="Манёвр">
-              <div className="flex flex-col items-center gap-1">
-                <NumberField
-                  label="Комплекция цели"
-                  value={targetBuild}
-                  min={-2}
-                  max={10}
-                  onChange={setTargetBuild}
-                  className="w-28"
-                />
-                <span className="max-w-[9rem] text-center text-[10px] leading-tight text-ink-faint">
-                  {manoeuvre.possible
-                    ? manoeuvre.reasons.join(' · ') || `ваша комплекция ${derived.build}`
-                    : manoeuvre.reason}
-                </span>
-              </div>
-              <BarButton
-                label="Провести"
-                value={skillValue(character, 'fighting:brawl')}
-                hint="обезоружить, сбить, схватить"
-                disabled={!manoeuvre.possible || noAction}
-                onClick={() =>
-                  onTurn(() => {
-                    if (!manoeuvre.possible) return;
-                    roll({
-                      label: 'Манёвр',
-                      value: skillValue(character, 'fighting:brawl'),
-                      kind: 'skill',
-                      id: 'fighting:brawl',
-                      difficulty: manoeuvre.difficulty,
-                      bonus: manoeuvre.bonus,
-                      penalty: manoeuvre.penalty,
-                    });
-                    spendAction();
-                  })
-                }
-              />
-            </BarGroup>
-            <BarGroup title="Ещё">
-              <BarButton
-                label="Навык"
-                hint="любой навык"
-                disabled={noAction}
-                onClick={() => onTurn(() => setSkillPicker(true))}
-              />
-              <BarButton
-                label="Удача"
-                value={coc.luck}
-                hint="бросок удачи"
-                onClick={() => roll({ label: 'Удача', value: coc.luck, kind: 'luck' })}
-              />
-              {coc.spells
-                .slice(0, coc.spells.length > INLINE_SPELLS ? INLINE_SPELLS - 1 : INLINE_SPELLS)
-                .map((sp) => (
-                  <BarButton
-                    key={sp.id}
-                    label={sp.name}
-                    hint={sp.cost}
-                    disabled={noAction}
-                    onClick={() => cast(sp)}
-                  />
-                ))}
-              {coc.spells.length > INLINE_SPELLS && (
-                <BarButton
-                  label={`Заклинания (${coc.spells.length})`}
-                  hint="все известные"
-                  onClick={() => setSpellsOpen(true)}
-                />
-              )}
-            </BarGroup>
+            )}
           </Panel>
-          {actionNote && inCombat && (
-            <p className="mt-1.5 text-center text-xs text-ink-faint" role="status">
-              {actionNote}
-            </p>
-          )}
-          {defending === 'cover' && last && (
-            <Panel ornate={false} className="mt-2 px-4 py-2 text-center text-sm">
-              <span role="status" className={last.check.success ? 'text-success' : 'text-danger'}>
-                {last.check.success
-                  ? 'Вы укрылись — стрелок бросает со штрафной костью'
-                  : 'Укрыться не успели — выстрел без штрафа'}
-              </span>
-              <span className="ml-2 text-ink-muted">· следующая атака потеряна</span>
-            </Panel>
-          )}
-          {defending && defending !== 'cover' && last && (
-            <Panel
-              ornate={false}
-              className="mt-2 flex flex-wrap items-center justify-center gap-1.5 px-4 py-2 text-sm"
-            >
-              <span className="text-ink-muted">
-                {last.label}: {SUCCESS_LABELS[last.check.level].toLowerCase()}. Атака по вам была:
-              </span>
-              {LEVELS.map((level) => (
-                <Chip key={level} on={incoming === level} onClick={() => setIncoming(level)}>
-                  {SUCCESS_LABELS[level]}
-                </Chip>
-              ))}
-              {verdict && !rollToastShown && (
-                <span
-                  className={cx(
-                    'ml-2',
-                    verdict === 'defender'
-                      ? 'text-success'
-                      : verdict === 'attacker'
-                        ? 'text-danger'
-                        : 'text-ink-muted',
-                  )}
-                >
-                  {verdict === 'defender'
-                    ? defending === 'fightBack'
-                      ? 'Контратака удалась — вы наносите урон'
-                      : 'Вы увернулись'
-                    : verdict === 'attacker'
-                      ? 'Атака достигла цели'
-                      : 'Никто не преуспел'}
-                </span>
-              )}
-            </Panel>
-          )}
+          <CombatLog character={character} />
         </motion.div>
+
+        {/* Bottom: the defences and every other action of the round. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 flex justify-center max-lg:static max-lg:basis-full">
+          <motion.div
+            className={cx('pointer-events-auto max-lg:w-full', locked && 'ui-turn-locked')}
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ ...ENTER, delay: 0.1 }}
+          >
+            <Panel className="flex items-stretch gap-0 px-2 py-3 max-lg:flex-wrap max-lg:justify-center max-lg:gap-y-4">
+              {inCombat && (
+                <div className="flex flex-col justify-center gap-1.5 px-4 text-xs max-lg:basis-full max-lg:flex-row max-lg:gap-4">
+                  <span
+                    className={cx(round.actionUsed ? 'text-ink-faint line-through' : 'text-act-action')}
+                    title="Одно действие в раунд"
+                  >
+                    ◆ действие
+                  </span>
+                  <span
+                    className="text-act-reaction"
+                    title="Защит в раунде: каждая следующая атака на вас получает бонусную кость"
+                  >
+                    ◇ защит: {round.reactions}
+                  </span>
+                </div>
+              )}
+              <BarGroup
+                title="Защита"
+                head={
+                  <Segmented
+                    label="Атака по вам"
+                    value={attackOn}
+                    onChange={setAttackOn}
+                    options={[
+                      { value: 'melee', label: 'Ближний бой' },
+                      { value: 'firearm', label: 'Огнестрел' },
+                    ]}
+                    className="ui-segmented--compact self-center"
+                  />
+                }
+              >
+                {attackOn === 'melee' ? (
+                  <>
+                    <BarButton
+                      label="Уклонение"
+                      value={skillValue(character, 'dodge')}
+                      hint="ничья — в вашу пользу"
+                      onClick={() => defend('dodge')}
+                    />
+                    <div className="flex flex-col items-center gap-1 max-sm:flex-1 max-sm:items-stretch">
+                      <BarButton
+                        label="Контратака"
+                        value={skillValue(character, fightBackId)}
+                        hint={fightWith ? fightWith.name : 'ничья — атакующему'}
+                        onClick={() => defend('fightBack')}
+                      />
+                      {melees.length > 0 && (
+                        <Select
+                          value={fightWith?.id ?? BRAWL}
+                          onChange={setFightWithId}
+                          options={[
+                            { value: BRAWL, label: 'Драка', hint: String(skillValue(character, 'fighting:brawl')) },
+                            ...melees.map((a) => ({
+                              value: a.id,
+                              label: a.name,
+                              hint: String(skillValue(character, fightBackSkill(a))),
+                            })),
+                          ]}
+                          className="w-[6.5rem] py-0.5 text-[11px] max-sm:w-full"
+                        />
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  // A bullet is not dodged: the target can only dive for cover (7th edition).
+                  <BarButton
+                    label="Укрыться"
+                    value={skillValue(character, 'dodge')}
+                    hint="от выстрела: теряете атаку"
+                    onClick={() => defend('cover')}
+                  />
+                )}
+              </BarGroup>
+              <BarGroup title="Манёвр">
+                <div className="flex flex-col items-center gap-1">
+                  <NumberField
+                    label="Комплекция цели"
+                    value={targetBuild}
+                    min={-2}
+                    max={10}
+                    onChange={setTargetBuild}
+                    className="w-28"
+                  />
+                  <span className="max-w-[9rem] text-center text-[10px] leading-tight text-ink-faint">
+                    {manoeuvre.possible
+                      ? manoeuvre.reasons.join(' · ') || `ваша комплекция ${derived.build}`
+                      : manoeuvre.reason}
+                  </span>
+                </div>
+                <BarButton
+                  label="Провести"
+                  value={skillValue(character, 'fighting:brawl')}
+                  hint="обезоружить, сбить, схватить"
+                  disabled={!manoeuvre.possible || noAction}
+                  onClick={() =>
+                    onTurn(() => {
+                      if (!manoeuvre.possible) return;
+                      roll({
+                        label: 'Манёвр',
+                        value: skillValue(character, 'fighting:brawl'),
+                        kind: 'skill',
+                        id: 'fighting:brawl',
+                        difficulty: manoeuvre.difficulty,
+                        bonus: manoeuvre.bonus,
+                        penalty: manoeuvre.penalty,
+                      });
+                      spendAction();
+                    })
+                  }
+                />
+              </BarGroup>
+              <BarGroup title="Ещё">
+                <BarButton
+                  label="Навык"
+                  hint="любой навык"
+                  disabled={noAction}
+                  onClick={() => onTurn(() => setSkillPicker(true))}
+                />
+                <BarButton
+                  label="Удача"
+                  value={coc.luck}
+                  hint="бросок удачи"
+                  onClick={() => roll({ label: 'Удача', value: coc.luck, kind: 'luck' })}
+                />
+                {coc.spells
+                  .slice(0, coc.spells.length > INLINE_SPELLS ? INLINE_SPELLS - 1 : INLINE_SPELLS)
+                  .map((sp) => (
+                    <BarButton
+                      key={sp.id}
+                      label={sp.name}
+                      hint={sp.cost}
+                      disabled={noAction}
+                      onClick={() => cast(sp)}
+                    />
+                  ))}
+                {coc.spells.length > INLINE_SPELLS && (
+                  <BarButton
+                    label={`Заклинания (${coc.spells.length})`}
+                    hint="все известные"
+                    onClick={() => setSpellsOpen(true)}
+                  />
+                )}
+              </BarGroup>
+            </Panel>
+            {actionNote && inCombat && (
+              <p className="mt-1.5 text-center text-xs text-ink-faint" role="status">
+                {actionNote}
+              </p>
+            )}
+            {defending === 'cover' && last && (
+              <Panel ornate={false} className="mt-2 px-4 py-2 text-center text-sm">
+                <span role="status" className={last.check.success ? 'text-success' : 'text-danger'}>
+                  {last.check.success
+                    ? 'Вы укрылись — стрелок бросает со штрафной костью'
+                    : 'Укрыться не успели — выстрел без штрафа'}
+                </span>
+                <span className="ml-2 text-ink-muted">· следующая атака потеряна</span>
+              </Panel>
+            )}
+            {defending && defending !== 'cover' && last && (
+              <Panel
+                ornate={false}
+                className="mt-2 flex flex-wrap items-center justify-center gap-1.5 px-4 py-2 text-sm"
+              >
+                <span className="text-ink-muted">
+                  {last.label}: {SUCCESS_LABELS[last.check.level].toLowerCase()}. Атака по вам была:
+                </span>
+                {LEVELS.map((level) => (
+                  <Chip key={level} on={incoming === level} onClick={() => setIncoming(level)}>
+                    {SUCCESS_LABELS[level]}
+                  </Chip>
+                ))}
+                {verdict && !rollToastShown && (
+                  <span
+                    className={cx(
+                      'ml-2',
+                      verdict === 'defender'
+                        ? 'text-success'
+                        : verdict === 'attacker'
+                          ? 'text-danger'
+                          : 'text-ink-muted',
+                    )}
+                  >
+                    {verdict === 'defender'
+                      ? defending === 'fightBack'
+                        ? 'Контратака удалась — вы наносите урон'
+                        : 'Вы увернулись'
+                      : verdict === 'attacker'
+                        ? 'Атака достигла цели'
+                        : 'Никто не преуспел'}
+                  </span>
+                )}
+              </Panel>
+            )}
+          </motion.div>
+        </div>
       </div>
 
       <Dialog

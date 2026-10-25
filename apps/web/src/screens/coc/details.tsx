@@ -32,7 +32,7 @@ import type { Character } from '@itd/schema';
 import { DetailsPane, type DetailsFact } from '../../ui/DetailsPane';
 import { Dialog } from '../../ui/Dialog';
 import { NumberField } from '../../ui/forms';
-import { Button, Input } from '../../ui/primitives';
+import { Button, Input, cx } from '../../ui/primitives';
 import { Prose } from '../../ui/Prose';
 import { useWideSheet } from '../sheet/dialogs/context';
 import { EditableText } from '../sheet/parts/EditableText';
@@ -734,11 +734,15 @@ const CardBody: React.FC<{ entry: CocEntry; asDialog: boolean }> = ({ entry, asD
  * The chosen entry's card: a column beside the section on a wide screen (the list stays in view),
  * a dialog on a narrow one. The section's content sits in `children`.
  */
-export const CocDetailsLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CocDetailsLayout: React.FC<{
+  children: React.ReactNode;
+  /** Its height: the section's full height by default; a narrow sheet lets it grow and scroll the page. */
+  className?: string;
+}> = ({ children, className = 'h-full min-h-0' }) => {
   const { selected } = useCocSelection();
   const wide = useWideSheet();
   return (
-    <div className="flex h-full min-h-0 gap-8">
+    <div className={cx('flex gap-8', className)}>
       <div className="min-w-0 flex-1">{children}</div>
       {selected && wide && (
         <div className="h-full w-[400px] shrink-0 pt-1">
