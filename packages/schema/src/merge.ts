@@ -7,6 +7,13 @@ type Json = unknown;
 type JsonObject = Record<string, Json>;
 type Entity = JsonObject & { id: string };
 
+/**
+ * Top-level fields that are sets of strings, not ordered lists: concurrent additions on two devices
+ * must both survive, so they merge as a set union rather than "local wins". (`build.choices` arrays
+ * are deliberately excluded — a single-select choice there must not keep both devices' picks.)
+ */
+const STRING_SET_FIELDS = new Set(['conditions', 'savingThrowProficiencies', 'knownSchools']);
+
 export interface MergeResult {
   merged: Character;
   /** Paths edited on both sides where the local edit won, e.g. `currentHP`, `inventory[item_1]`. */
@@ -56,9 +63,33 @@ function mergeValue(path: string, base: Slot, local: Slot, remote: Slot, conflic
   if (isObject(local) && isObject(remote)) {
     return mergeObjects(path, isObject(base) ? base : null, local, remote, conflicts);
   }
+  if (STRING_SET_FIELDS.has(path) && Array.isArray(local) && Array.isArray(remote)) {
+    return mergeStringSet(base, local, remote);
+  }
 
   conflicts.push(path);
   return local;
+}
+
+/**
+ * Three-way merge of a set-like array: an entry present in the ancestor but gone on a side was
+ * removed there (a removal wins); every other entry from either side is kept. Remote order is the
+ * backbone, local-only additions follow; duplicates are collapsed.
+ */
+function mergeStringSet(base: Slot, local: Json[], remote: Json[]): Json[] {
+  const baseSet = new Set<Json>(Array.isArray(base) ? base : []);
+  const localSet = new Set(local);
+  const remoteSet = new Set(remote);
+  const removed = (value: Json) => baseSet.has(value) && (!localSet.has(value) || !remoteSet.has(value));
+
+  const result: Json[] = [];
+  const seen = new Set<Json>();
+  for (const value of [...remote, ...local]) {
+    if (seen.has(value) || removed(value)) continue;
+    seen.add(value);
+    result.push(value);
+  }
+  return result;
 }
 
 function mergeObjects(
