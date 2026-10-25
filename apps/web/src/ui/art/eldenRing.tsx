@@ -164,7 +164,8 @@ const SigilRule: React.FC = () => (
  * Screen corner, 120×120: the border of the map — a heavy rule and a hairline inside it, fading out
  * along each edge, and in the corner a small leaf drawn in outline with its midrib.
  */
-const ScreenCorner: React.FC = () => (
+// Unwired scaffolding for the Elden Ring setting — drop the `_` when it is placed on screen.
+const _ScreenCorner: React.FC = () => (
   <svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-hidden>
     <defs>
       <linearGradient id="er-fade-x" x1="0" x2="1" y1="0" y2="0">
@@ -392,7 +393,8 @@ const NAMES: { x: number; y: number; size: number; text: string }[] = [
  * capital; mountains and the rot's marshes in Caelid; roads in dashes, the sites of grace, the names
  * of the lands — and the marker of where you stand.
  */
-const LandsMap: React.FC<{ names?: boolean }> = ({ names = true }) => (
+// Unwired scaffolding for the Elden Ring setting — drop the `_` when it is placed on screen.
+const _LandsMap: React.FC<{ names?: boolean }> = ({ names = true }) => (
   <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden className="h-full w-full">
     <defs>
       <clipPath id="er-map-lake">
@@ -483,7 +485,8 @@ const LandsMap: React.FC<{ names?: boolean }> = ({ names = true }) => (
 );
 
 /** Motes of gold rising through the dark, each on its own drift and time. */
-const MOTES = (() => {
+// Unwired scaffolding for the Elden Ring setting — drop the `_` when it is placed on screen.
+const _MOTES = (() => {
   const next = random(617);
   return Array.from({ length: 8 }, () => ({
     left: `${(next() * 100).toFixed(1)}%`,
