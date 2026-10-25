@@ -12,6 +12,7 @@ import {
   IconCreate,
   IconHidden,
   IconInitiative,
+  IconSanity,
   IconShown,
 } from '../../ui/icons';
 import { IconButton, Meter, Panel, cx } from '../../ui/primitives';
@@ -454,7 +455,7 @@ const HeroCard: React.FC<{
               </span>
               {spread && (
                 <span className="block truncate text-xs text-ink-muted">
-                  {[origin.calling || origin.race, `${hero.level} ур.`].filter(Boolean).join(' · ')}
+                  {[origin.calling || origin.race, !vitals?.coc && `${hero.level} ур.`].filter(Boolean).join(' · ')}
                 </span>
               )}
               {spread && vitals && (
@@ -472,10 +473,17 @@ const HeroCard: React.FC<{
                   <span className="ui-numeric text-xs text-ink-muted">
                     {vitals.currentHP}/{vitals.maxHP}
                   </span>
-                  <span className="flex items-center gap-1 text-xs text-ink" title="Класс брони">
-                    <IconArmor width={13} height={13} className="text-armor" />
-                    <span className="ui-numeric">{vitals.armorClass}</span>
-                  </span>
+                  {vitals.coc ? (
+                    <span className="flex items-center gap-1 text-xs text-ink" title="Рассудок">
+                      <IconSanity width={13} height={13} className="text-sanity" />
+                      <span className="ui-numeric">{vitals.coc.sanity}</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-ink" title="Класс брони">
+                      <IconArmor width={13} height={13} className="text-armor" />
+                      <span className="ui-numeric">{vitals.armorClass}</span>
+                    </span>
+                  )}
                 </span>
               )}
             </span>
@@ -618,13 +626,15 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
             {spread && (
               <>
                 <span className="flex items-center gap-3 text-xs text-ink-muted">
-                  <span className="flex items-center gap-1" title="Класс брони">
-                    <IconArmor width={13} height={13} className="text-armor" />
-                    <span className="ui-numeric text-ink">{npc.armorClass}</span>
-                  </span>
-                  <span className="flex items-center gap-1" title="Модификатор инициативы">
+                  {party.rules !== 'coc7' && (
+                    <span className="flex items-center gap-1" title="Класс брони">
+                      <IconArmor width={13} height={13} className="text-armor" />
+                      <span className="ui-numeric text-ink">{npc.armorClass}</span>
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1" title={party.rules === 'coc7' ? 'Ловкость: порядок хода' : 'Модификатор инициативы'}>
                     <IconInitiative width={12} height={12} />
-                    <span className="ui-numeric text-ink">{formatBonus(npc.initiativeBonus)}</span>
+                    <span className="ui-numeric text-ink">{party.rules === 'coc7' ? npc.initiativeBonus : formatBonus(npc.initiativeBonus)}</span>
                   </span>
                 </span>
                 <span className="block h-5" />

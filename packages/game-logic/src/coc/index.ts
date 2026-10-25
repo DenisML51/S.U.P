@@ -7,6 +7,7 @@ export * from './types';
 export * from './engine';
 export * from './creation';
 export * from './actions';
+export * from './combat';
 export { CHARACTERISTICS, characteristicDef } from './content/characteristics';
 export { SKILLS, SOCIAL_SKILLS, skillDef, skillName } from './content/skills';
 export { OCCUPATIONS, occupationDef } from './content/occupations';

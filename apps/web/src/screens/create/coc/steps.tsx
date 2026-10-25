@@ -23,6 +23,7 @@ import { NumberField, Segmented } from '../../../ui/forms';
 import { Button, Input, Panel, TextArea, cx } from '../../../ui/primitives';
 import { ImageSlot } from '../../../ui/ImageSlot';
 import { WireDie } from '../../../ui/WireDie';
+import { LandedValue, RollingDice, useLanded, type ThrownDie } from '../../../ui/RollingDie';
 import { EditionCarousel } from '../../../ui/RulesetCards';
 import { choiceOptions, type CocCreation } from './useCocCreation';
 
@@ -80,6 +81,70 @@ const TileGrid: React.FC<{
     ))}
   </div>
 );
+
+const d6s = (dice: number[]): ThrownDie[] => dice.map((value) => ({ sides: 6, value }));
+
+/**
+ * A rolled number with the dice of the throw that made it: the dice tumble small beside it and the
+ * number comes in once they are down. Without a throw on this visit the number simply stands.
+ */
+const ThrownNumber: React.FC<{
+  value: React.ReactNode;
+  throwKey: number | null;
+  dice?: ThrownDie[];
+  delay?: number;
+  /** Between the dice and the number ("+13 ×5 ="). */
+  note?: string;
+  className?: string;
+}> = ({ value, throwKey, dice, delay, note, className }) => {
+  const [landed, markLanded] = useLanded(dice ? throwKey : null);
+  return (
+    <span className="flex items-center gap-3">
+      {dice && throwKey !== null && (
+        <RollingDice
+          key={throwKey}
+          dice={dice}
+          size="1.6rem"
+          delay={delay}
+          stagger={80}
+          onLanded={markLanded}
+        />
+      )}
+      {note && dice && <span className="text-xs text-ink-faint">{note}</span>}
+      <LandedValue landed={landed} className={className}>
+        {value}
+      </LandedValue>
+    </span>
+  );
+};
+
+/** One EDU improvement check as thrown: the d100 against EDU, the d10 it adds on a pass. */
+const EduThrow: React.FC<{ check: { roll: number; die?: number; gain: number }; delay: number }> = ({
+  check,
+  delay,
+}) => {
+  const [landed, setLanded] = useState(false);
+  return (
+    <span className="flex items-center gap-1.5">
+      <RollingDice
+        dice={[
+          { sides: 100, value: check.roll },
+          ...(check.die !== undefined ? [{ sides: 10, value: check.die }] : []),
+        ]}
+        size="2.2rem"
+        delay={delay}
+        stagger={160}
+        onLanded={() => setLanded(true)}
+      />
+      <LandedValue
+        landed={landed}
+        className={cx('ui-numeric text-sm', check.gain ? 'text-success' : 'text-ink-faint')}
+      >
+        +{check.gain}
+      </LandedValue>
+    </span>
+  );
+};
 
 const Facts: React.FC<{ facts: [string, React.ReactNode][] }> = ({ facts }) => (
   <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
@@ -170,6 +235,15 @@ export const ArchetypeStep: React.FC<{ creation: CocCreation }> = ({ creation })
                   </Button>
                 ))}
               </div>
+              {creation.core && creation.throws.core && (
+                <ThrownNumber
+                  throwKey={creation.throws.core.serial}
+                  dice={d6s([creation.throws.core.dice])}
+                  note="+13 ×5 ="
+                  value={`${CHAR_SHORT[creation.core.id]} ${creation.core.value}`}
+                  className="ui-display ui-numeric text-xl text-frame-bright"
+                />
+              )}
               <p className="text-xs text-ink-faint">
                 Она заменит обычный бросок этой характеристики, если выйдет выше.
               </p>
@@ -216,16 +290,23 @@ export const CharacteristicsStep: React.FC<{ creation: CocCreation }> = ({ creat
         )}
       </div>
       <div className="grid grid-cols-4 gap-3">
-        {CHARACTERISTICS.map((c) => {
+        {CHARACTERISTICS.map((c, index) => {
           const value = creation.base[c.id];
           const final = creation.characteristics[c.id];
+          const thrown = creation.throws.characteristics;
           return (
             <Panel key={c.id} ornate={false} className="flex flex-col gap-1 px-4 py-3">
               <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">
                 {c.short} · {c.name}
               </span>
               {creation.method === 'roll' ? (
-                <span className="ui-display ui-numeric text-3xl">{value || '—'}</span>
+                <ThrownNumber
+                  throwKey={thrown?.serial ?? null}
+                  dice={thrown && value ? d6s(thrown.dice[c.id]) : undefined}
+                  delay={index * 90}
+                  value={value || '—'}
+                  className="ui-display ui-numeric text-3xl"
+                />
               ) : (
                 <NumberField
                   label={c.name}
@@ -250,7 +331,12 @@ export const CharacteristicsStep: React.FC<{ creation: CocCreation }> = ({ creat
         <WireDie shape="d10" spin={creation.luck ? 0.6 : 2} className="h-12 w-12 text-frame-bright" />
         <div>
           <div className="ui-label">Удача · {creation.pulp ? '(2d6+6)×5' : '3d6×5'}</div>
-          <div className="ui-display ui-numeric text-3xl">{creation.luck || '—'}</div>
+          <ThrownNumber
+            throwKey={creation.throws.luck?.serial ?? null}
+            dice={creation.throws.luck && creation.luck ? d6s(creation.throws.luck.dice) : undefined}
+            value={creation.luck || '—'}
+            className="ui-display ui-numeric text-3xl"
+          />
         </div>
         <Button onClick={creation.rollLuck}>
           {creation.luckRolls.length ? 'Перебросить' : 'Бросить удачу'}
@@ -329,6 +415,27 @@ export const AgeStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
           <Button onClick={creation.rollLuck}>Второй бросок удачи</Button>
         )}
       </div>
+      {rules.eduChecks > 0 && creation.eduGains && creation.throws.edu && (
+        <div
+          key={creation.throws.edu.serial}
+          className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+        >
+          {creation.throws.edu.dice.map((check, i) => (
+            <EduThrow key={i} check={check} delay={i * 300} />
+          ))}
+        </div>
+      )}
+      {rules.youth && creation.luckRolls.length === 2 && creation.throws.luck && (
+        <div className="flex items-center justify-center gap-3 text-sm text-ink-muted">
+          Удача: {creation.luckRolls.join(' и ')}, берётся
+          <ThrownNumber
+            throwKey={creation.throws.luck.serial}
+            dice={d6s(creation.throws.luck.dice)}
+            value={creation.luck}
+            className="ui-display ui-numeric text-2xl text-frame-bright"
+          />
+        </div>
+      )}
     </div>
   );
 };

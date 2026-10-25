@@ -33,12 +33,14 @@ export const NpcDialog: React.FC<{
   partyId: string;
   setting: Setting;
   npc?: PartyNpcDto;
+  /** A Call of Cthulhu table: no armour class, initiative is the NPC's DEX. */
+  coc?: boolean;
   onClose: () => void;
-}> = ({ open, partyId, setting, npc, onClose }) => {
+}> = ({ open, partyId, setting, npc, coc, onClose }) => {
   const createNpc = usePartyStore((s) => s.createNpc);
   const updateNpc = usePartyStore((s) => s.updateNpc);
   const removeNpc = usePartyStore((s) => s.removeNpc);
-  const [draft, setDraft] = useState(() => draftOf(npc));
+  const [draft, setDraft] = useState(() => (npc || !coc ? draftOf(npc) : { ...draftOf(npc), armorClass: 0, initiativeBonus: 50 }));
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const patch = (next: Partial<Draft>) => setDraft((current) => ({ ...current, ...next }));
@@ -129,13 +131,19 @@ export const NpcDialog: React.FC<{
                 />
               )}
             </Field>
-            <Field label="КБ">
-              {({ id }) => <NumberField id={id} value={draft.armorClass} min={0} max={99} onChange={(armorClass) => patch({ armorClass })} />}
-            </Field>
-            <Field label="Инициатива">
-              {({ id }) => (
-                <NumberField id={id} value={draft.initiativeBonus} min={-20} max={30} signed onChange={(initiativeBonus) => patch({ initiativeBonus })} />
-              )}
+            {!coc && (
+              <Field label="КБ">
+                {({ id }) => <NumberField id={id} value={draft.armorClass} min={0} max={99} onChange={(armorClass) => patch({ armorClass })} />}
+              </Field>
+            )}
+            <Field label={coc ? 'ЛВК' : 'Инициатива'}>
+              {({ id }) =>
+                coc ? (
+                  <NumberField id={id} value={draft.initiativeBonus} min={1} max={200} onChange={(initiativeBonus) => patch({ initiativeBonus })} />
+                ) : (
+                  <NumberField id={id} value={draft.initiativeBonus} min={-20} max={30} signed onChange={(initiativeBonus) => patch({ initiativeBonus })} />
+                )
+              }
             </Field>
           </div>
           {npc && (

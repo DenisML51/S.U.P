@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import type { PartyDto, PartyHeroDto } from '@itd/schema';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
-import { IconArmor, IconCombat, IconCreate, IconInitiative } from '../../ui/icons';
+import { IconArmor, IconCombat, IconCreate, IconInitiative, IconSanity } from '../../ui/icons';
 import { Corners } from '../../ui/ornaments';
 import { Button, Meter, Panel, SectionTitle } from '../../ui/primitives';
 import { formatBonus } from './partyView';
@@ -75,7 +75,7 @@ export const MyHero: React.FC<{
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-frame-bright/80">Ваш герой</div>
           <div className="ui-display mt-1 truncate text-[1.6rem] leading-tight text-ink">{hero.name}</div>
-          <div className="truncate text-xs text-ink-muted">{[origin.calling || origin.race, `${hero.level} ур.`].filter(Boolean).join(' · ')}</div>
+          <div className="truncate text-xs text-ink-muted">{[origin.calling || origin.race, !vitals?.coc && `${hero.level} ур.`].filter(Boolean).join(' · ')}</div>
         </div>
         {vitals && (
           <div className="flex items-center gap-3">
@@ -86,14 +86,29 @@ export const MyHero: React.FC<{
               {vitals.currentHP}
               <span className="text-ink-faint">/{vitals.maxHP}</span>
             </span>
-            <span className="flex items-center gap-1 text-sm text-ink" title="Класс брони">
-              <IconArmor width={14} height={14} className="text-armor" />
-              <span className="ui-numeric">{vitals.armorClass}</span>
-            </span>
-            <span className="flex items-center gap-1 text-sm text-ink" title="Инициатива">
-              <IconInitiative width={13} height={13} />
-              <span className="ui-numeric">{formatBonus(vitals.initiative)}</span>
-            </span>
+            {vitals.coc ? (
+              <>
+                <span className="flex items-center gap-1 text-sm text-ink" title="Рассудок">
+                  <IconSanity width={14} height={14} className="text-sanity" />
+                  <span className="ui-numeric">{vitals.coc.sanity}</span>
+                </span>
+                <span className="flex items-center gap-1 text-sm text-ink" title="Ловкость: порядок хода">
+                  <IconInitiative width={13} height={13} />
+                  <span className="ui-numeric">{vitals.coc.dex}</span>
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="flex items-center gap-1 text-sm text-ink" title="Класс брони">
+                  <IconArmor width={14} height={14} className="text-armor" />
+                  <span className="ui-numeric">{vitals.armorClass}</span>
+                </span>
+                <span className="flex items-center gap-1 text-sm text-ink" title="Инициатива">
+                  <IconInitiative width={13} height={13} />
+                  <span className="ui-numeric">{formatBonus(vitals.initiative)}</span>
+                </span>
+              </>
+            )}
           </div>
         )}
         <div className="flex flex-col gap-2">

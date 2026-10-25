@@ -22,8 +22,13 @@ export const InitiativeDialog: React.FC<{
   bonus: number | null;
   /** The master may take the combatant out of the fight. */
   canRemove?: boolean;
+  /**
+   * Call of Cthulhu: initiative is DEX (`bonus` holds it), with +50 for a firearm drawn and ready;
+   * nothing is rolled.
+   */
+  byDex?: boolean;
   onClose: () => void;
-}> = ({ partyId, setting, combatant, bonus, canRemove, onClose }) => {
+}> = ({ partyId, setting, combatant, bonus, canRemove, byDex, onClose }) => {
   const setInitiative = usePartyStore((s) => s.setInitiative);
   const removeCombatant = usePartyStore((s) => s.removeCombatant);
   const [manual, setManual] = useState<number>(() => combatant?.initiative ?? 10 + (bonus ?? 0));
@@ -31,6 +36,8 @@ export const InitiativeDialog: React.FC<{
   const [busy, setBusy] = useState(false);
   /** The rolled die has landed and the total shows. */
   const [shown, setShown] = useState(false);
+  const [dex, setDex] = useState<number>(() => bonus ?? 50);
+  const [gunReady, setGunReady] = useState(false);
 
   const submit = async (value: number) => {
     if (!combatant) return;
@@ -60,7 +67,7 @@ export const InitiativeDialog: React.FC<{
       width="sm"
       eyebrow="Инициатива"
       title={combatant?.name ?? ''}
-      subtitle={bonus !== null ? `Модификатор ${formatBonus(bonus)}` : undefined}
+      subtitle={byDex ? 'Ходят по порядку ЛВК, без броска' : bonus !== null ? `Модификатор ${formatBonus(bonus)}` : undefined}
       footerStart={
         canRemove &&
         combatant && (
@@ -74,6 +81,22 @@ export const InitiativeDialog: React.FC<{
         )
       }
     >
+      {byDex ? (
+        <div className="flex flex-col items-center gap-5 pb-2 pt-3">
+          <div className="flex items-end gap-4">
+            <NumberField value={dex} onChange={setDex} min={1} max={200} label="ЛВК" className="w-28" />
+            <span className="ui-display ui-numeric text-[4rem] leading-none text-frame-bright">{dex + (gunReady ? 50 : 0)}</span>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-ink-muted">
+            <input type="checkbox" checked={gunReady} onChange={(e) => setGunReady(e.target.checked)} />
+            Огнестрельное оружие наготове: +50 к порядку
+          </label>
+          <Button variant="primary" size="lg" disabled={busy} onClick={() => void submit(dex + (gunReady ? 50 : 0))} data-autofocus>
+            Заявить
+          </Button>
+          <p className="text-center text-xs text-ink-faint">При равенстве первым ходит тот, у кого выше боевой навык.</p>
+        </div>
+      ) : (
       <div className="flex flex-col items-center gap-5 pb-2 pt-3">
         <AnimatePresence mode="wait" initial={false}>
           {rolled ? (
@@ -131,6 +154,7 @@ export const InitiativeDialog: React.FC<{
           </div>
         )}
       </div>
+      )}
     </Dialog>
   );
 };

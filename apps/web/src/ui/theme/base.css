@@ -1127,6 +1127,14 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   text-shadow: 0 0 3px rgb(var(--c-surface)), 0 0 3px rgb(var(--c-surface)), 0 0 8px rgb(var(--c-surface));
 }
 
+/* On a plate with its own ink (the Call of Cthulhu roll on paper or metal) the die takes that ink. */
+.ui-rolling-die--ink,
+.ui-rolling-die--ink .ui-die-glyph { color: inherit; }
+
+.ui-rolling-die--ink.ui-rolling-die--landed .ui-die-glyph { opacity: 0.35; }
+
+.ui-rolling-die--ink .ui-rolling-die__value { text-shadow: none; }
+
 /* ------------------------------------------------------------------ Image framing */
 .ui-crop { background: rgb(var(--c-bg-deep)); border: 1px solid rgb(var(--c-line)); border-radius: var(--radius); }
 

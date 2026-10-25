@@ -27,7 +27,10 @@ import {
   parseSpellCost,
   reloadWeapon,
   setCharacteristic,
+  eduImprovement,
   rollCharacteristics,
+  rollCharacteristicsDetailed,
+  rollLuckDetailed,
   rollPercentile,
   sanityLoss,
   skillDef,
@@ -115,6 +118,18 @@ describe('Call of Cthulhu creation', () => {
     const top = rollCharacteristics(sequence(0.9999));
     expect(top.str).toBe(90);
     expect(top.edu).toBe(90);
+  });
+
+  it('shows the dice behind a roll, the same throw as the plain roll', () => {
+    const detailed = rollCharacteristicsDetailed(sequence(0.5));
+    expect(detailed.values).toEqual(rollCharacteristics(sequence(0.5)));
+    expect(detailed.dice.str).toEqual([4, 4, 4]);
+    expect(detailed.dice.edu).toEqual([4, 4]);
+    expect(detailed.values.edu).toBe((4 + 4 + 6) * 5);
+    expect(rollLuckDetailed('pulp', sequence(0))).toEqual({ value: 40, dice: [1, 1] });
+    expect(eduImprovement(50, sequence(0.9999))).toEqual({ roll: 100, gain: 10, die: 10 });
+    expect(eduImprovement(95, sequence(0.9999))).toEqual({ roll: 100, gain: 4, die: 10 });
+    expect(eduImprovement(50, sequence(0))).toEqual({ roll: 1, gain: 0 });
   });
 
   it('derives hit points, magic, sanity, damage bonus and move', () => {
@@ -363,5 +378,41 @@ describe('Call of Cthulhu spells and gear', () => {
     const doc = addItem('Фонарь', 1)(investigator());
     const item = doc.inventory.at(-1)!;
     expect(changeItemCount(item.id, 2)(doc).inventory.at(-1)?.quantity).toBe(3);
+  });
+});
+
+describe('Call of Cthulhu combat rules', () => {
+  it('weighs an attack against a dodge or a fight back', async () => {
+    const { opposedResult } = await import('../src/coc');
+    expect(opposedResult('hard', 'regular', 'dodge')).toBe('attacker');
+    expect(opposedResult('regular', 'regular', 'dodge')).toBe('defender');
+    expect(opposedResult('regular', 'regular', 'fightBack')).toBe('attacker');
+    expect(opposedResult('failure', 'regular', 'fightBack')).toBe('defender');
+    expect(opposedResult('failure', 'fumble', 'dodge')).toBe('none');
+  });
+
+  it('modifies a shot by the situation, dice cancelling out', async () => {
+    const { firearmModifiers } = await import('../src/coc');
+    expect(firearmModifiers({ pointBlank: true })).toMatchObject({
+      bonus: 1,
+      penalty: 0,
+      difficulty: 'regular',
+    });
+    expect(firearmModifiers({ pointBlank: true, shots: 2 })).toMatchObject({ bonus: 0, penalty: 0 });
+    expect(firearmModifiers({ shots: 3, intoMelee: true, targetDivedForCover: true })).toMatchObject({
+      penalty: 2,
+    });
+    expect(firearmModifiers({ range: 'long' }).difficulty).toBe('hard');
+    expect(firearmModifiers({ range: 'veryLong' }).difficulty).toBe('extreme');
+  });
+
+  it('allows manoeuvres by Build and gives outnumbering a bonus die', async () => {
+    const { manoeuvreChance, meleeModifiers, initiativeOf } = await import('../src/coc');
+    expect(manoeuvreChance(0, 0)).toMatchObject({ possible: true, penalty: 0 });
+    expect(manoeuvreChance(0, 1)).toMatchObject({ possible: true, penalty: 1 });
+    expect(manoeuvreChance(0, 2)).toMatchObject({ possible: true, difficulty: 'hard' });
+    expect(manoeuvreChance(0, 3).possible).toBe(false);
+    expect(meleeModifiers({ defenderReactedThisRound: 1 }).bonus).toBe(1);
+    expect(initiativeOf(60, true)).toBe(110);
   });
 });

@@ -96,6 +96,7 @@ export const PartyCombatBar: React.FC<{
         setting={party.setting}
         combatant={seat.rolling}
         bonus={seat.rolling ? initiativeBonusOf(party, seat.rolling) : null}
+        byDex={party.rules === 'coc7' || (seat.rolling?.kind === 'hero' && !!party.heroes.find((h) => h.id === seat.rolling?.refId)?.vitals?.coc)}
         canRemove={seat.isMaster}
         onClose={() => seat.roll(null)}
       />

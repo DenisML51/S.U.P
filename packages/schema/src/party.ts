@@ -36,9 +36,21 @@ export interface CharacterSummary {
   maxHP: number;
   tempHP: number;
   armorClass: number;
-  /** Initiative modifier. */
+  /** Initiative modifier (D&D), or DEX for an investigator (Call of Cthulhu acts in DEX order). */
   initiative: number;
   conditions: string[];
+  /** An investigator's numbers (Call of Cthulhu). */
+  coc?: InvestigatorVitals;
+}
+
+/** What the table knows of an investigator beyond hit points. */
+export interface InvestigatorVitals {
+  sanity: number;
+  maxSanity: number;
+  magicPoints: number;
+  luck: number;
+  dex: number;
+  dodge: number;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -134,7 +146,8 @@ const NpcFieldsSchema = z.object({
   maxHP: z.number().int().min(1).max(9999),
   currentHP: hp,
   armorClass: z.number().int().min(0).max(99),
-  initiativeBonus: z.number().int().min(-20).max(30),
+  /** Initiative modifier; at a Call of Cthulhu table the NPC's DEX (everyone acts in DEX order). */
+  initiativeBonus: z.number().int().min(-20).max(200),
   disposition: NpcDispositionSchema,
 });
 
@@ -211,6 +224,7 @@ export interface HeroVitalsDto {
   armorClass: number;
   initiative: number;
   conditions: string[];
+  coc?: InvestigatorVitals;
 }
 
 export interface PartyHeroDto {
