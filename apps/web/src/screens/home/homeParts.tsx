@@ -16,6 +16,7 @@ import { SettingScope } from '../../ui/theme/SettingScope';
 import { ClosedTableDialog } from '../party/ClosedTableDialog';
 import { InviteDialog } from '../party/InviteDialog';
 import { readLastHero } from './lastHero';
+import { rulebookLabel } from '../../systems';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -166,16 +167,6 @@ export const PartyPicture: React.FC<{ party: PartyListItemDto; className?: strin
     </SettingScope>
   );
 };
-
-/** The rules a hero is played by, as its card names them. */
-export const rulebookLabel = (hero: CharacterPreview): string =>
-  hero.ruleset === 'coc7'
-    ? hero.investigator?.pulp
-      ? 'Pulp Cthulhu'
-      : 'Зов Ктулху'
-    : hero.ruleset === 'dnd2024'
-      ? 'D&D 2024'
-      : 'Свои правила';
 
 /**
  * The rulebook hung under the focused hero card, in the setting's manner: a brass plaque in

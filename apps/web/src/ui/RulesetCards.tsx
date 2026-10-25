@@ -4,16 +4,9 @@ import { ChoiceCarousel } from './ChoiceCarousel';
 import { Corners } from './ornaments';
 import { cx } from './primitives';
 import { WireDie, type DieShape } from './WireDie';
+import { RULES_CHOICES, RULES_TITLE, type RulesChoice } from '../systems';
 
-/** What a table or a hero is played by: a rules system, or the table's own rules. */
-export type RulesChoice = 'dnd2024' | 'coc7' | 'custom';
 export type EditionChoice = 'classic' | 'pulp';
-
-export const RULES_TITLE: Record<RulesChoice, string> = {
-  dnd2024: 'D&D 2024',
-  coc7: 'Зов Ктулху',
-  custom: 'Свои правила',
-};
 
 // ------------------------------------------------------------------------------------------------
 // Scenes: each rulebook's own living ornament behind its dice
@@ -161,6 +154,7 @@ const RulebookCard: React.FC<{
   </div>
 );
 
+/** Every rulebook's card: a new system needs one before the carousel compiles. */
 const RULES_CARDS: Record<RulesChoice, { dice: DieShape[]; scene: (awake: boolean) => React.ReactNode }> = {
   dnd2024: { dice: ['d20'], scene: (awake) => <InfernalScene awake={awake} /> },
   coc7: { dice: ['d10', 'd10'], scene: (awake) => <TentacleScene awake={awake} arms={COC_ARMS} /> },
@@ -188,7 +182,7 @@ export const RulesCarousel: React.FC<{
     chooseLabel={chooseLabel}
     chosenLabel="Эти правила выбраны"
     disabledLabel="Стол играет по другим правилам"
-    items={(['dnd2024', 'coc7', 'custom'] as RulesChoice[]).map((id) => ({
+    items={RULES_CHOICES.map((id) => ({
       id,
       disabled: allowed ? !allowed.includes(id) : false,
       render: ({ focused, hovered }) => (
