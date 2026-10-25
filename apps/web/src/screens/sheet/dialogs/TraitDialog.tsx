@@ -1,5 +1,5 @@
 import React from 'react';
-import { createEntityId, removeById, upsertById } from '@itd/game-logic';
+import { createEntityId, describeGrant, removeById, upsertById } from '@itd/game-logic';
 import type { Character, Trait } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { MarkdownField } from '../../../ui/forms';
@@ -9,7 +9,7 @@ import { EntryForm, EntryView, useEntryDraft } from './entry';
 
 const blankTrait = (): Trait => ({ id: createEntityId('trait'), name: '', description: '' });
 
-/** A trait of the hero (racial, class, background): a name and what it means. */
+/** A feature of the hero (of their species, class, background, or their own): a name and what it means. */
 export const TraitDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; onClose: () => void }> = ({
   open,
   id,
@@ -43,11 +43,11 @@ export const TraitDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
       <EntryForm
         open={open}
         onClose={onClose}
-        what="черту"
+        what="особенность"
         onDelete={remove}
         isNew={!entry}
         name={draft.name}
-        eyebrow={entry ? 'Черта · правка' : 'Новая черта'}
+        eyebrow={entry ? 'Особенность · правка' : 'Новая особенность'}
         canSave={!!draft.name.trim()}
         onSave={save}
         onCancel={entry && !edit ? stopEditing : onClose}
@@ -77,14 +77,16 @@ export const TraitDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
   }
 
   if (!entry) return null;
+  // Where a granted feature comes from ("Воин, 1 уровень"); the player's own are just theirs.
+  const origin = entry.grant ? (character.build && describeGrant(character.build, entry.grant)) || 'Особенность' : 'Своя особенность';
   return (
     <EntryView
       open={open}
       onClose={onClose}
-      what="черту"
+      what="особенность"
       onDelete={remove}
       name={entry.name}
-      eyebrow="Черта"
+      eyebrow={origin}
       onEdit={startEditing}
     >
       {entry.description.trim() ? (

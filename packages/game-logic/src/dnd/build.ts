@@ -455,6 +455,33 @@ const hash = (value: string): string => {
 
 export const grantedId = (granted: GrantedFeature): string => `g-${granted.feature.id}-${hash(granted.key)}`;
 
+/** Where a granted entry of the sheet comes from: the part of the build, and the feature it was picked in. */
+export interface FeatureOrigin {
+  /** The part of the hero it belongs to; a subclass counts as the class. */
+  part: 'species' | 'background' | 'class';
+  source: SourceKind;
+  /** Key of the feature whose choice gave this one (Fighting Style for Defense), when there is one. */
+  parent?: string;
+}
+
+/**
+ * The origin of every feature a build grants, by its `grant` key: species, background or class,
+ * and the feature it was chosen in. Sheets list a hero's features by it.
+ */
+export function featureOrigins(build: Build): Map<string, FeatureOrigin> {
+  const collected = collect(build);
+  const keys = new Set(collected.features.map((g) => g.key));
+  const origins = new Map<string, FeatureOrigin>();
+  for (const granted of collected.features) {
+    const root = granted.key.split(/[:/]/)[0];
+    const part = root === 'species' || root === 'background' ? root : 'class';
+    const slash = granted.key.lastIndexOf('/');
+    const parent = slash > 0 ? granted.key.slice(0, slash) : undefined;
+    origins.set(granted.key, { part, source: granted.source, parent: parent && keys.has(parent) ? parent : undefined });
+  }
+  return origins;
+}
+
 /** Picture of a passive trait whose content has none: where it comes from. */
 const SOURCE_ICONS: Record<SourceKind, string> = {
   species: 'dna1',
@@ -704,6 +731,12 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: Build)
       return `- **${weapon.name}** — ${mastery?.name ?? weapon.mastery}`;
     });
     traits.push({ id: 'g-weapon-mastery', name: 'Оружейное мастерство', description: lines.join('\n'), iconName: 'crossed-swords', grant: 'build' });
+    // The class's Weapon Mastery feature names the weapons it works with, so its card says it all.
+    const owner = collected.features.find(
+      (g) => !g.feature.hidden && g.feature.name === 'Оружейное мастерство' && g.feature.choices?.some((c) => c.options.from === 'weapons'),
+    );
+    const trait = owner && traits.find((t) => t.grant === owner.key);
+    if (trait) trait.description = `${trait.description}\n\n**Выбрано:**\n${lines.join('\n')}`;
   }
 
   // Spells: the class list for a preparing caster, then every spell granted by a feature.

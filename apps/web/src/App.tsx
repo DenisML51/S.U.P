@@ -14,6 +14,7 @@ import { HeroSelect } from './screens/select/HeroSelect';
 import { SheetScreen } from './screens/sheet/SheetScreen';
 import { CombatScreen } from './screens/combat/CombatScreen';
 import { CreationScreen } from './screens/create/CreationScreen';
+import { DraftScope, clearDraft, draftScope } from './screens/create/useDraftState';
 import { Toasts } from './ui/Toasts';
 
 const App: React.FC = () => {
@@ -29,6 +30,9 @@ const App: React.FC = () => {
   const endCreation = useNavStore((s) => s.endCreation);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [introDone, setIntroDone] = useState(false);
+  const userId = useSessionStore((s) => s.user?.id);
+  /** Bumped to start the creation over: the screen mounts afresh on an emptied draft. */
+  const [creationRun, setCreationRun] = useState(0);
   const endIntro = useCallback(() => setIntroDone(true), []);
   const openSettings = () => setSettingsOpen(true);
 
@@ -60,7 +64,20 @@ const App: React.FC = () => {
     screen = <CombatScreen onOpenSettings={openSettings} />;
     screenKey = 'combat';
   } else if (creation) {
-    screen = <CreationScreen world={creation.world} onDone={finishCreation} />;
+    const scope = draftScope(userId ?? 'anonymous', creation.partyId);
+    screen = (
+      <DraftScope value={scope}>
+        <CreationScreen
+          key={creationRun}
+          world={creation.world}
+          onDone={finishCreation}
+          onRestart={() => {
+            clearDraft(scope);
+            setCreationRun((run) => run + 1);
+          }}
+        />
+      </DraftScope>
+    );
     screenKey = 'create';
   } else if (place.screen === 'party') {
     screen = <PartyScreen partyId={place.partyId} onOpenSettings={openSettings} />;

@@ -30,7 +30,6 @@ import { Button, IconButton, Panel, Tabs, cx } from '../../ui/primitives';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
-import { clearDraft } from '../create/useDraftState';
 import { ChatPanel } from './ChatPanel';
 import { HeroPickDialog } from './HeroPickDialog';
 import { InitiativeDialog } from './InitiativeDialog';
@@ -134,8 +133,8 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
     setOverlay({ kind: 'pick-hero' });
   }, [isMaster, myHeroes.length]);
 
+  // A hero begun for this table and left unfinished is picked up where it was.
   const createHero = () => {
-    clearDraft();
     startCreation({ world: party.setting, partyId: party.id });
   };
 

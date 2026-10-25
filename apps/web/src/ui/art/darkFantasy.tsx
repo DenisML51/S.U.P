@@ -6,29 +6,84 @@ import type { SettingArt } from './types';
  * Dark fantasy ornament: a hunter's reliquary (Bloodborne's Yharnam, the Imperium's iron, Dragon
  * Age's tooled leather). Tarnished brass engraved in double rules, gothic spikes and rivets at the
  * corners, a pointed arch over major panels, the cross pattée and daggers; behind the screen a
- * great rose window engraved in brass, candlelight, fog and embers.
+ * great rose window, moonlight falling through its coloured glass in shafts, candlelight, fog,
+ * dust and embers.
  */
 
-/** Engraved corner, 24×24: a double rule, a spike pointing inwards, a rivet where the rules meet. */
+/**
+ * Filters that turn the vector ornament into worked material (see dark-fantasy-material.css):
+ * brass in relief, lit from the upper left, its edge worn uneven; and the hand-cut wobble of an
+ * engraving. Drawn with every panel corner and with the backdrop, so they are on whatever screen
+ * uses them; identical copies are harmless.
+ */
+const MaterialFilters: React.FC = () => (
+  <defs>
+    <filter id="df-brass" x="-15%" y="-15%" width="130%" height="130%" colorInterpolationFilters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="4" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.9" xChannelSelector="R" yChannelSelector="G" result="worn" />
+      <feGaussianBlur in="worn" stdDeviation="0.5" result="soft" />
+      <feSpecularLighting in="soft" surfaceScale="2.4" specularConstant="1.1" specularExponent="16" lightingColor="#fff0cf" result="spec">
+        <feDistantLight azimuth="225" elevation="46" />
+      </feSpecularLighting>
+      <feComposite in="spec" in2="worn" operator="in" result="gloss" />
+      <feComposite in="worn" in2="gloss" operator="arithmetic" k2="0.8" k3="0.9" />
+    </filter>
+    <filter id="df-etch" x="-2%" y="-2%" width="104%" height="104%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="8" />
+      <feDisplacementMap in="SourceGraphic" scale="5" />
+    </filter>
+  </defs>
+);
+
+/**
+ * Engraved corner, 24×24, drawn on the panel's rim: the rim thickens into the corner, a fine rule
+ * runs inside it, and across the corner hangs a cusped arch of tracery, as in the head of a gothic
+ * window: its point is a spearhead aimed into the panel, two crockets sit on its curves, a rivet
+ * holds the corner.
+ */
 const GothicCorner: React.FC = () => (
   <>
-    <path d="M0.75 17V0.75H17" fill="none" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M4.5 10V4.5H10" fill="none" stroke="currentColor" strokeWidth="0.7" opacity="0.75" />
-    <path d="M4.5 4.5 11.5 8.2 8.2 11.5Z" fill="currentColor" />
+    <MaterialFilters />
+    <path d="M0.75 19V0.75H19" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    <path d="M4.25 14.5V4.25H14.5" fill="none" stroke="currentColor" strokeWidth="0.6" opacity="0.7" />
+    {/* The cusped arch across the corner, its point turned into the panel. */}
+    <path d="M4.25 17.5C7.6 17.5 10.2 14.6 10.2 10.2 14.6 10.2 17.5 7.6 17.5 4.25" fill="none" stroke="currentColor" strokeWidth="0.9" />
+    <path d="M10.2 10.2 13.4 11.6 15.6 15.6 11.6 13.4Z" fill="currentColor" />
+    <circle cx="6.9" cy="15.9" r="0.95" fill="currentColor" />
+    <circle cx="15.9" cy="6.9" r="0.95" fill="currentColor" />
     <circle cx="2.6" cy="2.6" r="1.5" fill="currentColor" />
     <circle cx="2.6" cy="2.6" r="0.6" fill="rgb(var(--c-bg-deep))" />
   </>
 );
 
-/** A pointed arch rising over the top edge of a major panel, 120×24, the edge along y = 20. */
+/**
+ * A reliquary's gable standing on the top edge of a major panel, 120×24, the edge along y = 20:
+ * a pointed arch with crockets climbing its sides and a finial, a traceried window in it (two
+ * lights under an oculus with a drop of blood set in it), and the rim running out to pinnacles.
+ */
 const ArchCrest: React.FC = () => (
   <>
-    <path d="M14 20H44M76 20H106" stroke="currentColor" strokeWidth="2.2" opacity="0.7" />
-    <path d="M14 20 10 17.5 14 15M106 20 110 17.5 106 15" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.7" />
-    <path d="M44 20C48 20 54 14 60 3 66 14 72 20 76 20Z" fill="rgb(var(--c-surface))" stroke="currentColor" strokeWidth="1" />
-    <path d="M50 20C53 19 57 15 60 9 63 15 67 19 70 20" fill="none" stroke="currentColor" strokeWidth="0.6" opacity="0.7" />
-    <path d="M60 11.5V20M56.5 15H63.5" stroke="rgb(var(--c-accent))" strokeWidth="1.4" />
-    <circle cx="60" cy="1.6" r="1.6" fill="currentColor" />
+    <path d="M12 20H42M78 20H108" stroke="currentColor" strokeWidth="1.8" opacity="0.8" />
+    <path d="M20 22.6H42M78 22.6H100" stroke="currentColor" strokeWidth="0.6" opacity="0.55" />
+    {/* Pinnacles where the rim ends. */}
+    <path d="M12 20 9.5 17.6 12 13.2 14.5 17.6ZM108 20 105.5 17.6 108 13.2 110.5 17.6Z" fill="currentColor" opacity="0.85" />
+    {/* The gable, its window, its crockets and its finial. */}
+    <path d="M42 20C47.5 19.4 54 13 60 2.6 66 13 72.5 19.4 78 20Z" fill="rgb(var(--c-surface))" stroke="currentColor" strokeWidth="1" />
+    <path d="M48.5 20C52 18.8 56.6 14.4 60 8.4 63.4 14.4 68 18.8 71.5 20" fill="none" stroke="currentColor" strokeWidth="0.6" opacity="0.75" />
+    <path d="M60 15.6V20M54.6 20V18.4C54.6 17 56 15.8 57.3 15.4M65.4 20V18.4C65.4 17 64 15.8 62.7 15.4" fill="none" stroke="currentColor" strokeWidth="0.55" opacity="0.75" />
+    <circle cx="60" cy="13.1" r="2.3" fill="none" stroke="currentColor" strokeWidth="0.6" />
+    <circle cx="60" cy="13.1" r="1.1" fill="rgb(var(--c-accent))" />
+    {[
+      [47.2, 17.6],
+      [51.8, 13.9],
+      [55.6, 9.4],
+      [64.4, 9.4],
+      [68.2, 13.9],
+      [72.8, 17.6],
+    ].map(([x, y]) => (
+      <path key={x} d={`M${x} ${y}c-1.2-0.4-1.6-1.6-0.8-2.3 0.6-0.5 1.4-0.1 1.3 0.6`} fill="none" stroke="currentColor" strokeWidth="0.7" />
+    ))}
+    <path d="M60 2.8V0.4M58.6 1.5H61.4" stroke="currentColor" strokeWidth="0.9" />
   </>
 );
 
@@ -168,16 +223,72 @@ const ScreenCorner: React.FC = () => (
 );
 
 /**
- * Inside a cathedral at night: a great rose window engraved in brass, half out of sight at the
- * left, candlelight breathing behind it; fog along the floor, embers rising, the dark pressing in
- * from the edges and an engraved frame closing the screen.
+ * Shafts of moonlight falling from the rose window across the nave, fanning out from its heart:
+ * the angle each falls at, how wide it is where it leaves the glass, and when it brightens.
+ */
+const RAYS = [
+  { angle: -9, width: 16, delay: 0 },
+  { angle: 4, width: 24, delay: -4 },
+  { angle: 16, width: 13, delay: -9 },
+  { angle: 27, width: 20, delay: -2 },
+  { angle: 39, width: 11, delay: -7 },
+];
+
+/** Dust turning slowly in the moonlight, where the shafts cross the nave. */
+const MOTES = (() => {
+  const next = random(91);
+  return Array.from({ length: 26 }, () => ({
+    left: `${(18 + next() * 60).toFixed(1)}%`,
+    top: `${(28 + next() * 60).toFixed(1)}%`,
+    size: 1 + Math.round(next() * 1.4),
+    duration: `${(14 + next() * 14).toFixed(1)}s`,
+    delay: `${(-next() * 28).toFixed(1)}s`,
+    dx: `${Math.round((next() - 0.3) * 70)}px`,
+    dy: `${Math.round((next() - 0.5) * 50)}px`,
+  }));
+})();
+
+/**
+ * Inside a cathedral at night. A great rose window stands half out of sight at the left: the moon
+ * behind it, clouds passing, its coloured glass turning slowly through crimson, amber and cobalt,
+ * a gleam running round its tracery; shafts of cold light fall from it across the nave with dust
+ * turning in them. Candlelight breathes low, fog drifts along the floor in two layers, embers
+ * rise, the dark presses in from the edges and an engraved frame closes the screen.
  */
 const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => (
   <div className="absolute inset-0 text-frame">
+    <svg width="0" height="0" className="absolute" aria-hidden>
+      <MaterialFilters />
+    </svg>
+    <div className="df-stone absolute inset-0" />
     <div className="df-candlelight absolute inset-0" />
-    <div className="absolute left-0 top-1/2 aspect-square h-[100%] -translate-x-[34%] -translate-y-1/2 opacity-[0.26]">
-      <RoseWindow />
+    <div className="df-rose absolute left-0 top-1/2 aspect-square h-[100%] -translate-x-[34%] -translate-y-1/2">
+      <div className="df-rose__moon absolute inset-0" />
+      <div className="df-rose__glass absolute inset-[3%] rounded-full" />
+      <div className="df-rose__lines absolute inset-0">
+        <RoseWindow />
+      </div>
+      <div className="df-rose__gleam absolute inset-0">
+        <RoseWindow />
+      </div>
+      {RAYS.map(({ angle, width, delay }) => (
+        <span
+          key={angle}
+          className="df-ray"
+          style={{ ['--ray-angle' as string]: `${angle}deg`, ['--ray-width' as string]: `${width}%`, animationDelay: `${delay}s` }}
+        >
+          <span className="df-ray__beam" />
+        </span>
+      ))}
     </div>
+    {MOTES.map(({ left, top, size, duration, delay, dx, dy }) => (
+      <span
+        key={`${left}${top}`}
+        className="df-mote"
+        style={{ left, top, width: size, height: size, animationDuration: duration, animationDelay: delay, ['--dx' as string]: dx, ['--dy' as string]: dy }}
+      />
+    ))}
+    <div className="ui-fog df-fog--back absolute inset-x-[-25%] bottom-[-4%] h-[34%]" />
     <div className="ui-fog absolute inset-x-[-20%] bottom-[-8%] h-[40%]" />
     <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-accent/15 to-transparent" />
     {EMBERS.map(({ left, size, duration, delay, drift }) => (
@@ -188,6 +299,8 @@ const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => (
       />
     ))}
     <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 200px 60px rgb(0 0 0 / 0.85)' }} />
+    <div className="df-flicker absolute inset-0" />
+    <div className="df-grain absolute inset-[-10%]" />
     {frame &&
       (['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map(
         (position) => (
@@ -301,17 +414,10 @@ const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => (
 );
 
 /**
- * The focused hero card set like a relic: a pointed brass arch rises over its top edge and a wax
+ * The focused hero card is sealed like a relic: a wax
  * seal is pressed on its corner, as the card comes forward.
  */
-const HeroReadout: NonNullable<SettingArt['HeroReadout']> = () => (
-  <>
-    <svg className="df-arch" viewBox="0 0 120 24" aria-hidden>
-      <ArchCrest />
-    </svg>
-    <Seal />
-  </>
-);
+const HeroReadout: NonNullable<SettingArt['HeroReadout']> = () => <Seal />;
 
 /** A wax seal on the card's corner, two ribbon tails under it, the cross of the order stamped in; it lands with a thud. */
 const Seal: React.FC = () => (

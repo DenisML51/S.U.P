@@ -48,6 +48,11 @@ export interface UpdateOptions {
    * they are not put on the undo stack.
    */
   undoable?: boolean;
+  /**
+   * The edit is undoable from the journal but shows no message of its own: a roll that follows it
+   * already tells the player what happened.
+   */
+  quiet?: boolean;
 }
 
 /** How many edits of one character can be undone in a session. */
@@ -97,7 +102,7 @@ interface CharacterState {
   /** Takes a short or long rest; returns what it changed. */
   rest(kind: RestKind, options?: Omit<ShortRestOptions, 'rolls' | 'random'>): RestResult | null;
   /** Uses an attack, ability or spell, paying its costs. Returns why it failed, if it did. */
-  performAction(request: PerformActionRequest): PerformActionResult | null;
+  performAction(request: PerformActionRequest, options?: { quiet?: boolean }): PerformActionResult | null;
 
   /** Opens a character, on its sheet unless another view is asked for (a party's fight opens combat). */
   loadCharacter(characterId: string, view?: ViewMode): Promise<void>;
@@ -313,7 +318,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       const stack = [...(undoStacks.get(current.id) ?? []), step].slice(-UNDO_LIMIT);
       undoStacks.set(current.id, stack);
       set({ undoable: stack.map((s) => s.id) });
-      if (log && get().settings.notifications) showUndoToast(log.message, () => get().undo(step.id));
+      if (log && !options?.quiet && get().settings.notifications) showUndoToast(log.message, () => get().undo(step.id));
     },
 
     undo: (stepId) => {
@@ -373,7 +378,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       return result;
     },
 
-    performAction: (request) => {
+    performAction: (request, options) => {
       const current = get().character;
       if (!current) return null;
       // A reaction answers someone else's turn: it is the one thing a hero may do out of their own.
@@ -388,7 +393,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
           const applied = performGameAction(doc, request);
           return applied.ok ? applied.character : doc;
         },
-        { log: { message: result.message, type: 'other' } },
+        { log: { message: result.message, type: 'other' }, quiet: options?.quiet },
       );
       return result;
     },

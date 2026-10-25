@@ -22,6 +22,7 @@ import {
   usePartyEntry,
 } from './homeParts';
 import { rememberLastHero } from './lastHero';
+import { useHasSoloDraft } from '../create/useDraftState';
 import { pageTone, readArt, type Rgb } from './artTone';
 import { figureMask } from './figureMask';
 
@@ -35,6 +36,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
   const go = useNavStore((s) => s.go);
   const startCreation = useNavStore((s) => s.startCreation);
+  const resumable = useHasSoloDraft();
   const loadCharacter = useCharacterStore((s) => s.loadCharacter);
   const { heroes, parties, lastHero: hero } = useHomeItems();
   const entry = usePartyEntry();
@@ -93,7 +95,7 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
                   icon={<IconCreate width={18} height={18} />}
                   onClick={() => startCreation()}
                 >
-                  Создать героя
+                  {resumable ? 'Продолжить создание' : 'Создать героя'}
                 </Button>
               </div>
             )}

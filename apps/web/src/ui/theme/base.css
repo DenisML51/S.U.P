@@ -1560,6 +1560,11 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 @container section-list (max-width: 760px) {
   .ui-section-list .ui-section__columns { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; align-content: start; }
 }
+/* The hero's story and their features: a page beside a page, one under the other when narrow. */
+.ui-persona__columns { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+@container section-list (max-width: 900px) {
+  .ui-section-list .ui-persona__columns { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* ------------------------------------------------------------------ Chips */
 /* A small on/off choice among several (studied schools). */
