@@ -942,12 +942,12 @@ html[data-setting='lovecraft'] body::before,
 /* Under the hero card it is a brass plaque on two screws, the name engraved, like a museum label. */
 [data-setting='lovecraft'] .ui-rulebook-plate .ui-rulebook {
   padding: 0.5rem 2rem 0.45rem;
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 12.5px;
+  font-family: var(--setting-display);
+  font-weight: 400;
+  font-size: 14px;
   letter-spacing: 0.24em;
   /* Engraved: dark letters cut into polished brass, lit from above. */
-  color: rgb(34 22 8);
+  color: rgb(14 8 2);
   text-shadow: 0 1px 0 rgb(255 244 210 / 0.7);
   background:
     radial-gradient(circle at 0.8rem 50%, rgb(60 46 26) 0 2px, rgb(236 214 160) 2.5px, rgb(110 88 52) 3.5px, transparent 4px),
