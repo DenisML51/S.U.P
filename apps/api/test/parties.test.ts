@@ -47,6 +47,33 @@ async function table(app: App) {
   return { master, player, partyId, code, masterHero, playerHero };
 }
 
+/** A Call of Cthulhu investigator with the DEX and fighting skill given. */
+const investigator = (name: string, dex: number, brawl = 25) =>
+  ({
+    name,
+    currentHP: 11,
+    maxHP: 11,
+    build: { ruleset: 'coc7', variant: 'classic', era: '1920s', occupation: 'professor', talents: [], age: 40 },
+    coc: { characteristics: { dex, pow: 50 }, skills: [{ id: 'fighting:brawl', value: brawl }] },
+  }) as unknown as Parameters<typeof makeCharacter>[0];
+
+/** A table (by the rules given) with one player seated and an investigator each. */
+async function cocTable(app: App, rules: 'coc7' | null) {
+  const master = await registerUser(app, 'Хранитель');
+  const player = await registerUser(app, 'Сыщик');
+  const created = await call(app, master, 'POST', '/parties', { name: 'Ужас Данвича', setting: 'lovecraft', rules });
+  expect(created.statusCode).toBe(201);
+  const partyId = created.json<{ id: string }>().id;
+  const code = (await view(app, master, partyId)).inviteCode!;
+  await call(app, master, 'POST', `/parties/${partyId}/session`);
+  expect((await call(app, player, 'POST', `/invites/${code}/accept`)).statusCode).toBe(200);
+  const masterHero = await saveHero(app, master, investigator('Профессор', 40));
+  const playerHero = await saveHero(app, player, investigator('Репортёр', 60, 50));
+  expect((await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: masterHero.id })).statusCode).toBe(201);
+  expect((await call(app, player, 'POST', `/parties/${partyId}/heroes`, { characterId: playerHero.id })).statusCode).toBe(201);
+  return { master, player, partyId };
+}
+
 describe('turn order', () => {
   const at = (n: number) => new Date(2026, 0, 1, 0, 0, n);
   const entries = [
@@ -308,6 +335,122 @@ describe('parties', () => {
     expect((await call(app, player, 'DELETE', `/parties/${partyId}`)).statusCode).toBe(404);
     expect((await call(app, master, 'DELETE', `/parties/${partyId}`)).statusCode).toBe(204);
     expect((await call(app, master, 'GET', '/parties')).json()).toEqual([]);
+  });
+});
+
+describe('Call of Cthulhu at the table', () => {
+  it('runs a fight in DEX order: +50 with a firearm, ties to the better fighter, rolls only while rolling', async () => {
+    const app = await ctx.app();
+    const { master, player, partyId } = await cocTable(app, 'coc7');
+    const npc = async (name: string, dex: number, coc: object | null) => {
+      const created = await call(app, master, 'POST', `/parties/${partyId}/npcs`, {
+        name,
+        maxHP: 12,
+        armorClass: 0,
+        initiativeBonus: dex,
+        coc,
+      });
+      expect(created.statusCode).toBe(201);
+      return created.json<{ id: string }>().id;
+    };
+    const gunman = await npc('Бутлегер', 50, { firearmReady: true, attacks: [{ name: 'Револьвер', skill: 45, damage: '1D10' }] });
+    const brute = await npc('Громила', 60, {
+      armor: 1,
+      build: 1,
+      damageBonus: '+1D4',
+      sanityLoss: '0/1D2',
+      attacks: [{ name: 'Кастет', skill: 70, damage: '1D3+1+БУ' }],
+    });
+    const plain = await npc('Зевака', 30, null);
+    expect((await view(app, master, partyId)).npcs!.find((n) => n.id === brute)!.coc).toEqual({
+      armor: 1,
+      build: 1,
+      damageBonus: '+1D4',
+      sanityLoss: '0/1D2',
+      firearmReady: false,
+      attacks: [{ name: 'Кастет', skill: 70, damage: '1D3+1+БУ' }],
+    });
+
+    const heroIds = (await view(app, master, partyId)).heroes.map((hero) => hero.id);
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat`, { heroIds, npcIds: [gunman, brute, plain] })).statusCode).toBe(204);
+    const fight = (await view(app, player, partyId)).combat!;
+    const mine = fight.combatants.find((c) => c.controlled)!;
+    const professor = fight.combatants.find((c) => c.name === 'Профессор')!;
+    const roll = (user: User, id: string, value: number) =>
+      call(app, user, 'PUT', `/parties/${partyId}/combat/combatants/${id}/initiative`, { value });
+
+    // DEX 60: the order is 60, or 110 with a firearm ready — past the old cap of 99.
+    expect((await roll(player, mine.id, 61)).statusCode).toBe(400);
+    expect((await roll(player, mine.id, 110)).statusCode).toBe(204);
+    expect((await roll(player, mine.id, 60)).statusCode).toBe(204);
+    expect((await roll(master, professor.id, 40)).statusCode).toBe(204);
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat/roll-npcs`)).statusCode).toBe(204);
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat/begin`)).statusCode).toBe(204);
+
+    // Same DEX 60: the brute's 70% beats the reporter's 50% brawl.
+    expect((await view(app, master, partyId)).combat!.combatants.map((c) => [c.name, c.initiative])).toEqual([
+      ['Бутлегер', 100],
+      ['Громила', 60],
+      ['Репортёр', 60],
+      ['Профессор', 40],
+      ['Зевака', 30],
+    ]);
+
+    // The round is under way: the order is the master's now.
+    expect((await roll(player, mine.id, 110)).statusCode).toBe(409);
+    expect((await roll(master, mine.id, 110)).statusCode).toBe(204);
+
+    // Hit points of a Call of Cthulhu NPC stay between 0 and the maximum.
+    const hp = (npcId: string, currentHP: number) => call(app, master, 'PATCH', `/parties/${partyId}/npcs/${npcId}`, { currentHP });
+    expect((await hp(brute, -3)).statusCode).toBe(400);
+    expect((await hp(brute, 13)).statusCode).toBe(400);
+    expect((await hp(brute, 0)).statusCode).toBe(204);
+    expect((await hp(plain, -1)).statusCode).toBe(400);
+
+    // The rules stay while the fight goes on, and fit the heroes at the table.
+    const rules = (value: string | null) => call(app, master, 'PATCH', `/parties/${partyId}`, { rules: value });
+    expect((await rules('dnd2024')).statusCode).toBe(409);
+    expect((await call(app, master, 'PATCH', `/parties/${partyId}`, { rules: 'coc7', name: 'Ужас Данвича II' })).statusCode).toBe(204);
+    expect((await call(app, master, 'DELETE', `/parties/${partyId}/combat`)).statusCode).toBe(204);
+    const refused = await rules('dnd2024');
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json<{ message: string }>().message).toContain('Профессор');
+    expect((await rules(null)).statusCode).toBe(204);
+    expect((await rules('coc7')).statusCode).toBe(204);
+  });
+
+  it('fights by DEX at a table of any rules when every hero is an investigator', async () => {
+    const app = await ctx.app();
+    const { master, player, partyId } = await cocTable(app, null);
+    const party = await view(app, master, partyId);
+    expect(party).toMatchObject({ rules: null, combatRules: 'coc7' });
+    expect(party.heroes.map((hero) => hero.rules)).toEqual(['coc7', 'coc7']);
+
+    const cultist = (
+      await call(app, master, 'POST', `/parties/${partyId}/npcs`, {
+        name: 'Культист',
+        maxHP: 10,
+        armorClass: 0,
+        initiativeBonus: 45,
+        coc: { firearmReady: true },
+      })
+    ).json<{ id: string }>().id;
+    await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [cultist] });
+    await call(app, master, 'POST', `/parties/${partyId}/combat/roll-npcs`);
+    expect((await view(app, master, partyId)).combat!.combatants[0]!.initiative).toBe(95);
+    await call(app, master, 'DELETE', `/parties/${partyId}/combat`);
+
+    // A D&D hero at the table: back to d20, and its NPCs may go below zero again.
+    const fighter = await saveHero(app, player, { name: 'Воин' });
+    const seat = (await view(app, player, partyId)).heroes.find((hero) => hero.ownerId === player.user.id)!;
+    expect((await call(app, player, 'DELETE', `/parties/${partyId}/heroes/${seat.id}`)).statusCode).toBe(204);
+    expect((await call(app, player, 'POST', `/parties/${partyId}/heroes`, { characterId: fighter.id })).statusCode).toBe(201);
+    expect((await view(app, master, partyId)).combatRules).toBeNull();
+    const orc = (
+      await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Орк', maxHP: 15, armorClass: 13, initiativeBonus: 1 })
+    ).json<{ id: string }>().id;
+    expect((await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${orc}`, { currentHP: -5 })).statusCode).toBe(204);
+    expect((await call(app, master, 'PATCH', `/parties/${partyId}`, { rules: 'coc7' })).statusCode).toBe(409);
   });
 });
 

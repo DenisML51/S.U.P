@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import type { CharacterSummary } from '@itd/schema';
+import type { CharacterSummary, NpcCocStats } from '@itd/schema';
 import {
   type AnyPgColumn,
   bigint,
@@ -231,6 +231,8 @@ export const partyNpcs = pgTable(
     armorClass: integer('armor_class').notNull(),
     initiativeBonus: integer('initiative_bonus').notNull(),
     disposition: text('disposition', { enum: ['hostile', 'friendly'] }).notNull().default('hostile'),
+    /** Call of Cthulhu numbers (armour, build, attacks…); `null` for other NPCs. */
+    coc: jsonb('coc').$type<NpcCocStats>(),
     createdAt: createdAt(),
   },
   (t) => [index('party_npcs_party_id_idx').on(t.partyId)],

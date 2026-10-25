@@ -10,7 +10,7 @@ import { IconPrev, IconTrash } from '../../ui/icons';
 import { Button, Field, Input, Panel, TextArea, cx } from '../../ui/primitives';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { RulesCarousel } from '../../ui/RulesetCards';
-import { RULES_TITLE } from '../../systems';
+import { RULES_CHOICES, RULES_TITLE } from '../../systems';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
 import { MarkdownField } from '../../ui/forms';
@@ -75,6 +75,11 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // The server holds to the same: no new rules in the middle of a fight, and only rules every seated hero was made by.
+  const rulesLocked = party?.combat ? 'Во время боя правила стола не меняются: сначала завершите бой' : null;
+  const seatedRules = party ? [...new Set(party.heroes.map((hero) => hero.rules))] : [];
+  const allowedRules = seatedRules.length > 0 ? RULES_CHOICES.filter((rules) => seatedRules.every((seated) => seated === rules)) : undefined;
 
   const shown = step === 'world' && inFront ? inFront : draft.setting;
   useDocumentSetting(shown);
@@ -164,10 +169,15 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
             exit={{ opacity: 0, x: -30, transition: { duration: 0.2 } }}
           >
             <h1 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">По каким правилам играет стол?</h1>
-            <p className="mt-1 text-center text-sm text-ink-muted">За стол сядут только герои, созданные по этим правилам</p>
+            <p className="mt-1 text-center text-sm text-ink-muted">
+              {allowedRules
+                ? `За столом уже сидят герои по правилам ${seatedRules.map((rules) => `«${RULES_TITLE[rules]}»`).join(', ')}: другие правила можно выбрать, когда они покинут стол`
+                : 'За стол сядут только герои, созданные по этим правилам'}
+            </p>
             <div className="flex min-h-0 flex-1 items-center">
               <RulesCarousel
                 value={rulesChosen ? draft.rules : null}
+                allowed={allowedRules}
                 chooseLabel="Играть за столом по этим правилам"
                 onChange={(rules) => {
                   patch({ rules });
@@ -190,7 +200,13 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
                 <div className="text-[11px] uppercase tracking-[0.22em] text-frame-bright/80">
                   {SETTING_INFO[draft.setting].label}
                   {' · '}
-                  <button type="button" className="underline-offset-4 hover:underline" onClick={() => setStep('rules')} title="Сменить правила стола">
+                  <button
+                    type="button"
+                    className="underline-offset-4 enabled:hover:underline disabled:cursor-not-allowed"
+                    disabled={!!rulesLocked}
+                    onClick={() => setStep('rules')}
+                    title={rulesLocked ?? 'Сменить правила стола'}
+                  >
                     {draft.rules ? RULES_TITLE[draft.rules] : 'Любые правила'}
                   </button>
                 </div>

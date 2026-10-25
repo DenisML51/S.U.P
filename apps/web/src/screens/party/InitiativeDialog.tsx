@@ -27,8 +27,10 @@ export const InitiativeDialog: React.FC<{
    * nothing is rolled.
    */
   byDex?: boolean;
+  /** An NPC that keeps its firearm drawn: the +50 starts ticked. */
+  firearmReady?: boolean;
   onClose: () => void;
-}> = ({ partyId, setting, combatant, bonus, canRemove, byDex, onClose }) => {
+}> = ({ partyId, setting, combatant, bonus, canRemove, byDex, firearmReady, onClose }) => {
   const setInitiative = usePartyStore((s) => s.setInitiative);
   const removeCombatant = usePartyStore((s) => s.removeCombatant);
   const [manual, setManual] = useState<number>(() => combatant?.initiative ?? 10 + (bonus ?? 0));
@@ -36,8 +38,12 @@ export const InitiativeDialog: React.FC<{
   const [busy, setBusy] = useState(false);
   /** The rolled die has landed and the total shows. */
   const [shown, setShown] = useState(false);
-  const [dex, setDex] = useState<number>(() => bonus ?? 50);
-  const [gunReady, setGunReady] = useState(false);
+  // DEX comes from the sheet (the server takes nothing else from a player); written in only when unknown.
+  const [dexInput, setDexInput] = useState(50);
+  const dex = bonus ?? dexInput;
+  const [gunReady, setGunReady] = useState(() =>
+    combatant?.initiative != null && bonus !== null ? combatant.initiative === bonus + 50 : !!firearmReady,
+  );
 
   const submit = async (value: number) => {
     if (!combatant) return;
@@ -84,7 +90,14 @@ export const InitiativeDialog: React.FC<{
       {byDex ? (
         <div className="flex flex-col items-center gap-5 pb-2 pt-3">
           <div className="flex items-end gap-4">
-            <NumberField value={dex} onChange={setDex} min={1} max={200} label="ЛВК" className="w-28" />
+            {bonus !== null ? (
+              <span className="flex flex-col items-center pb-1.5">
+                <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">ЛВК</span>
+                <span className="ui-numeric text-2xl text-ink">{bonus}</span>
+              </span>
+            ) : (
+              <NumberField value={dexInput} onChange={setDexInput} min={1} max={150} label="ЛВК" className="w-28" />
+            )}
             <span className="ui-display ui-numeric text-[4rem] leading-none text-frame-bright">{dex + (gunReady ? 50 : 0)}</span>
           </div>
           <label className="flex items-center gap-2 text-sm text-ink-muted">

@@ -4,7 +4,10 @@ import {
   INVITE_CODE_LENGTH,
   PARTY_LIMITS,
   heroRules,
+  npcMinHP,
   type CreateNpcRequestSchema,
+  type NpcCocStats,
+  type PartyRules,
   type CreatePartyRequestSchema,
   type UpdateNpcRequestSchema,
   type UpdatePartyRequestSchema,
@@ -26,6 +29,7 @@ import { isUniqueViolation } from '../../lib/postgres';
 import type { CharacterChangeListener } from '../characters/characters.service';
 import type { CombatService } from './combat.service';
 import { CODE_WAITS, masterOnly, partyNotFound, type PartyAccess } from './partyAccess';
+import { combatRulesOf } from './parties.queries';
 
 type CreateParty = z.output<typeof CreatePartyRequestSchema>;
 type UpdateParty = z.output<typeof UpdatePartyRequestSchema>;
@@ -51,6 +55,16 @@ async function withFreshCode<T>(write: (code: string) => Promise<T>): Promise<T>
       if (!isUniqueViolation(error) || attempt >= INVITE_ATTEMPTS) throw error;
     }
   }
+}
+
+/**
+ * An NPC's hit points stay between the system's floor (0 for a Call of Cthulhu NPC, whose foes do not
+ * go below it) and its maximum.
+ */
+function assertNpcHP(currentHP: number, maxHP: number, coc: boolean) {
+  if (currentHP > maxHP) throw validationError(`Хиты НПС не больше максимума (${maxHP})`);
+  const floor = npcMinHP(coc);
+  if (currentHP < floor) throw validationError(coc ? 'Хиты НПС не опускаются ниже 0' : `Хиты НПС не ниже ${floor}`);
 }
 
 /** An uploaded picture may only be used by the account that uploaded it. */
@@ -102,8 +116,9 @@ export class PartiesService implements CharacterChangeListener {
   }
 
   update(userId: string, partyId: string, input: UpdateParty): Promise<void> {
-    return this.access.change(userId, partyId, 'master', async ({ tx }) => {
+    return this.access.change(userId, partyId, 'master', async ({ tx, party }) => {
       await assertOwnAsset(tx, userId, input.coverAssetId);
+      if (input.rules !== undefined && input.rules !== party.rules) await this.assertRulesFit(tx, partyId, input.rules);
       await tx.update(parties).set(input).where(eq(parties.id, partyId));
     });
   }
@@ -112,6 +127,34 @@ export class PartiesService implements CharacterChangeListener {
     return this.access.change(userId, partyId, 'master', async ({ tx }) => {
       await tx.delete(parties).where(eq(parties.id, partyId));
     });
+  }
+
+  /**
+   * New rules for the table: never in the middle of a fight (its order was set by the old ones), and
+   * only rules every seated hero was made by (any rules, `null`, fit everyone).
+   */
+  private async assertRulesFit(tx: Transaction, partyId: string, rules: PartyRules | null) {
+    const [fight] = await tx
+      .select({ partyId: partyCombats.partyId })
+      .from(partyCombats)
+      .where(eq(partyCombats.partyId, partyId));
+    if (fight) throw conflictError('Во время боя правила стола не меняются: сначала завершите бой');
+    if (!rules) return;
+    const seated = await tx
+      .select({ name: characters.name, data: characters.data })
+      .from(partyHeroes)
+      .innerJoin(
+        characters,
+        and(eq(characters.userId, partyHeroes.userId), eq(characters.id, partyHeroes.characterId)),
+      )
+      .where(and(eq(partyHeroes.partyId, partyId), isNull(characters.deletedAt)));
+    const others = seated.filter((hero) => heroRules(hero.data as { build?: { ruleset: string } }) !== rules);
+    if (others.length > 0) {
+      throw conflictError(
+        `За столом сидят герои других правил (${others.map((hero) => hero.name).join(', ')}): ` +
+          'сменить правила можно, когда они покинут стол',
+      );
+    }
   }
 
   /** A new code; the old one stops working at once. */
@@ -304,6 +347,8 @@ export class PartiesService implements CharacterChangeListener {
       if ((existing?.value ?? 0) >= PARTY_LIMITS.npcs)
         throw conflictError(`Не больше ${PARTY_LIMITS.npcs} НПС`);
       await assertOwnAsset(tx, userId, input.portraitAssetId);
+      const currentHP = input.currentHP ?? input.maxHP;
+      assertNpcHP(currentHP, input.maxHP, input.coc !== null || (await combatRulesOf(tx, partyId)) === 'coc7');
       const [npc] = await tx
         .insert(partyNpcs)
         .values({
@@ -311,10 +356,11 @@ export class PartiesService implements CharacterChangeListener {
           name: input.name,
           portraitAssetId: input.portraitAssetId,
           maxHp: input.maxHP,
-          currentHp: input.currentHP ?? input.maxHP,
+          currentHp: currentHP,
           armorClass: input.armorClass,
           initiativeBonus: input.initiativeBonus,
           disposition: input.disposition,
+          coc: input.coc,
         })
         .returning({ id: partyNpcs.id });
       return npc!;
@@ -324,20 +370,34 @@ export class PartiesService implements CharacterChangeListener {
   updateNpc(userId: string, partyId: string, npcId: string, input: UpdateNpc): Promise<void> {
     return this.access.change(userId, partyId, 'master', async ({ tx }) => {
       await assertOwnAsset(tx, userId, input.portraitAssetId);
-      const updated = await tx
+      const where = and(eq(partyNpcs.id, npcId), eq(partyNpcs.partyId, partyId));
+      const [row] = await tx
+        .select({ maxHp: partyNpcs.maxHp, currentHp: partyNpcs.currentHp, coc: partyNpcs.coc })
+        .from(partyNpcs)
+        .where(where);
+      if (!row) throw notFound('НПС не найден');
+
+      const maxHP = input.maxHP ?? row.maxHp;
+      const coc: NpcCocStats | null = input.coc !== undefined ? input.coc : row.coc;
+      const cocFloor = coc !== null || (await combatRulesOf(tx, partyId)) === 'coc7';
+      // Given hit points must fit; kept ones follow a lowered maximum.
+      let currentHP = input.currentHP;
+      if (currentHP !== undefined) assertNpcHP(currentHP, maxHP, cocFloor);
+      else if (row.currentHp > maxHP) currentHP = maxHP;
+
+      await tx
         .update(partyNpcs)
         .set({
           name: input.name,
           portraitAssetId: input.portraitAssetId,
           maxHp: input.maxHP,
-          currentHp: input.currentHP,
+          currentHp: currentHP,
           armorClass: input.armorClass,
           initiativeBonus: input.initiativeBonus,
           disposition: input.disposition,
+          coc: input.coc,
         })
-        .where(and(eq(partyNpcs.id, npcId), eq(partyNpcs.partyId, partyId)))
-        .returning({ id: partyNpcs.id });
-      if (updated.length === 0) throw notFound('НПС не найден');
+        .where(where);
     });
   }
 
