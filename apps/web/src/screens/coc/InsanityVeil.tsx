@@ -15,8 +15,9 @@ export function madnessStage(character: Pick<Character, 'sanity' | 'conditions' 
 
 /**
  * The edge of sight closing in. Drawn over the whole screen and never in the way of a click: a
- * veil of veined noise at the borders that beats like a racing heart, shadows that slip past at the
- * edge of vision, and at the worst the page itself sways and its colours come apart. Each setting
+ * veil of veined noise at the borders that beats like a racing heart; in a bout the edges blur and
+ * drain of colour and shadows slip past at the edge of vision; in lasting madness the page sways,
+ * its colours come apart and the dark falls for an instant now and then. Each setting
  * tints it (see coc.css); reduced motion keeps only the still veil.
  */
 export const InsanityVeil: React.FC<{ stage: MadnessStage }> = ({ stage }) =>
@@ -27,10 +28,16 @@ export const InsanityVeil: React.FC<{ stage: MadnessStage }> = ({ stage }) =>
       <div className="coc-veil__pulse" />
       {stage >= 2 && (
         <>
+          <div className="coc-veil__tunnel" />
           <div className="coc-veil__shade coc-veil__shade--l" />
           <div className="coc-veil__shade coc-veil__shade--r" />
         </>
       )}
-      {stage >= 3 && <div className="coc-veil__split" />}
+      {stage >= 3 && (
+        <>
+          <div className="coc-veil__split" />
+          <div className="coc-veil__flicker" />
+        </>
+      )}
     </div>
   );
