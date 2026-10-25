@@ -135,7 +135,7 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
 
           {/* ---------------------------------------------------------------- The tables */}
           <motion.section
-            className="mt-[clamp(1.5rem,5vh,3rem)] flex min-h-0 flex-1 flex-col"
+            className="ui-hub-smoke mt-[clamp(1.5rem,5vh,3rem)] flex min-h-0 flex-1 flex-col"
             {...enter({ x: -24 }, 0.22)}
           >
             <div className="ui-hub-rule mb-6" aria-hidden />
