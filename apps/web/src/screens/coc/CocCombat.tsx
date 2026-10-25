@@ -1000,7 +1000,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                               hint: String(skillValue(character, fightBackSkill(a))),
                             })),
                           ]}
-                          className="w-[6.5rem] py-0.5 text-[11px] max-sm:w-full"
+                          className="w-[8.5rem] py-0.5 text-xs max-sm:w-full"
                         />
                       )}
                     </div>
