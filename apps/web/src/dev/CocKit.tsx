@@ -17,6 +17,7 @@ import { Button, Panel, SectionTitle } from '../ui/primitives';
 import { Toasts } from '../ui/Toasts';
 import { CocSheetProvider, useCoc, type RollRecord } from '../screens/coc/context';
 import { CocSheetView } from '../screens/coc/CocSheet';
+import { CocCombatView } from '../screens/coc/CocCombat';
 import { CharacteristicsGrid, DerivedStrip, RollResult, SkillList, Track } from '../screens/coc/parts';
 import { madnessStage } from '../screens/coc/InsanityVeil';
 
@@ -198,9 +199,13 @@ export const CocKit: React.FC = () => {
   );
   useDocumentSetting(setting);
   const { character, update, reset } = useLocalInvestigator();
-  const choose = (next: Setting) => {
+  const [view, setView] = useState<'sheet' | 'combat'>(() =>
+    new URLSearchParams(window.location.search).get('view') === 'combat' ? 'combat' : 'sheet',
+  );
+  const choose = (next: Setting, nextView = view) => {
     setSetting(next);
-    window.history.replaceState(null, '', `?coc=${next}`);
+    setView(nextView);
+    window.history.replaceState(null, '', `?coc=${next}${nextView === 'combat' ? '&view=combat' : ''}`);
   };
 
   return (
@@ -211,14 +216,29 @@ export const CocKit: React.FC = () => {
           <Segmented
             label="Сеттинг"
             value={setting}
-            onChange={choose}
+            onChange={(next) => choose(next)}
             options={SETTING_LIST.map((s) => ({ value: s.id, label: s.label }))}
+          />
+          <Segmented
+            label="Экран"
+            value={view}
+            onChange={(next) => choose(setting, next)}
+            options={[
+              { value: 'sheet', label: 'Лист' },
+              { value: 'combat', label: 'Бой' },
+            ]}
           />
           <MadnessControls reset={reset} />
         </header>
-        <div className="relative h-[900px] overflow-hidden">
+        <div
+          className={`relative h-[900px] overflow-hidden ${view === 'combat' ? 'max-lg:h-[2200px]' : ''}`}
+        >
           <SettingBackdrop setting={setting} strength={0.8} />
-          <CocSheetView journal={<Journal />} />
+          {view === 'combat' ? (
+            <CocCombatView onOpenSettings={() => {}} onDice={() => {}} />
+          ) : (
+            <CocSheetView journal={<Journal />} />
+          )}
         </div>
         <PartsSample />
       </CocSheetProvider>
