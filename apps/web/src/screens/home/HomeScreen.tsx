@@ -68,8 +68,16 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
               <div className="flex h-full flex-col justify-end pb-6">
                 <div className="text-[11px] uppercase tracking-[0.26em] text-ink-faint">Одиночная игра</div>
                 <div className="ui-display mt-2 text-[3rem] leading-tight text-ink">Первый герой</div>
-                <p className="mt-2 max-w-sm text-ink-muted">Выберите мир и соберите героя: лист, бой и кубики — всё здесь.</p>
-                <Button variant="primary" size="lg" className="mt-6 w-fit" icon={<IconCreate width={18} height={18} />} onClick={() => startCreation()}>
+                <p className="mt-2 max-w-sm text-ink-muted">
+                  Выберите мир и соберите героя: лист, бой и кубики — всё здесь.
+                </p>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="mt-6 w-fit"
+                  icon={<IconCreate width={18} height={18} />}
+                  onClick={() => startCreation()}
+                >
                   Создать героя
                 </Button>
               </div>
@@ -88,27 +96,28 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
                 <div className="text-[11px] uppercase tracking-[0.26em] text-ink-faint">Игра с мастером</div>
                 <div className="mt-1 text-[1.6rem] font-semibold leading-tight text-ink">Партии</div>
               </div>
-              <Button variant="secondary" size="sm" icon={<IconCreate width={15} height={15} />} onClick={() => go({ screen: 'party-form' })}>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<IconCreate width={15} height={15} />}
+                onClick={() => go({ screen: 'party-form' })}
+              >
                 Собрать партию
               </Button>
             </div>
 
-            <div className="ui-scroll mt-5 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-              {parties?.map((party, index) => (
-                <motion.div
-                  key={party.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE, delay: 0.3 + index * 0.06 } }}
-                >
-                  <TableCard party={party} onOpen={() => entry.enter(party)} />
-                </motion.div>
-              ))}
-              {parties?.length === 0 && (
-                <p className="max-w-sm pt-6 text-sm leading-relaxed text-ink-muted">
-                  Соберите свою партию и станьте мастером — или сядьте за чужой стол по коду, который даст мастер.
-                </p>
-              )}
-            </div>
+            {parties?.length ? (
+              <TableShelf parties={parties} onOpen={entry.enter} />
+            ) : (
+              <div className="min-h-0 flex-1">
+                {parties && (
+                  <p className="max-w-sm pt-6 text-sm leading-relaxed text-ink-muted">
+                    Соберите свою партию и станьте мастером — или сядьте за чужой стол по коду, который даст
+                    мастер.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="mt-5 flex items-center gap-4">
               <span className="shrink-0 text-sm text-ink-muted">Код приглашения</span>
@@ -148,8 +157,12 @@ const HeroStage: React.FC<{
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0">
         <SettingScope setting={setting}>
-          <div className="text-[11px] uppercase tracking-[0.24em] text-frame-bright/80">{SETTING_INFO[setting].label}</div>
-          <div className="ui-display mt-2 max-w-[34rem] text-[3.2rem] leading-[1.02] text-ink">{hero.name}</div>
+          <div className="text-[11px] uppercase tracking-[0.24em] text-frame-bright/80">
+            {SETTING_INFO[setting].label}
+          </div>
+          <div className="ui-display mt-2 max-w-[34rem] text-[3.2rem] leading-[1.02] text-ink">
+            {hero.name}
+          </div>
           <div className="mt-2 text-ink-muted">{heroOrigin(hero)}</div>
           <HeroVitals hero={hero} className="mt-4" />
         </SettingScope>
@@ -167,31 +180,87 @@ const HeroStage: React.FC<{
   );
 };
 
-/** A table as a wide cover in its own world, its name and state laid over the picture. */
+/** A cover is never taller than this, so one or two tables stay covers rather than walls. */
+const COVER_MAX_REM = 15;
+/** Below this a cover becomes a strip: name and state only (see .ui-table-card__body). */
+const COVER_MIN_REM = 5.5;
+
+/**
+ * The tables share the column's height instead of scrolling: up to three stand one above another;
+ * more pair up in two columns, the first spanning both when the count is odd. Only a crowd that
+ * would squeeze the covers under strip height ever scrolls.
+ */
+const TableShelf: React.FC<{ parties: PartyListItemDto[]; onOpen: (party: PartyListItemDto) => void }> = ({
+  parties,
+  onOpen,
+}) => {
+  const columns = parties.length > 3 ? 2 : 1;
+  const rows = Math.ceil(parties.length / columns);
+  const wide = columns === 2 && parties.length % 2 === 1;
+  return (
+    <div className="mt-5 min-h-0 flex-1">
+      <div
+        className="ui-scroll grid h-full gap-3 overflow-y-auto"
+        style={{
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${rows}, minmax(${COVER_MIN_REM}rem, 1fr))`,
+          maxHeight: `calc(${rows * COVER_MAX_REM}rem + ${(rows - 1) * 0.75}rem)`,
+        }}
+      >
+        {parties.map((party, index) => (
+          <motion.div
+            key={party.id}
+            className={cx('min-h-0', wide && index === 0 && 'col-span-2')}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              transition: { duration: 0.5, ease: EASE, delay: 0.3 + index * 0.06 },
+            }}
+          >
+            <TableCard party={party} onOpen={() => onOpen(party)} />
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/** A table as a cover in its own world, its name and state laid over the picture. */
 const TableCard: React.FC<{ party: PartyListItemDto; onOpen: () => void }> = ({ party, onOpen }) => (
-  <SettingScope setting={party.setting}>
+  <SettingScope setting={party.setting} className="h-full">
     <button
       type="button"
       onClick={onOpen}
-      className="ui-table-card__body relative block aspect-[16/6] w-full overflow-hidden text-left"
+      className="ui-table-card__body relative block h-full w-full overflow-hidden text-left"
     >
       <PartyPicture party={party} className="ui-table-card__picture absolute inset-0" />
       <span className="absolute inset-0 bg-gradient-to-r from-bg-deep/95 via-bg-deep/60 to-transparent" />
-      <span className="relative flex h-full flex-col justify-end p-6">
-        <span className="text-[10px] uppercase tracking-[0.22em] text-frame-bright/85">{SETTING_INFO[party.setting].label}</span>
-        <span className="ui-display ui-title mt-1 truncate text-[1.9rem] leading-tight text-ink">{party.name}</span>
-        <span className="mt-1 flex items-center gap-2 text-sm text-ink-muted">
-          {partyRole(party)} · {party.memberCount} {plural(party.memberCount, 'участник', 'участника', 'участников')}
+      <span className="ui-table-card__content relative flex h-full flex-col justify-end p-6">
+        <span className="ui-table-card__meta text-[10px] uppercase tracking-[0.22em] text-frame-bright/85">
+          {SETTING_INFO[party.setting].label}
+        </span>
+        <span className="ui-display ui-title ui-table-card__name mt-1 truncate text-[1.9rem] leading-tight text-ink">
+          {party.name}
+        </span>
+        <span className="ui-table-card__meta mt-1 flex items-center gap-2 text-sm text-ink-muted">
+          {partyRole(party)} · {party.memberCount}{' '}
+          {plural(party.memberCount, 'участник', 'участника', 'участников')}
         </span>
       </span>
       <span
         className={cx(
-          'absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-bg-deep/75 px-3 py-1 text-xs backdrop-blur',
+          'ui-table-card__state absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-bg-deep/75 px-3 py-1 text-xs backdrop-blur',
           party.inCombat ? 'text-danger' : party.inSession ? 'text-success' : 'text-ink-faint',
         )}
+        title={partyState(party)}
       >
-        {party.inCombat && <IconCombat width={14} height={14} />}
-        {partyState(party)}
+        {party.inCombat ? (
+          <IconCombat width={14} height={14} />
+        ) : (
+          <span className="ui-table-card__state-dot" />
+        )}
+        <span className="ui-table-card__state-label">{partyState(party)}</span>
       </span>
     </button>
   </SettingScope>
@@ -214,7 +283,15 @@ const HeroFigure: React.FC<{ hero: CharacterPreview }> = ({ hero }) => {
       className="ui-hero-figure relative max-w-full shrink-0"
       style={{ aspectRatio: ratio, height: portrait ? '72%' : '100%', marginTop: portrait ? '10%' : 0 }}
     >
-      {src && <img src={src} alt="" aria-hidden draggable={false} className="ui-hero-figure__glow absolute inset-0 h-full w-full object-cover" />}
+      {src && (
+        <img
+          src={src}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="ui-hero-figure__glow absolute inset-0 h-full w-full object-cover"
+        />
+      )}
       <span className="ui-hero-figure__art absolute inset-0">
         {src ? (
           <img

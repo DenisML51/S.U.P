@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavStore } from './store/useNavStore';
 import { usePartyStore } from './store/usePartyStore';
 import { HomeScreen } from './screens/home/HomeScreen';
@@ -8,20 +8,13 @@ import { useTableCalls } from './screens/party/useTableCalls';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
-import { AuthScreen } from './screens/auth/AuthScreen';
+import { Gate, type GatePhase } from './screens/auth/Gate';
 import { SettingsDialog } from './screens/settings/SettingsDialog';
 import { HeroSelect } from './screens/select/HeroSelect';
 import { SheetScreen } from './screens/sheet/SheetScreen';
 import { CombatScreen } from './screens/combat/CombatScreen';
 import { CreationScreen } from './screens/create/CreationScreen';
-import { SettingScope } from './ui/theme/SettingScope';
 import { Toasts } from './ui/Toasts';
-
-const Loading: React.FC = () => (
-  <SettingScope setting="service" className="grid h-screen place-items-center bg-bg">
-    <span className="ui-display animate-pulse text-2xl text-frame-bright">S.U.P.</span>
-  </SettingScope>
-);
 
 const App: React.FC = () => {
   const status = useSessionStore((s) => s.status);
@@ -35,6 +28,8 @@ const App: React.FC = () => {
   const startCreation = useNavStore((s) => s.startCreation);
   const endCreation = useNavStore((s) => s.endCreation);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [introDone, setIntroDone] = useState(false);
+  const endIntro = useCallback(() => setIntroDone(true), []);
   const openSettings = () => setSettingsOpen(true);
 
   /** Creation ends with the new hero open (or nothing, if it was left); a party's new hero takes its seat. */
@@ -53,12 +48,11 @@ const App: React.FC = () => {
 
   let screen: React.ReactNode;
   let screenKey: string;
-  if (status === 'booting' || (signedIn && !isLoaded)) {
-    screen = <Loading />;
-    screenKey = 'loading';
-  } else if (!signedIn) {
-    screen = <AuthScreen />;
-    screenKey = 'auth';
+  if (!introDone || !signedIn || !isLoaded) {
+    // Boot, the lock screen and the account opening are one place; it leaves once all is ready.
+    const phase: GatePhase = signedIn ? 'entering' : status === 'booting' || !introDone ? 'boot' : 'locked';
+    screen = <Gate phase={phase} onIntroDone={endIntro} />;
+    screenKey = 'gate';
   } else if (character && viewMode === 'tabs') {
     screen = <SheetScreen onOpenSettings={openSettings} />;
     screenKey = 'sheet';
@@ -75,7 +69,13 @@ const App: React.FC = () => {
     screen = <PartyFormScreen partyId={place.partyId} />;
     screenKey = `party-form-${place.partyId ?? 'new'}`;
   } else if (place.screen === 'heroes') {
-    screen = <HeroSelect onCreate={() => startCreation()} onHome={() => go({ screen: 'home' })} onOpenSettings={openSettings} />;
+    screen = (
+      <HeroSelect
+        onCreate={() => startCreation()}
+        onHome={() => go({ screen: 'home' })}
+        onOpenSettings={openSettings}
+      />
+    );
     screenKey = 'select';
   } else {
     screen = <HomeScreen onOpenSettings={openSettings} />;
@@ -91,7 +91,12 @@ const App: React.FC = () => {
           key={screenKey}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, transition: { duration: 0.25 } }}
-          exit={{ opacity: 0, transition: { duration: 0.3, delay: 0.1 } }}
+          // The gate lets its name ride away before the page fades.
+          exit={{
+            opacity: 0,
+            transition:
+              screenKey === 'gate' ? { duration: 0.35, delay: 0.35 } : { duration: 0.3, delay: 0.1 },
+          }}
         >
           {screen}
         </motion.div>
