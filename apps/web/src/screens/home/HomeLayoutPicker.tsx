@@ -32,31 +32,6 @@ const LAYOUTS: LayoutInfo[] = [
     ],
   },
   {
-    id: 'shelf',
-    label: 'Витрина',
-    blocks: [
-      { x: 3, y: 3, w: 4, h: 4, art: true },
-      { x: 8, y: 3, w: 4, h: 4, art: true },
-      { x: 13, y: 2, w: 5, h: 5, art: true },
-      { x: 21, y: 3, w: 7, h: 4, art: true },
-      { x: 3, y: 15, w: 13, h: 3 },
-      { x: 3, y: 20, w: 9, h: 1.5 },
-      { x: 30, y: 10, w: 15, h: 16, art: true },
-    ],
-  },
-  {
-    id: 'hand',
-    label: 'Рука',
-    blocks: [
-      { x: 8, y: 4, w: 10, h: 7, art: true },
-      { x: 20, y: 4, w: 10, h: 7, art: true },
-      { x: 32, y: 4, w: 8, h: 7 },
-      { x: 12, y: 17, w: 7, h: 11, art: true, r: -10 },
-      { x: 20.5, y: 15.5, w: 7, h: 12.5, art: true },
-      { x: 29, y: 17, w: 7, h: 11, art: true, r: 10 },
-    ],
-  },
-  {
     id: 'mosaic',
     label: 'Мозаика',
     blocks: [

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { CharacterPreview, PartyListItemDto } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
 import { CharacterArt } from '../../ui/CharacterArt';
-import { IconCombat, IconCreate, IconNext } from '../../ui/icons';
-import { Button, IconButton, cx } from '../../ui/primitives';
+import { IconCombat, IconCreate } from '../../ui/icons';
+import { Button, cx } from '../../ui/primitives';
 import { SettingScope } from '../../ui/theme/SettingScope';
 import { SETTING_INFO, settingOf } from '../../ui/theme/settings';
 import {
@@ -35,14 +35,17 @@ export const HomeHub: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettin
   const go = useNavStore((s) => s.go);
   const startCreation = useNavStore((s) => s.startCreation);
   const loadCharacter = useCharacterStore((s) => s.loadCharacter);
-  const { heroes, parties, lastHero } = useHomeItems();
+  const { heroes, parties, lastHero: hero } = useHomeItems();
   const entry = usePartyEntry();
-  const [pickedId, setPickedId] = useState<string | null>(null);
-  const hero = heroes.find((h) => h.id === pickedId) ?? lastHero;
 
   const play = (id: string) => {
     rememberLastHero(id);
     void loadCharacter(id);
+  };
+  /** Hero select opens on the hero shown here, even when it is only the newest one, not yet played. */
+  const allHeroes = () => {
+    if (hero) rememberLastHero(hero.id);
+    go({ screen: 'heroes' });
   };
 
   return (
@@ -61,13 +64,7 @@ export const HomeHub: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettin
             exit={{ opacity: 0, x: -24, transition: { duration: 0.25 } }}
           >
             {hero ? (
-              <HeroStage
-                hero={hero}
-                heroes={heroes}
-                onPick={setPickedId}
-                onPlay={() => play(hero.id)}
-                onAll={() => go({ screen: 'heroes' })}
-              />
+              <HeroStage hero={hero} count={heroes.length} onPlay={() => play(hero.id)} onAll={allHeroes} />
             ) : (
               <div className="flex h-full flex-col justify-end pb-6">
                 <div className="text-[11px] uppercase tracking-[0.26em] text-ink-faint">Одиночная игра</div>
@@ -130,62 +127,51 @@ export const HomeHub: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettin
 
 const HeroStage: React.FC<{
   hero: CharacterPreview;
-  heroes: CharacterPreview[];
-  onPick: (id: string) => void;
+  /** How many heroes one has, shown on the button to all of them. */
+  count: number;
   onPlay: () => void;
   onAll: () => void;
-}> = ({ hero, heroes, onPick, onPlay, onAll }) => {
+}> = ({ hero, count, onPlay, onAll }) => {
   const setting = settingOf(hero);
+  // The hero's world dresses the picture and the words; the buttons stay the page's own (service).
   return (
-    <SettingScope setting={setting} className="relative h-full">
-      <AnimatePresence initial={false}>
-        <motion.button
-          key={hero.id}
-          type="button"
-          onClick={onPlay}
-          aria-label={`Лист: ${hero.name}`}
-          className="ui-featured absolute -top-24 bottom-0 right-0 w-[78%]"
-          style={meltMask({ left: 35, right: 10, top: 18, bottom: 34 })}
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0, transition: { duration: 0.8, ease: EASE } }}
-          exit={{ opacity: 0, transition: { duration: 0.35 } }}
-        >
-          <CharacterArt source={hero} kind="full" className="h-full w-full" position="50% 15%" />
-        </motion.button>
-      </AnimatePresence>
+    <div className="relative h-full">
+      <SettingScope setting={setting} className="contents">
+        <AnimatePresence initial={false}>
+          <motion.button
+            key={hero.id}
+            type="button"
+            onClick={onPlay}
+            aria-label={`Лист: ${hero.name}`}
+            className="ui-featured absolute -top-24 bottom-0 right-0 w-[78%]"
+            style={meltMask({ left: 35, right: 10, top: 18, bottom: 34 })}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0, transition: { duration: 0.8, ease: EASE } }}
+            exit={{ opacity: 0, transition: { duration: 0.35 } }}
+          >
+            <CharacterArt source={hero} kind="full" className="h-full w-full" position="50% 15%" />
+          </motion.button>
+        </AnimatePresence>
+      </SettingScope>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0">
-        <div className="text-[11px] uppercase tracking-[0.24em] text-frame-bright/80">{SETTING_INFO[setting].label}</div>
-        <div className="ui-display mt-2 max-w-[34rem] text-[3.2rem] leading-[1.02] text-ink">{hero.name}</div>
-        <div className="mt-2 text-ink-muted">{heroOrigin(hero)}</div>
-        <HeroVitals hero={hero} className="mt-4" />
-        <div className="pointer-events-auto mt-7 flex items-center gap-6">
+        <SettingScope setting={setting}>
+          <div className="text-[11px] uppercase tracking-[0.24em] text-frame-bright/80">{SETTING_INFO[setting].label}</div>
+          <div className="ui-display mt-2 max-w-[34rem] text-[3.2rem] leading-[1.02] text-ink">{hero.name}</div>
+          <div className="mt-2 text-ink-muted">{heroOrigin(hero)}</div>
+          <HeroVitals hero={hero} className="mt-4" />
+        </SettingScope>
+        <div className="pointer-events-auto mt-7 flex items-center gap-3">
           <Button variant="primary" size="lg" className="min-w-[200px]" onClick={onPlay}>
             Лист
           </Button>
-          <SettingScope setting="service" className="flex items-center gap-2">
-            {heroes.map((other) => (
-              <button
-                key={other.id}
-                type="button"
-                title={other.name}
-                aria-label={other.name}
-                onClick={() => onPick(other.id)}
-                className={cx(
-                  'ui-strip-thumb h-11 w-11 overflow-hidden rounded-full border transition-all',
-                  other.id === hero.id ? 'border-frame-bright' : 'border-line opacity-55 hover:opacity-100',
-                )}
-              >
-                <CharacterArt source={other} kind="portrait" className="h-full w-full" />
-              </button>
-            ))}
-            <IconButton label="Все герои" onClick={onAll} className="ml-1">
-              <IconNext width={20} height={20} />
-            </IconButton>
-          </SettingScope>
+          <Button variant="secondary" size="lg" onClick={onAll}>
+            Все герои
+            <span className="text-ink-faint">{count}</span>
+          </Button>
         </div>
       </div>
-    </SettingScope>
+    </div>
   );
 };
 

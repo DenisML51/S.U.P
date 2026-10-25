@@ -9,7 +9,7 @@ export interface AppSettings {
 }
 
 /** How the home page lays out one's heroes and tables. */
-export const HOME_LAYOUTS = ['hub', 'menu', 'shelf', 'hand', 'mosaic', 'cinema'] as const;
+export const HOME_LAYOUTS = ['hub', 'menu', 'mosaic', 'cinema'] as const;
 export type HomeLayout = (typeof HOME_LAYOUTS)[number];
 
 const KEYS: Record<keyof AppSettings, string> = {

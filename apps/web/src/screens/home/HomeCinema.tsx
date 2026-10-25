@@ -50,29 +50,30 @@ export const HomeCinema: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
         {/* ---------------------------------------------------------------- The feature */}
         <div className="flex min-h-0 flex-1 items-end px-24 pb-10">
           {lastHero ? (
-            <SettingScope setting={settingOf(lastHero)}>
-              <motion.div
-                className="max-w-[38rem]"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0, transition: { duration: 0.6, ease: HOME_EASE, delay: 0.25 } }}
-                exit={{ opacity: 0, transition: { duration: 0.2 } }}
-              >
+            <motion.div
+              className="max-w-[38rem]"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0, transition: { duration: 0.6, ease: HOME_EASE, delay: 0.25 } }}
+              exit={{ opacity: 0, transition: { duration: 0.2 } }}
+            >
+              {/* The hero's words in their world; the buttons are the page's own (service). */}
+              <SettingScope setting={settingOf(lastHero)}>
                 <div className="text-[11px] uppercase tracking-[0.24em] text-frame-bright/85">
                   Продолжить · {SETTING_INFO[settingOf(lastHero)].label}
                 </div>
                 <div className="ui-display mt-2 text-[3.6rem] leading-[1.02] text-ink">{lastHero.name}</div>
                 <div className="mt-2 text-ink-muted">{heroOrigin(lastHero)}</div>
                 <HeroVitals hero={lastHero} className="mt-4" />
-                <div className="mt-7 flex items-center gap-3">
-                  <Button variant="primary" size="lg" className="min-w-[200px]" onClick={() => play(lastHero.id)}>
-                    Лист
-                  </Button>
-                  <Button variant="secondary" onClick={() => go({ screen: 'heroes' })}>
-                    Все герои
-                  </Button>
-                </div>
-              </motion.div>
-            </SettingScope>
+              </SettingScope>
+              <div className="mt-7 flex items-center gap-3">
+                <Button variant="primary" size="lg" className="min-w-[200px]" onClick={() => play(lastHero.id)}>
+                  Лист
+                </Button>
+                <Button variant="secondary" onClick={() => go({ screen: 'heroes' })}>
+                  Все герои
+                </Button>
+              </div>
+            </motion.div>
           ) : (
             <div>
               <div className="text-[3rem] font-semibold leading-tight text-ink">Первый герой</div>

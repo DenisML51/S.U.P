@@ -3,22 +3,6 @@
  * scope's tokens, so a party's table wears its world and the home page the service.
  */
 
-/* ---------------------------------------------------------------- Home: the hand of hero cards */
-.ui-home-card {
-  border-radius: calc(var(--radius) * 0.75);
-  border: 1px solid rgb(var(--c-frame) / 0.5);
-  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.85);
-  transform: translate(calc(-50% + var(--fan-x)), calc(-50% + var(--fan-y))) rotate(var(--fan-r));
-  transform-origin: 50% 120%;
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s;
-  filter: brightness(0.72) saturate(0.85);
-}
-.group:hover .ui-home-card,
-.group:focus-visible .ui-home-card {
-  transform: translate(calc(-50% + var(--fan-x) * 1.25), calc(-52% + var(--fan-y))) rotate(calc(var(--fan-r) * 1.3));
-  filter: brightness(0.95) saturate(1);
-}
-
 /* ---------------------------------------------------------------- Home: title menu */
 /* Words only; under the cursor a short bar grows in front of the word. The word itself never moves. */
 .ui-menu-item {
@@ -64,13 +48,6 @@
   transition: opacity 0.2s;
 }
 .ui-home-code__go:disabled { opacity: 0.25; }
-
-.ui-home-join {
-  border-top: 1px solid rgb(var(--c-line) / 0.6);
-}
-[data-setting='service'] .ui-home-join:not([data-world] *) {
-  border-top-color: var(--divider);
-}
 
 /* An invite code reads like a code: spaced capitals in the numeric face. */
 .ui-invite-input {
@@ -354,29 +331,6 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   transform: scale(1.04);
 }
 
-/* ---------------------------------------------------------------- Home: the shelf of tiles */
-.ui-shelf-tile {
-  aspect-ratio: 1;
-  border-radius: calc(var(--radius) * 0.6);
-  border: 1px solid rgb(var(--c-frame) / 0.3);
-  background: rgb(var(--c-inset));
-  filter: brightness(0.6) saturate(0.7);
-  transition: filter 0.3s, border-color 0.3s, box-shadow 0.3s;
-}
-.ui-shelf-tile--wide { aspect-ratio: 16 / 9; }
-.ui-shelf-tile:hover { filter: brightness(0.9) saturate(0.9); }
-.ui-shelf-tile[data-chosen] {
-  filter: none;
-  border-color: rgb(var(--c-frame-bright) / 0.85);
-  box-shadow: 0 0 0 3px rgb(var(--c-frame-bright) / 0.15), 0 16px 34px -14px rgb(0 0 0 / 0.9);
-}
-.ui-shelf-tile--add {
-  filter: none;
-  color: rgb(var(--c-ink-faint));
-  background: transparent;
-  border-style: dashed;
-}
-.ui-shelf-tile--add:hover { color: rgb(var(--c-ink)); border-color: rgb(var(--c-frame-bright) / 0.5); }
 
 /* ---------------------------------------------------------------- Settings: home layout choice */
 .ui-layout-option {
@@ -395,33 +349,6 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 .ui-layout-option__block { fill: rgb(var(--c-ink-faint) / 0.55); }
 .ui-layout-option__art { fill: rgb(var(--c-frame) / 0.55); }
 .ui-layout-option--chosen .ui-layout-option__art { fill: rgb(var(--c-frame-bright) / 0.4); }
-
-/* ---------------------------------------------------------------- Home: the hand of heroes */
-/* The table the cards lie on: a faint pool of light, no cloth texture. */
-.ui-home-felt {
-  background: radial-gradient(ellipse 60% 45% at 50% 42%, rgb(var(--c-frame-bright) / 0.05), transparent 70%);
-}
-.ui-hand-card {
-  border-radius: calc(var(--radius) * 0.75);
-  border: 1px solid rgb(var(--c-frame) / 0.55);
-  background: rgb(var(--c-inset));
-  box-shadow: 0 -10px 30px -12px rgb(0 0 0 / 0.85);
-  transition: border-color 0.3s, filter 0.3s;
-  filter: brightness(0.78) saturate(0.85);
-}
-.ui-hand-card[data-drawn] {
-  filter: none;
-  border-color: rgb(var(--c-frame-bright) / 0.8);
-}
-.ui-hand-card--new {
-  color: rgb(var(--c-ink-faint));
-  background: rgb(var(--c-surface) / 0.85);
-  border-style: dashed;
-  filter: none;
-}
-.ui-hand-card--new:hover { color: rgb(var(--c-ink)); }
-.ui-hand-all { transition: color 0.2s; }
-.ui-hand-all:hover { color: rgb(var(--c-ink)); }
 
 /* ---------------------------------------------------------------- Home: mosaic tiles */
 .ui-mosaic-hero {
