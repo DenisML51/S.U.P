@@ -252,6 +252,25 @@ describe('where an entry comes from', () => {
     expect(describeGrant(b, 'class:fighter.fighting-style/style:defense')).toBe('Черта «Оборона» · Воин, 1 уровень');
     expect(describeGrant(b, 'species:human.resourceful')).toBe('Вид «Человек»');
   });
+
+  it('tells the part of the hero a feature belongs to and the feature it was picked in', async () => {
+    const { featureOrigins } = await import('../src');
+    const origins = featureOrigins(build({ choices: { 'class:fighter.fighting-style/style': ['defense'] } }));
+    expect(origins.get('class:fighter.fighting-style/style:defense')).toEqual({
+      part: 'class',
+      source: 'feat',
+      parent: 'class:fighter.fighting-style',
+    });
+    expect(origins.get('background:savage-attacker')).toMatchObject({ part: 'background', source: 'feat', parent: undefined });
+    expect(origins.get('species:human.resourceful')).toMatchObject({ part: 'species', parent: undefined });
+  });
+
+  it('names the chosen weapons on the Weapon Mastery feature', () => {
+    const c = apply(build({ choices: { 'class:fighter.weapon-mastery/mastery': ['longsword', 'greataxe', 'javelin'] } }));
+    const trait = c.traits.find((t) => t.grant === 'class:fighter.weapon-mastery');
+    expect(trait?.description).toContain('**Выбрано:**');
+    expect(trait?.description).toContain('Длинный меч');
+  });
 });
 
 describe('damage that grows', () => {
