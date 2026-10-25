@@ -57,7 +57,9 @@ export const CocSheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpe
   return (
     <SheetDialogsProvider>
       <SettingScope setting={setting} className="h-screen overflow-clip bg-bg">
-        <CocSheetProvider character={character} update={update} renderRoll={renderRoll}>
+        {/* One provider per investigator: the master's screen following the turn to another hero
+            starts clean, without the last hero's roll, round or picks. */}
+        <CocSheetProvider key={character.id} character={character} update={update} renderRoll={renderRoll}>
           {viewMode === 'hotbar' ? (
             <CombatWithDialogs onOpenSettings={onOpenSettings} />
           ) : (

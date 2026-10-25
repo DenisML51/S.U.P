@@ -179,7 +179,8 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   const goToCharacterList = useCharacterStore((s) => s.goToCharacterList);
   const go = useNavStore((s) => s.go);
   const userId = useSessionStore((s) => s.user?.id);
-  const locked = useCharacterStore((s) => s.turnLock) !== null;
+  const turnLock = useCharacterStore((s) => s.turnLock);
+  const locked = turnLock !== null;
   const { party } = useTableOfCharacter(character.id);
   useFollowTurn(character.id);
   const partyFight = party?.combat ?? null;
@@ -328,6 +329,13 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   );
 
   const actionDone = inCombat && round.actionUsed;
+  /** Actions wait for the hero's turn at a table and for a new round; defences and wounds never do. */
+  const noAction = actionDone || locked;
+  const actionNote = locked
+    ? turnLock
+    : actionDone
+      ? 'Действие раунда потрачено — защищаться ещё можно'
+      : null;
   const firearmReady = weapon && weapon.ammo !== undefined && weapon.ammo <= 0;
 
   return (
@@ -625,7 +633,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
             variant="primary"
             size="lg"
             className="w-full"
-            disabled={!weapon || actionDone || !!firearmReady}
+            disabled={!weapon || noAction || !!firearmReady}
             onClick={attack}
           >
             {firearmReady ? 'Нет патронов' : `Атаковать${weapon ? ` · ${weapon.damage}` : ''}`}
@@ -635,7 +643,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               <Button
                 size="sm"
                 className="flex-1"
-                disabled={actionDone}
+                disabled={noAction}
                 title="Бонусная кость на следующий выстрел"
                 onClick={() => {
                   setRound({ ...round, actionUsed: true, aimedWith: weapon.id });
@@ -648,7 +656,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 <Button
                   size="sm"
                   className="flex-1"
-                  disabled={actionDone}
+                  disabled={noAction}
                   onClick={() => {
                     update(
                       (doc) => ({
@@ -730,7 +738,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 label="Провести"
                 value={skillValue(character, 'fighting:brawl')}
                 hint="обезоружить, сбить, схватить"
-                disabled={!manoeuvre.possible || actionDone}
+                disabled={!manoeuvre.possible || noAction}
                 onClick={() => {
                   if (!manoeuvre.possible) return;
                   roll({
@@ -749,7 +757,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               <BarButton
                 label="Навык"
                 hint="любой навык"
-                disabled={actionDone}
+                disabled={noAction}
                 onClick={() => setSkillPicker(true)}
               />
               <BarButton
@@ -765,7 +773,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                     key={sp.id}
                     label={sp.name}
                     hint={sp.cost}
-                    disabled={actionDone}
+                    disabled={noAction}
                     onClick={() => cast(sp)}
                   />
                 ))}
@@ -778,6 +786,11 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               )}
             </BarGroup>
           </Panel>
+          {actionNote && inCombat && (
+            <p className="mt-1.5 text-center text-xs text-ink-faint" role="status">
+              {actionNote}
+            </p>
+          )}
           {defending && (
             <Panel
               ornate={false}
@@ -838,7 +851,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               <Button
                 size="sm"
                 variant="secondary"
-                disabled={actionDone}
+                disabled={noAction}
                 onClick={() => {
                   cast(sp);
                   setSpellsOpen(false);
@@ -849,7 +862,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
             </li>
           ))}
         </ul>
-        {actionDone && <p className="mt-3 text-xs text-ink-faint">Действие этого раунда уже потрачено.</p>}
+        {actionNote && <p className="mt-3 text-xs text-ink-faint">{actionNote}</p>}
       </Dialog>
       <PickerDialog
         open={skillPicker}
