@@ -36,6 +36,16 @@ const enter = (from: { x?: number; y?: number }, delay = 0) => ({
 });
 
 /**
+ * As `enter`, but with no exit of its own (the page fades as a whole). For rows that can mount while
+ * the page is leaving — a table just joined arrives over the socket — since a motion element with an
+ * exit added to a leaving page kept that exit from ever finishing.
+ */
+const enterOnly = (from: { x?: number; y?: number }, delay = 0) => {
+  const { exit: _exit, ...rest } = enter(from, delay);
+  return rest;
+};
+
+/**
  * The first screen after signing in. The hero takes the page: their art stands large on the right,
  * the whole height of the screen. On the left a narrow column reads like a menu: the hero last
  * played, ready to go on, then the tables one sits at as a quiet list. The page wears the service
@@ -237,7 +247,7 @@ const TableList: React.FC<{ parties: PartyListItemDto[]; onOpen: (party: PartyLi
   return (
     <div ref={ref} data-more={more} className="ui-table-list ui-scroll -mx-3 mt-4 min-h-0 flex-1 overflow-y-auto">
       {parties.map((party, index) => (
-        <motion.div key={party.id} {...enter({ y: 12 }, 0.3 + index * 0.05)}>
+        <motion.div key={party.id} {...enterOnly({ y: 12 }, 0.3 + index * 0.05)}>
           <SettingScope setting={party.setting}>
             <button type="button" onClick={() => onOpen(party)} className="ui-table-row">
               <PartyPicture party={party} className="ui-table-row__picture relative" />

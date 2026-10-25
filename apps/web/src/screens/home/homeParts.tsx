@@ -48,10 +48,10 @@ export const usePartyEntry = () => {
       <InviteDialog
         invite={invite}
         onClose={() => setInvite(null)}
-        onEntered={(partyId) => {
-          setInvite(null);
-          openTable(partyId);
-        }}
+        // Not closed here: the dialog leaves together with the page. Closing it in the moment the page
+        // starts its exit kept that exit from finishing — the table never mounted, the screen stayed
+        // dark. Its state lives in this page, so it is gone when the page comes back.
+        onEntered={openTable}
       />
     </>
   );
