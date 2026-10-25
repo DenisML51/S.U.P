@@ -23,7 +23,7 @@ import {
 } from './dnd/steps';
 import { useDndCreation } from './dnd/useDndCreation';
 import { useCreation } from './useCreation';
-import { clearDraft, useDraftState } from './useDraftState';
+import { useDraftState } from './useDraftState';
 
 type Path = 'dnd' | 'custom';
 
@@ -80,7 +80,10 @@ export const CreationScreen: React.FC<{
   /** A world set in advance (a hero made for a party): the world step is already taken. */
   world?: Setting;
   onDone: () => void;
-}> = ({ world, onDone }) => {
+  /** Forgets the draft and starts the creation over. */
+  onRestart: () => void;
+}> = ({ world, onDone, onRestart }) => {
+  const [confirmRestart, setConfirmRestart] = React.useState(false);
   const [setting, setSetting] = useDraftState<Setting>('setting', world ?? DEFAULT_SETTING);
   const [worldChosen, setWorldChosen] = useDraftState('worldChosen', world !== undefined);
   const [path, setPath] = useDraftState<Path | null>('path', null);
@@ -217,13 +220,32 @@ export const CreationScreen: React.FC<{
       size="sm"
       icon={<IconPrev width={16} height={16} />}
       className="self-start"
-      onClick={() => {
-        clearDraft();
-        onDone();
-      }}
+      // Leaving keeps the draft: the hero is picked up where it was from the heroes or the home page.
+      onClick={onDone}
     >
       Герои
     </Button>
+  );
+
+  /** Throwing the draft away is asked once more: it is the only thing here that cannot be undone. */
+  const restart = path !== null && (
+    <div className="mb-2 mt-1 flex items-center gap-2 px-2 text-xs">
+      {confirmRestart ? (
+        <>
+          <span className="text-ink-muted">Сбросить все выборы?</span>
+          <button type="button" className="text-danger underline-offset-4 hover:underline" onClick={onRestart}>
+            Да
+          </button>
+          <button type="button" className="text-ink-faint underline-offset-4 hover:underline" onClick={() => setConfirmRestart(false)}>
+            Нет
+          </button>
+        </>
+      ) : (
+        <button type="button" className="text-ink-faint underline-offset-4 hover:text-ink hover:underline" onClick={() => setConfirmRestart(true)}>
+          Начать заново
+        </button>
+      )}
+    </div>
   );
 
   return (
@@ -250,7 +272,8 @@ export const CreationScreen: React.FC<{
           >
             <div className="flex min-h-0 w-60 flex-1 flex-col px-4 py-6">
               {backToHeroes}
-              <h1 className="ui-display ui-title mb-4 mt-6 px-2 text-xl text-frame-bright">Новый герой</h1>
+              <h1 className={cx('ui-display ui-title mt-6 px-2 text-xl text-frame-bright', !restart && 'mb-4')}>Новый герой</h1>
+              {restart}
               <nav className="ui-scroll flex min-h-0 flex-col gap-0.5 overflow-y-auto" aria-label="Шаги">
                 {steps.map((s, i) => {
                   const done = i !== index && s.issues.length === 0 && reachable(i);

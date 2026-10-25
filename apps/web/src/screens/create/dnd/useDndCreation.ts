@@ -11,7 +11,7 @@ import {
 } from '@itd/game-logic';
 import type { Build, CharacterImages, Setting } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
-import { clearDraft, useDraftState } from '../useDraftState';
+import { useClearDraft, useDraftState } from '../useDraftState';
 import { CLASS_SOURCES, planIssues } from '../../progression/LevelPlanView';
 
 /**
@@ -20,6 +20,7 @@ import { CLASS_SOURCES, planIssues } from '../../progression/LevelPlanView';
  */
 export function useDndCreation(setting: Setting, onCreated: () => void) {
   const createCharacter = useCharacterStore((s) => s.createCharacter);
+  const clearDraft = useClearDraft();
   const [build, setBuild] = useDraftState<Build>('build', emptyBuild);
   const [rolls, setRolls] = useDraftState<number[] | null>('rolls', null);
   const [classKitId, setClassKitId] = useDraftState<string | undefined>('classKit', undefined);
