@@ -465,10 +465,10 @@ const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => (
  * The focused hero card is lit as one resting at grace: gold light wells up under it, and over it a
  * caption names them as the Lands Between do — Tarnished, with their level.
  */
-const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ level }) => (
+const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ level, age }) => (
   <div className="er-readout" aria-hidden>
     <span className="er-readout__title">Погасший</span>
-    <span className="er-readout__level">Уровень {level}</span>
+    <span className="er-readout__level">{age !== undefined ? `${age} лет` : `Уровень ${level}`}</span>
   </div>
 );
 

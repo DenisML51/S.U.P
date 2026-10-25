@@ -236,10 +236,10 @@ const targetCode = (id: string) => {
  * A scanner's readout round the focused hero card: lock brackets standing off its corners and a
  * terminal line at each — the target's code, its level, its vitals and the link with a cursor.
  */
-const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ id, level, hp, maxHp }) => (
+const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ id, level, age, hp, maxHp }) => (
   <div className="cp-readout" aria-hidden>
     <span className="cp-readout__line cp-readout__line--tl">&gt; TARGET 0x{targetCode(id)}</span>
-    <span className="cp-readout__line cp-readout__line--tr">LVL {String(level).padStart(2, '0')}</span>
+    <span className="cp-readout__line cp-readout__line--tr">{age !== undefined ? `AGE ${age}` : `LVL ${String(level).padStart(2, '0')}`}</span>
     <span className="cp-readout__line cp-readout__line--bl">
       BIO {hp}/{maxHp} · {maxHp > 0 ? Math.round((hp / maxHp) * 100) : 0}%
     </span>

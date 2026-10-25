@@ -177,6 +177,16 @@ export const rulebookLabel = (hero: CharacterPreview): string =>
       ? 'D&D 2024'
       : 'Свои правила';
 
+/**
+ * The rulebook hung under the focused hero card, in the setting's manner: a brass plaque in
+ * Lovecraft's world, a ribbon, a chip, a tag on a chain, a holo-label, a rune bar.
+ */
+export const RulebookPlate: React.FC<{ hero: CharacterPreview }> = ({ hero }) => (
+  <div className="ui-rulebook-plate" aria-label={`Правила: ${rulebookLabel(hero)}`}>
+    <RulebookMark hero={hero} />
+  </div>
+);
+
 /** The rulebook's name on a hero's card, in the setting's tag. */
 export const RulebookMark: React.FC<{ hero: CharacterPreview; className?: string }> = ({ hero, className }) => (
   <span className={cx('ui-tag ui-rulebook', className)} style={{ '--tag-tone': 'var(--c-frame-bright)' } as React.CSSProperties}>
@@ -189,15 +199,17 @@ export const heroRank = (hero: CharacterPreview): { label: string; value: number
   hero.investigator ? { label: 'Лет', value: hero.investigator.age } : { label: 'Ур.', value: hero.level };
 
 /** Level (or age) and health, and an investigator's sanity, in one quiet line. */
-export const HeroVitals: React.FC<{ hero: CharacterPreview; className?: string; meterClassName?: string }> = ({
-  hero,
-  className,
-  meterClassName = 'w-40',
-}) => {
+export const HeroVitals: React.FC<{
+  hero: CharacterPreview;
+  className?: string;
+  meterClassName?: string;
+  /** The rulebook's mark in the line; the hero select hangs it under the card instead. */
+  rulebook?: boolean;
+}> = ({ hero, className, meterClassName = 'w-40', rulebook = true }) => {
   const rank = heroRank(hero);
   return (
     <div className={cx('flex flex-wrap items-center gap-x-4 gap-y-2', className)}>
-      <RulebookMark hero={hero} />
+      {rulebook && <RulebookMark hero={hero} />}
       <div className="flex items-baseline gap-1.5">
         <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">{rank.label}</span>
         <span className="ui-display ui-numeric text-2xl text-frame-bright">{rank.value}</span>

@@ -314,7 +314,7 @@ const CONSTELLATION = [
  * by the bottom right corner. The arcs draw themselves and the stars kindle in turn as the card
  * comes forward.
  */
-const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ level }) => (
+const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ level, age }) => (
   <div className="hf-atlas" aria-hidden>
     <svg className="hf-atlas__arc" width="260" height="160" viewBox="0 0 260 160" fill="none" stroke="currentColor">
       <path d={arcPath(ARC_R, 150, 300)} strokeWidth="1.2" pathLength={1} className="hf-atlas__draw" />
@@ -326,7 +326,7 @@ const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ level }) => (
         <circle key={x} cx={x} cy={y} r={i === 1 ? 2 : 1.4} fill="currentColor" stroke="none" className="hf-atlas__dot" style={{ transitionDelay: `${900 + i * 120}ms` }} />
       ))}
     </svg>
-    <span className="hf-atlas__level">{toRoman(level)}</span>
+    <span className="hf-atlas__level">{age !== undefined ? `${age} лет` : toRoman(level)}</span>
     <svg className="hf-atlas__rose" width="46" height="46" viewBox="-23 -23 46 46" fill="none" stroke="currentColor">
       <circle r="16" strokeWidth="0.6" />
       <path d={starPath(0, 0, 21, 3.4, 4)} fill="currentColor" stroke="none" />

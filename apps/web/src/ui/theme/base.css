@@ -1454,6 +1454,26 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 
 /* ------------------------------------------------------------------ Tags */
 /* A quiet label for a category (action type, school, rarity), tinted by its tone. */
+/* The rulebook hung under the focused hero card. Settings dress it (see settings/*.css). */
+.ui-rulebook-plate {
+  position: absolute;
+  left: 50%;
+  bottom: -3.1rem;
+  z-index: 3;
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+  animation: ui-plate-in 0.35s ease-out both;
+}
+@keyframes ui-plate-in {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.ui-rulebook-plate .ui-rulebook {
+  font-size: 12px;
+  padding: 0.45rem 1rem;
+}
+
 /* The rulebook on a hero's card: the setting's tag, set like a title. */
 .ui-rulebook {
   font-family: var(--font-display);

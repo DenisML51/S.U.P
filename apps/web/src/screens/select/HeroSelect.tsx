@@ -23,7 +23,7 @@ import { Wordmark } from './Wordmark';
 import { SyncBadge } from './SyncBadge';
 import { useHasSoloDraft } from '../create/useDraftState';
 import { readLastHero as readLast, rememberLastHero as rememberLast } from '../home/lastHero';
-import { HeroVitals, heroRank } from '../home/homeParts';
+import { HeroVitals, RulebookPlate } from '../home/homeParts';
 
 /** Index of the "new hero" slot that ends the row. */
 type Slot = { kind: 'hero'; hero: CharacterPreview } | { kind: 'new' };
@@ -299,7 +299,8 @@ const HeroCard: React.FC<{ hero: CharacterPreview; focused: boolean; onClick: ()
   const { HeroReadout } = SETTING_ART[setting];
   return (
     <SettingScope setting={setting} className="ui-hero-card relative h-full" data-focused={focused || undefined}>
-      {HeroReadout && <HeroReadout id={hero.id} level={heroRank(hero).value} hp={hero.currentHP} maxHp={hero.maxHP} />}
+      {focused && <RulebookPlate hero={hero} />}
+      {HeroReadout && <HeroReadout id={hero.id} level={hero.level} age={hero.investigator?.age} hp={hero.currentHP} maxHp={hero.maxHP} />}
       <Panel
         as="button"
         interactive
@@ -318,7 +319,7 @@ const HeroCard: React.FC<{ hero: CharacterPreview; focused: boolean; onClick: ()
           {focused && (
             <div className="text-sm text-ink-muted">{[origin.race, origin.calling].filter(Boolean).join(' · ')}</div>
           )}
-          <HeroVitals hero={hero} className={cx('pt-1', !focused && 'hidden')} meterClassName="flex-1" />
+          <HeroVitals hero={hero} className={cx('pt-1', !focused && 'hidden')} meterClassName="flex-1" rulebook={false} />
         </div>
       </Panel>
     </SettingScope>

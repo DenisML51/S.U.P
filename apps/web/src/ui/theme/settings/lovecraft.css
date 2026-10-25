@@ -917,3 +917,60 @@ html[data-setting='lovecraft'] body::before,
   80% { transform: translate(-1px, 0); }
   100% { transform: none; }
 }
+
+/* The rulebook on a hero's card: a railway ticket — a stub with a perforated edge, typed, punched. */
+[data-setting='lovecraft'] .ui-rulebook {
+  position: relative;
+  padding: 0.32rem 0.75rem 0.3rem 1.15rem;
+  font-family: var(--font-typed);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: rgb(var(--c-paper-ink));
+  background:
+    radial-gradient(circle at 0.45rem 50%, rgb(var(--c-bg)) 0 2.5px, transparent 3px),
+    linear-gradient(90deg, rgb(var(--c-paper)) 0 0.82rem, transparent 0.82rem 0.9rem, rgb(var(--c-paper)) 0.9rem),
+    var(--foxing);
+  background-color: rgb(var(--c-paper));
+  border: 0;
+  border-radius: 0;
+  -webkit-mask: radial-gradient(circle at 0 50%, transparent 4px, black 4.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 4px, black 4.5px) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle at 0 50%, transparent 4px, black 4.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 4px, black 4.5px) right / 51% 100% no-repeat;
+  box-shadow: inset 0 0 0 1px rgb(var(--c-paper-muted) / 0.5);
+}
+/* Under the hero card it is a brass plaque on two screws, the name engraved, like a museum label. */
+[data-setting='lovecraft'] .ui-rulebook-plate .ui-rulebook {
+  padding: 0.5rem 2rem 0.45rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.24em;
+  /* Engraved: dark letters cut into polished brass, lit from above. */
+  color: rgb(34 22 8);
+  text-shadow: 0 1px 0 rgb(255 244 210 / 0.7);
+  background:
+    radial-gradient(circle at 0.8rem 50%, rgb(60 46 26) 0 2px, rgb(236 214 160) 2.5px, rgb(110 88 52) 3.5px, transparent 4px),
+    radial-gradient(circle at calc(100% - 0.8rem) 50%, rgb(60 46 26) 0 2px, rgb(236 214 160) 2.5px, rgb(110 88 52) 3.5px, transparent 4px),
+    linear-gradient(180deg, rgb(232 210 152), rgb(196 166 104) 48%, rgb(160 128 74));
+  -webkit-mask: none;
+  mask: none;
+  clip-path: var(--deco-shape);
+  box-shadow:
+    inset 0 1px 0 rgb(255 246 214 / 0.8),
+    inset 0 -1px 0 rgb(70 50 24 / 0.7),
+    0 8px 16px -8px rgb(0 0 0 / 0.9);
+}
+[data-setting='lovecraft'] .ui-rulebook-plate .ui-rulebook::before {
+  display: none;
+}
+
+/* The tear line between the stub and the ticket. */
+[data-setting='lovecraft'] .ui-rulebook::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0.86rem;
+  border-left: 1px dashed rgb(var(--c-paper-muted));
+}

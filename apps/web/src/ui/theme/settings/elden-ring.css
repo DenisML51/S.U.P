@@ -1046,3 +1046,30 @@
   25%, 70% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* The rulebook on a hero's card: a thin plate of tarnished gold, a lozenge at each end like a rune bar. */
+[data-setting='elden-ring'] .ui-rulebook {
+  position: relative;
+  padding: 0.32rem 1.25rem;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: rgb(var(--c-frame-bright));
+  background: linear-gradient(180deg, rgb(var(--c-surface-2) / 0.85), rgb(var(--c-bg) / 0.85));
+  border: 0;
+  border-radius: 0;
+  border-block: 1px solid rgb(var(--c-frame) / 0.85);
+}
+[data-setting='elden-ring'] .ui-rulebook::before,
+[data-setting='elden-ring'] .ui-rulebook::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  background: rgb(var(--c-frame-bright));
+  transform: rotate(45deg);
+  box-shadow: 0 0 6px rgb(var(--c-accent) / 0.5);
+}
+[data-setting='elden-ring'] .ui-rulebook::before { left: 0.45rem; }
+[data-setting='elden-ring'] .ui-rulebook::after { right: 0.45rem; }
