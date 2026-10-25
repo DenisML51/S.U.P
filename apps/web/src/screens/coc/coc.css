@@ -508,8 +508,8 @@
 }
 
 /* ================================================================== madness
- * The veil: two tiles of veined noise (rendered once as images) masked to the borders, drifting and
- * crossfading; a heartbeat of darkness in the corners; shadows slipping past the edge of vision; at
+ * The veil: two images of veined noise (rendered once) masked to the borders, breathing and
+ * crossfading — only their opacity moves; a heartbeat of darkness in the corners; shadows slipping past the edge of vision; at
  * the worst a red/cyan split of the edges and a slow sway of the page (`.coc-sway`).
  */
 
@@ -517,9 +517,8 @@
   --veil: var(--c-danger);
   /* Every layer of the veil is cut by the same ellipse, so their edges never stack into rings. */
   --veil-shape: ellipse 72% 66% at 50% 50%;
-  --veil-strength: 0.75;
+  --veil-strength: 0.55;
   --beat: 1.25s;
-  --tunnel: 2.5px;
   position: fixed;
   inset: 0;
   z-index: 35;
@@ -527,38 +526,31 @@
   overflow: hidden;
 }
 .coc-veil[data-stage='1'] {
-  --veil-strength: 0.45;
+  --veil-strength: 0.35;
   --beat: 2.4s;
 }
 .coc-veil[data-stage='3'] {
-  --veil-strength: 1;
-  --beat: 0.85s;
-  --tunnel: 5px;
+  --veil-strength: 0.72;
+  --beat: 0.9s;
 }
 
 .coc-veil__noise {
   position: absolute;
-  inset: -6%;
-  /* Veins in the setting's colour: the noise cuts the colour, the ellipse keeps it to the borders. */
+  inset: 0;
+  /* Veins in the setting's colour, cut by one image that holds both the noise and the fall-off to a
+     clear centre. One mask, no tiles, no compositing of masks: those show seams on the GPU. */
   background: rgb(var(--veil));
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(var(--veil-shape), transparent 62%, black 100%);
-  -webkit-mask-size: 900px 900px, 100% 100%;
-  -webkit-mask-composite: source-in;
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(var(--veil-shape), transparent 62%, black 100%);
-  mask-size: 900px 900px, 100% 100%;
-  mask-composite: intersect;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000' viewBox='0 0 1600 1000' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.62' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000' viewBox='0 0 1600 1000' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.62' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
   opacity: var(--veil-strength);
-  animation: coc-veil-drift 18s ease-in-out infinite alternate;
+  will-change: opacity;
+  animation: coc-veil-breathe 9s ease-in-out infinite alternate;
 }
 .coc-veil__noise--b {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='800'%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 1.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(var(--veil-shape), transparent 66%, black 100%);
-  -webkit-mask-size: 800px 800px, 100% 100%;
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='800'%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 1.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"), radial-gradient(var(--veil-shape), transparent 66%, black 100%);
-  mask-size: 800px 800px, 100% 100%;
-  filter: brightness(0.55);
-  animation:
-    coc-veil-drift-b 23s ease-in-out infinite alternate,
-    coc-veil-cross 7s ease-in-out infinite alternate;
+  background: rgb(var(--veil) / 0.6);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.68' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.68' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  animation: coc-veil-cross 7s ease-in-out infinite alternate;
 }
 
 /* A heartbeat: two quick throbs of the dark at the borders, then a rest. */
@@ -568,33 +560,36 @@
   /* Grain over the gradient dithers it: a dark gradient fading in and out bands into blocks otherwise. */
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='d' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E"),
-    radial-gradient(var(--veil-shape), transparent 58%, rgb(var(--veil) / 0.3) 84%, rgb(0 0 0 / 0.92) 100%);
+    radial-gradient(var(--veil-shape), transparent 62%, rgb(var(--veil) / 0.22) 86%, rgb(0 0 0 / 0.7) 100%);
   background-size: 256px 256px, 100% 100%;
   opacity: var(--veil-strength);
   will-change: opacity;
   animation: coc-heartbeat var(--beat) ease-out infinite;
 }
 
-/* Tunnel vision: the edges blur and drain of colour (a panic attack), harder in lasting madness. */
+/* Tunnel vision: the edges drain of colour (a panic attack); in lasting madness they take the
+   veil's hue. Blend modes, not backdrop-filter: a blurred backdrop over a swaying page is redrawn in
+   GPU tiles whose seams show. */
 .coc-veil__tunnel {
   position: absolute;
   inset: 0;
-  -webkit-backdrop-filter: blur(var(--tunnel, 0px)) saturate(0.55);
-  backdrop-filter: blur(var(--tunnel, 0px)) saturate(0.55);
-  -webkit-mask-image: radial-gradient(var(--veil-shape), transparent 56%, black 92%);
-  mask-image: radial-gradient(var(--veil-shape), transparent 56%, black 92%);
+  background: rgb(128 128 128);
+  mix-blend-mode: saturation;
+  -webkit-mask-image: radial-gradient(var(--veil-shape), transparent 60%, black 95%);
+  mask-image: radial-gradient(var(--veil-shape), transparent 60%, black 95%);
+  opacity: 0.7;
   animation: coc-tunnel var(--beat) ease-out infinite;
 }
 .coc-veil[data-stage='3'] .coc-veil__tunnel {
-  -webkit-backdrop-filter: blur(var(--tunnel)) saturate(0.4) hue-rotate(25deg) contrast(1.15);
-  backdrop-filter: blur(var(--tunnel)) saturate(0.4) hue-rotate(25deg) contrast(1.15);
+  background: rgb(var(--veil));
+  mix-blend-mode: hue;
 }
 
 /* Lasting madness: the dark falls for an instant, now and then. */
 .coc-veil__flicker {
   position: absolute;
   inset: 0;
-  background: rgb(0 0 0 / 0.85);
+  background: rgb(0 0 0 / 0.6);
   opacity: 0;
   animation: coc-flicker 7.3s linear infinite;
 }
@@ -605,8 +600,7 @@
   top: 20%;
   width: 22vw;
   height: 60vh;
-  background: radial-gradient(closest-side, rgb(0 0 0 / 0.75), transparent);
-  filter: blur(18px);
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0.3) 55%, transparent);
   opacity: 0;
 }
 .coc-veil__shade--l {
@@ -639,17 +633,13 @@
 .coc-veil[data-stage='3'] .coc-veil__shade--r { animation-duration: 9s; animation-delay: 2s; }
 .coc-veil[data-stage='3'] .coc-veil__split {
   box-shadow:
-    inset 12px 0 40px -10px rgb(255 40 60 / 0.7),
-    inset -12px 0 40px -10px rgb(40 220 255 / 0.65);
+    inset 8px 0 32px -10px rgb(255 40 60 / 0.5),
+    inset -8px 0 32px -10px rgb(40 220 255 / 0.45);
   animation: coc-split 0.45s steps(3, jump-none) infinite;
 }
-@keyframes coc-veil-drift {
-  from { transform: translate3d(-1.5%, -1%, 0) scale(1); }
-  to { transform: translate3d(1.5%, 1.2%, 0) scale(1.04); }
-}
-@keyframes coc-veil-drift-b {
-  from { transform: translate3d(1%, 1.5%, 0) scale(1.03) rotate(0.6deg); }
-  to { transform: translate3d(-1.2%, -1%, 0) scale(1) rotate(-0.6deg); }
+@keyframes coc-veil-breathe {
+  from { opacity: calc(var(--veil-strength) * 0.55); }
+  to { opacity: var(--veil-strength); }
 }
 @keyframes coc-veil-cross {
   from { opacity: calc(var(--veil-strength) * 0.15); }
@@ -663,8 +653,8 @@
   60%, 100% { opacity: calc(var(--veil-strength) * 0.45); }
 }
 @keyframes coc-tunnel {
-  0%, 60%, 100% { opacity: 0.65; }
-  10%, 32% { opacity: 1; }
+  0%, 60%, 100% { opacity: 0.45; }
+  10%, 32% { opacity: 0.75; }
 }
 @keyframes coc-flicker {
   0%, 93%, 100% { opacity: 0; }
@@ -684,8 +674,8 @@
   76% { opacity: 0; transform: translateX(-4vw); }
 }
 @keyframes coc-split {
-  0%, 100% { transform: translateX(0); opacity: 0.9; }
-  50% { transform: translateX(3px); opacity: 0.6; }
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.45; }
 }
 @keyframes coc-sway {
   0%, 100% { transform: rotate(0deg) translateY(0) scale(1); }
@@ -711,10 +701,6 @@
 /* Glitch worlds: the veil tears in scanlines instead of veins. */
 [data-setting='sci-fi'] .coc-veil__noise--b,
 [data-setting='cyberpunk'] .coc-veil__noise--b {
-  -webkit-mask-image: repeating-linear-gradient(0deg, black 0 2px, transparent 2px 5px), radial-gradient(var(--veil-shape), transparent 66%, black 100%);
-  -webkit-mask-size: auto, 100% 100%;
-  mask-image: repeating-linear-gradient(0deg, black 0 2px, transparent 2px 5px), radial-gradient(var(--veil-shape), transparent 66%, black 100%);
-  mask-size: auto, 100% 100%;
-  filter: none;
+  background: repeating-linear-gradient(0deg, rgb(var(--veil) / 0.7) 0 2px, transparent 2px 5px);
   animation: coc-veil-cross 0.9s steps(3, jump-none) infinite alternate;
 }
