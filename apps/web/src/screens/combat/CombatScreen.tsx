@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { initiativeModifier, resetTurn } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { useParty, usePartyOfCharacter } from '../../store/usePartyStore';
+import { useTableOfCharacter } from '../../store/usePartyStore';
 import { useNavStore } from '../../store/useNavStore';
 import { useSessionStore } from '../../store/useSessionStore';
 import { CombatChat } from '../party/CombatChat';
@@ -87,7 +87,8 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
   const [combat, setCombat] = useCombatState(character.id);
   const userId = useSessionStore((s) => s.user?.id);
   // A hero at a party's table fights the party's fight: the master starts it and the turns are shared.
-  const party = useParty(usePartyOfCharacter(character.id)?.id);
+  // Between sessions the hero fights on their own, as if they had no party.
+  const { party } = useTableOfCharacter(character.id);
   const partyFight = party?.combat ?? null;
   const partyInitiative = partyFight?.combatants.find(
     (c) =>
@@ -282,10 +283,7 @@ export const CombatScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenS
   const character = useCharacterStore((s) => s.character);
   // While the party's table is open (a session or a fight running) the fight is in the party's world,
   // whatever the hero's own setting; between sessions the hero is on their own, in their own world.
-  // The live view decides once it has come; until then the list's word for it.
-  const listed = usePartyOfCharacter(character?.id);
-  const party = useParty(listed?.id);
-  const atTable = party ? party.sessionStartedAt !== null || party.combat !== null : !!(listed?.inSession || listed?.inCombat);
+  const { listed, atTable } = useTableOfCharacter(character?.id);
   const setting = listed && atTable ? listed.setting : settingOf(character);
   useDocumentSetting(setting);
 
