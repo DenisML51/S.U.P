@@ -75,6 +75,7 @@ export async function buildApp(
   services = createServices(config, database),
 ) {
   const { db } = database;
+  const trustedHops = config.TRUST_PROXY;
   const app = Fastify({
     logger:
       config.LOG_LEVEL === 'silent'
@@ -84,14 +85,20 @@ export async function buildApp(
             redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
           },
     bodyLimit: BODY_LIMIT_BYTES,
-    trustProxy: config.TRUST_PROXY,
+    // A hop count trusts that many proxies next to the API, whatever their address.
+    trustProxy: typeof trustedHops === 'number' ? (_address: string, hop: number) => hop < trustedHops : trustedHops,
   }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   registerErrorHandler(app);
 
-  await app.register(helmet, { contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'same-site' } });
+  // The API answers with JSON and images only: nothing it sends may run or be framed. The page's own
+  // policy is set by the web container's nginx.
+  await app.register(helmet, {
+    contentSecurityPolicy: { useDefaults: false, directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } },
+    crossOriginResourcePolicy: { policy: 'same-site' },
+  });
   await app.register(cookie);
   if (config.RATE_LIMIT_ENABLED) {
     await app.register(rateLimit, { global: true, max: 600, timeWindow: '1 minute' });

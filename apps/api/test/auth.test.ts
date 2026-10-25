@@ -237,3 +237,36 @@ describe('rate limiting', () => {
     expect(statuses[10]).toBe(429);
   });
 });
+
+describe('rate limiting behind the web proxy', () => {
+  // nginx appends the address it sees to whatever X-Forwarded-For the client sent.
+  const proxied = useTestApp({ RATE_LIMIT_ENABLED: 'true', TRUST_PROXY: '1' });
+
+  it('keys on the address the proxy saw, not on one the client made up', async () => {
+    const app = await proxied.app();
+    const attempt = (i: number) =>
+      app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        headers: { 'x-forwarded-for': `203.0.113.${i}, 198.51.100.7` },
+        payload: { email: 'x@example.com', password: 'whatever-1' },
+      });
+
+    const statuses: number[] = [];
+    for (let i = 0; i < 11; i++) statuses.push((await attempt(i)).statusCode);
+
+    expect(statuses[10]).toBe(429);
+  });
+});
+
+describe('security headers', () => {
+  const plain = useTestApp();
+
+  it('forbid anything the API sends from running or being framed', async () => {
+    const app = await plain.app();
+    const response = await app.inject({ method: 'GET', url: '/api/health' });
+
+    expect(response.headers['content-security-policy']).toBe("default-src 'none';frame-ancestors 'none'");
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+  });
+});
