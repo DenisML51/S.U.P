@@ -27,7 +27,7 @@ import {
   weaponAttack,
   weaponDef,
 } from '@itd/game-logic/coc';
-import { maxSanityOf, rollDie } from '@itd/game-logic';
+import { createEntityId, maxSanityOf, rollDie } from '@itd/game-logic';
 import type { Character, CocSheet } from '@itd/schema';
 import { Ledger, LedgerRow, MetaLine, MetaValue } from '../../ui/Ledger';
 import { Button, Input, Meter, Panel, SectionTitle, Tag } from '../../ui/primitives';
@@ -256,11 +256,11 @@ export const SanitySection: React.FC = () => {
     if (entry.id.includes('phobia')) {
       const phobia = pick(PHOBIAS);
       text += ` — ${phobia.name}`;
-      edit = addMadness({ name: phobia.name, kind: 'phobia', description: phobia.description });
+      edit = addMadness({ id: createEntityId('madness'), name: phobia.name, kind: 'phobia', description: phobia.description });
     } else if (entry.id.includes('mania')) {
       const mania = pick(MANIAS);
       text += ` — ${mania.name}`;
-      edit = addMadness({ name: mania.name, kind: 'mania', description: mania.description });
+      edit = addMadness({ id: createEntityId('madness'), name: mania.name, kind: 'mania', description: mania.description });
     }
     setBout(text);
     update(edit, { message: `Приступ безумия: ${text}`, type: 'sanity' });
@@ -496,7 +496,7 @@ export const GearSection: React.FC = () => {
           open={adding}
           onClose={() => setAdding(false)}
           onAdd={(item) =>
-            update(addItem(item.name, item.quantity, item.description), {
+            update(addItem({ ...item, id: createEntityId('item') }), {
               message: `Взято: ${item.name}`,
               type: 'inventory',
             })

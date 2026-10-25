@@ -129,7 +129,7 @@ const MadnessControls: React.FC<{ reset: () => void }> = ({ reset }) => {
         size="sm"
         onClick={() =>
           update((doc) =>
-            addMadness({ name: 'Никтофобия', kind: 'phobia', description: 'Боязнь темноты.' })(
+            addMadness({ id: 'madness-nyctophobia', name: 'Никтофобия', kind: 'phobia', description: 'Боязнь темноты.' })(
               loseSanity(20).edit({ ...clear(doc), coc: { ...doc.coc!, sanityAtDayStart: doc.sanity } }),
             ),
           )

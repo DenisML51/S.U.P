@@ -6,6 +6,16 @@ import {
   OCCUPATIONS,
   TALENTS,
   WEAPONS,
+  absorbArmor,
+  addMadness,
+  applyDevelopment,
+  applyHitDamage,
+  applyWeeklyRecovery,
+  firearmModifiers,
+  firearmRangeOf,
+  recoverLuck,
+  rollLuckRecovery,
+  weeklyRecovery,
   afterIntRoll,
   afterSkillRoll,
   ageRules,
@@ -404,8 +414,11 @@ describe('Call of Cthulhu spells and gear', () => {
   });
 
   it('keeps count of things carried', () => {
-    const doc = addItem('Фонарь', 1)(investigator());
+    const add = addItem({ id: 'item-lamp', name: 'Фонарь', quantity: 1 });
+    const doc = add(investigator());
     const item = doc.inventory.at(-1)!;
+    expect(item.id).toBe('item-lamp');
+    expect(add(doc)).toBe(doc);
     expect(changeItemCount(item.id, 2)(doc).inventory.at(-1)?.quantity).toBe(3);
   });
 });
@@ -439,9 +452,203 @@ describe('Call of Cthulhu combat rules', () => {
     const { manoeuvreChance, meleeModifiers, initiativeOf } = await import('../src/coc');
     expect(manoeuvreChance(0, 0)).toMatchObject({ possible: true, penalty: 0 });
     expect(manoeuvreChance(0, 1)).toMatchObject({ possible: true, penalty: 1 });
-    expect(manoeuvreChance(0, 2)).toMatchObject({ possible: true, difficulty: 'hard' });
+    expect(manoeuvreChance(0, 2)).toMatchObject({ possible: true, difficulty: 'regular', penalty: 2 });
+    expect(manoeuvreChance(2, 1)).toMatchObject({ possible: true, penalty: 0 });
+    expect(manoeuvreChance(-1, 1)).toMatchObject({ possible: true, penalty: 2 });
+    expect(manoeuvreChance(-2, 1).possible).toBe(false);
     expect(manoeuvreChance(0, 3).possible).toBe(false);
     expect(meleeModifiers({ defenderReactedThisRound: 1 }).bonus).toBe(1);
     expect(initiativeOf(60, true)).toBe(110);
+  });
+});
+
+describe('Call of Cthulhu rules by the book', () => {
+  /** A d100 as the random source: the units die, then the tens die. */
+  const percentile = (total: number) => {
+    const units = total % 10;
+    const tens = total === 100 ? 0 : Math.floor(total / 10);
+    return [face(units + 1, 10), face(tens + 1, 10)];
+  };
+  const ticked = (values: Record<string, number>, sanity = 70) => {
+    const doc = investigator();
+    const known = new Set(doc.coc!.skills.map((s) => s.id));
+    const skills = [
+      ...doc.coc!.skills,
+      ...Object.keys(values)
+        .filter((id) => !known.has(id))
+        .map((id) => ({ id, value: 0, check: false })),
+    ];
+    return {
+      ...doc,
+      sanity,
+      coc: {
+        ...doc.coc!,
+        skills: skills.map((s) => (s.id in values ? { ...s, value: values[s.id], check: true } : s)),
+      },
+    };
+  };
+
+  it('counts a fumble by the number needed after the difficulty', () => {
+    expect(successLevel(97, 60)).toBe('failure');
+    expect(successLevel(97, 60, 30)).toBe('fumble');
+    const hard = checkSkill(60, { difficulty: 'hard' }, sequence(...percentile(97)));
+    expect(hard).toMatchObject({ total: 97, level: 'fumble', success: false });
+    expect(checkSkill(60, {}, sequence(...percentile(97))).level).toBe('failure');
+    expect(checkSkill(80, { difficulty: 'extreme' }, sequence(...percentile(96))).level).toBe('fumble');
+    expect(checkSkill(80, { difficulty: 'hard' }, sequence(...percentile(96))).level).toBe('fumble');
+    expect(checkSkill(100, { difficulty: 'hard' }, sequence(...percentile(96)))).toMatchObject({
+      level: 'regular',
+      success: false,
+    });
+    // Levels still come from the full value.
+    expect(checkSkill(60, { difficulty: 'hard' }, sequence(...percentile(12))).level).toBe('extreme');
+  });
+
+  it('steps the damage bonus and build at the table boundaries', () => {
+    expect(damageBonusOf(204)).toEqual({ damageBonus: '+1d6', build: 2 });
+    expect(damageBonusOf(205)).toEqual({ damageBonus: '+2d6', build: 3 });
+    expect(damageBonusOf(284)).toEqual({ damageBonus: '+2d6', build: 3 });
+    expect(damageBonusOf(285)).toEqual({ damageBonus: '+3d6', build: 4 });
+    expect(damageBonusOf(444)).toEqual({ damageBonus: '+4d6', build: 5 });
+    expect(damageBonusOf(445)).toEqual({ damageBonus: '+5d6', build: 6 });
+    expect(damageBonusOf(524)).toEqual({ damageBonus: '+5d6', build: 6 });
+    expect(damageBonusOf(525)).toEqual({ damageBonus: '+6d6', build: 7 });
+  });
+
+  it('moves at 8 when only one of DEX and STR beats SIZ', () => {
+    expect(moveRate({ ...harvey, str: 40, dex: 70, siz: 65 })).toBe(8);
+    expect(moveRate({ ...harvey, str: 70, dex: 40, siz: 65 })).toBe(8);
+    expect(moveRate({ ...harvey, str: 65, dex: 65, siz: 65 })).toBe(8);
+  });
+
+  it('prices the extremes and the modern day', () => {
+    expect(wealthOf(30, 'modern')).toMatchObject({ cash: 1200, assets: 30_000, spendingLevel: 200 });
+    expect(wealthOf(0, '1920s')).toMatchObject({ label: 'Нищий', cash: 0.5, assets: 0 });
+    expect(wealthOf(0, 'modern').cash).toBe(10);
+    expect(wealthOf(99, '1920s')).toMatchObject({ label: 'Сверхбогатый', cash: 50_000 });
+  });
+
+  it('develops a skill on 96+ even above 95, and skips skills that never improve', () => {
+    const doc = ticked({ 'library-use': 97, 'credit-rating': 30, 'cthulhu-mythos': 4 });
+    const { character, rolls } = developSkills(doc, sequence(face(97, 100), face(3, 10)));
+    expect(rolls).toEqual([{ id: 'library-use', roll: 97, gain: 3, sanityGain: 0 }]);
+    const skill = (id: string) => character.coc!.skills.find((s) => s.id === id)!;
+    expect(skill('library-use')).toMatchObject({ value: 100, check: false });
+    expect(skill('credit-rating')).toMatchObject({ value: 30, check: false });
+    expect(skill('cthulhu-mythos')).toMatchObject({ value: 4, check: false });
+  });
+
+  it('steadies the mind at 90, never above 99 less Mythos', () => {
+    const doc = ticked({ 'library-use': 85 }, 90);
+    const { character, rolls } = developSkills(doc, sequence(face(90, 100), face(6, 10), face(6, 6)));
+    expect(rolls).toEqual([{ id: 'library-use', roll: 90, gain: 6, sanityGain: 12 }]);
+    expect(character.sanity).toBe(95);
+    expect(applyDevelopment(rolls)({ ...doc, sanity: 50 }).sanity).toBe(62);
+  });
+
+  it('applies development rolls the same way every time', () => {
+    const doc = ticked({ 'library-use': 70, listen: 20 });
+    const rolls = [
+      { id: 'library-use', roll: 90, gain: 6, sanityGain: 0 },
+      { id: 'listen', roll: 10, gain: 0, sanityGain: 0 },
+    ];
+    const once = applyDevelopment(rolls)(doc);
+    expect(applyDevelopment(rolls)(doc)).toEqual(once);
+    expect(once.coc!.skills.find((s) => s.id === 'library-use')).toMatchObject({ value: 76, check: false });
+    expect(once.coc!.skills.some((s) => s.check)).toBe(false);
+  });
+
+  it('recovers luck on a roll over it, up to the starting luck for Pulp heroes', () => {
+    const doc = investigator();
+    expect(rollLuckRecovery(doc, sequence(face(80, 100), face(7, 10)))).toEqual({ roll: 80, gain: 7, die: 7 });
+    expect(rollLuckRecovery(doc, sequence(face(30, 100)))).toEqual({ roll: 30, gain: 0 });
+    const pulp = investigator({ variant: 'pulp' });
+    const capped = { ...pulp, coc: { ...pulp.coc!, startingLuck: 60 } };
+    expect(rollLuckRecovery(capped, sequence(face(80, 100), face(7, 10))).gain).toBe(5);
+    expect(recoverLuck(7)(doc).coc!.luck).toBe(62);
+    expect(recoverLuck(50)(doc).coc!.luck).toBe(99);
+  });
+
+  it('gives a shotgun the damage of its range band', () => {
+    const low = () => 0;
+    const shotgun = { damage: '4d6/2d6/1d6' };
+    expect(weaponDamage(shotgun, '0', 'regular', low).total).toBe(4);
+    expect(weaponDamage(shotgun, '0', 'regular', low, 1).total).toBe(2);
+    expect(weaponDamageDetailed(shotgun, '0', 'extreme', low, 2)).toMatchObject({ total: 6, formula: '1d6' });
+    expect(weaponDamage(shotgun, '0', 'regular', low, 7).total).toBe(1);
+    expect(firearmRangeOf(8, '10/20/50 ярд.')).toEqual({ range: 'base', band: 0, bands: 3 });
+    expect(firearmRangeOf(15, '10/20/50 ярд.')).toEqual({ range: 'long', band: 1, bands: 3 });
+    expect(firearmRangeOf(51, '10/20/50 ярд.')?.range).toBe('beyond');
+    expect(firearmModifiers({ range: 'long', bands: 3 })).toMatchObject({ difficulty: 'regular', band: 1 });
+    expect(firearmModifiers({ range: 'veryLong', bands: 2 })).toMatchObject({ difficulty: 'regular', band: 1 });
+  });
+
+  it('makes a shot hard to twice the range, extreme to four times, impossible beyond', () => {
+    expect(firearmRangeOf(15, '15 ярд.')?.range).toBe('base');
+    expect(firearmRangeOf(30, '15 ярд.')?.range).toBe('long');
+    expect(firearmRangeOf(60, '15 ярд.')?.range).toBe('veryLong');
+    expect(firearmRangeOf(61, '15 ярд.')?.range).toBe('beyond');
+    expect(firearmRangeOf(1, 'касание')).toBeUndefined();
+    expect(firearmRangeOf(1, 'СИЛ/5 ярд.')).toBeUndefined();
+    expect(firearmModifiers({ range: 'beyond' })).toMatchObject({ impossible: true, difficulty: 'regular' });
+    expect(firearmModifiers({ range: 'base' }).impossible).toBeUndefined();
+  });
+
+  it('takes armour off every blow before the wound is judged', () => {
+    expect(absorbArmor(5, 2)).toBe(3);
+    expect(absorbArmor(1, 3)).toBe(0);
+    expect(absorbArmor(4)).toBe(4);
+    const doc = investigator();
+    expect(applyDamage(8, 2)(doc)).toMatchObject({ currentHP: 6, conditions: ['major-wound'] });
+    expect(applyDamage(7, 2)(doc)).toMatchObject({ currentHP: 7, conditions: [] });
+    const armoured = { ...doc, coc: { ...doc.coc!, armor: 2 } };
+    expect(applyHitDamage(7)(armoured).currentHP).toBe(7);
+    expect(applyHitDamage(7)(doc).currentHP).toBe(5);
+  });
+
+  it('brings a bout of madness when an insane investigator loses more', () => {
+    const doc = { ...investigator(), sanity: 60 };
+    expect(loseSanity(1).outcome(doc).boutTriggered).toBe(false);
+    const insane = { ...doc, conditions: ['temporary-insanity'] };
+    expect(loseSanity(1).outcome(insane).boutTriggered).toBe(true);
+    expect(loseSanity(0).outcome(insane).boutTriggered).toBe(false);
+    expect(sanityLoss({ ...doc, conditions: ['indefinite-insanity'] }, 2).boutTriggered).toBe(true);
+  });
+
+  it('heals a major wound by the week; an extreme CON roll erases it', () => {
+    const doc = { ...investigator(), currentHP: 4, conditions: ['major-wound'] };
+    const extreme = weeklyRecovery(doc, sequence(...percentile(5), face(3, 3), face(2, 3)));
+    expect(extreme).toMatchObject({ needed: true, gain: 5, dice: [3, 2], clearsMajorWound: true });
+    expect(applyWeeklyRecovery(extreme)(doc)).toMatchObject({ currentHP: 9, conditions: [] });
+    const regular = weeklyRecovery(doc, sequence(...percentile(40), face(2, 3)));
+    expect(regular).toMatchObject({ gain: 2, clearsMajorWound: false });
+    expect(applyWeeklyRecovery(regular)(doc)).toMatchObject({ currentHP: 6, conditions: ['major-wound'] });
+    expect(weeklyRecovery(doc, sequence(...percentile(80)))).toMatchObject({ gain: 0, dice: [] });
+    expect(weeklyRecovery(investigator()).needed).toBe(false);
+  });
+
+  it('charges the Powder of Ibn-Ghazi sanity for making, not for each pinch', () => {
+    expect(parseSpellCost('1 ПМ за щепотку; 1 рассудка за изготовление')).toEqual({
+      mp: 1,
+      variable: false,
+      sanity: undefined,
+      pow: 0,
+    });
+  });
+
+  it('needs a Hard POW roll the first time a spell is cast, paying either way', () => {
+    const doc = investigator();
+    const failed = castSpell(doc, '8 ПМ', undefined, sequence(...percentile(90)), { firstCast: true });
+    expect(failed).toMatchObject({ worked: false, powCheck: { difficulty: 'hard', success: false } });
+    expect(failed.edit(doc).coc!.magicPoints).toBe(6);
+    expect(castSpell(doc, '8 ПМ', undefined, sequence(...percentile(30)), { firstCast: true }).worked).toBe(true);
+    expect(castSpell(doc, '8 ПМ').powCheck).toBeUndefined();
+  });
+
+  it('writes down a madness with the id it is given, once', () => {
+    const add = addMadness({ id: 'madness-1', name: 'Никтофобия', kind: 'phobia', description: '' });
+    const once = add(investigator());
+    expect(once.coc!.madness.map((m) => m.id)).toEqual(['madness-1']);
+    expect(add(once).coc!.madness).toHaveLength(1);
   });
 });
