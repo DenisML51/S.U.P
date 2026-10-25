@@ -1,4 +1,4 @@
-import type { Setting } from '@itd/schema';
+import type { PartyRules, Setting } from '@itd/schema';
 import { create } from 'zustand';
 
 /**
@@ -16,6 +16,8 @@ export type Place =
 export interface Creation {
   world?: Setting;
   partyId?: string;
+  /** The table's rules: the hero is made by them, no other path is offered. */
+  rules?: PartyRules;
 }
 
 interface NavState {

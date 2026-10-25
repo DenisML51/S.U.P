@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import {
   abilityModifier,
   averageHitPoints,
+  rollDie,
+} from '@itd/game-logic';
+import {
   buildScores,
   describeGrant,
   featureNumbers,
   findClass,
   levelPlan,
-  rollDie,
   unfinishedChoices,
   type GrantedFeature,
   type SourceKind,
-} from '@itd/game-logic';
-import type { Build } from '@itd/schema';
+} from '@itd/game-logic/dnd';
+import type { DndBuild } from '@itd/schema';
 import type { IconKind } from '../../ui/GameIcon';
 import { Segmented } from '../../ui/forms';
 import { Button, cx } from '../../ui/primitives';
@@ -34,7 +36,7 @@ const inSources = (sources: SourceKind[] | undefined, key: string, source: Sourc
 };
 
 /** What still has to be decided on a level before it can be confirmed. */
-export function planIssues(build: Build, level: number, sources?: SourceKind[]): string[] {
+export function planIssues(build: DndBuild, level: number, sources?: SourceKind[]): string[] {
   const plan = levelPlan(build, level);
   const issues = unfinishedChoices(build, plan)
     .filter((open) => inSources(sources, open.key, open.owner.source))
@@ -47,7 +49,7 @@ export function planIssues(build: Build, level: number, sources?: SourceKind[]):
 }
 
 /** A gained feature as the card and details show it. */
-const featureEntry = (build: Build, { key, feature, level }: GrantedFeature): EntryInfo => ({
+const featureEntry = (build: DndBuild, { key, feature, level }: GrantedFeature): EntryInfo => ({
   id: key,
   name: feature.name,
   iconName: feature.iconName,
@@ -63,7 +65,7 @@ const featureEntry = (build: Build, { key, feature, level }: GrantedFeature): En
 const featureKind = ({ feature }: GrantedFeature): IconKind => (feature.action && feature.action !== 'passive' ? 'ability' : 'item');
 
 /** Hit points of a level: the fixed average or a roll of the hit die, as the player decides. */
-const HitPointsField: React.FC<{ build: Build; level: number; hitDie: number; onChange: (build: Build) => void }> = ({
+const HitPointsField: React.FC<{ build: DndBuild; level: number; hitDie: number; onChange: (build: DndBuild) => void }> = ({
   build,
   level,
   hitDie,
@@ -113,9 +115,9 @@ const HitPointsField: React.FC<{ build: Build; level: number; hitDie: number; on
  * make and the hit points. The same view serves creation (level by level) and level-up.
  */
 export const LevelPlanView: React.FC<{
-  build: Build;
+  build: DndBuild;
   level: number;
-  onChange: (build: Build) => void;
+  onChange: (build: DndBuild) => void;
   sources?: SourceKind[];
   className?: string;
 }> = ({ build, level, onChange, sources, className }) => {

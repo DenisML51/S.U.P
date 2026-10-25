@@ -35,8 +35,9 @@ services:
       REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
       # Secure cookies need HTTPS. Plain http://localhost works either way; set true behind TLS.
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      # The API is reachable only through the web container's proxy.
-      TRUST_PROXY: 'true'
+      # Proxies in front of the API: 1 is the web container's nginx. Put a TLS proxy in front of
+      # the stack and this becomes 2, or the rate limits will see every user as that proxy.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
     depends_on:
       postgres:
         condition: service_healthy

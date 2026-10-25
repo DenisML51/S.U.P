@@ -21,19 +21,34 @@ import { makeCharacter, sequence } from './helpers';
 
 describe('parseDiceFormula', () => {
   it.each([
-    ['2d6+3', [{ id: 'd6', sides: 6, count: 2, type: undefined }], 3],
-    ['d20', [{ id: 'd20', sides: 20, count: 1, type: undefined }], 0],
-    ['1d8 - 1', [{ id: 'd8', sides: 8, count: 1, type: undefined }], -1],
-    ['1к10 + 2', [{ id: 'd10', sides: 10, count: 1, type: undefined }], 2],
+    ['2d6+3', [{ id: 'd6', sides: 6, count: 2, sign: 1, type: undefined }], 3],
+    ['d20', [{ id: 'd20', sides: 20, count: 1, sign: 1, type: undefined }], 0],
+    ['1d8 - 1', [{ id: 'd8', sides: 8, count: 1, sign: 1, type: undefined }], -1],
+    ['1к10 + 2', [{ id: 'd10', sides: 10, count: 1, sign: 1, type: undefined }], 2],
     [
-      '1d6 рубящий + 1d4 огонь',
+      '1d20 - 1d4',
       [
-        { id: 'd6', sides: 6, count: 1, type: 'Рубящий' },
-        { id: 'd4', sides: 4, count: 1, type: 'Огонь' },
+        { id: 'd20', sides: 20, count: 1, sign: 1, type: undefined },
+        { id: 'd4', sides: 4, count: 1, sign: -1, type: undefined },
       ],
       0,
     ],
-    ['2d8 холод и 1d6 яд', [{ id: 'd8', sides: 8, count: 2, type: 'Холод' }, { id: 'd6', sides: 6, count: 1, type: 'Яд' }], 0],
+    [
+      '1d6 рубящий + 1d4 огонь',
+      [
+        { id: 'd6', sides: 6, count: 1, sign: 1, type: 'Рубящий' },
+        { id: 'd4', sides: 4, count: 1, sign: 1, type: 'Огонь' },
+      ],
+      0,
+    ],
+    [
+      '2d8 холод и 1d6 яд',
+      [
+        { id: 'd8', sides: 8, count: 2, sign: 1, type: 'Холод' },
+        { id: 'd6', sides: 6, count: 1, sign: 1, type: 'Яд' },
+      ],
+      0,
+    ],
     ['5', [], 5],
     ['мимо', [], 0],
   ])('%s', (formula, dice, bonus) => {
@@ -57,8 +72,28 @@ describe('rolling', () => {
     expect(result.total).toBe(8);
   });
 
+  it('doubles the dice of a critical hit but not the bonus', () => {
+    const result = rollFormula('2d6+3', () => 0, { critical: true });
+    expect(result.rolls).toHaveLength(4);
+    expect(result.bonus).toBe(3);
+    expect(result.total).toBe(7);
+  });
+
+  it('subtracts a subtracted dice group', () => {
+    // 1d20 → 11, 1d4 → 3 but subtracted: total 11 − 3.
+    const result = rollFormula('1d20 - 1d4', () => 0.5);
+    expect(result.rolls.map((r) => r.value)).toEqual([11, -3]);
+    expect(result.total).toBe(8);
+  });
+
   it('rolls initiative with Dexterity and the sheet bonus', () => {
     expect(rollInitiative(makeCharacter({ initiativeBonus: 1 }), () => 0.5)).toEqual({ roll: 11, mod: 3, bonus: 1, total: 15 });
+  });
+
+  it('adds Jack-of-All-Trades half-proficiency to the rolled initiative', () => {
+    expect(
+      rollInitiative(makeCharacter({ initiativeBonus: 1, halfProficiency: true, proficiencyBonus: 4 }), () => 0.5),
+    ).toEqual({ roll: 11, mod: 3, bonus: 3, total: 17 });
   });
 });
 

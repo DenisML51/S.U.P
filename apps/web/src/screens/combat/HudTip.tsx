@@ -50,7 +50,13 @@ export function useHudTip<T>() {
   return { tip, bind, hold, clear: () => setTip(null) };
 }
 
-/** The hint itself: a small plate in the setting's chrome, above its anchor, kept on screen. */
+/** What stands in the screen's upper half gets its hints and menus below it. */
+export const below = (rect: DOMRect) => rect.top < window.innerHeight / 2;
+
+/**
+ * The hint itself: a small plate in the setting's chrome, above its anchor (below it, for what
+ * stands in the screen's upper half), kept on screen.
+ */
 export const HudTip: React.FC<{
   rect: DOMRect | null;
   /** Changes when the hint describes something else, to replay the entrance. */
@@ -66,18 +72,22 @@ export const HudTip: React.FC<{
       {rect && (
         <motion.div
           key={tipKey}
-          // The bottom padding bridges the gap to the icon, so the cursor can travel onto the hint.
-          className={cx('fixed z-[60] pb-3', hold ? 'pointer-events-auto' : 'pointer-events-none')}
+          // The padding toward the icon bridges the gap, so the cursor can travel onto the hint.
+          className={cx(
+            'fixed z-[60]',
+            below(rect) ? 'pt-3' : 'pb-3',
+            hold ? 'pointer-events-auto' : 'pointer-events-none',
+          )}
           {...hold}
           style={{
             width,
-            bottom: window.innerHeight - rect.top,
+            ...(below(rect) ? { top: rect.bottom } : { bottom: window.innerHeight - rect.top }),
             left: Math.max(
               12,
               Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 12),
             ),
           }}
-          initial={{ opacity: 0, y: 6, scale: 0.98 }}
+          initial={{ opacity: 0, y: below(rect) ? -6 : 6, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.08 } }}
           transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}

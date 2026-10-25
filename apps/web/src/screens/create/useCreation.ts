@@ -10,23 +10,25 @@ import {
 } from '@itd/game-logic';
 import type { CharacterImages, Setting, Skill } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { clearDraft } from './useDraftState';
+import { useClearDraft, useDraftState } from './useDraftState';
 
 /**
  * A hero of one's own in the making (race, class and the rest typed by the player): every choice
- * of the creation screen and the rules that judge them.
+ * of the creation screen and the rules that judge them. The choices are kept as a draft until the
+ * hero is made; their keys stand apart from the D&D path's, which is drafted alongside.
  */
 export function useCreation(setting: Setting, onCreated: () => void) {
   const createCharacter = useCharacterStore((s) => s.createCharacter);
-  const [name, setName] = useState('');
-  const [race, setRace] = useState('');
-  const [subrace, setSubrace] = useState('');
-  const [characterClass, setCharacterClass] = useState('');
-  const [subclass, setSubclass] = useState('');
-  const [attributes, setAttributes] = useState<Record<string, number>>(startingAttributes);
-  const [skills, setSkills] = useState<Skill[]>(startingSkills);
-  const [savingThrows, setSavingThrows] = useState<string[]>([]);
-  const [images, setImages] = useState<CharacterImages>({});
+  const clearDraft = useClearDraft();
+  const [name, setName] = useDraftState('custom.name', '');
+  const [race, setRace] = useDraftState('custom.race', '');
+  const [subrace, setSubrace] = useDraftState('custom.subrace', '');
+  const [characterClass, setCharacterClass] = useDraftState('custom.class', '');
+  const [subclass, setSubclass] = useDraftState('custom.subclass', '');
+  const [attributes, setAttributes] = useDraftState<Record<string, number>>('custom.attributes', startingAttributes);
+  const [skills, setSkills] = useDraftState<Skill[]>('custom.skills', startingSkills);
+  const [savingThrows, setSavingThrows] = useDraftState<string[]>('custom.saves', []);
+  const [images, setImages] = useDraftState<CharacterImages>('custom.images', {});
   const [creating, setCreating] = useState(false);
 
   const points = pointsRemaining(attributes);

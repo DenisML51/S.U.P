@@ -63,6 +63,7 @@ describe('CharacterSchema', () => {
     expect(CharacterSchema.parse({ ...minimal, setting: 'sci-fi' }).setting).toBe('sci-fi');
     expect(CharacterSchema.parse({ ...minimal, setting: 'cyberpunk' }).setting).toBe('cyberpunk');
     expect(CharacterSchema.parse({ ...minimal, setting: 'lovecraft' }).setting).toBe('lovecraft');
+    expect(CharacterSchema.parse({ ...minimal, setting: 'elden-ring' }).setting).toBe('elden-ring');
     expect(CharacterSchema.parse(minimal).setting).toBeUndefined();
     expect(CharacterSchema.safeParse({ ...minimal, setting: 'steampunk' }).success).toBe(false);
   });
@@ -80,6 +81,14 @@ describe('CharacterSchema', () => {
     const id = 'a3bb189e-8bf9-4888-9912-ace4e6543002';
     expect(CharacterSchema.parse({ ...minimal, images: { portrait: id } }).images).toEqual({ portrait: id });
     expect(CharacterSchema.safeParse({ ...minimal, images: { full: 'not-an-id' } }).success).toBe(false);
+  });
+
+  it("reads an investigator's armour, absent on sheets saved before it", () => {
+    const coc = { characteristics: { str: 50 } };
+    expect(CharacterSchema.parse({ ...minimal, coc }).coc?.armor).toBeUndefined();
+    expect(CharacterSchema.parse({ ...minimal, coc: { ...coc, armor: '2' } }).coc?.armor).toBe(2);
+    expect(CharacterSchema.safeParse({ ...minimal, coc: { ...coc, armor: 21 } }).success).toBe(false);
+    expect(CharacterSchema.safeParse({ ...minimal, coc: { ...coc, armor: 1.5 } }).success).toBe(false);
   });
 
   it('rejects a numeric field that holds text', () => {

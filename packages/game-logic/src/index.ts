@@ -28,10 +28,5 @@ export * from './rules/spells';
 export * from './rules/summary';
 export * from './rules/upgrade';
 
-// D&D 2024 presets
-export * from './dnd/types';
-export * from './dnd/helpers';
-export * from './dnd/build';
-export { DND, DND_CLASSES } from './dnd/content';
-export { DND_ICONS } from './dnd/content/icons';
-export * from './dnd/creation';
+// Rules systems (D&D 2024 and those to come) load on demand: see `systems`, and `@itd/game-logic/dnd`
+export * from './systems';

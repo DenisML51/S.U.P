@@ -1,0 +1,201 @@
+import type { MadnessEntry } from '../types';
+
+/** Bout of madness in real time (1d10), when the investigator is with other players. Lasts 1d10 rounds. */
+export const BOUTS_REAL_TIME: MadnessEntry[] = [
+  {
+    id: 'amnesia',
+    name: 'Амнезия',
+    description:
+      'Сыщик не помнит ничего с момента, когда был в безопасности; не понимает, где он и что происходит.',
+  },
+  {
+    id: 'psychosomatic-disability',
+    name: 'Психосоматический недуг',
+    description: 'Внезапная слепота, глухота или отказ конечностей без телесной причины.',
+  },
+  {
+    id: 'violence',
+    name: 'Насилие',
+    description: 'Красная пелена: сыщик бросается на всех вокруг — врагов и друзей без разбора.',
+  },
+  {
+    id: 'paranoia',
+    name: 'Паранойя',
+    description: 'Все вокруг кажутся врагами и предателями; доверять нельзя никому.',
+  },
+  {
+    id: 'significant-person',
+    name: 'Значимый человек',
+    description:
+      'Сыщик принимает кого-то рядом за важного человека из своей предыстории и ведёт себя соответственно.',
+  },
+  {
+    id: 'faint',
+    name: 'Обморок',
+    description: 'Сыщик теряет сознание и приходит в себя через несколько раундов.',
+  },
+  {
+    id: 'flee-in-panic',
+    name: 'Паническое бегство',
+    description: 'Сыщик бежит прочь любым доступным путём, даже если для этого придётся бросить спутников.',
+  },
+  {
+    id: 'hysterics',
+    name: 'Истерика или эмоциональный взрыв',
+    description: 'Неудержимый смех, плач, крик — сыщик не способен ни на что иное.',
+  },
+  {
+    id: 'phobia',
+    name: 'Фобия',
+    description: 'Сыщик обретает новую фобию; источник страха мерещится ему прямо сейчас, даже если его нет.',
+  },
+  { id: 'mania', name: 'Мания', description: 'Сыщик обретает новую манию и тут же начинает ей потакать.' },
+];
+
+/** Bout of madness in summary (1d10), when the investigator is alone. Lasts 1d10 hours; he comes to elsewhere. */
+export const BOUTS_SUMMARY: MadnessEntry[] = [
+  {
+    id: 'amnesia',
+    name: 'Амнезия',
+    description:
+      'Сыщик приходит в себя в незнакомом месте, не помня, кто он; память возвращается постепенно.',
+  },
+  {
+    id: 'robbed',
+    name: 'Ограблен',
+    description:
+      'Сыщик очнулся невредимым, но обобранным: пропали ценные вещи (кроме тех, что хорошо спрятаны).',
+  },
+  {
+    id: 'battered',
+    name: 'Избит',
+    description: 'Сыщик очнулся избитым и в синяках; потеряна половина пунктов здоровья, вещи при нём.',
+  },
+  {
+    id: 'violence',
+    name: 'Насилие',
+    description: 'В припадке сыщик кого-то покалечил или что-то разрушил; помнит ли он это — решает ведущий.',
+  },
+  {
+    id: 'ideology',
+    name: 'Идеология и убеждения',
+    description: 'Сыщик яростно и безрассудно действует согласно одному из своих убеждений из предыстории.',
+  },
+  {
+    id: 'significant-people',
+    name: 'Значимые люди',
+    description: 'Сыщик искал близкого человека из предыстории и совершил ради него нечто безумное.',
+  },
+  {
+    id: 'institutionalized',
+    name: 'Помещён в лечебницу',
+    description:
+      'Сыщик очнулся в психиатрической больнице или полицейской камере, не помня, как там оказался.',
+  },
+  {
+    id: 'flee-in-panic',
+    name: 'Паническое бегство',
+    description: 'Сыщик приходит в себя далеко от того места — в другом районе, лесу или даже городе.',
+  },
+  {
+    id: 'phobia',
+    name: 'Фобия',
+    description: 'Сыщик обретает новую фобию и очнулся там, где пытался от неё укрыться.',
+  },
+  {
+    id: 'mania',
+    name: 'Мания',
+    description: 'Сыщик обретает новую манию и очнулся, потакая ей все эти часы.',
+  },
+];
+
+/** Phobias a bout of madness may give: an irrational fear of one thing. */
+export const PHOBIAS: MadnessEntry[] = [
+  { id: 'acrophobia', name: 'Акрофобия', description: 'Боязнь высоты.' },
+  { id: 'agoraphobia', name: 'Агорафобия', description: 'Боязнь открытых пространств и людных мест.' },
+  { id: 'ailurophobia', name: 'Айлурофобия', description: 'Боязнь кошек.' },
+  { id: 'arachnophobia', name: 'Арахнофобия', description: 'Боязнь пауков.' },
+  { id: 'astraphobia', name: 'Астрафобия', description: 'Боязнь грома и молнии.' },
+  { id: 'bacteriophobia', name: 'Бактериофобия', description: 'Боязнь микробов и заразы.' },
+  { id: 'batrachophobia', name: 'Батрахофобия', description: 'Боязнь лягушек и прочих земноводных.' },
+  { id: 'claustrophobia', name: 'Клаустрофобия', description: 'Боязнь тесных замкнутых помещений.' },
+  { id: 'cynophobia', name: 'Кинофобия', description: 'Боязнь собак.' },
+  { id: 'demonophobia', name: 'Демонофобия', description: 'Боязнь духов и демонов.' },
+  { id: 'entomophobia', name: 'Энтомофобия', description: 'Боязнь насекомых.' },
+  { id: 'hemophobia', name: 'Гемофобия', description: 'Боязнь крови.' },
+  { id: 'hydrophobia', name: 'Гидрофобия', description: 'Боязнь воды.' },
+  { id: 'ichthyophobia', name: 'Ихтиофобия', description: 'Боязнь рыб.' },
+  { id: 'monophobia', name: 'Монофобия', description: 'Боязнь одиночества.' },
+  {
+    id: 'necrophobia',
+    name: 'Некрофобия',
+    description: 'Боязнь мёртвых тел и всего, что связано со смертью.',
+  },
+  { id: 'nyctophobia', name: 'Никтофобия', description: 'Боязнь темноты и ночи.' },
+  { id: 'ophidiophobia', name: 'Офидиофобия', description: 'Боязнь змей.' },
+  { id: 'ornithophobia', name: 'Орнитофобия', description: 'Боязнь птиц.' },
+  { id: 'pyrophobia', name: 'Пирофобия', description: 'Боязнь огня.' },
+  { id: 'sciophobia', name: 'Сциофобия', description: 'Боязнь теней.' },
+  { id: 'selenophobia', name: 'Селенофобия', description: 'Боязнь луны.' },
+  { id: 'taphephobia', name: 'Тафефобия', description: 'Боязнь быть похороненным заживо.' },
+  { id: 'thalassophobia', name: 'Талассофобия', description: 'Боязнь моря и морских глубин.' },
+  { id: 'tomophobia', name: 'Томофобия', description: 'Боязнь хирургических операций.' },
+  { id: 'trypanophobia', name: 'Трипанофобия', description: 'Боязнь уколов и игл.' },
+  { id: 'xenophobia', name: 'Ксенофобия', description: 'Боязнь чужаков и иностранцев.' },
+  { id: 'zoophobia', name: 'Зоофобия', description: 'Боязнь животных.' },
+  { id: 'hypnophobia', name: 'Гипнофобия', description: 'Боязнь заснуть.' },
+  { id: 'eisoptrophobia', name: 'Эйсоптрофобия', description: 'Боязнь зеркал и собственного отражения.' },
+  { id: 'phasmophobia', name: 'Фасмофобия', description: 'Боязнь призраков.' },
+  { id: 'teratophobia', name: 'Тератофобия', description: 'Боязнь уродств и чудовищ.' },
+];
+
+/** Manias a bout of madness may give: a compulsion the investigator cannot resist. */
+export const MANIAS: MadnessEntry[] = [
+  { id: 'ablutomania', name: 'Аблютомания', description: 'Навязчивая страсть мыться.' },
+  { id: 'agromania', name: 'Агромания', description: 'Тяга к уединению на природе, в глуши.' },
+  { id: 'arithmomania', name: 'Арифмомания', description: 'Навязчивая страсть считать и пересчитывать.' },
+  { id: 'bibliomania', name: 'Библиомания', description: 'Одержимость книгами.' },
+  { id: 'cleptomania', name: 'Клептомания', description: 'Непреодолимое желание красть.' },
+  { id: 'dipsomania', name: 'Дипсомания', description: 'Неудержимая тяга к алкоголю.' },
+  { id: 'doramania', name: 'Дорамания', description: 'Одержимость мехами и шкурами.' },
+  { id: 'dromomania', name: 'Дромомания', description: 'Неудержимая тяга к бродяжничеству и путешествиям.' },
+  { id: 'egomania', name: 'Эгомания', description: 'Одержимость собой и своей значимостью.' },
+  { id: 'erotomania', name: 'Эротомания', description: 'Уверенность, что кто-то тайно влюблён в сыщика.' },
+  { id: 'gelotomania', name: 'Гелотомания', description: 'Навязчивый неуместный смех.' },
+  { id: 'graphomania', name: 'Графомания', description: 'Навязчивая страсть всё записывать.' },
+  { id: 'hedonomania', name: 'Гедономания', description: 'Неудержимая погоня за удовольствиями.' },
+  { id: 'hippomania', name: 'Гиппомания', description: 'Одержимость лошадьми.' },
+  { id: 'hydromania', name: 'Гидромания', description: 'Неутолимая тяга к воде.' },
+  { id: 'logomania', name: 'Логомания', description: 'Безудержная болтливость.' },
+  {
+    id: 'megalomania',
+    name: 'Мегаломания',
+    description: 'Мания величия: уверенность в своём могуществе и избранности.',
+  },
+  { id: 'monomania', name: 'Мономания', description: 'Одержимость одной мыслью или идеей.' },
+  { id: 'mythomania', name: 'Мифомания', description: 'Навязчивая склонность лгать и выдумывать.' },
+  { id: 'necromania', name: 'Некромания', description: 'Влечение к мёртвым и смерти.' },
+  { id: 'nosomania', name: 'Нозомания', description: 'Уверенность, что болен страшной болезнью.' },
+  { id: 'oniomania', name: 'Ониомания', description: 'Неудержимая страсть покупать.' },
+  {
+    id: 'onomatomania',
+    name: 'Ономатомания',
+    description: 'Навязчивая привязанность к одному слову или имени.',
+  },
+  { id: 'pyromania', name: 'Пиромания', description: 'Неудержимая тяга к поджогам.' },
+  { id: 'sitomania', name: 'Ситомания', description: 'Неудержимая тяга к еде.' },
+  { id: 'thanatomania', name: 'Танатомания', description: 'Уверенность, что проклят и скоро умрёт.' },
+  {
+    id: 'theomania',
+    name: 'Теомания',
+    description: 'Уверенность, что сам является божеством или его посланником.',
+  },
+  {
+    id: 'trichotillomania',
+    name: 'Трихотилломания',
+    description: 'Навязчивое выдёргивание собственных волос.',
+  },
+  { id: 'xenomania', name: 'Ксеномания', description: 'Одержимость всем чужеземным.' },
+  { id: 'zoomania', name: 'Зоомания', description: 'Безрассудная привязанность к животным.' },
+  { id: 'verbomania', name: 'Вербомания', description: 'Одержимость словами: их звучанием, смыслом, игрой.' },
+];

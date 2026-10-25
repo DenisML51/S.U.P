@@ -58,6 +58,7 @@ export const ProfileDialog: React.FC<{ open: boolean; onClose: () => void }> = (
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const [draft, setDraft] = useState(() => toDraft(character));
+  const investigator = character.build?.ruleset === 'coc7';
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const race = RACES.find((r) => r.id === idOf(RACES, draft.race));
   const characterClass = CLASSES.find((c) => c.id === idOf(CLASSES, draft.class));
@@ -101,8 +102,9 @@ export const ProfileDialog: React.FC<{ open: boolean; onClose: () => void }> = (
           </>
         }
       >
-        <div className="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-8">
-          <div className="grid grid-rows-[minmax(0,1fr)_auto] gap-4">
+        <div className="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-8 max-sm:grid-cols-1 max-sm:gap-5">
+          {/* On a phone the pictures stand side by side above the fields. */}
+          <div className="grid grid-rows-[minmax(0,1fr)_auto] gap-4 max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:grid-rows-1 max-sm:items-end">
             <ImageSlot
               label="Полный арт"
               kind="full"
@@ -127,71 +129,74 @@ export const ProfileDialog: React.FC<{ open: boolean; onClose: () => void }> = (
                 <Input {...props} value={draft.name} onChange={(e) => set({ name: e.target.value })} />
               )}
             </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Раса">
-                {({ id }) => (
-                  <Suggest
-                    id={id}
-                    value={draft.race}
-                    onChange={(v) => set({ race: v })}
-                    suggestions={RACES.map((r) => r.name)}
-                  />
-                )}
-              </Field>
-              <Field label="Подраса">
-                {({ id }) => (
-                  <Suggest
-                    id={id}
-                    value={draft.subrace}
-                    onChange={(v) => set({ subrace: v })}
-                    suggestions={race?.subraces?.map((s) => s.name) ?? []}
-                  />
-                )}
-              </Field>
-              <Field label="Класс">
-                {({ id }) => (
-                  <Suggest
-                    id={id}
-                    value={draft.class}
-                    onChange={(v) => set({ class: v })}
-                    suggestions={CLASSES.map((c) => c.name)}
-                  />
-                )}
-              </Field>
-              <Field label="Подкласс">
-                {({ id }) => (
-                  <Suggest
-                    id={id}
-                    value={draft.subclass}
-                    onChange={(v) => set({ subclass: v })}
-                    suggestions={characterClass?.subclasses.map((s) => s.name) ?? []}
-                  />
-                )}
-              </Field>
-              <Field label="Скорость, фт">
-                {({ id }) => (
-                  <NumberField
-                    id={id}
-                    min={0}
-                    step={5}
-                    value={draft.speed}
-                    onChange={(speed) => set({ speed })}
-                    className="w-full"
-                  />
-                )}
-              </Field>
-              <Field label="Бонус к инициативе">
-                {({ id }) => (
-                  <NumberField
-                    id={id}
-                    signed
-                    value={draft.initiativeBonus}
-                    onChange={(initiativeBonus) => set({ initiativeBonus })}
-                    className="w-full"
-                  />
-                )}
-              </Field>
-            </div>
+            {/* An investigator has no race or class: occupation and the rest come from its rules. */}
+            {!investigator && (
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Раса">
+                  {({ id }) => (
+                    <Suggest
+                      id={id}
+                      value={draft.race}
+                      onChange={(v) => set({ race: v })}
+                      suggestions={RACES.map((r) => r.name)}
+                    />
+                  )}
+                </Field>
+                <Field label="Подраса">
+                  {({ id }) => (
+                    <Suggest
+                      id={id}
+                      value={draft.subrace}
+                      onChange={(v) => set({ subrace: v })}
+                      suggestions={race?.subraces?.map((s) => s.name) ?? []}
+                    />
+                  )}
+                </Field>
+                <Field label="Класс">
+                  {({ id }) => (
+                    <Suggest
+                      id={id}
+                      value={draft.class}
+                      onChange={(v) => set({ class: v })}
+                      suggestions={CLASSES.map((c) => c.name)}
+                    />
+                  )}
+                </Field>
+                <Field label="Подкласс">
+                  {({ id }) => (
+                    <Suggest
+                      id={id}
+                      value={draft.subclass}
+                      onChange={(v) => set({ subclass: v })}
+                      suggestions={characterClass?.subclasses.map((s) => s.name) ?? []}
+                    />
+                  )}
+                </Field>
+                <Field label="Скорость, фт">
+                  {({ id }) => (
+                    <NumberField
+                      id={id}
+                      min={0}
+                      step={5}
+                      value={draft.speed}
+                      onChange={(speed) => set({ speed })}
+                      className="w-full"
+                    />
+                  )}
+                </Field>
+                <Field label="Бонус к инициативе">
+                  {({ id }) => (
+                    <NumberField
+                      id={id}
+                      signed
+                      value={draft.initiativeBonus}
+                      onChange={(initiativeBonus) => set({ initiativeBonus })}
+                      className="w-full"
+                    />
+                  )}
+                </Field>
+              </div>
+            )}
             <div role="radiogroup" aria-label="Сеттинг" className="space-y-1.5">
               <span className="ui-label">Сеттинг</span>
               <div className="grid grid-cols-2 gap-2">

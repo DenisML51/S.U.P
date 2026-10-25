@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import type { PartyDto, PartyHeroDto } from '@itd/schema';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
-import { IconArmor, IconCombat, IconCreate, IconInitiative } from '../../ui/icons';
+import { IconArmor, IconCombat, IconCreate, IconInitiative, IconSanity } from '../../ui/icons';
+import { Corners } from '../../ui/ornaments';
 import { Button, Meter, Panel, SectionTitle } from '../../ui/primitives';
 import { formatBonus } from './partyView';
 
@@ -29,6 +30,7 @@ export const Companions: React.FC<{ party: PartyDto; userId: string | undefined 
             >
               <span className="ui-companion relative block h-40 w-40 overflow-hidden">
                 <CharacterArt source={art(hero)} kind="portrait" className="h-full w-full" />
+                <Corners />
               </span>
               <span className="ui-display block w-full truncate text-lg leading-tight text-ink">{hero.name}</span>
               <span className="-mt-1.5 block w-full truncate text-[11px] text-ink-faint">
@@ -67,13 +69,13 @@ export const MyHero: React.FC<{
   const vitals = hero.vitals;
   return (
     <Panel className="relative flex min-h-[16rem] flex-1 flex-col overflow-hidden p-0">
-      <CharacterArt source={art(hero)} kind="portrait" className="absolute inset-0 h-full w-full" position="50% 20%" />
+      <CharacterArt source={art(hero)} kind="portrait" className="absolute inset-0 h-full w-full" position="50% 12%" />
       <span className="absolute inset-0 bg-gradient-to-t from-bg-deep from-25% via-bg-deep/70 via-50% to-transparent" />
       <div className="relative mt-auto space-y-3 p-5">
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-frame-bright/80">Ваш герой</div>
           <div className="ui-display mt-1 truncate text-[1.6rem] leading-tight text-ink">{hero.name}</div>
-          <div className="truncate text-xs text-ink-muted">{[origin.calling || origin.race, `${hero.level} ур.`].filter(Boolean).join(' · ')}</div>
+          <div className="truncate text-xs text-ink-muted">{[origin.calling || origin.race, !vitals?.coc && `${hero.level} ур.`].filter(Boolean).join(' · ')}</div>
         </div>
         {vitals && (
           <div className="flex items-center gap-3">
@@ -84,24 +86,39 @@ export const MyHero: React.FC<{
               {vitals.currentHP}
               <span className="text-ink-faint">/{vitals.maxHP}</span>
             </span>
-            <span className="flex items-center gap-1 text-sm text-ink" title="Класс брони">
-              <IconArmor width={14} height={14} className="text-armor" />
-              <span className="ui-numeric">{vitals.armorClass}</span>
-            </span>
-            <span className="flex items-center gap-1 text-sm text-ink" title="Инициатива">
-              <IconInitiative width={13} height={13} />
-              <span className="ui-numeric">{formatBonus(vitals.initiative)}</span>
-            </span>
+            {vitals.coc ? (
+              <>
+                <span className="flex items-center gap-1 text-sm text-ink" title="Рассудок">
+                  <IconSanity width={14} height={14} className="text-sanity" />
+                  <span className="ui-numeric">{vitals.coc.sanity}</span>
+                </span>
+                <span className="flex items-center gap-1 text-sm text-ink" title="Ловкость: порядок хода">
+                  <IconInitiative width={13} height={13} />
+                  <span className="ui-numeric">{vitals.coc.dex}</span>
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="flex items-center gap-1 text-sm text-ink" title="Класс брони">
+                  <IconArmor width={14} height={14} className="text-armor" />
+                  <span className="ui-numeric">{vitals.armorClass}</span>
+                </span>
+                <span className="flex items-center gap-1 text-sm text-ink" title="Инициатива">
+                  <IconInitiative width={13} height={13} />
+                  <span className="ui-numeric">{formatBonus(vitals.initiative)}</span>
+                </span>
+              </>
+            )}
           </div>
         )}
-        <div className="flex gap-2">
-          <Button variant={inCombat ? 'secondary' : 'primary'} size="sm" className="flex-1" onClick={() => onOpen('sheet')}>
+        <div className="flex flex-col gap-2">
+          <Button variant={inCombat ? 'secondary' : 'primary'} size="sm" className="w-full" onClick={() => onOpen('sheet')}>
             Лист героя
           </Button>
           <Button
             variant={inCombat ? 'primary' : 'secondary'}
             size="sm"
-            className="flex-1"
+            className="w-full"
             icon={<IconCombat width={15} height={15} />}
             onClick={() => onOpen('combat')}
           >

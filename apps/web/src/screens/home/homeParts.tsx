@@ -16,6 +16,7 @@ import { SettingScope } from '../../ui/theme/SettingScope';
 import { ClosedTableDialog } from '../party/ClosedTableDialog';
 import { InviteDialog } from '../party/InviteDialog';
 import { readLastHero } from './lastHero';
+import { rulebookLabel } from '../../systems';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -48,10 +49,10 @@ export const usePartyEntry = () => {
       <InviteDialog
         invite={invite}
         onClose={() => setInvite(null)}
-        onEntered={(partyId) => {
-          setInvite(null);
-          openTable(partyId);
-        }}
+        // Not closed here: the dialog leaves together with the page. Closing it in the moment the page
+        // starts its exit kept that exit from finishing — the table never mounted, the screen stayed
+        // dark. Its state lives in this page, so it is gone when the page comes back.
+        onEntered={openTable}
       />
     </>
   );
@@ -167,21 +168,54 @@ export const PartyPicture: React.FC<{ party: PartyListItemDto; className?: strin
   );
 };
 
-/** Level and health in one quiet line. */
-export const HeroVitals: React.FC<{ hero: CharacterPreview; className?: string }> = ({ hero, className }) => (
-  <div className={cx('flex items-center gap-4', className)}>
-    <div className="flex items-baseline gap-1.5">
-      <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">Ур.</span>
-      <span className="ui-display ui-numeric text-2xl text-frame-bright">{hero.level}</span>
-    </div>
-    <div className="w-40">
-      <Meter value={hero.currentHP} max={hero.maxHP} tone="hp" height={5} label="Здоровье" />
-    </div>
-    <span className="ui-numeric text-xs text-ink-muted">
-      {hero.currentHP}/{hero.maxHP}
-    </span>
+/**
+ * The rulebook hung under the focused hero card, in the setting's manner: a brass plaque in
+ * Lovecraft's world, a ribbon, a chip, a tag on a chain, a holo-label, a rune bar.
+ */
+export const RulebookPlate: React.FC<{ hero: CharacterPreview }> = ({ hero }) => (
+  <div className="ui-rulebook-plate" aria-label={`Правила: ${rulebookLabel(hero)}`}>
+    <RulebookMark hero={hero} />
   </div>
 );
+
+/** The rulebook's name on a hero's card, in the setting's tag. */
+export const RulebookMark: React.FC<{ hero: CharacterPreview; className?: string }> = ({ hero, className }) => (
+  <span className={cx('ui-tag ui-rulebook', className)} style={{ '--tag-tone': 'var(--c-frame-bright)' } as React.CSSProperties}>
+    {rulebookLabel(hero)}
+  </span>
+);
+
+/** What the big number of a hero's card is: the level, or an investigator's age. */
+export const heroRank = (hero: CharacterPreview): { label: string; value: number } =>
+  hero.investigator ? { label: 'Лет', value: hero.investigator.age } : { label: 'Ур.', value: hero.level };
+
+/** Level (or age) and health, and an investigator's sanity, in one quiet line. */
+export const HeroVitals: React.FC<{
+  hero: CharacterPreview;
+  className?: string;
+  meterClassName?: string;
+  /** The rulebook's mark in the line; the hero select hangs it under the card instead. */
+  rulebook?: boolean;
+}> = ({ hero, className, meterClassName = 'w-40', rulebook = true }) => {
+  const rank = heroRank(hero);
+  return (
+    <div className={cx('flex flex-wrap items-center gap-x-4 gap-y-2', className)}>
+      {rulebook && <RulebookMark hero={hero} />}
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">{rank.label}</span>
+        <span className="ui-display ui-numeric text-2xl text-frame-bright">{rank.value}</span>
+      </div>
+      <div className={cx('flex flex-col gap-1', meterClassName)}>
+        <Meter value={hero.currentHP} max={hero.maxHP} tone="hp" height={5} label="Здоровье" />
+        {hero.investigator && <Meter value={hero.investigator.sanity} max={hero.investigator.maxSanity} tone="sanity" height={4} label="Рассудок" />}
+      </div>
+      <span className="ui-numeric text-xs text-ink-muted">
+        {hero.currentHP}/{hero.maxHP}
+        {hero.investigator && <span className="block">рассудок {hero.investigator.sanity}</span>}
+      </span>
+    </div>
+  );
+};
 
 /** The service name and the account, the same over every layout of the page. */
 export const HomeHeader: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => (

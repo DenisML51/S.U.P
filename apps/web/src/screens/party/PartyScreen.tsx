@@ -30,7 +30,6 @@ import { Button, IconButton, Panel, Tabs, cx } from '../../ui/primitives';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
-import { clearDraft } from '../create/useDraftState';
 import { ChatPanel } from './ChatPanel';
 import { HeroPickDialog } from './HeroPickDialog';
 import { InitiativeDialog } from './InitiativeDialog';
@@ -38,11 +37,12 @@ import { InitiativeStrip } from './InitiativeStrip';
 import { LoreDialog } from './LoreDialog';
 import { NpcDialog } from './NpcDialog';
 import { PartyCover } from './PartyCover';
-import { initiativeBonusOf } from './partyView';
+import { actsByDex, initiativeBonusOf, isCocFight, npcFirearmReady } from './partyView';
 import { StartCombatDialog } from './StartCombatDialog';
 import { TableDecks } from './PartyDecks';
 import { Companions, MyHero } from './PlayerSeat';
 import { useTableCombat } from './useTableCombat';
+import { SyncStatus } from '../../ui/SyncStatus';
 
 const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
 
@@ -124,6 +124,13 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
   const isMaster = combat.isMaster;
 
   const myHeroes = party.heroes.filter((hero) => hero.ownerId === userId);
+  // The master's own heroes in the fight, in the order of turns: the master plays them from the combat
+  // screen, starting with the one whose turn it is.
+  const myFighters = (party.combat?.combatants ?? []).flatMap((c) => {
+    const hero = c.kind === 'hero' ? myHeroes.find((h) => h.id === c.refId) : undefined;
+    return hero ? [{ hero, current: c.id === party.combat?.currentCombatantId }] : [];
+  });
+  const fighterToPlay = myFighters.find((f) => f.current)?.hero ?? myFighters[0]?.hero;
   const canBring = myHeroes.length < (isMaster ? PARTY_LIMITS.masterHeroes : PARTY_LIMITS.playerHeroes);
 
   // A player who has just sat down is asked whom they bring.
@@ -134,9 +141,9 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
     setOverlay({ kind: 'pick-hero' });
   }, [isMaster, myHeroes.length]);
 
+  // A hero begun for this table and left unfinished is picked up where it was.
   const createHero = () => {
-    clearDraft();
-    startCreation({ world: party.setting, partyId: party.id });
+    startCreation({ world: party.setting, partyId: party.id, rules: party.rules ?? undefined });
   };
 
   return (
@@ -160,6 +167,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
             {isMaster ? 'вы мастер' : `мастер ${party.members[0]?.displayName ?? ''}`}
           </span>
           <div className="ml-auto flex items-center gap-1">
+            <SyncStatus className="mr-2" />
             {isMaster &&
               (party.sessionStartedAt ? (
                 <Button
@@ -241,6 +249,11 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                     combat={combat}
                     onAdd={() => setOverlay({ kind: 'combat' })}
                     onEnd={() => setOverlay({ kind: 'end-combat' })}
+                    onPlay={
+                      isMaster && fighterToPlay
+                        ? () => void loadCharacter(fighterToPlay.characterId, 'hotbar')
+                        : undefined
+                    }
                   />
                 </motion.div>
               )}
@@ -251,7 +264,13 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                 userId={userId}
                 canBring={canBring}
                 onBring={() => setOverlay({ kind: 'pick-hero' })}
-                onPlay={(hero) => void loadCharacter(hero.characterId)}
+                // A hero in the fight opens on its combat screen, any other on its sheet.
+                onPlay={(hero) =>
+                  void loadCharacter(
+                    hero.characterId,
+                    myFighters.some((f) => f.hero.id === hero.id) ? 'hotbar' : 'tabs',
+                  )
+                }
                 onRemoveHero={(hero) => setOverlay({ kind: 'remove-hero', hero })}
                 onNpc={(npc) => setOverlay({ kind: 'npc', npc })}
               />
@@ -276,7 +295,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
             />
             {/* A player's own hero waits in the corner: the way into its sheet and its fight. */}
             {!isMaster && (
-              <div className="flex h-[17rem] shrink-0 flex-col">
+              <div className="flex h-[20rem] shrink-0 flex-col">
                 <MyHero
                   hero={myHeroes[0]}
                   inCombat={party.combat !== null}
@@ -299,6 +318,8 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         setting={party.setting}
         combatant={combat.rolling}
         bonus={combat.rolling ? initiativeBonusOf(party, combat.rolling) : null}
+        byDex={actsByDex(party, combat.rolling)}
+        firearmReady={npcFirearmReady(party, combat.rolling)}
         canRemove={isMaster}
         onClose={() => combat.roll(null)}
       />
@@ -306,12 +327,13 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         open={overlay?.kind === 'pick-hero'}
         partyId={party.id}
         setting={party.setting}
+        rules={party.rules}
         onClose={close}
         onCreate={createHero}
       />
       {overlay?.kind === 'combat' && <StartCombatDialog open party={party} onClose={close} />}
       {overlay?.kind === 'npc' && (
-        <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} onClose={close} />
+        <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} coc={isCocFight(party) || !!overlay.npc?.coc} onClose={close} />
       )}
       <LoreDialog
         open={overlay?.kind === 'lore'}
@@ -506,7 +528,9 @@ const CombatPanel: React.FC<{
   combat: ReturnType<typeof useTableCombat>;
   onAdd: () => void;
   onEnd: () => void;
-}> = ({ party, combat: seat, onAdd, onEnd }) => {
+  /** The master's way into the fight for their own heroes. */
+  onPlay?: () => void;
+}> = ({ party, combat: seat, onAdd, onEnd, onPlay }) => {
   const store = usePartyStore.getState();
   const fight = party.combat!;
   const waiting = fight.combatants.filter((c) => c.initiative === null);
@@ -560,6 +584,16 @@ const CombatPanel: React.FC<{
               {seat.myTurn ? 'Завершить ход' : 'Следующий ход'}
             </Button>
           )}
+          {onPlay && (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<IconCombat width={15} height={15} />}
+              onClick={onPlay}
+            >
+              В бой за героя
+            </Button>
+          )}
           {seat.isMaster && (
             <>
               <Button variant="ghost" size="sm" onClick={onAdd}>
@@ -572,7 +606,7 @@ const CombatPanel: React.FC<{
           )}
         </div>
       </div>
-      <InitiativeStrip combat={fight} onPick={seat.roll} className="mt-3 [justify-content:safe_center]" />
+      <InitiativeStrip combat={fight} onPick={seat.roll} master={seat.isMaster} className="mt-3 [justify-content:safe_center]" />
     </Panel>
   );
 };

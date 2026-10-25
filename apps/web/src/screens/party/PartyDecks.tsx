@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LayoutGroup, motion } from 'framer-motion';
-import type { PartyDto, PartyHeroDto, PartyNpcDto } from '@itd/schema';
+import { npcMinHP, type NpcAttack, type PartyDto, type PartyHeroDto, type PartyNpcDto } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
 import { usePartyStore } from '../../store/usePartyStore';
 import { CharacterArt } from '../../ui/CharacterArt';
@@ -12,10 +12,14 @@ import {
   IconCreate,
   IconHidden,
   IconInitiative,
+  IconSanity,
   IconShown,
 } from '../../ui/icons';
 import { IconButton, Meter, Panel, cx } from '../../ui/primitives';
-import { formatBonus } from './partyView';
+import { formatBonus, isCocFight } from './partyView';
+
+/** "Нож 40% 1D4" — an attack of a Call of Cthulhu NPC on its card. */
+const attackLine = (attack: NpcAttack) => [attack.name, `${attack.skill}%`, attack.damage].filter(Boolean).join(' ');
 
 const SPRING = { type: 'spring', stiffness: 260, damping: 30 } as const;
 /** How far each card behind peeks out of a stack (party.css reserves room for three: keep `--stack-peek` in step). */
@@ -47,7 +51,6 @@ export const TableDecks: React.FC<{
 }> = ({ party, userId, canBring, onBring, onPlay, onRemoveHero, onNpc }) => {
   const [open, setOpen] = useState<GroupId | null>(null);
   const setHeroHidden = usePartyStore((s) => s.setHeroHidden);
-  const names = new Map(party.members.map((member) => [member.userId, member.displayName]));
   const npcs = party.npcs ?? [];
   const fighting = new Set(party.combat?.combatants.map((c) => c.refId));
 
@@ -64,7 +67,8 @@ export const TableDecks: React.FC<{
       render: (mode) => (
         <HeroCard
           hero={hero}
-          label={mine ? seen : (names.get(hero.ownerId) ?? '')}
+          // Players' heroes carry no owner name on the card; the master's own show whether players see them.
+          label={mine ? seen : ''}
           mine={mine}
           mode={mode}
           canRemove
@@ -186,9 +190,7 @@ const Deck: React.FC<{
         ...cards,
         {
           key: `add-${title}`,
-          render: (shown) => (
-            <AddCard label={add.label} hint={add.hint} small={shown === 'small'} onAdd={add.onAdd} />
-          ),
+          render: (shown) => <AddCard label={add.label} hint={add.hint} mode={shown} onAdd={add.onAdd} />,
         },
       ]
     : cards;
@@ -362,35 +364,40 @@ const Line: React.FC<{ count: number; children: React.ReactNode }> = ({ count, c
   );
 };
 
-const AddCard: React.FC<{ label: string; hint: string; small: boolean; onAdd: () => void }> = ({
+const AddCard: React.FC<{ label: string; hint: string; mode: DeckMode; onAdd: () => void }> = ({
   label,
   hint,
-  small,
+  mode,
   onAdd,
-}) => (
-  <Panel
-    as="button"
-    interactive
-    onClick={onAdd}
-    aria-label={label}
-    className="flex h-full w-full flex-col items-center justify-center gap-3 px-4 text-center"
-  >
-    <span
-      className={cx(
-        'grid place-items-center rounded-full border border-frame/50 text-frame-bright',
-        small ? 'h-9 w-9' : 'h-14 w-14',
-      )}
+}) => {
+  const spread = mode === 'spread';
+  const small = mode === 'small';
+  return (
+    <Panel
+      as="button"
+      interactive
+      onClick={onAdd}
+      aria-label={label}
+      className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center"
     >
-      <IconCreate width={small ? 18 : 26} height={small ? 18 : 26} />
-    </span>
-    {!small && (
-      <>
-        <span className="ui-display ui-title text-lg leading-tight text-ink">{label}</span>
-        <span className="text-xs text-ink-muted">{hint}</span>
-      </>
-    )}
-  </Panel>
-);
+      <span
+        className={cx(
+          'grid place-items-center rounded-full border border-frame/50 text-frame-bright',
+          spread ? 'h-14 w-14' : 'h-9 w-9',
+        )}
+      >
+        <IconCreate width={spread ? 26 : 18} height={spread ? 26 : 18} />
+      </span>
+      {/* Side-stack: just the plus. Stack: plus and the label. Laid out: the hint as well. */}
+      {!small && (
+        <span className={cx('ui-display ui-title leading-tight text-ink', spread ? 'text-lg' : 'text-sm')}>
+          {label}
+        </span>
+      )}
+      {spread && <span className="text-xs text-ink-muted">{hint}</span>}
+    </Panel>
+  );
+};
 
 const HeroCard: React.FC<{
   hero: PartyHeroDto;
@@ -427,23 +434,34 @@ const HeroCard: React.FC<{
           <>
             <span className="absolute inset-0 bg-gradient-to-t from-bg-deep from-15% via-bg-deep/60 via-40% to-transparent to-65%" />
             <span className="relative mt-auto block space-y-1.5 p-4">
+              {/* A stacked card carries only the name; its visibility reads from the dimmed art, and the
+                  owner/status line, class and vitals belong to the laid-out card where there is room. */}
+              {spread && (label || onToggleHidden) && (
+                <span
+                  className={cx(
+                    'flex items-center gap-1.5 truncate text-[10px] uppercase tracking-[0.2em]',
+                    hidden ? 'text-ink-faint' : 'text-frame-bright/80',
+                  )}
+                >
+                  {onToggleHidden &&
+                    (hidden ? <IconHidden width={12} height={12} /> : <IconShown width={12} height={12} />)}
+                  {label}
+                </span>
+              )}
               <span
                 className={cx(
-                  'flex items-center gap-1.5 truncate text-[10px] uppercase tracking-[0.2em]',
-                  hidden ? 'text-ink-faint' : 'text-frame-bright/80',
+                  'ui-display ui-card-name block leading-tight text-ink',
+                  spread ? 'line-clamp-2' : 'truncate',
                 )}
               >
-                {onToggleHidden &&
-                  (hidden ? <IconHidden width={12} height={12} /> : <IconShown width={12} height={12} />)}
-                {label}
-              </span>
-              <span className="ui-display ui-card-name block truncate leading-tight text-ink">
                 {hero.name}
               </span>
-              <span className="block truncate text-xs text-ink-muted">
-                {[origin.calling || origin.race, `${hero.level} ур.`].filter(Boolean).join(' · ')}
-              </span>
-              {vitals && (
+              {spread && (
+                <span className="block truncate text-xs text-ink-muted">
+                  {[origin.calling || origin.race, !vitals?.coc && `${hero.level} ур.`].filter(Boolean).join(' · ')}
+                </span>
+              )}
+              {spread && vitals && (
                 <span className="flex items-center gap-2.5 pt-1">
                   <span className="min-w-0 flex-1">
                     <Meter
@@ -458,10 +476,17 @@ const HeroCard: React.FC<{
                   <span className="ui-numeric text-xs text-ink-muted">
                     {vitals.currentHP}/{vitals.maxHP}
                   </span>
-                  <span className="flex items-center gap-1 text-xs text-ink" title="Класс брони">
-                    <IconArmor width={13} height={13} className="text-armor" />
-                    <span className="ui-numeric">{vitals.armorClass}</span>
-                  </span>
+                  {vitals.coc ? (
+                    <span className="flex items-center gap-1 text-xs text-ink" title="Рассудок">
+                      <IconSanity width={13} height={13} className="text-sanity" />
+                      <span className="ui-numeric">{vitals.coc.sanity}</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-ink" title="Класс брони">
+                      <IconArmor width={13} height={13} className="text-armor" />
+                      <span className="ui-numeric">{vitals.armorClass}</span>
+                    </span>
+                  )}
                 </span>
               )}
             </span>
@@ -529,6 +554,8 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
   const [editing, setEditing] = useState(false);
   const hostile = npc.disposition === 'hostile';
   const down = npc.currentHP <= 0;
+  const coc = isCocFight(party) || npc.coc !== null;
+  const stats = npc.coc;
 
   const apply = (raw: string) => {
     setEditing(false);
@@ -537,7 +564,7 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
     if (!text || !Number.isFinite(value)) return;
     const relative = /^[+-]/.test(text);
     const currentHP = Math.max(
-      -9999,
+      npcMinHP(coc),
       Math.min(npc.maxHP, Math.round(relative ? npc.currentHP + value : value)),
     );
     if (currentHP !== npc.currentHP) void updateNpc(party.id, npc.id, { currentHP });
@@ -565,7 +592,13 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
             style={{ objectPosition: '50% 20%' }}
           />
         ) : (
-          <span className="ui-display absolute inset-0 grid place-items-center bg-inset text-[5rem] text-frame/15">
+          <span
+            className={cx(
+              'ui-display absolute inset-0 grid place-items-center bg-inset text-frame/15',
+              // The big initial is for a laid-out card; in a stack it would dwarf the little card.
+              spread ? 'text-[5rem]' : 'text-4xl',
+            )}
+          >
             {npc.name.charAt(0).toUpperCase()}
           </span>
         )}
@@ -574,32 +607,77 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
         )}
         {!small && (
           <span className="relative mt-auto block space-y-1.5 p-4">
+            {/* A stacked card carries only the name; side, numbers and the editable hit-points bar
+                belong to the laid-out card. */}
+            {spread && (
+              <span
+                className={cx(
+                  'block text-[10px] uppercase tracking-[0.2em]',
+                  hostile ? 'text-danger' : 'text-success',
+                )}
+              >
+                {hostile ? 'враг' : 'союзник'}
+                {inFight && <span className="text-ink-muted"> · в бою</span>}
+              </span>
+            )}
             <span
               className={cx(
-                'block text-[10px] uppercase tracking-[0.2em]',
-                hostile ? 'text-danger' : 'text-success',
+                'ui-display ui-card-name block leading-tight text-ink',
+                spread ? 'line-clamp-2' : 'truncate',
               )}
             >
-              {hostile ? 'враг' : 'союзник'}
-              {inFight && <span className="text-ink-muted"> · в бою</span>}
+              {npc.name}
             </span>
-            <span className="ui-display ui-card-name block truncate leading-tight text-ink">{npc.name}</span>
-            <span className="flex items-center gap-3 text-xs text-ink-muted">
-              <span className="flex items-center gap-1" title="Класс брони">
-                <IconArmor width={13} height={13} className="text-armor" />
-                <span className="ui-numeric text-ink">{npc.armorClass}</span>
-              </span>
-              <span className="flex items-center gap-1" title="Модификатор инициативы">
-                <IconInitiative width={12} height={12} />
-                <span className="ui-numeric text-ink">{formatBonus(npc.initiativeBonus)}</span>
-              </span>
-            </span>
-            <span className="block h-5" />
+            {spread && (
+              <>
+                <span className="flex items-center gap-3 text-xs text-ink-muted">
+                  {coc ? (
+                    stats?.armor ? (
+                      <span className="flex items-center gap-1" title="Броня: очки, снимаемые с каждого попадания">
+                        <IconArmor width={13} height={13} className="text-armor" />
+                        <span className="ui-numeric text-ink">{stats.armor}</span>
+                      </span>
+                    ) : null
+                  ) : (
+                    <span className="flex items-center gap-1" title="Класс брони">
+                      <IconArmor width={13} height={13} className="text-armor" />
+                      <span className="ui-numeric text-ink">{npc.armorClass}</span>
+                    </span>
+                  )}
+                  <span
+                    className="flex items-center gap-1"
+                    title={coc ? (stats?.firearmReady ? 'Ловкость: порядок хода, +50 с оружием наготове' : 'Ловкость: порядок хода') : 'Модификатор инициативы'}
+                  >
+                    <IconInitiative width={12} height={12} />
+                    <span className="ui-numeric text-ink">{coc ? npc.initiativeBonus : formatBonus(npc.initiativeBonus)}</span>
+                    {coc && stats?.firearmReady && <span className="ui-numeric text-frame-bright">+50</span>}
+                  </span>
+                  {stats?.sanityLoss && (
+                    <span className="flex items-center gap-1" title="Потеря рассудка при встрече">
+                      <IconSanity width={12} height={12} />
+                      <span className="ui-numeric text-ink">{stats.sanityLoss}</span>
+                    </span>
+                  )}
+                  {coc && stats && (stats.build !== 0 || stats.damageBonus) && (
+                    <span className="ui-numeric" title="Комплекция и бонус урона">
+                      Ком {formatBonus(stats.build)}
+                      {stats.damageBonus && ` · БУ ${stats.damageBonus}`}
+                    </span>
+                  )}
+                </span>
+                {coc && stats && stats.attacks.length > 0 && (
+                  <span className="block truncate text-[11px] text-ink-muted" title={stats.attacks.map(attackLine).join('\n')}>
+                    {stats.attacks.map(attackLine).join(' · ')}
+                  </span>
+                )}
+                <span className="block h-5" />
+              </>
+            )}
           </span>
         )}
       </Panel>
       {/* Hit points sit over the card so they can be changed without opening it. */}
-      {!small && (
+      {spread && (
         <div className="absolute inset-x-4 bottom-4 z-[2]">
           {editing ? (
             <input

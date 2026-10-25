@@ -31,6 +31,22 @@ export default tseslint.config(
     },
   },
 
+  // Rules systems load on demand (see packages/game-logic/src/systems). A static import of one from
+  // shared code would put its whole engine and content back into the first download.
+  {
+    files: ['packages/game-logic/src/{rules,content,systems}/**/*.ts', 'packages/game-logic/src/index.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [{ regex: '/(dnd|coc)(/(?!meta$).*)?$', message: 'Rules systems load on demand: use loadRuleSystem / rulesOf.' }] }],
+    },
+  },
+  {
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    ignores: ['apps/web/src/screens/create/**', 'apps/web/src/screens/progression/**', 'apps/web/src/screens/coc/**', 'apps/web/src/dev/**'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [{ regex: '^@itd/game-logic/', message: 'Only the screens of a system import it; the rest use rulesOf from @itd/game-logic.' }] }],
+    },
+  },
+
   // UI components predate the linter and get their own clean-up pass with the frontend work;
   // until then their typing debt is reported, not enforced.
   {

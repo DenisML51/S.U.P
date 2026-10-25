@@ -301,66 +301,10 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   -webkit-mask-image: var(--glow-fade);
 }
 
-/* ---------------------------------------------------------------- Home: a table as a cover card */
-/* The card is a window onto its world: the frame stays, the picture inside wakes under the cursor. */
-.ui-table-card__body {
-  container-type: size;
-  border-radius: calc(var(--radius) * 0.75);
-  border: 1px solid rgb(var(--c-frame) / 0.35);
-  box-shadow: 0 20px 44px -24px rgb(0 0 0 / 0.9);
-  transition: border-color 0.3s;
-}
-.ui-table-card__picture {
-  filter: brightness(0.62) saturate(0.85);
-  transition: filter 0.5s, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.ui-table-card__body:hover,
-.ui-table-card__body:focus-visible { border-color: rgb(var(--c-frame-bright) / 0.7); outline: none; }
-.ui-table-card__body:hover .ui-table-card__picture,
-.ui-table-card__body:focus-visible .ui-table-card__picture {
-  filter: brightness(0.9) saturate(1);
-  transform: scale(1.04);
-}
-.ui-table-card__state-dot {
-  display: none;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 999px;
-  background: currentColor;
-}
-/* Squeezed by its neighbours, a cover becomes a strip: the name on the left, the state on the right. */
-@container (max-height: 8.5rem) {
-  .ui-table-card__body .ui-table-card__meta { display: none; }
-  .ui-table-card__body .ui-table-card__content { justify-content: center; padding: 0 9rem 0 1.5rem; }
-  .ui-table-card__body .ui-table-card__name { margin-top: 0; font-size: 1.5rem; }
-  .ui-table-card__body .ui-table-card__state { top: 50%; transform: translateY(-50%); }
-}
-/* Half a column wide (two columns of tables): a smaller name, the state still in its corner. */
-@container (max-width: 24rem) {
-  .ui-table-card__body .ui-table-card__content { padding-left: 1.25rem; padding-right: 1.25rem; }
-  .ui-table-card__body .ui-table-card__name {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    white-space: normal;
-    font-size: 1.45rem;
-  }
-}
-@container (max-width: 24rem) and (max-height: 8.5rem) {
-  .ui-table-card__body .ui-table-card__content { padding-right: 3rem; }
-  .ui-table-card__body .ui-table-card__name { -webkit-line-clamp: 2; font-size: 1.2rem; line-height: 1.15; }
-  /* The state shrinks to its colour: a dot (or the crossed swords of a fight), named on hover. */
-  .ui-table-card__body .ui-table-card__state { padding: 0.4rem; background: none; backdrop-filter: none; }
-  .ui-table-card__body .ui-table-card__state-label { display: none; }
-  .ui-table-card__body .ui-table-card__state-dot { display: block; }
-}
-
-
-
 /* ---------------------------------------------------------------- Home: the dark takes the art's colour */
 /* The hero's art meets the page in its own edge colour (quieted, capped at a deep grey) instead of black:
  * a bright sky no longer ends in a hard cut. The tone sits right under the fading edge and spreads a little
- * to the left; it flows over when the hero changes. */
+ * from the right, where the hero stands; it flows over when the hero changes. */
 @property --hub-tone {
   syntax: '<color>';
   inherits: true;
@@ -379,6 +323,164 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   );
 }
 .ui-hub-lift {
-  background: linear-gradient(to right, color-mix(in srgb, var(--hub-tone) 22%, transparent), transparent 50%);
+  background: linear-gradient(to left, color-mix(in srgb, var(--hub-tone) 26%, transparent), transparent 60%);
 }
 .ui-hub .ui-hero-figure__art { --figure-sink: color-mix(in srgb, var(--hub-tone) 55%, transparent); }
+
+/* ---------------------------------------------------------------- Home: the hero's art fits its area */
+/* As wide as the area lets it, or as tall, whichever runs out first: never cropped, so a head near an
+ * edge of the picture stays in it. */
+.ui-art-fit { container-type: size; }
+.ui-art-fit__box {
+  flex-shrink: 0;
+  width: calc(min(100cqw, 100cqh * var(--art-ratio)) * var(--art-scale, 1));
+  aspect-ratio: var(--art-ratio);
+}
+
+/* Before the first hero: the place where they will stand, a faint glow and a quiet line. */
+.ui-hero-place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: min(78%, 40rem);
+  aspect-ratio: 2 / 3;
+  padding-bottom: 12%;
+  border-radius: 999px 999px 0 0 / 30% 30% 0 0;
+  border: 1px solid rgb(var(--c-frame) / 0.3);
+  border-bottom: none;
+  background: radial-gradient(ellipse 70% 55% at 50% 45%, rgb(var(--c-frame-bright) / 0.09), transparent 70%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 95%);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 95%);
+  color: rgb(var(--c-ink-faint));
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  transition: color 0.3s, border-color 0.3s;
+}
+.ui-hero-place:hover,
+.ui-hero-place:focus-visible { color: rgb(var(--c-ink-muted)); border-color: rgb(var(--c-frame-bright) / 0.35); outline: none; }
+
+/* ---------------------------------------------------------------- Home: the tables as a list */
+.ui-hub-rule {
+  height: 1px;
+  background: linear-gradient(to right, rgb(var(--c-frame) / 0.45), rgb(var(--c-frame) / 0.12) 70%, transparent);
+}
+/* Under the tables lies a drift of dark smoke, so the hero's art running underneath on a narrow
+ * window never mixes with the text: overlapping soft clouds give it ragged, uneven edges, not a box. */
+.ui-hub-smoke { position: relative; isolation: isolate; }
+.ui-hub-smoke::before {
+  content: '';
+  position: absolute;
+  inset: -2.5rem -4rem -1.5rem -3.5rem;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 46% at 28% 30%, rgb(var(--c-bg-deep) / 0.9), transparent 72%),
+    radial-gradient(52% 40% at 72% 22%, rgb(var(--c-bg-deep) / 0.78), transparent 70%),
+    radial-gradient(60% 44% at 40% 62%, rgb(var(--c-bg-deep) / 0.88), transparent 74%),
+    radial-gradient(48% 38% at 80% 70%, rgb(var(--c-bg-deep) / 0.7), transparent 70%),
+    radial-gradient(55% 34% at 35% 94%, rgb(var(--c-bg-deep) / 0.82), transparent 72%);
+  filter: blur(16px);
+}
+/* The list fades at the edge it scrolls past, so a row cut by the column reads as "more", not a slip. */
+.ui-table-list {
+  container-type: inline-size;
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+}
+.ui-table-list[data-more~='up'] { --fade-top: 2.5rem; }
+.ui-table-list[data-more~='down'] { --fade-bottom: 3rem; }
+
+.ui-table-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+  border-radius: calc(var(--radius) * 0.75);
+  text-align: left;
+  transition: background-color 0.25s;
+}
+.ui-table-row:hover,
+.ui-table-row:focus-visible { background: rgb(var(--c-surface) / 0.55); outline: none; }
+.ui-table-row__picture {
+  width: 5.75rem;
+  aspect-ratio: 16 / 10;
+  flex-shrink: 0;
+  border-radius: calc(var(--radius) * 0.5);
+  border: 1px solid rgb(var(--c-frame) / 0.3);
+  transition: border-color 0.25s;
+}
+.ui-table-row:hover .ui-table-row__picture { border-color: rgb(var(--c-frame-bright) / 0.6); }
+.ui-table-row__picture img { filter: brightness(0.72) saturate(0.85); transition: filter 0.4s, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+.ui-table-row:hover .ui-table-row__picture img { filter: brightness(0.95) saturate(1); transform: scale(1.06); }
+.ui-table-row__go {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.25s, transform 0.25s;
+}
+/* A narrow column keeps the names whole: the state shrinks to its dot, named on hover. */
+@container (max-width: 30rem) {
+  .ui-table-row__state { display: none; }
+}
+.ui-table-row:hover .ui-table-row__go,
+.ui-table-row:focus-visible .ui-table-row__go { opacity: 1; transform: none; }
+
+.ui-party-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+/* A table in play breathes. */
+.ui-party-dot--live { animation: ui-party-live 2.4s ease-in-out infinite; }
+@keyframes ui-party-live {
+  0%, 100% { box-shadow: 0 0 0 0 currentColor; }
+  50% { box-shadow: 0 0 0 4px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-party-dot--live { animation: none; }
+}
+
+/* Something to make while there is none yet (the first hero, the first table): a dashed card. */
+.ui-add-card {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  width: 100%;
+  max-width: 30rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: calc(var(--radius) * 0.75);
+  border: 1px dashed rgb(var(--c-frame) / 0.4);
+  background: rgb(var(--c-surface) / 0.18);
+  text-align: left;
+  transition: border-color 0.25s, background-color 0.25s;
+}
+.ui-add-card:hover,
+.ui-add-card:focus-visible {
+  border-color: rgb(var(--c-frame-bright) / 0.7);
+  background: rgb(var(--c-surface) / 0.45);
+  outline: none;
+}
+.ui-add-card__plus {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  color: rgb(var(--c-frame-bright));
+  transition: background-color 0.25s, color 0.25s, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-add-card:hover .ui-add-card__plus {
+  background: rgb(var(--c-accent));
+  color: rgb(var(--c-accent-ink));
+  transform: rotate(90deg);
+}
+
+/* The hero's name gives way on a short screen, so the tables below keep room for a few rows. */
+.ui-hub-name { font-size: clamp(2.4rem, 5.4vh, 3.2rem); }

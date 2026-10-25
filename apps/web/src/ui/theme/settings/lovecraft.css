@@ -522,19 +522,155 @@
   }
   /* Figures typed, not drawn in the thin poster face. */
   .ui-toast .ui-numeric { font-family: var(--font-typed); }
-  .ui-toast::before {
-    content: 'Телеграмма';
-    align-self: stretch;
-    display: grid;
-    place-items: center;
-    padding-right: 0.7rem;
-    font-size: 0.62rem;
-    letter-spacing: 0.18em;
-    color: rgb(var(--c-paper-muted));
-    border-right: 1px dashed rgb(var(--c-paper-muted) / 0.7);
-  }
   .ui-toast button { color: rgb(var(--c-pen)); }
-  .ui-toast--error { box-shadow: inset 4px 0 0 rgb(var(--c-danger)), inset 0 0 24px rgb(var(--c-paper-muted) / 0.45), 0 14px 30px -12px rgb(0 0 0 / 0.85); }
+
+  /* Every message comes as a telegram form: the printed head of the office over a perforated tear,
+     then the message typed with its ТЧК, the foot torn off the roll; it prints out downwards when it
+     arrives. A roll puts its dice and total first and is stamped with its level in its own ink. */
+  .ui-toast {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: min(15rem, calc(100vw - 2rem));
+    max-width: min(22.5rem, calc(100vw - 2rem));
+    padding: 0 0.95rem 1.05rem;
+    background:
+      radial-gradient(120% 70% at 12% 0%, rgb(255 246 214 / 0.34), transparent 60%),
+      radial-gradient(90% 80% at 100% 100%, rgb(var(--c-paper-muted) / 0.38), transparent 65%),
+      repeating-linear-gradient(0deg, rgb(var(--c-paper-ink) / 0.035) 0 1px, transparent 1px 4px),
+      var(--foxing),
+      rgb(var(--c-paper));
+    box-shadow: inset 0 0 28px rgb(var(--c-paper-muted) / 0.5);
+    /* Perforation along the top, a torn zigzag along the foot, the sheet whole between them. */
+    -webkit-mask:
+      linear-gradient(#000 0 0) center / 100% calc(100% - 12px) no-repeat,
+      radial-gradient(circle at 50% 0, transparent 2.6px, #000 3.2px) top / 11px 6px repeat-x,
+      conic-gradient(from -45deg at 50% 100%, #000 90deg, transparent 0) bottom / 12px 6px repeat-x;
+    mask:
+      linear-gradient(#000 0 0) center / 100% calc(100% - 12px) no-repeat,
+      radial-gradient(circle at 50% 0, transparent 2.6px, #000 3.2px) top / 11px 6px repeat-x,
+      conic-gradient(from -45deg at 50% 100%, #000 90deg, transparent 0) bottom / 12px 6px repeat-x;
+    animation: lc-telegram 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .ui-toast:has(.coc-roll, .ui-roll-toast) { width: min(22.5rem, calc(100vw - 2rem)); }
+  .ui-toast::before {
+    content: '— Телеграмма —';
+    display: block;
+    margin: 0 -0.95rem 0.65rem;
+    padding: 0.8rem 0 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.42em;
+    text-align: center;
+    color: rgb(var(--c-paper-ink) / 0.78);
+    background: linear-gradient(rgb(var(--c-paper-muted) / 0.26), rgb(var(--c-paper-muted) / 0.1));
+    border-right: 0;
+    border-bottom: 3px double rgb(var(--c-paper-ink) / 0.5);
+  }
+  /* A notice is one typed line ending in ТЧК; success and refusal get a small stamp on the head
+     instead of an icon. */
+  .ui-toast__text::after { content: ' ТЧК'; opacity: 0.7; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success) .ui-toast__body > svg { display: none; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success)::after {
+    position: absolute;
+    top: 0.62rem;
+    right: 0.7rem;
+    padding: 0.05rem 0.35rem;
+    font: 700 0.55rem/1.2 var(--font-typed);
+    letter-spacing: 0.14em;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    opacity: 0.8;
+    mix-blend-mode: multiply;
+    transform: rotate(-6deg);
+    pointer-events: none;
+  }
+  .ui-toast--error::after { content: 'Отказ'; color: rgb(var(--c-danger)); }
+  .ui-toast--success::after { content: 'Принято'; color: rgb(var(--c-pen)); }
+  /* Dice on the telegram are drawn in its ink, the natural 20 and 1 in the pen's green and red. */
+  .ui-toast .ui-rolling-die { color: rgb(var(--c-paper-ink)); }
+  .ui-toast .ui-rolling-die .ui-die-glyph { color: currentColor; }
+  .ui-toast .ui-rolling-die--success { color: rgb(var(--c-success)); }
+  .ui-toast .ui-rolling-die--danger { color: rgb(var(--c-danger)); }
+  .ui-toast .ui-rolling-die__value { text-shadow: none; }
+  .ui-toast .ui-roll-toast { position: relative; }
+  .ui-toast .ui-roll-toast__detail::after { content: ' ТЧК'; opacity: 0.7; }
+  /* The stamp sits right of the dice and the total, in room kept for it, never over the text. */
+  .ui-toast .ui-roll-toast[data-stamp] > :first-child { padding-right: 6.75rem; }
+  .ui-toast .ui-roll-toast[data-landed][data-stamp]::after {
+    content: attr(data-stamp);
+    position: absolute;
+    top: 0.85rem;
+    right: 0;
+    padding: 0.2rem 0.45rem;
+    font: 700 0.66rem/1.1 var(--font-typed);
+    letter-spacing: 0.12em;
+    color: var(--lc-stamp);
+    border: 2px solid currentColor;
+    border-radius: 3px;
+    outline: 1px solid currentColor;
+    outline-offset: 2px;
+    opacity: 0.8;
+    mix-blend-mode: multiply;
+    transform: rotate(-9deg);
+    pointer-events: none;
+    -webkit-mask: repeating-radial-gradient(circle at 30% 40%, #000 0 2px, rgb(0 0 0 / 0.7) 3px 4px);
+    mask: repeating-radial-gradient(circle at 30% 40%, #000 0 2px, rgb(0 0 0 / 0.7) 3px 4px);
+    animation: lc-stamp 360ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  }
+  .ui-toast .ui-roll-toast[data-tone='crit'] { --lc-stamp: rgb(20 104 64); }
+  .ui-toast .ui-roll-toast[data-tone='fumble'] { --lc-stamp: rgb(146 18 18); }
+  .ui-toast .coc-roll {
+    position: relative;
+    width: auto;
+    max-width: none;
+  }
+  .ui-toast .coc-ladder__step b { font-family: var(--font-typed); }
+  /* Telegraph punctuation: a stop is typed out as ТЧК. */
+  .ui-toast .coc-roll__stop { font-size: 0; }
+  .ui-toast .coc-roll__stop::after { content: ' ТЧК '; font-size: 0.72rem; letter-spacing: 0.08em; }
+  .ui-toast .coc-roll[data-landed] .coc-roll__level::after,
+  .ui-toast .coc-roll__verdict::after { content: ' ТЧК'; opacity: 0.7; }
+  .ui-toast .coc-roll__verdict {
+    margin-top: 0.35rem;
+    padding-top: 0.3rem;
+    border-top: 1px dashed rgb(var(--c-paper-ink) / 0.35);
+    letter-spacing: 0.08em;
+  }
+  /* The stamp: the level in its own ink, struck at a slant right of the dice and the total once
+     they are down, in room the head keeps for it, so it never covers the message. */
+  .ui-toast .coc-roll__head { padding-right: 7.75rem; }
+  .ui-toast .coc-roll[data-landed]::after {
+    content: attr(data-stamp);
+    position: absolute;
+    top: 0.75rem;
+    right: 0;
+    max-width: 7.6rem;
+    padding: 0.22rem 0.5rem;
+    font: 700 0.7rem/1.1 var(--font-typed);
+    letter-spacing: 0.12em;
+    text-align: center;
+    color: var(--lc-stamp, rgb(var(--c-pen)));
+    border: 2px solid currentColor;
+    border-radius: 3px;
+    outline: 1px solid currentColor;
+    outline-offset: 2px;
+    opacity: 0.8;
+    mix-blend-mode: multiply;
+    transform: rotate(-9deg);
+    pointer-events: none;
+    /* Worn ink: the stamp never takes evenly. */
+    -webkit-mask: repeating-radial-gradient(circle at 30% 40%, #000 0 2px, rgb(0 0 0 / 0.7) 3px 4px);
+    mask: repeating-radial-gradient(circle at 30% 40%, #000 0 2px, rgb(0 0 0 / 0.7) 3px 4px);
+    animation: lc-stamp 360ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  }
+  .ui-toast .coc-roll[data-level='critical'] { --lc-stamp: rgb(20 104 64); }
+  .ui-toast .coc-roll[data-level='extreme'] { --lc-stamp: rgb(28 78 118); }
+  .ui-toast .coc-roll[data-level='hard'] { --lc-stamp: rgb(92 58 120); }
+  .ui-toast .coc-roll[data-level='regular'] { --lc-stamp: rgb(var(--c-pen)); }
+  .ui-toast .coc-roll[data-level='failure'] { --lc-stamp: rgb(140 72 28); }
+  .ui-toast .coc-roll[data-level='fumble'] { --lc-stamp: rgb(146 18 18); }
+  .ui-toast .coc-roll[data-level='fumble'][data-landed]::after { border-style: double; border-width: 3px; }
 
   /* ---------------------------------------------------------------- Dialogs */
   /* A compartment door: leather in the frame, the title on a brass plate. */
@@ -585,7 +721,26 @@
 
   /* ---------------------------------------------------------------- Combat */
   .ui-hud-slot,
-  .ui-hud-slot--tile { border-radius: 2px; }
+  /* An entry's picture is a plate from a museum's catalogue: a card of yellowed stock in a fine brass
+     frame, foxed, the picture printed in black ink as an engraving is; its colour is the tab in the
+     corner, as a card is marked in the index. */
+  .ui-hud-slot--tile {
+    color: rgb(var(--c-paper-ink) / 0.88);
+    border-radius: 1px;
+    border-color: rgb(var(--c-frame));
+    background:
+      linear-gradient(135deg, var(--tile-color) 0 8px, transparent 8.5px) top left / 14px 14px no-repeat,
+      var(--foxing),
+      radial-gradient(ellipse 70% 60% at 40% 30%, rgb(255 246 220 / 0.22), transparent 70%),
+      radial-gradient(ellipse at center, rgb(var(--c-paper)), color-mix(in srgb, rgb(var(--c-paper)) 70%, rgb(var(--c-paper-muted))) 100%);
+    box-shadow:
+      inset 0 0 0 2px rgb(var(--c-paper)),
+      inset 0 0 0 3px rgb(var(--c-paper-ink) / 0.45),
+      inset 0 0 12px rgb(var(--c-paper-ink) / 0.35),
+      0 2px 4px rgb(0 0 0 / 0.6);
+  }
+  .ui-hud-slot--tile .ui-hud-slot__icon { filter: drop-shadow(0 0.5px 0 rgb(255 246 220 / 0.5)); }
+  .ui-hud-slot--tile:hover { border-color: rgb(var(--c-frame-bright)); box-shadow: inset 0 0 0 2px rgb(var(--c-paper)), inset 0 0 0 3px rgb(var(--c-paper-ink) / 0.6), inset 0 0 12px rgb(var(--c-eldritch) / 0.35), 0 0 10px -2px rgb(var(--c-eldritch) / 0.5); }
   .ui-hud-slot:not(.ui-hud-slot--tile) {
     background: rgb(var(--c-inset));
     border-color: rgb(var(--c-frame) / 0.6);
@@ -766,6 +921,15 @@ html[data-setting='lovecraft'] body::before,
   from { transform: translateX(-4%); }
   to { transform: translateX(4%); }
 }
+/* The telegram prints out from its head down; the stamp comes down hard and settles. */
+@keyframes lc-telegram {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes lc-stamp {
+  from { opacity: 0; transform: rotate(-9deg) scale(1.8); }
+  to { opacity: 0.8; transform: rotate(-9deg) scale(1); }
+}
 /* The wrong colour: the green drifts towards hues it should not have. */
 @keyframes lc-wrong-colour {
   0%, 100% { filter: hue-rotate(0deg); }
@@ -773,6 +937,9 @@ html[data-setting='lovecraft'] body::before,
 }
 @media (prefers-reduced-motion: reduce) {
   [data-setting='lovecraft'] :is(.lc-glow, .lc-chart__mark, .lc-haze, .lc-fog, .ui-meter__fill, .ui-vbar__fill) { animation: none; }
+  [data-setting='lovecraft'] .ui-toast,
+  [data-setting='lovecraft'] .ui-toast .coc-roll[data-landed]::after,
+  [data-setting='lovecraft'] .ui-toast .ui-roll-toast[data-landed]::after { animation: none; }
   html[data-setting='lovecraft'] body::after,
   html[data-setting='lovecraft'] body::before,
   .ui-atmosphere[data-setting='lovecraft']::after,
@@ -897,4 +1064,61 @@ html[data-setting='lovecraft'] body::before,
   66% { transform: translate(2px, 1px); }
   80% { transform: translate(-1px, 0); }
   100% { transform: none; }
+}
+
+/* The rulebook on a hero's card: a railway ticket — a stub with a perforated edge, typed, punched. */
+[data-setting='lovecraft'] .ui-rulebook {
+  position: relative;
+  padding: 0.32rem 0.75rem 0.3rem 1.15rem;
+  font-family: var(--font-typed);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: rgb(var(--c-paper-ink));
+  background:
+    radial-gradient(circle at 0.45rem 50%, rgb(var(--c-bg)) 0 2.5px, transparent 3px),
+    linear-gradient(90deg, rgb(var(--c-paper)) 0 0.82rem, transparent 0.82rem 0.9rem, rgb(var(--c-paper)) 0.9rem),
+    var(--foxing);
+  background-color: rgb(var(--c-paper));
+  border: 0;
+  border-radius: 0;
+  -webkit-mask: radial-gradient(circle at 0 50%, transparent 4px, black 4.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 4px, black 4.5px) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle at 0 50%, transparent 4px, black 4.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 4px, black 4.5px) right / 51% 100% no-repeat;
+  box-shadow: inset 0 0 0 1px rgb(var(--c-paper-muted) / 0.5);
+}
+/* Under the hero card it is a brass plaque on two screws, the name engraved, like a museum label. */
+[data-setting='lovecraft'] .ui-rulebook-plate .ui-rulebook {
+  padding: 0.5rem 2rem 0.45rem;
+  font-family: var(--setting-display);
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.24em;
+  /* Engraved: dark letters cut into polished brass, lit from above. */
+  color: rgb(14 8 2);
+  text-shadow: 0 1px 0 rgb(255 244 210 / 0.7);
+  background:
+    radial-gradient(circle at 0.8rem 50%, rgb(60 46 26) 0 2px, rgb(236 214 160) 2.5px, rgb(110 88 52) 3.5px, transparent 4px),
+    radial-gradient(circle at calc(100% - 0.8rem) 50%, rgb(60 46 26) 0 2px, rgb(236 214 160) 2.5px, rgb(110 88 52) 3.5px, transparent 4px),
+    linear-gradient(180deg, rgb(232 210 152), rgb(196 166 104) 48%, rgb(160 128 74));
+  -webkit-mask: none;
+  mask: none;
+  clip-path: var(--deco-shape);
+  box-shadow:
+    inset 0 1px 0 rgb(255 246 214 / 0.8),
+    inset 0 -1px 0 rgb(70 50 24 / 0.7),
+    0 8px 16px -8px rgb(0 0 0 / 0.9);
+}
+[data-setting='lovecraft'] .ui-rulebook-plate .ui-rulebook::before {
+  display: none;
+}
+
+/* The tear line between the stub and the ticket. */
+[data-setting='lovecraft'] .ui-rulebook::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0.86rem;
+  border-left: 1px dashed rgb(var(--c-paper-muted));
 }

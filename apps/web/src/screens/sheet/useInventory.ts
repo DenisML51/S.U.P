@@ -1,9 +1,9 @@
-import { applyBuild, changeItemQuantity, equipItem, itemQuantity, unequipItem } from '@itd/game-logic';
+import { changeItemQuantity, equipItem, itemQuantity, rulesOf, unequipItem } from '@itd/game-logic';
 import type { Character, InventoryItem } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 
 /** A preset hero's weapon attacks take their bonuses from the build (proficiency, ability, styles). */
-export const withBuild = (doc: Character): Character => (doc.build ? applyBuild(doc, doc.build).character : doc);
+export const withBuild = (doc: Character): Character => (doc.build ? rulesOf(doc.build).rebuild(doc, doc.build) : doc);
 
 /** Putting on, taking off and counting items; the same from the list and from an item's card. */
 export function useInventory() {

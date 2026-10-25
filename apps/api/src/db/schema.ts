@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import type { CharacterSummary } from '@itd/schema';
+import type { CharacterSummary, NpcCocStats } from '@itd/schema';
 import {
   type AnyPgColumn,
   bigint,
@@ -161,6 +161,8 @@ export const parties = pgTable(
     /** The party's chronicle, Markdown. */
     lore: text('lore').notNull().default(''),
     setting: text('setting').notNull(),
+    /** `dnd2024`, `coc7` or `custom`; `null`: any rules (tables made before the choice). */
+    rules: text('rules'),
     coverAssetId: uuid('cover_asset_id').references(() => assets.id, { onDelete: 'set null' }),
     inviteCode: text('invite_code').notNull(),
     /** The running session's start; `null` between sessions, when the table is closed to players. */
@@ -229,6 +231,8 @@ export const partyNpcs = pgTable(
     armorClass: integer('armor_class').notNull(),
     initiativeBonus: integer('initiative_bonus').notNull(),
     disposition: text('disposition', { enum: ['hostile', 'friendly'] }).notNull().default('hostile'),
+    /** Call of Cthulhu numbers (armour, build, attacks…); `null` for other NPCs. */
+    coc: jsonb('coc').$type<NpcCocStats>(),
     createdAt: createdAt(),
   },
   (t) => [index('party_npcs_party_id_idx').on(t.partyId)],
@@ -245,6 +249,11 @@ export const partyCombats = pgTable('party_combats', {
     onDelete: 'set null',
   }),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * The rules the fight goes by, fixed when it starts (`PartyDto.combatRules`; `d20` for `null`), so a
+   * hero seated mid-fight does not change them. `null`: a fight started before they were kept.
+   */
+  rules: text('rules'),
 });
 
 /** One side of the fight: a party hero or an NPC, gone with them. */

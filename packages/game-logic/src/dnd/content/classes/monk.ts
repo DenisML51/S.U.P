@@ -378,7 +378,6 @@ export const MONK: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие (лёгкое)' },
   ],
-  mentalStrength: 65,
   subclassLevel: 3,
   subclasses: [mercy, shadow, elements, openHand, mysticArts],
   startingEquipment: MONK_KITS,

@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import type { Build, Character } from '@itd/schema';
-import { DND, applyBuild, choiceOptions, levelPlan, setPicks, startingSkills } from '../src';
+import type { DndBuild, Character } from '@itd/schema';
+import { startingSkills } from '../src';
+import { DND, applyBuild, choiceOptions, levelPlan, setPicks } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
 const fresh = (): Character => makeCharacter({ skills: startingSkills(), maxHP: 10, currentHP: 10 });
 const resource = (c: Character, id: string) => c.resources.find((r) => r.id === id);
 const ability = (c: Character, name: string) => c.abilities.find((a) => a.name === name);
 
-const bard = (patch: Partial<Build> = {}): Build => ({
+const bard = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'entertainer',
@@ -22,7 +23,7 @@ const bard = (patch: Partial<Build> = {}): Build => ({
   ...patch,
 });
 
-const cleric = (patch: Partial<Build> = {}): Build => ({
+const cleric = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'acolyte',

@@ -1,9 +1,12 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { findBackground, findClass, findSubclass, pointsRemaining } from '@itd/game-logic';
+import { pointsRemaining } from '@itd/game-logic';
+import { findBackground, findClass, findSubclass } from '@itd/game-logic/dnd';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 import { Button, Panel, cx } from '../../ui/primitives';
-import { IconCheck, IconDice, IconPrev, IconQuill } from '../../ui/icons';
+import { IconCheck, IconPrev } from '../../ui/icons';
+import { RulesCarousel } from '../../ui/RulesetCards';
+import type { RulesChoice } from '../../systems';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
 import { Flourish } from '../../ui/Flourish';
@@ -22,10 +25,35 @@ import {
   SpeciesStep,
 } from './dnd/steps';
 import { useDndCreation } from './dnd/useDndCreation';
+import {
+  AgeStep,
+  ArchetypeStep,
+  CharacteristicsStep,
+  CocSummary,
+  GearStep,
+  IdentityStep as CocIdentityStep,
+  OccupationStep,
+  RulesStep,
+  SkillsStep,
+  StoryStep,
+  TalentsStep,
+} from './coc/steps';
+import { useCocCreation } from './coc/useCocCreation';
 import { useCreation } from './useCreation';
-import { clearDraft, useDraftState } from './useDraftState';
+import { useDraftState } from './useDraftState';
 
-type Path = 'dnd' | 'custom';
+type Path = 'dnd' | 'coc' | 'custom';
+
+const PATH_OF: Record<RulesChoice, Path> = { dnd2024: 'dnd', coc7: 'coc', custom: 'custom' };
+const RULES_OF: Record<Path, RulesChoice> = { dnd: 'dnd2024', coc: 'coc7', custom: 'custom' };
+/** A step's page turning: in from the side the player is going, out the other way, with a slight swing. */
+const PAGE_TURN = {
+  enter: (dir: number) => ({ opacity: 0, x: 56 * dir, rotateY: -7 * dir }),
+  shown: { opacity: 1, x: 0, rotateY: 0 },
+  leave: (dir: number) => ({ opacity: 0, x: -40 * dir, rotateY: 6 * dir }),
+};
+
+const PATH_NAMES: Record<Path, string> = { dnd: 'D&D 2024', coc: 'Зов Ктулху', custom: 'Свои правила' };
 
 interface Step {
   id: string;
@@ -40,18 +68,6 @@ interface Step {
   stage?: boolean;
 }
 
-/** A big card to choose with; inside a setting scope it takes that setting's hover effect. */
-const BigChoice: React.FC<{ selected: boolean; onSelect: () => void; children: React.ReactNode; className?: string }> = ({
-  selected,
-  onSelect,
-  children,
-  className,
-}) => (
-  <Panel as="button" interactive active={selected} onClick={onSelect} aria-pressed={selected} className={cx('text-left', className)}>
-    <span className="relative block">{children}</span>
-  </Panel>
-);
-
 /**
  * Brings the field an issue names into view on the step's panel and flashes it. Issues carry the
  * field's title, prefixed with its level on the level plan ("1: Навыки").
@@ -59,7 +75,9 @@ const BigChoice: React.FC<{ selected: boolean; onSelect: () => void; children: R
 function revealIssue(issue: string) {
   const title = issue.replace(/^\d+:\s*/, '');
   const panel = document.querySelector('[data-creation-panel]');
-  const field = [...(panel?.querySelectorAll('h3, h4, h5, label, .ui-label') ?? [])].find((el) => el.textContent?.trim().startsWith(title));
+  const field = [...(panel?.querySelectorAll('h3, h4, h5, label, .ui-label') ?? [])].find((el) =>
+    el.textContent?.trim().startsWith(title),
+  );
   const target = field?.closest('section') ?? field;
   if (!target) return;
   target.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -79,21 +97,38 @@ const METHOD_NAMES = { pointBuy: 'Покупка очков', roll: 'Бросо�
 export const CreationScreen: React.FC<{
   /** A world set in advance (a hero made for a party): the world step is already taken. */
   world?: Setting;
+  /** The table's rules (a hero made for a party): only that path is offered. */
+  rules?: RulesChoice;
   onDone: () => void;
-}> = ({ world, onDone }) => {
+  /** Forgets the draft and starts the creation over. */
+  onRestart: () => void;
+}> = ({ world, rules, onDone, onRestart }) => {
+  const [confirmRestart, setConfirmRestart] = React.useState(false);
   const [setting, setSetting] = useDraftState<Setting>('setting', world ?? DEFAULT_SETTING);
   const [worldChosen, setWorldChosen] = useDraftState('worldChosen', world !== undefined);
-  const [path, setPath] = useDraftState<Path | null>('path', null);
+  const [path, setPath] = useDraftState<Path | null>('path', rules ? PATH_OF[rules] : null);
   const [index, setIndex] = useDraftState('step', world ? 1 : 0);
+  /** Which way the last step went: the next page comes in from that side, the old one leaves the other way. */
+  const lastIndex = React.useRef(index);
+  const direction = index >= lastIndex.current ? 1 : -1;
+  React.useEffect(() => {
+    lastIndex.current = index;
+  }, [index]);
   const dnd = useDndCreation(setting, onDone);
   const custom = useCreation(setting, onDone);
+  const coc = useCocCreation(setting, onDone);
   /** The world in front of the world carousel: on the world step the screen wears its look. */
   const [inFront, setInFront] = React.useState<Setting | null>(null);
   const previewing = index === 0 && inFront !== null;
   const shown = previewing ? inFront : setting;
   useDocumentSetting(shown);
   /** The flourish of the world just chosen, while it plays. */
-  const [flourish, setFlourish] = React.useState<{ setting: Setting; x: number; y: number; key: number } | null>(null);
+  const [flourish, setFlourish] = React.useState<{
+    setting: Setting;
+    x: number;
+    y: number;
+    key: number;
+  } | null>(null);
   const endFlourish = React.useCallback(() => setFlourish(null), []);
 
   const common: Step[] = [
@@ -119,28 +154,19 @@ export const CreationScreen: React.FC<{
     {
       id: 'path',
       label: 'Путь',
-      value: path === 'dnd' ? 'D&D 2024' : path === 'custom' ? 'Свой герой' : undefined,
-      question: 'Как создадим героя?',
-      issues: path ? [] : ['Путь'],
+      value: path ? PATH_NAMES[path] : undefined,
+      question: 'По каким правилам играем?',
+      issues: path ? [] : ['Правила'],
       stage: true,
       content: (
-        <div className="mx-auto grid h-[22rem] w-full max-w-4xl grid-cols-2 gap-5">
-          <BigChoice selected={path === 'dnd'} onSelect={() => { setPath('dnd'); setIndex(2); }} className="flex flex-col justify-center px-8">
-            <IconDice width={52} height={52} className="mb-5 text-frame-bright" />
-            <span className="ui-display ui-title block text-[1.8rem] leading-tight text-frame-bright">По правилам D&D 2024</span>
-            <span className="mt-3 block text-ink-muted">
-              Виды, предыстории и классы Книги игрока. Умения, ячейки и выборы приходят сами с каждым уровнем.
-            </span>
-            <span className="mt-4 block text-sm text-ink-faint">12 классов, 48 подклассов и все заклинания Книги игрока</span>
-          </BigChoice>
-          <BigChoice selected={path === 'custom'} onSelect={() => { setPath('custom'); setIndex(2); }} className="flex flex-col justify-center px-8">
-            <IconQuill width={52} height={52} className="mb-5 text-frame-bright" />
-            <span className="ui-display ui-title block text-[1.8rem] leading-tight text-frame-bright">Свой герой</span>
-            <span className="mt-3 block text-ink-muted">
-              Раса, класс и всё остальное — своими словами. Лист заполняете сами, по правилам вашего стола.
-            </span>
-          </BigChoice>
-        </div>
+        <RulesCarousel
+          value={path ? RULES_OF[path] : null}
+          allowed={rules ? [rules] : undefined}
+          onChange={(choice) => {
+            setPath(PATH_OF[choice]);
+            setIndex(2);
+          }}
+        />
       ),
     },
   ];
@@ -149,18 +175,49 @@ export const CreationScreen: React.FC<{
   const classDef = findClass(build.class);
   const subclass = findSubclass(classDef, build.subclass);
   const dndSteps: Step[] = [
-    { id: 'species', label: 'Вид', value: build.species ? preview.subrace || preview.race : undefined, question: 'Кто ваш герой по крови?', issues: dnd.issues.species, content: <SpeciesStep creation={dnd} /> },
-    { id: 'background', label: 'Предыстория', value: findBackground(build.background)?.name, question: 'Кем он был до приключений?', issues: dnd.issues.background, content: <BackgroundStep creation={dnd} /> },
-    { id: 'class', label: 'Класс', value: [classDef?.name, subclass?.name].filter(Boolean).join(' · ') || undefined, question: 'Чему он посвятил жизнь?', issues: dnd.issues.class, content: <ClassStep creation={dnd} /> },
+    {
+      id: 'species',
+      label: 'Вид',
+      value: build.species ? preview.subrace || preview.race : undefined,
+      question: 'Кто ваш герой по крови?',
+      issues: dnd.issues.species,
+      content: <SpeciesStep creation={dnd} />,
+    },
+    {
+      id: 'background',
+      label: 'Предыстория',
+      value: findBackground(build.background)?.name,
+      question: 'Кем он был до приключений?',
+      issues: dnd.issues.background,
+      content: <BackgroundStep creation={dnd} />,
+    },
+    {
+      id: 'class',
+      label: 'Класс',
+      value: [classDef?.name, subclass?.name].filter(Boolean).join(' · ') || undefined,
+      question: 'Чему он посвятил жизнь?',
+      issues: dnd.issues.class,
+      content: <ClassStep creation={dnd} />,
+    },
     {
       id: 'abilities',
       label: 'Характеристики',
-      value: build.abilityMethod === 'pointBuy' ? `${METHOD_NAMES.pointBuy} · ${27 - pointsRemaining(build.baseAttributes)}/27` : METHOD_NAMES[build.abilityMethod],
+      value:
+        build.abilityMethod === 'pointBuy'
+          ? `${METHOD_NAMES.pointBuy} · ${27 - pointsRemaining(build.baseAttributes)}/27`
+          : METHOD_NAMES[build.abilityMethod],
       question: 'В чём его сила?',
       issues: dnd.issues.abilities,
       content: <AbilitiesStep creation={dnd} />,
     },
-    { id: 'progression', label: 'Развитие', value: classDef ? `Уровень ${build.level}` : undefined, question: 'Чему он научился на своём пути?', issues: dnd.issues.progression, content: <ProgressionStep creation={dnd} /> },
+    {
+      id: 'progression',
+      label: 'Развитие',
+      value: classDef ? `Уровень ${build.level}` : undefined,
+      question: 'Чему он научился на своём пути?',
+      issues: dnd.issues.progression,
+      content: <ProgressionStep creation={dnd} />,
+    },
     {
       id: 'equipment',
       label: 'Снаряжение',
@@ -169,7 +226,14 @@ export const CreationScreen: React.FC<{
       issues: dnd.issues.equipment,
       content: <EquipmentStep creation={dnd} />,
     },
-    { id: 'identity', label: 'Имя', value: dnd.name || undefined, question: 'Как его зовут?', issues: dnd.issues.identity, content: <IdentityStep creation={dnd} /> },
+    {
+      id: 'identity',
+      label: 'Имя',
+      value: dnd.name || undefined,
+      question: 'Как его зовут?',
+      issues: dnd.issues.identity,
+      content: <IdentityStep creation={dnd} />,
+    },
   ];
 
   const customSteps: Step[] = [
@@ -181,30 +245,147 @@ export const CreationScreen: React.FC<{
       issues: custom.valid.origin ? [] : ['Раса и класс'],
       content: <OriginStep creation={custom} />,
     },
-    { id: 'attributes', label: 'Характеристики', value: `${27 - custom.points}/27`, question: 'В чём его сила?', issues: custom.valid.attributes ? [] : ['Очки характеристик'], content: <PointBuyStep creation={custom} /> },
-    { id: 'training', label: 'Навыки', question: 'Чему он обучен?', issues: [], content: <TrainingChoice creation={custom} columns={3} /> },
-    { id: 'identity', label: 'Имя', value: custom.name || undefined, question: 'Как его зовут?', issues: custom.valid.identity ? [] : ['Имя'], content: <IdentityStep creation={custom} /> },
+    {
+      id: 'attributes',
+      label: 'Характеристики',
+      value: `${27 - custom.points}/27`,
+      question: 'В чём его сила?',
+      issues: custom.valid.attributes ? [] : ['Очки характеристик'],
+      content: <PointBuyStep creation={custom} />,
+    },
+    {
+      id: 'training',
+      label: 'Навыки',
+      question: 'Чему он обучен?',
+      issues: [],
+      content: <TrainingChoice creation={custom} columns={3} />,
+    },
+    {
+      id: 'identity',
+      label: 'Имя',
+      value: custom.name || undefined,
+      question: 'Как его зовут?',
+      issues: custom.valid.identity ? [] : ['Имя'],
+      content: <IdentityStep creation={custom} />,
+    },
   ];
 
-  const steps = [...common, ...(path === 'custom' ? customSteps : dndSteps)];
+  const cocSteps: Step[] = [
+    {
+      id: 'coc-rules',
+      label: 'Редакция',
+      value: coc.editionChosen
+        ? `${coc.pulp ? 'Pulp' : 'Классика'} · ${coc.era === '1920s' ? '1920-е' : 'наши дни'}`
+        : undefined,
+      question: 'Какая история?',
+      issues: coc.issues.rules,
+      stage: true,
+      content: <RulesStep creation={coc} onChosen={() => setIndex(index + 1)} />,
+    },
+    ...(coc.pulp
+      ? [
+          {
+            id: 'coc-archetype',
+            label: 'Архетип',
+            value: coc.archetypeInfo?.name,
+            question: 'Кем он был бы на обложке?',
+            issues: coc.issues.archetype,
+            content: <ArchetypeStep creation={coc} />,
+          },
+        ]
+      : []),
+    {
+      id: 'coc-characteristics',
+      label: 'Характеристики',
+      value: coc.rolled ? `Удача ${coc.luck || '—'}` : undefined,
+      question: 'Каков он от природы?',
+      issues: coc.issues.characteristics,
+      content: <CharacteristicsStep creation={coc} />,
+    },
+    {
+      id: 'coc-age',
+      label: 'Возраст',
+      value: `${coc.age} лет`,
+      question: 'Сколько ему лет?',
+      issues: coc.issues.age,
+      content: <AgeStep creation={coc} />,
+    },
+    {
+      id: 'coc-occupation',
+      label: 'Профессия',
+      value: coc.occupationInfo?.name,
+      question: 'Чем он зарабатывает на жизнь?',
+      issues: coc.issues.occupation,
+      content: <OccupationStep creation={coc} />,
+    },
+    {
+      id: 'coc-skills',
+      label: 'Навыки',
+      value: coc.occupationInfo ? `Средства ${coc.creditRating}` : undefined,
+      question: 'Что он умеет?',
+      issues: coc.issues.skills,
+      content: <SkillsStep creation={coc} />,
+    },
+    ...(coc.pulp
+      ? [
+          {
+            id: 'coc-talents',
+            label: 'Таланты',
+            value: coc.talents.length ? `${coc.talents.length}` : undefined,
+            question: 'Чем он особенный?',
+            issues: coc.issues.talents,
+            content: <TalentsStep creation={coc} />,
+          },
+        ]
+      : []),
+    {
+      id: 'coc-story',
+      label: 'Предыстория',
+      question: 'Что у него за душой?',
+      issues: coc.issues.story,
+      content: <StoryStep creation={coc} />,
+    },
+    {
+      id: 'coc-gear',
+      label: 'Снаряжение',
+      value: coc.weapons.length ? `Оружие: ${coc.weapons.length}` : undefined,
+      question: 'Что у него с собой?',
+      issues: coc.issues.gear,
+      content: <GearStep creation={coc} />,
+    },
+    {
+      id: 'coc-identity',
+      label: 'Имя',
+      value: coc.name || undefined,
+      question: 'Как его зовут?',
+      issues: coc.issues.identity,
+      content: <CocIdentityStep creation={coc} />,
+    },
+  ];
+
+  const steps = [...common, ...(path === 'custom' ? customSteps : path === 'coc' ? cocSteps : dndSteps)];
   const step = steps[Math.min(index, steps.length - 1)]!;
   const last = index === steps.length - 1;
   /** A step can be opened once every step before it is done. */
   const reachable = (i: number) => steps.slice(0, i).every((s) => s.issues.length === 0);
   const summary = path === 'custom' ? custom.preview() : dnd.preview;
   const images = path === 'custom' ? custom.images : dnd.images;
-  const creating = path === 'custom' ? custom.creating : dnd.creating;
-  const create = () => void (path === 'custom' ? custom.create() : dnd.create());
+  const creating = path === 'custom' ? custom.creating : path === 'coc' ? coc.creating : dnd.creating;
+  const create = () =>
+    void (path === 'custom' ? custom.create() : path === 'coc' ? coc.create() : dnd.create());
 
   const content = (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="wait" initial={false} custom={direction}>
       <motion.div
         key={step.id}
+        custom={direction}
         className={cx('min-h-0', step.stage ? 'w-full' : 'h-full')}
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
-        transition={{ duration: 0.2 }}
+        style={{ transformPerspective: 1400 }}
+        variants={PAGE_TURN}
+        initial="enter"
+        animate="shown"
+        exit="leave"
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
       >
         {step.content}
       </motion.div>
@@ -217,24 +398,69 @@ export const CreationScreen: React.FC<{
       size="sm"
       icon={<IconPrev width={16} height={16} />}
       className="self-start"
-      onClick={() => {
-        clearDraft();
-        onDone();
-      }}
+      // Leaving keeps the draft: the hero is picked up where it was from the heroes or the home page.
+      onClick={onDone}
     >
       Герои
     </Button>
   );
 
+  /** Throwing the draft away is asked once more: it is the only thing here that cannot be undone. */
+  const restart = path !== null && (
+    <div className="mb-2 mt-1 flex items-center gap-2 px-2 text-xs">
+      {confirmRestart ? (
+        <>
+          <span className="text-ink-muted">Сбросить все выборы?</span>
+          <button
+            type="button"
+            className="text-danger underline-offset-4 hover:underline"
+            onClick={onRestart}
+          >
+            Да
+          </button>
+          <button
+            type="button"
+            className="text-ink-faint underline-offset-4 hover:underline"
+            onClick={() => setConfirmRestart(false)}
+          >
+            Нет
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          className="text-ink-faint underline-offset-4 hover:text-ink hover:underline"
+          onClick={() => setConfirmRestart(true)}
+        >
+          Начать заново
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <SettingScope
       setting={shown}
-      className={cx('ui-morph relative flex h-screen overflow-clip bg-bg', !worldChosen && !previewing && 'ui-service')}
+      className={cx(
+        'ui-morph relative flex h-screen overflow-clip bg-bg',
+        !worldChosen && !previewing && 'ui-service',
+      )}
       data-flourish={flourish?.setting}
     >
-      {flourish && <Flourish key={flourish.key} setting={flourish.setting} x={flourish.x} y={flourish.y} onEnd={endFlourish} />}
+      {flourish && (
+        <Flourish
+          key={flourish.key}
+          setting={flourish.setting}
+          x={flourish.x}
+          y={flourish.y}
+          onEnd={endFlourish}
+        />
+      )}
       {/* The atmosphere of the world in front, behind the world step only. */}
-      <div className="pointer-events-none absolute inset-0 transition-opacity duration-700" style={{ opacity: index === 0 ? 1 : 0 }}>
+      <div
+        className="pointer-events-none absolute inset-0 transition-opacity duration-700"
+        style={{ opacity: index === 0 ? 1 : 0 }}
+      >
         <SettingBackdrop setting={shown} strength={0.6} />
       </div>
       {/* The steps appear once the world is behind: choosing a world is a stage of its own. */}
@@ -250,7 +476,12 @@ export const CreationScreen: React.FC<{
           >
             <div className="flex min-h-0 w-60 flex-1 flex-col px-4 py-6">
               {backToHeroes}
-              <h1 className="ui-display ui-title mb-4 mt-6 px-2 text-xl text-frame-bright">Новый герой</h1>
+              <h1
+                className={cx('ui-display ui-title mt-6 px-2 text-xl text-frame-bright', !restart && 'mb-4')}
+              >
+                Новый герой
+              </h1>
+              {restart}
               <nav className="ui-scroll flex min-h-0 flex-col gap-0.5 overflow-y-auto" aria-label="Шаги">
                 {steps.map((s, i) => {
                   const done = i !== index && s.issues.length === 0 && reachable(i);
@@ -281,9 +512,11 @@ export const CreationScreen: React.FC<{
       <div className="relative flex min-w-0 flex-1 flex-col">
         {step.stage ? (
           // A stage step (the world, the path): its question on top, its choices centred in the room left.
-          <main className="relative flex min-h-0 flex-1 flex-col px-10 pt-8">
-            {index === 0 && <div className="absolute left-24 top-8">{backToHeroes}</div>}
-            <h2 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">{step.question}</h2>
+          <main className="relative flex min-h-0 flex-1 flex-col px-10 pt-14">
+            {index === 0 && <div className="absolute left-24 top-14">{backToHeroes}</div>}
+            <h2 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">
+              {step.question}
+            </h2>
             <div className="flex min-h-0 flex-1 items-center">{content}</div>
           </main>
         ) : (
@@ -296,7 +529,16 @@ export const CreationScreen: React.FC<{
                 {content}
               </div>
             </Panel>
-            <HeroSummary sheet={summary} setting={setting} images={images} classIcon={path === 'dnd' ? build.class : undefined} />
+            {path === 'coc' ? (
+              <CocSummary creation={coc} />
+            ) : (
+              <HeroSummary
+                sheet={summary}
+                setting={setting}
+                images={images}
+                classIcon={path === 'dnd' ? build.class : undefined}
+              />
+            )}
           </main>
         )}
 
@@ -307,7 +549,11 @@ export const CreationScreen: React.FC<{
               Назад
             </Button>
             {last ? (
-              <Button variant="primary" disabled={!steps.every((s) => s.issues.length === 0) || creating} onClick={create}>
+              <Button
+                variant="primary"
+                disabled={!steps.every((s) => s.issues.length === 0) || creating}
+                onClick={create}
+              >
                 Начать путь
               </Button>
             ) : (
@@ -322,7 +568,12 @@ export const CreationScreen: React.FC<{
               <>
                 Осталось выбрать:
                 {step.issues.map((issue) => (
-                  <button key={issue} type="button" className="ui-issue-link" onClick={() => revealIssue(issue)}>
+                  <button
+                    key={issue}
+                    type="button"
+                    className="ui-issue-link"
+                    onClick={() => revealIssue(issue)}
+                  >
                     {issue}
                   </button>
                 ))}

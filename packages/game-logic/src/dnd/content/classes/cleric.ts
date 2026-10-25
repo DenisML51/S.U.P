@@ -607,7 +607,6 @@ export const CLERIC: ClassDef = {
     { type: 'proficiency', category: 'armor', value: 'Щиты' },
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
   ],
-  mentalStrength: 65,
   subclassLevel: 3,
   subclasses: [life, light, trickery, war, knowledge, grave, arcana],
   startingEquipment: CLERIC_KITS,

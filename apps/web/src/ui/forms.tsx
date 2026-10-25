@@ -105,9 +105,11 @@ export const NumberField: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `format` only depends on `signed`
   }, [value, focused, signed]);
 
+  // Enter commits and the blur after it would commit again: only a real change is passed on, once.
   const commit = (raw: string) => {
     const parsed = Number(raw.replace('−', '-').replace(',', '.'));
-    if (raw.trim() !== '' && Number.isFinite(parsed)) onChange(clamp(parsed));
+    const next = raw.trim() !== '' && Number.isFinite(parsed) ? clamp(parsed) : null;
+    if (next !== null && next !== value) onChange(next);
     else setText(format(value));
   };
 
@@ -131,7 +133,7 @@ export const NumberField: React.FC<{
           commit(e.target.value);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') commit((e.target as HTMLInputElement).value);
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           else if (e.key === 'ArrowUp') {
             e.preventDefault();
             onChange(clamp(value + step));
@@ -152,6 +154,8 @@ export const NumberField: React.FC<{
 // Popover: a floating list under a field. Rendered into <body> so scrolling dialogs never clip it;
 // flips above the field when there is no room below.
 // ------------------------------------------------------------------------------------------------
+
+const POPOVER_MIN_WIDTH = 224;
 
 const Popover: React.FC<{
   anchor: React.RefObject<HTMLElement | null>;
@@ -196,6 +200,9 @@ const Popover: React.FC<{
   }, [open, onClose, anchor]);
 
   const below = rect ? window.innerHeight - rect.bottom > 260 || rect.top < 260 : true;
+  // A narrow field still gets a list wide enough to read, kept inside the window's 16px gutters.
+  const width = rect ? Math.min(Math.max(rect.width, POPOVER_MIN_WIDTH), window.innerWidth - 32) : 0;
+  const left = rect ? Math.max(16, Math.min(rect.left, window.innerWidth - width - 16)) : 0;
 
   return createPortal(
     <AnimatePresence>
@@ -204,8 +211,8 @@ const Popover: React.FC<{
           ref={panel}
           className="ui-popover ui-scroll"
           style={{
-            left: rect.left,
-            width: rect.width,
+            left,
+            width,
             ...(below ? { top: rect.bottom + 4 } : { bottom: window.innerHeight - rect.top + 4 }),
           }}
           initial={{ opacity: 0, y: below ? -4 : 4 }}

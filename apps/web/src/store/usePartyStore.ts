@@ -274,3 +274,22 @@ export function useParty(id: string | undefined): PartyDto | undefined {
   useEffect(() => (id ? watch(id) : undefined), [id, watch]);
   return usePartyStore((s) => (id ? s.parties[id] : undefined));
 }
+
+/**
+ * The party whose table this hero sits at right now: only while a session (or a fight) runs there.
+ * Between sessions the hero is on their own — their own world, their own fights. `listed` is the
+ * party from the list, at the table or not; the live view decides once it has come, until then the
+ * list's word for it.
+ */
+export function useTableOfCharacter(characterId: string | undefined): {
+  listed: PartyListItemDto | undefined;
+  party: PartyDto | undefined;
+  atTable: boolean;
+} {
+  const listed = usePartyOfCharacter(characterId);
+  const view = useParty(listed?.id);
+  const atTable = view
+    ? view.sessionStartedAt !== null || view.combat !== null
+    : !!(listed?.inSession || listed?.inCombat);
+  return { listed, party: atTable ? view : undefined, atTable };
+}

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { LevelUpDialog } from '../../progression/LevelUpDialog';
+import React, { Suspense, lazy, useState } from 'react';
 import { AbilityDialog } from './AbilityDialog';
 import { AttackDialog } from './AttackDialog';
+import { BodyDialog } from './BodyDialog';
 import { DiceDialog } from './DiceDialog';
 import { ItemDialog } from './ItemDialog';
 import { ProfileDialog } from './ProfileDialog';
@@ -12,6 +12,9 @@ import { ArmorDialog, AttributeDialog, LimbDialog } from './StatDialogs';
 import { TraitDialog } from './TraitDialog';
 import { CurrencyDialog, ExperienceDialog, HealthDialog, SanityDialog } from './VitalDialogs';
 import { useSheetDialogs, type EntryKind, type SheetDialog } from './context';
+
+/** Level-up is the build engine's own screen: it comes with the rules system, on demand. */
+const LevelUpDialog = lazy(() => import('../../progression/LevelUpDialog').then((m) => ({ default: m.LevelUpDialog })));
 
 /** The card of one entry, by its kind: shown as a dialog or, inside a pane scope, as the pane. */
 export const EntryCard: React.FC<{ kind: EntryKind; open: boolean; id?: string; edit?: boolean; onClose: () => void }> = ({
@@ -67,12 +70,18 @@ export const SheetDialogHost: React.FC = () => {
       return <AttributeDialog key={key} open={open} id={current.id} onClose={close} />;
     case 'armor':
       return <ArmorDialog key={key} open={open} onClose={close} />;
+    case 'body':
+      return <BodyDialog key={key} open={open} onClose={close} />;
     case 'profile':
       return <ProfileDialog key={key} open={open} onClose={close} />;
     case 'limb':
       return <LimbDialog key={key} open={open} id={current.id} onClose={close} />;
     case 'levelUp':
-      return <LevelUpDialog key={key} open={open} onClose={close} />;
+      return (
+        <Suspense key={key} fallback={null}>
+          <LevelUpDialog open={open} onClose={close} />
+        </Suspense>
+      );
     case 'rest':
       return <RestDialog key={key} open={open} onClose={close} />;
     case 'dice':

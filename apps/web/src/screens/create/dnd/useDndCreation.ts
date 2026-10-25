@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
+  pointsRemaining,
+} from '@itd/game-logic';
+import {
   createDndHero,
   emptyBuild,
   findBackground,
   findClass,
-  pointsRemaining,
   validBackgroundBonuses,
   withoutPicks,
-} from '@itd/game-logic';
-import type { Build, CharacterImages, Setting } from '@itd/schema';
+} from '@itd/game-logic/dnd';
+import type { DndBuild, CharacterImages, Setting } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
-import { clearDraft, useDraftState } from '../useDraftState';
+import { useClearDraft, useDraftState } from '../useDraftState';
 import { CLASS_SOURCES, planIssues } from '../../progression/LevelPlanView';
 
 /**
@@ -20,7 +22,8 @@ import { CLASS_SOURCES, planIssues } from '../../progression/LevelPlanView';
  */
 export function useDndCreation(setting: Setting, onCreated: () => void) {
   const createCharacter = useCharacterStore((s) => s.createCharacter);
-  const [build, setBuild] = useDraftState<Build>('build', emptyBuild);
+  const clearDraft = useClearDraft();
+  const [build, setBuild] = useDraftState<DndBuild>('build', emptyBuild);
   const [rolls, setRolls] = useDraftState<number[] | null>('rolls', null);
   const [classKitId, setClassKitId] = useDraftState<string | undefined>('classKit', undefined);
   const [backgroundKitId, setBackgroundKitId] = useDraftState<string | undefined>('backgroundKit', undefined);

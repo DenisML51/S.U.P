@@ -42,3 +42,19 @@ export function initiativeBonusOf(party: PartyDto, combatant: CombatantDto): num
 }
 
 export const formatBonus = (value: number) => (value >= 0 ? `+${value}` : `−${Math.abs(value)}`);
+
+/**
+ * A Call of Cthulhu fight: the table's rules, or a table of any rules where every hero is an
+ * investigator (see `PartyDto.combatRules`). NPCs then act in DEX order and carry CoC numbers.
+ */
+export const isCocFight = (party: PartyDto): boolean => party.combatRules === 'coc7';
+
+/** The combatant acts in DEX order: an investigator always, an NPC in a Call of Cthulhu fight. */
+export function actsByDex(party: PartyDto, combatant: CombatantDto | null): boolean {
+  if (combatant?.kind === 'hero') return !!party.heroes.find((hero) => hero.id === combatant.refId)?.vitals?.coc;
+  return isCocFight(party);
+}
+
+/** An NPC with its firearm drawn: its DEX order starts at +50. */
+export const npcFirearmReady = (party: PartyDto, combatant: CombatantDto | null): boolean =>
+  combatant?.kind === 'npc' && !!party.npcs?.find((npc) => npc.id === combatant.refId)?.coc?.firearmReady;

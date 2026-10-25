@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Build, Character } from '@itd/schema';
-import { DND, applyBuild, choiceOptions, levelPlan, setPicks, startingSkills } from '../src';
+import type { DndBuild, Character } from '@itd/schema';
+import { startingSkills } from '../src';
+import { DND, applyBuild, choiceOptions, levelPlan, setPicks } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
-const build = (patch: Partial<Build> = {}): Build => ({
+const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'sage',
@@ -19,11 +20,11 @@ const build = (patch: Partial<Build> = {}): Build => ({
 });
 
 const fresh = (): Character => makeCharacter({ skills: startingSkills(), maxHP: 10, currentHP: 10 });
-const run = (b: Build) => applyBuild(fresh(), b);
-const apply = (b: Build) => run(b).character;
+const run = (b: DndBuild) => applyBuild(fresh(), b);
+const apply = (b: DndBuild) => run(b).character;
 const resource = (c: Character, id: string) => c.resources.find((r) => r.id === id);
 const ability = (c: Character, name: string) => c.abilities.find((a) => a.name === name);
-const classCantrips = (b: Build, level: number) =>
+const classCantrips = (b: DndBuild, level: number) =>
   levelPlan(b, level).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips');
 
 const ORDER = 'class:druid.primal-order/order';

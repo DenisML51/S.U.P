@@ -6,7 +6,7 @@ import { IconCombat, IconInitiative } from '../../ui/icons';
 import { Button } from '../../ui/primitives';
 import { InitiativeDialog } from './InitiativeDialog';
 import { InitiativeStrip } from './InitiativeStrip';
-import { initiativeBonusOf } from './partyView';
+import { actsByDex, initiativeBonusOf, npcFirearmReady } from './partyView';
 import { StartCombatDialog } from './StartCombatDialog';
 import { useTableCombat } from './useTableCombat';
 
@@ -66,7 +66,7 @@ export const PartyCombatBar: React.FC<{
               )}
               {!rolling && !seat.canPassTurn && seat.current && <span className="text-sm text-ink-muted">ходит {seat.current.name}</span>}
             </div>
-            <InitiativeStrip combat={fight} size="sm" onPick={seat.roll} className="max-w-[60vw] [justify-content:safe_center]" />
+            <InitiativeStrip combat={fight} size="sm" onPick={seat.roll} master={seat.isMaster} className="max-w-[60vw] [justify-content:safe_center]" />
           </motion.div>
         ) : (
           <motion.div
@@ -96,6 +96,8 @@ export const PartyCombatBar: React.FC<{
         setting={party.setting}
         combatant={seat.rolling}
         bonus={seat.rolling ? initiativeBonusOf(party, seat.rolling) : null}
+        byDex={actsByDex(party, seat.rolling)}
+        firearmReady={npcFirearmReady(party, seat.rolling)}
         canRemove={seat.isMaster}
         onClose={() => seat.roll(null)}
       />

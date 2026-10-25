@@ -5,7 +5,7 @@ import { useCharacterStore } from '../../store/useCharacterStore';
 import { CharacterArt, fullArtSrc } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { ConfirmDialog } from '../../ui/Dialog';
-import { Button, IconButton, Meter, Panel, cx } from '../../ui/primitives';
+import { Button, IconButton, Panel, cx } from '../../ui/primitives';
 import { SETTING_ART } from '../../ui/art';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
@@ -21,7 +21,9 @@ import {
 } from '../../ui/icons';
 import { Wordmark } from './Wordmark';
 import { SyncBadge } from './SyncBadge';
+import { useHasSoloDraft } from '../create/useDraftState';
 import { readLastHero as readLast, rememberLastHero as rememberLast } from '../home/lastHero';
+import { HeroVitals, RulebookPlate } from '../home/homeParts';
 
 /** Index of the "new hero" slot that ends the row. */
 type Slot = { kind: 'hero'; hero: CharacterPreview } | { kind: 'new' };
@@ -38,6 +40,7 @@ interface HeroSelectProps {
  * the controls are the service's own and stay the same over every world.
  */
 export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpenSettings }) => {
+  const resumable = useHasSoloDraft();
   const heroes = useCharacterStore((s) => s.charactersList);
   const loadCharacter = useCharacterStore((s) => s.loadCharacter);
   const deleteCharacter = useCharacterStore((s) => s.deleteCharacter);
@@ -124,7 +127,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
 
       <div className="relative z-10 flex h-full flex-col">
         <motion.header
-          className="flex items-center justify-between px-24 pt-10"
+          className="flex items-center justify-between px-24 pt-14"
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.15 } }}
           exit={{ opacity: 0, y: -12, transition: { duration: 0.25 } }}
@@ -159,7 +162,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
         </main>
 
         <motion.footer
-          className="flex items-center justify-between gap-6 px-24 pb-10"
+          className="flex items-center justify-between gap-6 px-24 pb-14"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.2 } }}
           exit={{ opacity: 0, y: 12, transition: { duration: 0.25 } }}
@@ -178,7 +181,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
               </Button>
             ) : (
               <Button variant="primary" size="lg" className="min-w-[220px]" icon={<IconCreate width={18} height={18} />} onClick={onCreate}>
-                Создать героя
+                {resumable ? 'Продолжить создание' : 'Создать героя'}
               </Button>
             )}
             <Strip slots={slots} index={focusIndex} onFocus={setIndex} />
@@ -296,7 +299,8 @@ const HeroCard: React.FC<{ hero: CharacterPreview; focused: boolean; onClick: ()
   const { HeroReadout } = SETTING_ART[setting];
   return (
     <SettingScope setting={setting} className="ui-hero-card relative h-full" data-focused={focused || undefined}>
-      {HeroReadout && <HeroReadout id={hero.id} level={hero.level} hp={hero.currentHP} maxHp={hero.maxHP} />}
+      {focused && <RulebookPlate hero={hero} />}
+      {HeroReadout && <HeroReadout id={hero.id} level={hero.level} age={hero.investigator?.age} hp={hero.currentHP} maxHp={hero.maxHP} />}
       <Panel
         as="button"
         interactive
@@ -315,25 +319,16 @@ const HeroCard: React.FC<{ hero: CharacterPreview; focused: boolean; onClick: ()
           {focused && (
             <div className="text-sm text-ink-muted">{[origin.race, origin.calling].filter(Boolean).join(' · ')}</div>
           )}
-          <div className={cx('flex items-center gap-4 pt-1', !focused && 'hidden')}>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">Ур.</span>
-              <span className="ui-display ui-numeric text-2xl text-frame-bright">{hero.level}</span>
-            </div>
-            <div className="flex-1">
-              <Meter value={hero.currentHP} max={hero.maxHP} tone="hp" height={5} label="Здоровье" />
-            </div>
-            <span className="ui-numeric text-xs text-ink-muted">
-              {hero.currentHP}/{hero.maxHP}
-            </span>
-          </div>
+          <HeroVitals hero={hero} className={cx('pt-1', !focused && 'hidden')} meterClassName="flex-1" rulebook={false} />
         </div>
       </Panel>
     </SettingScope>
   );
 };
 
-const NewHeroCard: React.FC<{ focused: boolean; onClick: () => void }> = ({ focused, onClick }) => (
+const NewHeroCard: React.FC<{ focused: boolean; onClick: () => void }> = ({ focused, onClick }) => {
+  const resumable = useHasSoloDraft();
+  return (
   <Panel
     as="button"
     interactive
@@ -346,9 +341,12 @@ const NewHeroCard: React.FC<{ focused: boolean; onClick: () => void }> = ({ focu
       <IconCreate width={36} height={36} />
     </span>
     <span className="ui-display text-2xl">Новый герой</span>
-    <span className="max-w-[16rem] text-sm text-ink-muted">Начните историю с чистого листа</span>
+    <span className="max-w-[16rem] text-sm text-ink-muted">
+      {resumable ? 'Создание не закончено: продолжите с того же места' : 'Начните историю с чистого листа'}
+    </span>
   </Panel>
-);
+  );
+};
 
 /** Portrait strip: every hero at a glance, and a quick way to jump far along the row. */
 const Strip: React.FC<{ slots: Slot[]; index: number; onFocus: (index: number) => void }> = ({ slots, index, onFocus }) => (

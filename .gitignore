@@ -29,3 +29,10 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .claude/worktrees/
+
+# Local reference images and screenshots, not tracked: keep them in photos/
+photos/
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp

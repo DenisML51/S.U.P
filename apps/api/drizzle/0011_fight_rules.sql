@@ -1,0 +1,1 @@
+ALTER TABLE "party_combats" ADD COLUMN "rules" text;

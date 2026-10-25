@@ -29,5 +29,6 @@ export interface SettingArt {
   /** The hero's level in the vitals panel's corner as the setting's own token of rank. */
   StatusLevel: React.FC<{ level: number }>;
   /** Laid round the focused hero card on hero select, outside its frame, if the setting reads one. */
-  HeroReadout?: React.FC<{ id: string; level: number; hp: number; maxHp: number }>;
+  /** `age` instead of a level for heroes without levels (an investigator). */
+  HeroReadout?: React.FC<{ id: string; level: number; age?: number; hp: number; maxHp: number }>;
 }

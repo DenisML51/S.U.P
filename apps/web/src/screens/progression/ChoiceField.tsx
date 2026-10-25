@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { ATTRIBUTES_LIST, choiceOptions, setPicks, type OpenChoice, type OptionView } from '@itd/game-logic';
-import type { Build } from '@itd/schema';
+import { ATTRIBUTES_LIST } from '@itd/game-logic';
+import { choiceOptions, setPicks, type OpenChoice, type OptionView } from '@itd/game-logic/dnd';
+import type { DndBuild } from '@itd/schema';
 import { Dialog } from '../../ui/Dialog';
 import { GameIcon, tileStyle, type IconKind } from '../../ui/GameIcon';
 import { Prose } from '../../ui/Prose';
@@ -47,10 +48,10 @@ const OptionIcon: React.FC<{ option: OptionView; kind: IconKind; size?: 'sm' | '
  * long ones (feats, spells, weapons, tools) open a picker and the page shows the picks as cards.
  */
 export const ChoiceField: React.FC<{
-  build: Build;
+  build: DndBuild;
   level: number;
   open: OpenChoice;
-  onChange: (build: Build) => void;
+  onChange: (build: DndBuild) => void;
 }> = ({ build, level, open, onChange }) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const options = useMemo(() => choiceOptions(build, level, open), [build, level, open]);

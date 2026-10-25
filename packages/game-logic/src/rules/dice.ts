@@ -1,6 +1,6 @@
 import type { Character } from '@itd/schema';
 import { DAMAGE_TYPES } from '../content/combat';
-import { attributeModifier } from './abilities';
+import { attributeModifier, initiativeModifier } from './abilities';
 
 /** Source of randomness in [0, 1); injectable so rolls are testable and reproducible. */
 export type RandomSource = () => number;
@@ -10,6 +10,8 @@ export interface DiceGroup {
   id: string;
   sides: number;
   count: number;
+  /** `+1`, or `-1` for a subtracted group such as the die in `1d20 - 1d4`. */
+  sign: 1 | -1;
   /** Damage type named next to the dice ("1d6 огонь"), if any. */
   type?: string;
 }
@@ -58,6 +60,7 @@ export function parseDiceFormula(formula: string): ParsedFormula {
           id: `d${sides}`,
           sides,
           count: Math.min(count, MAX_DICE_PER_GROUP),
+          sign: sign as 1 | -1,
           type: findDamageType(diceMatch[3] ?? ''),
         });
       }
@@ -80,10 +83,20 @@ export interface FormulaRoll {
   bonus: number;
 }
 
-export function rollFormula(formula: string, random: RandomSource = Math.random): FormulaRoll {
+export interface RollOptions {
+  /** A critical hit: every die of the formula is rolled twice as many times; flat bonuses are not doubled. */
+  critical?: boolean;
+}
+
+export function rollFormula(formula: string, random: RandomSource = Math.random, options: RollOptions = {}): FormulaRoll {
   const { dice, bonus } = parseDiceFormula(formula);
   const rolls = dice.flatMap((group) =>
-    Array.from({ length: group.count }, () => ({ sides: group.sides, value: rollDie(group.sides, random), type: group.type })),
+    Array.from({ length: options.critical ? group.count * 2 : group.count }, () => ({
+      sides: group.sides,
+      // A subtracted group ("1d20 - 1d4") contributes negative values.
+      value: group.sign * rollDie(group.sides, random),
+      type: group.type,
+    })),
   );
   return { total: rolls.reduce((sum, r) => sum + r.value, bonus), rolls, bonus };
 }
@@ -92,19 +105,21 @@ export interface InitiativeRoll {
   roll: number;
   /** Dexterity modifier. */
   mod: number;
-  /** Flat initiative bonus from the sheet. */
+  /** Everything else added: the sheet's flat bonus plus Jack-of-All-Trades half-proficiency. */
   bonus: number;
   total: number;
 }
 
 export function rollInitiative(
-  character: Pick<Character, 'attributes' | 'attributeBonuses' | 'initiativeBonus'>,
+  character: Pick<Character, 'attributes' | 'attributeBonuses' | 'initiativeBonus'> &
+    Partial<Pick<Character, 'halfProficiency' | 'proficiencyBonus'>>,
   random: RandomSource = Math.random,
 ): InitiativeRoll {
   const roll = rollDie(20, random);
   const mod = attributeModifier(character, 'dexterity');
-  const bonus = character.initiativeBonus ?? 0;
-  return { roll, mod, bonus, total: roll + mod + bonus };
+  // Share the sheet's formula so the rolled initiative matches the modifier shown on it.
+  const modifier = initiativeModifier(character);
+  return { roll, mod, bonus: modifier - mod, total: roll + modifier };
 }
 
 export type D20Mode = 'normal' | 'advantage' | 'disadvantage';

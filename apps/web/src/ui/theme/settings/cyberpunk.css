@@ -441,12 +441,21 @@
   .ui-hud-slot__level,
   .ui-hud-slot__count { text-shadow: none; font-family: var(--font-numeric); font-size: 0.7rem; }
   .ui-hud-slot__count { bottom: 0; right: 0; padding: 1px 3px; color: rgb(var(--c-ink)); background: rgb(var(--c-bg-deep) / 0.85); }
+  /* An entry's picture is a data chip: black, its top right corner cut, a neon edge of its colour,
+     a yellow tag along its foot, the picture burnt in the neon. */
   .ui-hud-slot--tile {
-    background: color-mix(in srgb, var(--tile-color) 34%, rgb(var(--c-inset)));
-    border-color: color-mix(in srgb, var(--tile-color) 60%, rgb(var(--c-line)));
-    box-shadow: none;
+    color: color-mix(in srgb, var(--tile-color) 55%, #fff);
+    border: 0;
+    border-radius: 0;
+    clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 0 100%);
+    background:
+      linear-gradient(225deg, transparent 0 7px, var(--tile-color) 7px 8.5px, transparent 8.5px) top right / 16px 16px no-repeat,
+      linear-gradient(rgb(var(--c-accent)), rgb(var(--c-accent))) bottom left / 42% 2px no-repeat,
+      linear-gradient(180deg, color-mix(in srgb, var(--tile-color) 16%, transparent), transparent 60%),
+      rgb(12 9 14);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tile-color) 75%, transparent), inset 0 0 12px color-mix(in srgb, var(--tile-color) 22%, transparent);
   }
-  .ui-hud-slot--tile .ui-hud-slot__icon { filter: none; }
+  .ui-hud-slot--tile .ui-hud-slot__icon { filter: drop-shadow(0 0 4px var(--tile-color)); }
   .ui-hud-panel__head {
     font-family: var(--font-display);
     letter-spacing: 0.14em;
@@ -789,4 +798,28 @@
   40% { opacity: 0; }
   48% { opacity: 1; }
   60%, 100% { opacity: 0; }
+}
+
+/* The rulebook on a hero's card: a neon holo-tag, corners cut, the glow flickering now and then. */
+[data-setting='cyberpunk'] .ui-rulebook {
+  padding: 0.3rem 0.8rem;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  color: rgb(var(--c-accent));
+  background: rgb(var(--c-accent) / 0.08);
+  border: 1px solid rgb(var(--c-accent) / 0.8);
+  border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  text-shadow: 0 0 8px rgb(var(--c-accent) / 0.8);
+  box-shadow: inset 0 0 10px rgb(var(--c-accent) / 0.25);
+  animation: ui-rulebook-flicker 6s steps(1, end) infinite;
+}
+@keyframes ui-rulebook-flicker {
+  0%, 92%, 100% { opacity: 1; }
+  93% { opacity: 0.45; }
+  95% { opacity: 0.9; }
+  96% { opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='cyberpunk'] .ui-rulebook { animation: none; }
 }

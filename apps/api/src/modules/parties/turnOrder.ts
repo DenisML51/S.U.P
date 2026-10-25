@@ -3,18 +3,24 @@ export interface TurnEntry {
   id: string;
   /** `null` until rolled: such combatants act last. */
   initiative: number | null;
-  /** Initiative modifier: breaks ties, the quicker one first. */
+  /** Initiative modifier (DEX in Call of Cthulhu): breaks ties, the quicker one first. */
   bonus: number;
+  /** Then the higher combat skill (Call of Cthulhu: best fighting or firearms skill); 0 when unknown. */
+  skill?: number;
   joinedAt: Date;
 }
 
-/** Highest initiative first; ties go to the higher modifier, then to whoever joined the fight first. */
+/**
+ * Highest initiative first; ties go to the higher modifier, then the higher combat skill, then to
+ * whoever joined the fight first.
+ */
 export const turnOrder = <T extends TurnEntry>(entries: readonly T[]): T[] =>
   [...entries].sort(
     (a, b) =>
       Number(a.initiative === null) - Number(b.initiative === null) ||
       (b.initiative ?? 0) - (a.initiative ?? 0) ||
       b.bonus - a.bonus ||
+      (b.skill ?? 0) - (a.skill ?? 0) ||
       a.joinedAt.getTime() - b.joinedAt.getTime() ||
       a.id.localeCompare(b.id),
   );

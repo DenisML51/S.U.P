@@ -1,29 +1,32 @@
 import React, { useState } from 'react';
 import {
   ATTRIBUTES_LIST,
-  DND,
-  DND_ICONS,
   SKILLS_LIST,
   abilityModifier,
   canDecrement,
   canIncrement,
+  formatModifier,
+  pointsRemaining,
+  startingAttributes,
+} from '@itd/game-logic';
+import {
+  DND,
+  DND_ICONS,
   findBackground,
   findClass,
   findFeat,
-  formatModifier,
   kitItems,
-  pointsRemaining,
   preparedSpellsChoice,
   rollAbilityScores,
-  startingAttributes,
   type KitOption,
-} from '@itd/game-logic';
-import type { Build } from '@itd/schema';
+} from '@itd/game-logic/dnd';
+import type { DndBuild } from '@itd/schema';
 import { GameIcon } from '../../../ui/GameIcon';
 import { ImageSlot } from '../../../ui/ImageSlot';
 import { NumberField, Segmented } from '../../../ui/forms';
 import { Button, IconButton, Panel, cx } from '../../../ui/primitives';
 import { IconCoins, IconDice, IconMinus, IconPlus } from '../../../ui/icons';
+import { LandedValue, RollingDice, useLanded } from '../../../ui/RollingDie';
 import { ChoiceField } from '../../progression/ChoiceField';
 import { CLASS_SOURCES, LevelPlanView, planIssues } from '../../progression/LevelPlanView';
 import type { DndCreation } from './useDndCreation';
@@ -109,7 +112,7 @@ export const SpeciesStep: React.FC<{ creation: DndCreation }> = ({ creation }) =
 // ------------------------------------------------------------------------------------------------
 
 /** The background's +2/+1 or +1/+1/+1 to its three scores. */
-const BackgroundBonuses: React.FC<{ build: Build; onChange: (build: Build) => void }> = ({ build, onChange }) => {
+const BackgroundBonuses: React.FC<{ build: DndBuild; onChange: (build: DndBuild) => void }> = ({ build, onChange }) => {
   const background = findBackground(build.background);
   if (!background) return null;
   const bonuses = build.backgroundBonuses;
@@ -264,22 +267,67 @@ export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => 
 // Ability scores
 // ------------------------------------------------------------------------------------------------
 
+/**
+ * A score with the 4d6 that made it: the dice tumble under it (the lowest one dropped) and the score
+ * comes in once they are down. Without a throw on this visit the score simply stands.
+ */
+const ThrownScore: React.FC<{
+  dice?: number[];
+  throwKey: number | null;
+  delay: number;
+  children: React.ReactNode;
+}> = ({ dice, throwKey, delay, children }) => {
+  const [landed, markLanded] = useLanded(dice ? throwKey : null);
+  const lowest = dice ? dice.indexOf(Math.min(...dice)) : -1;
+  return (
+    <>
+      <LandedValue landed={landed} className="flex flex-col items-center">
+        {children}
+      </LandedValue>
+      {dice && throwKey !== null && (
+        <RollingDice
+          key={throwKey}
+          className="mt-3 justify-center"
+          size="1.55rem"
+          delay={delay}
+          stagger={70}
+          dice={dice.map((value, i) => ({ sides: 6, value, dropped: i === lowest }))}
+          onLanded={markLanded}
+        />
+      )}
+    </>
+  );
+};
+
 export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation }) => {
   const { build, setBuild, rolls, setRolls } = creation;
   const [swap, setSwap] = useState<string | null>(null);
   const scores = build.baseAttributes;
   const setScores = (baseAttributes: Record<string, number>) => setBuild({ ...build, baseAttributes });
   const method = build.abilityMethod;
-  const setMethod = (abilityMethod: Build['abilityMethod']) => {
+  const setMethod = (abilityMethod: DndBuild['abilityMethod']) => {
     setSwap(null);
+    setThrown(null);
     if (abilityMethod === 'pointBuy') setBuild({ ...build, abilityMethod, baseAttributes: startingAttributes() });
     else if (abilityMethod === 'roll') {
       setRolls(null);
       setBuild({ ...build, abilityMethod });
     } else setBuild({ ...build, abilityMethod });
   };
+  /** The four d6 behind each score of the latest throw, to show it tumbling; gone once scores move. */
+  const [thrown, setThrown] = useState<{ serial: number; dice: number[][] } | null>(null);
   const roll = () => {
-    const values = rollAbilityScores();
+    // The scores are 4d6 each, thrown in order: the random draws behind them give back every die.
+    const draws: number[] = [];
+    const values = rollAbilityScores(() => {
+      const r = Math.random();
+      draws.push(r);
+      return r;
+    });
+    setThrown({
+      serial: Date.now(),
+      dice: values.map((_, i) => draws.slice(i * 4, i * 4 + 4).map((r) => Math.floor(r * 6) + 1)),
+    });
     setRolls(values);
     setScores(Object.fromEntries(ATTRIBUTES_LIST.map((a, i) => [a.id, values[i]!])));
   };
@@ -288,6 +336,7 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
     if (!swap || swap === id) return setSwap(swap === id ? null : id);
     setScores({ ...scores, [swap]: scores[id]!, [id]: scores[swap]! });
     setSwap(null);
+    setThrown(null);
   };
   const points = pointsRemaining(scores);
 
@@ -314,7 +363,7 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
         </Button>
       )}
       <div className="mt-6 grid w-full grid-cols-6 gap-3">
-        {ATTRIBUTES_LIST.map((attribute) => {
+        {ATTRIBUTES_LIST.map((attribute, index) => {
           const base = scores[attribute.id] ?? 8;
           const bonus = build.backgroundBonuses[attribute.id] ?? 0;
           const total = base + bonus;
@@ -328,12 +377,18 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
               className="flex flex-col items-center px-3 py-5 text-center"
             >
               <span className="ui-stat__label">{attribute.name}</span>
-              <span className="ui-display ui-numeric my-2 text-5xl leading-none text-ink">{total}</span>
-              <span className="text-frame-bright">{formatModifier(abilityModifier(total))}</span>
-              <span className="mt-2 text-xs text-ink-faint">
-                {base}
-                {bonus > 0 && <span className="text-success"> +{bonus}</span>}
-              </span>
+              <ThrownScore
+                throwKey={method === 'roll' ? (thrown?.serial ?? null) : null}
+                dice={method === 'roll' ? thrown?.dice[index] : undefined}
+                delay={index * 90}
+              >
+                <span className="ui-display ui-numeric my-2 text-5xl leading-none text-ink">{total}</span>
+                <span className="text-frame-bright">{formatModifier(abilityModifier(total))}</span>
+                <span className="mt-2 text-xs text-ink-faint">
+                  {base}
+                  {bonus > 0 && <span className="text-success"> +{bonus}</span>}
+                </span>
+              </ThrownScore>
               {method === 'pointBuy' && (
                 <span className="mt-3 flex gap-2">
                   <IconButton label="Уменьшить" size={30} disabled={!canDecrement(scores, attribute.id)} onClick={() => setScores({ ...scores, [attribute.id]: base - 1 })}>

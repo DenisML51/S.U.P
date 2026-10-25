@@ -12,7 +12,8 @@ import { GameIcon, tileStyle } from '../ui/GameIcon';
 import { Rail, RailButton, RailDivider } from '../ui/Rail';
 import { SettingBackdrop } from '../ui/SettingBackdrop';
 import { Toasts } from '../ui/Toasts';
-import { LevelReady, SettingEmblem } from '../ui/ornaments';
+import { LevelReady, SettingEmblem, useSettingArt } from '../ui/ornaments';
+import { WorldCard } from '../screens/create/WorldCard';
 import {
   IconArmor,
   IconAttacks,
@@ -32,6 +33,16 @@ import {
  * Design showcase, opened with `?kit`: one screen of the sheet and every primitive, in the setting
  * chosen at the top. It renders the real components, so what is approved here is what ships.
  */
+
+/** The current setting's level token (status medallion), shown at the rank the samples use. */
+const LevelDemo: React.FC = () => {
+  const { StatusLevel } = useSettingArt();
+  return StatusLevel ? (
+    <span className="ui-level relative inline-flex h-[5.3rem] w-[4rem] items-center justify-center">
+      <StatusLevel level={20} />
+    </span>
+  ) : null;
+};
 
 interface SampleSpell {
   id: string;
@@ -255,7 +266,7 @@ const Board: React.FC<{ title: string; children: React.ReactNode; className?: st
 );
 
 /** Every primitive in its states. */
-const ComponentsSample: React.FC = () => {
+const ComponentsSample: React.FC<{ setting: Setting }> = ({ setting }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [segment, setSegment] = useState<'action' | 'bonus' | 'reaction'>('action');
   const [on, setOn] = useState(true);
@@ -408,7 +419,10 @@ const ComponentsSample: React.FC = () => {
       </Board>
 
       <Board title="Новый уровень">
-        {/* The experience plaque of the status cluster in its "ready" state. */}
+        {/* The setting's level token (status medallion) and the experience plaque in its "ready" state. */}
+        <div className="flex items-center justify-center py-3">
+          <LevelDemo />
+        </div>
         <div className="ui-status pt-2">
           <span className="ui-xp" data-ready>
             <span className="ui-xp__label">Новый уровень</span>
@@ -422,6 +436,17 @@ const ComponentsSample: React.FC = () => {
               <LevelReady />
             </span>
           </span>
+        </div>
+      </Board>
+
+      <Board title="Карточка мира" className="row-span-2">
+        {/* The setting's world card as hero creation shows it, at rest and chosen. */}
+        <div className="flex justify-center gap-4">
+          {[false, true].map((selected) => (
+            <div key={String(selected)} style={{ height: 380, aspectRatio: '0.62' }}>
+              <WorldCard setting={setting} selected={selected} onSelect={() => undefined} />
+            </div>
+          ))}
         </div>
       </Board>
 
@@ -460,7 +485,7 @@ export const UiKit = () => {
         <SettingBackdrop setting={setting} strength={0.8} />
         <ScreenSample />
       </div>
-      <ComponentsSample />
+      <ComponentsSample setting={setting} />
       <Toasts />
     </SettingScope>
   );

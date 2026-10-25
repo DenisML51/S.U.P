@@ -669,7 +669,6 @@ export const WIZARD: ClassDef = {
   saves: ['intelligence', 'wisdom'],
   skillChoices: { count: 2, list: ['arcana', 'history', 'insight', 'investigation', 'medicine', 'nature', 'religion'] },
   proficiencies: [{ type: 'proficiency', category: 'weapon', value: 'Простое оружие' }],
-  mentalStrength: 50,
   subclassLevel: 3,
   subclasses: [abjurer, diviner, evoker, illusionist, bladesinger, necromancer, enchanter, transmuter, conjurer],
   startingEquipment: WIZARD_KITS,

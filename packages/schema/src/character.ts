@@ -83,7 +83,7 @@ export const ItemTypeSchema = z.enum(['armor', 'weapon', 'ammunition', 'item']);
 export const WeaponClassSchema = z.enum(['melee', 'ranged']);
 export const ResistanceLevelSchema = z.enum(['resistance', 'vulnerability', 'immunity', 'none']);
 /** The universe a character comes from; drives the visual theme of the sheet. */
-export const SETTINGS = ['high-fantasy', 'sci-fi', 'dark-fantasy', 'cyberpunk', 'lovecraft'] as const;
+export const SETTINGS = ['high-fantasy', 'sci-fi', 'dark-fantasy', 'cyberpunk', 'lovecraft', 'elden-ring'] as const;
 export const SettingSchema = z.enum(SETTINGS);
 export const DEFAULT_SETTING: z.infer<typeof SettingSchema> = 'high-fantasy';
 /** Settings that were merged into another one; documents saved with them read as their successor. */
@@ -184,6 +184,17 @@ export const AttackSchema = passthroughObject({
   usesAmmunition: optionalFlag,
   ammunitionCost: optionalNumber,
   attribute: optionalShortText,
+  /** Call of Cthulhu: the skill it is rolled with (`firearms:handgun`). */
+  skill: optionalShortText,
+  /** Call of Cthulhu: range ("15 ярд."), attacks per round ("1 (3)"), rounds loaded and capacity. */
+  range: optionalShortText,
+  uses: optionalShortText,
+  ammo: optionalNumber,
+  magazine: optionalNumber,
+  /** Call of Cthulhu: a roll at or above this jams the gun. */
+  malfunction: optionalNumber,
+  /** Call of Cthulhu: an extreme success adds the maximum of the damage. */
+  impale: optionalFlag,
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry (a Monk's Unarmed Strike); rebuilt from the build. */
@@ -309,11 +320,19 @@ const numberMap = (maxKeyLength: number) =>
   text(z.record(z.string().max(maxKeyLength), numeric(num)).default({}));
 
 /**
+ * Rules systems a hero can be built by. Each one has its own build engine and preset content in
+ * `@itd/game-logic` (loaded on demand); a system whose choices differ from D&D's turns `BuildSchema`
+ * into a union discriminated by `ruleset`.
+ */
+export const RULESETS = ['dnd2024', 'coc7'] as const;
+export type RulesetId = (typeof RULESETS)[number];
+
+/**
  * The preset choices a hero was built from (D&D 2024). The sheet's granted entries (abilities,
  * traits, resources, spells marked with `grant`) are derived from it and rebuilt on every level-up;
  * everything else on the sheet stays the player's.
  */
-export const BuildSchema = passthroughObject({
+export const DndBuildSchema = passthroughObject({
   ruleset: z.literal('dnd2024'),
   species: shortTextOr(),
   background: shortTextOr(),
@@ -335,6 +354,94 @@ export const BuildSchema = passthroughObject({
     }),
   ),
   level: numeric(int.min(1).max(20).default(1)),
+});
+
+/**
+ * Who a Call of Cthulhu investigator is (7th edition, or Pulp Cthulhu): the choices the sheet's
+ * derived numbers and the creation summary come from. Everything that changes in play (scores,
+ * skills, luck, insanity) is in the `coc` block of the sheet.
+ */
+export const CocBuildSchema = passthroughObject({
+  ruleset: z.literal('coc7'),
+  variant: text(z.enum(['classic', 'pulp']).default('classic')),
+  era: text(z.enum(['1920s', 'modern']).default('1920s')),
+  occupation: shortTextOr(),
+  /** Pulp only. */
+  archetype: optionalShortText,
+  /** Pulp talents, by id. */
+  talents: text(z.array(shortString).max(20).default([])),
+  age: numeric(int.min(15).max(99).default(25)),
+});
+
+export const BuildSchema = z.discriminatedUnion('ruleset', [DndBuildSchema, CocBuildSchema]);
+
+/** A percentile skill of an investigator; `id` is the content id (`spot-hidden`, `science:biology`). */
+export const CocSkillSchema = passthroughObject({
+  id: nestedId,
+  /** A speciality of the player's own ("Искусство (Танго)"), or a renamed skill. */
+  name: optionalShortText,
+  value: numeric(int.min(0).max(999).default(0)),
+  /** Ticked after a successful use; the development phase may raise it. */
+  check: flag(false),
+  /** One of the occupation's skills (shown with a mark). */
+  occupation: optionalFlag,
+});
+
+export const CocSpellSchema = passthroughObject({
+  id: nestedId,
+  name: shortText,
+  cost: shortTextOr(),
+  castingTime: shortTextOr(),
+  description: longTextOr(),
+  /** Id of the grimoire spell it was copied from. */
+  ref: optionalShortText,
+});
+
+export const CocMadnessSchema = passthroughObject({
+  id: nestedId,
+  name: shortText,
+  kind: z.enum(['phobia', 'mania']),
+  description: longTextOr(),
+});
+
+/** The investigator's backstory, in the order of the 7th edition sheet. */
+export const CocBackstorySchema = passthroughObject({
+  personalDescription: longTextOr(),
+  ideology: longTextOr(),
+  significantPeople: longTextOr(),
+  meaningfulLocations: longTextOr(),
+  treasuredPossessions: longTextOr(),
+  traits: longTextOr(),
+  injuries: longTextOr(),
+  arcaneTomes: longTextOr(),
+  encounters: longTextOr(),
+});
+
+/**
+ * The live part of a Call of Cthulhu investigator. Hit points and sanity use the sheet's common
+ * `currentHP`/`maxHP` and `sanity`; states like a major wound or insanity are `conditions`.
+ */
+export const CocSheetSchema = passthroughObject({
+  /** STR, CON, SIZ, DEX, APP, INT, POW, EDU by id (`str`…`edu`), 0–99 and beyond for monsters. */
+  characteristics: numberMap(16),
+  skills: list(CocSkillSchema),
+  luck: numberOr(50),
+  /** Luck as rolled at creation, the cap of Pulp luck recovery. */
+  startingLuck: optionalNumber,
+  magicPoints: numberOr(0),
+  /** Sanity at creation (equal to POW). */
+  startingSanity: optionalNumber,
+  /** Sanity when the current day began: losing a fifth of it in a day means indefinite insanity. */
+  sanityAtDayStart: optionalNumber,
+  /** Points of armour worn (0–20), taken off every blow; absent means none (sheets saved before it). */
+  armor: numeric(int.min(0).max(20).optional()),
+  residence: shortTextOr(),
+  birthplace: shortTextOr(),
+  cash: numberOr(0),
+  assets: shortTextOr(),
+  backstory: text(CocBackstorySchema.prefault({})),
+  madness: list(CocMadnessSchema),
+  spells: list(CocSpellSchema),
 });
 
 /** Uploaded artwork, referenced by asset id (see the API's /assets). */
@@ -438,6 +545,8 @@ export const CharacterSchema = passthroughObject({
   history: text(z.array(HistoryEntrySchema).max(LIMITS.history).default([])),
   actionLimits: text(ActionCountersSchema.optional()),
   build: text(BuildSchema.optional()),
+  /** Call of Cthulhu investigators only. */
+  coc: text(CocSheetSchema.optional()),
   spentActions: text(ActionCountersSchema.optional()),
 });
 
@@ -465,6 +574,12 @@ export type ActionCounters = z.infer<typeof ActionCountersSchema>;
 export type Concentration = z.infer<typeof ConcentrationSchema>;
 export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
 export type Build = z.infer<typeof BuildSchema>;
+export type DndBuild = z.infer<typeof DndBuildSchema>;
+export type CocBuild = z.infer<typeof CocBuildSchema>;
+export type CocSheet = z.infer<typeof CocSheetSchema>;
+export type CocSkill = z.infer<typeof CocSkillSchema>;
+export type CocSpell = z.infer<typeof CocSpellSchema>;
+export type CocMadness = z.infer<typeof CocMadnessSchema>;
 export type Character = z.infer<typeof CharacterSchema>;
 
 /** A character before it has an identity: what the creation wizard produces. */

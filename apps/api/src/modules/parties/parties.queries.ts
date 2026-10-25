@@ -8,8 +8,10 @@ import type {
   PartyListItemDto,
   PartyNpcDto,
   PartyRole,
+  PartyRules,
   Setting,
 } from '@itd/schema';
+import { npcCombatSkill } from '@itd/schema';
 import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import type { Database, Transaction } from '../../db/client';
 import {
@@ -52,7 +54,12 @@ interface HeroRow {
   name: string;
   hidden: boolean;
   summary: CharacterSummary | null;
+  /** The build's rules; `null` for a hero without a preset build. */
+  ruleset: string | null;
 }
+
+/** The rules a hero was made by, from its sheet (`custom`: no preset build). */
+const rulesetOf = sql<string | null>`${characters.data} -> 'build' ->> 'ruleset'`;
 
 /** A party hero whose character still exists, with what the party shows of it. */
 const heroesOf = (db: Executor, partyId: string): Promise<HeroRow[]> =>
@@ -64,6 +71,7 @@ const heroesOf = (db: Executor, partyId: string): Promise<HeroRow[]> =>
       name: characters.name,
       hidden: partyHeroes.hidden,
       summary: characters.summary,
+      ruleset: rulesetOf,
     })
     .from(partyHeroes)
     .innerJoin(
@@ -73,12 +81,57 @@ const heroesOf = (db: Executor, partyId: string): Promise<HeroRow[]> =>
     .where(and(eq(partyHeroes.partyId, partyId), isNull(characters.deletedAt)))
     .orderBy(asc(partyHeroes.addedAt));
 
+/**
+ * The rules a fight goes by (see `PartyDto.combatRules`). A table of any rules (`null`, made before
+ * tables chose rules) may seat heroes of several systems; a fight there has one way of ordering
+ * NPCs, so it goes by Call of Cthulhu (DEX order) only when every seated hero is an investigator,
+ * and by d20 otherwise. Heroes always keep their own system's initiative.
+ */
+export const combatRulesFor = (rules: string | null, heroes: readonly { ruleset: string | null }[]): PartyRules | null => {
+  if (rules) return rules as PartyRules;
+  return heroes.length > 0 && heroes.every((hero) => hero.ruleset === 'coc7') ? 'coc7' : null;
+};
+
+/** How a fight keeps its rules (`party_combats.rules`): `null` combat rules are stored as this. */
+export const D20_FIGHT = 'd20';
+
+/** The rules a fight keeps, as stored; `undefined` when it kept none (started before they were kept). */
+export const frozenCombatRules = (stored: string | null | undefined): PartyRules | null | undefined =>
+  stored == null ? undefined : stored === D20_FIGHT ? null : (stored as PartyRules);
+
+/** The rules a fight goes by: those it started with while one runs, else what the table makes of them. */
+export async function combatRulesOf(db: Executor, partyId: string): Promise<PartyRules | null> {
+  const [[table], [combat], heroes] = await Promise.all([
+    db.select({ rules: parties.rules }).from(parties).where(eq(parties.id, partyId)),
+    db.select({ rules: partyCombats.rules }).from(partyCombats).where(eq(partyCombats.partyId, partyId)),
+    heroesOf(db, partyId),
+  ]);
+  return keptOr(frozenCombatRules(combat?.rules), () => combatRulesFor(table?.rules ?? null, heroes));
+}
+
+const keptOr = (kept: PartyRules | null | undefined, current: () => PartyRules | null): PartyRules | null =>
+  kept !== undefined ? kept : current();
+
 export interface CombatantEntry extends TurnEntry {
   heroId: string | null;
   npcId: string | null;
   /** Owner of the hero; `null` for NPCs (the master's). */
   ownerId: string | null;
+  /** An investigator's DEX (from the saved summary); `null` for other heroes and for NPCs. */
+  heroDex: number | null;
+  /** The NPC's Call of Cthulhu numbers; `null` for heroes and other NPCs. */
+  npcCoc: PartyNpcRow['coc'];
 }
+
+/** An investigator's best fighting or firearms skill: breaks a tie of DEX. */
+const heroCombatSkill = sql<number | null>`(
+  select max(floor((skill ->> 'value')::numeric)::int)
+  from jsonb_array_elements(
+    case when jsonb_typeof(${characters.data} -> 'coc' -> 'skills') = 'array'
+      then ${characters.data} -> 'coc' -> 'skills' else '[]'::jsonb end
+  ) as skill
+  where skill ->> 'id' like 'fighting%' or skill ->> 'id' like 'firearms%'
+)`;
 
 /** The fight's combatants with what orders them; used by the view and by turn changes. */
 export async function combatantsOf(db: Executor, partyId: string): Promise<CombatantEntry[]> {
@@ -91,7 +144,10 @@ export async function combatantsOf(db: Executor, partyId: string): Promise<Comba
       joinedAt: partyCombatants.joinedAt,
       ownerId: partyHeroes.userId,
       heroInitiative: sql<number | null>`(${characters.summary} ->> 'initiative')::int`,
+      heroDex: sql<number | null>`(${characters.summary} -> 'coc' ->> 'dex')::int`,
+      heroSkill: heroCombatSkill,
       npcBonus: partyNpcs.initiativeBonus,
+      npcCoc: partyNpcs.coc,
     })
     .from(partyCombatants)
     .leftJoin(partyHeroes, eq(partyHeroes.id, partyCombatants.heroId))
@@ -101,9 +157,10 @@ export async function combatantsOf(db: Executor, partyId: string): Promise<Comba
     )
     .leftJoin(partyNpcs, eq(partyNpcs.id, partyCombatants.npcId))
     .where(eq(partyCombatants.partyId, partyId));
-  return rows.map(({ heroInitiative, npcBonus, ...row }) => ({
+  return rows.map(({ heroInitiative, heroSkill, npcBonus, ...row }) => ({
     ...row,
     bonus: heroInitiative ?? npcBonus ?? 0,
+    skill: row.heroId ? (heroSkill ?? 0) : npcCombatSkill(row.npcCoc),
   }));
 }
 
@@ -116,6 +173,7 @@ const npcDto = (row: PartyNpcRow): PartyNpcDto => ({
   armorClass: row.armorClass,
   initiativeBonus: row.initiativeBonus,
   disposition: row.disposition,
+  coc: row.coc ?? null,
 });
 
 /** Read side of parties: every view is tailored to who is looking. */
@@ -148,6 +206,7 @@ export class PartyQueries {
         id: parties.id,
         name: parties.name,
         setting: parties.setting,
+        rules: parties.rules,
         coverAssetId: parties.coverAssetId,
         updatedAt: parties.updatedAt,
         role: partyMembers.role,
@@ -175,6 +234,7 @@ export class PartyQueries {
     return rows.map(({ sessionStartedAt, ...row }) => ({
       ...row,
       setting: row.setting as Setting,
+      rules: row.rules as PartyRules | null,
       inSession: sessionStartedAt !== null,
       updatedAt: row.updatedAt.toISOString(),
     }));
@@ -243,6 +303,8 @@ export class PartyQueries {
           description: party.description,
           lore: party.lore,
           setting: party.setting as Setting,
+          rules: party.rules as PartyRules | null,
+          combatRules: keptOr(frozenCombatRules(combat?.rules), () => combatRulesFor(party.rules, heroes)),
           coverAssetId: party.coverAssetId,
           role,
           masterId: party.masterId,
@@ -271,6 +333,7 @@ export class PartyQueries {
         name: parties.name,
         description: parties.description,
         setting: parties.setting,
+        rules: parties.rules,
         coverAssetId: parties.coverAssetId,
         sessionStartedAt: parties.sessionStartedAt,
         masterName: users.displayName,
@@ -286,7 +349,12 @@ export class PartyQueries {
     if (!row) throw partyNotFound();
     const { sessionStartedAt, ...preview } = row;
     if (!sessionStartedAt && !preview.member) throw sessionClosed(CODE_WAITS);
-    return { ...preview, setting: row.setting as Setting, inSession: sessionStartedAt !== null };
+    return {
+      ...preview,
+      setting: row.setting as Setting,
+      rules: row.rules as PartyRules | null,
+      inSession: sessionStartedAt !== null,
+    };
   }
 }
 
@@ -304,6 +372,7 @@ function heroDto(hero: HeroRow, visible: boolean): PartyHeroDto {
     subclass: summary.subclass,
     level: summary.level,
     portrait: summary.portrait,
+    rules: (hero.ruleset as PartyRules | null) ?? 'custom',
     hidden: hero.hidden,
     vitals: visible
       ? {
@@ -312,6 +381,7 @@ function heroDto(hero: HeroRow, visible: boolean): PartyHeroDto {
           tempHP: summary.tempHP,
           armorClass: summary.armorClass,
           initiative: summary.initiative,
+          coc: summary.coc,
           conditions: summary.conditions,
         }
       : null,

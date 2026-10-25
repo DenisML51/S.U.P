@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import type { Setting } from '@itd/schema';
+import type { PartyRules, Setting } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { usePartyStore } from '../../store/usePartyStore';
 import { CharacterArt } from '../../ui/CharacterArt';
@@ -9,21 +9,26 @@ import { IconCreate } from '../../ui/icons';
 import { Button, Panel, cx } from '../../ui/primitives';
 import { SettingScope } from '../../ui/theme/SettingScope';
 import { SETTING_INFO, settingOf } from '../../ui/theme/settings';
+import { RULES_TITLE } from '../../systems';
+import { heroRank } from '../home/homeParts';
 
 /**
  * Which of the user's heroes comes to the table. Heroes of the party's world come first; each card
  * wears its own world. A hero sits at one table at a time: those seated elsewhere are shown, greyed,
- * with the table that holds them, so none of the user's heroes silently goes missing.
+ * with the table that holds them, so none of the user's heroes silently goes missing. A table with its
+ * own rules takes only heroes made by them; the others are shown greyed with their rules.
  */
 export const HeroPickDialog: React.FC<{
   open: boolean;
   partyId: string;
   setting: Setting;
+  /** The table's rules; `null` or absent: any. */
+  rules?: PartyRules | null;
   onClose: () => void;
   /** Start creating a hero of the party's world instead. */
   onCreate: () => void;
   onPicked?: () => void;
-}> = ({ open, partyId, setting, onClose, onCreate, onPicked }) => {
+}> = ({ open, partyId, setting, rules, onClose, onCreate, onPicked }) => {
   const heroes = useCharacterStore((s) => s.charactersList);
   const parties = usePartyStore((s) => s.list);
   const addHero = usePartyStore((s) => s.addHero);
@@ -33,15 +38,18 @@ export const HeroPickDialog: React.FC<{
     const seatedAt = new Map<string, { partyId: string; name: string }>();
     for (const party of parties ?? []) for (const id of party.myCharacterIds) seatedAt.set(id, { partyId: party.id, name: party.name });
     const byWorld = [...heroes].sort((a, b) => Number(settingOf(b) === setting) - Number(settingOf(a) === setting));
+    const fits = (hero: (typeof heroes)[number]) => !rules || (hero.ruleset ?? 'custom') === rules;
     return {
-      free: byWorld.filter((hero) => !seatedAt.has(hero.id)),
-      // Heroes already at this table are on it, not in the choice.
+      free: byWorld.filter((hero) => !seatedAt.has(hero.id) && fits(hero)),
+      // Heroes already at this table are on it, not in the choice; others are shown with why they can't come.
       elsewhere: byWorld.flatMap((hero) => {
         const seat = seatedAt.get(hero.id);
-        return seat && seat.partyId !== partyId ? [{ hero, table: seat.name }] : [];
+        if (seat && seat.partyId === partyId) return [];
+        if (!fits(hero)) return [{ hero, table: `По правилам «${RULES_TITLE[hero.ruleset ?? 'custom']}»` }];
+        return seat ? [{ hero, table: `За столом «${seat.name}»` }] : [];
       }),
     };
-  }, [heroes, parties, partyId, setting]);
+  }, [heroes, parties, partyId, setting, rules]);
 
   const pick = async (characterId: string) => {
     if (busy) return;
@@ -80,7 +88,10 @@ export const HeroPickDialog: React.FC<{
             <IconCreate width={26} height={26} />
           </span>
           <span className="ui-display ui-title text-lg leading-tight text-ink">Новый герой</span>
-          <span className="text-xs text-ink-muted">Создать в мире {SETTING_INFO[setting].label}</span>
+          <span className="text-xs text-ink-muted">
+            Создать в мире {SETTING_INFO[setting].label}
+            {rules && ` по правилам «${RULES_TITLE[rules]}»`}
+          </span>
         </Panel>
         {[...free.map((hero) => ({ hero, table: null as string | null })), ...elsewhere].map(({ hero, table }) => {
           const own = settingOf(hero);
@@ -92,7 +103,7 @@ export const HeroPickDialog: React.FC<{
                 interactive={table === null}
                 aria-disabled={table !== null || undefined}
                 onClick={table === null ? () => void pick(hero.id) : undefined}
-                title={table === null ? undefined : `Сидит за столом «${table}» — заберите его оттуда, чтобы привести сюда`}
+                title={table === null ? undefined : `${table} — этот герой не может сесть за этот стол`}
                 className={cx(
                   'relative flex aspect-[2/3] w-full flex-col overflow-hidden p-0 text-left',
                   busy === hero.id && 'animate-pulse',
@@ -112,8 +123,8 @@ export const HeroPickDialog: React.FC<{
                   <span className="ui-display block truncate text-lg leading-tight text-ink">{hero.name}</span>
                   <span className={cx('block text-xs text-ink-muted', table === null ? 'truncate' : 'line-clamp-2')}>
                     {table === null
-                      ? [origin.calling, `${hero.level} ур.`].filter(Boolean).join(' · ')
-                      : `За столом «${table}»`}
+                      ? [origin.calling, `${heroRank(hero).value} ${hero.investigator ? 'лет' : 'ур.'}`].filter(Boolean).join(' · ')
+                      : table}
                   </span>
                 </span>
               </Panel>

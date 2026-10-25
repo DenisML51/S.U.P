@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { applyBuild, findClass } from '@itd/game-logic';
-import type { Build, Character } from '@itd/schema';
+import { applyBuild, dndBuildOf, findClass } from '@itd/game-logic/dnd';
+import type { DndBuild, Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { Dialog } from '../../ui/Dialog';
 import { Button } from '../../ui/primitives';
@@ -15,7 +15,10 @@ export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = (
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const level = character.level + 1;
-  const [draft, setDraft] = useState<Build | undefined>(() => (character.build ? { ...character.build, level } : undefined));
+  const [draft, setDraft] = useState<DndBuild | undefined>(() => {
+    const build = dndBuildOf(character);
+    return build ? { ...build, level } : undefined;
+  });
   if (!draft) return null;
 
   const issues = planIssues(draft, level);

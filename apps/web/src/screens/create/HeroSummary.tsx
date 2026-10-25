@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import {
   ATTRIBUTES_LIST,
-  DND_ICONS,
   SKILLS_LIST,
   abilityModifier,
   armorClassOf,
-  describeGrant,
-  findClass,
   formatModifier,
   initiativeModifier,
   maxSanityOf,
 } from '@itd/game-logic';
+import {
+  DND_ICONS,
+  describeGrant,
+  dndBuildOf,
+  findClass,
+} from '@itd/game-logic/dnd';
 import type { CharacterDraft, CharacterImages, Setting } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
 import { SettingEmblem } from '../../ui/ornaments';
@@ -85,7 +88,8 @@ export const HeroSummary: React.FC<{
   );
   const proficiencies = sheet.traits.find((t) => t.id === 'g-proficiencies')?.description;
   const mastery = sheet.traits.find((t) => t.id === 'g-weapon-mastery')?.description;
-  const hitDie = findClass(sheet.build?.class)?.hitDie;
+  const build = dndBuildOf(sheet);
+  const hitDie = findClass(build?.class)?.hitDie;
   const features = sheet.traits.filter((t) => t.id !== 'g-proficiencies' && t.id !== 'g-weapon-mastery');
   const [open, setOpen] = useState<{ entry: EntryInfo; kind: IconKind } | null>(null);
   const show = (entry: EntryInfo, kind: IconKind) => setOpen({ entry, kind });
@@ -94,8 +98,8 @@ export const HeroSummary: React.FC<{
     open &&
     (open.kind === 'attack'
       ? 'Оружие из снаряжения'
-      : sheet.build
-        ? describeGrant(sheet.build, open.entry.grant)
+      : build
+        ? describeGrant(build, open.entry.grant)
         : undefined);
 
   return (

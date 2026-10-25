@@ -1,0 +1,987 @@
+/*
+ * Call of Cthulhu kit: the investigator's sheet. Loaded with the investigator's screens only (this
+ * file is imported by them, so it travels in their chunk).
+ *
+ * The structure is drawn with the setting's tokens, so every setting colours and sets it in its own
+ * type; the blocks at the end give each setting its own reading of the parts that have no D&D twin:
+ * the characteristic card with its half and fifth, the percentile skill row with its tick, the
+ * numbered tracks and the d100 result.
+ */
+
+.coc-sheet {
+  --coc-cell: rgb(var(--c-surface-2) / 0.7);
+  --coc-cell-edge: rgb(var(--c-line));
+  --coc-mark: rgb(var(--c-accent));
+  --coc-tick: rgb(var(--c-accent));
+}
+
+/* ----------------------------------------------------------------- characteristic card */
+
+.coc-chars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.coc-char {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
+  align-items: center;
+  min-height: 5.25rem;
+  padding: 0.55rem 0.7rem 0.55rem 0.85rem;
+  background: var(--coc-cell);
+  border: 1px solid var(--coc-cell-edge);
+  border-radius: var(--radius);
+  text-align: left;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s,
+    transform 0.15s;
+}
+/* The card is a roll button under its text; the text lets clicks through to it. */
+.coc-char__roll {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.coc-char > span {
+  pointer-events: none;
+}
+.coc-char > .coc-char__info {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.5rem;
+  z-index: 2;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.coc-char:hover > .coc-char__info,
+.coc-char:focus-within > .coc-char__info {
+  opacity: 1;
+}
+.coc-info {
+  opacity: 0.55;
+}
+.coc-info:hover {
+  opacity: 1;
+}
+.coc-skill .coc-info {
+  opacity: 0;
+}
+.coc-skill:hover .coc-info,
+.coc-skill:focus-within .coc-info {
+  opacity: 0.6;
+}
+.coc-char:hover {
+  border-color: rgb(var(--c-frame-bright));
+  background: rgb(var(--c-surface-2));
+}
+.coc-char__label {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--c-ink-muted));
+}
+.coc-char__value {
+  font-family: var(--font-numeric);
+  font-size: 2.35rem;
+  line-height: 1;
+  color: rgb(var(--c-ink));
+}
+.coc-char__parts {
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+}
+.coc-char__part {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-family: var(--font-numeric);
+  font-size: 0.95rem;
+  line-height: 1.1;
+  color: rgb(var(--c-ink-muted));
+}
+.coc-char__part small {
+  font-family: var(--font-body);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgb(var(--c-ink-faint));
+}
+
+/* ----------------------------------------------------------------- derived strip */
+
+.coc-derived {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-block: 1px solid rgb(var(--c-line) / 0.7);
+}
+.coc-derived > * + * {
+  border-left: 1px solid rgb(var(--c-line) / 0.7);
+}
+.coc-derived__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0.25rem;
+}
+.coc-derived__value {
+  font-family: var(--font-numeric);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.coc-derived__label {
+  margin-top: 0.25rem;
+  font-size: 11px;
+  color: rgb(var(--c-ink-faint));
+}
+
+/* ----------------------------------------------------------------- skill rows */
+
+.coc-skills {
+  columns: 2;
+  column-gap: 2.25rem;
+}
+.coc-skills--wide {
+  columns: 3;
+}
+.coc-skill {
+  break-inside: avoid;
+  display: grid;
+  grid-template-columns: 1.15rem minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.28rem 0;
+  border-bottom: 1px solid rgb(var(--c-paper-muted) / 0.28);
+}
+.coc-skill__tick {
+  display: grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 1px solid rgb(var(--c-paper-muted) / 0.8);
+  border-radius: 1px;
+  color: rgb(var(--c-paper-ink));
+}
+.coc-skill__tick[data-on] {
+  background: rgb(var(--c-paper-ink) / 0.82);
+  color: rgb(var(--c-paper));
+}
+.coc-skill__tick:disabled {
+  opacity: 0.25;
+}
+.coc-skill__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  font-size: 0.95rem;
+}
+.coc-skill__name:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.coc-skill[data-occupation] .coc-skill__name::after {
+  content: ' ●';
+  font-size: 0.55em;
+  vertical-align: 0.35em;
+  opacity: 0.6;
+}
+.coc-skill__value {
+  width: 2.6rem;
+  text-align: right;
+  font-family: var(--font-numeric);
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+.coc-skill__value input {
+  width: 100%;
+  background: transparent;
+  text-align: right;
+  outline: 1px solid rgb(var(--c-paper-muted));
+}
+.coc-skill__parts {
+  display: flex;
+  flex-direction: column;
+  width: 1.6rem;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: right;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+.coc-skill[data-dim] .coc-skill__name,
+.coc-skill[data-dim] .coc-skill__value {
+  opacity: 0.55;
+}
+
+/* ----------------------------------------------------------------- tracks (HP, MP) */
+
+.coc-vital {
+  display: grid;
+  gap: 0.35rem;
+}
+.coc-vital__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.coc-vital__label {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(var(--c-ink-muted));
+}
+.coc-vital__value {
+  margin-left: auto;
+  font-family: var(--font-numeric);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+.coc-vital__max {
+  font-size: 0.85rem;
+  color: rgb(var(--c-ink-faint));
+}
+.coc-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.coc-pip {
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 1px solid rgb(var(--coc-pip-tone, var(--c-hp)) / 0.7);
+  background: transparent;
+  border-radius: 1px;
+  transition: background-color 0.15s;
+}
+.coc-pip[data-on] {
+  background: rgb(var(--coc-pip-tone, var(--c-hp)));
+}
+.coc-vital__actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+/* ----------------------------------------------------------------- d100 result */
+
+/* The roll lives inside the app's toast: the setting's plate frames it. */
+.coc-roll {
+  width: 21rem;
+  max-width: calc(100vw - 4rem);
+  padding: 0.15rem 0;
+  cursor: default;
+}
+.coc-roll__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+.coc-roll__total {
+  font-family: var(--font-numeric);
+  font-size: 3.1rem;
+  line-height: 0.9;
+  min-width: 3.4rem;
+  text-align: center;
+}
+.coc-roll__dice {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+/* Inside the toast everything takes the plate's own ink, so it reads on paper and on metal alike. */
+.coc-die {
+  display: grid;
+  place-items: center;
+  min-width: 2.1rem;
+  height: 1.7rem;
+  padding: 0 0.3rem;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  font-family: var(--font-numeric);
+  font-size: 0.9rem;
+  opacity: 0.5;
+}
+.coc-die[data-kept] {
+  border-color: color-mix(in srgb, currentColor 70%, transparent);
+  opacity: 1;
+}
+.coc-die[data-units] {
+  border-style: dashed;
+}
+.coc-ladder {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  margin-top: 0.75rem;
+  font-size: 11px;
+  text-align: center;
+}
+.coc-ladder__step {
+  padding: 0.3rem 0.1rem;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  opacity: 0.55;
+}
+.coc-ladder__step b {
+  display: block;
+  font-family: var(--font-numeric);
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+.coc-ladder__step[data-reached] {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, currentColor 55%, transparent);
+  opacity: 1;
+}
+.coc-roll__action {
+  font-size: 0.85rem;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 4px;
+  opacity: 0.85;
+}
+.coc-roll__action:hover {
+  opacity: 1;
+  text-decoration-color: currentColor;
+}
+.coc-roll__action--strong {
+  font-weight: 600;
+  opacity: 1;
+}
+.coc-roll[data-level='fumble'] .coc-roll__total,
+.coc-roll[data-level='failure'] .coc-roll__total {
+  color: rgb(var(--c-danger));
+}
+.coc-roll[data-level='critical'] .coc-roll__total,
+.coc-roll[data-level='extreme'] .coc-roll__total {
+  color: rgb(var(--c-success));
+}
+.coc-roll__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+  margin-top: 0.8rem;
+}
+
+/* ----------------------------------------------------------------- modifiers bar */
+
+.coc-mods {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+.coc-dice-step {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgb(var(--c-line));
+  border-radius: var(--radius);
+}
+.coc-dice-step button {
+  width: 1.9rem;
+  height: 1.9rem;
+  color: rgb(var(--c-ink-muted));
+}
+.coc-dice-step button:hover {
+  color: rgb(var(--c-ink));
+}
+.coc-dice-step span {
+  min-width: 6.5rem;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* ================================================================== settings */
+
+/* Lovecraft — filed and stamped: the cards are index cards in brass frames, numbers typed. */
+[data-setting='lovecraft'] .coc-char {
+  background: linear-gradient(180deg, rgb(var(--c-paper) / 0.94), rgb(var(--c-paper) / 0.86)), var(--foxing);
+  color: rgb(var(--c-paper-ink));
+  border: 1px solid rgb(var(--c-frame));
+  clip-path: var(--deco-shape);
+  box-shadow:
+    inset 0 0 0 3px rgb(var(--c-paper)),
+    inset 0 0 0 4px rgb(var(--c-frame) / 0.6);
+}
+[data-setting='lovecraft'] .coc-char__label,
+[data-setting='lovecraft'] .coc-char__part,
+[data-setting='lovecraft'] .coc-char__part small {
+  color: rgb(var(--c-paper-muted));
+  font-family: var(--font-typed);
+}
+[data-setting='lovecraft'] .coc-char__value {
+  color: rgb(var(--c-paper-ink));
+  font-family: var(--font-typed);
+  font-size: 2.1rem;
+}
+[data-setting='lovecraft'] .coc-skill__value,
+[data-setting='lovecraft'] .coc-roll__total,
+[data-setting='lovecraft'] .coc-die {
+  font-family: var(--font-typed);
+}
+[data-setting='lovecraft'] .coc-skill__tick[data-on] {
+  background: rgb(var(--c-pen));
+  color: rgb(var(--c-paper));
+  border-color: rgb(var(--c-pen));
+}
+[data-setting='lovecraft'] .coc-pip {
+  border-radius: 50%;
+}
+
+/* High fantasy — gilded parchment: cards are vellum tablets with gold edges, numbers in Garamond. */
+[data-setting='high-fantasy'] .coc-char {
+  background: radial-gradient(120% 90% at 50% 0%, rgb(var(--c-paper) / 0.95), rgb(var(--c-paper) / 0.8));
+  color: rgb(var(--c-paper-ink));
+  border: 1px solid rgb(var(--c-frame));
+  box-shadow:
+    inset 0 0 0 2px rgb(var(--c-paper)),
+    inset 0 0 0 3px rgb(var(--c-frame) / 0.55),
+    0 6px 16px -10px rgb(0 0 0 / 0.8);
+}
+[data-setting='high-fantasy'] .coc-char__label,
+[data-setting='high-fantasy'] .coc-char__part,
+[data-setting='high-fantasy'] .coc-char__part small {
+  color: rgb(var(--c-paper-muted));
+}
+[data-setting='high-fantasy'] .coc-char__value {
+  color: rgb(var(--c-paper-ink));
+}
+[data-setting='high-fantasy'] .coc-pip {
+  transform: rotate(45deg);
+  width: 0.6rem;
+  height: 0.6rem;
+  margin: 1px;
+}
+
+/* Sci-fi — a data readout: flat matte cells, a lit left edge, values in Tektur. */
+[data-setting='sci-fi'] .coc-char {
+  background: rgb(var(--c-surface-2) / 0.75);
+  border: 1px solid rgb(var(--c-line));
+  border-left: 3px solid rgb(var(--c-accent));
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+[data-setting='sci-fi'] .coc-char__label {
+  color: rgb(var(--c-accent));
+}
+[data-setting='sci-fi'] .coc-pip {
+  height: 0.45rem;
+  width: 0.9rem;
+}
+
+/* Dark fantasy — iron and wax: heavy dark cards with a blood-red rule, a wax seal for the tick. */
+[data-setting='dark-fantasy'] .coc-char {
+  background: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-surface)));
+  border: 1px solid rgb(var(--c-frame) / 0.8);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    inset 0 -2px 0 rgb(var(--c-hp) / 0.55);
+}
+[data-setting='dark-fantasy'] .coc-skill__tick[data-on] {
+  background: rgb(var(--c-hp));
+  border-color: rgb(var(--c-hp));
+  border-radius: 50%;
+  color: rgb(var(--c-ink));
+}
+
+/* Cyberpunk — neon on black: cut corners, a glowing value, a scanline tick. */
+[data-setting='cyberpunk'] .coc-char {
+  background: rgb(var(--c-bg) / 0.85);
+  border: 1px solid rgb(var(--c-accent) / 0.55);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+[data-setting='cyberpunk'] .coc-char__value {
+  color: rgb(var(--c-accent));
+  text-shadow: 0 0 14px rgb(var(--c-accent) / 0.55);
+}
+[data-setting='cyberpunk'] .coc-char:hover {
+  border-color: rgb(var(--c-accent));
+  background: rgb(var(--c-accent) / 0.08);
+}
+[data-setting='cyberpunk'] .coc-pip[data-on] {
+  box-shadow: 0 0 6px rgb(var(--coc-pip-tone, var(--c-hp)) / 0.8);
+}
+
+/* Elden Ring — tarnished gold on grey stone: a thin gold frame, the value in Cinzel, a grace glow. */
+[data-setting='elden-ring'] .coc-char {
+  background: linear-gradient(180deg, rgb(var(--c-surface-2) / 0.85), rgb(var(--c-surface) / 0.85));
+  border: 1px solid rgb(var(--c-frame) / 0.75);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.4),
+    inset 0 0 18px rgb(var(--c-accent) / 0.08);
+}
+[data-setting='elden-ring'] .coc-char:hover {
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.4),
+    inset 0 0 24px rgb(var(--c-accent) / 0.2);
+}
+[data-setting='elden-ring'] .coc-char__value {
+  color: rgb(var(--c-frame-bright));
+}
+
+/* ================================================================== madness
+ * The veil: two images of veined noise (rendered once) masked to the borders, breathing and
+ * crossfading — only their opacity moves; a heartbeat of darkness in the corners; shadows slipping past the edge of vision; at
+ * the worst a red/cyan split of the edges and a slow sway of the veil itself — never of the page:
+ * swaying the sheet would blur its text. `data-mode='calm'` (an app setting, or reduced motion)
+ * keeps the still veil without the strobe, the flicker and the sway.
+ */
+
+.coc-veil {
+  --veil: var(--c-danger);
+  /* Every layer of the veil is cut by the same ellipse, so their edges never stack into rings. */
+  --veil-shape: ellipse 72% 66% at 50% 50%;
+  --veil-strength: 0.55;
+  --beat: 1.25s;
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  pointer-events: none;
+  overflow: hidden;
+}
+.coc-veil[data-stage='1'] {
+  --veil-strength: 0.35;
+  --beat: 2.4s;
+}
+.coc-veil[data-stage='3'] {
+  --veil-strength: 0.72;
+  --beat: 0.9s;
+}
+
+.coc-veil__noise {
+  position: absolute;
+  inset: 0;
+  /* Veins in the setting's colour, cut by one image that holds both the noise and the fall-off to a
+     clear centre. One mask, no tiles, no compositing of masks: those show seams on the GPU. */
+  background: rgb(var(--veil));
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000' viewBox='0 0 1600 1000' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.62' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000' viewBox='0 0 1600 1000' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008 .02' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.62' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  opacity: var(--veil-strength);
+  will-change: opacity;
+  animation: coc-veil-breathe 9s ease-in-out infinite alternate;
+}
+.coc-veil__noise--b {
+  background: rgb(var(--veil) / 0.6);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.68' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.02 .0075' numOctaves='3' seed='31'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.4 1.25'/%3E%3C/filter%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='72%25'%3E%3Cstop offset='0.68' stop-color='black'/%3E%3Cstop offset='1' stop-color='white'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='100%25' height='100%25' fill='url%28%23g%29'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23v%29' mask='url%28%23m%29'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  animation: coc-veil-cross 7s ease-in-out infinite alternate;
+}
+
+/* A heartbeat: two quick throbs of the dark at the borders, then a rest. */
+.coc-veil__pulse {
+  position: absolute;
+  inset: 0;
+  /* Grain over the gradient dithers it: a dark gradient fading in and out bands into blocks otherwise. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='d' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E"),
+    radial-gradient(var(--veil-shape), transparent 62%, rgb(var(--veil) / 0.22) 86%, rgb(0 0 0 / 0.7) 100%);
+  background-size:
+    256px 256px,
+    100% 100%;
+  opacity: var(--veil-strength);
+  will-change: opacity;
+  animation: coc-heartbeat var(--beat) ease-out infinite;
+}
+
+/* Tunnel vision: the edges drain of colour (a panic attack); in lasting madness they take the
+   veil's hue. Blend modes, not backdrop-filter: a blurred backdrop over a swaying page is redrawn in
+   GPU tiles whose seams show. */
+.coc-veil__tunnel {
+  position: absolute;
+  inset: 0;
+  background: rgb(128 128 128);
+  mix-blend-mode: saturation;
+  -webkit-mask-image: radial-gradient(var(--veil-shape), transparent 60%, black 95%);
+  mask-image: radial-gradient(var(--veil-shape), transparent 60%, black 95%);
+  opacity: 0.7;
+  animation: coc-tunnel var(--beat) ease-out infinite;
+}
+.coc-veil[data-stage='3'] .coc-veil__tunnel {
+  background: rgb(var(--veil));
+  mix-blend-mode: hue;
+}
+
+/* Lasting madness: the dark falls for an instant, now and then. */
+.coc-veil__flicker {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.6);
+  opacity: 0;
+  animation: coc-flicker 7.3s linear infinite;
+}
+
+/* Something at the edge of vision: a dark smear that slides in and is gone when looked at. */
+.coc-veil__shade {
+  position: absolute;
+  top: 20%;
+  width: 22vw;
+  height: 60vh;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0.3) 55%, transparent);
+  opacity: 0;
+}
+.coc-veil__shade--l {
+  left: -12vw;
+  animation: coc-shade-l 13s ease-in-out infinite;
+}
+.coc-veil__shade--r {
+  right: -12vw;
+  top: 35%;
+  animation: coc-shade-r 17s ease-in-out 4s infinite;
+}
+
+/* The colours of the borders come apart, red one way and cyan the other. */
+.coc-veil__split {
+  position: absolute;
+  inset: 0;
+  /* Painted once as gradients; only opacity and a small shift move (no box-shadow repaint). */
+  background:
+    linear-gradient(90deg, rgb(255 40 60 / 0.45), transparent 2.2rem),
+    linear-gradient(270deg, rgb(40 220 255 / 0.4), transparent 2.2rem);
+  will-change: opacity, transform;
+  animation: coc-split 3.3s steps(2, jump-none) infinite;
+}
+
+/* The veil sways, a fraction of a degree, like a deck at sea; the page under it stays still and sharp. */
+.coc-veil[data-stage='3'] .coc-veil__noise--b {
+  will-change: opacity, transform;
+  animation:
+    coc-veil-cross 7s ease-in-out infinite alternate,
+    coc-sway 9s ease-in-out infinite;
+  transform-origin: 50% 60%;
+}
+
+.coc-veil[data-stage='3'] .coc-veil__shade--l {
+  animation-duration: 7s;
+}
+.coc-veil[data-stage='3'] .coc-veil__shade--r {
+  animation-duration: 9s;
+  animation-delay: 2s;
+}
+.coc-veil[data-stage='3'] .coc-veil__split {
+  animation: coc-split 0.45s steps(3, jump-none) infinite;
+}
+
+/* Calm: the veil stays, still; no strobe, no flicker, no sway, nothing slipping past. */
+.coc-veil[data-mode='calm'] *,
+.coc-veil[data-mode='calm'] .coc-veil__noise--b {
+  animation: none !important;
+}
+.coc-veil[data-mode='calm'] .coc-veil__flicker,
+.coc-veil[data-mode='calm'] .coc-veil__shade,
+.coc-veil[data-mode='calm'] .coc-veil__split {
+  display: none;
+}
+@keyframes coc-veil-breathe {
+  from {
+    opacity: calc(var(--veil-strength) * 0.55);
+  }
+  to {
+    opacity: var(--veil-strength);
+  }
+}
+@keyframes coc-veil-cross {
+  from {
+    opacity: calc(var(--veil-strength) * 0.15);
+  }
+  to {
+    opacity: calc(var(--veil-strength) * 0.85);
+  }
+}
+@keyframes coc-heartbeat {
+  0% {
+    opacity: calc(var(--veil-strength) * 0.5);
+  }
+  10% {
+    opacity: var(--veil-strength);
+  }
+  22% {
+    opacity: calc(var(--veil-strength) * 0.6);
+  }
+  32% {
+    opacity: calc(var(--veil-strength) * 0.95);
+  }
+  60%,
+  100% {
+    opacity: calc(var(--veil-strength) * 0.45);
+  }
+}
+@keyframes coc-tunnel {
+  0%,
+  60%,
+  100% {
+    opacity: 0.45;
+  }
+  10%,
+  32% {
+    opacity: 0.75;
+  }
+}
+@keyframes coc-flicker {
+  0%,
+  93%,
+  100% {
+    opacity: 0;
+  }
+  94% {
+    opacity: 0.8;
+  }
+  95% {
+    opacity: 0.1;
+  }
+  96% {
+    opacity: 0.6;
+  }
+  97% {
+    opacity: 0;
+  }
+}
+@keyframes coc-shade-l {
+  0%,
+  70%,
+  100% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  78% {
+    opacity: 0.9;
+    transform: translateX(9vw);
+  }
+  86% {
+    opacity: 0;
+    transform: translateX(3vw);
+  }
+}
+@keyframes coc-shade-r {
+  0%,
+  60%,
+  100% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  68% {
+    opacity: 0.8;
+    transform: translateX(-10vw);
+  }
+  76% {
+    opacity: 0;
+    transform: translateX(-4vw);
+  }
+}
+@keyframes coc-split {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 0.45;
+    transform: translateX(2px);
+  }
+}
+@keyframes coc-sway {
+  0%,
+  100% {
+    transform: rotate(0deg) translateY(0) scale(1.03);
+  }
+  30% {
+    transform: rotate(0.6deg) translateY(4px) scale(1.04);
+  }
+  70% {
+    transform: rotate(-0.55deg) translateY(-4px) scale(1.035);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coc-veil * {
+    animation: none !important;
+  }
+}
+
+/* What a shock left to do (the INT roll, a bout), kept in the investigator's column until done. */
+.coc-followup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgb(var(--c-warning) / 0.6);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: rgb(var(--c-warning) / 0.08);
+}
+.coc-followup--danger {
+  border-color: rgb(var(--c-danger) / 0.6);
+  background: rgb(var(--c-danger) / 0.08);
+}
+
+/* Modifiers beyond a plain roll light up, so they are never carried into the next roll unseen. */
+.coc-mods__active,
+.coc-dice-step[data-active] {
+  box-shadow: 0 0 0 1px rgb(var(--c-warning) / 0.8);
+}
+.coc-dice-step[data-active] span {
+  color: rgb(var(--c-warning));
+}
+.coc-mods__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 12px;
+}
+.coc-mods__pin,
+.coc-mods__reset {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: rgb(var(--c-ink-muted));
+}
+.coc-mods__pin[aria-pressed='true'] {
+  color: rgb(var(--c-warning));
+}
+.coc-mods__pin:hover,
+.coc-mods__reset:hover {
+  color: rgb(var(--c-ink));
+}
+.coc-mods__note {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 12px;
+  color: rgb(var(--c-warning));
+}
+
+/* Each world's madness has its own colour. */
+[data-setting='lovecraft'] .coc-veil {
+  --veil: var(--c-eldritch);
+}
+[data-setting='high-fantasy'] .coc-veil {
+  --veil: 150 96 220;
+}
+[data-setting='dark-fantasy'] .coc-veil {
+  --veil: var(--c-hp);
+}
+[data-setting='elden-ring'] .coc-veil {
+  --veil: 236 196 60;
+}
+[data-setting='sci-fi'] .coc-veil {
+  --veil: var(--c-accent);
+}
+[data-setting='cyberpunk'] .coc-veil {
+  --veil: var(--c-accent);
+}
+
+/* Glitch worlds: the veil tears in scanlines instead of veins. */
+[data-setting='sci-fi'] .coc-veil__noise--b,
+[data-setting='cyberpunk'] .coc-veil__noise--b {
+  background: repeating-linear-gradient(0deg, rgb(var(--veil) / 0.7) 0 2px, transparent 2px 5px);
+  animation: coc-veil-cross 0.9s steps(3, jump-none) infinite alternate;
+}
+
+/* ================================================================== narrow screens */
+
+/*
+ * Phones and tablets (docs/MOBILE.md): below 1024px the sheet trades its rail for tabs along the
+ * bottom and its column for a drawer, the fight's panels go one under another, and what the finger
+ * presses grows to 40px. The desktop above it is untouched.
+ */
+
+/* The rail's places laid along the bottom: the mark of the open one runs along their top edge. */
+.coc-tabbar {
+  border-right: 0;
+  border-top: 1px solid rgb(var(--c-line) / 0.7);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.coc-tabbar .ui-rail__item {
+  min-height: 3.5rem;
+  justify-content: center;
+}
+.coc-tabbar .ui-rail__item .ui-rail__mark {
+  top: 0;
+  bottom: auto;
+  left: 25%;
+  right: 25%;
+  width: auto !important;
+  height: 2px;
+}
+
+@media (max-width: 1023.98px) {
+  .coc-skills--wide {
+    columns: 2;
+  }
+  .coc-touch .ui-button--row,
+  .coc-touch .ui-button--sm,
+  .coc-touch .ui-button--md {
+    min-height: 2.5rem;
+  }
+  .coc-touch .ui-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+  }
+  .coc-touch .ui-icon-button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+  .coc-touch .coc-dice-step button {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .coc-touch .coc-skill {
+    min-height: 2.75rem;
+    padding-block: 0.4rem;
+  }
+  /* The "i" stays small to the eye and gets a finger-sized place around it. */
+  .coc-touch .coc-skill .coc-info {
+    position: relative;
+  }
+  .coc-touch .coc-info::after {
+    content: '';
+    position: absolute;
+    inset: -0.65rem;
+  }
+}
+
+@media (max-width: 639.98px) {
+  .coc-chars {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coc-skills,
+  .coc-skills--wide {
+    columns: 1;
+  }
+  .coc-sheet .ui-ledger__head {
+    flex-wrap: wrap;
+    padding-inline: 1rem;
+  }
+  .coc-sheet .ui-ledger__list {
+    padding-inline: 1rem;
+  }
+  /* The difficulty takes the row and its options share it, so «Экстремальная» never pushes it out. */
+  .coc-mods > .ui-segmented {
+    display: flex;
+    width: 100%;
+  }
+  .coc-mods > .ui-segmented .ui-segmented__option {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-inline: 0.3rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Without a hover the cards' "i" is shown all the time: a finger has no other way to find it. */
+@media (hover: none) {
+  .coc-char > .coc-char__info {
+    opacity: 1;
+  }
+  .coc-skill .coc-info {
+    opacity: 0.6;
+  }
+}

@@ -14,13 +14,14 @@ import {
 } from '@itd/schema';
 import {
   appendHistory,
-  applyBuild,
   changeResource,
   createEntityId,
   hitDiceOf,
+  loadRuleSystem,
   longRest,
   performAction as performGameAction,
   rollDie,
+  rulesOf,
   shortRest,
   type HistoryEvent,
   type PerformActionRequest,
@@ -48,6 +49,11 @@ export interface UpdateOptions {
    * they are not put on the undo stack.
    */
   undoable?: boolean;
+  /**
+   * The edit is undoable from the journal but shows no message of its own: a roll that follows it
+   * already tells the player what happened.
+   */
+  quiet?: boolean;
 }
 
 /** How many edits of one character can be undone in a session. */
@@ -97,7 +103,7 @@ interface CharacterState {
   /** Takes a short or long rest; returns what it changed. */
   rest(kind: RestKind, options?: Omit<ShortRestOptions, 'rolls' | 'random'>): RestResult | null;
   /** Uses an attack, ability or spell, paying its costs. Returns why it failed, if it did. */
-  performAction(request: PerformActionRequest): PerformActionResult | null;
+  performAction(request: PerformActionRequest, options?: { quiet?: boolean }): PerformActionResult | null;
 
   /** Opens a character, on its sheet unless another view is asked for (a party's fight opens combat). */
   loadCharacter(characterId: string, view?: ViewMode): Promise<void>;
@@ -195,8 +201,24 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
    */
   const refreshPreset = (character: Character) => {
     if (!character.build) return;
-    const rebuilt = applyBuild(character, character.build).character;
+    const rebuilt = rulesOf(character.build).rebuild(character, character.build);
     if (!deepEqual(rebuilt, character)) get().updateCharacter(() => rebuilt);
+  };
+
+  /**
+   * A preset hero's rules system loads on demand; its sheet opens only once it is there. False when
+   * it could not be loaded (offline before it was ever cached).
+   */
+  const loadRulesFor = async (character: Character): Promise<boolean> => {
+    if (!character.build) return true;
+    try {
+      await loadRuleSystem(character.build.ruleset);
+      return true;
+    } catch (error) {
+      console.error('Failed to load the rules system', error);
+      toast.error('Не удалось загрузить правила персонажа — проверьте соединение');
+      return false;
+    }
   };
 
   /** The entry a request uses is a reaction (an attack, ability or spell taken with the reaction). */
@@ -256,7 +278,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     if (!latest) {
       set({ character: null, undoable: [] });
       toast('Персонаж был удалён на другом устройстве', { icon: '🗑️' });
-    } else if (get().character?.id === latest.id) {
+    } else if (get().character?.id === latest.id && (await loadRulesFor(latest)) && get().character?.id === latest.id) {
       set({ character: latest });
     }
   };
@@ -313,7 +335,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       const stack = [...(undoStacks.get(current.id) ?? []), step].slice(-UNDO_LIMIT);
       undoStacks.set(current.id, stack);
       set({ undoable: stack.map((s) => s.id) });
-      if (log && get().settings.notifications) showUndoToast(log.message, () => get().undo(step.id));
+      if (log && !options?.quiet && get().settings.notifications) showUndoToast(log.message, () => get().undo(step.id));
     },
 
     undo: (stepId) => {
@@ -373,7 +395,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       return result;
     },
 
-    performAction: (request) => {
+    performAction: (request, options) => {
       const current = get().character;
       if (!current) return null;
       // A reaction answers someone else's turn: it is the one thing a hero may do out of their own.
@@ -388,7 +410,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
           const applied = performGameAction(doc, request);
           return applied.ok ? applied.character : doc;
         },
-        { log: { message: result.message, type: 'other' } },
+        { log: { message: result.message, type: 'other' }, quiet: options?.quiet },
       );
       return result;
     },
@@ -399,6 +421,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         toast.error('Персонаж не найден');
         return;
       }
+      if (!(await loadRulesFor(character))) return;
       writeViewMode(view);
       set({ character, viewMode: view, undoable: undoIds(character.id) });
       rememberOpen(character.id);
@@ -410,12 +433,12 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       if (!repository) throw new Error('Нет активного аккаунта');
       const character = normalizeCharacter(createCharacterDocument(draft));
       await repository.create(character);
-      set({
-        character,
-        charactersList: [...get().charactersList, toCharacterPreview(character)],
-        viewMode: 'tabs',
-        undoable: [],
-      });
+      const charactersList = [...get().charactersList, toCharacterPreview(character)];
+      if (!(await loadRulesFor(character))) {
+        set({ charactersList });
+        return character.id;
+      }
+      set({ character, charactersList, viewMode: 'tabs', undoable: [] });
       rememberOpen(character.id);
       return character.id;
     },
@@ -489,7 +512,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       const open = readOpen();
       const character = open ? await next.repository.get(open) : undefined;
       // A reload returns to the hero as it was left: on its sheet or in its fight.
-      if (character && workspace === next) {
+      if (character && (await loadRulesFor(character)) && workspace === next) {
         set({ character, viewMode: readViewMode(), undoable: [] });
         refreshPreset(character);
       }

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Build, Character } from '@itd/schema';
-import { DND, applyBuild, choiceOptions, levelPlan, setPicks, startingSkills } from '../src';
+import type { DndBuild, Character } from '@itd/schema';
+import { startingSkills } from '../src';
+import { DND, applyBuild, choiceOptions, levelPlan, setPicks } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
-const build = (patch: Partial<Build> = {}): Build => ({
+const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'sage',
@@ -19,9 +20,9 @@ const build = (patch: Partial<Build> = {}): Build => ({
 });
 
 const fresh = (): Character => makeCharacter({ skills: startingSkills(), maxHP: 10, currentHP: 10, inventory: [] });
-const applied = (b: Build) => applyBuild(fresh(), b);
-const apply = (b: Build) => applied(b).character;
-const unexpectedMissing = (b: Build) => applied(b).missing.filter((id) => !id.startsWith('spell:'));
+const applied = (b: DndBuild) => applyBuild(fresh(), b);
+const apply = (b: DndBuild) => applied(b).character;
+const unexpectedMissing = (b: DndBuild) => applied(b).missing.filter((id) => !id.startsWith('spell:'));
 const resource = (c: Character, id: string) => c.resources.find((r) => r.id === id);
 const school = (id: string) => DND.spells.find((s) => s.id === id)?.school;
 

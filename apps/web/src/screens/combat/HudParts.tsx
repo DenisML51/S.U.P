@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -13,7 +13,6 @@ import {
   itemQuantity,
   maxSanityOf,
   setActionLimit,
-  setCondition,
   setSpentActions,
   spentActionsOf,
   totalCopper,
@@ -25,13 +24,13 @@ import { useCharacterStore } from '../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../ui/actionTypes';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { NumberField } from '../../ui/forms';
-import { CONDITION_ICONS, CatalogIcon, DAMAGE_ICONS, GameIcon } from '../../ui/GameIcon';
+import { CONDITION_ICONS, CatalogIcon, GameIcon } from '../../ui/GameIcon';
 import { Panel, cx } from '../../ui/primitives';
-import { IconAmmunition, IconCoins, IconPlus } from '../../ui/icons';
+import { IconAmmunition, IconCoins } from '../../ui/icons';
 import { useEndConcentration } from '../sheet/Concentration';
 import { useSheetDialogs } from '../sheet/dialogs/context';
 import { ActionShape } from './Hotbar';
-import { HudTip, useHudTip, type TipBinding } from './HudTip';
+import { HudTip, below, useHudTip, type TipBinding } from './HudTip';
 
 interface Hint {
   key: string;
@@ -168,10 +167,10 @@ const Flyout: React.FC<{
           <motion.div
             className="fixed z-[56] w-80"
             style={{
-              bottom: window.innerHeight - rect.top + 10,
+              ...(below(rect) ? { top: rect.bottom + 10 } : { bottom: window.innerHeight - rect.top + 10 }),
               left: Math.max(12, rect.left + rect.width / 2 - 160),
             }}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: below(rect) ? -8 : 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8, transition: { duration: 0.1 } }}
             transition={{ duration: 0.16 }}
@@ -187,146 +186,99 @@ const Flyout: React.FC<{
   );
 };
 
-/** The hero's face, framed by their state, with conditions and defences above it. */
+/** Conditions marked on the portrait; the rest are counted, and all are listed in the body window. */
+const CONDITIONS_SHOWN = 3;
+
+/**
+ * The hero's face, framed by their state, with the first conditions marked on it. A click opens the
+ * body window: wounds by limb, every condition, defences.
+ */
 export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
-  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const dialogs = useSheetDialogs();
   const { bind, view } = useHint();
-  const [picking, setPicking] = useState(false);
-  const addButton = useRef<HTMLButtonElement>(null);
   const endConcentration = useEndConcentration();
-  const toggle = (id: string) => updateCharacter((doc) => setCondition(doc, id, !doc.conditions.includes(id)));
-  const defences = character.resistances.filter((r) => r.level !== 'none');
   const down = character.currentHP <= 0;
+  const conditions = character.conditions.map((id) => ({ id, condition: CONDITIONS.find((c) => c.id === id) }));
+  const shown = conditions.slice(0, CONDITIONS_SHOWN);
+  const more = conditions.length - shown.length;
+  const openBody = () => dialogs.open({ kind: 'body' });
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="flex max-w-[12.5rem] flex-wrap justify-center gap-1.5">
-        {character.concentratingOn && (
-          <button
-            type="button"
-            onClick={() => endConcentration('по желанию')}
-            className="ui-hud-chip"
-            style={{ color: 'rgb(var(--c-accent))', borderColor: 'rgb(var(--c-accent) / 0.6)' }}
-            aria-label={`Прекратить концентрацию: ${character.concentratingOn.name}`}
-            {...bind({
-              key: 'concentration',
-              title: `Концентрация: ${character.concentratingOn.name}`,
-              lines: ['Урон требует спасброска Телосложения', 'Нажмите, чтобы прекратить'],
-            })}
-          >
-            <CatalogIcon id="psychic-waves" size={20} />
-          </button>
-        )}
+    <div
+      className={cx(
+        'ui-hud-portrait',
+        down && 'ui-hud-portrait--down',
+        character.tempHP > 0 && 'ui-hud-portrait--shielded',
+      )}
+    >
+      <button
+        type="button"
+        onClick={openBody}
+        className="block h-full w-full overflow-hidden"
+        aria-label="Тело и состояния"
+        {...bind({ key: 'body', title: 'Тело и состояния', lines: ['Раны, состояния, защита'] })}
+      >
+        <CharacterArt
+          source={character}
+          kind="portrait"
+          className="h-full w-full transition-transform duration-700 hover:scale-105"
+        />
+      </button>
+      <div className="absolute left-2 top-2 flex flex-col gap-1">
         <AnimatePresence mode="popLayout" initial={false}>
-          {character.conditions.map((id) => {
-            const condition = CONDITIONS.find((c) => c.id === id);
-            return (
-              <motion.button
-                key={id}
-                layout
-                type="button"
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.7 }}
-                onClick={() => toggle(id)}
-                className="ui-hud-chip ui-hud-chip--condition"
-                aria-label={`Снять: ${condition?.name ?? id}`}
-                {...bind({
-                  key: `c:${id}`,
-                  title: condition?.name ?? id,
-                  lines: [condition?.description ?? '', 'Нажмите, чтобы снять'],
-                })}
-              >
-                <CatalogIcon id={CONDITION_ICONS[id] ?? 'terror'} size={20} />
-              </motion.button>
-            );
-          })}
-        </AnimatePresence>
-        {defences.map((resistance) => {
-          const level =
-            resistance.level === 'resistance'
-              ? 'Сопротивление'
-              : resistance.level === 'vulnerability'
-                ? 'Уязвимость'
-                : 'Иммунитет';
-          return (
-            <button
-              key={resistance.id}
+          {shown.map(({ id, condition }) => (
+            <motion.button
+              key={id}
+              layout
               type="button"
-              onClick={() => dialogs.open({ kind: 'armor' })}
-              className={cx('ui-hud-chip', `ui-hud-chip--${resistance.level}`)}
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.7 }}
+              onClick={openBody}
+              className="ui-hud-chip ui-hud-chip--condition ui-hud-chip--mini"
+              aria-label={condition?.name ?? id}
               {...bind({
-                key: `r:${resistance.id}`,
-                title: resistance.type,
-                lines: [level, 'Нажмите: защита'],
+                key: `c:${id}`,
+                title: condition?.name ?? id,
+                lines: [condition?.description ?? '', 'Нажмите: тело и состояния'],
               })}
             >
-              <CatalogIcon id={DAMAGE_ICONS[resistance.type] ?? 'checked-shield'} size={18} />
-            </button>
-          );
-        })}
-        <button
-          ref={addButton}
-          type="button"
-          onClick={() => setPicking((v) => !v)}
-          className="ui-hud-chip ui-hud-chip--add"
-          aria-expanded={picking}
-          {...bind({ key: 'add', title: 'Состояния', lines: ['Наложить или снять'] })}
-        >
-          <IconPlus width={16} height={16} />
-        </button>
-      </div>
-
-      <div
-        className={cx(
-          'ui-hud-portrait',
-          down && 'ui-hud-portrait--down',
-          character.tempHP > 0 && 'ui-hud-portrait--shielded',
+              <CatalogIcon id={CONDITION_ICONS[id] ?? 'terror'} size={16} />
+            </motion.button>
+          ))}
+        </AnimatePresence>
+        {more > 0 && (
+          <button
+            type="button"
+            onClick={openBody}
+            className="ui-hud-chip ui-hud-chip--condition ui-hud-chip--mini text-xs tabular-nums"
+            {...bind({
+              key: 'c:more',
+              title: `Ещё состояний: ${more}`,
+              lines: [...conditions.slice(CONDITIONS_SHOWN).map((c) => c.condition?.name ?? c.id), 'Нажмите: все состояния'],
+            })}
+          >
+            +{more}
+          </button>
         )}
-      >
+      </div>
+      {character.concentratingOn && (
         <button
           type="button"
-          onClick={() => dialogs.open({ kind: 'profile' })}
-          className="block h-full w-full overflow-hidden"
-          aria-label="Профиль героя"
-        >
-          <CharacterArt
-            source={character}
-            kind="portrait"
-            className="h-full w-full transition-transform duration-700 hover:scale-105"
-          />
-        </button>
-        {character.tempHP > 0 && <span className="ui-hud-portrait__temp">+{character.tempHP}</span>}
-      </div>
-
-      <Flyout anchor={addButton} open={picking} onClose={() => setPicking(false)}>
-        <div className="mb-2 text-xs uppercase tracking-[0.16em] text-ink-muted">Состояния</div>
-        <div className="grid grid-cols-2 gap-1">
-          {CONDITIONS.map((condition) => {
-            const active = character.conditions.includes(condition.id);
-            return (
-              <button
-                key={condition.id}
-                type="button"
-                onClick={() => toggle(condition.id)}
-                aria-pressed={active}
-                className={cx(
-                  'flex items-center gap-2 px-2 py-1.5 text-left text-sm transition-colors',
-                  active ? 'text-warning' : 'text-ink-muted hover:text-ink',
-                )}
-                style={{
-                  borderRadius: 'var(--radius)',
-                  background: active ? 'rgb(var(--c-warning) / 0.1)' : undefined,
-                }}
-              >
-                <CatalogIcon id={CONDITION_ICONS[condition.id] ?? 'terror'} size={18} className="shrink-0" />
-                {condition.name}
-              </button>
-            );
+          onClick={() => endConcentration('по желанию')}
+          className="ui-hud-chip ui-hud-chip--mini absolute right-2 top-2"
+          style={{ color: 'rgb(var(--c-accent))', borderColor: 'rgb(var(--c-accent) / 0.6)' }}
+          aria-label={`Прекратить концентрацию: ${character.concentratingOn.name}`}
+          {...bind({
+            key: 'concentration',
+            title: `Концентрация: ${character.concentratingOn.name}`,
+            lines: ['Урон требует спасброска Телосложения', 'Нажмите, чтобы прекратить'],
           })}
-        </div>
-      </Flyout>
+        >
+          <CatalogIcon id="psychic-waves" size={16} />
+        </button>
+      )}
+      {character.tempHP > 0 && <span className="ui-hud-portrait__temp">+{character.tempHP}</span>}
       {view}
     </div>
   );
@@ -400,15 +352,39 @@ export const ActionTokens: React.FC<{ character: Character }> = ({ character }) 
   );
 };
 
+/** Resources shown in the bar; the rest wait behind a button that lays the full set out over the bar. */
+const RESOURCES_SHOWN = 5;
+
 /** Resources as icons with what is left; a click spends one, a right click opens the card. */
 export const ResourceStrip: React.FC<{ character: Character }> = ({ character }) => {
   const updateResourceCount = useCharacterStore((s) => s.updateResourceCount);
   const dialogs = useSheetDialogs();
   const { bind, view } = useHint();
+  const [expanded, setExpanded] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  // Room to the right of the strip: the laid-out set grows that way, then upward in rows.
+  const [room, setRoom] = useState(0);
   const resources = character.resources.filter((r) => r.max > 0);
+  const hiddenCount = resources.length - RESOURCES_SHOWN;
+  const open = expanded && hiddenCount > 0;
   const ammunition = character.inventory.filter((i) => i.type === 'ammunition' && isStackable(i));
   const arrows = ammunition.reduce((sum, i) => sum + itemQuantity(i), 0);
   const gold = totalCopper(character.currency) / 100;
+
+  // The laid-out set closes on a click elsewhere or on Escape.
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => {
+      if (!box.current?.contains(e.target as Node)) setExpanded(false);
+    };
+    const escape = (e: KeyboardEvent) => e.key === 'Escape' && setExpanded(false);
+    document.addEventListener('mousedown', away);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('mousedown', away);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [open]);
 
   const tile = (resource: Resource) => (
     <button
@@ -431,9 +407,28 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
     </button>
   );
 
-  return (
-    <Panel className="ui-hud-strip">
-      {resources.map(tile)}
+  const toggle = (
+    <button
+      type="button"
+      onClick={() => {
+        const rect = box.current?.getBoundingClientRect();
+        if (rect) setRoom(window.innerWidth - rect.left - 16);
+        setExpanded(!open);
+      }}
+      className="ui-hud-chip ui-hud-chip--add text-xs tabular-nums"
+      aria-expanded={open}
+      {...bind({
+        key: 'more-resources',
+        title: open ? 'Свернуть ресурсы' : 'Все ресурсы',
+        lines: open ? ['Нажмите, чтобы свернуть'] : [`Ещё ${hiddenCount}`, 'Нажмите, чтобы раскрыть'],
+      })}
+    >
+      {open ? '−' : `+${hiddenCount}`}
+    </button>
+  );
+
+  const extras = (
+    <>
       {resources.length > 0 && <span className="h-6 w-px bg-line" aria-hidden />}
       <button
         type="button"
@@ -466,8 +461,40 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
           <span className="tabular-nums">{arrows}</span>
         </button>
       )}
+    </>
+  );
+
+  return (
+    <div ref={box} className="relative">
+      {/* The bar keeps its place (and its width) while the full set lies over it. */}
+      <Panel className={cx('ui-hud-strip h-full', open && 'invisible')}>
+        {resources.slice(0, RESOURCES_SHOWN).map(tile)}
+        {hiddenCount > 0 && toggle}
+        {extras}
+      </Panel>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="absolute bottom-0 left-0 z-30 min-w-full"
+            style={{ width: 'max-content', maxWidth: room > 0 ? room : undefined }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6, transition: { duration: 0.12 } }}
+            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Panel className="ui-hud-strip h-full shadow-2xl">
+              {/* Resources wrap into rows above; the purse and ammunition stay on the bar's line. */}
+              <div className="flex min-w-0 flex-wrap-reverse items-center gap-[0.4rem]">
+                {resources.map(tile)}
+                {toggle}
+              </div>
+              <div className="flex h-[2.4rem] shrink-0 items-center gap-[0.4rem] self-end">{extras}</div>
+            </Panel>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {view}
-    </Panel>
+    </div>
   );
 };
 

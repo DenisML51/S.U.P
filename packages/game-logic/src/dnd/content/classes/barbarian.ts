@@ -318,7 +318,6 @@ export const BARBARIAN: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
-  mentalStrength: 60,
   subclassLevel: 3,
   subclasses: [berserker, wildHeart, worldTree, zealot],
   startingEquipment: BARBARIAN_KITS,

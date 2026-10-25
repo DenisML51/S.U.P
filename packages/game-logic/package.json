@@ -5,7 +5,9 @@
   "type": "module",
   "description": "Game rules and static content of the SUP system. Pure functions over @itd/schema documents.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./dnd": "./src/dnd/index.ts",
+    "./coc": "./src/coc/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
