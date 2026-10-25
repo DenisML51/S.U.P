@@ -129,40 +129,52 @@ const Chip: React.FC<{ on: boolean; onClick: () => void; children: React.ReactNo
 );
 
 /**
- * A group of the bottom bar under its small title, groups parted by a rule; `head` goes between the
- * title and the buttons. On a narrow screen the groups wrap, a phone gives each its own row.
+ * A card of the dock: its mark and title, what it has left this round, an optional switch on the
+ * right, then a row of equal tiles. A narrow screen lays the tiles out as a grid.
  */
-const BarGroup: React.FC<{ title: string; head?: React.ReactNode; children: React.ReactNode }> = ({
-  title,
-  head,
-  children,
-}) => (
-  <div className="flex flex-col gap-1.5 border-l border-line/50 px-3 first:border-l-0 max-lg:border-l-0 max-sm:basis-full">
-    <span className="text-center text-[10px] uppercase tracking-[0.18em] text-ink-faint">{title}</span>
-    {head}
-    <div className="flex items-end gap-2 max-lg:flex-wrap max-lg:justify-center">{children}</div>
-  </div>
+const DockCard: React.FC<{
+  mark: string;
+  title: string;
+  tone: 'action' | 'reaction';
+  state?: React.ReactNode;
+  aside?: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}> = ({ mark, title, tone, state, aside, className, children }) => (
+  <Panel className={cx('flex flex-col gap-3 px-4 pb-4 pt-3', className)}>
+    <div className="flex min-h-[2rem] items-center gap-3">
+      <span className={cx('text-sm', tone === 'action' ? 'text-act-action' : 'text-act-reaction')} aria-hidden>
+        {mark}
+      </span>
+      <span className="text-[11px] uppercase tracking-[0.18em] text-ink-muted">{title}</span>
+      {state && <span className="text-[11px] text-ink-faint">{state}</span>}
+      {aside && <div className="ml-auto">{aside}</div>}
+    </div>
+    <div className="flex gap-2 max-lg:grid max-lg:grid-cols-[repeat(auto-fit,minmax(7rem,1fr))]">{children}</div>
+  </Panel>
 );
 
-/** A button of the bottom bar: the action, its number in the setting's figures, a hint under it. */
-const BarButton: React.FC<{
+/** A tile of the dock: the action, its number in the setting's figures, one line of hint. */
+const DockTile: React.FC<{
   label: string;
   value?: number;
   hint?: string;
+  title?: string;
   disabled?: boolean;
   onClick: () => void;
-}> = ({ label, value, hint, disabled, onClick }) => (
+}> = ({ label, value, hint, title, disabled, onClick }) => (
   <button
     type="button"
     disabled={disabled}
     onClick={onClick}
-    className="ui-interactive group flex min-w-[6.5rem] flex-col items-center gap-0.5 rounded-[var(--radius)] border border-line/60 px-3 py-1.5 transition-colors hover:border-frame-bright/70 disabled:opacity-35 max-sm:min-w-[5.75rem] max-sm:flex-1"
+    title={title ?? hint}
+    className="ui-interactive flex h-[4.75rem] w-[7.25rem] flex-col items-center justify-center gap-1 rounded-[var(--radius)] border border-line/60 px-2 transition-colors hover:border-frame-bright/70 disabled:opacity-35 max-lg:w-auto"
   >
-    <span className="text-sm text-ink">{label}</span>
+    <span className="max-w-full truncate text-sm leading-none text-ink">{label}</span>
     {value !== undefined && (
       <span className="ui-display ui-numeric text-xl leading-none text-frame-bright">{value}</span>
     )}
-    {hint && <span className="max-w-[8rem] truncate text-[10px] text-ink-faint">{hint}</span>}
+    {hint && <span className="max-w-full truncate text-[10px] leading-none text-ink-faint">{hint}</span>}
   </button>
 );
 
@@ -191,9 +203,6 @@ interface ShotOutcome {
   jammed: boolean;
   damage?: { total: number; formula: string };
 }
-
-/** Fighting back with fists, when no melee weapon is picked. */
-const BRAWL = 'brawl';
 
 /** Spells shown on the bar itself; the rest wait behind «Заклинания (N)». */
 const INLINE_SPELLS = 2;
@@ -285,12 +294,15 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
     .filter((x) => x.kind === 'npc')
     .map((x) => ({ combatant: x, build: party?.npcs?.find((n) => n.id === x.refId)?.coc?.build }));
   const knownTargets = targets.filter((t) => t.build !== undefined);
+  /** The target's Build settles a manoeuvre and marks a big target (still a chip to turn off). */
+  const setBuildOfTarget = (build: number) => {
+    setTargetBuild(build);
+    setShot((s) => ({ ...s, bigTarget: build >= BIG_TARGET_BUILD }));
+  };
   const pickTarget = (id: string) => {
     setTargetId(id);
     const found = knownTargets.find((t) => t.combatant.id === id);
-    if (found?.build === undefined) return;
-    setTargetBuild(found.build);
-    setShot((s) => ({ ...s, bigTarget: found.build! >= BIG_TARGET_BUILD }));
+    if (found?.build !== undefined) setBuildOfTarget(found.build);
   };
 
   const maxShots = weapon ? shotsPerRound(weapon.uses) : 1;
@@ -401,13 +413,8 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
       spendAction();
     });
 
-  const melees = meleeWeapons(character.attacks);
-  const [fightWithId, setFightWithId] = useState<string | null>(null);
-  // Fighting back is made with the melee weapon in hand unless another is picked; Brawl without one.
-  const fightWith =
-    fightWithId === BRAWL
-      ? undefined
-      : (melees.find((a) => a.id === fightWithId) ?? (weapon && !firearm ? melees.find((a) => a.id === weapon.id) : undefined));
+  // Fighting back is made with the weapon in hand: the melee weapon picked under «Оружие», else Brawl.
+  const fightWith = weapon && !firearm ? meleeWeapons([weapon])[0] : undefined;
   const fightBackId = fightBackSkill(fightWith);
 
   const [attackOn, setAttackOn] = useState<IncomingAttack>('melee');
@@ -756,22 +763,37 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 );
               })}
             </div>
-            {knownTargets.length > 0 && (
-              <label className="flex items-center gap-2 text-xs text-ink-faint">
-                <span className="shrink-0">Цель</span>
-                <Select
-                  value={targetId}
-                  onChange={pickTarget}
-                  placeholder="не выбрана"
-                  options={knownTargets.map((t) => ({
-                    value: t.combatant.id,
-                    label: t.combatant.name,
-                    hint: `комплекция ${t.build}`,
-                  }))}
-                  className="flex-1 text-sm"
+            {/* The target: who it is (the master knows the foes' sheets) and its Build, for a manoeuvre and a big target. */}
+            <div className="flex items-end gap-2 border-t border-line/50 pt-3">
+              {knownTargets.length > 0 && (
+                <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-ink-faint">
+                  <span>Цель</span>
+                  <Select
+                    value={targetId}
+                    onChange={pickTarget}
+                    placeholder="не выбрана"
+                    options={knownTargets.map((t) => ({
+                      value: t.combatant.id,
+                      label: t.combatant.name,
+                      hint: `комплекция ${t.build}`,
+                    }))}
+                    className="text-sm"
+                  />
+                </label>
+              )}
+              <div className="flex flex-col gap-1 text-xs text-ink-faint">
+                <span>Комплекция цели</span>
+                <NumberField
+                  label="Комплекция цели"
+                  value={targetBuild}
+                  min={-2}
+                  max={10}
+                  onChange={setBuildOfTarget}
+                  className="w-28"
                 />
-              </label>
-            )}
+              </div>
+              <span className="pb-2 text-xs text-ink-faint">ваша {derived.build}</span>
+            </div>
             {firearm ? (
               <div className="flex flex-col gap-2 border-t border-line/50 pt-3">
                 <div className="flex flex-wrap gap-1.5">
@@ -933,108 +955,81 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
           <CombatLog character={character} />
         </motion.div>
 
-        {/* Bottom: the defences and every other action of the round. */}
+        {/* Bottom: the dock — answering an attack on the left, the round's one action on the right. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 flex justify-center max-lg:static max-lg:basis-full">
           <motion.div
-            className={cx('pointer-events-auto max-lg:w-full', locked && 'ui-turn-locked')}
+            className="pointer-events-auto flex flex-col gap-2 max-lg:w-full"
             initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ ...ENTER, delay: 0.1 }}
           >
-            <Panel className="flex items-stretch gap-0 px-2 py-3 max-lg:flex-wrap max-lg:justify-center max-lg:gap-y-4">
-              {inCombat && (
-                <div className="flex flex-col justify-center gap-1.5 px-4 text-xs max-lg:basis-full max-lg:flex-row max-lg:gap-4">
-                  <span
-                    className={cx(round.actionUsed ? 'text-ink-faint line-through' : 'text-act-action')}
-                    title="Одно действие в раунд"
-                  >
-                    ◆ действие
-                  </span>
-                  <span
-                    className="text-act-reaction"
-                    title="Защит в раунде: каждая следующая атака на вас получает бонусную кость"
-                  >
-                    ◇ защит: {round.reactions}
-                  </span>
-                </div>
-              )}
-              <BarGroup
-                title="Защита"
-                head={
+            <div className="flex items-stretch gap-3 max-lg:flex-col">
+              <DockCard
+                mark="◇"
+                tone="reaction"
+                title="Ответ на атаку"
+                state={inCombat ? `защит: ${round.reactions}` : undefined}
+                aside={
                   <Segmented
                     label="Атака по вам"
                     value={attackOn}
                     onChange={setAttackOn}
                     options={[
-                      { value: 'melee', label: 'Ближний бой' },
-                      { value: 'firearm', label: 'Огнестрел' },
+                      { value: 'melee', label: 'Удар' },
+                      { value: 'firearm', label: 'Выстрел' },
                     ]}
-                    className="ui-segmented--compact self-center"
+                    className="ui-segmented--compact"
                   />
                 }
               >
                 {attackOn === 'melee' ? (
                   <>
-                    <BarButton
+                    <DockTile
                       label="Уклонение"
                       value={skillValue(character, 'dodge')}
-                      hint="ничья — в вашу пользу"
+                      hint="ничья — ваша"
+                      title="Ничья в вашу пользу"
                       onClick={() => defend('dodge')}
                     />
-                    <div className="flex flex-col items-center gap-1 max-sm:flex-1 max-sm:items-stretch">
-                      <BarButton
-                        label="Контратака"
-                        value={skillValue(character, fightBackId)}
-                        hint={fightWith ? fightWith.name : 'ничья — атакующему'}
-                        onClick={() => defend('fightBack')}
-                      />
-                      {melees.length > 0 && (
-                        <Select
-                          value={fightWith?.id ?? BRAWL}
-                          onChange={setFightWithId}
-                          options={[
-                            { value: BRAWL, label: 'Драка', hint: String(skillValue(character, 'fighting:brawl')) },
-                            ...melees.map((a) => ({
-                              value: a.id,
-                              label: a.name,
-                              hint: String(skillValue(character, fightBackSkill(a))),
-                            })),
-                          ]}
-                          className="w-[8.5rem] py-0.5 text-xs max-sm:w-full"
-                        />
-                      )}
-                    </div>
+                    <DockTile
+                      label="Контратака"
+                      value={skillValue(character, fightBackId)}
+                      hint={fightWith ? fightWith.name : 'драка'}
+                      title={`${fightWith ? fightWith.name : 'Драка'}: оружие ближнего боя выбирается в списке «Оружие». Ничья — атакующему`}
+                      onClick={() => defend('fightBack')}
+                    />
                   </>
                 ) : (
                   // A bullet is not dodged: the target can only dive for cover (7th edition).
-                  <BarButton
+                  <DockTile
                     label="Укрыться"
                     value={skillValue(character, 'dodge')}
-                    hint="от выстрела: теряете атаку"
+                    hint="теряете атаку"
+                    title="Бросок Уклонения: успех — стрелку штрафная кость. Удачно или нет, следующая атака потеряна"
                     onClick={() => defend('cover')}
                   />
                 )}
-              </BarGroup>
-              <BarGroup title="Манёвр">
-                <div className="flex flex-col items-center gap-1">
-                  <NumberField
-                    label="Комплекция цели"
-                    value={targetBuild}
-                    min={-2}
-                    max={10}
-                    onChange={setTargetBuild}
-                    className="w-28"
-                  />
-                  <span className="max-w-[9rem] text-center text-[10px] leading-tight text-ink-faint">
-                    {manoeuvre.possible
-                      ? manoeuvre.reasons.join(' · ') || `ваша комплекция ${derived.build}`
-                      : manoeuvre.reason}
-                  </span>
-                </div>
-                <BarButton
-                  label="Провести"
+              </DockCard>
+              <DockCard
+                mark="◆"
+                tone="action"
+                title="Действие раунда"
+                state={inCombat ? (round.actionUsed ? 'потрачено' : 'одно в раунд') : undefined}
+                className={cx(locked && 'ui-turn-locked')}
+              >
+                <DockTile
+                  label="Манёвр"
                   value={skillValue(character, 'fighting:brawl')}
-                  hint="обезоружить, сбить, схватить"
+                  hint={
+                    manoeuvre.possible
+                      ? manoeuvre.reasons.join(' · ') || `цель ${targetBuild}, вы ${derived.build}`
+                      : 'цель слишком велика'
+                  }
+                  title={`Обезоружить, сбить с ног, схватить. ${
+                    manoeuvre.possible
+                      ? manoeuvre.reasons.join(' · ') || 'Комплекция цели — в панели «Оружие»'
+                      : manoeuvre.reason
+                  }`}
                   disabled={!manoeuvre.possible || noAction}
                   onClick={() =>
                     onTurn(() => {
@@ -1052,24 +1047,16 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                     })
                   }
                 />
-              </BarGroup>
-              <BarGroup title="Ещё">
-                <BarButton
+                <DockTile
                   label="Навык"
                   hint="любой навык"
                   disabled={noAction}
                   onClick={() => onTurn(() => setSkillPicker(true))}
                 />
-                <BarButton
-                  label="Удача"
-                  value={coc.luck}
-                  hint="бросок удачи"
-                  onClick={() => roll({ label: 'Удача', value: coc.luck, kind: 'luck' })}
-                />
                 {coc.spells
                   .slice(0, coc.spells.length > INLINE_SPELLS ? INLINE_SPELLS - 1 : INLINE_SPELLS)
                   .map((sp) => (
-                    <BarButton
+                    <DockTile
                       key={sp.id}
                       label={sp.name}
                       hint={sp.cost}
@@ -1078,21 +1065,24 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                     />
                   ))}
                 {coc.spells.length > INLINE_SPELLS && (
-                  <BarButton
-                    label={`Заклинания (${coc.spells.length})`}
+                  <DockTile
+                    label="Заклинания"
+                    value={coc.spells.length}
                     hint="все известные"
                     onClick={() => setSpellsOpen(true)}
                   />
                 )}
-              </BarGroup>
-            </Panel>
-            {actionNote && inCombat && (
-              <p className="mt-1.5 text-center text-xs text-ink-faint" role="status">
-                {actionNote}
-              </p>
-            )}
-            {defending === 'cover' && last && (
-              <Panel ornate={false} className="mt-2 px-4 py-2 text-center text-sm">
+                <DockTile
+                  label="Удача"
+                  value={coc.luck}
+                  hint="не тратит действие"
+                  onClick={() => roll({ label: 'Удача', value: coc.luck, kind: 'luck' })}
+                />
+              </DockCard>
+            </div>
+            {/* One line under the dock: what the last defence came to, or why the action waits. */}
+            {defending === 'cover' && last ? (
+              <Panel ornate={false} className="px-4 py-2 text-center text-sm">
                 <span role="status" className={last.check.success ? 'text-success' : 'text-danger'}>
                   {last.check.success
                     ? 'Вы укрылись — стрелок бросает со штрафной костью'
@@ -1100,11 +1090,10 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 </span>
                 <span className="ml-2 text-ink-muted">· следующая атака потеряна</span>
               </Panel>
-            )}
-            {defending && defending !== 'cover' && last && (
+            ) : defending && last ? (
               <Panel
                 ornate={false}
-                className="mt-2 flex flex-wrap items-center justify-center gap-1.5 px-4 py-2 text-sm"
+                className="flex flex-wrap items-center justify-center gap-1.5 px-4 py-2 text-sm"
               >
                 <span className="text-ink-muted">
                   {last.label}: {SUCCESS_LABELS[last.check.level].toLowerCase()}. Атака по вам была:
@@ -1135,6 +1124,13 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                   </span>
                 )}
               </Panel>
+            ) : (
+              actionNote &&
+              inCombat && (
+                <p className="text-center text-xs text-ink-faint" role="status">
+                  {actionNote}
+                </p>
+              )
             )}
           </motion.div>
         </div>
