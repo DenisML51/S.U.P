@@ -30,5 +30,9 @@ npm-debug.log*
 Thumbs.db
 .claude/worktrees/
 
-# local reference images, not tracked
+# Local reference images and screenshots, not tracked: keep them in photos/
 photos/
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
