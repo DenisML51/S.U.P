@@ -3,37 +3,6 @@
  * scope's tokens, so a party's table wears its world and the home page the service.
  */
 
-/* ---------------------------------------------------------------- Home: title menu */
-/* Words only; under the cursor a short bar grows in front of the word. The word itself never moves. */
-.ui-menu-item {
-  position: relative;
-  color: rgb(var(--c-ink-muted));
-  font-size: 1.35rem;
-  font-weight: 500;
-  line-height: 1.25;
-  transition: color 0.2s;
-}
-.ui-menu-item--large { font-size: 2.1rem; font-weight: 600; }
-.ui-menu-item::before {
-  content: '';
-  position: absolute;
-  left: -2.25rem;
-  top: 50%;
-  width: 1.25rem;
-  height: 2px;
-  background: rgb(var(--c-frame-bright));
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.ui-menu-item:hover,
-.ui-menu-item:focus-visible,
-.ui-menu-item[data-active] { color: rgb(var(--c-ink)); }
-.ui-menu-item:hover::before,
-.ui-menu-item:focus-visible::before,
-.ui-menu-item[data-active]::before { transform: scaleX(1); }
-.ui-menu-item:focus-visible { outline: none; }
-
 /* ---------------------------------------------------------------- Home: invite code */
 .ui-home-code__go {
   display: grid;
@@ -305,11 +274,36 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
     radial-gradient(ellipse 120% 90% at 50% 50%, transparent 40%, rgb(var(--c-bg-deep) / 0.95) 100%),
     linear-gradient(to right, rgb(var(--c-bg-deep)) 0%, rgb(var(--c-bg)) 45%, rgb(var(--c-bg)) 100%);
 }
-.ui-featured {
-  transition: filter 0.4s;
-  filter: brightness(0.92);
+/* The featured hero: no box, the picture fades out as an ellipse; its own colours glow around it. */
+.ui-hero-figure__art {
+  /* The ellipse dies out before every edge (centre 46% down, radii under the nearest distances). */
+  --figure-fade: radial-gradient(ellipse 48% 45% at 50% 46%, #000 50%, rgb(0 0 0 / 0.5) 75%, transparent 100%);
+  mask-image: var(--figure-fade);
+  -webkit-mask-image: var(--figure-fade);
 }
-.ui-featured:hover { filter: brightness(1.05); }
+.ui-hero-figure__art img {
+  filter: brightness(0.9) saturate(0.95) contrast(1.04);
+  transition: filter 0.5s;
+}
+/* Bright backgrounds sink into the dark before the fade takes them. */
+.ui-hero-figure__art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 48% 45% at 50% 46%, transparent 36%, rgb(var(--c-bg-deep) / 0.55) 100%);
+  pointer-events: none;
+}
+.ui-hero-figure:hover .ui-hero-figure__art img,
+.ui-hero-figure:focus-visible .ui-hero-figure__art img { filter: brightness(1) saturate(1) contrast(1.04); }
+.ui-hero-figure:focus-visible { outline: none; }
+.ui-hero-figure__glow {
+  --glow-fade: radial-gradient(closest-side, #000 35%, transparent 100%);
+  filter: blur(48px) saturate(1.2) brightness(0.6);
+  opacity: 0.55;
+  transform: scale(1.2);
+  mask-image: var(--glow-fade);
+  -webkit-mask-image: var(--glow-fade);
+}
 
 /* ---------------------------------------------------------------- Home: a table as a cover card */
 /* The card is a window onto its world: the frame stays, the picture inside wakes under the cursor. */
@@ -332,59 +326,3 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 }
 
 
-/* ---------------------------------------------------------------- Settings: home layout choice */
-.ui-layout-option {
-  border-radius: 12px;
-  border: 1px solid var(--control-edge, rgb(var(--c-line)));
-  color: rgb(var(--c-ink-muted));
-  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
-}
-.ui-layout-option:hover { background: var(--control, rgb(var(--c-surface-2))); color: rgb(var(--c-ink)); }
-.ui-layout-option--chosen {
-  color: rgb(var(--c-ink));
-  border-color: rgb(var(--c-frame-bright) / 0.7);
-  background: var(--control, rgb(var(--c-surface-2)));
-}
-.ui-layout-option__screen { fill: rgb(var(--c-inset)); }
-.ui-layout-option__block { fill: rgb(var(--c-ink-faint) / 0.55); }
-.ui-layout-option__art { fill: rgb(var(--c-frame) / 0.55); }
-.ui-layout-option--chosen .ui-layout-option__art { fill: rgb(var(--c-frame-bright) / 0.4); }
-
-/* ---------------------------------------------------------------- Home: mosaic tiles */
-.ui-mosaic-hero {
-  border-radius: var(--radius);
-  border: 1px solid rgb(var(--c-frame) / 0.35);
-  background: rgb(var(--c-inset));
-  transition: border-color 0.3s;
-}
-.ui-mosaic-hero__art {
-  filter: brightness(0.75) saturate(0.85);
-  transition: filter 0.4s, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.ui-mosaic-hero:hover { border-color: rgb(var(--c-frame-bright) / 0.7); }
-.ui-mosaic-hero:hover .ui-mosaic-hero__art { filter: none; transform: scale(1.04); }
-.ui-mosaic-free {
-  border-radius: var(--radius);
-  border: 1px dashed rgb(var(--c-line) / 0.5);
-}
-[data-setting='service'] .ui-mosaic-free:not([data-world] *) { border-color: var(--divider); }
-
-/* ---------------------------------------------------------------- Home: posters */
-.ui-poster__frame {
-  border-radius: calc(var(--radius) * 0.6);
-  border: 1px solid rgb(var(--c-frame) / 0.35);
-  background: rgb(var(--c-inset));
-  transition: border-color 0.3s;
-}
-.ui-poster__art {
-  filter: brightness(0.75) saturate(0.85);
-  transition: filter 0.4s, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.ui-poster:hover .ui-poster__frame { border-color: rgb(var(--c-frame-bright) / 0.75); }
-.ui-poster:hover .ui-poster__art { filter: none; transform: scale(1.05); }
-.ui-poster__frame--add {
-  color: rgb(var(--c-ink-faint));
-  background: transparent;
-  border-style: dashed;
-}
-.ui-poster:hover .ui-poster__frame--add { color: rgb(var(--c-ink)); }
