@@ -105,9 +105,11 @@ export const NumberField: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `format` only depends on `signed`
   }, [value, focused, signed]);
 
+  // Enter commits and the blur after it would commit again: only a real change is passed on, once.
   const commit = (raw: string) => {
     const parsed = Number(raw.replace('−', '-').replace(',', '.'));
-    if (raw.trim() !== '' && Number.isFinite(parsed)) onChange(clamp(parsed));
+    const next = raw.trim() !== '' && Number.isFinite(parsed) ? clamp(parsed) : null;
+    if (next !== null && next !== value) onChange(next);
     else setText(format(value));
   };
 
@@ -131,7 +133,7 @@ export const NumberField: React.FC<{
           commit(e.target.value);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') commit((e.target as HTMLInputElement).value);
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           else if (e.key === 'ArrowUp') {
             e.preventDefault();
             onChange(clamp(value + step));

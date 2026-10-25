@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Kraken, type TentacleSpec } from './art/lovecraft';
 import { ChoiceCarousel } from './ChoiceCarousel';
 import { Corners } from './ornaments';
@@ -125,15 +125,56 @@ const PulpScene: React.FC<{ awake: boolean }> = ({ awake }) => (
 // The card
 // ------------------------------------------------------------------------------------------------
 
-/** A rulebook as a card in the setting's world frame: its living scene, its dice, its name. */
+/**
+ * A rulebook as a card in the setting's world frame: its living scene, its dice, its name. A
+ * button for the keyboard and screen readers (pressed when chosen); it wakes under the pointer,
+ * on keyboard focus and on a tap, not only on hover. Enter or Space acts as a click, which the
+ * carousel turns into bringing the card forward or choosing it.
+ */
 const RulebookCard: React.FC<{
+  title: string;
+  dice: DieShape[];
+  scene: (awake: boolean) => React.ReactNode;
+  /** The card stands in front of the carousel. */
+  focused: boolean;
+  hovered: boolean;
+  chosen: boolean;
+}> = ({ title, dice, scene, focused, hovered, chosen }) => {
+  const [engaged, setEngaged] = useState(false);
+  const awake = focused && (hovered || engaged);
+  return (
+    <div
+      className="ui-world ui-rulebook-card"
+      role="button"
+      tabIndex={0}
+      aria-label={title}
+      aria-pressed={chosen}
+      data-awake={awake || undefined}
+      onFocus={() => setEngaged(true)}
+      onBlur={() => setEngaged(false)}
+      onPointerDown={(e) => {
+        if (e.pointerType === 'touch') setEngaged(true);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.currentTarget.click();
+        }
+      }}
+    >
+      <RulebookFace title={title} dice={dice} scene={scene(awake || (focused && chosen))} awake={awake} chosen={chosen} />
+    </div>
+  );
+};
+
+const RulebookFace: React.FC<{
   title: string;
   dice: DieShape[];
   scene: React.ReactNode;
   awake: boolean;
   chosen: boolean;
 }> = ({ title, dice, scene, awake, chosen }) => (
-  <div className="ui-world ui-rulebook-card" data-awake={awake || undefined} aria-pressed={chosen}>
+  <>
     <span className="ui-world__scene" aria-hidden>
       {scene}
     </span>
@@ -151,7 +192,7 @@ const RulebookCard: React.FC<{
       ))}
     </span>
     <span className="ui-world__name ui-display ui-title">{title}</span>
-  </div>
+  </>
 );
 
 /** Every rulebook's card: a new system needs one before the carousel compiles. */
@@ -189,8 +230,9 @@ export const RulesCarousel: React.FC<{
         <RulebookCard
           title={RULES_TITLE[id]}
           dice={RULES_CARDS[id].dice}
-          scene={RULES_CARDS[id].scene(focused && (hovered || value === id))}
-          awake={focused && hovered}
+          scene={RULES_CARDS[id].scene}
+          focused={focused}
+          hovered={hovered}
           chosen={value === id}
         />
       ),
@@ -217,8 +259,9 @@ export const EditionCarousel: React.FC<{
           <RulebookCard
             title="Классика"
             dice={['d10']}
-            scene={<TentacleScene awake={focused && (hovered || value === 'classic')} arms={CLASSIC_ARMS} />}
-            awake={focused && hovered}
+            scene={(awake) => <TentacleScene awake={awake} arms={CLASSIC_ARMS} />}
+            focused={focused}
+            hovered={hovered}
             chosen={value === 'classic'}
           />
         ),
@@ -229,8 +272,9 @@ export const EditionCarousel: React.FC<{
           <RulebookCard
             title="Pulp Cthulhu"
             dice={['d10', 'd10']}
-            scene={<PulpScene awake={focused && (hovered || value === 'pulp')} />}
-            awake={focused && hovered}
+            scene={(awake) => <PulpScene awake={awake} />}
+            focused={focused}
+            hovered={hovered}
             chosen={value === 'pulp'}
           />
         ),
