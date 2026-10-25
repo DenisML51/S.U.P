@@ -14,13 +14,14 @@ import {
 } from '@itd/schema';
 import {
   appendHistory,
-  applyBuild,
   changeResource,
   createEntityId,
   hitDiceOf,
+  loadRuleSystem,
   longRest,
   performAction as performGameAction,
   rollDie,
+  rulesOf,
   shortRest,
   type HistoryEvent,
   type PerformActionRequest,
@@ -200,8 +201,24 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
    */
   const refreshPreset = (character: Character) => {
     if (!character.build) return;
-    const rebuilt = applyBuild(character, character.build).character;
+    const rebuilt = rulesOf(character.build).rebuild(character, character.build);
     if (!deepEqual(rebuilt, character)) get().updateCharacter(() => rebuilt);
+  };
+
+  /**
+   * A preset hero's rules system loads on demand; its sheet opens only once it is there. False when
+   * it could not be loaded (offline before it was ever cached).
+   */
+  const loadRulesFor = async (character: Character): Promise<boolean> => {
+    if (!character.build) return true;
+    try {
+      await loadRuleSystem(character.build.ruleset);
+      return true;
+    } catch (error) {
+      console.error('Failed to load the rules system', error);
+      toast.error('Не удалось загрузить правила персонажа — проверьте соединение');
+      return false;
+    }
   };
 
   /** The entry a request uses is a reaction (an attack, ability or spell taken with the reaction). */
@@ -261,7 +278,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     if (!latest) {
       set({ character: null, undoable: [] });
       toast('Персонаж был удалён на другом устройстве', { icon: '🗑️' });
-    } else if (get().character?.id === latest.id) {
+    } else if (get().character?.id === latest.id && (await loadRulesFor(latest)) && get().character?.id === latest.id) {
       set({ character: latest });
     }
   };
@@ -404,6 +421,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
         toast.error('Персонаж не найден');
         return;
       }
+      if (!(await loadRulesFor(character))) return;
       writeViewMode(view);
       set({ character, viewMode: view, undoable: undoIds(character.id) });
       rememberOpen(character.id);
@@ -415,12 +433,12 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       if (!repository) throw new Error('Нет активного аккаунта');
       const character = normalizeCharacter(createCharacterDocument(draft));
       await repository.create(character);
-      set({
-        character,
-        charactersList: [...get().charactersList, toCharacterPreview(character)],
-        viewMode: 'tabs',
-        undoable: [],
-      });
+      const charactersList = [...get().charactersList, toCharacterPreview(character)];
+      if (!(await loadRulesFor(character))) {
+        set({ charactersList });
+        return character.id;
+      }
+      set({ character, charactersList, viewMode: 'tabs', undoable: [] });
       rememberOpen(character.id);
       return character.id;
     },
@@ -494,7 +512,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       const open = readOpen();
       const character = open ? await next.repository.get(open) : undefined;
       // A reload returns to the hero as it was left: on its sheet or in its fight.
-      if (character && workspace === next) {
+      if (character && (await loadRulesFor(character)) && workspace === next) {
         set({ character, viewMode: readViewMode(), undoable: [] });
         refreshPreset(character);
       }

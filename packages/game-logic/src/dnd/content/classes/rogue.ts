@@ -555,7 +555,6 @@ export const ROGUE: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие (фехтовальное или лёгкое)' },
     { type: 'proficiency', category: 'tool', value: 'Воровские инструменты' },
   ],
-  mentalStrength: 50,
   subclassLevel: 3,
   subclasses: [arcaneTrickster, assassin, soulknife, thief, scionOfTheThree, phantom],
   startingEquipment: ROGUE_KITS,

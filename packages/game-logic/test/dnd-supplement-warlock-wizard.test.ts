@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Build, Character } from '@itd/schema';
-import { DND, type Effect, applyBuild, choiceOptions, levelPlan, setPicks, startingSkills, weaponProficient } from '../src';
+import { startingSkills } from '../src';
+import { DND, type Effect, applyBuild, choiceOptions, levelPlan, setPicks, weaponProficient } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
 const warlockBuild = (patch: Partial<Build> = {}): Build => ({

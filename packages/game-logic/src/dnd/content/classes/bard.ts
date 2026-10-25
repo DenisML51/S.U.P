@@ -467,7 +467,6 @@ export const BARD: ClassDef = {
     { type: 'proficiency', category: 'armor', value: 'Лёгкие доспехи' },
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
   ],
-  mentalStrength: 50,
   subclassLevel: 3,
   subclasses: [dance, glamour, lore, valor, moon, spirits],
   startingEquipment: BARD_KITS,

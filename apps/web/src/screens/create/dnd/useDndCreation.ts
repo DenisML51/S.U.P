@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
+  pointsRemaining,
+} from '@itd/game-logic';
+import {
   createDndHero,
   emptyBuild,
   findBackground,
   findClass,
-  pointsRemaining,
   validBackgroundBonuses,
   withoutPicks,
-} from '@itd/game-logic';
+} from '@itd/game-logic/dnd';
 import type { Build, CharacterImages, Setting } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { useClearDraft, useDraftState } from '../useDraftState';

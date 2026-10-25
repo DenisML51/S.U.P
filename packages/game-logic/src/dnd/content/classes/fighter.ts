@@ -654,7 +654,6 @@ export const FIGHTER: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
-  mentalStrength: 55,
   subclassLevel: 3,
   subclasses: [battleMaster, champion, eldritchKnight, psiWarrior, banneret, arcaneArcher],
   replaceable: [

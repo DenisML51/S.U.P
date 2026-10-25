@@ -3,16 +3,18 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { Build, Character } from '@itd/schema';
 import {
+  startingSkills,
+} from '../src';
+import {
   DND,
   applyBuild,
   choiceOptions,
   collect,
   levelPlan,
   setPicks,
-  startingSkills,
   unfinishedChoices,
   type FeatureDef,
-} from '../src';
+} from '../src/dnd';
 import { makeCharacter } from './helpers';
 
 const build = (patch: Partial<Build> = {}): Build => ({
@@ -208,7 +210,7 @@ describe('build engine', () => {
 
 describe('hero creation from presets', () => {
   it('fills the inventory and purse from the starting kits and sets the experience of the level', async () => {
-    const { createDndHero, DND: content } = await import('../src');
+    const { createDndHero, DND: content } = await import('../src/dnd');
     const paladin = content.classes.find((c) => c.id === 'paladin')!;
     const soldier = content.backgrounds.find((b) => b.id === 'soldier')!;
     const kitA = paladin.startingEquipment[0]!;
@@ -232,7 +234,8 @@ describe('hero creation from presets', () => {
 
 describe('armour class from features', () => {
   it('adds Defense while armoured only', async () => {
-    const { armorClassOf, createDndHero } = await import('../src');
+    const { armorClassOf } = await import('../src');
+    const { createDndHero } = await import('../src/dnd');
     const base = build({ class: 'fighter', choices: { 'class:fighter.fighting-style/style': ['defense'] } });
     const armoured = createDndHero({ name: 'Т', build: base, classKitId: 'a', backgroundKitId: 'a' });
     const plain = createDndHero({ name: 'Т', build: { ...base, choices: {} }, classKitId: 'a', backgroundKitId: 'a' });
@@ -245,7 +248,7 @@ describe('armour class from features', () => {
 
 describe('where an entry comes from', () => {
   it('names the species, the class level and the feat a grant comes from', async () => {
-    const { describeGrant } = await import('../src');
+    const { describeGrant } = await import('../src/dnd');
     const b = build({ choices: { 'class:fighter.fighting-style/style': ['defense'] } });
     expect(describeGrant(b, 'class:fighter.second-wind')).toBe('Воин, 1 уровень');
     expect(describeGrant(b, 'background:savage-attacker')).toBe('Черта «Неистово атакующий» · Предыстория «Солдат»');
@@ -254,7 +257,7 @@ describe('where an entry comes from', () => {
   });
 
   it('tells the part of the hero a feature belongs to and the feature it was picked in', async () => {
-    const { featureOrigins } = await import('../src');
+    const { featureOrigins } = await import('../src/dnd');
     const origins = featureOrigins(build({ choices: { 'class:fighter.fighting-style/style': ['defense'] } }));
     expect(origins.get('class:fighter.fighting-style/style:defense')).toEqual({
       part: 'class',

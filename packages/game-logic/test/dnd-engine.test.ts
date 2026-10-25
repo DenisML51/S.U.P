@@ -1,20 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import type { Build, Character } from '@itd/schema';
 import {
-  applyBuild,
   armorClassOf,
-  choiceOptions,
-  collect,
   initiativeModifier,
-  levelPlan,
   performAction,
-  setPicks,
   skillModifier,
   startingSkills,
+} from '../src';
+import {
+  applyBuild,
+  choiceOptions,
+  collect,
+  levelPlan,
+  setPicks,
   unfinishedChoices,
   weaponProficient,
   DND,
-} from '../src';
+} from '../src/dnd';
 import { makeCharacter } from './helpers';
 
 /** Engine mechanics shared by the classes: replacing picks, catalogs, attacks, armour without armour. */

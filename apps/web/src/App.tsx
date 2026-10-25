@@ -1,21 +1,48 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import { RULESETS } from '@itd/schema';
+import { loadRuleSystem } from '@itd/game-logic';
 import { useNavStore } from './store/useNavStore';
 import { usePartyStore } from './store/usePartyStore';
 import { HomeScreen } from './screens/home/HomeScreen';
-import { PartyFormScreen } from './screens/party/PartyFormScreen';
-import { PartyScreen } from './screens/party/PartyScreen';
 import { useTableCalls } from './screens/party/useTableCalls';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
 import { Gate, type GatePhase } from './screens/auth/Gate';
-import { SettingsDialog } from './screens/settings/SettingsDialog';
-import { HeroSelect } from './screens/select/HeroSelect';
-import { SheetScreen } from './screens/sheet/SheetScreen';
-import { CombatScreen } from './screens/combat/CombatScreen';
-import { CreationScreen } from './screens/create/CreationScreen';
 import { DraftScope, clearDraft, draftScope } from './screens/create/useDraftState';
 import { Toasts } from './ui/Toasts';
+
+/**
+ * The gate and the home page are all the first paint needs; every other screen is its own chunk.
+ * They are all fetched in the background right after start, so they are there by the time they
+ * are opened, and the app keeps working if the network goes away later.
+ */
+const SCREENS = {
+  sheet: () => import('./screens/sheet/SheetScreen'),
+  combat: () => import('./screens/combat/CombatScreen'),
+  create: () => import('./screens/create/CreationScreen'),
+  party: () => import('./screens/party/PartyScreen'),
+  partyForm: () => import('./screens/party/PartyFormScreen'),
+  heroes: () => import('./screens/select/HeroSelect'),
+};
+const SheetScreen = lazy(() => SCREENS.sheet().then((m) => ({ default: m.SheetScreen })));
+const CombatScreen = lazy(() => SCREENS.combat().then((m) => ({ default: m.CombatScreen })));
+const CreationScreen = lazy(() => SCREENS.create().then((m) => ({ default: m.CreationScreen })));
+const PartyScreen = lazy(() => SCREENS.party().then((m) => ({ default: m.PartyScreen })));
+const PartyFormScreen = lazy(() => SCREENS.partyForm().then((m) => ({ default: m.PartyFormScreen })));
+const HeroSelect = lazy(() => SCREENS.heroes().then((m) => ({ default: m.HeroSelect })));
+const SettingsDialog = lazy(() => import('./screens/settings/SettingsDialog').then((m) => ({ default: m.SettingsDialog })));
+
+/** Fetches what later screens need without holding up the first one; failures retry on open. */
+function preloadInBackground(signedIn: boolean) {
+  const later = (load: () => Promise<unknown>) => void load().catch(() => undefined);
+  const idle = window.requestIdleCallback ?? ((run: () => void) => window.setTimeout(run, 200));
+  idle(() => {
+    Object.values(SCREENS).forEach(later);
+    // The rules systems are the heaviest part: only once there is an account to play with.
+    if (signedIn) RULESETS.forEach((id) => later(() => loadRuleSystem(id)));
+  });
+}
 
 const App: React.FC = () => {
   const status = useSessionStore((s) => s.status);
@@ -49,6 +76,7 @@ const App: React.FC = () => {
   useTableCalls();
 
   const signedIn = status === 'authenticated';
+  useEffect(() => preloadInBackground(signedIn), [signedIn]);
 
   let screen: React.ReactNode;
   let screenKey: string;
@@ -115,10 +143,12 @@ const App: React.FC = () => {
               screenKey === 'gate' ? { duration: 0.35, delay: 0.35 } : { duration: 0.3, delay: 0.1 },
           }}
         >
-          {screen}
+          <Suspense fallback={null}>{screen}</Suspense>
         </motion.div>
       </AnimatePresence>
-      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <Suspense fallback={null}>
+        <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      </Suspense>
       <Toasts />
     </MotionConfig>
   );

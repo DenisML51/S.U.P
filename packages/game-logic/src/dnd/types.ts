@@ -341,8 +341,6 @@ export interface ClassDef {
   saves: AttributeId[];
   skillChoices: { count: number; list: SkillId[] };
   proficiencies: Effect[];
-  /** Base of the S.U.P. sanity track. */
-  mentalStrength: number;
   levels: Record<number, FeatureDef[]>;
   subclassLevel: number;
   subclasses: SubclassDef[];

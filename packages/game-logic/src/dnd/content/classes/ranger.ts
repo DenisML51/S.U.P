@@ -631,7 +631,6 @@ export const RANGER: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
-  mentalStrength: 55,
   subclassLevel: 3,
   subclasses: [beastMaster, feyWanderer, gloomStalker, hunter, winterWalker, hollowWarden],
   startingEquipment: RANGER_KITS,

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { featureOrigins, type FeatureOrigin } from '@itd/game-logic';
+import { rulesOf, type FeatureOrigin } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { Ledger, LedgerGroup, LedgerRow } from '../../../ui/Ledger';
 import { Panel } from '../../../ui/primitives';
@@ -34,17 +34,16 @@ interface FeatureRow {
   from?: string;
 }
 
-const PART_TITLES = { species: 'Вид', background: 'Предыстория', class: 'Класс' } as const;
-
 /**
- * The hero's features, each once, by where they come from: species, background, class, then the
- * player's own. A pick stands in for the feature it was picked in (Defense for Fighting Style) and
- * names it; features used as actions are listed too, so a feat is found here whatever it does.
+ * The hero's features, each once, by where they come from: the parts its rules system names
+ * (species, background, class), then the player's own. A pick stands in for the feature it was
+ * picked in (Defense for Fighting Style) and names it; features used as actions are listed too, so
+ * a feat is found here whatever it does.
  * Summaries the sheet shows elsewhere (proficiencies, the weapon mastery list) are left out.
  */
 function useFeatureGroups(character: Character): { title: string; rows: FeatureRow[] }[] {
   const { build, traits, abilities } = character;
-  const origins = useMemo(() => (build ? featureOrigins(build) : new Map<string, FeatureOrigin>()), [build]);
+  const origins = useMemo(() => (build ? rulesOf(build).featureOrigins(build) : new Map<string, FeatureOrigin>()), [build]);
 
   return useMemo(() => {
     const entries: (FeatureRow & { grant?: string })[] = [
@@ -69,18 +68,18 @@ function useFeatureGroups(character: Character): { title: string; rows: FeatureR
       }
       if (replaced.has(entry.grant)) continue;
       const parent = origin.parent ? byGrant.get(origin.parent)?.name : undefined;
-      const row = { ...entry, from: parent ?? (origin.source === 'feat' ? 'Черта' : undefined) };
+      const row = { ...entry, from: parent ?? origin.label };
       parts.set(origin.part, [...(parts.get(origin.part) ?? []), row]);
     }
     const rank = (row: FeatureRow & { grant?: string }) => order.indexOf(row.grant ?? '');
     return [
-      ...(['species', 'background', 'class'] as const).map((part) => ({
-        title: PART_TITLES[part],
-        rows: (parts.get(part) ?? []).sort((a, b) => rank(a) - rank(b)),
+      ...(build ? rulesOf(build).featureParts : []).map((part) => ({
+        title: part.title,
+        rows: (parts.get(part.id) ?? []).sort((a, b) => rank(a) - rank(b)),
       })),
       { title: 'Своё', rows: own },
     ].filter((group) => group.rows.length > 0);
-  }, [traits, abilities, origins]);
+  }, [build, traits, abilities, origins]);
 }
 
 const pick = (entry: { id: string; name: string; description?: string; grant?: string }) => ({

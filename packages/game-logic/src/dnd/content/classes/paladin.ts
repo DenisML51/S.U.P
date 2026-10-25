@@ -422,7 +422,6 @@ export const PALADIN: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
-  mentalStrength: 65,
   subclassLevel: 3,
   subclasses: [devotion, glory, ancients, vengeance, nobleGenies],
   startingEquipment: PALADIN_KITS,

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ATTRIBUTES_LIST, choiceOptions, setPicks, type OpenChoice, type OptionView } from '@itd/game-logic';
+import { ATTRIBUTES_LIST } from '@itd/game-logic';
+import { choiceOptions, setPicks, type OpenChoice, type OptionView } from '@itd/game-logic/dnd';
 import type { Build } from '@itd/schema';
 import { Dialog } from '../../ui/Dialog';
 import { GameIcon, tileStyle, type IconKind } from '../../ui/GameIcon';

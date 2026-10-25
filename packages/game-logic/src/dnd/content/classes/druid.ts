@@ -513,7 +513,6 @@ export const DRUID: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'tool', value: 'Набор травника' },
   ],
-  mentalStrength: 60,
   subclassLevel: 3,
   subclasses: [land, moon, sea, stars],
   startingEquipment: DRUID_KITS,

@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
 import {
   ATTRIBUTES_LIST,
-  DND,
-  DND_ICONS,
   SKILLS_LIST,
   abilityModifier,
   canDecrement,
   canIncrement,
+  formatModifier,
+  pointsRemaining,
+  startingAttributes,
+} from '@itd/game-logic';
+import {
+  DND,
+  DND_ICONS,
   findBackground,
   findClass,
   findFeat,
-  formatModifier,
   kitItems,
-  pointsRemaining,
   preparedSpellsChoice,
   rollAbilityScores,
-  startingAttributes,
   type KitOption,
-} from '@itd/game-logic';
+} from '@itd/game-logic/dnd';
 import type { Build } from '@itd/schema';
 import { GameIcon } from '../../../ui/GameIcon';
 import { ImageSlot } from '../../../ui/ImageSlot';
