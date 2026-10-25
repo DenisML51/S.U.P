@@ -414,7 +414,7 @@ const HeroCard: React.FC<{
         as={playable ? 'button' : 'div'}
         interactive={playable}
         onClick={playable ? onPlay : undefined}
-        aria-label={playable ? `Играть за ${hero.name}` : hero.name}
+        aria-label={playable ? `Лист: ${hero.name}` : hero.name}
         className="flex h-full w-full flex-col overflow-hidden p-0 text-left"
       >
         <CharacterArt

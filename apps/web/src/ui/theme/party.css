@@ -19,6 +19,52 @@
   filter: brightness(0.95) saturate(1);
 }
 
+/* ---------------------------------------------------------------- Home: title menu */
+/* Words only; under the cursor a short bar grows in front of the word. The word itself never moves. */
+.ui-menu-item {
+  position: relative;
+  color: rgb(var(--c-ink-muted));
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1.25;
+  transition: color 0.2s;
+}
+.ui-menu-item--large { font-size: 2.1rem; font-weight: 600; }
+.ui-menu-item::before {
+  content: '';
+  position: absolute;
+  left: -2.25rem;
+  top: 50%;
+  width: 1.25rem;
+  height: 2px;
+  background: rgb(var(--c-frame-bright));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-menu-item:hover,
+.ui-menu-item:focus-visible,
+.ui-menu-item[data-active] { color: rgb(var(--c-ink)); }
+.ui-menu-item:hover::before,
+.ui-menu-item:focus-visible::before,
+.ui-menu-item[data-active]::before { transform: scaleX(1); }
+.ui-menu-item:focus-visible { outline: none; }
+
+/* ---------------------------------------------------------------- Home: invite code */
+.ui-home-code__go {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  color: rgb(var(--c-accent-ink));
+  background: rgb(var(--c-accent));
+  font-size: 1.1rem;
+  transition: opacity 0.2s;
+}
+.ui-home-code__go:disabled { opacity: 0.25; }
+
 .ui-home-join {
   border-top: 1px solid rgb(var(--c-line) / 0.6);
 }
@@ -273,3 +319,145 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   font-size: 10px;
   letter-spacing: 0;
 }
+
+/* ---------------------------------------------------------------- Home: the place itself */
+/* The service's dark, lit from where the featured hero stands; the menu side falls into shadow. */
+.ui-home-atmosphere {
+  background:
+    radial-gradient(ellipse 55% 70% at 68% 46%, rgb(var(--c-frame-bright) / 0.07), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 50%, transparent 40%, rgb(var(--c-bg-deep) / 0.95) 100%),
+    linear-gradient(to right, rgb(var(--c-bg-deep)) 0%, rgb(var(--c-bg)) 45%, rgb(var(--c-bg)) 100%);
+}
+.ui-featured {
+  transition: filter 0.4s;
+  filter: brightness(0.92);
+}
+.ui-featured:hover { filter: brightness(1.05); }
+
+/* ---------------------------------------------------------------- Home: a table as a cover card */
+/* The card is a window onto its world: the frame stays, the picture inside wakes under the cursor. */
+.ui-table-card__body {
+  border-radius: calc(var(--radius) * 0.75);
+  border: 1px solid rgb(var(--c-frame) / 0.35);
+  box-shadow: 0 20px 44px -24px rgb(0 0 0 / 0.9);
+  transition: border-color 0.3s;
+}
+.ui-table-card__picture {
+  filter: brightness(0.62) saturate(0.85);
+  transition: filter 0.5s, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-table-card__body:hover,
+.ui-table-card__body:focus-visible { border-color: rgb(var(--c-frame-bright) / 0.7); outline: none; }
+.ui-table-card__body:hover .ui-table-card__picture,
+.ui-table-card__body:focus-visible .ui-table-card__picture {
+  filter: brightness(0.9) saturate(1);
+  transform: scale(1.04);
+}
+
+/* ---------------------------------------------------------------- Home: the shelf of tiles */
+.ui-shelf-tile {
+  aspect-ratio: 1;
+  border-radius: calc(var(--radius) * 0.6);
+  border: 1px solid rgb(var(--c-frame) / 0.3);
+  background: rgb(var(--c-inset));
+  filter: brightness(0.6) saturate(0.7);
+  transition: filter 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+.ui-shelf-tile--wide { aspect-ratio: 16 / 9; }
+.ui-shelf-tile:hover { filter: brightness(0.9) saturate(0.9); }
+.ui-shelf-tile[data-chosen] {
+  filter: none;
+  border-color: rgb(var(--c-frame-bright) / 0.85);
+  box-shadow: 0 0 0 3px rgb(var(--c-frame-bright) / 0.15), 0 16px 34px -14px rgb(0 0 0 / 0.9);
+}
+.ui-shelf-tile--add {
+  filter: none;
+  color: rgb(var(--c-ink-faint));
+  background: transparent;
+  border-style: dashed;
+}
+.ui-shelf-tile--add:hover { color: rgb(var(--c-ink)); border-color: rgb(var(--c-frame-bright) / 0.5); }
+
+/* ---------------------------------------------------------------- Settings: home layout choice */
+.ui-layout-option {
+  border-radius: 12px;
+  border: 1px solid var(--control-edge, rgb(var(--c-line)));
+  color: rgb(var(--c-ink-muted));
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+}
+.ui-layout-option:hover { background: var(--control, rgb(var(--c-surface-2))); color: rgb(var(--c-ink)); }
+.ui-layout-option--chosen {
+  color: rgb(var(--c-ink));
+  border-color: rgb(var(--c-frame-bright) / 0.7);
+  background: var(--control, rgb(var(--c-surface-2)));
+}
+.ui-layout-option__screen { fill: rgb(var(--c-inset)); }
+.ui-layout-option__block { fill: rgb(var(--c-ink-faint) / 0.55); }
+.ui-layout-option__art { fill: rgb(var(--c-frame) / 0.55); }
+.ui-layout-option--chosen .ui-layout-option__art { fill: rgb(var(--c-frame-bright) / 0.4); }
+
+/* ---------------------------------------------------------------- Home: the hand of heroes */
+/* The table the cards lie on: a faint pool of light, no cloth texture. */
+.ui-home-felt {
+  background: radial-gradient(ellipse 60% 45% at 50% 42%, rgb(var(--c-frame-bright) / 0.05), transparent 70%);
+}
+.ui-hand-card {
+  border-radius: calc(var(--radius) * 0.75);
+  border: 1px solid rgb(var(--c-frame) / 0.55);
+  background: rgb(var(--c-inset));
+  box-shadow: 0 -10px 30px -12px rgb(0 0 0 / 0.85);
+  transition: border-color 0.3s, filter 0.3s;
+  filter: brightness(0.78) saturate(0.85);
+}
+.ui-hand-card[data-drawn] {
+  filter: none;
+  border-color: rgb(var(--c-frame-bright) / 0.8);
+}
+.ui-hand-card--new {
+  color: rgb(var(--c-ink-faint));
+  background: rgb(var(--c-surface) / 0.85);
+  border-style: dashed;
+  filter: none;
+}
+.ui-hand-card--new:hover { color: rgb(var(--c-ink)); }
+.ui-hand-all { transition: color 0.2s; }
+.ui-hand-all:hover { color: rgb(var(--c-ink)); }
+
+/* ---------------------------------------------------------------- Home: mosaic tiles */
+.ui-mosaic-hero {
+  border-radius: var(--radius);
+  border: 1px solid rgb(var(--c-frame) / 0.35);
+  background: rgb(var(--c-inset));
+  transition: border-color 0.3s;
+}
+.ui-mosaic-hero__art {
+  filter: brightness(0.75) saturate(0.85);
+  transition: filter 0.4s, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-mosaic-hero:hover { border-color: rgb(var(--c-frame-bright) / 0.7); }
+.ui-mosaic-hero:hover .ui-mosaic-hero__art { filter: none; transform: scale(1.04); }
+.ui-mosaic-free {
+  border-radius: var(--radius);
+  border: 1px dashed rgb(var(--c-line) / 0.5);
+}
+[data-setting='service'] .ui-mosaic-free:not([data-world] *) { border-color: var(--divider); }
+
+/* ---------------------------------------------------------------- Home: posters */
+.ui-poster__frame {
+  border-radius: calc(var(--radius) * 0.6);
+  border: 1px solid rgb(var(--c-frame) / 0.35);
+  background: rgb(var(--c-inset));
+  transition: border-color 0.3s;
+}
+.ui-poster__art {
+  filter: brightness(0.75) saturate(0.85);
+  transition: filter 0.4s, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-poster:hover .ui-poster__frame { border-color: rgb(var(--c-frame-bright) / 0.75); }
+.ui-poster:hover .ui-poster__art { filter: none; transform: scale(1.05); }
+.ui-poster__frame--add {
+  color: rgb(var(--c-ink-faint));
+  background: transparent;
+  border-style: dashed;
+}
+.ui-poster:hover .ui-poster__frame--add { color: rgb(var(--c-ink)); }

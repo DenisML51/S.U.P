@@ -8,6 +8,7 @@ import { ConfirmDialog, Dialog } from '../../ui/Dialog';
 import { Switch } from '../../ui/forms';
 import { Button, cx } from '../../ui/primitives';
 import { IconExit, IconSync } from '../../ui/icons';
+import { HomeLayoutPicker } from '../home/HomeLayoutPicker';
 
 const syncLine = (sync: SyncStatus, offline: boolean): { text: string; tone: string } => {
   if (offline || sync.state === 'offline') return { text: 'Нет связи: изменения сохраняются на устройстве', tone: 'text-warning' };
@@ -121,6 +122,11 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
             label="Полный экран"
             hint="Лист рассчитан на весь экран без прокрутки"
           />
+        </section>
+
+        <section className="mt-6">
+          <h3 className="ui-label">Вид главной</h3>
+          <HomeLayoutPicker value={settings.homeLayout} onChange={(homeLayout) => set({ homeLayout })} />
         </section>
       </Dialog>
 
