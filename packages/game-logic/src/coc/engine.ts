@@ -371,12 +371,6 @@ export function parseSanityLoss(spec: string): { success: string; failure: strin
   return { success, failure };
 }
 
-/** The most a loss can be: a critical fail on the roll takes the maximum. */
-const maxOf = (formula: string): number => {
-  const roll = rollFormula(formula, () => 0.999999);
-  return roll.total;
-};
-
 export interface SanityResult {
   check: SkillCheck;
   loss: number;
@@ -386,6 +380,8 @@ export interface SanityResult {
   /** A fifth of the day's sanity is gone. */
   indefinite: boolean;
   permanent: boolean;
+  /** The dice of the loss as thrown (all at their maximum on a fumble), for a table that shows them. */
+  lossDice?: { sides: number; value: number }[];
 }
 
 export function sanityCheck(
@@ -397,8 +393,15 @@ export function sanityCheck(
   const check = checkSkill(sanity, {}, random);
   const { success, failure } = parseSanityLoss(spec);
   const formula = check.success ? success : failure;
-  const loss = Math.max(0, check.level === 'fumble' ? maxOf(formula) : rollFormula(formula, random).total);
-  return { check, ...sanityLoss(character, loss) };
+  // A fumble on the roll takes the most the loss can be.
+  const lossRoll =
+    check.level === 'fumble' ? rollFormula(formula, () => 0.999999) : rollFormula(formula, random);
+  const loss = Math.max(0, lossRoll.total);
+  return {
+    check,
+    ...sanityLoss(character, loss),
+    lossDice: lossRoll.rolls.map((r) => ({ sides: r.sides, value: r.value })),
+  };
 }
 
 /** What losing this much sanity now does, by the day's start and the investigator's state. */

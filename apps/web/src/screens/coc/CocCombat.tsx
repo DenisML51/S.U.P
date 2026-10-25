@@ -34,6 +34,7 @@ import { useSessionStore } from '../../store/useSessionStore';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { Button, IconButton, Panel, cx } from '../../ui/primitives';
 import { NumberField, Segmented } from '../../ui/forms';
+import { Dialog } from '../../ui/Dialog';
 import { IconDice, IconExit, IconPrev, IconSettings } from '../../ui/icons';
 import { SyncStatus } from '../../ui/SyncStatus';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
@@ -42,6 +43,7 @@ import { foldRepeats } from '../sheet/parts/history';
 import { CombatChat } from '../party/CombatChat';
 import { PartyCombatBar } from '../party/PartyCombatBar';
 import { useCoc } from './context';
+import { setRollVerdict, useRollShown, type RollVerdict } from './verdict';
 import { InsanityVeil, madnessStage } from './InsanityVeil';
 import { Track } from './parts';
 import { PickerDialog } from './picker';
@@ -144,6 +146,24 @@ const BarButton: React.FC<{
 
 const LEVELS: SuccessLevel[] = ['failure', 'regular', 'hard', 'extreme', 'critical'];
 
+/** Spells shown on the bar itself; the rest wait behind «Заклинания (N)». */
+const INLINE_SPELLS = 2;
+
+/** An opposed roll told as a telegram reads it: what the defence did, then what the blow did. */
+function verdictOf(
+  winner: 'attacker' | 'defender' | 'none',
+  defence: 'dodge' | 'fightBack',
+): Omit<RollVerdict, 'serial'> {
+  if (winner === 'none') return { parts: ['Никто не преуспел', 'удар не нанесён'], tone: 'neutral' };
+  if (winner === 'defender')
+    return defence === 'fightBack'
+      ? { parts: ['Контратака удалась', 'вы наносите урон'], tone: 'success' }
+      : { parts: ['Уклонение удалось', 'удар прошёл мимо'], tone: 'success' };
+  return defence === 'fightBack'
+    ? { parts: ['Контратака не удалась', 'удар прошёл'], tone: 'danger' }
+    : { parts: ['Уклонение не удалось', 'удар прошёл'], tone: 'danger' };
+}
+
 /**
  * The investigator's fight by the 7th edition: one action a round (attack, aim, manoeuvre, a skill,
  * a spell), any number of defences (dodge or fight back, each making the next attacker's job easier),
@@ -207,6 +227,11 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
     : meleeModifiers({ defenderReactedThisRound: melee.outnumbering ? 1 : 0, hampered: melee.hampered });
 
   const spendAction = () => setRound({ ...round, actionUsed: true, aimedWith: undefined });
+  const cast = (spell: { name: string; cost: string }) => {
+    const result = castSpell(character, spell.cost);
+    update(result.edit, { message: `Сотворено «${spell.name}»`, type: 'sanity' });
+    spendAction();
+  };
 
   const attack = () => {
     if (!weapon) return;
@@ -247,6 +272,28 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   const [incoming, setIncoming] = useState<SuccessLevel | null>(null);
   const defending = last && defence && (last.label === 'Уклонение' || last.label === 'Контратака');
   const verdict = defending && incoming ? opposedResult(incoming, last.check.level, defence) : null;
+  const told = verdict && defence ? verdictOf(verdict, defence) : null;
+  // The verdict goes onto the defence roll's telegram; a new roll leaves it behind.
+  const toldSerial = told && last ? last.serial : null;
+  const toldText = told?.parts.join('|');
+  useEffect(() => {
+    if (toldSerial === null || !told) return;
+    setRollVerdict({ serial: toldSerial, ...told });
+    // `told` is rebuilt every render; its text is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toldSerial, toldText]);
+  useEffect(() => () => setRollVerdict(null), []);
+  // Messages rise above the bottom bar instead of covering it.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--toast-offset', '12.5rem');
+    return () => {
+      root.style.removeProperty('--toast-offset');
+    };
+  }, []);
+  // When the telegram is already gone, the verdict stays readable under the bar instead.
+  const rollToastShown = useRollShown();
+  const [spellsOpen, setSpellsOpen] = useState(false);
 
   const manoeuvre = manoeuvreChance(derived.build, targetBuild);
 
@@ -709,19 +756,24 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 hint="бросок удачи"
                 onClick={() => roll({ label: 'Удача', value: coc.luck, kind: 'luck' })}
               />
-              {coc.spells.slice(0, 2).map((sp) => (
+              {coc.spells
+                .slice(0, coc.spells.length > INLINE_SPELLS ? INLINE_SPELLS - 1 : INLINE_SPELLS)
+                .map((sp) => (
+                  <BarButton
+                    key={sp.id}
+                    label={sp.name}
+                    hint={sp.cost}
+                    disabled={actionDone}
+                    onClick={() => cast(sp)}
+                  />
+                ))}
+              {coc.spells.length > INLINE_SPELLS && (
                 <BarButton
-                  key={sp.id}
-                  label={sp.name}
-                  hint={sp.cost}
-                  disabled={actionDone}
-                  onClick={() => {
-                    const result = castSpell(character, sp.cost);
-                    update(result.edit, { message: `Сотворено «${sp.name}»`, type: 'sanity' });
-                    spendAction();
-                  }}
+                  label={`Заклинания (${coc.spells.length})`}
+                  hint="все известные"
+                  onClick={() => setSpellsOpen(true)}
                 />
-              ))}
+              )}
             </BarGroup>
           </Panel>
           {defending && (
@@ -737,7 +789,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                   {SUCCESS_LABELS[level]}
                 </Chip>
               ))}
-              {verdict && (
+              {verdict && !rollToastShown && (
                 <span
                   className={cx(
                     'ml-2',
@@ -762,6 +814,41 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
         </motion.div>
       </div>
 
+      <Dialog
+        open={spellsOpen}
+        onClose={() => setSpellsOpen(false)}
+        eyebrow="Действие раунда"
+        title="Заклинания"
+        width="sm"
+      >
+        <ul className="flex flex-col gap-1.5">
+          {coc.spells.map((sp) => (
+            <li
+              key={sp.id}
+              className="flex items-center gap-3 rounded-[var(--radius)] border border-line/50 px-3 py-2"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm text-ink">{sp.name}</span>
+                <span className="block truncate text-xs text-ink-faint">
+                  {[sp.cost, sp.castingTime].filter(Boolean).join(' · ') || 'без цены'}
+                </span>
+              </span>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={actionDone}
+                onClick={() => {
+                  cast(sp);
+                  setSpellsOpen(false);
+                }}
+              >
+                Сотворить
+              </Button>
+            </li>
+          ))}
+        </ul>
+        {actionDone && <p className="mt-3 text-xs text-ink-faint">Действие этого раунда уже потрачено.</p>}
+      </Dialog>
       <PickerDialog
         open={skillPicker}
         onClose={() => setSkillPicker(false)}
