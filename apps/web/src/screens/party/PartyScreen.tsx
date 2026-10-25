@@ -124,6 +124,13 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
   const isMaster = combat.isMaster;
 
   const myHeroes = party.heroes.filter((hero) => hero.ownerId === userId);
+  // The master's own heroes in the fight, in the order of turns: the master plays them from the combat
+  // screen, starting with the one whose turn it is.
+  const myFighters = (party.combat?.combatants ?? []).flatMap((c) => {
+    const hero = c.kind === 'hero' ? myHeroes.find((h) => h.id === c.refId) : undefined;
+    return hero ? [{ hero, current: c.id === party.combat?.currentCombatantId }] : [];
+  });
+  const fighterToPlay = myFighters.find((f) => f.current)?.hero ?? myFighters[0]?.hero;
   const canBring = myHeroes.length < (isMaster ? PARTY_LIMITS.masterHeroes : PARTY_LIMITS.playerHeroes);
 
   // A player who has just sat down is asked whom they bring.
@@ -242,6 +249,11 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                     combat={combat}
                     onAdd={() => setOverlay({ kind: 'combat' })}
                     onEnd={() => setOverlay({ kind: 'end-combat' })}
+                    onPlay={
+                      isMaster && fighterToPlay
+                        ? () => void loadCharacter(fighterToPlay.characterId, 'hotbar')
+                        : undefined
+                    }
                   />
                 </motion.div>
               )}
@@ -252,7 +264,13 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                 userId={userId}
                 canBring={canBring}
                 onBring={() => setOverlay({ kind: 'pick-hero' })}
-                onPlay={(hero) => void loadCharacter(hero.characterId)}
+                // A hero in the fight opens on its combat screen, any other on its sheet.
+                onPlay={(hero) =>
+                  void loadCharacter(
+                    hero.characterId,
+                    myFighters.some((f) => f.hero.id === hero.id) ? 'hotbar' : 'tabs',
+                  )
+                }
                 onRemoveHero={(hero) => setOverlay({ kind: 'remove-hero', hero })}
                 onNpc={(npc) => setOverlay({ kind: 'npc', npc })}
               />
@@ -507,7 +525,9 @@ const CombatPanel: React.FC<{
   combat: ReturnType<typeof useTableCombat>;
   onAdd: () => void;
   onEnd: () => void;
-}> = ({ party, combat: seat, onAdd, onEnd }) => {
+  /** The master's way into the fight for their own heroes. */
+  onPlay?: () => void;
+}> = ({ party, combat: seat, onAdd, onEnd, onPlay }) => {
   const store = usePartyStore.getState();
   const fight = party.combat!;
   const waiting = fight.combatants.filter((c) => c.initiative === null);
@@ -559,6 +579,16 @@ const CombatPanel: React.FC<{
               onClick={() => void store.nextTurn(party.id, fight.currentCombatantId)}
             >
               {seat.myTurn ? 'Завершить ход' : 'Следующий ход'}
+            </Button>
+          )}
+          {onPlay && (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<IconCombat width={15} height={15} />}
+              onClick={onPlay}
+            >
+              В бой за героя
             </Button>
           )}
           {seat.isMaster && (
