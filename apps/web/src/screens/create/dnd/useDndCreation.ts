@@ -11,7 +11,7 @@ import {
   validBackgroundBonuses,
   withoutPicks,
 } from '@itd/game-logic/dnd';
-import type { Build, CharacterImages, Setting } from '@itd/schema';
+import type { DndBuild, CharacterImages, Setting } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { useClearDraft, useDraftState } from '../useDraftState';
 import { CLASS_SOURCES, planIssues } from '../../progression/LevelPlanView';
@@ -23,7 +23,7 @@ import { CLASS_SOURCES, planIssues } from '../../progression/LevelPlanView';
 export function useDndCreation(setting: Setting, onCreated: () => void) {
   const createCharacter = useCharacterStore((s) => s.createCharacter);
   const clearDraft = useClearDraft();
-  const [build, setBuild] = useDraftState<Build>('build', emptyBuild);
+  const [build, setBuild] = useDraftState<DndBuild>('build', emptyBuild);
   const [rolls, setRolls] = useDraftState<number[] | null>('rolls', null);
   const [classKitId, setClassKitId] = useDraftState<string | undefined>('classKit', undefined);
   const [backgroundKitId, setBackgroundKitId] = useDraftState<string | undefined>('backgroundKit', undefined);

@@ -1,0 +1,70 @@
+import type { WeaponDef } from '../types';
+
+/**
+ * Weapons of the 7th edition table, 1920s and modern. Damage is in rules notation: `+DB` adds the
+ * damage bonus, `+½DB` half of it; shotguns give damage per range band (`4d6/2d6/1d6`).
+ */
+export const WEAPONS: WeaponDef[] = [
+  // Melee.
+  { id: 'unarmed', name: 'Удар рукой/ногой/головой', skill: 'fighting:brawl', damage: '1d3+DB', range: 'касание', uses: '1' },
+  { id: 'knuckleduster', name: 'Кастет', skill: 'fighting:brawl', damage: '1d3+1+DB', range: 'касание', uses: '1', price: { '1920s': 1, modern: 10 } },
+  { id: 'blackjack', name: 'Дубинка (кистень, «блэкджек»)', skill: 'fighting:brawl', damage: '1d8+DB', range: 'касание', uses: '1', price: { '1920s': 2, modern: 15 } },
+  { id: 'club-small', name: 'Полицейская дубинка', skill: 'fighting:brawl', damage: '1d6+DB', range: 'касание', uses: '1', price: { '1920s': 3, modern: 15 } },
+  { id: 'club-large', name: 'Бита, крупная палица', skill: 'fighting:brawl', damage: '1d8+DB', range: 'касание', uses: '1', price: { '1920s': 3, modern: 35 } },
+  { id: 'knife-small', name: 'Нож, малый (выкидной)', skill: 'fighting:brawl', damage: '1d4+DB', range: 'касание', uses: '1', impale: true, price: { '1920s': 2, modern: 6 } },
+  { id: 'knife-medium', name: 'Нож, средний (разделочный)', skill: 'fighting:brawl', damage: '1d4+2+DB', range: 'касание', uses: '1', impale: true, price: { '1920s': 3, modern: 15 } },
+  { id: 'knife-large', name: 'Нож, большой (мачете)', skill: 'fighting:brawl', damage: '1d8+DB', range: 'касание', uses: '1', impale: true, price: { '1920s': 4, modern: 50 } },
+  { id: 'sabre', name: 'Сабля, меч', skill: 'fighting:sword', damage: '1d8+1+DB', range: 'касание', uses: '1', impale: true, price: { '1920s': 15, modern: 75 } },
+  { id: 'hatchet', name: 'Топорик, серп', skill: 'fighting:axe', damage: '1d6+1+DB', range: 'касание', uses: '1', price: { '1920s': 3, modern: 9 } },
+  { id: 'wood-axe', name: 'Топор дровосека', skill: 'fighting:axe', damage: '1d8+2+DB', range: 'касание', uses: '1', price: { '1920s': 5, modern: 10 } },
+  { id: 'spear', name: 'Копьё', skill: 'fighting:spear', damage: '1d8+1+DB', range: 'касание', uses: '1', impale: true, price: { '1920s': 25, modern: 150 } },
+  { id: 'bullwhip', name: 'Кнут', skill: 'fighting:whip', damage: '1d3+½DB', range: '3 ярд.', uses: '1', price: { '1920s': 5, modern: 50 } },
+  { id: 'garrote', name: 'Удавка', skill: 'fighting:garrote', damage: '1d6+DB', range: 'касание', uses: '1', price: { '1920s': 0.5, modern: 3 }, description: 'Душит каждый раунд, пока жертва не вырвется.' },
+  { id: 'chainsaw', name: 'Бензопила', skill: 'fighting:chainsaw', damage: '2d8', range: 'касание', uses: '1', malfunction: 95, price: { modern: 300 } },
+  { id: 'taser', name: 'Электрошокер (контактный)', skill: 'fighting:brawl', damage: '1d3+оглушение', range: 'касание', uses: '1', malfunction: 97, price: { modern: 200 }, era: 'modern' },
+
+  // Thrown.
+  { id: 'thrown-rock', name: 'Камень (бросок)', skill: 'throw', damage: '1d4+½DB', range: 'СИЛ/5 ярд.', uses: '1' },
+  { id: 'thrown-knife', name: 'Метательный нож', skill: 'throw', damage: '1d4+½DB', range: 'СИЛ/5 ярд.', uses: '1', impale: true, price: { '1920s': 2, modern: 6 } },
+  { id: 'dynamite', name: 'Динамитная шашка', skill: 'throw', damage: '4d10/3 ярд.', range: 'СИЛ/5 ярд.', uses: '½', malfunction: 99, price: { '1920s': 2, modern: 5 }, description: 'Урон убывает с расстоянием от точки взрыва.' },
+  { id: 'molotov', name: 'Коктейль Молотова', skill: 'throw', damage: '2d6+горение', range: 'СИЛ/5 ярд.', uses: '½', malfunction: 95 },
+
+  // Bows.
+  { id: 'bow', name: 'Лук со стрелами', skill: 'firearms:bow', damage: '1d6+½DB', range: '30 ярд.', uses: '1', ammo: 1, malfunction: 97, impale: true, price: { '1920s': 7, modern: 75 } },
+
+  // Handguns.
+  { id: 'derringer-41', name: 'Деринджер .41', skill: 'firearms:handgun', damage: '1d8', range: '2 ярд.', uses: '1', ammo: 1, malfunction: 100, impale: true, price: { '1920s': 12 }, era: '1920s' },
+  { id: 'automatic-22', name: 'Пистолет .22 (малокалиберный)', skill: 'firearms:handgun', damage: '1d6', range: '10 ярд.', uses: '1 (3)', ammo: 6, malfunction: 100, impale: true, price: { '1920s': 25, modern: 190 } },
+  { id: 'revolver-32', name: 'Револьвер .32 (7,65 мм)', skill: 'firearms:handgun', damage: '1d8', range: '15 ярд.', uses: '1 (3)', ammo: 6, malfunction: 100, impale: true, price: { '1920s': 15, modern: 200 } },
+  { id: 'automatic-32', name: 'Пистолет .32 (7,65 мм)', skill: 'firearms:handgun', damage: '1d8', range: '15 ярд.', uses: '1 (3)', ammo: 8, malfunction: 99, impale: true, price: { '1920s': 20, modern: 350 } },
+  { id: 'revolver-38', name: 'Револьвер .38', skill: 'firearms:handgun', damage: '1d10', range: '15 ярд.', uses: '1 (3)', ammo: 6, malfunction: 100, impale: true, price: { '1920s': 25, modern: 400 } },
+  { id: 'revolver-45', name: 'Револьвер .45', skill: 'firearms:handgun', damage: '1d10+2', range: '15 ярд.', uses: '1 (3)', ammo: 6, malfunction: 100, impale: true, price: { '1920s': 30, modern: 300 } },
+  { id: 'automatic-45', name: 'Пистолет .45 (Кольт M1911)', skill: 'firearms:handgun', damage: '1d10+2', range: '15 ярд.', uses: '1 (3)', ammo: 7, malfunction: 100, impale: true, price: { '1920s': 40, modern: 375 } },
+  { id: 'luger-p08', name: 'Пистолет 9 мм (Люгер P08)', skill: 'firearms:handgun', damage: '1d10', range: '15 ярд.', uses: '1 (3)', ammo: 8, malfunction: 99, impale: true, price: { '1920s': 75, modern: 600 } },
+  { id: 'glock-17', name: 'Пистолет 9 мм (Глок 17)', skill: 'firearms:handgun', damage: '1d10', range: '15 ярд.', uses: '1 (3)', ammo: 17, malfunction: 98, impale: true, price: { modern: 500 }, era: 'modern' },
+
+  // Rifles and shotguns.
+  { id: 'rifle-22', name: 'Винтовка .22 со скользящим затвором', skill: 'firearms:rifle-shotgun', damage: '1d6+1', range: '30 ярд.', uses: '1', ammo: 6, malfunction: 99, impale: true, price: { '1920s': 13, modern: 70 } },
+  { id: 'carbine-30', name: 'Карабин .30 рычажный (Винчестер)', skill: 'firearms:rifle-shotgun', damage: '2d6', range: '50 ярд.', uses: '1', ammo: 6, malfunction: 98, impale: true, price: { '1920s': 19, modern: 150 } },
+  { id: 'rifle-30-06', name: 'Винтовка .30-06 со скользящим затвором', skill: 'firearms:rifle-shotgun', damage: '2d6+4', range: '110 ярд.', uses: '1', ammo: 5, malfunction: 100, impale: true, price: { '1920s': 75, modern: 175 } },
+  { id: 'elephant-gun', name: 'Слоновое ружьё (двуствольное)', skill: 'firearms:rifle-shotgun', damage: '3d6+4', range: '100 ярд.', uses: '1 или 2', ammo: 2, malfunction: 100, impale: true, price: { '1920s': 400, modern: 1800 } },
+  { id: 'shotgun-12', name: 'Дробовик 12-го калибра (двуствольный)', skill: 'firearms:rifle-shotgun', damage: '4d6/2d6/1d6', range: '10/20/50 ярд.', uses: '1 или 2', ammo: 2, malfunction: 100, price: { '1920s': 40, modern: 200 } },
+  { id: 'shotgun-12-pump', name: 'Дробовик 12-го калибра (помповый)', skill: 'firearms:rifle-shotgun', damage: '4d6/2d6/1d6', range: '10/20/50 ярд.', uses: '1', ammo: 5, malfunction: 100, price: { '1920s': 45, modern: 100 } },
+  { id: 'shotgun-20', name: 'Дробовик 20-го калибра (двуствольный)', skill: 'firearms:rifle-shotgun', damage: '2d6/1d6/1d3', range: '10/20/50 ярд.', uses: '1 или 2', ammo: 2, malfunction: 100, price: { '1920s': 35 } },
+  { id: 'shotgun-sawed-off', name: 'Обрез 12-го калибра', skill: 'firearms:rifle-shotgun', damage: '4d6/1d6', range: '5/10 ярд.', uses: '1 или 2', ammo: 2, malfunction: 100 },
+  { id: 'assault-rifle', name: 'Автомат (АК-47, M16)', skill: 'firearms:rifle-shotgun', damage: '2d6+1', range: '100 ярд.', uses: '1 (2) или очередь', ammo: 30, malfunction: 100, impale: true, price: { modern: 200 }, era: 'modern', description: 'Цифры для АК-47; у M16 урон 2d6, дальность 110 ярд., осечка 97.' },
+
+  // Submachine guns.
+  { id: 'thompson', name: 'Пистолет-пулемёт Томпсона', skill: 'firearms:submachine-gun', damage: '1d10+2', range: '20 ярд.', uses: '1 или очередь', ammo: 20, malfunction: 96, impale: true, price: { '1920s': 200, modern: 1600 }, description: 'Магазин на 20 или 30 патронов, диск на 50.' },
+  { id: 'uzi', name: 'Пистолет-пулемёт «Узи»', skill: 'firearms:submachine-gun', damage: '1d10', range: '20 ярд.', uses: '1 (2) или очередь', ammo: 32, malfunction: 98, impale: true, price: { modern: 1000 }, era: 'modern' },
+
+  // Machine guns.
+  { id: 'bar', name: 'Автоматическая винтовка Браунинга (BAR)', skill: 'firearms:machine-gun', damage: '2d6+4', range: '90 ярд.', uses: '1 (2) или очередь', ammo: 20, malfunction: 100, impale: true, price: { '1920s': 800, modern: 1500 } },
+  { id: 'lewis-gun', name: 'Пулемёт Льюиса', skill: 'firearms:machine-gun', damage: '2d6+4', range: '110 ярд.', uses: 'очередь', ammo: 47, malfunction: 96, impale: true, price: { '1920s': 3000 }, description: 'Диск на 47 или 97 патронов.' },
+
+  // Heavy.
+  { id: 'flamethrower', name: 'Огнемёт', skill: 'firearms:flamethrower', damage: '2d6+горение', range: '25 ярд.', uses: '1', ammo: 10, malfunction: 93 },
+];
+
+/** A weapon by its id. */
+export const weaponDef = (id: string | undefined) => WEAPONS.find((w) => w.id === id);

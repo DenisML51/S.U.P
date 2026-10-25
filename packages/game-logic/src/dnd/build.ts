@@ -1,4 +1,4 @@
-import type { Ability, Attack, Build, Character, CharacterDraft, InventoryItem, Resistance, Resource, Spell, Trait } from '@itd/schema';
+import type { Ability, Attack, Build, Character, DndBuild, CharacterDraft, InventoryItem, Resistance, Resource, Spell, Trait } from '@itd/schema';
 import { ATTRIBUTES_LIST, SKILLS_LIST } from '../content/attributes';
 import { spellColor } from '../content/combat';
 import { abilityModifier } from '../rules/abilities';
@@ -41,6 +41,9 @@ import type {
 // Lookups
 // ------------------------------------------------------------------------------------------------
 
+/** The D&D 2024 build of a hero, if it was built by these rules. */
+export const dndBuildOf = (hero: { build?: Build }): DndBuild | undefined => (hero.build?.ruleset === 'dnd2024' ? hero.build : undefined);
+
 export const findClass = (id: string | undefined): ClassDef | undefined => DND.classes.find((c) => c.id === id);
 export const findSubclass = (classDef: ClassDef | undefined, id: string | undefined): SubclassDef | undefined =>
   classDef?.subclasses.find((s) => s.id === id);
@@ -65,7 +68,7 @@ const attributeName = (id: string) => ATTRIBUTES_LIST.find((a) => a.id === id)?.
 const skillName = (id: string) => SKILLS_LIST.find((s) => s.id === id)?.name ?? id;
 
 /** Spell slots of the class or its subclass at a class level; empty for non-casters. */
-export function spellcastingOf(build: Pick<Build, 'class' | 'subclass'>): SpellcastingDef | undefined {
+export function spellcastingOf(build: Pick<DndBuild, 'class' | 'subclass'>): SpellcastingDef | undefined {
   const classDef = findClass(build.class);
   return classDef?.spellcasting ?? findSubclass(classDef, build.subclass)?.spellcasting;
 }
@@ -130,7 +133,7 @@ export interface Collected {
 const forgetKey = (pool: string, level: number) => `swap:${pool}@${level}/forget`;
 
 /** Picks given up on later levels, read from the build's `swap:<pool>@<level>/forget` choices. */
-function forgottenPicks(build: Build): { pool: string; id: string; level: number }[] {
+function forgottenPicks(build: DndBuild): { pool: string; id: string; level: number }[] {
   const out: { pool: string; id: string; level: number }[] = [];
   for (const [key, picks] of Object.entries(build.choices)) {
     const match = /^swap:(.+)@(\d+)\/forget$/.exec(key);
@@ -164,7 +167,7 @@ const synthetic = (id: string, name: string, description: string, extra: Partial
  * Walks every feature a build has up to `level`: species, background, class levels, subclass
  * levels, and everything picked through choices (feats, maneuvers, inline options).
  */
-export function collect(build: Build, level = build.level, scores?: Record<string, number>): Collected {
+export function collect(build: DndBuild, level = build.level, scores?: Record<string, number>): Collected {
   const ctx = contextFor(level, scores ?? baseScores(build));
   const out: Collected = { features: [], choices: [], effects: [], masteries: [], spellAbilities: [], poolPicks: [] };
   const forgotten = forgottenPicks(build).filter((f) => f.level <= level);
@@ -406,13 +409,13 @@ export function collect(build: Build, level = build.level, scores?: Record<strin
 // Numbers
 // ------------------------------------------------------------------------------------------------
 
-const baseScores = (build: Build): Record<string, number> =>
+const baseScores = (build: DndBuild): Record<string, number> =>
   Object.fromEntries(
     ATTRIBUTE_IDS.map((id) => [id, (build.baseAttributes[id] ?? 10) + (build.backgroundBonuses[id] ?? 0)]),
   );
 
 /** Final ability scores: base, background, then every increase in the order it was gained. */
-export function buildScores(build: Build, level = build.level): Record<string, number> {
+export function buildScores(build: DndBuild, level = build.level): Record<string, number> {
   const scores = baseScores(build);
   const { effects } = collect(build, level, scores);
   for (const { effect } of [...effects].sort((a, b) => a.owner.level - b.owner.level)) {
@@ -425,7 +428,7 @@ export function buildScores(build: Build, level = build.level): Record<string, n
 }
 
 /** Maximum hit points of a build: the full die at level 1, then rolled or average gains. */
-export function buildMaxHP(build: Build, collected: Collected, scores: Record<string, number>, level = build.level): number {
+export function buildMaxHP(build: DndBuild, collected: Collected, scores: Record<string, number>, level = build.level): number {
   const classDef = findClass(build.class);
   if (!classDef) return 1;
   const constitution = abilityModifier(scores.constitution ?? 10);
@@ -468,7 +471,7 @@ export interface FeatureOrigin {
  * The origin of every feature a build grants, by its `grant` key: species, background or class,
  * and the feature it was chosen in. Sheets list a hero's features by it.
  */
-export function featureOrigins(build: Build): Map<string, FeatureOrigin> {
+export function featureOrigins(build: DndBuild): Map<string, FeatureOrigin> {
   const collected = collect(build);
   const keys = new Set(collected.features.map((g) => g.key));
   const origins = new Map<string, FeatureOrigin>();
@@ -552,7 +555,7 @@ export interface ApplyResult<C extends CharacterDraft = Character> {
  * Writes a build onto the sheet. Granted entries are replaced; their use counters, preparation
  * and the icons the player chose survive. Damage taken survives a change of maximum hit points.
  */
-export function applyBuild<C extends CharacterDraft>(character: C, build: Build): ApplyResult<C> {
+export function applyBuild<C extends CharacterDraft>(character: C, build: DndBuild): ApplyResult<C> {
   const level = build.level;
   const missing: string[] = [];
   const scores = buildScores(build, level);
@@ -959,7 +962,7 @@ function grantedAttacks(
  * Where a granted entry of the sheet comes from, for people: "Вид «Эльф»", "Паладин, 2 уровень",
  * "Черта «Бдительный» · Предыстория «Солдат»". `grant` is the entry's `grant` field.
  */
-export function describeGrant(build: Build, grant: string | undefined): string | undefined {
+export function describeGrant(build: DndBuild, grant: string | undefined): string | undefined {
   if (!grant) return undefined;
   const classDef = findClass(build.class);
   if (grant === 'spellcasting') return classDef ? `Заклинания класса «${classDef.name}»` : undefined;
@@ -1015,7 +1018,7 @@ export interface LevelPlan {
 }
 
 /** What a hero gets on `level` with the picks made so far (choices open more choices as they are made). */
-export function levelPlan(build: Build, level: number): LevelPlan {
+export function levelPlan(build: DndBuild, level: number): LevelPlan {
   const target = { ...build, level };
   const collected = collect(target, level, buildScores(target, level));
   const classDef = findClass(build.class);
@@ -1068,7 +1071,7 @@ const FEAT_CATEGORY_NAMES: Record<string, string> = {
 const poolPicks = (collected: Collected, open: OpenChoice): Set<string> =>
   new Set(collected.choices.filter((c) => c.key !== open.key && c.choice.pool && c.choice.pool === open.choice.pool).flatMap((c) => c.picked));
 
-function featBlocker(feat: FeatDef, build: Build, collected: Collected, scores: Record<string, number>, level: number, open: OpenChoice): string | undefined {
+function featBlocker(feat: FeatDef, build: DndBuild, collected: Collected, scores: Record<string, number>, level: number, open: OpenChoice): string | undefined {
   const taken = collected.features.some((f) => f.feature.id === feat.id && !f.key.startsWith(open.key));
   if (taken && !feat.repeatable) return 'Уже есть';
   const pre = feat.prerequisite;
@@ -1088,7 +1091,7 @@ function featBlocker(feat: FeatDef, build: Build, collected: Collected, scores: 
 }
 
 /** Options of an open choice, with the reason each unavailable one cannot be picked. */
-export function choiceOptions(build: Build, level: number, open: OpenChoice): OptionView[] {
+export function choiceOptions(build: DndBuild, level: number, open: OpenChoice): OptionView[] {
   const target = { ...build, level };
   const scores = buildScores(target, level);
   const collected = collect(target, level, scores);
@@ -1276,7 +1279,7 @@ export function choiceOptions(build: Build, level: number, open: OpenChoice): Op
 }
 
 /** Choices of a plan still waiting for picks (a choice with fewer options than its count is done when all are taken). */
-export function unfinishedChoices(build: Build, plan: LevelPlan): OpenChoice[] {
+export function unfinishedChoices(build: DndBuild, plan: LevelPlan): OpenChoice[] {
   return plan.choices.filter((open) => {
     if (open.choice.optional || open.picked.length >= open.count) return false;
     const available = choiceOptions(build, plan.level, open).filter((o) => !o.disabled).length;
@@ -1285,13 +1288,13 @@ export function unfinishedChoices(build: Build, plan: LevelPlan): OpenChoice[] {
 }
 
 /** Records the picks of a choice; picks that depended on replaced ones are dropped. */
-export function setPicks(build: Build, key: string, picks: string[]): Build {
+export function setPicks(build: DndBuild, key: string, picks: string[]): DndBuild {
   const choices = Object.fromEntries(Object.entries(build.choices).filter(([k]) => !k.startsWith(`${key}=`) && !k.startsWith(`${key}:`)));
   return { ...build, choices: { ...choices, [key]: picks } };
 }
 
 /** A feature's numbers as they stand on a level (damage that grows, a save DC), for previews. */
-export function featureNumbers(build: Build, level: number, feature: FeatureDef): { damage?: string; saveDC?: number } {
+export function featureNumbers(build: DndBuild, level: number, feature: FeatureDef): { damage?: string; saveDC?: number } {
   const ctx = contextFor(level, buildScores({ ...build, level }, level));
   return {
     damage: typeof feature.damage === 'function' ? feature.damage(ctx) : feature.damage,

@@ -20,7 +20,7 @@ import {
   rollAbilityScores,
   type KitOption,
 } from '@itd/game-logic/dnd';
-import type { Build } from '@itd/schema';
+import type { DndBuild } from '@itd/schema';
 import { GameIcon } from '../../../ui/GameIcon';
 import { ImageSlot } from '../../../ui/ImageSlot';
 import { NumberField, Segmented } from '../../../ui/forms';
@@ -111,7 +111,7 @@ export const SpeciesStep: React.FC<{ creation: DndCreation }> = ({ creation }) =
 // ------------------------------------------------------------------------------------------------
 
 /** The background's +2/+1 or +1/+1/+1 to its three scores. */
-const BackgroundBonuses: React.FC<{ build: Build; onChange: (build: Build) => void }> = ({ build, onChange }) => {
+const BackgroundBonuses: React.FC<{ build: DndBuild; onChange: (build: DndBuild) => void }> = ({ build, onChange }) => {
   const background = findBackground(build.background);
   if (!background) return null;
   const bonuses = build.backgroundBonuses;
@@ -272,7 +272,7 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
   const scores = build.baseAttributes;
   const setScores = (baseAttributes: Record<string, number>) => setBuild({ ...build, baseAttributes });
   const method = build.abilityMethod;
-  const setMethod = (abilityMethod: Build['abilityMethod']) => {
+  const setMethod = (abilityMethod: DndBuild['abilityMethod']) => {
     setSwap(null);
     if (abilityMethod === 'pointBuy') setBuild({ ...build, abilityMethod, baseAttributes: startingAttributes() });
     else if (abilityMethod === 'roll') {
