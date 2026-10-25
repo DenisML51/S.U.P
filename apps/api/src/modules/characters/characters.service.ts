@@ -261,6 +261,8 @@ export class CharactersService {
     decide: (current: CharacterRow) => Date | undefined | null,
   ): Promise<CharacterRecordDto> {
     const outcome = await this.db.transaction(async (tx) => {
+      // The user row first, as in `put`: locking in the other order deadlocks a concurrent save.
+      const cursor = await this.nextChangeSeq(tx, userId);
       const [current] = await tx
         .select()
         .from(characters)
@@ -271,7 +273,6 @@ export class CharactersService {
       const deletedAt = decide(current);
       if (deletedAt === null) return { row: current, cursor: null };
 
-      const cursor = await this.nextChangeSeq(tx, userId);
       const [row] = await tx
         .update(characters)
         .set({ revision: current.revision + 1, changeSeq: cursor, deletedAt: deletedAt ?? null, updatedAt: new Date() })

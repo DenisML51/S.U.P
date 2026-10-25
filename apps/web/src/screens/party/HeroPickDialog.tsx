@@ -12,7 +12,8 @@ import { SETTING_INFO, settingOf } from '../../ui/theme/settings';
 
 /**
  * Which of the user's heroes comes to the table. Heroes of the party's world come first; each card
- * wears its own world. Heroes already sitting at a table are not offered.
+ * wears its own world. A hero sits at one table at a time: those seated elsewhere are shown, greyed,
+ * with the table that holds them, so none of the user's heroes silently goes missing.
  */
 export const HeroPickDialog: React.FC<{
   open: boolean;
@@ -28,12 +29,19 @@ export const HeroPickDialog: React.FC<{
   const addHero = usePartyStore((s) => s.addHero);
   const [busy, setBusy] = useState<string | null>(null);
 
-  const free = useMemo(() => {
-    const seated = new Set(parties?.flatMap((party) => party.myCharacterIds) ?? []);
-    return heroes
-      .filter((hero) => !seated.has(hero.id))
-      .sort((a, b) => Number(settingOf(b) === setting) - Number(settingOf(a) === setting));
-  }, [heroes, parties, setting]);
+  const { free, elsewhere } = useMemo(() => {
+    const seatedAt = new Map<string, { partyId: string; name: string }>();
+    for (const party of parties ?? []) for (const id of party.myCharacterIds) seatedAt.set(id, { partyId: party.id, name: party.name });
+    const byWorld = [...heroes].sort((a, b) => Number(settingOf(b) === setting) - Number(settingOf(a) === setting));
+    return {
+      free: byWorld.filter((hero) => !seatedAt.has(hero.id)),
+      // Heroes already at this table are on it, not in the choice.
+      elsewhere: byWorld.flatMap((hero) => {
+        const seat = seatedAt.get(hero.id);
+        return seat && seat.partyId !== partyId ? [{ hero, table: seat.name }] : [];
+      }),
+    };
+  }, [heroes, parties, partyId, setting]);
 
   const pick = async (characterId: string) => {
     if (busy) return;
@@ -74,26 +82,38 @@ export const HeroPickDialog: React.FC<{
           <span className="ui-display ui-title text-lg leading-tight text-ink">Новый герой</span>
           <span className="text-xs text-ink-muted">Создать в мире {SETTING_INFO[setting].label}</span>
         </Panel>
-        {free.map((hero) => {
+        {[...free.map((hero) => ({ hero, table: null as string | null })), ...elsewhere].map(({ hero, table }) => {
           const own = settingOf(hero);
           const origin = describeOrigin(hero);
           return (
             <SettingScope key={hero.id} setting={own} className="min-w-0">
               <Panel
-                as="button"
-                interactive
-                onClick={() => void pick(hero.id)}
-                className={cx('relative flex aspect-[2/3] w-full flex-col overflow-hidden p-0 text-left', busy === hero.id && 'animate-pulse')}
+                as={table === null ? 'button' : 'div'}
+                interactive={table === null}
+                aria-disabled={table !== null || undefined}
+                onClick={table === null ? () => void pick(hero.id) : undefined}
+                title={table === null ? undefined : `Сидит за столом «${table}» — заберите его оттуда, чтобы привести сюда`}
+                className={cx(
+                  'relative flex aspect-[2/3] w-full flex-col overflow-hidden p-0 text-left',
+                  busy === hero.id && 'animate-pulse',
+                  table !== null && 'cursor-not-allowed',
+                )}
               >
-                <CharacterArt source={hero} kind="full" className="absolute inset-0 h-full w-full" />
+                <CharacterArt
+                  source={hero}
+                  kind="full"
+                  className={cx('absolute inset-0 h-full w-full', table !== null && 'opacity-40 grayscale')}
+                />
                 <span className="absolute inset-0 bg-gradient-to-t from-bg-deep via-bg-deep/50 via-35% to-transparent to-60%" />
                 <span className="relative mt-auto block space-y-1 p-3">
                   {own !== setting && (
                     <span className="block text-[10px] uppercase tracking-[0.2em] text-frame-bright/80">{SETTING_INFO[own].label}</span>
                   )}
                   <span className="ui-display block truncate text-lg leading-tight text-ink">{hero.name}</span>
-                  <span className="block truncate text-xs text-ink-muted">
-                    {[origin.calling, `${hero.level} ур.`].filter(Boolean).join(' · ')}
+                  <span className={cx('block text-xs text-ink-muted', table === null ? 'truncate' : 'line-clamp-2')}>
+                    {table === null
+                      ? [origin.calling, `${hero.level} ур.`].filter(Boolean).join(' · ')
+                      : `За столом «${table}»`}
                   </span>
                 </span>
               </Panel>
