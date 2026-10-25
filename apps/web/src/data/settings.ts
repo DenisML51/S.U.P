@@ -5,14 +5,20 @@
 export interface AppSettings {
   notifications: boolean;
   fullscreen: boolean;
+  homeLayout: HomeLayout;
 }
+
+/** How the home page lays out one's heroes and tables. */
+export const HOME_LAYOUTS = ['hub', 'menu', 'shelf', 'hand', 'mosaic', 'cinema'] as const;
+export type HomeLayout = (typeof HOME_LAYOUTS)[number];
 
 const KEYS: Record<keyof AppSettings, string> = {
   notifications: 'trpg_notifications',
   fullscreen: 'trpg_fullscreen',
+  homeLayout: 'itd.homeLayout',
 };
 
-const DEFAULTS: AppSettings = { notifications: true, fullscreen: false };
+const DEFAULTS: AppSettings = { notifications: true, fullscreen: false, homeLayout: 'hub' };
 
 const read = (key: string): string | null => {
   try {
@@ -23,13 +29,17 @@ const read = (key: string): string | null => {
 };
 
 export function loadSettings(): AppSettings {
-  const flag = (name: keyof AppSettings) => {
+  const flag = (name: 'notifications' | 'fullscreen') => {
     const value = read(KEYS[name]);
     return value === null ? DEFAULTS[name] : value === 'true';
   };
-  return { notifications: flag('notifications'), fullscreen: flag('fullscreen') };
+  const layout = read(KEYS.homeLayout);
+  return {
+    notifications: flag('notifications'),
+    fullscreen: flag('fullscreen'),
+    homeLayout: HOME_LAYOUTS.find((known) => known === layout) ?? DEFAULTS.homeLayout,
+  };
 }
-
 export function saveSettings(settings: AppSettings): void {
   try {
     for (const name of Object.keys(KEYS) as (keyof AppSettings)[]) {
