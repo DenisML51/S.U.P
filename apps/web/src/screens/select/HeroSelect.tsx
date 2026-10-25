@@ -5,7 +5,7 @@ import { useCharacterStore } from '../../store/useCharacterStore';
 import { CharacterArt, fullArtSrc } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { ConfirmDialog } from '../../ui/Dialog';
-import { Button, IconButton, Meter, Panel, cx } from '../../ui/primitives';
+import { Button, IconButton, Panel, cx } from '../../ui/primitives';
 import { SETTING_ART } from '../../ui/art';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
@@ -23,6 +23,7 @@ import { Wordmark } from './Wordmark';
 import { SyncBadge } from './SyncBadge';
 import { useHasSoloDraft } from '../create/useDraftState';
 import { readLastHero as readLast, rememberLastHero as rememberLast } from '../home/lastHero';
+import { HeroVitals, heroRank } from '../home/homeParts';
 
 /** Index of the "new hero" slot that ends the row. */
 type Slot = { kind: 'hero'; hero: CharacterPreview } | { kind: 'new' };
@@ -298,7 +299,7 @@ const HeroCard: React.FC<{ hero: CharacterPreview; focused: boolean; onClick: ()
   const { HeroReadout } = SETTING_ART[setting];
   return (
     <SettingScope setting={setting} className="ui-hero-card relative h-full" data-focused={focused || undefined}>
-      {HeroReadout && <HeroReadout id={hero.id} level={hero.level} hp={hero.currentHP} maxHp={hero.maxHP} />}
+      {HeroReadout && <HeroReadout id={hero.id} level={heroRank(hero).value} hp={hero.currentHP} maxHp={hero.maxHP} />}
       <Panel
         as="button"
         interactive
@@ -317,18 +318,7 @@ const HeroCard: React.FC<{ hero: CharacterPreview; focused: boolean; onClick: ()
           {focused && (
             <div className="text-sm text-ink-muted">{[origin.race, origin.calling].filter(Boolean).join(' · ')}</div>
           )}
-          <div className={cx('flex items-center gap-4 pt-1', !focused && 'hidden')}>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">Ур.</span>
-              <span className="ui-display ui-numeric text-2xl text-frame-bright">{hero.level}</span>
-            </div>
-            <div className="flex-1">
-              <Meter value={hero.currentHP} max={hero.maxHP} tone="hp" height={5} label="Здоровье" />
-            </div>
-            <span className="ui-numeric text-xs text-ink-muted">
-              {hero.currentHP}/{hero.maxHP}
-            </span>
-          </div>
+          <HeroVitals hero={hero} className={cx('pt-1', !focused && 'hidden')} meterClassName="flex-1" />
         </div>
       </Panel>
     </SettingScope>

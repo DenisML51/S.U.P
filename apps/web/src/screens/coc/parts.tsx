@@ -38,7 +38,10 @@ const DICE_LABEL: Record<string, string> = {
 };
 
 /** How hard the next roll is and what dice it gets: the Keeper says, the player sets it here. */
-export const RollModsBar: React.FC<{ value: RollMods; onChange: (mods: RollMods) => void }> = ({ value, onChange }) => (
+export const RollModsBar: React.FC<{ value: RollMods; onChange: (mods: RollMods) => void }> = ({
+  value,
+  onChange,
+}) => (
   <div className="coc-mods">
     <Segmented
       label="Сложность"
@@ -51,11 +54,19 @@ export const RollModsBar: React.FC<{ value: RollMods; onChange: (mods: RollMods)
       ]}
     />
     <div className="coc-dice-step" role="group" aria-label="Бонусные и штрафные кости">
-      <button type="button" onClick={() => onChange({ ...value, dice: Math.max(-2, value.dice - 1) })} aria-label="Штрафная кость">
+      <button
+        type="button"
+        onClick={() => onChange({ ...value, dice: Math.max(-2, value.dice - 1) })}
+        aria-label="Штрафная кость"
+      >
         <IconMinus width={14} height={14} className="mx-auto" />
       </button>
       <span>{DICE_LABEL[String(value.dice)]}</span>
-      <button type="button" onClick={() => onChange({ ...value, dice: Math.min(2, value.dice + 1) })} aria-label="Бонусная кость">
+      <button
+        type="button"
+        onClick={() => onChange({ ...value, dice: Math.min(2, value.dice + 1) })}
+        aria-label="Бонусная кость"
+      >
         <IconPlus width={14} height={14} className="mx-auto" />
       </button>
     </div>
@@ -148,7 +159,11 @@ export const DerivedStrip: React.FC = () => {
  * Every skill of the sheet as on the paper one: tick box, name, value with its half and fifth.
  * The name rolls it; the value is edited in place; the box is the development tick.
  */
-export const SkillList: React.FC<{ mods: RollMods; filter?: string; wide?: boolean }> = ({ mods, filter = '', wide }) => {
+export const SkillList: React.FC<{ mods: RollMods; filter?: string; wide?: boolean }> = ({
+  mods,
+  filter = '',
+  wide,
+}) => {
   const { character, roll, update } = useCoc();
   const [editing, setEditing] = useState<string | null>(null);
   const skills = useMemo(() => {
@@ -165,7 +180,12 @@ export const SkillList: React.FC<{ mods: RollMods; filter?: string; wide?: boole
         const def = skillDef(s.id)?.skill;
         const base = s.value <= (def && typeof def.base === 'number' ? def.base : 0);
         return (
-          <div key={s.id} className="coc-skill" data-occupation={s.occupation || undefined} data-dim={base || undefined}>
+          <div
+            key={s.id}
+            className="coc-skill"
+            data-occupation={s.occupation || undefined}
+            data-dim={base || undefined}
+          >
             <button
               type="button"
               className="coc-skill__tick"
@@ -181,7 +201,9 @@ export const SkillList: React.FC<{ mods: RollMods; filter?: string; wide?: boole
               type="button"
               className="coc-skill__name"
               title={def?.description}
-              onClick={() => roll({ label: s.label, value: s.value, kind: 'skill', id: s.id, ...modsToRoll(mods) })}
+              onClick={() =>
+                roll({ label: s.label, value: s.value, kind: 'skill', id: s.id, ...modsToRoll(mods) })
+              }
             >
               {s.label}
             </button>
@@ -194,7 +216,10 @@ export const SkillList: React.FC<{ mods: RollMods; filter?: string; wide?: boole
                   onBlur={(event) => {
                     const value = Number(event.currentTarget.value);
                     if (Number.isFinite(value) && value !== s.value)
-                      update(setSkill(s.id, value), { message: `${s.label}: ${s.value} → ${Math.round(value)}`, type: 'other' });
+                      update(setSkill(s.id, value), {
+                        message: `${s.label}: ${s.value} → ${Math.round(value)}`,
+                        type: 'other',
+                      });
                     setEditing(null);
                   }}
                   onKeyDown={(event) => {
@@ -249,10 +274,20 @@ export const Track: React.FC<{
       </span>
       {onChange && (
         <span className="coc-vital__actions">
-          <button type="button" className="ui-icon-button h-7 w-7" onClick={() => onChange(-1)} aria-label={`${label}: −1`}>
+          <button
+            type="button"
+            className="ui-icon-button h-7 w-7"
+            onClick={() => onChange(-1)}
+            aria-label={`${label}: −1`}
+          >
             <IconMinus width={13} height={13} />
           </button>
-          <button type="button" className="ui-icon-button h-7 w-7" onClick={() => onChange(1)} aria-label={`${label}: +1`}>
+          <button
+            type="button"
+            className="ui-icon-button h-7 w-7"
+            onClick={() => onChange(1)}
+            aria-label={`${label}: +1`}
+          >
             <IconPlus width={13} height={13} />
           </button>
         </span>
@@ -304,7 +339,10 @@ export const RollResult: React.FC<{
             {record.label}
             {record.pushed && <span className="text-ink-faint"> · повтор</span>}
           </div>
-          <div className="text-[13px]" style={{ color: `rgb(var(--c-${check.success ? 'success' : 'danger'}))` }}>
+          <div
+            className="text-[13px]"
+            style={{ color: `rgb(var(--c-${check.success ? 'success' : 'danger'}))` }}
+          >
             {record.luckSpent ? `Успех за ${record.luckSpent} удачи` : SUCCESS_LABELS[check.level]}
             <span className="text-ink-faint"> · нужно ≤ {target(record)}</span>
           </div>
@@ -320,7 +358,12 @@ export const RollResult: React.FC<{
           </div>
         </div>
         {floating && (
-          <button type="button" onClick={dismiss} className="text-ink-faint hover:text-ink" aria-label="Закрыть">
+          <button
+            type="button"
+            onClick={dismiss}
+            className="text-ink-faint hover:text-ink"
+            aria-label="Закрыть"
+          >
             ×
           </button>
         )}
@@ -328,7 +371,11 @@ export const RollResult: React.FC<{
       {record.kind !== 'sanity' && (
         <div className="coc-ladder">
           {LADDER.map((step) => (
-            <span key={step.level} className="coc-ladder__step" data-reached={RANK[check.level] >= RANK[step.level] || undefined}>
+            <span
+              key={step.level}
+              className="coc-ladder__step"
+              data-reached={RANK[check.level] >= RANK[step.level] || undefined}
+            >
               <b>{step.of(record.value)}</b>
               {step.label}
             </span>
@@ -344,7 +391,12 @@ export const RollResult: React.FC<{
       )}
       <div className="coc-roll__actions">
         {canPush(record) && (
-          <Button size="sm" variant="secondary" onClick={push} title="Повторить бросок; провал повтора обернётся бедой">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={push}
+            title="Повторить бросок; провал повтора обернётся бедой"
+          >
             Повторить с риском
           </Button>
         )}
@@ -357,7 +409,9 @@ export const RollResult: React.FC<{
           <Button
             size="sm"
             variant="primary"
-            onClick={() => roll({ label: 'Осознание ужаса (ИНТ)', value: cocCharacteristics(character).int, kind: 'int' })}
+            onClick={() =>
+              roll({ label: 'Осознание ужаса (ИНТ)', value: cocCharacteristics(character).int, kind: 'int' })
+            }
             title="Потеря 5 и больше: успех ИНТ — сыщик осознаёт увиденное и сходит с ума временно"
           >
             Бросок ИНТ

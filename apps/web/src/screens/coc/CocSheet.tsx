@@ -55,15 +55,26 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode }> = ({ footer }) 
   const archetype = archetypeDef(build?.archetype)?.name;
   const [amount, setAmount] = useState(1);
   const maxMP = Math.floor(cocCharacteristics(character).pow / 5);
-  const conditions = character.conditions.map((id) => COC_CONDITIONS.find((c) => c.id === id)).filter(Boolean);
+  const conditions = character.conditions
+    .map((id) => COC_CONDITIONS.find((c) => c.id === id))
+    .filter(Boolean);
 
   return (
     <aside className="flex h-full w-[340px] shrink-0 flex-col border-r border-line/70 bg-surface/40">
       <div className="relative h-[210px] shrink-0 overflow-hidden">
-        <CharacterArt source={character} kind="portrait" position="50% 12%" className="absolute inset-0 h-full w-full" />
+        <CharacterArt
+          source={character}
+          kind="portrait"
+          position="50% 12%"
+          className="absolute inset-0 h-full w-full"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent" />
         <span className="absolute inset-x-5 bottom-3">
-          <span className="ui-display block text-[1.7rem] leading-tight text-ink" role="heading" aria-level={1}>
+          <span
+            className="ui-display block text-[1.7rem] leading-tight text-ink"
+            role="heading"
+            aria-level={1}
+          >
             {character.name}
           </span>
           <span className="block truncate text-sm text-ink-muted">
@@ -75,18 +86,48 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode }> = ({ footer }) 
       <div className="ui-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-3">
         <Track label="Хиты" value={character.currentHP} max={character.maxHP} tone="hp" />
         <div className="flex items-center gap-2">
-          <NumberField label="Сколько" value={amount} onChange={(v) => setAmount(Math.max(1, v ?? 1))} min={1} className="w-20" />
-          <Button size="sm" variant="danger" onClick={() => update(applyDamage(amount), { message: `Урон ${amount}`, type: 'health' })}>
+          <NumberField
+            label="Сколько"
+            value={amount}
+            onChange={(v) => setAmount(Math.max(1, v ?? 1))}
+            min={1}
+            className="w-20"
+          />
+          <Button
+            size="sm"
+            variant="danger"
+            onClick={() => update(applyDamage(amount), { message: `Урон ${amount}`, type: 'health' })}
+          >
             Урон
           </Button>
-          <Button size="sm" onClick={() => update(heal(amount), { message: `Лечение ${amount}`, type: 'health' })}>
+          <Button
+            size="sm"
+            onClick={() => update(heal(amount), { message: `Лечение ${amount}`, type: 'health' })}
+          >
             Лечение
           </Button>
         </div>
-        <Track label="Магия" value={coc.magicPoints} max={maxMP} tone="accent" onChange={(d) => update(changeMagic(d))} />
+        <Track
+          label="Магия"
+          value={coc.magicPoints}
+          max={maxMP}
+          tone="accent"
+          onChange={(d) => update(changeMagic(d))}
+        />
         <Track label="Рассудок" value={character.sanity} max={maxSanityOf(character)} tone="sanity" />
-        <Track label="Удача" value={coc.luck} max={99} tone="xp" onChange={(d) => update(setLuck(coc.luck + d))}>
-          <Button size="row" variant="ghost" className="justify-self-start" onClick={() => roll({ label: 'Удача', value: coc.luck, kind: 'luck' })}>
+        <Track
+          label="Удача"
+          value={coc.luck}
+          max={99}
+          tone="xp"
+          onChange={(d) => update(setLuck(coc.luck + d))}
+        >
+          <Button
+            size="row"
+            variant="ghost"
+            className="justify-self-start"
+            onClick={() => roll({ label: 'Удача', value: coc.luck, kind: 'luck' })}
+          >
             Бросок удачи
           </Button>
         </Track>
@@ -94,7 +135,12 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode }> = ({ footer }) 
         {conditions.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {conditions.map((c) => (
-              <span key={c!.id} title={c!.description} className="border border-danger/50 bg-surface-2/70 px-2.5 py-1 text-xs text-danger" style={{ borderRadius: 'var(--radius)' }}>
+              <span
+                key={c!.id}
+                title={c!.description}
+                className="border border-danger/50 bg-surface-2/70 px-2.5 py-1 text-xs text-danger"
+                style={{ borderRadius: 'var(--radius)' }}
+              >
                 {c!.name}
               </span>
             ))}
@@ -126,25 +172,64 @@ export const CocSheetView: React.FC<{
 
   return (
     <div className={cx('coc-sheet relative flex h-full', className)}>
-      <motion.div className={cx('flex h-full w-full', stage >= 3 && 'coc-sway')} exit={{ opacity: 0, scale: 0.985, transition: { duration: 0.25 } }}>
-        <motion.div className="flex shrink-0" initial={{ x: -24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={ENTER}>
+      <motion.div
+        className={cx('flex h-full w-full', stage >= 3 && 'coc-sway')}
+        exit={{ opacity: 0, scale: 0.985, transition: { duration: 0.25 } }}
+      >
+        <motion.div
+          className="flex shrink-0"
+          initial={{ x: -24, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={ENTER}
+        >
           <Rail label="Разделы листа">
-            <RailButton label="Герои" Icon={IconPrev} onClick={onBack ?? (() => undefined)} hint="К выбору героя" />
+            <RailButton
+              label="Герои"
+              Icon={IconPrev}
+              onClick={onBack ?? (() => undefined)}
+              hint="К выбору героя"
+            />
             <RailDivider />
             <div className="flex flex-1 flex-col">
               {SECTIONS.map(({ id, label, Icon }) => (
-                <RailButton key={id} label={label} Icon={Icon} active={section === id} onClick={() => setSection(id)} />
+                <RailButton
+                  key={id}
+                  label={label}
+                  Icon={Icon}
+                  active={section === id}
+                  onClick={() => setSection(id)}
+                />
               ))}
             </div>
-            <RailButton label="Бой" Icon={IconCombat} onClick={onCombat ?? (() => undefined)} hint="Боевой режим" />
+            <RailButton
+              label="Бой"
+              Icon={IconCombat}
+              onClick={onCombat ?? (() => undefined)}
+              hint="Боевой режим"
+            />
             <RailButton label="Кубики" Icon={IconDice} onClick={onDice ?? (() => undefined)} />
-            <RailButton label="Опции" Icon={IconSettings} onClick={onSettings ?? (() => undefined)} hint="Настройки" />
+            <RailButton
+              label="Опции"
+              Icon={IconSettings}
+              onClick={onSettings ?? (() => undefined)}
+              hint="Настройки"
+            />
           </Rail>
         </motion.div>
-        <motion.div className="flex shrink-0" initial={{ x: -40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ ...ENTER, delay: 0.06 }}>
+        <motion.div
+          className="flex shrink-0"
+          initial={{ x: -40, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ ...ENTER, delay: 0.06 }}
+        >
           <InvestigatorColumn footer={footer} />
         </motion.div>
-        <motion.main className="min-w-0 flex-1 px-10 py-8" initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ ...ENTER, delay: 0.14 }}>
+        <motion.main
+          className="min-w-0 flex-1 px-10 py-8"
+          initial={{ y: 16, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ ...ENTER, delay: 0.14 }}
+        >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={section}

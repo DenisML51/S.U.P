@@ -74,11 +74,18 @@ export const canBuyWithLuck = (record: RollRecord, luck: number): boolean =>
   luckToSucceed(record.check.total, target(record)) <= luck;
 
 export const canPush = (record: RollRecord): boolean =>
-  !record.check.success && !record.pushed && !record.luckSpent && (record.kind === 'skill' || record.kind === 'characteristic');
+  !record.check.success &&
+  !record.pushed &&
+  !record.luckSpent &&
+  (record.kind === 'skill' || record.kind === 'characteristic');
 
 /** The number the roll had to beat for its difficulty. */
 export const target = (record: Pick<RollRecord, 'value' | 'difficulty'>): number =>
-  record.difficulty === 'extreme' ? Math.floor(record.value / 5) : record.difficulty === 'hard' ? Math.floor(record.value / 2) : record.value;
+  record.difficulty === 'extreme'
+    ? Math.floor(record.value / 5)
+    : record.difficulty === 'hard'
+      ? Math.floor(record.value / 2)
+      : record.value;
 
 const describe = (record: RollRecord): string =>
   `${record.label}${record.pushed ? ' (повтор)' : ''}: ${record.check.total} из ${target(record)} — ${SUCCESS_LABELS[record.check.level]}`;
@@ -97,7 +104,11 @@ export const CocSheetProvider: React.FC<{
 
   const record = useCallback(
     (request: RollRequest, extra: Partial<RollRecord> = {}): RollRecord => {
-      const check = checkSkill(request.value, { difficulty: request.difficulty, bonus: request.bonus, penalty: request.penalty });
+      const check = checkSkill(request.value, {
+        difficulty: request.difficulty,
+        bonus: request.bonus,
+        penalty: request.penalty,
+      });
       const next = { ...request, check, serial: serial + 1, ...extra };
       setSerial((n) => n + 1);
       setLast(next);
@@ -109,11 +120,15 @@ export const CocSheetProvider: React.FC<{
   const roll = useCallback<CocSheetApi['roll']>(
     (request) => {
       const next = record(request);
-      update((doc) => {
-        let edited = request.kind === 'skill' && request.id ? afterSkillRoll(request.id, next.check)(doc) : doc;
-        if (request.kind === 'int') edited = afterIntRoll(next.check.success)(edited);
-        return edited;
-      }, { message: describe(next), type: 'other' });
+      update(
+        (doc) => {
+          let edited =
+            request.kind === 'skill' && request.id ? afterSkillRoll(request.id, next.check)(doc) : doc;
+          if (request.kind === 'int') edited = afterIntRoll(next.check.success)(edited);
+          return edited;
+        },
+        { message: describe(next), type: 'other' },
+      );
       return next;
     },
     [record, update],
@@ -133,7 +148,10 @@ export const CocSheetProvider: React.FC<{
     const cost = luckToSucceed(last.check.total, target(last));
     const check: SkillCheck = { ...last.check, level: 'regular', success: true };
     setLast({ ...last, check, luckSpent: cost });
-    update((doc) => spendLuck(cost)(doc), { message: `${last.label}: потрачено ${cost} удачи — успех`, type: 'other' });
+    update((doc) => spendLuck(cost)(doc), {
+      message: `${last.label}: потрачено ${cost} удачи — успех`,
+      type: 'other',
+    });
   }, [last, character.coc?.luck, update]);
 
   const sanityRoll = useCallback(
@@ -145,7 +163,12 @@ export const CocSheetProvider: React.FC<{
         kind: 'sanity',
         check: result.check,
         serial: serial + 1,
-        sanity: { loss: result.loss, needsIntRoll: result.needsIntRoll, indefinite: result.indefinite, permanent: result.permanent },
+        sanity: {
+          loss: result.loss,
+          needsIntRoll: result.needsIntRoll,
+          indefinite: result.indefinite,
+          permanent: result.permanent,
+        },
       };
       setSerial((n) => n + 1);
       setLast(next);

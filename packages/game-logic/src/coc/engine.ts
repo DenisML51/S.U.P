@@ -32,7 +32,8 @@ export function rollCharacteristics(random: RandomSource = Math.random): Charact
 }
 
 /** A Pulp archetype's core characteristic: (1d6+13)×5. */
-export const rollCoreCharacteristic = (random: RandomSource = Math.random): number => (rollDie(6, random) + 13) * 5;
+export const rollCoreCharacteristic = (random: RandomSource = Math.random): number =>
+  (rollDie(6, random) + 13) * 5;
 
 /** Luck: 3d6×5, or (2d6+6)×5 for Pulp heroes. */
 export const rollLuck = (variant: CocVariant, random: RandomSource = Math.random): number =>
@@ -61,7 +62,10 @@ export function ageRules(age: number): AgeRules {
 }
 
 /** One EDU improvement check: a d100 over EDU adds 1d10 (EDU stops at 99). */
-export function eduImprovement(edu: number, random: RandomSource = Math.random): { roll: number; gain: number } {
+export function eduImprovement(
+  edu: number,
+  random: RandomSource = Math.random,
+): { roll: number; gain: number } {
   const roll = rollDie(100, random);
   const gain = roll > edu ? Math.min(rollDie(10, random), 99 - edu) : 0;
   return { roll, gain: Math.max(0, gain) };
@@ -133,7 +137,8 @@ export function skillBase(id: string, c: Characteristics): number {
 }
 
 /** The skills a new sheet lists: the standard ones of the era, and specialities the player has. */
-export const sheetSkills = (era: CocEra): SkillDef[] => SKILLS.filter((s) => !s.uncommon && (!s.era || s.era === era));
+export const sheetSkills = (era: CocEra): SkillDef[] =>
+  SKILLS.filter((s) => !s.uncommon && (!s.era || s.era === era));
 
 // ------------------------------------------------------------------------------------------------
 // Percentile rolls
@@ -151,7 +156,14 @@ export const SUCCESS_LABELS: Record<SuccessLevel, string> = {
   critical: 'Критический успех',
 };
 
-const RANK: Record<SuccessLevel, number> = { fumble: 0, failure: 1, regular: 2, hard: 3, extreme: 4, critical: 5 };
+const RANK: Record<SuccessLevel, number> = {
+  fumble: 0,
+  failure: 1,
+  regular: 2,
+  hard: 3,
+  extreme: 4,
+  critical: 5,
+};
 
 /** Half and fifth of a value, as the sheet prints them. */
 export const half = (value: number): number => Math.floor(value / 2);
@@ -183,7 +195,11 @@ export interface PercentileRoll {
  * A d100: one units die and a tens die, plus one extra tens die for each bonus (keep the lowest)
  * or penalty die (keep the highest). Bonus and penalty dice cancel each other out first.
  */
-export function rollPercentile(bonusDice = 0, penaltyDice = 0, random: RandomSource = Math.random): PercentileRoll {
+export function rollPercentile(
+  bonusDice = 0,
+  penaltyDice = 0,
+  random: RandomSource = Math.random,
+): PercentileRoll {
   const net = Math.max(-2, Math.min(2, bonusDice - penaltyDice));
   const units = rollDie(10, random) - 1;
   const tens = Array.from({ length: 1 + Math.abs(net) }, () => (rollDie(10, random) - 1) * 10);
@@ -211,7 +227,8 @@ export function checkSkill(
 }
 
 /** A gun jams when the roll is at or above its malfunction number. */
-export const malfunctions = (roll: number, malfunction: number | undefined): boolean => malfunction !== undefined && roll >= malfunction;
+export const malfunctions = (roll: number, malfunction: number | undefined): boolean =>
+  malfunction !== undefined && roll >= malfunction;
 
 // ------------------------------------------------------------------------------------------------
 // The sheet
@@ -228,13 +245,42 @@ export const CONDITION_IDS = {
 } as const;
 
 export const COC_CONDITIONS: { id: string; name: string; description: string }[] = [
-  { id: CONDITION_IDS.majorWound, name: 'Серьёзная рана', description: 'Получено за раз не меньше половины хитов. Бросок ВЫН или потеря сознания; при 0 хитов — при смерти.' },
-  { id: CONDITION_IDS.dying, name: 'При смерти', description: 'Каждый раунд бросок ВЫН, иначе смерть. Спасает первая помощь, затем медицина.' },
-  { id: CONDITION_IDS.unconscious, name: 'Без сознания', description: 'Ничего не делает, пока не придёт в себя.' },
-  { id: CONDITION_IDS.temporaryInsanity, name: 'Временное безумие', description: 'Приступ, затем 1d10 часов подверженности: новые приступы от любой потери рассудка.' },
-  { id: CONDITION_IDS.indefiniteInsanity, name: 'Бессрочное безумие', description: 'Потеряна пятая часть рассудка за день. Месяцы лечения или опасных заблуждений.' },
-  { id: CONDITION_IDS.permanentInsanity, name: 'Неизлечимое безумие', description: 'Рассудок на нуле: сыщик больше не играет.' },
-  { id: CONDITION_IDS.dead, name: 'Мёртв', description: 'Урон за один удар больше максимума хитов, или проваленный бросок при смерти.' },
+  {
+    id: CONDITION_IDS.majorWound,
+    name: 'Серьёзная рана',
+    description:
+      'Получено за раз не меньше половины хитов. Бросок ВЫН или потеря сознания; при 0 хитов — при смерти.',
+  },
+  {
+    id: CONDITION_IDS.dying,
+    name: 'При смерти',
+    description: 'Каждый раунд бросок ВЫН, иначе смерть. Спасает первая помощь, затем медицина.',
+  },
+  {
+    id: CONDITION_IDS.unconscious,
+    name: 'Без сознания',
+    description: 'Ничего не делает, пока не придёт в себя.',
+  },
+  {
+    id: CONDITION_IDS.temporaryInsanity,
+    name: 'Временное безумие',
+    description: 'Приступ, затем 1d10 часов подверженности: новые приступы от любой потери рассудка.',
+  },
+  {
+    id: CONDITION_IDS.indefiniteInsanity,
+    name: 'Бессрочное безумие',
+    description: 'Потеряна пятая часть рассудка за день. Месяцы лечения или опасных заблуждений.',
+  },
+  {
+    id: CONDITION_IDS.permanentInsanity,
+    name: 'Неизлечимое безумие',
+    description: 'Рассудок на нуле: сыщик больше не играет.',
+  },
+  {
+    id: CONDITION_IDS.dead,
+    name: 'Мёртв',
+    description: 'Урон за один удар больше максимума хитов, или проваленный бросок при смерти.',
+  },
 ];
 
 const characteristicsOf = (coc: CocSheet): Characteristics =>
@@ -249,7 +295,8 @@ export function skillValue(character: Pick<Character, 'coc'>, id: string): numbe
   return written ? written.value : skillBase(id, cocCharacteristics(character));
 }
 
-export const displaySkillName = (skill: Pick<CocSkill, 'id' | 'name'>): string => skill.name || skillName(skill.id);
+export const displaySkillName = (skill: Pick<CocSkill, 'id' | 'name'>): string =>
+  skill.name || skillName(skill.id);
 
 /**
  * Writes what the characteristics decide onto the sheet: maximum hit points (Pulp doubles them),
@@ -301,7 +348,11 @@ export interface SanityResult {
   permanent: boolean;
 }
 
-export function sanityCheck(character: Character, spec: string, random: RandomSource = Math.random): SanityResult {
+export function sanityCheck(
+  character: Character,
+  spec: string,
+  random: RandomSource = Math.random,
+): SanityResult {
   const sanity = character.sanity;
   const check = checkSkill(sanity, {}, random);
   const { success, failure } = parseSanityLoss(spec);
@@ -333,9 +384,13 @@ export interface DamageResult {
 }
 
 /** One blow: half the maximum at once is a major wound; at 0 a major wound means dying. */
-export function takeDamage(character: Pick<Character, 'currentHP' | 'maxHP' | 'conditions'>, amount: number): DamageResult {
+export function takeDamage(
+  character: Pick<Character, 'currentHP' | 'maxHP' | 'conditions'>,
+  amount: number,
+): DamageResult {
   const currentHP = Math.max(0, character.currentHP - Math.max(0, amount));
-  const majorWound = character.conditions.includes(CONDITION_IDS.majorWound) || amount >= Math.ceil(character.maxHP / 2);
+  const majorWound =
+    character.conditions.includes(CONDITION_IDS.majorWound) || amount >= Math.ceil(character.maxHP / 2);
   return {
     currentHP,
     majorWound,
@@ -360,7 +415,10 @@ export interface DevelopmentRoll {
  * The development phase: every ticked skill rolls d100; over its value (or 96+) it gains 1d10.
  * Ticks are cleared either way.
  */
-export function developSkills(character: Character, random: RandomSource = Math.random): { character: Character; rolls: DevelopmentRoll[] } {
+export function developSkills(
+  character: Character,
+  random: RandomSource = Math.random,
+): { character: Character; rolls: DevelopmentRoll[] } {
   const coc = character.coc;
   if (!coc) return { character, rolls: [] };
   const rolls: DevelopmentRoll[] = [];
@@ -374,7 +432,10 @@ export function developSkills(character: Character, random: RandomSource = Math.
     return { ...skill, value, check: false };
   });
   const sanityGain = rolls.reduce((sum, r) => sum + r.sanityGain, 0);
-  return { character: { ...character, sanity: character.sanity + sanityGain, coc: { ...coc, skills } }, rolls };
+  return {
+    character: { ...character, sanity: character.sanity + sanityGain, coc: { ...coc, skills } },
+    rolls,
+  };
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -392,9 +453,28 @@ export interface Wealth {
 export function wealthOf(creditRating: number, era: CocEra): Wealth {
   const k = era === 'modern' ? 20 : 1;
   if (creditRating <= 0) return { label: 'Нищий', cash: 0.5 * k, assets: 0, spendingLevel: 0.5 * k };
-  if (creditRating <= 9) return { label: 'Бедный', cash: creditRating * k, assets: creditRating * 10 * k, spendingLevel: 2 * k };
-  if (creditRating <= 49) return { label: 'Средний достаток', cash: creditRating * 2 * k, assets: creditRating * 50 * k, spendingLevel: 10 * k };
-  if (creditRating <= 89) return { label: 'Состоятельный', cash: creditRating * 5 * k, assets: creditRating * 500 * k, spendingLevel: 50 * k };
-  if (creditRating <= 98) return { label: 'Богатый', cash: creditRating * 20 * k, assets: creditRating * 2000 * k, spendingLevel: 250 * k };
+  if (creditRating <= 9)
+    return { label: 'Бедный', cash: creditRating * k, assets: creditRating * 10 * k, spendingLevel: 2 * k };
+  if (creditRating <= 49)
+    return {
+      label: 'Средний достаток',
+      cash: creditRating * 2 * k,
+      assets: creditRating * 50 * k,
+      spendingLevel: 10 * k,
+    };
+  if (creditRating <= 89)
+    return {
+      label: 'Состоятельный',
+      cash: creditRating * 5 * k,
+      assets: creditRating * 500 * k,
+      spendingLevel: 50 * k,
+    };
+  if (creditRating <= 98)
+    return {
+      label: 'Богатый',
+      cash: creditRating * 20 * k,
+      assets: creditRating * 2000 * k,
+      spendingLevel: 250 * k,
+    };
   return { label: 'Сверхбогатый', cash: 50_000 * k, assets: 5_000_000 * k, spendingLevel: 5000 * k };
 }

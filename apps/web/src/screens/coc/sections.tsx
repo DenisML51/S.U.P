@@ -2,6 +2,21 @@ import React, { useState } from 'react';
 import {
   BOUTS_REAL_TIME,
   BOUTS_SUMMARY,
+  MYTHOS_SPELLS,
+  WEAPONS,
+  addItem,
+  addWeapon,
+  castSpell,
+  changeItemCount,
+  forgetSpell,
+  learnSpell,
+  parseSpellCost,
+  removeItem,
+  removeWeapon,
+  setCash,
+  spellDef,
+  weaponAttack,
+  weaponDef,
   COC_CONDITIONS,
   MANIAS,
   PHOBIAS,
@@ -29,9 +44,22 @@ import { Ledger, LedgerRow, MetaLine, MetaValue } from '../../ui/Ledger';
 import { Button, Input, Meter, Panel, SectionTitle, Tag } from '../../ui/primitives';
 import { Select } from '../../ui/forms';
 import { useCoc, type RollRecord } from './context';
-import { CharacteristicsGrid, DerivedStrip, RollModsBar, SkillList, missingSkills, modsToRoll, type RollMods } from './parts';
+import {
+  CharacteristicsGrid,
+  DerivedStrip,
+  RollModsBar,
+  SkillList,
+  missingSkills,
+  modsToRoll,
+  type RollMods,
+} from './parts';
 
 const NO_MODS: RollMods = { difficulty: 'regular', dice: 0 };
+
+/** Adding to a list: a row under the paper, where the pickers read as they do everywhere else. */
+const AddRow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="-mt-2 flex items-center gap-2 px-1">{children}</div>
+);
 
 // ------------------------------------------------------------------------------------------------
 // Investigator: characteristics and skills
@@ -45,10 +73,10 @@ export const InvestigatorSection: React.FC = () => {
   const ticked = character.coc?.skills.filter((s) => s.check).length ?? 0;
   const have = new Set(character.coc?.skills.map((s) => s.id));
   const develop = () =>
-    update(
-      (doc) => developSkills(doc).character,
-      { message: `Фаза развития: проверено навыков — ${ticked}`, type: 'other' },
-    );
+    update((doc) => developSkills(doc).character, {
+      message: `Фаза развития: проверено навыков — ${ticked}`,
+      type: 'other',
+    });
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,8 +90,19 @@ export const InvestigatorSection: React.FC = () => {
         scroll={false}
         aside={
           <>
-            <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Найти навык" className="!h-8 w-44 text-sm" />
-            <Button size="sm" variant="secondary" disabled={ticked === 0} onClick={develop} title="Каждый отмеченный навык бросает d100: выше значения — +1d10">
+            <Input
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Найти навык"
+              className="!h-8 w-44 text-sm"
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={ticked === 0}
+              onClick={develop}
+              title="Каждый отмеченный навык бросает d100: выше значения — +1d10"
+            >
               Развитие ({ticked})
             </Button>
           </>
@@ -75,27 +114,27 @@ export const InvestigatorSection: React.FC = () => {
         <li className="list-none pb-2">
           <SkillList mods={mods} filter={filter} wide />
         </li>
-        <li className="flex list-none items-center gap-2 pb-4 pt-2">
-          <Select
-            value={adding}
-            onChange={setAdding}
-            placeholder="Добавить навык или специализацию…"
-            options={missingSkills(have).map((s) => ({ value: s.id, label: s.name }))}
-            className="w-80"
-          />
-          <Button
-            size="sm"
-            disabled={!adding}
-            onClick={() => {
-              const value = skillValue(character, adding);
-              update(setSkill(adding, value), { message: `Новый навык: ${skillName(adding)}`, type: 'other' });
-              setAdding('');
-            }}
-          >
-            Добавить
-          </Button>
-        </li>
       </Ledger>
+      <AddRow>
+        <Select
+          value={adding}
+          onChange={setAdding}
+          placeholder="Добавить навык или специализацию…"
+          options={missingSkills(have).map((s) => ({ value: s.id, label: s.name }))}
+          className="w-80"
+        />
+        <Button
+          size="sm"
+          disabled={!adding}
+          onClick={() => {
+            const value = skillValue(character, adding);
+            update(setSkill(adding, value), { message: `Новый навык: ${skillName(adding)}`, type: 'other' });
+            setAdding('');
+          }}
+        >
+          Добавить
+        </Button>
+      </AddRow>
     </div>
   );
 };
@@ -109,6 +148,7 @@ export const WeaponsSection: React.FC = () => {
   const { character, update, roll, damageBonus, last } = useCoc();
   const [mods, setMods] = useState<RollMods>(NO_MODS);
   const [damage, setDamage] = useState<{ serial: number; text: string } | null>(null);
+  const [arming, setArming] = useState('');
 
   const attack = (id: string) => {
     const weapon = character.attacks.find((a) => a.id === id);
@@ -117,7 +157,10 @@ export const WeaponsSection: React.FC = () => {
     const record = roll({ label: weapon.name, value, kind: 'skill', id: weapon.skill, ...modsToRoll(mods) });
     if (weapon.ammo !== undefined) update(fireWeapon(weapon.id));
     if (malfunctions(record.check.total, weapon.malfunction))
-      update((doc) => doc, { message: `${weapon.name}: осечка (${record.check.total} ≥ ${weapon.malfunction})`, type: 'other' });
+      update((doc) => doc, {
+        message: `${weapon.name}: осечка (${record.check.total} ≥ ${weapon.malfunction})`,
+        type: 'other',
+      });
   };
 
   const rollDamage = (record: RollRecord) => {
@@ -158,20 +201,68 @@ export const WeaponsSection: React.FC = () => {
               }
               value={a.ammo !== undefined ? `${a.ammo} / ${a.magazine}` : undefined}
               action={
-                a.magazine !== undefined && (
-                  <Button size="row" variant="ghost" onClick={() => update(reloadWeapon(a.id), { message: `${a.name}: перезаряжено`, type: 'inventory' })}>
-                    Перезарядить
-                  </Button>
-                )
+                <>
+                  {a.magazine !== undefined && (
+                    <Button
+                      size="row"
+                      variant="ghost"
+                      onClick={() =>
+                        update(reloadWeapon(a.id), { message: `${a.name}: перезаряжено`, type: 'inventory' })
+                      }
+                    >
+                      Перезарядить
+                    </Button>
+                  )}
+                  {a.id !== 'coc-unarmed' && (
+                    <Button
+                      size="row"
+                      variant="ghost"
+                      onClick={() =>
+                        update(removeWeapon(a.id), { message: `Убрано оружие: ${a.name}`, type: 'inventory' })
+                      }
+                    >
+                      ×
+                    </Button>
+                  )}
+                </>
               }
             />
           );
         })}
       </Ledger>
+      <AddRow>
+        <Select
+          value={arming}
+          onChange={setArming}
+          placeholder="Взять оружие из таблицы…"
+          options={WEAPONS.filter((w) => !character.attacks.some((a) => a.id === `coc-${w.id}`)).map((w) => ({
+            value: w.id,
+            label: w.name,
+            hint: w.damage,
+          }))}
+          className="flex-1"
+        />
+        <Button
+          size="sm"
+          disabled={!arming}
+          onClick={() => {
+            const weapon = weaponDef(arming);
+            if (weapon)
+              update(addWeapon(weaponAttack(weapon)), {
+                message: `Взято оружие: ${weapon.name}`,
+                type: 'inventory',
+              });
+            setArming('');
+          }}
+        >
+          Взять
+        </Button>
+      </AddRow>
       {hit && last && (
         <Panel ornate={false} className="flex items-center gap-4 px-5 py-3">
           <span className="text-sm text-ink-muted">
-            {last.label}: попадание ({last.check.level === 'extreme' || last.check.level === 'critical' ? 'экстремальное' : 'обычное'})
+            {last.label}: попадание (
+            {last.check.level === 'extreme' || last.check.level === 'critical' ? 'экстремальное' : 'обычное'})
           </span>
           {damage?.serial === last.serial ? (
             <span className="ui-display ui-numeric ml-auto text-2xl">{damage.text}</span>
@@ -232,23 +323,49 @@ export const SanitySection: React.FC = () => {
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-ink-muted">
             <span>Начальный: {coc.startingSanity ?? '—'}</span>
             <span>В начале дня: {coc.sanityAtDayStart ?? character.sanity}</span>
-            <span>Бессрочное при потере ≥ {Math.max(1, Math.floor((coc.sanityAtDayStart ?? character.sanity) / 5))} за день</span>
+            <span>
+              Бессрочное при потере ≥{' '}
+              {Math.max(1, Math.floor((coc.sanityAtDayStart ?? character.sanity) / 5))} за день
+            </span>
           </div>
           <div className="flex flex-wrap items-end gap-2">
-            <Input value={source} onChange={(e) => setSource(e.target.value)} placeholder="Что увидел" className="!h-9 flex-1" />
-            <Input value={spec} onChange={(e) => setSpec(e.target.value)} placeholder="0/1d6" className="!h-9 w-24 text-center" aria-label="Цена: успех/провал" />
+            <Input
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              placeholder="Что увидел"
+              className="!h-9 flex-1"
+            />
+            <Input
+              value={spec}
+              onChange={(e) => setSpec(e.target.value)}
+              placeholder="0/1d6"
+              className="!h-9 w-24 text-center"
+              aria-label="Цена: успех/провал"
+            />
             <Button variant="primary" onClick={() => sanityRoll(source.trim() || 'Проверка рассудка', spec)}>
               Проверка рассудка
             </Button>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => update(startDay, { message: 'Начался новый день', type: 'sanity' })}>
+            <Button
+              size="sm"
+              onClick={() => update(startDay, { message: 'Начался новый день', type: 'sanity' })}
+            >
               Новый день
             </Button>
-            <Button size="sm" onClick={() => roll({ label: 'Мифы Ктулху', value: mythos, kind: 'skill', id: 'cthulhu-mythos' })}>
+            <Button
+              size="sm"
+              onClick={() =>
+                roll({ label: 'Мифы Ктулху', value: mythos, kind: 'skill', id: 'cthulhu-mythos' })
+              }
+            >
               Бросок Мифов ({mythos})
             </Button>
-            <Button size="sm" onClick={() => update(gainMythos(1), { message: 'Мифы Ктулху +1', type: 'sanity' })} title="Предел рассудка снижается вместе с ростом Мифов">
+            <Button
+              size="sm"
+              onClick={() => update(gainMythos(1), { message: 'Мифы Ктулху +1', type: 'sanity' })}
+              title="Предел рассудка снижается вместе с ростом Мифов"
+            >
               Мифы +1
             </Button>
           </div>
@@ -266,7 +383,13 @@ export const SanitySection: React.FC = () => {
                   <div className="text-xs text-ink-faint">{c.description}</div>
                 </div>
                 {on && (
-                  <Button size="row" variant="ghost" onClick={() => update(recoverFrom(c.id), { message: `Прошло: ${c.name}`, type: 'sanity' })}>
+                  <Button
+                    size="row"
+                    variant="ghost"
+                    onClick={() =>
+                      update(recoverFrom(c.id), { message: `Прошло: ${c.name}`, type: 'sanity' })
+                    }
+                  >
                     Прошло
                   </Button>
                 )}
@@ -274,10 +397,18 @@ export const SanitySection: React.FC = () => {
             );
           })}
           <div className="flex flex-wrap gap-2 pt-1">
-            <Button size="sm" onClick={() => rollBout(false)} disabled={!character.conditions.some((id) => id.includes('insanity'))}>
+            <Button
+              size="sm"
+              onClick={() => rollBout(false)}
+              disabled={!character.conditions.some((id) => id.includes('insanity'))}
+            >
               Приступ (в моменте)
             </Button>
-            <Button size="sm" onClick={() => rollBout(true)} disabled={!character.conditions.some((id) => id.includes('insanity'))}>
+            <Button
+              size="sm"
+              onClick={() => rollBout(true)}
+              disabled={!character.conditions.some((id) => id.includes('insanity'))}
+            >
               Приступ (вкратце)
             </Button>
           </div>
@@ -287,14 +418,22 @@ export const SanitySection: React.FC = () => {
 
       <div className="flex flex-col gap-5">
         <Ledger title="Фобии и мании" scroll={false}>
-          {coc.madness.length === 0 && <li className="list-none py-3 text-sm opacity-70">Пока рассудок держится.</li>}
+          {coc.madness.length === 0 && (
+            <li className="list-none py-3 text-sm opacity-70">Пока рассудок держится.</li>
+          )}
           {coc.madness.map((m) => (
             <LedgerRow
               key={m.id}
               title={m.name}
               meta={<MetaLine parts={[m.kind === 'phobia' ? 'Фобия' : 'Мания', m.description]} />}
               action={
-                <Button size="row" variant="ghost" onClick={() => update(removeMadness(m.id), { message: `Излечено: ${m.name}`, type: 'sanity' })}>
+                <Button
+                  size="row"
+                  variant="ghost"
+                  onClick={() =>
+                    update(removeMadness(m.id), { message: `Излечено: ${m.name}`, type: 'sanity' })
+                  }
+                >
                   Излечено
                 </Button>
               }
@@ -312,27 +451,126 @@ const MagicPanel: React.FC = () => {
   const { character, update } = useCoc();
   const coc = character.coc as CocSheet;
   const maxMP = Math.floor((coc.characteristics.pow ?? 0) / 5);
+  const [learning, setLearning] = useState('');
+  const [chosenMp, setChosenMp] = useState<Record<string, number>>({});
+  const [note, setNote] = useState<string | null>(null);
+  const known = new Set(coc.spells.map((s) => s.ref));
+
+  const cast = (spell: CocSheet['spells'][number]) => {
+    const parsed = parseSpellCost(spell.cost);
+    const result = castSpell(
+      character,
+      spell.cost,
+      parsed.variable ? (chosenMp[spell.id] ?? Math.max(1, parsed.mp)) : undefined,
+    );
+    const parts = [
+      result.mp && `${result.mp} ПМ`,
+      result.shortfall && `${result.shortfall} из хитов`,
+      result.sanityLoss && `${result.sanityLoss} рассудка`,
+      result.pow && `${result.pow} МОЩ`,
+    ].filter(Boolean);
+    const text = parts.join(', ') || 'без цены';
+    setNote(`${spell.name}: ${text}`);
+    update(result.edit, { message: `Сотворено «${spell.name}»: ${text}`, type: 'sanity' });
+  };
+
   return (
-    <Ledger
-      title="Заклинания"
-      scroll={false}
-      aside={
-        <span className="flex items-center gap-2">
-          ПМ <b className="tabular-nums">{coc.magicPoints}</b> / {maxMP}
-          <Button size="row" variant="ghost" onClick={() => update(changeMagic(-1))}>
-            −1
-          </Button>
-          <Button size="row" variant="ghost" onClick={() => update(changeMagic(1))}>
-            +1
-          </Button>
-        </span>
-      }
-    >
-      {coc.spells.length === 0 && <li className="list-none py-3 text-sm opacity-70">Ни одного заклинания — и, возможно, к лучшему.</li>}
-      {coc.spells.map((s) => (
-        <LedgerRow key={s.id} title={s.name} meta={<MetaLine parts={[s.cost, s.castingTime]} />} />
-      ))}
-    </Ledger>
+    <div className="flex flex-col gap-4">
+      <Ledger
+        title="Заклинания"
+        scroll={false}
+        aside={
+          <span className="flex items-center gap-2">
+            ПМ <b className="tabular-nums">{coc.magicPoints}</b> / {maxMP}
+            <Button size="row" variant="ghost" onClick={() => update(changeMagic(-1))}>
+              −1
+            </Button>
+            <Button
+              size="row"
+              variant="ghost"
+              onClick={() => update(changeMagic(1))}
+              title="Магия восстанавливается по 1 ПМ в час"
+            >
+              +1
+            </Button>
+          </span>
+        }
+      >
+        {coc.spells.length === 0 && (
+          <li className="list-none py-3 text-sm opacity-70">
+            Ни одного заклинания — и, возможно, к лучшему.
+          </li>
+        )}
+        {coc.spells.map((s) => {
+          const parsed = parseSpellCost(s.cost);
+          return (
+            <LedgerRow
+              key={s.id}
+              title={s.name}
+              meta={<MetaLine parts={[s.cost, s.castingTime]} />}
+              action={
+                <>
+                  {parsed.variable && (
+                    <Input
+                      className="!h-7 w-14 text-center text-sm"
+                      inputMode="numeric"
+                      aria-label="Сколько ПМ вложить"
+                      value={chosenMp[s.id] ?? Math.max(1, parsed.mp)}
+                      onChange={(e) =>
+                        setChosenMp({ ...chosenMp, [s.id]: Math.max(0, Number(e.target.value) || 0) })
+                      }
+                    />
+                  )}
+                  <Button
+                    size="row"
+                    variant="secondary"
+                    onClick={() => cast(s)}
+                    title="Списать цену заклинания"
+                  >
+                    Сотворить
+                  </Button>
+                  <Button
+                    size="row"
+                    variant="ghost"
+                    onClick={() =>
+                      update(forgetSpell(s.id), { message: `Забыто заклинание «${s.name}»`, type: 'other' })
+                    }
+                  >
+                    ×
+                  </Button>
+                </>
+              }
+            />
+          );
+        })}
+        {note && <li className="list-none pt-2 text-sm text-danger/90">{note}</li>}
+      </Ledger>
+      <AddRow>
+        <Select
+          value={learning}
+          onChange={setLearning}
+          placeholder="Выучить из гримуара…"
+          options={MYTHOS_SPELLS.filter((sp) => !known.has(sp.id)).map((sp) => ({
+            value: sp.id,
+            label: sp.name,
+            hint: sp.cost,
+          }))}
+          className="flex-1"
+        />
+        <Button
+          size="sm"
+          disabled={!learning}
+          onClick={() => {
+            const spell = spellDef(learning);
+            if (spell)
+              update(learnSpell(spell), { message: `Выучено заклинание «${spell.name}»`, type: 'other' });
+            setLearning('');
+          }}
+        >
+          Выучить
+        </Button>
+      </AddRow>
+    </div>
   );
 };
 
@@ -341,30 +579,91 @@ const MagicPanel: React.FC = () => {
 // ------------------------------------------------------------------------------------------------
 
 export const GearSection: React.FC = () => {
-  const { character } = useCoc();
+  const { character, update } = useCoc();
   const coc = character.coc as CocSheet;
   const era = character.build?.ruleset === 'coc7' ? character.build.era : '1920s';
   const credit = skillValue(character, 'credit-rating');
   const wealth = wealthOf(credit, era);
+  const [name, setName] = useState('');
+  const [cash, setCashText] = useState<string | null>(null);
   return (
     <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-6">
       <Ledger title="Снаряжение и вещи" scroll={false}>
-        {character.inventory.length === 0 && <li className="list-none py-3 text-sm opacity-70">Карманы пусты.</li>}
+        {character.inventory.length === 0 && (
+          <li className="list-none py-3 text-sm opacity-70">Карманы пусты.</li>
+        )}
         {character.inventory.map((item) => (
-          <LedgerRow key={item.id} title={item.name} meta={item.description} value={item.quantity} />
+          <LedgerRow
+            key={item.id}
+            title={item.name}
+            meta={item.description}
+            value={item.quantity}
+            action={
+              <>
+                {item.quantity !== undefined && (
+                  <>
+                    <Button size="row" variant="ghost" onClick={() => update(changeItemCount(item.id, -1))}>
+                      −
+                    </Button>
+                    <Button size="row" variant="ghost" onClick={() => update(changeItemCount(item.id, 1))}>
+                      +
+                    </Button>
+                  </>
+                )}
+                <Button
+                  size="row"
+                  variant="ghost"
+                  onClick={() =>
+                    update(removeItem(item.id), { message: `Убрано: ${item.name}`, type: 'inventory' })
+                  }
+                >
+                  ×
+                </Button>
+              </>
+            }
+          />
         ))}
+        <li className="flex list-none items-center gap-2 pb-4 pt-3">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Что взять с собой"
+            className="!h-9 flex-1"
+          />
+          <Button
+            size="sm"
+            disabled={!name.trim()}
+            onClick={() => {
+              update(addItem(name.trim()), { message: `Взято: ${name.trim()}`, type: 'inventory' });
+              setName('');
+            }}
+          >
+            Добавить
+          </Button>
+        </li>
       </Ledger>
       <Panel ornate={false} className="flex flex-col gap-3 px-6 py-5">
         <SectionTitle>Деньги</SectionTitle>
-        <div className="grid grid-cols-2 gap-y-2 text-sm">
+        <div className="grid grid-cols-2 items-center gap-y-2 text-sm">
           <span className="text-ink-muted">Средства</span>
           <span className="text-right">
             {credit} · {wealth.label}
           </span>
           <span className="text-ink-muted">Расходы в день</span>
           <span className="text-right">${wealth.spendingLevel.toLocaleString('ru-RU')}</span>
-          <span className="text-ink-muted">Наличные</span>
-          <span className="text-right">${coc.cash.toLocaleString('ru-RU')}</span>
+          <span className="text-ink-muted">Наличные, $</span>
+          <Input
+            className="!h-8 text-right"
+            inputMode="decimal"
+            value={cash ?? String(coc.cash)}
+            onChange={(e) => setCashText(e.target.value)}
+            onBlur={() => {
+              const value = Number((cash ?? '').replace(',', '.'));
+              if (cash !== null && Number.isFinite(value) && value !== coc.cash)
+                update(setCash(value), { message: `Наличные: $${coc.cash} → $${value}`, type: 'inventory' });
+              setCashText(null);
+            }}
+          />
           <span className="text-ink-muted">Имущество</span>
           <span className="text-right">{coc.assets || '—'}</span>
         </div>
@@ -409,12 +708,23 @@ export const StorySection: React.FC = () => {
                   onBlur={(e) => {
                     const value = e.currentTarget.value;
                     if (value !== story[field])
-                      update((doc) => (doc.coc ? { ...doc, coc: { ...doc.coc, backstory: { ...doc.coc.backstory, [field]: value } } } : doc));
+                      update((doc) =>
+                        doc.coc
+                          ? {
+                              ...doc,
+                              coc: { ...doc.coc, backstory: { ...doc.coc.backstory, [field]: value } },
+                            }
+                          : doc,
+                      );
                     setEditing(null);
                   }}
                 />
               ) : (
-                <button type="button" onClick={() => setEditing(field)} className="block w-full whitespace-pre-wrap text-left text-[15px] leading-relaxed">
+                <button
+                  type="button"
+                  onClick={() => setEditing(field)}
+                  className="block w-full whitespace-pre-wrap text-left text-[15px] leading-relaxed"
+                >
                   {story[field] || <span className="opacity-50">Нажмите, чтобы записать</span>}
                 </button>
               )}
@@ -425,4 +735,3 @@ export const StorySection: React.FC = () => {
     </div>
   );
 };
-

@@ -167,21 +167,34 @@ export const PartyPicture: React.FC<{ party: PartyListItemDto; className?: strin
   );
 };
 
-/** Level and health in one quiet line. */
-export const HeroVitals: React.FC<{ hero: CharacterPreview; className?: string }> = ({ hero, className }) => (
-  <div className={cx('flex items-center gap-4', className)}>
-    <div className="flex items-baseline gap-1.5">
-      <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">Ур.</span>
-      <span className="ui-display ui-numeric text-2xl text-frame-bright">{hero.level}</span>
+/** What the big number of a hero's card is: the level, or an investigator's age. */
+export const heroRank = (hero: CharacterPreview): { label: string; value: number } =>
+  hero.investigator ? { label: 'Лет', value: hero.investigator.age } : { label: 'Ур.', value: hero.level };
+
+/** Level (or age) and health, and an investigator's sanity, in one quiet line. */
+export const HeroVitals: React.FC<{ hero: CharacterPreview; className?: string; meterClassName?: string }> = ({
+  hero,
+  className,
+  meterClassName = 'w-40',
+}) => {
+  const rank = heroRank(hero);
+  return (
+    <div className={cx('flex items-center gap-4', className)}>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">{rank.label}</span>
+        <span className="ui-display ui-numeric text-2xl text-frame-bright">{rank.value}</span>
+      </div>
+      <div className={cx('flex flex-col gap-1', meterClassName)}>
+        <Meter value={hero.currentHP} max={hero.maxHP} tone="hp" height={5} label="Здоровье" />
+        {hero.investigator && <Meter value={hero.investigator.sanity} max={hero.investigator.maxSanity} tone="sanity" height={4} label="Рассудок" />}
+      </div>
+      <span className="ui-numeric text-xs text-ink-muted">
+        {hero.currentHP}/{hero.maxHP}
+        {hero.investigator && <span className="block">рассудок {hero.investigator.sanity}</span>}
+      </span>
     </div>
-    <div className="w-40">
-      <Meter value={hero.currentHP} max={hero.maxHP} tone="hp" height={5} label="Здоровье" />
-    </div>
-    <span className="ui-numeric text-xs text-ink-muted">
-      {hero.currentHP}/{hero.maxHP}
-    </span>
-  </div>
-);
+  );
+};
 
 /** The service name and the account, the same over every layout of the page. */
 export const HomeHeader: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => (

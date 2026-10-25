@@ -27,7 +27,19 @@ export interface CharacterPreview {
   resistances?: Resistance[];
   /** Rules system of a preset hero; absent for the player's own. */
   ruleset?: RulesetId;
+  /** A Call of Cthulhu investigator's card shows age and sanity instead of a level. */
+  investigator?: { age: number; sanity: number; maxSanity: number };
 }
+
+/** Sanity can never rise above 99 less Cthulhu Mythos (kept in step with game-logic's `cocMaxSanity`). */
+const investigatorOf = (character: Character): CharacterPreview['investigator'] =>
+  character.build?.ruleset === 'coc7'
+    ? {
+        age: character.build.age,
+        sanity: character.sanity,
+        maxSanity: Math.max(0, 99 - (character.coc?.skills.find((s) => s.id === 'cthulhu-mythos')?.value ?? 0)),
+      }
+    : undefined;
 
 export const toCharacterPreview = (character: Character): CharacterPreview => ({
   id: character.id,
@@ -44,6 +56,7 @@ export const toCharacterPreview = (character: Character): CharacterPreview => ({
   avatar: character.avatar,
   resistances: character.resistances,
   ruleset: character.build?.ruleset,
+  investigator: investigatorOf(character),
 });
 
 export const newCharacterId = (): string => crypto.randomUUID();

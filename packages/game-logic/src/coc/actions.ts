@@ -1,7 +1,15 @@
 import type { Attack, Character, CocMadness, CocSheet } from '@itd/schema';
 import { rollFormula, type RandomSource } from '../rules/dice';
 import { skillDef } from './content/skills';
-import { CONDITION_IDS, cocCharacteristics, derivedOf, sanityLoss, skillValue, takeDamage, type SkillCheck } from './engine';
+import {
+  CONDITION_IDS,
+  cocCharacteristics,
+  derivedOf,
+  sanityLoss,
+  skillValue,
+  takeDamage,
+  type SkillCheck,
+} from './engine';
 import { cocMaxSanity } from './meta';
 
 /**
@@ -25,21 +33,32 @@ const setConditions = (doc: Character, add: string[], remove: string[] = []): Ch
 // ------------------------------------------------------------------------------------------------
 
 /** A skill's value; a skill not on the sheet yet is added with it (a new speciality). */
-export const setSkill = (id: string, value: number, name?: string): Edit => (doc) =>
-  withCoc(doc, (coc) => {
-    const known = coc.skills.some((s) => s.id === id);
-    const v = Math.max(0, Math.round(value));
-    return {
-      skills: known
-        ? coc.skills.map((s) => (s.id === id ? { ...s, value: v, ...(name !== undefined ? { name } : {}) } : s))
-        : [...coc.skills, { id, name, value: v, check: false }],
-    };
-  });
+export const setSkill =
+  (id: string, value: number, name?: string): Edit =>
+  (doc) =>
+    withCoc(doc, (coc) => {
+      const known = coc.skills.some((s) => s.id === id);
+      const v = Math.max(0, Math.round(value));
+      return {
+        skills: known
+          ? coc.skills.map((s) =>
+              s.id === id ? { ...s, value: v, ...(name !== undefined ? { name } : {}) } : s,
+            )
+          : [...coc.skills, { id, name, value: v, check: false }],
+      };
+    });
 
-export const toggleSkillCheck = (id: string, check?: boolean): Edit => (doc) =>
-  withCoc(doc, (coc) => ({ skills: coc.skills.map((s) => (s.id === id ? { ...s, check: check ?? !s.check } : s)) }));
+export const toggleSkillCheck =
+  (id: string, check?: boolean): Edit =>
+  (doc) =>
+    withCoc(doc, (coc) => ({
+      skills: coc.skills.map((s) => (s.id === id ? { ...s, check: check ?? !s.check } : s)),
+    }));
 
-export const removeSkill = (id: string): Edit => (doc) => withCoc(doc, (coc) => ({ skills: coc.skills.filter((s) => s.id !== id) }));
+export const removeSkill =
+  (id: string): Edit =>
+  (doc) =>
+    withCoc(doc, (coc) => ({ skills: coc.skills.filter((s) => s.id !== id) }));
 
 /** A success ticks the skill for the development phase; some skills never improve that way. */
 export function afterSkillRoll(id: string, check: Pick<SkillCheck, 'success'>): Edit {
@@ -51,35 +70,48 @@ export function afterSkillRoll(id: string, check: Pick<SkillCheck, 'success'>): 
 }
 
 /** Characteristics changed (an injury, a spell, age): hit points, magic and move follow. */
-export const setCharacteristic = (id: string, value: number): Edit => (doc) => {
-  const next = withCoc(doc, (coc) => ({ characteristics: { ...coc.characteristics, [id]: Math.max(0, Math.round(value)) } }));
-  if (!next.coc || next.build?.ruleset !== 'coc7') return next;
-  const derived = derivedOf(cocCharacteristics(next), next.build.variant, next.build.age);
-  const damage = Math.max(0, doc.maxHP - doc.currentHP);
-  return {
-    ...next,
-    maxHP: derived.maxHP,
-    currentHP: Math.max(0, derived.maxHP - damage),
-    speed: derived.move,
-    coc: { ...next.coc, magicPoints: Math.min(next.coc.magicPoints, derived.maxMP) },
+export const setCharacteristic =
+  (id: string, value: number): Edit =>
+  (doc) => {
+    const next = withCoc(doc, (coc) => ({
+      characteristics: { ...coc.characteristics, [id]: Math.max(0, Math.round(value)) },
+    }));
+    if (!next.coc || next.build?.ruleset !== 'coc7') return next;
+    const derived = derivedOf(cocCharacteristics(next), next.build.variant, next.build.age);
+    const damage = Math.max(0, doc.maxHP - doc.currentHP);
+    return {
+      ...next,
+      maxHP: derived.maxHP,
+      currentHP: Math.max(0, derived.maxHP - damage),
+      speed: derived.move,
+      coc: { ...next.coc, magicPoints: Math.min(next.coc.magicPoints, derived.maxMP) },
+    };
   };
-};
 
 // ------------------------------------------------------------------------------------------------
 // Luck and magic
 // ------------------------------------------------------------------------------------------------
 
 /** Luck spent: never below zero. Returns the sheet unchanged if there is not enough. */
-export const spendLuck = (points: number): Edit => (doc) =>
-  doc.coc && doc.coc.luck >= points ? withCoc(doc, (coc) => ({ luck: coc.luck - Math.max(0, points) })) : doc;
+export const spendLuck =
+  (points: number): Edit =>
+  (doc) =>
+    doc.coc && doc.coc.luck >= points
+      ? withCoc(doc, (coc) => ({ luck: coc.luck - Math.max(0, points) }))
+      : doc;
 
-export const setLuck = (value: number): Edit => (doc) => withCoc(doc, () => ({ luck: Math.max(0, Math.min(99, Math.round(value))) }));
+export const setLuck =
+  (value: number): Edit =>
+  (doc) =>
+    withCoc(doc, () => ({ luck: Math.max(0, Math.min(99, Math.round(value))) }));
 
 /** Magic points: spent on spells, regained 1 per hour; never above POW/5. */
-export const changeMagic = (delta: number): Edit => (doc) => {
-  const max = Math.floor(cocCharacteristics(doc).pow / 5);
-  return withCoc(doc, (coc) => ({ magicPoints: Math.max(0, Math.min(max, coc.magicPoints + delta)) }));
-};
+export const changeMagic =
+  (delta: number): Edit =>
+  (doc) => {
+    const max = Math.floor(cocCharacteristics(doc).pow / 5);
+    return withCoc(doc, (coc) => ({ magicPoints: Math.max(0, Math.min(max, coc.magicPoints + delta)) }));
+  };
 
 // ------------------------------------------------------------------------------------------------
 // Sanity
@@ -113,64 +145,86 @@ export function loseSanity(loss: number): { edit: Edit; outcome: (doc: Character
 }
 
 /** After a loss of five or more: a passed INT roll means the horror is understood — temporary insanity. */
-export const afterIntRoll = (passed: boolean): Edit => (doc) => (passed ? setConditions(doc, [CONDITION_IDS.temporaryInsanity]) : doc);
+export const afterIntRoll =
+  (passed: boolean): Edit =>
+  (doc) =>
+    passed ? setConditions(doc, [CONDITION_IDS.temporaryInsanity]) : doc;
 
 /** Sanity regained (therapy, a defeated horror, 90 in a skill); never above 99 − Mythos. */
-export const gainSanity = (amount: number): Edit => (doc) => ({
-  ...doc,
-  sanity: Math.max(0, Math.min(cocMaxSanity(doc.coc), doc.sanity + Math.max(0, amount))),
-});
+export const gainSanity =
+  (amount: number): Edit =>
+  (doc) => ({
+    ...doc,
+    sanity: Math.max(0, Math.min(cocMaxSanity(doc.coc), doc.sanity + Math.max(0, amount))),
+  });
 
 /** A new day: the fifth that means indefinite insanity is counted from here. */
 export const startDay: Edit = (doc) => withCoc(doc, () => ({ sanityAtDayStart: doc.sanity }));
 
 /** Cthulhu Mythos grows (a tome, an encounter); the sanity cap shrinks with it. */
-export const gainMythos = (amount: number): Edit => (doc) => {
-  const current = skillValue(doc, 'cthulhu-mythos');
-  const next = setSkill('cthulhu-mythos', Math.min(99, current + Math.max(0, amount)))(doc);
-  return { ...next, sanity: Math.min(next.sanity, cocMaxSanity(next.coc)) };
-};
+export const gainMythos =
+  (amount: number): Edit =>
+  (doc) => {
+    const current = skillValue(doc, 'cthulhu-mythos');
+    const next = setSkill('cthulhu-mythos', Math.min(99, current + Math.max(0, amount)))(doc);
+    return { ...next, sanity: Math.min(next.sanity, cocMaxSanity(next.coc)) };
+  };
 
-export const addMadness = (entry: Omit<CocMadness, 'id'> & { id?: string }): Edit => (doc) =>
-  withCoc(doc, (coc) => ({
-    madness: coc.madness.some((m) => m.name === entry.name)
-      ? coc.madness
-      : [...coc.madness, { ...entry, id: entry.id ?? `madness-${coc.madness.length + 1}-${Date.now().toString(36)}` }],
-  }));
+export const addMadness =
+  (entry: Omit<CocMadness, 'id'> & { id?: string }): Edit =>
+  (doc) =>
+    withCoc(doc, (coc) => ({
+      madness: coc.madness.some((m) => m.name === entry.name)
+        ? coc.madness
+        : [
+            ...coc.madness,
+            { ...entry, id: entry.id ?? `madness-${coc.madness.length + 1}-${Date.now().toString(36)}` },
+          ],
+    }));
 
-export const removeMadness = (id: string): Edit => (doc) => withCoc(doc, (coc) => ({ madness: coc.madness.filter((m) => m.id !== id) }));
+export const removeMadness =
+  (id: string): Edit =>
+  (doc) =>
+    withCoc(doc, (coc) => ({ madness: coc.madness.filter((m) => m.id !== id) }));
 
 /** Recovering from a bout or an insanity: the condition goes. */
-export const recoverFrom = (condition: string): Edit => (doc) => setConditions(doc, [], [condition]);
+export const recoverFrom =
+  (condition: string): Edit =>
+  (doc) =>
+    setConditions(doc, [], [condition]);
 
 // ------------------------------------------------------------------------------------------------
 // Wounds
 // ------------------------------------------------------------------------------------------------
 
 /** One blow: hit points, and the major wound, unconsciousness or dying it brings. */
-export const applyDamage = (amount: number): Edit => (doc) => {
-  const result = takeDamage(doc, amount);
-  const add = [
-    ...(result.majorWound ? [CONDITION_IDS.majorWound] : []),
-    ...(result.dying ? [CONDITION_IDS.dying] : []),
-    ...(result.unconscious ? [CONDITION_IDS.unconscious] : []),
-    ...(result.dead ? [CONDITION_IDS.dead] : []),
-  ];
-  return setConditions({ ...doc, currentHP: result.currentHP }, add);
-};
+export const applyDamage =
+  (amount: number): Edit =>
+  (doc) => {
+    const result = takeDamage(doc, amount);
+    const add = [
+      ...(result.majorWound ? [CONDITION_IDS.majorWound] : []),
+      ...(result.dying ? [CONDITION_IDS.dying] : []),
+      ...(result.unconscious ? [CONDITION_IDS.unconscious] : []),
+      ...(result.dead ? [CONDITION_IDS.dead] : []),
+    ];
+    return setConditions({ ...doc, currentHP: result.currentHP }, add);
+  };
 
 /**
  * Healing: First Aid (1 point, and it stabilises the dying), Medicine (1d3) or rest. Back above 0
  * the investigator is no longer dying; a major wound heals only when the hit points are full.
  */
-export const heal = (amount: number): Edit => (doc) => {
-  const currentHP = Math.min(doc.maxHP, doc.currentHP + Math.max(0, amount));
-  const remove = [
-    ...(currentHP > 0 ? [CONDITION_IDS.dying, CONDITION_IDS.unconscious] : []),
-    ...(currentHP >= doc.maxHP ? [CONDITION_IDS.majorWound] : []),
-  ];
-  return setConditions({ ...doc, currentHP }, [], remove);
-};
+export const heal =
+  (amount: number): Edit =>
+  (doc) => {
+    const currentHP = Math.min(doc.maxHP, doc.currentHP + Math.max(0, amount));
+    const remove = [
+      ...(currentHP > 0 ? [CONDITION_IDS.dying, CONDITION_IDS.unconscious] : []),
+      ...(currentHP >= doc.maxHP ? [CONDITION_IDS.majorWound] : []),
+    ];
+    return setConditions({ ...doc, currentHP }, [], remove);
+  };
 
 /** A successful First Aid on someone dying keeps them alive for the hour, with a point of hit points. */
 export const stabilise: Edit = (doc) => heal(1)(doc);
@@ -185,10 +239,15 @@ const patchAttack = (doc: Character, id: string, patch: (attack: Attack) => Part
 });
 
 /** Shots fired: rounds leave the gun. A gun without rounds cannot fire (the screen says so). */
-export const fireWeapon = (id: string, shots = 1): Edit => (doc) =>
-  patchAttack(doc, id, (a) => (a.ammo === undefined ? {} : { ammo: Math.max(0, a.ammo - shots) }));
+export const fireWeapon =
+  (id: string, shots = 1): Edit =>
+  (doc) =>
+    patchAttack(doc, id, (a) => (a.ammo === undefined ? {} : { ammo: Math.max(0, a.ammo - shots) }));
 
-export const reloadWeapon = (id: string): Edit => (doc) => patchAttack(doc, id, (a) => (a.magazine === undefined ? {} : { ammo: a.magazine }));
+export const reloadWeapon =
+  (id: string): Edit =>
+  (doc) =>
+    patchAttack(doc, id, (a) => (a.magazine === undefined ? {} : { ammo: a.magazine }));
 
 /**
  * Damage of a hit. The first range band counts ("4d6/2d6/1d6" up close). An extreme success deals the
@@ -213,8 +272,136 @@ export function weaponDamage(
   };
   const extreme = level === 'extreme' || level === 'critical';
   const total = extreme
-    ? rollFormula(dice, highest).total + dbValue(highest) + (attack.impale ? rollFormula(dice, random).total : 0)
+    ? rollFormula(dice, highest).total +
+      dbValue(highest) +
+      (attack.impale ? rollFormula(dice, random).total : 0)
     : rollFormula(dice, random).total + dbValue(random);
-  const formula = [dice, fullDb && db && `${db.startsWith('-') ? '' : '+'}${db}`, halfDb && db && `+½(${db})`].filter(Boolean).join('');
+  const formula = [dice, fullDb && db && `${db.startsWith('-') ? '' : '+'}${db}`, halfDb && db && `+½(${db})`]
+    .filter(Boolean)
+    .join('');
   return { total: Math.max(0, total), formula };
 }
+
+// ------------------------------------------------------------------------------------------------
+// Spells
+// ------------------------------------------------------------------------------------------------
+
+export interface SpellCost {
+  /** Magic points; `variable` when the caster chooses how many ("переменная", "1+"). */
+  mp: number;
+  variable: boolean;
+  /** Sanity lost on casting, as a dice formula ("1d6"). */
+  sanity?: string;
+  /** Points of POW given up for good. */
+  pow: number;
+}
+
+/** "10 ПМ; 1 МОЩ; 1d10 рассудка" read into numbers. */
+export function parseSpellCost(cost: string): SpellCost {
+  const mp = /(\d+)\+?\s*ПМ/i.exec(cost);
+  const sanity = /(\d+(?:d\d+)?(?:[+-]\d+)?)\s*рассудка/i.exec(cost);
+  const pow = /(\d+)\s*МОЩ/i.exec(cost);
+  return {
+    mp: mp ? Number(mp[1]) : 0,
+    variable: /переменн|\d\+\s*ПМ/i.test(cost),
+    sanity: sanity?.[1],
+    pow: pow ? Number(pow[1]) : 0,
+  };
+}
+
+export interface CastResult {
+  edit: Edit;
+  mp: number;
+  sanityLoss: number;
+  pow: number;
+  /** Not enough magic points: the rest is paid in hit points (7th edition), and the screen warns. */
+  shortfall: number;
+}
+
+/**
+ * Casting a spell: magic points spent (what is missing comes out of hit points), sanity lost, POW
+ * given up. `mp` overrides the cost for spells whose price the caster chooses.
+ */
+export function castSpell(
+  doc: Character,
+  cost: string,
+  mp?: number,
+  random: RandomSource = Math.random,
+): CastResult {
+  const parsed = parseSpellCost(cost);
+  const spend = Math.max(0, mp ?? parsed.mp);
+  const have = doc.coc?.magicPoints ?? 0;
+  const shortfall = Math.max(0, spend - have);
+  const sanityLoss = parsed.sanity ? Math.max(0, rollFormula(parsed.sanity, random).total) : 0;
+  const lose = loseSanity(sanityLoss);
+  const edit: Edit = (d) => {
+    let next = changeMagic(-Math.min(spend, d.coc?.magicPoints ?? 0))(d);
+    if (shortfall > 0) next = applyDamage(shortfall)(next);
+    if (sanityLoss > 0) next = lose.edit(next);
+    if (parsed.pow > 0) next = setCharacteristic('pow', cocCharacteristics(next).pow - parsed.pow)(next);
+    return next;
+  };
+  return { edit, mp: spend, sanityLoss, pow: parsed.pow, shortfall };
+}
+
+export const learnSpell =
+  (spell: { id: string; name: string; cost: string; castingTime: string; description: string }): Edit =>
+  (doc) =>
+    withCoc(doc, (coc) => ({
+      spells: coc.spells.some((s) => s.ref === spell.id)
+        ? coc.spells
+        : [...coc.spells, { ...spell, id: `spell-${spell.id}`, ref: spell.id }],
+    }));
+
+export const forgetSpell =
+  (id: string): Edit =>
+  (doc) =>
+    withCoc(doc, (coc) => ({ spells: coc.spells.filter((s) => s.id !== id) }));
+
+// ------------------------------------------------------------------------------------------------
+// Gear and money
+// ------------------------------------------------------------------------------------------------
+
+export const addItem =
+  (name: string, quantity?: number): Edit =>
+  (doc) => ({
+    ...doc,
+    inventory: [
+      ...doc.inventory,
+      {
+        id: `item-${Date.now().toString(36)}-${doc.inventory.length}`,
+        name,
+        type: 'item',
+        equipped: false,
+        weight: 0,
+        cost: 0,
+        description: '',
+        quantity,
+      },
+    ],
+  });
+
+export const removeItem =
+  (id: string): Edit =>
+  (doc) => ({ ...doc, inventory: doc.inventory.filter((i) => i.id !== id) });
+
+export const changeItemCount =
+  (id: string, delta: number): Edit =>
+  (doc) => ({
+    ...doc,
+    inventory: doc.inventory.map((i) =>
+      i.id === id ? { ...i, quantity: Math.max(0, (i.quantity ?? 1) + delta) } : i,
+    ),
+  });
+
+export const setCash =
+  (cash: number): Edit =>
+  (doc) =>
+    withCoc(doc, () => ({ cash: Math.max(0, Math.round(cash * 100) / 100) }));
+
+export const addWeapon =
+  (attack: Attack): Edit =>
+  (doc) => ({ ...doc, attacks: [...doc.attacks.filter((a) => a.id !== attack.id), attack] });
+export const removeWeapon =
+  (id: string): Edit =>
+  (doc) => ({ ...doc, attacks: doc.attacks.filter((a) => a.id !== id) });
