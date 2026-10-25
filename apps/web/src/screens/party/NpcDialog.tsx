@@ -26,7 +26,8 @@ const draftOf = (npc: PartyNpcDto | undefined, coc: boolean): Draft => ({
   name: npc?.name ?? '',
   portraitAssetId: npc?.portraitAssetId ?? null,
   maxHP: npc?.maxHP ?? 10,
-  currentHP: npc?.currentHP ?? 10,
+  // An NPC hurt below the Call of Cthulhu floor before it came starts at the floor.
+  currentHP: npc ? Math.max(npcMinHP(coc), npc.currentHP) : 10,
   // A Call of Cthulhu NPC has no armour class (its armour is `coc.armor`); initiative is its DEX.
   armorClass: npc?.armorClass ?? (coc ? 0 : 12),
   initiativeBonus: npc?.initiativeBonus ?? (coc ? 50 : 0),

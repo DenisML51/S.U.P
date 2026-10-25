@@ -92,13 +92,25 @@ export const combatRulesFor = (rules: string | null, heroes: readonly { ruleset:
   return heroes.length > 0 && heroes.every((hero) => hero.ruleset === 'coc7') ? 'coc7' : null;
 };
 
+/** How a fight keeps its rules (`party_combats.rules`): `null` combat rules are stored as this. */
+export const D20_FIGHT = 'd20';
+
+/** The rules a fight keeps, as stored; `undefined` when it kept none (started before they were kept). */
+export const frozenCombatRules = (stored: string | null | undefined): PartyRules | null | undefined =>
+  stored == null ? undefined : stored === D20_FIGHT ? null : (stored as PartyRules);
+
+/** The rules a fight goes by: those it started with while one runs, else what the table makes of them. */
 export async function combatRulesOf(db: Executor, partyId: string): Promise<PartyRules | null> {
-  const [[table], heroes] = await Promise.all([
+  const [[table], [combat], heroes] = await Promise.all([
     db.select({ rules: parties.rules }).from(parties).where(eq(parties.id, partyId)),
+    db.select({ rules: partyCombats.rules }).from(partyCombats).where(eq(partyCombats.partyId, partyId)),
     heroesOf(db, partyId),
   ]);
-  return combatRulesFor(table?.rules ?? null, heroes);
+  return keptOr(frozenCombatRules(combat?.rules), () => combatRulesFor(table?.rules ?? null, heroes));
 }
+
+const keptOr = (kept: PartyRules | null | undefined, current: () => PartyRules | null): PartyRules | null =>
+  kept !== undefined ? kept : current();
 
 export interface CombatantEntry extends TurnEntry {
   heroId: string | null;
@@ -292,7 +304,7 @@ export class PartyQueries {
           lore: party.lore,
           setting: party.setting as Setting,
           rules: party.rules as PartyRules | null,
-          combatRules: combatRulesFor(party.rules, heroes),
+          combatRules: keptOr(frozenCombatRules(combat?.rules), () => combatRulesFor(party.rules, heroes)),
           coverAssetId: party.coverAssetId,
           role,
           masterId: party.masterId,

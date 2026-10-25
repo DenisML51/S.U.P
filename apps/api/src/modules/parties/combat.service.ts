@@ -5,7 +5,7 @@ import type { Transaction } from '../../db/client';
 import { partyCombatants, partyCombats, partyHeroes, partyNpcs } from '../../db/schema';
 import { conflictError, notFound, sessionClosed, validationError } from '../../lib/errors';
 import { masterOnly, type PartyAccess, type PartyContext } from './partyAccess';
-import { combatantsOf, combatRulesOf } from './parties.queries';
+import { combatantsOf, combatRulesOf, D20_FIGHT } from './parties.queries';
 import { nextTurn } from './turnOrder';
 
 interface Participants {
@@ -30,7 +30,9 @@ export class CombatService {
         .from(partyCombats)
         .where(eq(partyCombats.partyId, partyId));
       if (existing) throw conflictError('Бой уже идёт');
-      await tx.insert(partyCombats).values({ partyId, phase: 'initiative' });
+      // The fight keeps the rules it starts with: a hero seated later does not change them.
+      const rules = (await combatRulesOf(tx, partyId)) ?? D20_FIGHT;
+      await tx.insert(partyCombats).values({ partyId, phase: 'initiative', rules });
       await this.enlist(tx, partyId, participants);
     });
   }
@@ -86,8 +88,8 @@ export class CombatService {
   /**
    * Initiative for every NPC still waiting: d20 + modifier, or in a Call of Cthulhu fight the NPC's
    * DEX (kept in the modifier's place), +50 with a firearm ready, since there everyone acts in DEX
-   * order (see `combatRulesFor` for a table of any rules). Ties of DEX go to the higher attack skill
-   * (`turnOrder`).
+   * order (see `combatRulesFor` for a table of any rules; a fight keeps the rules it started with).
+   * Ties of DEX go to the higher attack skill (`turnOrder`).
    */
   rollForNpcs(userId: string, partyId: string): Promise<void> {
     return this.access.change(userId, partyId, 'master', async ({ tx }) => {

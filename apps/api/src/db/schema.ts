@@ -249,6 +249,11 @@ export const partyCombats = pgTable('party_combats', {
     onDelete: 'set null',
   }),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * The rules the fight goes by, fixed when it starts (`PartyDto.combatRules`; `d20` for `null`), so a
+   * hero seated mid-fight does not change them. `null`: a fight started before they were kept.
+   */
+  rules: text('rules'),
 });
 
 /** One side of the fight: a party hero or an NPC, gone with them. */
