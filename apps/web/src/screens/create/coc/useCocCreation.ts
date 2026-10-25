@@ -4,7 +4,6 @@ import {
   ARCHETYPE_POINTS,
   CHARACTERISTICS,
   POINT_BUY_TOTAL,
-  SOCIAL_SKILLS,
   ageRules,
   archetypeDef,
   createInvestigator,
@@ -17,16 +16,32 @@ import {
   rollCoreCharacteristicDetailed,
   rollLuckDetailed,
   skillBase,
+  skillName,
   type CharacteristicId,
   type Characteristics,
   type CocEra,
   type CocVariant,
-  type OccupationDef,
-  type SkillChoice,
 } from '@itd/game-logic/coc';
 import type { CharacterImages, CocSheet, Setting } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { useClearDraft, useDraftState } from '../useDraftState';
+import {
+  choiceNumbers,
+  countedPoints,
+  manualOutOfRange,
+  nextPoints,
+  occupationSkills,
+  picksInEra,
+  pruneOccupationPoints,
+  prunePointsToEra,
+  skillsOverCap,
+  withCore,
+  type ChoicePicks,
+  type Pool,
+  type PoolPoints,
+} from './creationRules';
+
+export { SKILL_CAP, choiceOptions, occupationSkills, type ChoicePicks } from './creationRules';
 
 export type CharacteristicMethod = 'roll' | 'pointBuy' | 'manual';
 
@@ -43,10 +58,8 @@ export interface CocThrows {
   core?: Thrown<number>;
   edu?: Thrown<{ roll: number; die?: number; gain: number }[]>;
 }
-type Pool = 'occupation' | 'personal' | 'archetype';
-
-/** The highest a skill may start at. */
-export const SKILL_CAP = 99;
+/** Throws that can be made again; a throw of a kind made before counts as a re-roll. */
+type RollKind = 'characteristics' | 'luck' | 'core' | 'edu';
 
 const EMPTY: Characteristics = { str: 0, con: 0, siz: 0, dex: 0, app: 0, int: 0, pow: 0, edu: 0 };
 const POINT_BUY_START: Characteristics = {
@@ -59,23 +72,6 @@ const POINT_BUY_START: Characteristics = {
   pow: 50,
   edu: 60,
 };
-
-/** Picks of a choice group: `{ pick: 2, from: [...] }` keeps which two by its index in the list. */
-export type ChoicePicks = Record<number, string[]>;
-
-/** The occupation's skills: fixed ones plus what the player picked in its choice groups. */
-export function occupationSkills(occupation: OccupationDef | undefined, picks: ChoicePicks): string[] {
-  if (!occupation) return [];
-  const fixed = occupation.skills.flatMap((choice) => ('skill' in choice ? [choice.skill] : []));
-  const chosen = occupation.skills.flatMap((choice, i) =>
-    'skill' in choice ? [] : (picks[i] ?? []).slice(0, choice.pick),
-  );
-  return [...new Set([...fixed, ...chosen, 'credit-rating'])];
-}
-
-/** What a choice group offers: its list, the interpersonal skills, or anything. */
-export const choiceOptions = (choice: SkillChoice): string[] | 'any' =>
-  'from' in choice ? choice.from : 'social' in choice ? SOCIAL_SKILLS : 'any' in choice ? 'any' : [];
 
 /**
  * A Call of Cthulhu investigator in the making, kept in the draft so a reload returns to it: the
@@ -99,7 +95,7 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
   const [eduGains, setEduGains] = useDraftState<number[] | null>('coc.eduGains', null);
   const [occupation, setOccupationId] = useDraftState<string | undefined>('coc.occupation', undefined);
   const [picks, setPicks] = useDraftState<ChoicePicks>('coc.picks', {});
-  const [points, setPoints] = useDraftState<Record<Pool, Record<string, number>>>('coc.points', {
+  const [points, setPoints] = useDraftState<PoolPoints>('coc.points', {
     occupation: {},
     personal: {},
     archetype: {},
@@ -111,6 +107,9 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
   const [weapons, setWeapons] = useDraftState<string[]>('coc.weapons', []);
   const [name, setName] = useDraftState('name', '');
   const [images, setImages] = useDraftState<CharacterImages>('images', {});
+  /** Throws made again (characteristics, luck, core, EDU checks): not limited, but the master sees them. */
+  const [rerolls, setRerolls] = useDraftState('coc.rerolls', 0);
+  const [rolledKinds, setRolledKinds] = useDraftState<RollKind[]>('coc.rolledKinds', []);
   const [creating, setCreating] = useState(false);
   const [throws, setThrows] = useState<CocThrows>({});
   const throwSerial = useRef(0);
@@ -118,6 +117,12 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     throwSerial.current += 1;
     const next = { serial: throwSerial.current, dice };
     setThrows((t) => ({ ...t, [kind]: next }));
+  };
+  /** Counts a throw: the first of its kind is free, every later one is a re-roll. */
+  const counted = (kind: RollKind, free = false) => {
+    if (rolledKinds.includes(kind)) {
+      if (!free) setRerolls((n) => n + 1);
+    } else setRolledKinds([...rolledKinds, kind]);
   };
 
   const pulp = variant === 'pulp';
@@ -130,8 +135,7 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
 
   /** Characteristics after the archetype's core, age and EDU checks. */
   const characteristics = useMemo<Characteristics>(() => {
-    const c = { ...base };
-    if (pulp && core) c[core.id] = Math.max(c[core.id], core.value);
+    const c = withCore(base, core, pulp);
     // Nothing rolled yet stays empty: age takes from what is there.
     const lose = (id: CharacteristicId, by: number) => {
       if (c[id] > 0) c[id] = Math.max(1, c[id] - by);
@@ -145,13 +149,15 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
 
   const luck = luckRolls.length === 0 ? 0 : rules.youth ? Math.max(...luckRolls) : luckRolls[0]!;
   const ownSkills = occupationSkills(occupationInfo, picks);
+  /** Points as they count: occupation points on the occupation's skills, archetype points in Pulp. */
+  const counts = countedPoints(points, ownSkills, pulp);
 
   const budgets = {
     occupation: occupationInfo ? formulaPoints(occupationInfo.points, characteristics) : 0,
     personal: personalPoints(characteristics),
     archetype: pulp ? ARCHETYPE_POINTS : 0,
   };
-  const spent = (pool: Pool) => Object.values(points[pool]).reduce((sum, n) => sum + n, 0);
+  const spent = (pool: Pool) => Object.values(counts[pool]).reduce((sum, n) => sum + n, 0);
   const remaining = {
     occupation: budgets.occupation - spent('occupation'),
     personal: budgets.personal - spent('personal'),
@@ -161,25 +167,28 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
   /** A skill's value as allocated: base plus the points of every pool (personal points go anywhere). */
   const skillValue = (id: string) =>
     skillBase(id, characteristics) +
-    (points.occupation[id] ?? 0) +
-    (points.personal[id] ?? 0) +
-    (points.archetype[id] ?? 0);
+    (counts.occupation[id] ?? 0) +
+    (counts.personal[id] ?? 0) +
+    (counts.archetype[id] ?? 0);
   const creditRating = skillValue('credit-rating');
 
   const allocated = useMemo(() => {
     const ids = new Set([
-      ...Object.keys(points.occupation),
-      ...Object.keys(points.personal),
-      ...Object.keys(points.archetype),
+      ...Object.keys(counts.occupation),
+      ...Object.keys(counts.personal),
+      ...Object.keys(counts.archetype),
     ]);
     return Object.fromEntries(
       [...ids].map((id) => [id, skillValue(id)]).filter(([, v]) => (v as number) > 0),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- skillValue reads these
-  }, [points, characteristics]);
+  }, [points, characteristics, pulp, ownSkills.join()]);
 
   const ageSpent = (['str', 'con', 'dex'] as const).reduce((sum, id) => sum + (ageLoss[id] ?? 0), 0);
   const youthSpent = (ageLoss.str ?? 0) + (ageLoss.siz ?? 0);
+
+  const choiceNumber = choiceNumbers(occupationInfo);
+  const overCap = skillsOverCap(allocated as Record<string, number>);
 
   const issues = {
     rules: editionPicked ? [] : ['Редакция'],
@@ -193,6 +202,7 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
       CHARACTERISTICS.reduce((sum, c) => sum + base[c.id], 0) !== POINT_BUY_TOTAL
         ? ['Очки характеристик']
         : []),
+      ...(method === 'manual' && manualOutOfRange(base).length ? ['Значения характеристик'] : []),
       ...(luckRolls.length ? [] : ['Удача']),
     ],
     age: [
@@ -208,8 +218,11 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     ],
     occupation: [
       ...(occupationInfo ? [] : ['Профессия']),
+      ...(occupationInfo?.era && occupationInfo.era !== era ? ['Профессия другой эпохи'] : []),
       ...(occupationInfo?.skills.flatMap((choice, i) =>
-        'skill' in choice || (picks[i]?.length ?? 0) >= choice.pick ? [] : [`Выбор навыков ${i + 1}`],
+        'skill' in choice || (picks[i]?.length ?? 0) >= choice.pick
+          ? []
+          : [`Выбор навыков ${choiceNumber[i]}`],
       ) ?? []),
     ],
     skills: [
@@ -220,6 +233,7 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
       (creditRating < occupationInfo.creditRating[0] || creditRating > occupationInfo.creditRating[1])
         ? ['Средства']
         : []),
+      ...overCap.map((id) => `Навык выше 99: ${skillName(id)}`),
     ],
     talents: pulp && talents.length !== (archetypeInfo?.talents ?? 2) ? ['Таланты'] : [],
     story: [] as string[],
@@ -288,18 +302,34 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     }
   };
 
-  /** Points of one pool on one skill, kept within the pool and the skill cap. */
+  /** Points of one pool on one skill, kept within the pool and the skill cap; lowering only stops at 0. */
   const setPoint = (pool: Pool, id: string, value: number) =>
     setPoints((all) => {
-      const others = Object.entries(all[pool]).reduce((sum, [key, n]) => (key === id ? sum : sum + n), 0);
-      const room = budgets[pool] - others;
       const current = all[pool][id] ?? 0;
-      const capRoom = SKILL_CAP - (skillValue(id) - current);
-      const next = Math.max(0, Math.min(Math.round(value), room, capRoom));
+      const next = nextPoints({
+        value,
+        current,
+        others: Object.entries(all[pool]).reduce((sum, [key, n]) => (key === id ? sum : sum + n), 0),
+        budget: budgets[pool],
+        without: skillValue(id) - current,
+      });
       const pool2 = { ...all[pool], [id]: next };
       if (next === 0) delete pool2[id];
       return { ...all, [pool]: pool2 };
     });
+
+  /** The picks of choice groups, and occupation points off the skills no longer picked. */
+  const choosePicks = (next: ChoicePicks) => {
+    setPicks(next);
+    const own = occupationSkills(occupationInfo, next);
+    setPoints((p) => pruneOccupationPoints(p, own));
+  };
+
+  /** EDU improvement checks are rolled against EDU as it stands: they start over once it changes. */
+  const setBaseAndChecks = (next: Characteristics) => {
+    setBase(next);
+    if (next.edu !== base.edu) setEduGains(null);
+  };
 
   return {
     variant,
@@ -307,10 +337,34 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     setVariant: (v: CocVariant) => {
       setVariant(v);
       setEditionChosen(true);
-      if (v === 'classic') setTalents([]);
+      if (v === 'classic') {
+        setTalents([]);
+        setCore(null);
+        setPoints((p) => ({ ...p, archetype: {} }));
+      }
+      if (v !== variant) {
+        // Luck is rolled by the edition's formula (3D6×5 or (2D6+6)×5): a new edition needs a new throw.
+        setLuckRolls([]);
+        // The core characteristic comes or goes with Pulp: EDU checks rolled against it start over.
+        if (core?.id === 'edu') setEduGains(null);
+      }
     },
     era,
-    setEra,
+    setEra: (e: CocEra) => {
+      if (e === era) return;
+      setEra(e);
+      if (occupationInfo?.era && occupationInfo.era !== e) {
+        setOccupationId(undefined);
+        setPicks({});
+        setPoints((p) => prunePointsToEra({ ...p, occupation: {} }, e));
+      } else {
+        const kept = picksInEra(picks, e);
+        setPicks(kept);
+        setPoints((p) =>
+          pruneOccupationPoints(prunePointsToEra(p, e), occupationSkills(occupationInfo, kept)),
+        );
+      }
+    },
     pulp,
     archetype,
     archetypeInfo,
@@ -326,18 +380,23 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     rollCore: (id: CharacteristicId) => {
       const { value, die } = rollCoreCharacteristicDetailed();
       setCore({ id, value });
+      if (id === 'edu' || core?.id === 'edu') setEduGains(null);
+      counted('core');
       thrown('core', die);
     },
     method,
     setMethod: (m: CharacteristicMethod) => {
       setMethodState(m);
       setBase(m === 'pointBuy' ? POINT_BUY_START : m === 'manual' ? { ...POINT_BUY_START } : EMPTY);
+      setEduGains(null);
     },
     base,
-    setBase,
+    setBase: setBaseAndChecks,
     rollAll: () => {
       const { values, dice } = rollCharacteristicsDetailed();
       setBase(values);
+      setEduGains(null);
+      counted('characteristics');
       thrown('characteristics', dice);
     },
     rolled,
@@ -347,6 +406,8 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     rollLuck: () => {
       const { value, dice } = rollLuckDetailed(variant);
       setLuckRolls((r) => (rules.youth && r.length === 1 ? [...r, value] : [value]));
+      // A youth's second throw is the rule, not a re-roll.
+      counted('luck', rules.youth && luckRolls.length === 1);
       thrown('luck', dice);
     },
     age,
@@ -363,7 +424,8 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     youthSpent,
     eduGains,
     rollEdu: () => {
-      let edu = base.edu - (rules.youth ? 5 : 0);
+      // EDU as the characteristics have it (a Pulp core included), before any checks are added.
+      let edu = withCore(base, core, pulp).edu - (rules.youth ? 5 : 0);
       const checks: { roll: number; die?: number; gain: number }[] = [];
       for (let i = 0; i < rules.eduChecks; i++) {
         const check = eduImprovement(edu);
@@ -371,6 +433,7 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
         edu += check.gain;
       }
       setEduGains(checks.map((c) => c.gain));
+      counted('edu');
       thrown('edu', checks);
     },
     characteristics,
@@ -385,7 +448,8 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
       }
     },
     picks,
-    setPicks,
+    setPicks: choosePicks,
+    choiceNumber,
     ownSkills,
     points,
     setPoint,
@@ -408,6 +472,7 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     images,
     setImages,
     preview,
+    rerolls,
     issues,
     create,
     creating,

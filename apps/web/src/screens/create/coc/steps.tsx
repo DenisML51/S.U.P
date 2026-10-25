@@ -4,7 +4,6 @@ import {
   CHARACTERISTICS,
   OCCUPATIONS,
   POINT_BUY_TOTAL,
-  SKILLS,
   TALENTS,
   WEAPONS,
   fifth,
@@ -25,6 +24,7 @@ import { ImageSlot } from '../../../ui/ImageSlot';
 import { WireDie } from '../../../ui/WireDie';
 import { LandedValue, RollingDice, useLanded, type ThrownDie } from '../../../ui/RollingDie';
 import { EditionCarousel } from '../../../ui/RulesetCards';
+import { choiceList, manualOutOfRange } from './creationRules';
 import { choiceOptions, type CocCreation } from './useCocCreation';
 
 const CHAR_SHORT = Object.fromEntries(CHARACTERISTICS.map((c) => [c.id, c.short])) as Record<
@@ -146,6 +146,12 @@ const EduThrow: React.FC<{ check: { roll: number; die?: number; gain: number }; 
   );
 };
 
+/** How many throws were made again: re-rolls are free, but the master sees how many. */
+const Rerolls: React.FC<{ count: number; className?: string }> = ({ count, className }) =>
+  count > 0 ? (
+    <p className={cx('text-center text-xs text-ink-faint', className)}>Перебросов: {count}</p>
+  ) : null;
+
 const Facts: React.FC<{ facts: [string, React.ReactNode][] }> = ({ facts }) => (
   <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
     {facts.map(([label, value]) => (
@@ -244,9 +250,8 @@ export const ArchetypeStep: React.FC<{ creation: CocCreation }> = ({ creation })
                   className="ui-display ui-numeric text-xl text-frame-bright"
                 />
               )}
-              <p className="text-xs text-ink-faint">
-                Она заменит обычный бросок этой характеристики, если выйдет выше.
-              </p>
+              <p className="text-xs text-ink-faint">Она заменяет обычный бросок этой характеристики.</p>
+              <Rerolls count={creation.rerolls} className="text-left" />
             </div>
           </div>
         </div>
@@ -265,6 +270,7 @@ export const ArchetypeStep: React.FC<{ creation: CocCreation }> = ({ creation })
 
 export const CharacteristicsStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
   const total = CHARACTERISTICS.reduce((sum, c) => sum + creation.base[c.id], 0);
+  const wrong = new Set(creation.method === 'manual' ? manualOutOfRange(creation.base) : []);
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-center gap-4">
@@ -286,6 +292,11 @@ export const CharacteristicsStep: React.FC<{ creation: CocCreation }> = ({ creat
         {creation.method === 'pointBuy' && (
           <span className={cx('text-sm', total === POINT_BUY_TOTAL ? 'text-success' : 'text-warning')}>
             Распределено {total} из {POINT_BUY_TOTAL}
+          </span>
+        )}
+        {creation.method === 'manual' && (
+          <span className={cx('text-sm', wrong.size ? 'text-warning' : 'text-ink-muted')}>
+            Выброшенное на своих кубах: кратно 5, 3d6×5 — 15–90, (2d6+6)×5 — 40–90
           </span>
         )}
       </div>
@@ -311,11 +322,11 @@ export const CharacteristicsStep: React.FC<{ creation: CocCreation }> = ({ creat
                 <NumberField
                   label={c.name}
                   value={value}
-                  min={15}
+                  min={creation.method === 'manual' && c.roll !== '3d6' ? 40 : 15}
                   max={90}
                   step={5}
                   onChange={(v) => creation.setBase({ ...creation.base, [c.id]: v })}
-                  className="w-24"
+                  className={cx('w-24', wrong.has(c.id) && 'text-warning')}
                 />
               )}
               <span className="text-xs text-ink-faint">
@@ -342,6 +353,7 @@ export const CharacteristicsStep: React.FC<{ creation: CocCreation }> = ({ creat
           {creation.luckRolls.length ? 'Перебросить' : 'Бросить удачу'}
         </Button>
       </Panel>
+      <Rerolls count={creation.rerolls} />
     </div>
   );
 };
@@ -436,6 +448,7 @@ export const AgeStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
           />
         </div>
       )}
+      <Rerolls count={creation.rerolls} />
     </div>
   );
 };
@@ -449,13 +462,6 @@ export const OccupationStep: React.FC<{ creation: CocCreation }> = ({ creation }
   const info = creation.occupationInfo;
   const shown = OCCUPATIONS.filter(
     (o) => (!o.era || o.era === creation.era) && o.name.toLowerCase().includes(query.trim().toLowerCase()),
-  );
-  const anyOptions = useMemo(
-    () =>
-      SKILLS.flatMap((s) =>
-        s.noPoints ? [] : s.specialities ? s.specialities.map((sp) => `${s.id}:${sp.id}`) : [s.id],
-      ).filter((id) => id !== 'credit-rating'),
-    [],
   );
   return (
     <div>
@@ -492,18 +498,11 @@ export const OccupationStep: React.FC<{ creation: CocCreation }> = ({ creation }
                 if ('skill' in choice) return <div key={i}>• {skillName(choice.skill)}</div>;
                 const options = choiceOptions(choice);
                 const picked = creation.picks[i] ?? [];
-                const list =
-                  options === 'any'
-                    ? anyOptions
-                    : options.flatMap((id) =>
-                        skillDef(id)?.skill.specialities && !id.includes(':')
-                          ? skillDef(id)!.skill.specialities!.map((s) => `${id}:${s.id}`)
-                          : [id],
-                      );
+                const list = choiceList(info, i, creation.picks, creation.era);
                 return (
                   <div key={i}>
                     <div className="mb-1 text-ink-muted">
-                      Выбрать {choice.pick}:{' '}
+                      {creation.choiceNumber[i]}. Выбрать {choice.pick}:{' '}
                       {options === 'any' ? 'любые навыки' : 'social' in choice ? 'межличностные' : ''}
                       <span className="text-ink-faint">
                         {' '}
@@ -933,6 +932,7 @@ export const CocSummary: React.FC<{ creation: CocCreation }> = ({ creation }) =>
           ))}
         </div>
       )}
+      <Rerolls count={creation.rerolls} className="text-left" />
       {creation.talents.length > 0 && (
         <div className="text-sm">
           <span className="ui-label">Таланты</span>
