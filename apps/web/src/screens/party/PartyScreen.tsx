@@ -42,6 +42,7 @@ import { StartCombatDialog } from './StartCombatDialog';
 import { TableDecks } from './PartyDecks';
 import { Companions, MyHero } from './PlayerSeat';
 import { useTableCombat } from './useTableCombat';
+import { SyncStatus } from '../../ui/SyncStatus';
 
 const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
 
@@ -159,6 +160,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
             {isMaster ? 'вы мастер' : `мастер ${party.members[0]?.displayName ?? ''}`}
           </span>
           <div className="ml-auto flex items-center gap-1">
+            <SyncStatus className="mr-2" />
             {isMaster &&
               (party.sessionStartedAt ? (
                 <Button
