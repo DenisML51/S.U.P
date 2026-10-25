@@ -42,6 +42,7 @@ import { settingOf } from '../../ui/theme/settings';
 import { foldRepeats } from '../sheet/parts/history';
 import { CombatChat } from '../party/CombatChat';
 import { PartyCombatBar } from '../party/PartyCombatBar';
+import { useFollowTurn } from '../party/useFollowTurn';
 import { useCoc } from './context';
 import { setRollVerdict, useRollShown, type RollVerdict } from './verdict';
 import { InsanityVeil, madnessStage } from './InsanityVeil';
@@ -180,6 +181,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   const userId = useSessionStore((s) => s.user?.id);
   const locked = useCharacterStore((s) => s.turnLock) !== null;
   const { party } = useTableOfCharacter(character.id);
+  useFollowTurn(character.id);
   const partyFight = party?.combat ?? null;
   const [round, setRound] = useRound(character.id);
   const inCombat = party ? partyFight !== null : round.inCombat;

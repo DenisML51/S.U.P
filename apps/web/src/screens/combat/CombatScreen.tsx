@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { initiativeModifier, resetTurn } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
@@ -9,6 +9,7 @@ import { useSessionStore } from '../../store/useSessionStore';
 import { CombatChat } from '../party/CombatChat';
 import { PartyCombatBar } from '../party/PartyCombatBar';
 import { useTurnLock } from '../party/useTurnLock';
+import { useFollowTurn } from '../party/useFollowTurn';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { Button, IconButton } from '../../ui/primitives';
 import { IconDice, IconExit, IconPrev, IconSettings } from '../../ui/icons';
@@ -98,23 +99,7 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
   const inCombat = party ? partyFight !== null : combat.inCombat;
   useTurnLock(character.id);
 
-  // The master plays several heroes: when the turn passes to another of the user's own heroes, the
-  // screen follows it. The turn already under way when the screen opens stays with the hero picked.
-  const loadCharacter = useCharacterStore((s) => s.loadCharacter);
-  const turnId = partyFight?.phase === 'active' ? partyFight.currentCombatantId : null;
-  const followedTurn = useRef<string | null | undefined>(undefined);
-  useEffect(() => {
-    if (!party) return;
-    if (followedTurn.current === undefined || turnId === followedTurn.current) {
-      followedTurn.current = turnId;
-      return;
-    }
-    followedTurn.current = turnId;
-    const current = partyFight?.combatants.find((c) => c.id === turnId);
-    if (current?.kind !== 'hero') return;
-    const hero = party.heroes.find((h) => h.id === current.refId && h.ownerId === userId);
-    if (hero && hero.characterId !== character.id) void loadCharacter(hero.characterId, 'hotbar');
-  }, [party, partyFight, turnId, userId, character.id, loadCharacter]);
+  useFollowTurn(character.id);
   const locked = useCharacterStore((s) => s.turnLock) !== null;
 
   const start = () => {
