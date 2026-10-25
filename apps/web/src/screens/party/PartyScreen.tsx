@@ -141,8 +141,9 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
 
   return (
     <SettingScope setting={party.setting} className="ui-morph relative h-screen overflow-clip bg-bg">
-      {/* The table stands in its world: the setting's own backdrop, as on the hero's sheet. */}
-      <SettingBackdrop setting={party.setting} strength={0.7} />
+      {/* The table stands in its world: the setting's own backdrop, as on the hero's sheet, but without
+          the screen-corner flourishes — the table's panels frame it already. */}
+      <SettingBackdrop setting={party.setting} strength={0.7} frame={false} />
 
       <div className="relative z-10 flex h-full flex-col gap-5 px-14 pb-8 pt-7">
         <motion.header
@@ -619,10 +620,25 @@ const Seats: React.FC<{
     <div className="ui-scroll -mr-2 min-h-0 flex-1 space-y-1 overflow-y-auto pr-2">
       {party.members.map((member) => (
         <div key={member.userId} className="ui-party-row group flex items-center gap-3 px-2 py-2">
-          <span className="ui-display grid h-9 w-9 shrink-0 place-items-center rounded-full bg-inset text-frame-bright">
+          {/* A lit mark: this member has the app open right now. */}
+          <span
+            className={cx(
+              'ui-display relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-inset',
+              member.online ? 'text-frame-bright' : 'text-ink-faint',
+            )}
+            title={member.online ? 'В сети' : 'Не в сети'}
+          >
             {member.displayName.charAt(0).toUpperCase()}
+            <span
+              aria-hidden
+              className={cx(
+                'absolute -bottom-px -right-px h-2.5 w-2.5 rounded-full border-2 border-bg-deep',
+                member.online ? 'bg-success shadow-[0_0_6px_rgb(var(--c-success)/0.8)]' : 'bg-ink-faint/50',
+              )}
+            />
           </span>
-          <span className="min-w-0 flex-1">
+          <span className={cx('min-w-0 flex-1', !member.online && 'opacity-60')}>
+            <span className="sr-only">{member.online ? 'В сети: ' : 'Не в сети: '}</span>
             <span className="block truncate text-sm text-ink">
               {member.displayName}
               {member.userId === userId && <span className="text-ink-faint"> · вы</span>}

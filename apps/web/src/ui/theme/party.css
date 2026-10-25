@@ -141,13 +141,39 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 .ui-decks-room {
   container-type: inline-size;
 }
-/* As tall as the screen allows, but narrow enough for every stack (and its peeking cards) in one row. */
+/* Stacks that wrap scroll within the room; sideways the fanned cards are only clipped, never scrolled. */
+.ui-decks-room--wrap {
+  overflow: hidden auto;
+  scrollbar-width: thin;
+}
+/* As tall as the screen allows, but narrow enough for every stack (and its peeking cards) in one row;
+   never smaller than a readable card — past that the stacks wrap. */
 .ui-decks {
-  --card-h: min(
-    clamp(13rem, 36vh, 19rem),
-    calc(((100cqw - (var(--groups, 3) - 1) * 2rem) / var(--groups, 3) - 66px) / 0.75)
-  );
+  /* Three cards peeking out from under a stack (PartyDecks `PEEK.x` × 3), with a little to spare when it fans. */
+  --stack-peek: 40px;
+  --per-row: var(--groups, 3);
+  --card-tall: clamp(13rem, 36vh, 19rem);
+  /* One stack's part of the row. */
+  --deck-share: calc((100cqw - (var(--per-row) - 1) * 2rem) / var(--per-row));
+  --card-h: max(8.5rem, min(var(--card-tall), calc((var(--deck-share) - var(--stack-peek)) / 0.75)));
   --card-w: calc(var(--card-h) * 0.75);
+}
+/* Too narrow for every stack in one row even with small cards: two to a row, a little lower, so
+   both rows mostly fit the screen. */
+@container (max-width: 680px) {
+  .ui-decks {
+    --per-row: 2;
+    --card-tall: clamp(8.5rem, 24vh, 13rem);
+  }
+}
+/* A title never widens its column past the stack's share of the room: wider, it would push the row
+   of stacks over the chat beside the table. */
+.ui-deck__title {
+  max-width: var(--deck-share);
+}
+/* Titles follow the room, so a narrow table keeps them whole as long as it can. */
+.ui-deck__title-text {
+  font-size: clamp(1rem, 2cqw, 1.35rem);
 }
 .ui-deck__empty {
   border: 1px dashed rgb(var(--c-frame) / 0.35);
