@@ -1,24 +1,26 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
-  BOUTS_REAL_TIME,
-  BOUTS_SUMMARY,
   COC_CONDITIONS,
-  MANIAS,
+  CONDITION_IDS,
   MYTHOS_SPELLS,
-  PHOBIAS,
   SKILLS,
   WEAPONS,
   addItem,
-  addMadness,
   addWeapon,
+  applyDevelopment,
   changeMagic,
-  developSkills,
+  displaySkillName,
   fifth,
   gainMythos,
+  gainSanity,
   half,
   learnSpell,
+  recoverLuck,
+  rollDevelopment,
+  rollLuckRecovery,
   setCash,
   setSkill,
+  skillDef,
   skillName,
   skillValue,
   spellDef,
@@ -26,18 +28,22 @@ import {
   wealthOf,
   weaponAttack,
   weaponDef,
+  type DevelopmentRoll,
 } from '@itd/game-logic/coc';
-import { createEntityId, maxSanityOf, rollDie } from '@itd/game-logic';
+import { createEntityId, maxSanityOf } from '@itd/game-logic';
 import type { Character, CocSheet } from '@itd/schema';
+import { toast } from 'react-hot-toast';
+import { Dialog } from '../../ui/Dialog';
+import { NumberField } from '../../ui/forms';
 import { Ledger, LedgerRow, MetaLine, MetaValue } from '../../ui/Ledger';
 import { Button, Input, Meter, Panel, SectionTitle, Tag } from '../../ui/primitives';
 import { IconPlus } from '../../ui/icons';
+import { SectionNotes } from '../sheet/parts/EditableText';
 import { useCoc } from './context';
 import { useCocSelection } from './details';
-import { CharacteristicsGrid, DerivedStrip, RollModsBar, SkillList, type RollMods } from './parts';
+import { CharacteristicsGrid, DerivedStrip, ModsNote, RollModsBar, SkillList } from './parts';
 import { ItemDialog, PickerDialog, type PickOption } from './picker';
-
-const NO_MODS: RollMods = { difficulty: 'regular', dice: 0 };
+import { addCondition, isSanitySpec, parseCashInput, setAssets } from './sheetRules';
 
 /** "Add" under a list: a quiet button that opens the dialog to pick from. */
 const AddButton: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
@@ -45,6 +51,12 @@ const AddButton: React.FC<{ label: string; onClick: () => void }> = ({ label, on
     {label}
   </Button>
 );
+
+/** One of the sheet's own texts (`attacksNotes`, `inventoryNotes`…), saved as typed. */
+const saveNotes =
+  (field: 'attacksNotes' | 'inventoryNotes' | 'spellsNotes' | 'abilitiesNotes') =>
+  (value: string) =>
+  (doc: Character): Character => ({ ...doc, [field]: value });
 
 // ------------------------------------------------------------------------------------------------
 // Investigator: characteristics and skills
@@ -72,27 +84,177 @@ const missingSkillOptions = (have: Set<string>): PickOption[] =>
         ],
   ).filter((o) => !have.has(o.id));
 
-export const InvestigatorSection: React.FC = () => {
+interface DevelopmentResult {
+  rolls: (DevelopmentRoll & { name: string; before: number })[];
+  luck?: { roll: number; gain: number; before: number };
+}
+
+/**
+ * The development phase between scenarios: asks first (it clears every tick), then rolls each ticked
+ * skill — and Luck, by the optional rule — outside the edit, writes the rolls down and shows them.
+ */
+const DevelopmentPhase: React.FC = () => {
   const { character, update } = useCoc();
-  const [mods, setMods] = useState<RollMods>(NO_MODS);
+  const [asking, setAsking] = useState(false);
+  const [withLuck, setWithLuck] = useState(false);
+  const [result, setResult] = useState<DevelopmentResult | null>(null);
+  const skills = character.coc?.skills ?? [];
+  const ticked = skills.filter((s) => s.check && !skillDef(s.id)?.skill.noImprovement).length;
+
+  const develop = () => {
+    setAsking(false);
+    // The dice are thrown here, once; the edit (run twice by the store) only writes them down.
+    const rolls = rollDevelopment(character);
+    const luck = withLuck ? rollLuckRecovery(character) : undefined;
+    const named = rolls.map((r) => {
+      const skill = skills.find((s) => s.id === r.id);
+      return { ...r, name: skill ? displaySkillName(skill) : skillName(r.id), before: skill?.value ?? 0 };
+    });
+    const grown = named.filter((r) => r.gain > 0);
+    const sanity = rolls.reduce((total, r) => total + r.sanityGain, 0);
+    const parts = [
+      rolls.length > 0 &&
+        (grown.length > 0
+          ? `выросли ${grown.map((r) => `${r.name} +${r.gain}`).join(', ')}`
+          : `ни один из ${rolls.length} навыков не вырос`),
+      sanity > 0 && `рассудок +${sanity}`,
+      luck && (luck.gain > 0 ? `удача +${luck.gain}` : 'удача не восстановилась'),
+    ].filter(Boolean);
+    update(
+      (doc) => {
+        const developed = applyDevelopment(rolls)(doc);
+        return luck && luck.gain > 0 ? recoverLuck(luck.gain)(developed) : developed;
+      },
+      { message: `Фаза развития: ${parts.join('; ')}`, type: 'other' },
+      { quiet: true },
+    );
+    setResult({ rolls: named, luck: luck && { roll: luck.roll, gain: luck.gain, before: character.coc?.luck ?? 0 } });
+  };
+
+  const sanityGain = result?.rolls.reduce((total, r) => total + r.sanityGain, 0) ?? 0;
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={() => setAsking(true)}
+        title="Каждый отмеченный навык бросает d100: выше значения (или 96+) — +1d10"
+      >
+        Развитие ({ticked})
+      </Button>
+      <Dialog
+        open={asking}
+        onClose={() => setAsking(false)}
+        title="Фаза развития"
+        width="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setAsking(false)}>
+              Отмена
+            </Button>
+            <Button variant="primary" disabled={ticked === 0 && !withLuck} onClick={develop}>
+              Бросить
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3 text-[15px] leading-relaxed text-ink-muted">
+          <p>
+            {ticked > 0
+              ? `Проверить ${ticked} отмеченных навыков? Каждый бросает d100: выше значения или 96+ — навык растёт на 1d10. Все отметки снимутся.`
+              : 'Отмеченных навыков нет: развивать нечего.'}
+          </p>
+          <label className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={withLuck}
+              onChange={(e) => setWithLuck(e.target.checked)}
+            />
+            <span>
+              Восстановление удачи (необязательное правило): d100 выше текущей удачи — +1d10
+              {character.build?.ruleset === 'coc7' && character.build.variant === 'pulp'
+                ? ', не выше начальной.'
+                : '.'}
+            </span>
+          </label>
+        </div>
+      </Dialog>
+      <Dialog
+        open={result !== null}
+        onClose={() => setResult(null)}
+        title="Итоги развития"
+        width="sm"
+        footer={
+          <Button variant="primary" onClick={() => setResult(null)}>
+            Готово
+          </Button>
+        }
+      >
+        {result && (
+          <div className="flex flex-col gap-3 text-sm">
+            {result.rolls.length > 0 && (
+              <table className="w-full">
+                <thead className="text-xs text-ink-faint">
+                  <tr>
+                    <th className="py-1 text-left font-normal">Навык</th>
+                    <th className="py-1 text-right font-normal">Бросок</th>
+                    <th className="py-1 text-right font-normal">Рост</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.rolls.map((r) => (
+                    <tr key={r.id} className="border-t border-line/50">
+                      <td className="py-1.5">{r.name}</td>
+                      <td className="py-1.5 text-right tabular-nums">
+                        {r.roll} / {r.before}
+                      </td>
+                      <td
+                        className={r.gain > 0 ? 'py-1.5 text-right tabular-nums text-success' : 'py-1.5 text-right text-ink-faint'}
+                      >
+                        {r.gain > 0 ? `+${r.gain} → ${r.before + r.gain}` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {sanityGain > 0 && (
+              <p className="text-success">
+                Навык достиг 90: рассудок +{sanityGain} (не выше предела 99 − Мифы).
+              </p>
+            )}
+            {result.luck && (
+              <p>
+                Удача: бросок {result.luck.roll} против {result.luck.before} —{' '}
+                {result.luck.gain > 0 ? (
+                  <span className="text-success">+{result.luck.gain}</span>
+                ) : (
+                  'без изменений'
+                )}
+              </p>
+            )}
+          </div>
+        )}
+      </Dialog>
+    </>
+  );
+};
+
+export const InvestigatorSection: React.FC = () => {
+  const { character, update, mods, setMods } = useCoc();
   const [filter, setFilter] = useState('');
   const [adding, setAdding] = useState(false);
-  const ticked = character.coc?.skills.filter((s) => s.check).length ?? 0;
   const options = useMemo(
     () => missingSkillOptions(new Set(character.coc?.skills.map((s) => s.id))),
     [character.coc?.skills],
   );
-  const develop = () =>
-    update((doc) => developSkills(doc).character, {
-      message: `Фаза развития: проверено навыков — ${ticked}`,
-      type: 'other',
-    });
 
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-3">
         <SectionTitle>Характеристики</SectionTitle>
-        <CharacteristicsGrid mods={mods} />
+        <CharacteristicsGrid />
         <DerivedStrip />
       </section>
       <Ledger
@@ -104,17 +266,10 @@ export const InvestigatorSection: React.FC = () => {
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               placeholder="Найти навык"
+              aria-label="Найти навык"
               className="!h-8 w-44 text-sm"
             />
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={ticked === 0}
-              onClick={develop}
-              title="Каждый отмеченный навык бросает d100: выше значения — +1d10"
-            >
-              Развитие ({ticked})
-            </Button>
+            <DevelopmentPhase />
           </>
         }
       >
@@ -122,12 +277,16 @@ export const InvestigatorSection: React.FC = () => {
           <RollModsBar value={mods} onChange={setMods} />
         </li>
         <li className="list-none pb-4">
-          <SkillList mods={mods} filter={filter} wide />
+          <SkillList filter={filter} wide />
         </li>
       </Ledger>
       <div>
         <AddButton label="Добавить навык" onClick={() => setAdding(true)} />
       </div>
+      <SectionNotes
+        value={character.abilitiesNotes}
+        onSave={(value) => update(saveNotes('abilitiesNotes')(value))}
+      />
       <PickerDialog
         open={adding}
         onClose={() => setAdding(false)}
@@ -174,7 +333,7 @@ const WEAPON_OPTIONS: PickOption[] = WEAPONS.map((w) => ({
 
 /** Weapons: the row opens the weapon's card, which attacks; the result comes as the roll's toast. */
 export const WeaponsSection: React.FC = () => {
-  const { character, update } = useCoc();
+  const { character, update, isJammed } = useCoc();
   const { open, isOpen } = useCocSelection();
   const [adding, setAdding] = useState(false);
 
@@ -194,6 +353,7 @@ export const WeaponsSection: React.FC = () => {
               meta={
                 <MetaLine
                   parts={[
+                    isJammed(a.id) && <span className="text-danger">заклинило</span>,
                     a.skill && `${skillName(a.skill)} ${value} · ${half(value)} · ${fifth(value)}`,
                     <>
                       урон <MetaValue>{a.damage}</MetaValue>
@@ -211,6 +371,7 @@ export const WeaponsSection: React.FC = () => {
       <div>
         <AddButton label="Взять оружие" onClick={() => setAdding(true)} />
       </div>
+      <SectionNotes value={character.attacksNotes} onSave={(value) => update(saveNotes('attacksNotes')(value))} />
       <PickerDialog
         open={adding}
         onClose={() => setAdding(false)}
@@ -220,11 +381,14 @@ export const WeaponsSection: React.FC = () => {
         confirmLabel="Взять"
         onPick={(id) => {
           const weapon = weaponDef(id);
-          if (weapon)
-            update(addWeapon(weaponAttack(weapon)), {
-              message: `Взято оружие: ${weapon.name}`,
-              type: 'inventory',
-            });
+          if (!weapon) return;
+          const attack = weaponAttack(weapon);
+          // Taking it again would replace the one in hand, with its rounds.
+          if (character.attacks.some((a) => a.id === attack.id)) {
+            toast(`${weapon.name} уже в листе`, { id: 'coc-weapon-owned' });
+            return;
+          }
+          update(addWeapon(attack), { message: `Взято оружие: ${weapon.name}`, type: 'inventory' });
         }}
       />
     </div>
@@ -235,36 +399,52 @@ export const WeaponsSection: React.FC = () => {
 // Sanity
 // ------------------------------------------------------------------------------------------------
 
-const pick = <T,>(list: T[]) => list[rollDie(list.length) - 1];
+/** Sanity regained: therapy, a horror defeated, the Keeper's reward; never above 99 − Mythos. */
+const RegainSanity: React.FC = () => {
+  const { character, update } = useCoc();
+  const [amount, setAmount] = useState(1);
+  const [reason, setReason] = useState('');
+  const max = maxSanityOf(character);
+  const room = Math.max(0, max - character.sanity);
+  const regain = () => {
+    const gained = Math.min(room, amount);
+    const why = reason.trim() || 'восстановление';
+    update(gainSanity(amount), { message: `Рассудок +${gained}: ${why}`, type: 'sanity' });
+    setReason('');
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <NumberField label="Сколько восстановить" value={amount} min={1} max={99} onChange={setAmount} className="w-20" />
+      <Input
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="За что: лечение, победа над ужасом…"
+        aria-label="Причина восстановления рассудка"
+        className="!h-9 min-w-0 flex-1"
+      />
+      <Button
+        size="sm"
+        disabled={room === 0}
+        onClick={regain}
+        title={room === 0 ? `Рассудок уже на пределе (${max})` : `Не выше ${max} (99 − Мифы Ктулху)`}
+      >
+        Восстановить
+      </Button>
+    </div>
+  );
+};
 
 export const SanitySection: React.FC = () => {
-  const { character, update, sanityRoll, roll } = useCoc();
+  const { character, update, sanityRoll, rollModded, rollBout, bout, followUps } = useCoc();
   const { open, isOpen } = useCocSelection();
   const coc = character.coc as CocSheet;
   const [spec, setSpec] = useState('0/1d6');
   const [source, setSource] = useState('');
-  const [bout, setBout] = useState<string | null>(null);
   const max = maxSanityOf(character);
   const mythos = skillValue(character, 'cthulhu-mythos');
   const insanity = COC_CONDITIONS.filter((c) => c.id.includes('insanity'));
   const insane = character.conditions.some((id) => id.includes('insanity'));
-
-  const rollBout = (summary: boolean) => {
-    const entry = pick(summary ? BOUTS_SUMMARY : BOUTS_REAL_TIME);
-    let text = `${entry.name}: ${entry.description}`;
-    let edit = (doc: Character) => doc;
-    if (entry.id.includes('phobia')) {
-      const phobia = pick(PHOBIAS);
-      text += ` — ${phobia.name}`;
-      edit = addMadness({ id: createEntityId('madness'), name: phobia.name, kind: 'phobia', description: phobia.description });
-    } else if (entry.id.includes('mania')) {
-      const mania = pick(MANIAS);
-      text += ` — ${mania.name}`;
-      edit = addMadness({ id: createEntityId('madness'), name: mania.name, kind: 'mania', description: mania.description });
-    }
-    setBout(text);
-    update(edit, { message: `Приступ безумия: ${text}`, type: 'sanity' });
-  };
+  const specOk = isSanitySpec(spec);
 
   return (
     <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6">
@@ -284,25 +464,39 @@ export const SanitySection: React.FC = () => {
               {Math.max(1, Math.floor((coc.sanityAtDayStart ?? character.sanity) / 5))} за день
             </span>
           </div>
-          <div className="flex flex-wrap items-end gap-2">
-            <Input
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder="Что увидел"
-              className="!h-9 flex-1"
-            />
-            <Input
-              value={spec}
-              onChange={(e) => setSpec(e.target.value)}
-              placeholder="0/1d6"
-              className="!h-9 w-24 text-center"
-              aria-label="Цена: успех/провал"
-            />
-            <Button variant="primary" onClick={() => sanityRoll(source.trim() || 'Проверка рассудка', spec)}>
-              Проверка рассудка
-            </Button>
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-end gap-2">
+              <Input
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                placeholder="Что увидел"
+                aria-label="Что увидел"
+                className="!h-9 flex-1"
+              />
+              <Input
+                value={spec}
+                onChange={(e) => setSpec(e.target.value)}
+                placeholder="0/1d6"
+                className="!h-9 w-24 text-center"
+                aria-label="Цена: успех/провал"
+                aria-invalid={!specOk || undefined}
+                aria-describedby={specOk ? undefined : 'coc-sanity-spec-error'}
+              />
+              <Button
+                variant="primary"
+                disabled={!specOk}
+                onClick={() => sanityRoll(source.trim() || 'Проверка рассудка', spec.replace(/\s/g, ''))}
+              >
+                Проверка рассудка
+              </Button>
+            </div>
+            {!specOk && (
+              <p id="coc-sanity-spec-error" className="text-xs text-danger">
+                Цена пишется как «успех/провал»: 0/1d6, 1/1d4+1, 1d3/1d10.
+              </p>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               onClick={() => update(startDay, { message: 'Начался новый день', type: 'sanity' })}
@@ -311,9 +505,7 @@ export const SanitySection: React.FC = () => {
             </Button>
             <Button
               size="sm"
-              onClick={() =>
-                roll({ label: 'Мифы Ктулху', value: mythos, kind: 'skill', id: 'cthulhu-mythos' })
-              }
+              onClick={() => rollModded({ label: 'Мифы Ктулху', value: mythos, kind: 'skill', id: 'cthulhu-mythos' })}
             >
               Бросок Мифов ({mythos})
             </Button>
@@ -324,19 +516,29 @@ export const SanitySection: React.FC = () => {
             >
               Мифы +1
             </Button>
+            <ModsNote />
           </div>
+          <RegainSanity />
         </Panel>
 
         <Panel ornate={false} className="flex flex-col gap-3 px-6 py-5">
           <SectionTitle>Безумие</SectionTitle>
           {insanity.map((c) => {
             const on = character.conditions.includes(c.id);
+            // Permanent insanity comes only with sanity at zero; the rest the Keeper may declare.
+            const manual = c.id !== CONDITION_IDS.permanentInsanity;
             return (
               <button
                 key={c.id}
                 type="button"
-                disabled={!on}
-                onClick={() => open('condition', c.id)}
+                disabled={!on && !manual}
+                aria-pressed={on}
+                onClick={() =>
+                  on
+                    ? open('condition', c.id)
+                    : update(addCondition(c.id), { message: `Состояние: ${c.name}`, type: 'sanity' })
+                }
+                title={on ? 'Открыть: снять можно в карточке' : 'Отметить по решению Хранителя'}
                 className="flex items-start gap-3 text-left"
               >
                 <Tag tone={on ? 'danger' : 'line'}>{on ? 'есть' : 'нет'}</Tag>
@@ -348,10 +550,10 @@ export const SanitySection: React.FC = () => {
             );
           })}
           <div className="flex flex-wrap gap-2 pt-1">
-            <Button size="sm" onClick={() => rollBout(false)} disabled={!insane}>
+            <Button size="sm" onClick={() => rollBout(false)} disabled={!insane && !followUps.bout}>
               Приступ (в моменте)
             </Button>
-            <Button size="sm" onClick={() => rollBout(true)} disabled={!insane}>
+            <Button size="sm" onClick={() => rollBout(true)} disabled={!insane && !followUps.bout}>
               Приступ (вкратце)
             </Button>
           </div>
@@ -375,6 +577,7 @@ export const SanitySection: React.FC = () => {
           ))}
         </Ledger>
         <MagicPanel />
+        <SectionNotes value={character.spellsNotes} onSave={(value) => update(saveNotes('spellsNotes')(value))} />
       </div>
     </div>
   );
@@ -409,7 +612,7 @@ const MagicPanel: React.FC = () => {
         aside={
           <span className="flex items-center gap-2">
             ПМ <b className="tabular-nums">{coc.magicPoints}</b> / {maxMP}
-            <Button size="row" variant="ghost" onClick={() => update(changeMagic(-1))}>
+            <Button size="row" variant="ghost" onClick={() => update(changeMagic(-1))} aria-label="Магия: −1">
               −1
             </Button>
             <Button
@@ -417,6 +620,7 @@ const MagicPanel: React.FC = () => {
               variant="ghost"
               onClick={() => update(changeMagic(1))}
               title="Магия восстанавливается по 1 ПМ в час"
+              aria-label="Магия: +1"
             >
               +1
             </Button>
@@ -462,6 +666,42 @@ const MagicPanel: React.FC = () => {
 // Gear and money
 // ------------------------------------------------------------------------------------------------
 
+/** A short text of the sheet edited in place: saved on blur or Enter, Escape drops the edit. */
+const InlineText: React.FC<{
+  value: string;
+  label: string;
+  placeholder?: string;
+  onSave: (value: string) => void;
+  className?: string;
+}> = ({ value, label, placeholder, onSave, className }) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  const cancelled = useRef(false);
+  return (
+    <Input
+      className={className}
+      aria-label={label}
+      placeholder={placeholder}
+      value={draft ?? value}
+      onFocus={() => {
+        cancelled.current = false;
+      }}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        if (!cancelled.current && draft !== null && draft.trim() !== value) onSave(draft.trim());
+        setDraft(null);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          cancelled.current = true;
+          e.currentTarget.blur();
+        }
+      }}
+    />
+  );
+};
+
 export const GearSection: React.FC = () => {
   const { character, update } = useCoc();
   const { open, isOpen } = useCocSelection();
@@ -492,15 +732,18 @@ export const GearSection: React.FC = () => {
         <div>
           <AddButton label="Добавить вещь" onClick={() => setAdding(true)} />
         </div>
+        <SectionNotes
+          value={character.inventoryNotes}
+          onSave={(value) => update(saveNotes('inventoryNotes')(value))}
+        />
         <ItemDialog
           open={adding}
           onClose={() => setAdding(false)}
-          onAdd={(item) =>
-            update(addItem({ ...item, id: createEntityId('item') }), {
-              message: `Взято: ${item.name}`,
-              type: 'inventory',
-            })
-          }
+          onAdd={(item) => {
+            // The id is made here, once: the edit runs twice (screen and stored copy).
+            const id = createEntityId('item');
+            update(addItem({ ...item, id }), { message: `Взято: ${item.name}`, type: 'inventory' });
+          }}
         />
       </div>
       <Panel ornate={false} className="flex flex-col gap-3 px-6 py-5">
@@ -512,21 +755,38 @@ export const GearSection: React.FC = () => {
           </span>
           <span className="text-ink-muted">Расходы в день</span>
           <span className="text-right">${wealth.spendingLevel.toLocaleString('ru-RU')}</span>
-          <span className="text-ink-muted">Наличные, $</span>
+          <label className="text-ink-muted" htmlFor="coc-cash">
+            Наличные, $
+          </label>
           <Input
+            id="coc-cash"
             className="!h-8 text-right"
             inputMode="decimal"
             value={cash ?? String(coc.cash)}
             onChange={(e) => setCashText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur();
+              if (e.key === 'Escape') {
+                e.stopPropagation();
+                setCashText(null);
+              }
+            }}
             onBlur={() => {
-              const value = Number((cash ?? '').replace(',', '.'));
-              if (cash !== null && Number.isFinite(value) && value !== coc.cash)
+              // An empty or unreadable entry keeps the money as it was.
+              const value = cash === null ? null : parseCashInput(cash);
+              if (value !== null && value !== coc.cash)
                 update(setCash(value), { message: `Наличные: $${coc.cash} → $${value}`, type: 'inventory' });
               setCashText(null);
             }}
           />
           <span className="text-ink-muted">Имущество</span>
-          <span className="text-right">{coc.assets || '—'}</span>
+          <InlineText
+            className="!h-8 text-right"
+            label="Имущество"
+            placeholder="—"
+            value={coc.assets}
+            onSave={(assets) => update(setAssets(assets), { message: 'Имущество изменено', type: 'inventory' })}
+          />
         </div>
       </Panel>
     </div>
@@ -549,31 +809,47 @@ const STORY_FIELDS: { field: keyof CocSheet['backstory']; title: string }[] = [
   { field: 'encounters', title: 'Встречи с неведомым' },
 ];
 
-/** Talents of a Pulp hero and the player's own traits; each opens its card. */
+/** Talents of a Pulp hero and the player's own traits; each opens its card, own traits are added here. */
 const Talents: React.FC = () => {
-  const { character } = useCoc();
+  const { character, update } = useCoc();
   const { open, isOpen } = useCocSelection();
-  if (character.traits.length === 0) return null;
+  const add = () => {
+    // The id is made here, once: the edit runs twice (screen and stored copy).
+    const id = createEntityId('trait');
+    update(
+      (doc) => ({ ...doc, traits: [...doc.traits, { id, name: 'Новая особенность', description: '' }] }),
+      { message: 'Добавлена особенность', type: 'other' },
+    );
+    open('talent', id);
+  };
   return (
-    <Ledger title="Таланты и особенности" scroll={false}>
-      {character.traits.map((t) => (
-        <LedgerRow
-          key={t.id}
-          title={t.name}
-          meta={t.grant?.startsWith('talent:') ? 'Талант Pulp' : 'Своя особенность'}
-          onOpen={() => open('talent', t.id)}
-          selected={isOpen('talent', t.id)}
-        />
-      ))}
-    </Ledger>
+    <div className="flex flex-col gap-3">
+      {character.traits.length > 0 && (
+        <Ledger title="Таланты и особенности" scroll={false}>
+          {character.traits.map((t) => (
+            <LedgerRow
+              key={t.id}
+              title={t.name}
+              meta={t.grant?.startsWith('talent:') ? 'Талант Pulp' : 'Своя особенность'}
+              onOpen={() => open('talent', t.id)}
+              selected={isOpen('talent', t.id)}
+            />
+          ))}
+        </Ledger>
+      )}
+      <div>
+        <AddButton label="Своя особенность" onClick={add} />
+      </div>
+    </div>
   );
 };
 
-/** The backstory in the order of the paper sheet; each block is written in place. */
+/** The backstory in the order of the paper sheet; each block is written in place, Escape drops the edit. */
 export const StorySection: React.FC = () => {
   const { character, update } = useCoc();
   const story = (character.coc as CocSheet).backstory;
   const [editing, setEditing] = useState<string | null>(null);
+  const cancelled = useRef(false);
   return (
     <div className="flex flex-col gap-6">
       <Talents />
@@ -586,18 +862,31 @@ export const StorySection: React.FC = () => {
                 {editing === field ? (
                   <textarea
                     autoFocus
+                    aria-label={title}
                     defaultValue={story[field]}
                     className="ui-input min-h-24 w-full resize-y bg-transparent text-paper-ink"
+                    onFocus={() => {
+                      cancelled.current = false;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        e.stopPropagation();
+                        cancelled.current = true;
+                        e.currentTarget.blur();
+                      }
+                    }}
                     onBlur={(e) => {
                       const value = e.currentTarget.value;
-                      if (value !== story[field])
-                        update((doc) =>
-                          doc.coc
-                            ? {
-                                ...doc,
-                                coc: { ...doc.coc, backstory: { ...doc.coc.backstory, [field]: value } },
-                              }
-                            : doc,
+                      if (!cancelled.current && value !== story[field])
+                        update(
+                          (doc) =>
+                            doc.coc
+                              ? {
+                                  ...doc,
+                                  coc: { ...doc.coc, backstory: { ...doc.coc.backstory, [field]: value } },
+                                }
+                              : doc,
+                          { message: `История: ${title.toLowerCase()}`, type: 'other' },
                         );
                       setEditing(null);
                     }}
@@ -606,6 +895,7 @@ export const StorySection: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setEditing(field)}
+                    aria-label={`${title}: изменить`}
                     className="block w-full whitespace-pre-wrap text-left text-[15px] leading-relaxed"
                   >
                     {story[field] || <span className="opacity-50">Нажмите, чтобы записать</span>}

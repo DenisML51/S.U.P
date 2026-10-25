@@ -2,15 +2,21 @@ import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   COC_CONDITIONS,
-  applyDamage,
+  CONDITION_IDS,
+  absorbArmor,
+  applyHitDamage,
+  applyWeeklyRecovery,
   archetypeDef,
   changeMagic,
   cocCharacteristics,
   heal,
   occupationDef,
   setLuck,
+  stabilise,
+  weeklyRecovery,
 } from '@itd/game-logic/coc';
 import { maxSanityOf } from '@itd/game-logic';
+import { useNavStore } from '../../store/useNavStore';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { Rail, RailButton, RailDivider } from '../../ui/Rail';
 import { Button, cx } from '../../ui/primitives';
@@ -28,6 +34,8 @@ import {
   IconSettings,
 } from '../../ui/icons';
 import { useCoc } from './context';
+import { ConditionsDialog, FollowUpBanners } from './controls';
+import { setArmor } from './sheetRules';
 import { InsanityVeil, madnessStage } from './InsanityVeil';
 import { Track } from './parts';
 import { CocDetailsLayout, CocSelectionProvider, useCocSelection } from './details';
@@ -53,8 +61,35 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode; onProfile?: () =>
   onProfile,
 }) => {
   const { open } = useCocSelection();
-  const { character, update, roll } = useCoc();
+  const { character, update, roll, present } = useCoc();
   const coc = character.coc!;
+  const [conditionsOpen, setConditionsOpen] = useState(false);
+  const armor = coc.armor ?? 0;
+  const has = (id: string) => character.conditions.includes(id);
+  const majorWound = has(CONDITION_IDS.majorWound);
+  const hurt = character.currentHP < character.maxHP;
+
+  const takeHit = () => {
+    const taken = absorbArmor(amount, armor);
+    update(applyHitDamage(amount), {
+      message: armor > 0 ? `Урон ${amount}, броня −${Math.min(amount, armor)}: ${taken}` : `Урон ${amount}`,
+      type: 'health',
+    });
+  };
+  /** A week of rest with a major wound: the CON roll is made here, the edit writes down what it gave. */
+  const restWeek = () => {
+    const result = weeklyRecovery(character);
+    if (!result.needed || !result.check) return;
+    const note = result.check.success
+      ? `Восстановлено ${result.gain} хитов${result.clearsMajorWound ? '; серьёзная рана зажила' : ''}.`
+      : 'Неделя прошла без улучшения.';
+    present(
+      { label: 'Неделя отдыха: ВЫН', value: cocCharacteristics(character).con, kind: 'rule' },
+      result.check,
+      { note },
+    );
+    update(applyWeeklyRecovery(result), { message: `Неделя отдыха: ${note}`, type: 'health' }, { quiet: true });
+  };
   const build = character.build?.ruleset === 'coc7' ? character.build : undefined;
   const occupation = occupationDef(build?.occupation)?.name ?? character.class;
   const archetype = archetypeDef(build?.archetype)?.name;
@@ -98,8 +133,9 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode; onProfile?: () =>
       </div>
 
       <div className="ui-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-3">
+        <FollowUpBanners />
         <Track label="Хиты" value={character.currentHP} max={character.maxHP} tone="hp" />
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <NumberField
             label="Сколько"
             value={amount}
@@ -110,7 +146,8 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode; onProfile?: () =>
           <Button
             size="sm"
             variant="danger"
-            onClick={() => update(applyDamage(amount), { message: `Урон ${amount}`, type: 'health' })}
+            onClick={takeHit}
+            title={armor > 0 ? `Броня снимает ${armor} с каждого удара` : 'Урон от удара'}
           >
             Урон
           </Button>
@@ -120,6 +157,47 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode; onProfile?: () =>
           >
             Лечение
           </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-ink-muted">Броня</span>
+          <NumberField
+            label="Броня"
+            value={armor}
+            min={0}
+            max={20}
+            onChange={(v) => update(setArmor(v), { message: `Броня: ${armor} → ${v}`, type: 'health' })}
+            className="w-20"
+          />
+          {has(CONDITION_IDS.dying) && (
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() =>
+                update(stabilise, { message: 'Первая помощь: состояние стабильно, +1 хит', type: 'health' })
+              }
+              title="Успешная первая помощь при смерти: +1 хит, жизнь вне опасности на час"
+            >
+              Первая помощь
+            </Button>
+          )}
+          {majorWound ? (
+            <Button
+              size="sm"
+              onClick={restWeek}
+              title="С серьёзной раной: бросок ВЫН в конце недели — успех +1d3, экстремальный +2d3 и рана заживает"
+            >
+              Неделя отдыха
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              disabled={!hurt}
+              onClick={() => update(heal(1), { message: 'День отдыха: +1 хит', type: 'health' })}
+              title="Без серьёзной раны хиты восстанавливаются по 1 в день"
+            >
+              День отдыха
+            </Button>
+          )}
         </div>
         <Track
           label="Магия"
@@ -141,14 +219,14 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode; onProfile?: () =>
             variant="ghost"
             className="justify-self-start"
             onClick={() => roll({ label: 'Удача', value: coc.luck, kind: 'luck' })}
+            title="Бросок удачи — без сложности и без бонусных и штрафных костей"
           >
             Бросок удачи
           </Button>
         </Track>
 
-        {conditions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {conditions.map((c) => (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {conditions.map((c) => (
               <button
                 key={c!.id}
                 type="button"
@@ -160,8 +238,11 @@ const InvestigatorColumn: React.FC<{ footer?: React.ReactNode; onProfile?: () =>
                 {c!.name}
               </button>
             ))}
-          </div>
-        )}
+          <Button size="row" variant="ghost" onClick={() => setConditionsOpen(true)}>
+            Состояния…
+          </Button>
+        </div>
+        <ConditionsDialog open={conditionsOpen} onClose={() => setConditionsOpen(false)} />
       </div>
       {footer && <div className="shrink-0 border-t border-line/70 px-4 py-2">{footer}</div>}
     </aside>
@@ -203,11 +284,13 @@ const SheetLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
   const { close } = useCocSelection();
   const [section, setSection] = useState<CocSection>('investigator');
   const stage = madnessStage(character);
+  // Opened from a party's table, the investigator goes back to it.
+  const atTable = useNavStore((s) => s.place.screen === 'party');
 
   return (
     <div className={cx('coc-sheet relative flex h-full', className)}>
       <motion.div
-        className={cx('flex h-full w-full', stage >= 3 && 'coc-sway')}
+        className="flex h-full w-full"
         exit={{ opacity: 0, scale: 0.985, transition: { duration: 0.25 } }}
       >
         <motion.div
@@ -218,10 +301,10 @@ const SheetLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
         >
           <Rail label="Разделы листа">
             <RailButton
-              label="Герои"
+              label={atTable ? 'Стол' : 'Герои'}
               Icon={IconPrev}
               onClick={onBack ?? (() => undefined)}
-              hint="К выбору героя"
+              hint={atTable ? 'К столу партии' : 'К выбору героя'}
             />
             <RailDivider />
             <div className="flex flex-1 flex-col">

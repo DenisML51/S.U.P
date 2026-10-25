@@ -1,8 +1,23 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { toast } from 'react-hot-toast';
-import type { HistoryEvent } from '@itd/game-logic';
+import { createEntityId, rollDie, type HistoryEvent } from '@itd/game-logic';
 import {
+  BOUTS_REAL_TIME,
+  BOUTS_SUMMARY,
+  CONDITION_IDS,
+  MANIAS,
+  PHOBIAS,
   SUCCESS_LABELS,
+  addMadness,
   afterIntRoll,
   afterSkillRoll,
   checkSkill,
@@ -16,12 +31,14 @@ import {
   weaponDamageDetailed,
   type DamageDie,
   type Difficulty,
+  type SanityOutcome,
   type SkillCheck,
 } from '@itd/game-logic/coc';
 import type { Character } from '@itd/schema';
+import { NO_MODS, diceOnly, modsAfterRoll, modsToRoll, type RollMods } from './sheetRules';
 
-/** What was rolled: a skill (ticked on success), a characteristic, Luck, Sanity, an attack, INT. */
-export type RollKind = 'skill' | 'characteristic' | 'luck' | 'sanity' | 'attack' | 'int';
+/** What was rolled: a skill (ticked on success), a characteristic, Luck, Sanity, an attack, INT, a roll the rules make (a week's recovery, a first casting: neither pushed nor bought with Luck). */
+export type RollKind = 'skill' | 'characteristic' | 'luck' | 'sanity' | 'attack' | 'int' | 'rule';
 
 export interface RollRequest {
   label: string;
@@ -36,6 +53,10 @@ export interface RollRequest {
   penalty?: number;
   /** A gun jams on a roll at or above this. */
   malfunction?: number;
+  /** The damage band of the range (a shotgun's "4d6/2d6/1d6"): 0 up close. */
+  band?: number;
+  /** The screen that rolled the attack rolls its damage itself (a volley, a farther band): no "Урон" on the toast. */
+  damageRolled?: boolean;
 }
 
 export interface RollRecord extends RollRequest {
@@ -51,11 +72,15 @@ export interface RollRecord extends RollRequest {
     needsIntRoll: boolean;
     indefinite: boolean;
     permanent: boolean;
+    /** Already insane: the loss brings a bout of madness. */
+    boutTriggered?: boolean;
     /** The dice of the loss, to show them thrown. */
     dice?: { sides: number; value: number }[];
   };
   /** An attack's damage, once rolled, with the dice behind it. */
   damage?: { total: number; formula: string; dice?: DamageDie[] };
+  /** A line of what the roll meant (a week's recovery, a first casting). */
+  note?: string;
   serial: number;
 }
 
@@ -64,12 +89,29 @@ export interface UpdateOptions {
   quiet?: boolean;
 }
 
+/** What a shock left to do, kept on screen until it is done or waved away. */
+export interface FollowUps {
+  /** A loss of 5 or more: the INT roll that decides whether the horror sinks in. */
+  int: { source: string } | null;
+  /** A bout of madness to roll (a loss while insane, a passed INT roll, indefinite insanity). */
+  bout: { reason: string } | null;
+}
+
+const NO_FOLLOW_UPS: FollowUps = { int: null, bout: null };
+
 export interface CocSheetApi {
   character: Character;
   /** One edit of the sheet, with its line in the journal. */
   update: (edit: (doc: Character) => Character, log?: HistoryEvent, options?: UpdateOptions) => void;
   last: RollRecord | null;
   roll: (request: RollRequest) => RollRecord;
+  /**
+   * A roll with the sheet's modifiers (`mods`), which go back to plain afterwards unless pinned.
+   * `diceOnly` keeps the difficulty out (an opposed roll such as a dodge compares levels instead).
+   */
+  rollModded: (request: RollRequest, options?: { diceOnly?: boolean }) => RollRecord;
+  /** A roll already made by the rules (a week's CON roll, a first casting), shown as the latest. */
+  present: (request: RollRequest, check: SkillCheck, extra?: Partial<RollRecord>) => RollRecord;
   /** The same roll again, at the risk the Keeper names; only after a failure, only once. */
   push: () => void;
   /** Turns the last failed roll into a success for as much Luck as it missed by. */
@@ -78,13 +120,63 @@ export interface CocSheetApi {
   rollDamage: () => void;
   /** A sanity roll with its cost ("0/1d6"); the loss and any insanity go onto the sheet. */
   sanityRoll: (label: string, spec: string) => void;
+  /** What a loss of sanity already paid (a spell's price) sets off: the INT roll, a bout. */
+  sanityLost: (source: string, outcome: Omit<SanityOutcome, 'sanity'>) => void;
   dismiss: () => void;
   damageBonus: string;
+
+  /** Difficulty and bonus or penalty dice of the next roll, the same wherever it is rolled from. */
+  mods: RollMods;
+  setMods: (mods: RollMods) => void;
+
+  followUps: FollowUps;
+  rollInt: () => void;
+  dismissInt: () => void;
+  /** Rolls a bout of madness from the tables; `summary` when the investigator is alone (the summary table). */
+  rollBout: (summary: boolean) => void;
+  dismissBout: () => void;
+  /** The last bout rolled, kept while the sheet is open. */
+  bout: string | null;
+
+  /** Why the hero cannot act now (a party's fight, someone else's turn), or null. */
+  turnLock: string | null;
+  /** Runs an action of the fight only on the hero's turn; otherwise says why and returns false. */
+  onTurn: (run: () => void) => boolean;
+
+  /** A gun that jammed stays jammed until it is cleared (kept on this screen, not in the sheet). */
+  isJammed: (weaponId: string) => boolean;
+  clearJam: (weaponId: string) => void;
 }
 
 const CocSheetContext = createContext<CocSheetApi | null>(null);
-/** The latest api for the roll's toast, which is drawn outside the provider. */
-const ApiRef = createContext<React.MutableRefObject<CocSheetApi | null> | null>(null);
+
+/** The latest api for the roll's toast, which is drawn outside the provider and must follow it. */
+interface ApiStore {
+  get: () => CocSheetApi | null;
+  subscribe: (listener: () => void) => () => void;
+}
+const ApiStoreContext = createContext<ApiStore | null>(null);
+
+const createApiStore = () => {
+  let current: CocSheetApi | null = null;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => current,
+    set: (api: CocSheetApi) => {
+      current = api;
+      listeners.forEach((listener) => listener());
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+};
+
+const noSubscribe = () => () => undefined;
+const nothing = () => null;
 
 export const useCoc = (): CocSheetApi => {
   const api = useContext(CocSheetContext);
@@ -94,19 +186,20 @@ export const useCoc = (): CocSheetApi => {
 
 /** The api inside the roll's toast (drawn by the app's toaster, outside the provider) or the sheet. */
 export const useCocAnywhere = (): CocSheetApi => {
-  const ref = useContext(ApiRef);
+  const store = useContext(ApiStoreContext);
   const api = useContext(CocSheetContext);
-  const found = ref?.current ?? api;
+  const live = useSyncExternalStore(store?.subscribe ?? noSubscribe, store?.get ?? nothing);
+  const found = live ?? api;
   if (!found) throw new Error('useCocAnywhere outside CocSheetProvider');
   return found;
 };
 
-/** Luck cannot buy Luck, Sanity or pushed rolls (7th edition). */
+/** Luck cannot buy Luck, Sanity, the rules' own or pushed rolls (7th edition). */
 export const canBuyWithLuck = (record: RollRecord, luck: number): boolean =>
   !record.check.success &&
   !record.pushed &&
   record.check.level !== 'fumble' &&
-  !['luck', 'sanity', 'int'].includes(record.kind) &&
+  !['luck', 'sanity', 'int', 'rule'].includes(record.kind) &&
   luckToSucceed(record.check.total, target(record)) <= luck;
 
 export const canPush = (record: RollRecord): boolean =>
@@ -123,6 +216,13 @@ export const target = (record: Pick<RollRecord, 'value' | 'difficulty'>): number
       ? Math.floor(record.value / 2)
       : record.value;
 
+/** A hit whose damage is still to roll from the toast (not when the screen rolled it already). */
+export const canRollDamage = (record: RollRecord | null): record is RollRecord =>
+  !!record && record.kind === 'attack' && record.check.success && !record.damage && !record.damageRolled;
+
+/** What a roll bought with Luck reaches: the level its difficulty asked for. */
+export const boughtLevel = (record: Pick<RollRecord, 'difficulty'>): Difficulty => record.difficulty ?? 'regular';
+
 const describe = (record: RollRecord): string =>
   `${record.label}${record.pushed ? ' (повтор)' : ''}: ${record.check.total} из ${target(record)} — ${
     SUCCESS_LABELS[record.check.level]
@@ -134,27 +234,47 @@ const ROLL_TOAST = 'coc-roll';
 const tickFor = (request: RollRequest) =>
   request.skill ?? (request.kind === 'skill' ? request.id : undefined);
 
+const pick = <T,>(list: T[]): T => list[rollDie(list.length) - 1]!;
+
+/** What a sanity loss leaves to do, by the rules: the INT roll for 5+, a bout when already insane or newly indefinite. */
+export function followUpsOf(
+  source: string,
+  outcome: Pick<SanityOutcome, 'needsIntRoll' | 'boutTriggered' | 'indefinite' | 'permanent'>,
+  wasIndefinite: boolean,
+): Partial<FollowUps> {
+  if (outcome.permanent) return { int: null };
+  const next: Partial<FollowUps> = {};
+  if (outcome.needsIntRoll && !outcome.boutTriggered) next.int = { source };
+  if (outcome.boutTriggered) next.bout = { reason: `${source}: потеря рассудка при безумии` };
+  else if (outcome.indefinite && !wasIndefinite) next.bout = { reason: `${source}: бессрочное безумие` };
+  return next;
+}
+
 /**
  * Everything an investigator's screens do goes through here: the sheet in the app (backed by the
  * store) and the design showcase (backed by local state) work the same way. The latest roll shows
  * as the app's toast, with what may follow it by the rules.
+ *
+ * The store runs every edit twice (on the screen's copy and the stored one): dice are thrown and
+ * ids made here, outside the edits, and the edits only write down what was thrown.
  */
 export const CocSheetProvider: React.FC<{
   character: Character;
   update: CocSheetApi['update'];
   /** Draws the roll's toast; the sheet passes it, so the provider stays free of the parts. */
   renderRoll?: (record: RollRecord) => React.ReactNode;
+  /** Out of the hero's turn in a party's fight: why (the fight's actions are refused). */
+  turnLock?: string | null;
   children: React.ReactNode;
-}> = ({ character, update, renderRoll, children }) => {
+}> = ({ character, update, renderRoll, turnLock = null, children }) => {
   const [last, setLast] = useState<RollRecord | null>(null);
+  const [mods, setMods] = useState<RollMods>(NO_MODS);
+  const [followUps, setFollowUps] = useState<FollowUps>(NO_FOLLOW_UPS);
+  const [bout, setBout] = useState<string | null>(null);
+  const [jams, setJams] = useState<Record<string, true>>({});
   const serial = useRef(0);
 
-  const record = useCallback((request: RollRequest, extra: Partial<RollRecord> = {}): RollRecord => {
-    const check = checkSkill(request.value, {
-      difficulty: request.difficulty,
-      bonus: request.bonus,
-      penalty: request.penalty,
-    });
+  const show = useCallback((request: RollRequest, check: SkillCheck, extra: Partial<RollRecord> = {}) => {
     serial.current += 1;
     const next: RollRecord = {
       ...request,
@@ -164,8 +284,26 @@ export const CocSheetProvider: React.FC<{
       ...extra,
     };
     setLast(next);
+    if (next.jammed && request.kind === 'attack' && request.id) {
+      const id = request.id;
+      setJams((current) => ({ ...current, [id]: true }));
+    }
     return next;
   }, []);
+
+  const record = useCallback(
+    (request: RollRequest, extra: Partial<RollRecord> = {}): RollRecord =>
+      show(
+        request,
+        checkSkill(request.value, {
+          difficulty: request.difficulty,
+          bonus: request.bonus,
+          penalty: request.penalty,
+        }),
+        extra,
+      ),
+    [show],
+  );
 
   const roll = useCallback<CocSheetApi['roll']>(
     (request) => {
@@ -184,6 +322,17 @@ export const CocSheetProvider: React.FC<{
     [record, update],
   );
 
+  const rollModded = useCallback<CocSheetApi['rollModded']>(
+    (request, options) => {
+      const next = roll({ ...request, ...(options?.diceOnly ? diceOnly(mods) : modsToRoll(mods)) });
+      setMods(modsAfterRoll(mods));
+      return next;
+    },
+    [roll, mods],
+  );
+
+  const present = useCallback<CocSheetApi['present']>((request, check, extra) => show(request, check, extra), [show]);
+
   const push = useCallback(() => {
     if (!last || !canPush(last)) return;
     const next = record(last, { pushed: true });
@@ -198,7 +347,7 @@ export const CocSheetProvider: React.FC<{
   const buyWithLuck = useCallback(() => {
     if (!last || !canBuyWithLuck(last, character.coc?.luck ?? 0)) return;
     const cost = luckToSucceed(last.check.total, target(last));
-    setLast({ ...last, check: { ...last.check, level: 'regular', success: true }, luckSpent: cost });
+    setLast({ ...last, check: { ...last.check, level: boughtLevel(last), success: true }, luckSpent: cost });
     update(
       (doc) => spendLuck(cost)(doc),
       { message: `${last.label}: потрачено ${cost} удачи — успех`, type: 'other' },
@@ -210,10 +359,10 @@ export const CocSheetProvider: React.FC<{
   const damageBonus = damageBonusOf(c.str + c.siz).damageBonus;
 
   const rollDamage = useCallback(() => {
-    if (!last || last.kind !== 'attack' || !last.check.success || last.damage) return;
+    if (!canRollDamage(last)) return;
     const weapon = character.attacks.find((a) => a.id === last.id);
     if (!weapon) return;
-    const damage = weaponDamageDetailed(weapon, damageBonus, last.check.level);
+    const damage = weaponDamageDetailed(weapon, damageBonus, last.check.level, Math.random, last.band ?? 0);
     setLast({ ...last, damage });
     update(
       (doc) => doc,
@@ -221,6 +370,16 @@ export const CocSheetProvider: React.FC<{
       { quiet: true },
     );
   }, [last, character.attacks, damageBonus, update]);
+
+  const indefinite = character.conditions.includes(CONDITION_IDS.indefiniteInsanity);
+  const sanityLost = useCallback<CocSheetApi['sanityLost']>(
+    (source, outcome) => {
+      if (outcome.loss <= 0) return;
+      const next = followUpsOf(source, outcome, indefinite);
+      setFollowUps((current) => ({ ...current, ...next }));
+    },
+    [indefinite],
+  );
 
   const sanityRoll = useCallback(
     (label: string, spec: string) => {
@@ -237,6 +396,7 @@ export const CocSheetProvider: React.FC<{
           needsIntRoll: result.needsIntRoll,
           indefinite: result.indefinite,
           permanent: result.permanent,
+          boutTriggered: result.boutTriggered,
           dice: result.lossDice,
         },
       });
@@ -248,9 +408,71 @@ export const CocSheetProvider: React.FC<{
         },
         { quiet: true },
       );
+      sanityLost(label, result);
     },
-    [character, update],
+    [character, update, sanityLost],
   );
+
+  const rollInt = useCallback(() => {
+    const source = followUps.int?.source;
+    const next = roll({ label: 'Осознание ужаса (ИНТ)', value: cocCharacteristics(character).int, kind: 'int' });
+    setFollowUps((current) => ({
+      int: null,
+      bout: next.check.success ? { reason: `${source ?? 'Шок'}: временное безумие` } : current.bout,
+    }));
+  }, [followUps.int, roll, character]);
+
+  const dismissInt = useCallback(() => setFollowUps((current) => ({ ...current, int: null })), []);
+  const dismissBout = useCallback(() => setFollowUps((current) => ({ ...current, bout: null })), []);
+
+  const rollBout = useCallback(
+    (summary: boolean) => {
+      // The tables are rolled here, the id made here: the edit only writes the result down.
+      const entry = pick(summary ? BOUTS_SUMMARY : BOUTS_REAL_TIME);
+      let text = `${entry.name}: ${entry.description}`;
+      let edit = (doc: Character) => doc;
+      let extra = '';
+      const madness = entry.id.includes('phobia') ? pick(PHOBIAS) : entry.id.includes('mania') ? pick(MANIAS) : null;
+      if (madness) {
+        const kind = entry.id.includes('phobia') ? 'phobia' : 'mania';
+        text += ` — ${madness.name}`;
+        const had = character.coc?.madness.some((m) => m.name === madness.name);
+        if (had) extra = ` (${madness.name} уже записана)`;
+        else
+          edit = addMadness({
+            id: createEntityId('madness'),
+            name: madness.name,
+            kind,
+            description: madness.description,
+          });
+      }
+      setBout(text + extra);
+      setFollowUps((current) => ({ ...current, bout: null }));
+      update(edit, { message: `Приступ безумия: ${text}${extra}`, type: 'sanity' });
+    },
+    [character.coc?.madness, update],
+  );
+
+  const onTurn = useCallback(
+    (run: () => void) => {
+      if (turnLock) {
+        toast.error(turnLock, { id: 'turn-lock' });
+        return false;
+      }
+      run();
+      return true;
+    },
+    [turnLock],
+  );
+
+  const isJammed = useCallback((id: string) => !!jams[id], [jams]);
+  const clearJam = useCallback((id: string) => {
+    setJams((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  }, []);
 
   const dismiss = useCallback(() => {
     setLast(null);
@@ -263,29 +485,71 @@ export const CocSheetProvider: React.FC<{
       update,
       last,
       roll,
+      rollModded,
+      present,
       push,
       buyWithLuck,
       rollDamage,
       sanityRoll,
+      sanityLost,
       dismiss,
       damageBonus,
+      mods,
+      setMods,
+      followUps,
+      rollInt,
+      dismissInt,
+      rollBout,
+      dismissBout,
+      bout,
+      turnLock,
+      onTurn,
+      isJammed,
+      clearJam,
     }),
-    [character, update, last, roll, push, buyWithLuck, rollDamage, sanityRoll, dismiss, damageBonus],
+    [
+      character,
+      update,
+      last,
+      roll,
+      rollModded,
+      present,
+      push,
+      buyWithLuck,
+      rollDamage,
+      sanityRoll,
+      sanityLost,
+      dismiss,
+      damageBonus,
+      mods,
+      followUps,
+      rollInt,
+      dismissInt,
+      rollBout,
+      dismissBout,
+      bout,
+      turnLock,
+      onTurn,
+      isJammed,
+      clearJam,
+    ],
   );
-  const apiRef = useRef<CocSheetApi | null>(api);
+  const [store] = useState(createApiStore);
   useEffect(() => {
-    apiRef.current = api;
-  });
+    store.set(api);
+  }, [store, api]);
 
-  // The toast follows the latest roll and the luck it may spend; leaving the sheet takes it away.
-  const luck = character.coc?.luck;
+  // The toast comes up for a new roll or a follow-up of it (Luck, damage); its content follows the
+  // sheet by itself. Once it is gone (timed out, closed), a change of the sheet does not bring it back.
+  const shown = useRef<RollRecord | null>(null);
   useEffect(() => {
-    if (!last || !renderRoll) return;
-    toast(() => <ApiRef.Provider value={apiRef}>{renderRoll(last)}</ApiRef.Provider>, {
+    if (!last || !renderRoll || shown.current === last) return;
+    shown.current = last;
+    toast(() => <ApiStoreContext.Provider value={store}>{renderRoll(last)}</ApiStoreContext.Provider>, {
       id: ROLL_TOAST,
       duration: last.check.success || last.pushed || last.luckSpent ? 7000 : 12000,
     });
-  }, [last, luck, renderRoll]);
+  }, [last, renderRoll, store]);
   useEffect(() => () => toast.dismiss(ROLL_TOAST), []);
 
   return <CocSheetContext.Provider value={api}>{children}</CocSheetContext.Provider>;

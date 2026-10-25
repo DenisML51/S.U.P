@@ -1,6 +1,9 @@
 import React from 'react';
+import { useReducedMotion } from 'framer-motion';
 import { CONDITION_IDS, fifth } from '@itd/game-logic/coc';
 import type { Character } from '@itd/schema';
+import { effectiveMadnessEffects } from '../../data/settings';
+import { useCharacterStore } from '../../store/useCharacterStore';
 
 /** How badly the mind is going: nothing, uneasy (sanity low), a bout of madness, or lasting insanity. */
 export type MadnessStage = 0 | 1 | 2 | 3;
@@ -16,13 +19,17 @@ export function madnessStage(character: Pick<Character, 'sanity' | 'conditions' 
 /**
  * The edge of sight closing in. Drawn over the whole screen and never in the way of a click: a
  * veil of veined noise at the borders that beats like a racing heart; in a bout the edges blur and
- * drain of colour and shadows slip past at the edge of vision; in lasting madness the page sways,
- * its colours come apart and the dark falls for an instant now and then. Each setting
- * tints it (see coc.css); reduced motion keeps only the still veil.
+ * drain of colour and shadows slip past at the edge of vision; in lasting madness the veil sways,
+ * its colours come apart and the dark falls for an instant now and then. Each setting tints it
+ * (see coc.css). The app's setting "Эффекты безумия" calms it (no strobe, flicker or sway) or turns
+ * it off; reduced motion always calms it.
  */
-export const InsanityVeil: React.FC<{ stage: MadnessStage }> = ({ stage }) =>
-  stage === 0 ? null : (
-    <div className="coc-veil" data-stage={stage} aria-hidden>
+export const InsanityVeil: React.FC<{ stage: MadnessStage }> = ({ stage }) => {
+  const chosen = useCharacterStore((s) => s.settings.madnessEffects);
+  const mode = effectiveMadnessEffects(chosen, !!useReducedMotion());
+  if (stage === 0 || mode === 'off') return null;
+  return (
+    <div className="coc-veil" data-stage={stage} data-mode={mode} aria-hidden>
       <div className="coc-veil__noise" />
       <div className="coc-veil__noise coc-veil__noise--b" />
       <div className="coc-veil__pulse" />
@@ -41,3 +48,4 @@ export const InsanityVeil: React.FC<{ stage: MadnessStage }> = ({ stage }) =>
       )}
     </div>
   );
+};

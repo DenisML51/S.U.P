@@ -16,6 +16,7 @@ import {
   removeMadness,
   removeSkill,
   removeWeapon,
+  sanityLoss as sanityLossOf,
   setCharacteristic,
   setSkill,
   skillBase,
@@ -27,14 +28,17 @@ import {
   cocCharacteristics,
   type CharacteristicId,
 } from '@itd/game-logic/coc';
+import type { Character } from '@itd/schema';
 import { DetailsPane, type DetailsFact } from '../../ui/DetailsPane';
 import { Dialog } from '../../ui/Dialog';
 import { NumberField } from '../../ui/forms';
-import { Button } from '../../ui/primitives';
+import { Button, Input } from '../../ui/primitives';
 import { Prose } from '../../ui/Prose';
 import { useWideSheet } from '../sheet/dialogs/context';
-import { useCoc } from './context';
-import { RollModsBar, modsToRoll, type RollMods } from './parts';
+import { EditableText } from '../sheet/parts/EditableText';
+import { canRollDamage, useCoc } from './context';
+import { ConfirmButton } from './controls';
+import { RollModsBar } from './parts';
 
 /** What a card can show: an entry of one of the sheet's lists. */
 export type CocEntryKind =
@@ -105,15 +109,45 @@ interface CardContent {
   actions?: React.ReactNode;
 }
 
+/** A trait of the player's own renamed or rewritten; a Pulp talent is rebuilt from the build and stays. */
+const editTrait =
+  (id: string, patch: { name?: string; description?: string }) =>
+  (doc: Character): Character => ({
+    ...doc,
+    traits: doc.traits.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+  });
+
+/** The name of an own trait, edited in place. */
+const TraitName: React.FC<{ value: string; onSave: (name: string) => void }> = ({ value, onSave }) => {
+  const [draft, setDraft] = useState(value);
+  return (
+    <Input
+      aria-label="Название особенности"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+      }}
+      onBlur={() => {
+        const name = draft.trim();
+        if (name && name !== value) onSave(name);
+        else setDraft(value);
+      }}
+    />
+  );
+};
+
 /** What the card of each kind of entry shows and lets do; null when the entry is gone. */
-function useCard(
-  entry: CocEntry,
-  mods: { roll: (label: string, value: number, extra?: object) => void },
-): CardContent | null {
-  const { character, update, roll } = useCoc();
+function useCard(entry: CocEntry): CardContent | null {
+  const { character, update, rollModded, present, last, rollDamage, onTurn, isJammed, clearJam, sanityLost } =
+    useCoc();
   const { close } = useCocSelection();
   const coc = character.coc!;
   const [mp, setMp] = useState<number | null>(null);
+  const [casting, setCasting] = useState(false);
+  const [firstCast, setFirstCast] = useState(false);
+  const rollEntry = (label: string, value: number, extra: object) =>
+    rollModded({ label, value, kind: 'skill', ...extra });
 
   switch (entry.kind) {
     case 'skill': {
@@ -130,7 +164,7 @@ function useCard(
         facts: [
           { label: 'Значение', value: skill.value },
           { label: 'Трудный', value: half(skill.value) },
-          { label: 'Экстрим', value: fifth(skill.value) },
+          { label: 'Экстремальный', value: fifth(skill.value) },
           { label: 'База', value: base },
         ],
         body: (
@@ -159,10 +193,7 @@ function useCard(
         ),
         actions: (
           <>
-            <Button
-              variant="primary"
-              onClick={() => mods.roll(name, skill.value, { kind: 'skill', id: entry.id })}
-            >
+            <Button variant="primary" onClick={() => rollEntry(name, skill.value, { kind: 'skill', id: entry.id })}>
               Бросить
             </Button>
             {!def.skill.noImprovement && (
@@ -171,15 +202,21 @@ function useCard(
               </Button>
             )}
             {(def.speciality || def.skill.uncommon) && (
-              <Button
-                variant="ghost"
-                onClick={() => {
+              <ConfirmButton
+                title="Убрать навык?"
+                message={
+                  <>
+                    <span className="text-ink">{name}</span> ({skill.value}) исчезнет из листа.
+                  </>
+                }
+                confirmLabel="Убрать"
+                onConfirm={() => {
                   update(removeSkill(entry.id), { message: `Убран навык: ${name}`, type: 'other' });
                   close();
                 }}
               >
                 Убрать
-              </Button>
+              </ConfirmButton>
             )}
           </>
         ),
@@ -219,7 +256,7 @@ function useCard(
           </div>
         ),
         actions: (
-          <Button variant="primary" onClick={() => mods.roll(def.name, value, { kind: 'characteristic' })}>
+          <Button variant="primary" onClick={() => rollEntry(def.name, value, { kind: 'characteristic' })}>
             Бросить
           </Button>
         ),
@@ -230,6 +267,8 @@ function useCard(
       if (!weapon) return null;
       const value = weapon.skill ? skillValue(character, weapon.skill) : 0;
       const empty = weapon.ammo !== undefined && weapon.ammo <= 0;
+      const jammed = isJammed(weapon.id);
+      const hit = canRollDamage(last) && last.id === weapon.id ? last : null;
       return {
         eyebrow: weapon.skill ? `Оружие · ${skillName(weapon.skill)}` : 'Оружие',
         title: weapon.name,
@@ -245,6 +284,12 @@ function useCard(
         ],
         body: (
           <div className="flex flex-col gap-2 text-sm">
+            {jammed && (
+              <p className="text-danger">
+                Оружие заклинило: нужен раунд на починку (по решению Хранителя — бросок навыка). Отметка
+                держится, пока лист открыт.
+              </p>
+            )}
             {weapon.description && <Prose>{weapon.description}</Prose>}
             {weapon.impale && <p>Пронзающее: экстремальный успех — максимум урона и ещё один бросок.</p>}
             {weapon.damage.includes('DB') && <p>К урону прибавляется бонус урона сыщика.</p>}
@@ -252,46 +297,77 @@ function useCard(
         ),
         actions: (
           <>
-            <Button
-              variant="primary"
-              disabled={empty}
-              onClick={() => {
-                mods.roll(weapon.name, value, {
-                  kind: 'attack',
-                  id: weapon.id,
-                  skill: weapon.skill,
-                  malfunction: weapon.malfunction,
-                });
-                if (weapon.ammo !== undefined) update(fireWeapon(weapon.id));
-              }}
-            >
-              {empty ? 'Нет патронов' : 'Атаковать'}
-            </Button>
+            {jammed ? (
+              <Button
+                variant="primary"
+                onClick={() =>
+                  onTurn(() => {
+                    clearJam(weapon.id);
+                    update((doc) => doc, { message: `${weapon.name}: починено`, type: 'inventory' }, { quiet: true });
+                  })
+                }
+              >
+                Починить
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                disabled={empty}
+                onClick={() =>
+                  onTurn(() => {
+                    rollEntry(weapon.name, value, {
+                      kind: 'attack',
+                      id: weapon.id,
+                      skill: weapon.skill,
+                      malfunction: weapon.malfunction,
+                    });
+                    if (weapon.ammo !== undefined) update(fireWeapon(weapon.id), undefined, { quiet: true });
+                  })
+                }
+              >
+                {empty ? 'Нет патронов' : 'Атаковать'}
+              </Button>
+            )}
+            {hit && (
+              <Button variant="danger" onClick={rollDamage}>
+                Урон
+              </Button>
+            )}
             {weapon.magazine !== undefined && (
               <Button
                 onClick={() =>
-                  update(reloadWeapon(weapon.id), {
-                    message: `${weapon.name}: перезаряжено`,
-                    type: 'inventory',
-                  })
+                  onTurn(() =>
+                    update(reloadWeapon(weapon.id), {
+                      message: `${weapon.name}: перезаряжено`,
+                      type: 'inventory',
+                    }),
+                  )
                 }
               >
                 Перезарядить
               </Button>
             )}
             {weapon.id !== 'coc-unarmed' && (
-              <Button
-                variant="ghost"
-                onClick={() => {
+              <ConfirmButton
+                title="Убрать оружие?"
+                message={
+                  <>
+                    <span className="text-ink">{weapon.name}</span> исчезнет из листа
+                    {weapon.ammo !== undefined ? ' вместе с патронами в нём' : ''}.
+                  </>
+                }
+                confirmLabel="Убрать"
+                onConfirm={() => {
                   update(removeWeapon(weapon.id), {
                     message: `Убрано оружие: ${weapon.name}`,
                     type: 'inventory',
                   });
+                  clearJam(weapon.id);
                   close();
                 }}
               >
                 Убрать
-              </Button>
+              </ConfirmButton>
             )}
           </>
         ),
@@ -302,6 +378,54 @@ function useCard(
       if (!spell) return null;
       const cost = parseSpellCost(spell.cost);
       const chosen = mp ?? Math.max(1, cost.mp);
+      const spend = cost.variable ? chosen : cost.mp;
+      const shortfall = Math.max(0, spend - coc.magicPoints);
+      const pow = cocCharacteristics(character).pow;
+
+      const cast = () => {
+        setCasting(false);
+        // Every die (the POW roll, the sanity it costs) is thrown here; the edit only pays the price.
+        const result = castSpell(character, spell.cost, cost.variable ? chosen : undefined, Math.random, {
+          firstCast,
+        });
+        const outcome = result.sanityLoss > 0 ? sanityLossOf(character, result.sanityLoss) : null;
+        const parts = [
+          result.mp && `${result.mp} ПМ`,
+          result.shortfall && `${result.shortfall} из хитов`,
+          result.sanityLoss && `${result.sanityLoss} рассудка`,
+          result.pow && `${result.pow} МОЩ`,
+        ].filter(Boolean);
+        const first = result.powCheck ? (result.worked ? ' (первое сотворение удалось)' : ' — не сработало (МОЩ провален)') : '';
+        update(
+          result.edit,
+          { message: `Сотворено «${spell.name}»${first}: ${parts.join(', ') || 'без цены'}`, type: 'sanity' },
+          { quiet: !!result.powCheck },
+        );
+        if (result.powCheck)
+          present(
+            { label: `Первое сотворение «${spell.name}»: МОЩ`, value: pow, kind: 'rule', difficulty: 'hard' },
+            result.powCheck,
+            {
+              note: result.worked
+                ? 'Заклинание действует.'
+                : 'Заклинание не сработало — цена всё равно уплачена.',
+              ...(outcome
+                ? {
+                    sanity: {
+                      loss: outcome.loss,
+                      needsIntRoll: outcome.needsIntRoll,
+                      indefinite: outcome.indefinite,
+                      permanent: outcome.permanent,
+                      boutTriggered: outcome.boutTriggered,
+                    },
+                  }
+                : {}),
+            },
+          );
+        if (outcome) sanityLost(`«${spell.name}»`, outcome);
+        setFirstCast(false);
+      };
+
       return {
         eyebrow: 'Заклинание Мифов',
         title: spell.name,
@@ -322,47 +446,69 @@ function useCard(
                 className="w-24"
               />
             )}
-            <p className="text-xs text-ink-faint">
-              Нехватка ПМ оплачивается хитами. Первое сотворение — трудный бросок МОЩ (по решению Хранителя).
-            </p>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={firstCast}
+                onChange={(e) => setFirstCast(e.target.checked)}
+              />
+              <span>
+                Первое сотворение: трудный бросок МОЩ ({half(pow)}) решает, подействует ли заклинание. Цена
+                платится в любом случае.
+              </span>
+            </label>
+            <p className="text-xs text-ink-faint">Нехватка ПМ оплачивается хитами.</p>
+            <Dialog
+              open={casting}
+              onClose={() => setCasting(false)}
+              title={`Сотворить «${spell.name}»?`}
+              width="sm"
+              footer={
+                <>
+                  <Button variant="ghost" onClick={() => setCasting(false)}>
+                    Отмена
+                  </Button>
+                  <Button variant={cost.pow > 0 ? 'danger' : 'primary'} onClick={cast}>
+                    Сотворить
+                  </Button>
+                </>
+              }
+            >
+              <ul className="flex list-disc flex-col gap-1 pl-5 text-[15px] text-ink-muted">
+                {spend > 0 && (
+                  <li>
+                    {spend} ПМ (есть {coc.magicPoints})
+                    {shortfall > 0 && <span className="text-danger">, нехватка {shortfall} — из хитов</span>}
+                  </li>
+                )}
+                {cost.sanity && <li>Рассудок: −{cost.sanity}</li>}
+                {cost.pow > 0 && (
+                  <li className="text-danger">
+                    МОЩ −{cost.pow} навсегда ({pow} → {pow - cost.pow})
+                  </li>
+                )}
+                {spend === 0 && !cost.sanity && cost.pow === 0 && <li>Без цены: {spell.cost || '—'}</li>}
+                {firstCast && <li>Первое сотворение: трудный бросок МОЩ.</li>}
+              </ul>
+            </Dialog>
           </div>
         ),
         actions: (
           <>
-            <Button
-              variant="primary"
-              onClick={() => {
-                const result = castSpell(character, spell.cost, cost.variable ? chosen : undefined);
-                const parts = [
-                  result.mp && `${result.mp} ПМ`,
-                  result.shortfall && `${result.shortfall} из хитов`,
-                  result.sanityLoss && `${result.sanityLoss} рассудка`,
-                  result.pow && `${result.pow} МОЩ`,
-                ].filter(Boolean);
-                update(result.edit, {
-                  message: `Сотворено «${spell.name}»: ${parts.join(', ') || 'без цены'}`,
-                  type: 'sanity',
-                });
-              }}
-            >
+            <Button variant="primary" onClick={() => onTurn(() => setCasting(true))}>
               Сотворить
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() =>
-                roll({
-                  label: 'Мощь (трудный)',
-                  value: cocCharacteristics(character).pow,
-                  kind: 'characteristic',
-                  difficulty: 'hard',
-                })
+            <ConfirmButton
+              title="Забыть заклинание?"
+              message={
+                <>
+                  <span className="text-ink">«{spell.name}»</span> исчезнет из листа; выучить снова — по
+                  решению Хранителя.
+                </>
               }
-            >
-              Бросок МОЩ
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => {
+              confirmLabel="Забыть"
+              onConfirm={() => {
                 update(forgetSpell(spell.id), {
                   message: `Забыто заклинание «${spell.name}»`,
                   type: 'other',
@@ -371,7 +517,7 @@ function useCard(
               }}
             >
               Забыть
-            </Button>
+            </ConfirmButton>
           </>
         ),
       };
@@ -392,19 +538,29 @@ function useCard(
           <>
             {item.quantity !== undefined && (
               <>
-                <Button onClick={() => update(changeItemCount(item.id, -1))}>−1</Button>
-                <Button onClick={() => update(changeItemCount(item.id, 1))}>+1</Button>
+                <Button onClick={() => update(changeItemCount(item.id, -1))} aria-label={`${item.name}: −1`}>
+                  −1
+                </Button>
+                <Button onClick={() => update(changeItemCount(item.id, 1))} aria-label={`${item.name}: +1`}>
+                  +1
+                </Button>
               </>
             )}
-            <Button
-              variant="ghost"
-              onClick={() => {
+            <ConfirmButton
+              title="Убрать вещь?"
+              message={
+                <>
+                  <span className="text-ink">{item.name}</span> исчезнет из листа.
+                </>
+              }
+              confirmLabel="Убрать"
+              onConfirm={() => {
                 update(removeItem(item.id), { message: `Убрано: ${item.name}`, type: 'inventory' });
                 close();
               }}
             >
               Убрать
-            </Button>
+            </ConfirmButton>
           </>
         ),
       };
@@ -426,14 +582,24 @@ function useCard(
           </div>
         ),
         actions: (
-          <Button
-            onClick={() => {
+          <ConfirmButton
+            variant="secondary"
+            danger={false}
+            title="Излечено?"
+            message={
+              <>
+                <span className="text-ink">{m.name}</span> уйдёт из листа: обычно после лечения, по решению
+                Хранителя.
+              </>
+            }
+            confirmLabel="Излечено"
+            onConfirm={() => {
               update(removeMadness(m.id), { message: `Излечено: ${m.name}`, type: 'sanity' });
               close();
             }}
           >
             Излечено
-          </Button>
+          </ConfirmButton>
         ),
       };
     }
@@ -446,10 +612,48 @@ function useCard(
       const category =
         talent &&
         { physical: 'физический', mental: 'ментальный', combat: 'боевой', misc: 'особый' }[talent.category];
+      // Entries written by the build (Pulp talents) are rebuilt from it: only the player's own are edited.
+      const own = !trait.grant;
       return {
         eyebrow: talent ? `Талант Pulp · ${category}` : 'Особенность',
         title: trait.name,
-        body: <Prose>{trait.description || 'Без описания.'}</Prose>,
+        body: own ? (
+          <div className="flex flex-col gap-3">
+            <TraitName
+              key={trait.id}
+              value={trait.name}
+              onSave={(name) => update(editTrait(trait.id, { name }), { message: `Особенность: ${name}`, type: 'other' })}
+            />
+            <EditableText
+              title="Описание"
+              heading="label"
+              value={trait.description}
+              onSave={(description) => update(editTrait(trait.id, { description }))}
+            />
+          </div>
+        ) : (
+          <Prose>{trait.description || 'Без описания.'}</Prose>
+        ),
+        actions: own ? (
+          <ConfirmButton
+            title="Удалить особенность?"
+            message={
+              <>
+                <span className="text-ink">{trait.name}</span> исчезнет из листа.
+              </>
+            }
+            confirmLabel="Удалить"
+            onConfirm={() => {
+              update((doc) => ({ ...doc, traits: doc.traits.filter((t) => t.id !== trait.id) }), {
+                message: `Удалена особенность: ${trait.name}`,
+                type: 'other',
+              });
+              close();
+            }}
+          >
+            Удалить
+          </ConfirmButton>
+        ) : undefined,
       };
     }
     case 'condition': {
@@ -460,14 +664,23 @@ function useCard(
         title: condition.name,
         body: <Prose>{condition.description}</Prose>,
         actions: (
-          <Button
-            onClick={() => {
+          <ConfirmButton
+            variant="secondary"
+            danger={false}
+            title="Состояние прошло?"
+            message={
+              <>
+                <span className="text-ink">{condition.name}</span> будет снято с листа.
+              </>
+            }
+            confirmLabel="Прошло"
+            onConfirm={() => {
               update(recoverFrom(condition.id), { message: `Прошло: ${condition.name}`, type: 'health' });
               close();
             }}
           >
             Прошло
-          </Button>
+          </ConfirmButton>
         ),
       };
     }
@@ -477,12 +690,9 @@ function useCard(
 const ROLLABLE: CocEntryKind[] = ['skill', 'characteristic', 'weapon'];
 
 const CardBody: React.FC<{ entry: CocEntry; asDialog: boolean }> = ({ entry, asDialog }) => {
-  const { roll } = useCoc();
   const { close } = useCocSelection();
-  const [mods, setMods] = useState<RollMods>({ difficulty: 'regular', dice: 0 });
-  const card = useCard(entry, {
-    roll: (label, value, extra = {}) => roll({ label, value, kind: 'skill', ...modsToRoll(mods), ...extra }),
-  });
+  const { mods, setMods } = useCoc();
+  const card = useCard(entry);
   if (!card) return null;
   const body = (
     <div className="flex flex-col gap-4">

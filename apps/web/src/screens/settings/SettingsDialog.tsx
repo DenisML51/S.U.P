@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { applyFullscreen, type AppSettings } from '../../data/settings';
+import { applyFullscreen, type AppSettings, type MadnessEffects } from '../../data/settings';
 import type { SyncStatus } from '../../data/sync/syncEngine';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useSessionStore } from '../../store/useSessionStore';
 import { ConfirmDialog, Dialog } from '../../ui/Dialog';
-import { Switch } from '../../ui/forms';
+import { Segmented, Switch } from '../../ui/forms';
 import { Button, cx } from '../../ui/primitives';
 import { IconExit, IconSync } from '../../ui/icons';
 import type { Theme } from '../../ui/theme/settings';
@@ -128,6 +128,25 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
             label="Полный экран"
             hint="Лист рассчитан на весь экран без прокрутки"
           />
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-ink">Эффекты безумия</div>
+              <div className="text-sm text-ink-faint">
+                Как безумие сыщика «Зова Ктулху» меняет экран. Спокойно — без мерцания, вспышек и
+                качки; при системной настройке «уменьшить движение» эффекты всегда спокойные
+              </div>
+            </div>
+            <Segmented<MadnessEffects>
+              label="Эффекты безумия"
+              value={settings.madnessEffects}
+              onChange={(madnessEffects) => set({ madnessEffects })}
+              options={[
+                { value: 'full', label: 'Полностью' },
+                { value: 'calm', label: 'Спокойно' },
+                { value: 'off', label: 'Выкл.' },
+              ]}
+            />
+          </div>
         </section>
 
       </Dialog>

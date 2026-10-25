@@ -525,7 +525,9 @@
 /* ================================================================== madness
  * The veil: two images of veined noise (rendered once) masked to the borders, breathing and
  * crossfading — only their opacity moves; a heartbeat of darkness in the corners; shadows slipping past the edge of vision; at
- * the worst a red/cyan split of the edges and a slow sway of the page (`.coc-sway`).
+ * the worst a red/cyan split of the edges and a slow sway of the veil itself — never of the page:
+ * swaying the sheet would blur its text. `data-mode='calm'` (an app setting, or reduced motion)
+ * keeps the still veil without the strobe, the flicker and the sway.
  */
 
 .coc-veil {
@@ -638,15 +640,20 @@
 .coc-veil__split {
   position: absolute;
   inset: 0;
-  box-shadow:
-    inset 6px 0 28px -10px rgb(255 40 60 / 0.55),
-    inset -6px 0 28px -10px rgb(40 220 255 / 0.5);
+  /* Painted once as gradients; only opacity and a small shift move (no box-shadow repaint). */
+  background:
+    linear-gradient(90deg, rgb(255 40 60 / 0.45), transparent 2.2rem),
+    linear-gradient(270deg, rgb(40 220 255 / 0.4), transparent 2.2rem);
+  will-change: opacity, transform;
   animation: coc-split 3.3s steps(2, jump-none) infinite;
 }
 
-/* The page itself sways, a fraction of a degree, like a deck at sea. */
-.coc-sway {
-  animation: coc-sway 9s ease-in-out infinite;
+/* The veil sways, a fraction of a degree, like a deck at sea; the page under it stays still and sharp. */
+.coc-veil[data-stage='3'] .coc-veil__noise--b {
+  will-change: opacity, transform;
+  animation:
+    coc-veil-cross 7s ease-in-out infinite alternate,
+    coc-sway 9s ease-in-out infinite;
   transform-origin: 50% 60%;
 }
 
@@ -658,10 +665,18 @@
   animation-delay: 2s;
 }
 .coc-veil[data-stage='3'] .coc-veil__split {
-  box-shadow:
-    inset 8px 0 32px -10px rgb(255 40 60 / 0.5),
-    inset -8px 0 32px -10px rgb(40 220 255 / 0.45);
   animation: coc-split 0.45s steps(3, jump-none) infinite;
+}
+
+/* Calm: the veil stays, still; no strobe, no flicker, no sway, nothing slipping past. */
+.coc-veil[data-mode='calm'] *,
+.coc-veil[data-mode='calm'] .coc-veil__noise--b {
+  animation: none !important;
+}
+.coc-veil[data-mode='calm'] .coc-veil__flicker,
+.coc-veil[data-mode='calm'] .coc-veil__shade,
+.coc-veil[data-mode='calm'] .coc-veil__split {
+  display: none;
 }
 @keyframes coc-veil-breathe {
   from {
@@ -763,29 +778,82 @@
   0%,
   100% {
     opacity: 0.9;
+    transform: translateX(0);
   }
   50% {
     opacity: 0.45;
+    transform: translateX(2px);
   }
 }
 @keyframes coc-sway {
   0%,
   100% {
-    transform: rotate(0deg) translateY(0) scale(1);
+    transform: rotate(0deg) translateY(0) scale(1.03);
   }
   30% {
-    transform: rotate(0.6deg) translateY(2px) scale(1.004);
+    transform: rotate(0.6deg) translateY(4px) scale(1.04);
   }
   70% {
-    transform: rotate(-0.55deg) translateY(-2px) scale(0.997);
+    transform: rotate(-0.55deg) translateY(-4px) scale(1.035);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .coc-veil *,
-  .coc-sway {
+  .coc-veil * {
     animation: none !important;
   }
+}
+
+/* What a shock left to do (the INT roll, a bout), kept in the investigator's column until done. */
+.coc-followup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgb(var(--c-warning) / 0.6);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: rgb(var(--c-warning) / 0.08);
+}
+.coc-followup--danger {
+  border-color: rgb(var(--c-danger) / 0.6);
+  background: rgb(var(--c-danger) / 0.08);
+}
+
+/* Modifiers beyond a plain roll light up, so they are never carried into the next roll unseen. */
+.coc-mods__active,
+.coc-dice-step[data-active] {
+  box-shadow: 0 0 0 1px rgb(var(--c-warning) / 0.8);
+}
+.coc-dice-step[data-active] span {
+  color: rgb(var(--c-warning));
+}
+.coc-mods__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 12px;
+}
+.coc-mods__pin,
+.coc-mods__reset {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: rgb(var(--c-ink-muted));
+}
+.coc-mods__pin[aria-pressed='true'] {
+  color: rgb(var(--c-warning));
+}
+.coc-mods__pin:hover,
+.coc-mods__reset:hover {
+  color: rgb(var(--c-ink));
+}
+.coc-mods__note {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 12px;
+  color: rgb(var(--c-warning));
 }
 
 /* Each world's madness has its own colour. */
