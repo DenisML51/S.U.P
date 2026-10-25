@@ -16,6 +16,8 @@ export type Place =
 export interface Creation {
   world?: Setting;
   partyId?: string;
+  /** The table's rules: the hero is made by them, no other path is offered. */
+  rules?: 'dnd2024' | 'coc7' | 'custom';
 }
 
 interface NavState {

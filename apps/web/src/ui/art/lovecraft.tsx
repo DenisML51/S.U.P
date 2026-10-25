@@ -158,7 +158,7 @@ const Chart: React.FC = () => (
   </svg>
 );
 
-interface TentacleSpec {
+export interface TentacleSpec {
   /** Base, on a 400×400 box, and the direction it rises in (radians, 0 = right, -π/2 = up). */
   x: number;
   y: number;
@@ -179,7 +179,7 @@ const SAMPLES = 64;
  * loosens slowly. Hatching (the engraver's shade) runs across the upper side, suckers along the
  * lower side, shrinking towards the tip.
  */
-const tentacle = ({ x, y, angle, length, width, curl, phase }: TentacleSpec, t: number) => {
+export const tentacle = ({ x, y, angle, length, width, curl, phase }: TentacleSpec, t: number) => {
   const step = length / SAMPLES;
   const breathe = 1 + 0.18 * Math.sin(t * 0.45 + phase);
   const spine: { x: number; y: number; nx: number; ny: number; w: number }[] = [];
@@ -237,18 +237,26 @@ const ARMS: TentacleSpec[] = [
  * suckers on their undersides, coiling and swaying slowly. Each frame rewrites the paths directly;
  * nothing moves while the setting is hidden or motion is reduced.
  */
-const Kraken: React.FC<{ className?: string }> = ({ className }) => {
+export const Kraken: React.FC<{
+  className?: string;
+  /** Other arms than the chart's corner (the rulebook card raises its own). */
+  arms?: TentacleSpec[];
+  /** How fast they move; read every frame, so it can change (a hover). */
+  speed?: number;
+}> = ({ className, arms = ARMS, speed = 1 }) => {
   const svg = React.useRef<SVGSVGElement>(null);
+  const pace = React.useRef(speed);
+  pace.current = speed;
   React.useEffect(() => {
     const root = svg.current;
     if (!root) return;
-    const paths = ARMS.map((_, i) => ({
+    const paths = arms.map((_, i) => ({
       outline: root.querySelector<SVGPathElement>(`[data-arm="${i}"][data-part="outline"]`),
       hatching: root.querySelector<SVGPathElement>(`[data-arm="${i}"][data-part="hatching"]`),
       suckers: root.querySelector<SVGPathElement>(`[data-arm="${i}"][data-part="suckers"]`),
     }));
     const draw = (t: number) =>
-      ARMS.forEach((arm, i) => {
+      arms.forEach((arm, i) => {
         const { outline, hatching, suckers } = tentacle(arm, t);
         paths[i].outline?.setAttribute('d', outline);
         paths[i].hatching?.setAttribute('d', hatching);
@@ -260,19 +268,24 @@ const Kraken: React.FC<{ className?: string }> = ({ className }) => {
     const scope = root.closest<HTMLElement>('[data-setting]');
     let frame = 0;
     let last = 0;
+    let clock = 0;
+    let rate = pace.current;
     const tick = (now: number) => {
       frame = requestAnimationFrame(tick);
       if (now - last < 33) return;
+      const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
       last = now;
       if (scope && getComputedStyle(scope).opacity === '0') return;
-      draw(now / 1000);
+      rate += (pace.current - rate) * Math.min(1, dt * 2);
+      clock += dt * rate;
+      draw(clock);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [arms]);
   return (
     <svg ref={svg} viewBox="0 0 400 400" fill="none" stroke="currentColor" aria-hidden className={className}>
-      {ARMS.map((_, i) => (
+      {arms.map((_, i) => (
         <g key={i}>
           <path data-arm={i} data-part="outline" fill="rgb(var(--c-bg))" strokeWidth="1.2" />
           <path data-arm={i} data-part="hatching" strokeWidth="0.6" opacity="0.8" />

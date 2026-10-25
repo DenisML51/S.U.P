@@ -121,6 +121,7 @@ const App: React.FC = () => {
         <CreationScreen
           key={creationRun}
           world={creation.world}
+          rules={creation.rules}
           onDone={finishCreation}
           onRestart={() => {
             clearDraft(scope);

@@ -3,6 +3,7 @@ import {
   INVITE_CODE_ALPHABET,
   INVITE_CODE_LENGTH,
   PARTY_LIMITS,
+  heroRules,
   type CreateNpcRequestSchema,
   type CreatePartyRequestSchema,
   type UpdateNpcRequestSchema,
@@ -220,12 +221,17 @@ export class PartiesService implements CharacterChangeListener {
   addHero(userId: string, partyId: string, characterId: string): Promise<{ id: string }> {
     return this.access.change(userId, partyId, 'member', async ({ tx, role }) => {
       const [character] = await tx
-        .select({ id: characters.id })
+        .select({ id: characters.id, data: characters.data })
         .from(characters)
         .where(
           and(eq(characters.userId, userId), eq(characters.id, characterId), isNull(characters.deletedAt)),
         );
       if (!character) throw notFound('Персонаж не найден');
+      // A table with its own rules seats only heroes made by them.
+      const [table] = await tx.select({ rules: parties.rules }).from(parties).where(eq(parties.id, partyId));
+      if (table?.rules && table.rules !== heroRules(character.data as { build?: { ruleset: string } })) {
+        throw conflictError('Этот стол играет по другим правилам: герой должен быть создан по ним');
+      }
 
       const limit = role === 'master' ? PARTY_LIMITS.masterHeroes : PARTY_LIMITS.playerHeroes;
       const [brought] = await tx

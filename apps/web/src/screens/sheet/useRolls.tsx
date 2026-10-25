@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { rollDie, rollFormula, type FormulaRoll } from '@itd/game-logic';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { RollingDie } from '../../ui/RollingDie';
 
 type Tone = 'crit' | 'fumble';
 
@@ -42,6 +44,49 @@ const RollToast: React.FC<{
   </div>
 );
 
+/**
+ * A d20 roll shown with its die: the d20 tumbles and lands on the natural roll, then the total and
+ * the breakdown come in beside it.
+ */
+const RollingToast: React.FC<{ label: string; die: number; total: number; detail: string; tone?: Tone }> = ({
+  label,
+  die,
+  total,
+  detail,
+  tone,
+}) => {
+  const [landed, setLanded] = useState(false);
+  const colour = tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : 'frame-bright';
+  return (
+    <div className="flex min-w-[240px] items-center gap-3">
+      <RollingDie
+        sides={20}
+        value={die}
+        size="3.5rem"
+        tone={tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : undefined}
+        onLanded={() => setLanded(true)}
+      />
+      <motion.span
+        className="flex min-w-0 items-center gap-3"
+        initial={false}
+        animate={landed ? { opacity: 1, x: 0 } : { opacity: 0, x: -6 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 24 }}
+      >
+        <span
+          className="ui-display ui-numeric shrink-0 text-3xl leading-none"
+          style={{ color: `rgb(var(--c-${colour}))` }}
+        >
+          {total}
+        </span>
+        <span className="flex min-w-0 flex-col">
+          <span className="text-sm text-ink">{label}</span>
+          <span className="text-xs text-ink-muted">{detail}</span>
+        </span>
+      </motion.span>
+    </div>
+  );
+};
+
 const signed = (value: number) => `${value >= 0 ? '+' : '−'} ${Math.abs(value)}`;
 
 const describeDice = (roll: FormulaRoll) =>
@@ -64,12 +109,22 @@ export type DamageComponents = { damage: string; type?: string }[];
 export function useRolls() {
   const logHistory = useCharacterStore((s) => s.logHistory);
 
-  /** A d20 check or save with a modifier. */
-  const check = (label: string, modifier: number) => {
+  /**
+   * A d20 check or save with a modifier. `animated` shows the d20 tumbling and landing on the roll
+   * (initiative at the start of a fight) instead of the plain number.
+   */
+  const check = (label: string, modifier: number, { animated = false } = {}) => {
     const die = rollDie(20);
     const total = die + modifier;
     const detail = `к20: ${die} ${signed(modifier)}`;
-    toast(<RollToast label={label} total={total} detail={detail} tone={toneOf(die)} />, { duration: 5000 });
+    toast(
+      animated ? (
+        <RollingToast label={label} die={die} total={total} detail={detail} tone={toneOf(die)} />
+      ) : (
+        <RollToast label={label} total={total} detail={detail} tone={toneOf(die)} />
+      ),
+      { duration: animated ? 6000 : 5000 },
+    );
     logHistory(`${label}: ${total} (${detail})`);
     return total;
   };
