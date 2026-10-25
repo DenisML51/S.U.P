@@ -1454,6 +1454,14 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 
 /* ------------------------------------------------------------------ Tags */
 /* A quiet label for a category (action type, school, rarity), tinted by its tone. */
+/* The rulebook on a hero's card: the setting's tag, set like a title. */
+.ui-rulebook {
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.5rem;
+}
+
 .ui-tag {
   display: inline-flex;
   align-items: center;

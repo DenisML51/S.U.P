@@ -9,16 +9,26 @@ import { useTurnLock } from '../party/useTurnLock';
 import { SheetDialogsProvider, useSheetDialogs } from '../sheet/dialogs/context';
 import { SheetDialogHost } from '../sheet/dialogs/SheetDialogHost';
 import { JournalSection } from '../sheet/sections/JournalSection';
-import { CocSheetProvider } from './context';
+import { CocSheetProvider, type RollRecord, type UpdateOptions } from './context';
 import { CocSheetView } from './CocSheet';
+import { RollResult } from './parts';
 
-/** The view with the sheet's shared dialogs (the dice tray) at hand. */
-const SheetWithDialogs: React.FC<Omit<React.ComponentProps<typeof CocSheetView>, 'onDice' | 'footer'>> = (
-  props,
-) => {
+/** The view with the sheet's shared dialogs (the dice tray, the profile with pictures) at hand. */
+const SheetWithDialogs: React.FC<
+  Omit<React.ComponentProps<typeof CocSheetView>, 'onDice' | 'onProfile' | 'footer'>
+> = (props) => {
   const dialogs = useSheetDialogs();
-  return <CocSheetView {...props} onDice={() => dialogs.open({ kind: 'dice' })} footer={<SyncStatus />} />;
+  return (
+    <CocSheetView
+      {...props}
+      onDice={() => dialogs.open({ kind: 'dice' })}
+      onProfile={() => dialogs.open({ kind: 'profile' })}
+      footer={<SyncStatus />}
+    />
+  );
 };
+
+const renderRoll = (record: RollRecord) => <RollResult record={record} />;
 
 /** The investigator's sheet in the app: the kit's view on the open character of the store. */
 export const CocSheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
@@ -30,8 +40,8 @@ export const CocSheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpe
   useDocumentSetting(setting);
   useTurnLock(character?.id);
   const update = useCallback(
-    (edit: (doc: Character) => Character, log?: HistoryEvent) =>
-      updateCharacter(edit, log ? { log } : undefined),
+    (edit: (doc: Character) => Character, log?: HistoryEvent, options?: UpdateOptions) =>
+      updateCharacter(edit, { log, quiet: options?.quiet }),
     [updateCharacter],
   );
 
@@ -39,7 +49,7 @@ export const CocSheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpe
   return (
     <SheetDialogsProvider>
       <SettingScope setting={setting} className="h-screen overflow-clip bg-bg">
-        <CocSheetProvider character={character} update={update}>
+        <CocSheetProvider character={character} update={update} renderRoll={renderRoll}>
           <SheetWithDialogs
             onBack={goToCharacterList}
             onCombat={() => setViewMode('hotbar')}

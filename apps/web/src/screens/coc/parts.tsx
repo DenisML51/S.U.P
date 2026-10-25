@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
   CHARACTERISTICS,
-  SKILLS,
   SUCCESS_LABELS,
   cocCharacteristics,
   derivedOf,
@@ -17,7 +16,8 @@ import {
 import { IconCheck, IconMinus, IconPlus } from '../../ui/icons';
 import { Button, cx } from '../../ui/primitives';
 import { Segmented } from '../../ui/forms';
-import { canBuyWithLuck, canPush, target, useCoc, type RollRecord } from './context';
+import { canBuyWithLuck, canPush, target, useCoc, useCocAnywhere, type RollRecord } from './context';
+import { InfoButton } from './details';
 
 // ------------------------------------------------------------------------------------------------
 // Roll modifiers
@@ -92,13 +92,18 @@ export const CharacteristicsGrid: React.FC<{ mods: RollMods }> = ({ mods }) => {
       {CHARACTERISTICS.map((ch) => {
         const value = c[ch.id];
         return (
-          <button
-            key={ch.id}
-            type="button"
-            className="coc-char"
-            title={`${ch.description} Нажмите, чтобы бросить.`}
-            onClick={() => roll({ label: ch.name, value, kind: 'characteristic', ...modsToRoll(mods) })}
-          >
+          <div key={ch.id} className="coc-char">
+            {/* The whole card rolls; the corner "i" opens its description. */}
+            <button
+              type="button"
+              className="coc-char__roll"
+              aria-label={`Бросить: ${ch.name}`}
+              title={`${ch.description} Нажмите, чтобы бросить.`}
+              onClick={() => roll({ label: ch.name, value, kind: 'characteristic', ...modsToRoll(mods) })}
+            />
+            <span className="coc-char__info">
+              <InfoButton kind="characteristic" id={ch.id} label={ch.name} />
+            </span>
             <span className="coc-char__label">
               {ch.short} · {ch.name}
             </span>
@@ -111,7 +116,7 @@ export const CharacteristicsGrid: React.FC<{ mods: RollMods }> = ({ mods }) => {
                 {fifth(value)} <small>⅕</small>
               </span>
             </span>
-          </button>
+          </div>
         );
       })}
     </div>
@@ -207,6 +212,7 @@ export const SkillList: React.FC<{ mods: RollMods; filter?: string; wide?: boole
             >
               {s.label}
             </button>
+            <InfoButton kind="skill" id={s.id} label={s.label} />
             <span className="coc-skill__value">
               {editing === s.id ? (
                 <input
@@ -243,14 +249,6 @@ export const SkillList: React.FC<{ mods: RollMods; filter?: string; wide?: boole
     </div>
   );
 };
-
-/** Skills not on the sheet yet, to add (an uncommon skill, a new speciality). */
-export const missingSkills = (have: Set<string>) =>
-  SKILLS.flatMap((skill) =>
-    skill.specialities
-      ? skill.specialities.map((s) => ({ id: `${skill.id}:${s.id}`, name: `${skill.name} (${s.name})` }))
-      : [{ id: skill.id, name: skill.name }],
-  ).filter((s) => !have.has(s.id));
 
 // ------------------------------------------------------------------------------------------------
 // Tracks
@@ -316,35 +314,51 @@ const LADDER: { level: RollRecord['check']['level']; label: string; of: (v: numb
 ];
 const RANK = { fumble: 0, failure: 1, regular: 2, hard: 3, extreme: 4, critical: 5 } as const;
 
+/** An action inside the toast: a link in the plate's own ink; the toast dismisses on a click, it must not. */
+const ToastButton: React.FC<{
+  onClick: () => void;
+  title?: string;
+  strong?: boolean;
+  children: React.ReactNode;
+}> = ({ onClick, title, strong, children }) => (
+  <button
+    type="button"
+    title={title}
+    className={cx('coc-roll__action', strong && 'coc-roll__action--strong')}
+    onClick={(event) => {
+      event.stopPropagation();
+      onClick();
+    }}
+  >
+    {children}
+  </button>
+);
+
 /**
- * The last roll: the dice (the tens die kept, the others greyed), how far it reached on the ladder of
- * success, and what may follow — a push, Luck, the damage of a hit, the INT roll after a shock.
+ * The latest roll, drawn inside the app's toast in the setting's plate: the dice (the kept tens die
+ * marked), how far it reached on the ladder of success, a jam, and what may follow by the rules — a
+ * push, Luck, the damage of a hit, the INT roll after a shock.
  */
-export const RollResult: React.FC<{
-  record: RollRecord;
-  /** Extra actions for this roll (damage of a hit). */
-  actions?: React.ReactNode;
-  floating?: boolean;
-}> = ({ record, actions, floating = true }) => {
-  const { push, buyWithLuck, dismiss, character, roll } = useCoc();
+export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
+  const { push, buyWithLuck, rollDamage, character, roll } = useCocAnywhere();
   const { check } = record;
   const kept = check.total === 100 ? 0 : check.total - check.units;
   const luck = character.coc?.luck ?? 0;
   return (
-    <div className={cx('coc-roll', !floating && '!static !w-full')} data-level={check.level} role="status">
+    <div className="coc-roll" data-level={check.level}>
       <div className="coc-roll__head">
         <span className="coc-roll__total">{check.total}</span>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm text-ink">
+          <div className="truncate text-sm">
             {record.label}
-            {record.pushed && <span className="text-ink-faint"> · повтор</span>}
+            {record.pushed && <span className="opacity-60"> · повтор</span>}
           </div>
           <div
             className="text-[13px]"
             style={{ color: `rgb(var(--c-${check.success ? 'success' : 'danger'}))` }}
           >
             {record.luckSpent ? `Успех за ${record.luckSpent} удачи` : SUCCESS_LABELS[check.level]}
-            <span className="text-ink-faint"> · нужно ≤ {target(record)}</span>
+            <span className="opacity-60"> · нужно ≤ {target(record)}</span>
           </div>
           <div className="coc-roll__dice">
             {check.tens.map((t, i) => (
@@ -355,18 +369,12 @@ export const RollResult: React.FC<{
             <span className="coc-die" data-units data-kept>
               {check.units}
             </span>
+            {(record.bonus ?? 0) > 0 && <span className="self-center text-[11px] opacity-60">бонусная</span>}
+            {(record.penalty ?? 0) > 0 && (
+              <span className="self-center text-[11px] opacity-60">штрафная</span>
+            )}
           </div>
         </div>
-        {floating && (
-          <button
-            type="button"
-            onClick={dismiss}
-            className="text-ink-faint hover:text-ink"
-            aria-label="Закрыть"
-          >
-            ×
-          </button>
-        )}
       </div>
       {record.kind !== 'sanity' && (
         <div className="coc-ladder">
@@ -382,42 +390,60 @@ export const RollResult: React.FC<{
           ))}
         </div>
       )}
+      {record.jammed && (
+        <div className="mt-2 text-sm text-danger">Осечка: оружие заклинило, нужен раунд на починку.</div>
+      )}
+      {check.level === 'fumble' && record.kind !== 'sanity' && (
+        <div className="mt-2 text-sm text-danger">
+          Провал: худший исход, Хранитель решает, чем он обернётся.
+        </div>
+      )}
       {record.sanity && (
-        <div className="mt-3 text-sm text-ink-muted">
-          Потеряно <b className="text-ink">{record.sanity.loss}</b> рассудка.
+        <div className="mt-2 text-sm opacity-80">
+          Потеряно <b>{record.sanity.loss}</b> рассудка.
+          {record.sanity.needsIntRoll && <span> Потеря 5 и больше — бросок ИНТ.</span>}
           {record.sanity.indefinite && <span className="text-danger"> Бессрочное безумие.</span>}
           {record.sanity.permanent && <span className="text-danger"> Рассудок исчерпан.</span>}
         </div>
       )}
+      {record.kind === 'int' && (
+        <div className="mt-2 text-sm opacity-80">
+          {check.success
+            ? 'Сыщик осознал увиденное — временное безумие.'
+            : 'Разум отказался понимать — безумие обошло стороной.'}
+        </div>
+      )}
+      {record.damage && (
+        <div className="mt-2 flex items-baseline gap-2 text-sm opacity-80">
+          Урон <span className="ui-display ui-numeric text-2xl">{record.damage.total}</span> (
+          {record.damage.formula})
+        </div>
+      )}
       <div className="coc-roll__actions">
         {canPush(record) && (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={push}
-            title="Повторить бросок; провал повтора обернётся бедой"
-          >
+          <ToastButton onClick={push} title="Повторить бросок; провал повтора обернётся бедой">
             Повторить с риском
-          </Button>
+          </ToastButton>
         )}
         {canBuyWithLuck(record, luck) && (
-          <Button size="sm" variant="secondary" onClick={buyWithLuck}>
-            Удача: −{check.total - target(record)}
-          </Button>
+          <ToastButton onClick={buyWithLuck}>Удача: −{check.total - target(record)}</ToastButton>
+        )}
+        {record.kind === 'attack' && check.success && !record.damage && (
+          <ToastButton strong onClick={rollDamage}>
+            Урон
+          </ToastButton>
         )}
         {record.sanity?.needsIntRoll && (
-          <Button
-            size="sm"
-            variant="primary"
+          <ToastButton
+            strong
             onClick={() =>
               roll({ label: 'Осознание ужаса (ИНТ)', value: cocCharacteristics(character).int, kind: 'int' })
             }
-            title="Потеря 5 и больше: успех ИНТ — сыщик осознаёт увиденное и сходит с ума временно"
+            title="Успех ИНТ — сыщик осознаёт увиденное и сходит с ума временно"
           >
             Бросок ИНТ
-          </Button>
+          </ToastButton>
         )}
-        {actions}
       </div>
     </div>
   );
