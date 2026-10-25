@@ -6,6 +6,7 @@ import { Dialog } from '../../../ui/Dialog';
 import { Segmented } from '../../../ui/forms';
 import { Button, Input, cx } from '../../../ui/primitives';
 import { IconDice } from '../../../ui/icons';
+import { DieGlyph, RollingDie } from '../../../ui/RollingDie';
 
 const DICE = [4, 6, 8, 10, 12, 20, 100];
 
@@ -23,6 +24,84 @@ interface Result {
   dice: DieResult[];
   bonus: number;
 }
+
+/** A die of the picker: turns slowly at rest, winds up under the pointer or while it is in the pool. */
+const DieButton: React.FC<{
+  sides: number;
+  count: number;
+  phase: number;
+  onChange: (delta: number) => void;
+}> = ({ sides, count, phase, onChange }) => {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(1)}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onChange(-1);
+      }}
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => setHover(false)}
+      className={cx('ui-die', count > 0 && 'ui-die--in')}
+      title="Клик — добавить, правый клик — убрать"
+    >
+      <DieGlyph sides={sides} spin={hover ? 4 : count > 0 ? 2 : 0.6} phase={phase} />
+      <span className="ui-display ui-numeric ui-die__name">d{sides}</span>
+      {count ? <span className="ui-die__count">{count}</span> : null}
+    </button>
+  );
+};
+
+/** Between the landings of two dice of one throw, in ms. */
+const STAGGER_MS = 140;
+
+/** The edge of a thrown die: large for a few dice, smaller as the handful grows. */
+const thrownSize = (count: number) =>
+  count <= 3 ? '6rem' : count <= 6 ? '4.75rem' : count <= 10 ? '3.75rem' : '3rem';
+
+const signedBonus = (bonus: number) => (bonus > 0 ? `+ ${bonus}` : `− ${-bonus}`);
+
+/**
+ * The latest throw: its dice tumble large, land one after another with their numbers, and the total
+ * shows once the last one is down. The result is already known; this only reveals it.
+ */
+const Throw: React.FC<{ result: Result }> = ({ result }) => {
+  const [revealed, setRevealed] = useState(false);
+  // Larger dice first, in the order they were thrown within a size.
+  const dice = [...result.dice].sort((a, b) => b.sides - a.sides);
+  const size = thrownSize(dice.length);
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <div className="text-sm text-ink-muted">{result.formula}</div>
+      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+        {dice.map((die, index) => (
+          <RollingDie
+            key={index}
+            sides={die.sides}
+            value={die.value}
+            delay={index * STAGGER_MS}
+            size={size}
+            phase={index * 1.3 + die.sides * 0.1}
+            dropped={die.dropped}
+            tone={die.value === die.sides ? 'success' : die.value === 1 ? 'danger' : undefined}
+            onLanded={index === dice.length - 1 ? () => setRevealed(true) : undefined}
+          />
+        ))}
+        {result.bonus !== 0 && <span className="text-lg text-ink-muted">{signedBonus(result.bonus)}</span>}
+      </div>
+      <motion.span
+        className="ui-display ui-numeric text-6xl leading-none text-frame-bright"
+        initial={false}
+        animate={revealed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+        aria-hidden={!revealed}
+      >
+        {result.total}
+      </motion.span>
+    </div>
+  );
+};
 
 const counts = (formula: string) => {
   const parsed = parseDiceFormula(formula);
@@ -79,23 +158,16 @@ export const DiceDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
   const [latest, ...earlier] = results;
 
   return (
-    <Dialog open={open} onClose={onClose} title="Кубики" width="md">
+    <Dialog open={open} onClose={onClose} title="Кубики" width="lg">
       <div className="grid grid-cols-7 gap-2">
-        {DICE.map((sides) => (
-          <button
+        {DICE.map((sides, index) => (
+          <DieButton
             key={sides}
-            type="button"
-            onClick={() => change(sides, 1)}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              change(sides, -1);
-            }}
-            className={cx('ui-die', !!byDie[sides] && 'ui-die--in')}
-            title="Клик — добавить, правый клик — убрать"
-          >
-            <span className="ui-display ui-numeric">d{sides}</span>
-            {byDie[sides] ? <span className="ui-die__count">{byDie[sides]}</span> : null}
-          </button>
+            sides={sides}
+            count={byDie[sides] ?? 0}
+            phase={index * 0.9}
+            onChange={(delta) => change(sides, delta)}
+          />
         ))}
       </div>
 
@@ -136,55 +208,20 @@ export const DiceDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
         />
       )}
 
-      <div className="mt-5 min-h-[7.5rem]">
+      <div className="mt-5 min-h-[17rem]">
         <AnimatePresence mode="popLayout" initial={false}>
           {latest ? (
             <motion.div
               key={latest.id}
-              className="flex items-center gap-6"
-              initial={{ opacity: 0, scale: 0.9, y: 6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, transition: { duration: 0.1 } }}
-              transition={{ type: 'spring', stiffness: 380, damping: 24 }}
+              transition={{ duration: 0.15 }}
             >
-              <span className="ui-display ui-numeric w-24 text-center text-6xl leading-none text-frame-bright">
-                {latest.total}
-              </span>
-              <div className="min-w-0">
-                <div className="text-sm text-ink-muted">{latest.formula}</div>
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-                  {[...new Set(latest.dice.map((d) => d.sides))]
-                    .sort((a, b) => b - a)
-                    .map((sides) => (
-                      <span key={sides} className="flex items-center gap-1.5">
-                        <span className="text-xs text-ink-faint">d{sides}</span>
-                        {latest.dice
-                          .filter((die) => die.sides === sides)
-                          .map((die, index) => (
-                            <span
-                              key={index}
-                              className={cx(
-                                'ui-die-face',
-                                die.dropped && 'ui-die-face--dropped',
-                                die.value === die.sides && 'ui-die-face--max',
-                                die.value === 1 && 'ui-die-face--min',
-                              )}
-                            >
-                              {die.value}
-                            </span>
-                          ))}
-                      </span>
-                    ))}
-                  {latest.bonus !== 0 && (
-                    <span className="self-center text-sm text-ink-muted">
-                      {latest.bonus > 0 ? `+ ${latest.bonus}` : `− ${-latest.bonus}`}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <Throw result={latest} />
             </motion.div>
           ) : (
-            <p className="pt-8 text-center text-sm text-ink-faint">
+            <p className="pt-24 text-center text-sm text-ink-faint">
               Соберите кубики или впишите формулу и бросайте.
             </p>
           )}

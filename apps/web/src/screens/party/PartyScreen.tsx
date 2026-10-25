@@ -143,7 +143,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
 
   // A hero begun for this table and left unfinished is picked up where it was.
   const createHero = () => {
-    startCreation({ world: party.setting, partyId: party.id });
+    startCreation({ world: party.setting, partyId: party.id, rules: party.rules ?? undefined });
   };
 
   return (
@@ -325,6 +325,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         open={overlay?.kind === 'pick-hero'}
         partyId={party.id}
         setting={party.setting}
+        rules={party.rules}
         onClose={close}
         onCreate={createHero}
       />

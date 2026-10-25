@@ -7,6 +7,7 @@ import { Dialog } from '../../ui/Dialog';
 import { NumberField } from '../../ui/forms';
 import { IconDice, IconTrash } from '../../ui/icons';
 import { Button } from '../../ui/primitives';
+import { RollingDie } from '../../ui/RollingDie';
 import { formatBonus } from './partyView';
 
 /**
@@ -28,6 +29,8 @@ export const InitiativeDialog: React.FC<{
   const [manual, setManual] = useState<number>(() => combatant?.initiative ?? 10 + (bonus ?? 0));
   const [rolled, setRolled] = useState<{ die: number; total: number } | null>(null);
   const [busy, setBusy] = useState(false);
+  /** The rolled die has landed and the total shows. */
+  const [shown, setShown] = useState(false);
 
   const submit = async (value: number) => {
     if (!combatant) return;
@@ -41,8 +44,12 @@ export const InitiativeDialog: React.FC<{
     const die = rollDie(20);
     const total = die + (bonus ?? 0);
     setRolled({ die, total });
-    // The number stays on screen for a moment before the window closes.
-    window.setTimeout(() => void submit(total), 900);
+  };
+
+  // The die tumbles and lands first; the number then stays on screen a moment before the window closes.
+  const landed = () => {
+    setShown(true);
+    if (rolled) window.setTimeout(() => void submit(rolled.total), 900);
   };
 
   return (
@@ -72,21 +79,38 @@ export const InitiativeDialog: React.FC<{
           {rolled ? (
             <motion.div
               key="result"
-              className="flex flex-col items-center"
-              initial={{ opacity: 0, scale: 0.6, rotate: -20 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 18 }}
+              className="flex items-center gap-5"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.15 }}
             >
-              <span
-                className="ui-display ui-numeric text-[4.5rem] leading-none"
-                style={{ color: `rgb(var(--c-${rolled.die === 20 ? 'success' : rolled.die === 1 ? 'danger' : 'frame-bright'}))` }}
+              <RollingDie
+                sides={20}
+                value={rolled.die}
+                size="6.5rem"
+                tone={rolled.die === 20 ? 'success' : rolled.die === 1 ? 'danger' : undefined}
+                onLanded={landed}
+              />
+              <motion.div
+                className="flex min-w-[6rem] flex-col items-start"
+                initial={false}
+                animate={shown ? { opacity: 1, x: 0 } : { opacity: 0, x: -8 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+                aria-hidden={!shown}
               >
-                {rolled.total}
-              </span>
-              <span className="mt-1 text-sm text-ink-muted">
-                к20: {rolled.die}
-                {bonus ? ` ${formatBonus(bonus)}` : ''}
-              </span>
+                <span
+                  className="ui-display ui-numeric text-[4.5rem] leading-none"
+                  style={{
+                    color: `rgb(var(--c-${rolled.die === 20 ? 'success' : rolled.die === 1 ? 'danger' : 'frame-bright'}))`,
+                  }}
+                >
+                  {rolled.total}
+                </span>
+                <span className="mt-1 text-sm text-ink-muted">
+                  к20: {rolled.die}
+                  {bonus ? ` ${formatBonus(bonus)}` : ''}
+                </span>
+              </motion.div>
             </motion.div>
           ) : (
             <motion.div key="roll" exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.15 }}>

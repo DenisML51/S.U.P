@@ -8,6 +8,7 @@ import type {
   PartyListItemDto,
   PartyNpcDto,
   PartyRole,
+  PartyRules,
   Setting,
 } from '@itd/schema';
 import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
@@ -148,6 +149,7 @@ export class PartyQueries {
         id: parties.id,
         name: parties.name,
         setting: parties.setting,
+        rules: parties.rules,
         coverAssetId: parties.coverAssetId,
         updatedAt: parties.updatedAt,
         role: partyMembers.role,
@@ -175,6 +177,7 @@ export class PartyQueries {
     return rows.map(({ sessionStartedAt, ...row }) => ({
       ...row,
       setting: row.setting as Setting,
+      rules: row.rules as PartyRules | null,
       inSession: sessionStartedAt !== null,
       updatedAt: row.updatedAt.toISOString(),
     }));
@@ -243,6 +246,7 @@ export class PartyQueries {
           description: party.description,
           lore: party.lore,
           setting: party.setting as Setting,
+          rules: party.rules as PartyRules | null,
           coverAssetId: party.coverAssetId,
           role,
           masterId: party.masterId,
@@ -271,6 +275,7 @@ export class PartyQueries {
         name: parties.name,
         description: parties.description,
         setting: parties.setting,
+        rules: parties.rules,
         coverAssetId: parties.coverAssetId,
         sessionStartedAt: parties.sessionStartedAt,
         masterName: users.displayName,
@@ -286,7 +291,12 @@ export class PartyQueries {
     if (!row) throw partyNotFound();
     const { sessionStartedAt, ...preview } = row;
     if (!sessionStartedAt && !preview.member) throw sessionClosed(CODE_WAITS);
-    return { ...preview, setting: row.setting as Setting, inSession: sessionStartedAt !== null };
+    return {
+      ...preview,
+      setting: row.setting as Setting,
+      rules: row.rules as PartyRules | null,
+      inSession: sessionStartedAt !== null,
+    };
   }
 }
 

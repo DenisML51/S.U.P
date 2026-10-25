@@ -161,6 +161,8 @@ export const parties = pgTable(
     /** The party's chronicle, Markdown. */
     lore: text('lore').notNull().default(''),
     setting: text('setting').notNull(),
+    /** `dnd2024`, `coc7` or `custom`; `null`: any rules (tables made before the choice). */
+    rules: text('rules'),
     coverAssetId: uuid('cover_asset_id').references(() => assets.id, { onDelete: 'set null' }),
     inviteCode: text('invite_code').notNull(),
     /** The running session's start; `null` between sessions, when the table is closed to players. */

@@ -100,6 +100,25 @@ describe('parties', () => {
     expect(list[0]!.myCharacterIds).toEqual([playerHero.id]);
   });
 
+  it('seats only heroes made by the rules of the table', async () => {
+    const app = await ctx.app();
+    const master = await registerUser(app, 'Хранитель');
+    const created = await call(app, master, 'POST', '/parties', { name: 'Ужас Данвича', setting: 'lovecraft', rules: 'coc7' });
+    expect(created.statusCode).toBe(201);
+    const partyId = created.json<{ id: string }>().id;
+    expect((await view(app, master, partyId)).rules).toBe('coc7');
+
+    const ownRules = await saveHero(app, master, { name: 'Свой герой' });
+    const refused = await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: ownRules.id });
+    expect(refused.statusCode).toBe(409);
+
+    const investigator = await saveHero(app, master, {
+      name: 'Сыщик',
+      build: { ruleset: 'coc7', variant: 'classic', era: '1920s', occupation: 'professor', talents: [], age: 40 },
+    });
+    expect((await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: investigator.id })).statusCode).toBe(201);
+  });
+
   it('seats the master and four players, no more', async () => {
     const app = await ctx.app();
     const { partyId, code } = await table(app);

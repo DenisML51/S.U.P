@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { DEFAULT_SETTING, type PartyDto, type Setting } from '@itd/schema';
+import { DEFAULT_SETTING, type PartyDto, type PartyRules, type Setting } from '@itd/schema';
 import { useNavStore } from '../../store/useNavStore';
 import { useParty, usePartyStore } from '../../store/usePartyStore';
 import { ConfirmDialog } from '../../ui/Dialog';
@@ -9,6 +9,7 @@ import { ImageSlot } from '../../ui/ImageSlot';
 import { IconPrev, IconTrash } from '../../ui/icons';
 import { Button, Field, Input, Panel, TextArea, cx } from '../../ui/primitives';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
+import { RULES_TITLE, RulesCarousel } from '../../ui/RulesetCards';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
 import { MarkdownField } from '../../ui/forms';
@@ -24,6 +25,8 @@ const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
 
 interface Draft {
   setting: Setting;
+  /** `null`: any rules (a table made before the choice existed). */
+  rules: PartyRules | null;
   name: string;
   description: string;
   lore: string;
@@ -55,13 +58,15 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
 
   const [draft, setDraft] = useState<Draft>(() => ({
     setting: party?.setting ?? DEFAULT_SETTING,
+    rules: party?.rules ?? null,
     name: party?.name ?? '',
     description: party?.description ?? '',
     lore: party?.lore ?? '',
     coverAssetId: party?.coverAssetId ?? null,
   }));
   const patch = (next: Partial<Draft>) => setDraft((current) => ({ ...current, ...next }));
-  const [step, setStep] = useState<'world' | 'table'>(party ? 'table' : 'world');
+  const [step, setStep] = useState<'world' | 'rules' | 'table'>(party ? 'table' : 'world');
+  const [rulesChosen, setRulesChosen] = useState(!!party?.rules);
   const [worldChosen, setWorldChosen] = useState(!!party);
   const [inFront, setInFront] = useState<Setting | null>(null);
   const [flourish, setFlourish] = useState<{ setting: Setting; x: number; y: number; key: number } | null>(null);
@@ -77,10 +82,12 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
   // Back goes one step at a time: from the table to the world of a new party, from the world to an edited table.
   const back =
     step === 'table' && !party
-      ? { label: 'Мир', go: () => setStep('world') }
-      : step === 'world' && party
-        ? { label: 'Назад', go: () => setStep('table') }
-        : { label: party ? 'Партия' : 'Главная', go: leave };
+      ? { label: 'Правила', go: () => setStep('rules') }
+      : step === 'rules' && !party
+        ? { label: 'Мир', go: () => setStep('world') }
+        : step !== 'table' && party
+          ? { label: 'Назад', go: () => setStep('table') }
+          : { label: party ? 'Партия' : 'Главная', go: leave };
 
   const submit = async () => {
     setTouched(true);
@@ -116,7 +123,7 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
           {back.label}
         </Button>
         <span className="text-[11px] uppercase tracking-[0.22em] text-ink-faint">
-          {party ? 'Настройки партии' : `Новая партия · шаг ${step === 'world' ? 1 : 2} из 2`}
+          {party ? 'Настройки партии' : `Новая партия · шаг ${step === 'world' ? 1 : step === 'rules' ? 2 : 3} из 3`}
         </span>
       </header>
 
@@ -142,10 +149,32 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
               />
             </div>
             <footer className="flex justify-center py-5">
-              <Button variant="primary" disabled={!worldChosen} onClick={() => setStep('table')}>
+              <Button variant="primary" disabled={!worldChosen} onClick={() => setStep(party ? 'table' : 'rules')}>
                 Дальше
               </Button>
             </footer>
+          </motion.main>
+        ) : step === 'rules' ? (
+          <motion.main
+            key="rules"
+            className="relative z-10 flex min-h-0 flex-1 flex-col px-10 pt-4"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0, transition: ENTER }}
+            exit={{ opacity: 0, x: -30, transition: { duration: 0.2 } }}
+          >
+            <h1 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">По каким правилам играет стол?</h1>
+            <p className="mt-1 text-center text-sm text-ink-muted">За стол сядут только герои, созданные по этим правилам</p>
+            <div className="flex min-h-0 flex-1 items-center">
+              <RulesCarousel
+                value={rulesChosen ? draft.rules : null}
+                chooseLabel="Играть за столом по этим правилам"
+                onChange={(rules) => {
+                  patch({ rules });
+                  setRulesChosen(true);
+                  setStep('table');
+                }}
+              />
+            </div>
           </motion.main>
         ) : (
           <motion.main
@@ -157,7 +186,13 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
           >
             <Panel crest className="flex max-h-full w-full max-w-[72rem] flex-col">
               <div className="px-10 pb-2 pt-8 text-center">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-frame-bright/80">{SETTING_INFO[draft.setting].label}</div>
+                <div className="text-[11px] uppercase tracking-[0.22em] text-frame-bright/80">
+                  {SETTING_INFO[draft.setting].label}
+                  {' · '}
+                  <button type="button" className="underline-offset-4 hover:underline" onClick={() => setStep('rules')} title="Сменить правила стола">
+                    {draft.rules ? RULES_TITLE[draft.rules] : 'Любые правила'}
+                  </button>
+                </div>
                 <h1 className="ui-display ui-title mt-2 text-[2.2rem] leading-tight text-ink">{party ? 'Ваш стол' : 'Соберите свой стол'}</h1>
                 <p className="mt-1 text-sm text-ink-muted">
                   {party ? 'Игроки увидят изменения сразу' : 'Вы станете мастером: игроки войдут по коду приглашения'}

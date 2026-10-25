@@ -73,11 +73,24 @@ const DescriptionSchema = z.string().trim().max(2000, 'Описание не д�
 /** The party's chronicle: the long story in Markdown, read by everyone at the table. */
 const LoreSchema = z.string().trim().max(50_000, 'Летопись не длиннее 50 000 символов');
 
+/**
+ * The rules a table plays by: a rules system, or the table's own (heroes without a preset build).
+ * `null` on a table: any rules (tables made before the choice existed).
+ */
+export const PARTY_RULES = ['dnd2024', 'coc7', 'custom'] as const;
+export const PartyRulesSchema = z.enum(PARTY_RULES);
+export type PartyRules = z.infer<typeof PartyRulesSchema>;
+
+/** The rules a hero is played by, in a table's terms. */
+export const heroRules = (character: { build?: { ruleset: string } }): PartyRules =>
+  (character.build?.ruleset as PartyRules | undefined) ?? 'custom';
+
 export const CreatePartyRequestSchema = z.object({
   name: PartyNameSchema,
   description: DescriptionSchema.default(''),
   lore: LoreSchema.default(''),
   setting: SettingSchema,
+  rules: PartyRulesSchema.nullable().default(null),
   coverAssetId: AssetIdSchema.nullable().default(null),
 });
 export type CreatePartyRequest = z.input<typeof CreatePartyRequestSchema>;
@@ -88,6 +101,7 @@ export const UpdatePartyRequestSchema = z
     description: DescriptionSchema,
     lore: LoreSchema,
     setting: SettingSchema,
+    rules: PartyRulesSchema.nullable(),
     coverAssetId: AssetIdSchema.nullable(),
   })
   .partial();
@@ -164,6 +178,7 @@ export interface PartyListItemDto {
   id: string;
   name: string;
   setting: Setting;
+  rules: PartyRules | null;
   coverAssetId: string | null;
   role: PartyRole;
   masterName: string;
@@ -267,6 +282,7 @@ export interface PartyDto {
   /** Markdown. */
   lore: string;
   setting: Setting;
+  rules: PartyRules | null;
   coverAssetId: string | null;
   role: PartyRole;
   masterId: string;
@@ -288,6 +304,7 @@ export interface InvitePreviewDto {
   name: string;
   description: string;
   setting: Setting;
+  rules: PartyRules | null;
   coverAssetId: string | null;
   masterName: string;
   memberCount: number;
