@@ -726,3 +726,27 @@
   &.ui-hero-card[data-focused] :is(.sf-file__tab, .sf-file__level) { opacity: 1; transform: none; transition-delay: 150ms; }
   &.ui-hero-card[data-focused] .sf-file__scale { opacity: 1; transition-delay: 250ms; }
 }
+
+/* The rulebook on a hero's card: an ID chip — a notched plate with a lit status light. */
+[data-setting='sci-fi'] .ui-rulebook {
+  position: relative;
+  padding: 0.3rem 0.65rem 0.3rem 1.35rem;
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  color: rgb(var(--c-accent));
+  background: rgb(var(--c-surface-2) / 0.9);
+  border: 1px solid rgb(var(--c-accent) / 0.5);
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+}
+[data-setting='sci-fi'] .ui-rulebook::before {
+  content: '';
+  position: absolute;
+  left: 0.55rem;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  background: rgb(var(--c-accent));
+  box-shadow: 0 0 6px rgb(var(--c-accent));
+}

@@ -441,11 +441,11 @@ const seatNumber = (id: string) => {
  * A railway ticket tucked against the focused hero card: the line, the carriage (the hero's level)
  * and the seat, punched by the conductor.
  */
-const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ id, level }) => (
+const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ id, level, age }) => (
   <div className="lc-ticket" aria-hidden>
     <span className="lc-ticket__line">Аркхем — Иннсмут</span>
     <span className="lc-ticket__seat">
-      Вагон {level} · Место {seatNumber(id)}
+      {age !== undefined ? `Пассажир, ${age} л.` : `Вагон ${level}`} · Место {seatNumber(id)}
     </span>
   </div>
 );
