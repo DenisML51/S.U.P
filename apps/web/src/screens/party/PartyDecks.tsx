@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LayoutGroup, motion } from 'framer-motion';
-import type { PartyDto, PartyHeroDto, PartyNpcDto } from '@itd/schema';
+import { npcMinHP, type NpcAttack, type PartyDto, type PartyHeroDto, type PartyNpcDto } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
 import { usePartyStore } from '../../store/usePartyStore';
 import { CharacterArt } from '../../ui/CharacterArt';
@@ -16,7 +16,10 @@ import {
   IconShown,
 } from '../../ui/icons';
 import { IconButton, Meter, Panel, cx } from '../../ui/primitives';
-import { formatBonus } from './partyView';
+import { formatBonus, isCocFight } from './partyView';
+
+/** "Нож 40% 1D4" — an attack of a Call of Cthulhu NPC on its card. */
+const attackLine = (attack: NpcAttack) => [attack.name, `${attack.skill}%`, attack.damage].filter(Boolean).join(' ');
 
 const SPRING = { type: 'spring', stiffness: 260, damping: 30 } as const;
 /** How far each card behind peeks out of a stack (party.css reserves room for three: keep `--stack-peek` in step). */
@@ -551,6 +554,8 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
   const [editing, setEditing] = useState(false);
   const hostile = npc.disposition === 'hostile';
   const down = npc.currentHP <= 0;
+  const coc = isCocFight(party) || npc.coc !== null;
+  const stats = npc.coc;
 
   const apply = (raw: string) => {
     setEditing(false);
@@ -559,7 +564,7 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
     if (!text || !Number.isFinite(value)) return;
     const relative = /^[+-]/.test(text);
     const currentHP = Math.max(
-      -9999,
+      npcMinHP(coc),
       Math.min(npc.maxHP, Math.round(relative ? npc.currentHP + value : value)),
     );
     if (currentHP !== npc.currentHP) void updateNpc(party.id, npc.id, { currentHP });
@@ -626,17 +631,45 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
             {spread && (
               <>
                 <span className="flex items-center gap-3 text-xs text-ink-muted">
-                  {party.rules !== 'coc7' && (
+                  {coc ? (
+                    stats?.armor ? (
+                      <span className="flex items-center gap-1" title="Броня: очки, снимаемые с каждого попадания">
+                        <IconArmor width={13} height={13} className="text-armor" />
+                        <span className="ui-numeric text-ink">{stats.armor}</span>
+                      </span>
+                    ) : null
+                  ) : (
                     <span className="flex items-center gap-1" title="Класс брони">
                       <IconArmor width={13} height={13} className="text-armor" />
                       <span className="ui-numeric text-ink">{npc.armorClass}</span>
                     </span>
                   )}
-                  <span className="flex items-center gap-1" title={party.rules === 'coc7' ? 'Ловкость: порядок хода' : 'Модификатор инициативы'}>
+                  <span
+                    className="flex items-center gap-1"
+                    title={coc ? (stats?.firearmReady ? 'Ловкость: порядок хода, +50 с оружием наготове' : 'Ловкость: порядок хода') : 'Модификатор инициативы'}
+                  >
                     <IconInitiative width={12} height={12} />
-                    <span className="ui-numeric text-ink">{party.rules === 'coc7' ? npc.initiativeBonus : formatBonus(npc.initiativeBonus)}</span>
+                    <span className="ui-numeric text-ink">{coc ? npc.initiativeBonus : formatBonus(npc.initiativeBonus)}</span>
+                    {coc && stats?.firearmReady && <span className="ui-numeric text-frame-bright">+50</span>}
                   </span>
+                  {stats?.sanityLoss && (
+                    <span className="flex items-center gap-1" title="Потеря рассудка при встрече">
+                      <IconSanity width={12} height={12} />
+                      <span className="ui-numeric text-ink">{stats.sanityLoss}</span>
+                    </span>
+                  )}
+                  {coc && stats && (stats.build !== 0 || stats.damageBonus) && (
+                    <span className="ui-numeric" title="Комплекция и бонус урона">
+                      Ком {formatBonus(stats.build)}
+                      {stats.damageBonus && ` · БУ ${stats.damageBonus}`}
+                    </span>
+                  )}
                 </span>
+                {coc && stats && stats.attacks.length > 0 && (
+                  <span className="block truncate text-[11px] text-ink-muted" title={stats.attacks.map(attackLine).join('\n')}>
+                    {stats.attacks.map(attackLine).join(' · ')}
+                  </span>
+                )}
                 <span className="block h-5" />
               </>
             )}

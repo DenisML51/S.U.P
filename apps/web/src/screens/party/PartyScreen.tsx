@@ -37,7 +37,7 @@ import { InitiativeStrip } from './InitiativeStrip';
 import { LoreDialog } from './LoreDialog';
 import { NpcDialog } from './NpcDialog';
 import { PartyCover } from './PartyCover';
-import { initiativeBonusOf } from './partyView';
+import { actsByDex, initiativeBonusOf, isCocFight, npcFirearmReady } from './partyView';
 import { StartCombatDialog } from './StartCombatDialog';
 import { TableDecks } from './PartyDecks';
 import { Companions, MyHero } from './PlayerSeat';
@@ -318,7 +318,8 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         setting={party.setting}
         combatant={combat.rolling}
         bonus={combat.rolling ? initiativeBonusOf(party, combat.rolling) : null}
-        byDex={party.rules === 'coc7' || (combat.rolling?.kind === 'hero' && !!party.heroes.find((h) => h.id === combat.rolling?.refId)?.vitals?.coc)}
+        byDex={actsByDex(party, combat.rolling)}
+        firearmReady={npcFirearmReady(party, combat.rolling)}
         canRemove={isMaster}
         onClose={() => combat.roll(null)}
       />
@@ -332,7 +333,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
       />
       {overlay?.kind === 'combat' && <StartCombatDialog open party={party} onClose={close} />}
       {overlay?.kind === 'npc' && (
-        <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} coc={party.rules === 'coc7'} onClose={close} />
+        <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} coc={isCocFight(party) || !!overlay.npc?.coc} onClose={close} />
       )}
       <LoreDialog
         open={overlay?.kind === 'lore'}
@@ -605,7 +606,7 @@ const CombatPanel: React.FC<{
           )}
         </div>
       </div>
-      <InitiativeStrip combat={fight} onPick={seat.roll} className="mt-3 [justify-content:safe_center]" />
+      <InitiativeStrip combat={fight} onPick={seat.roll} master={seat.isMaster} className="mt-3 [justify-content:safe_center]" />
     </Panel>
   );
 };

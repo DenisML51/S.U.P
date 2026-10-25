@@ -140,6 +140,52 @@ export const NPC_DISPOSITIONS = ['hostile', 'friendly'] as const;
 export const NpcDispositionSchema = z.enum(NPC_DISPOSITIONS);
 export type NpcDisposition = z.infer<typeof NpcDispositionSchema>;
 
+/** One attack of a Call of Cthulhu NPC: what it fights with, its skill and its damage. */
+export const NpcAttackSchema = z.object({
+  name: z.string().trim().min(1, 'Назовите атаку').max(60),
+  /** Skill, %. */
+  skill: z.number().int().min(0).max(200),
+  damage: z.string().trim().max(30, 'Урон не длиннее 30 символов').default(''),
+});
+export type NpcAttack = z.infer<typeof NpcAttackSchema>;
+
+/** Dice like `1D4`, `+1D6`, `−1`, `0/1D6`: digits, D, +, −, / and spaces. */
+const diceText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .regex(/^[0-9DdКк+\-−/ ]*$/, 'Только кубики и числа: 1D4, +1D6, 0/1D6');
+
+/**
+ * What a Call of Cthulhu NPC fights with beyond hit points and DEX (DEX itself is `initiativeBonus`).
+ * `null` on other tables.
+ */
+export const NpcCocSchema = z.object({
+  /** Armour points taken off every hit. */
+  armor: z.number().int().min(0).max(20).default(0),
+  build: z.number().int().min(-2).max(20).default(0),
+  /** `+1D4`, `−1`, `0`. */
+  damageBonus: diceText(12).default(''),
+  attacks: z.array(NpcAttackSchema).max(8).default([]),
+  /** Sanity lost on seeing it: `0/1D6`. */
+  sanityLoss: diceText(20).default(''),
+  /** A firearm drawn and ready: +50 to its place in the DEX order. */
+  firearmReady: z.boolean().default(false),
+});
+export type NpcCocStats = z.infer<typeof NpcCocSchema>;
+
+/** The NPC's highest attack skill: who acts first when DEX is the same. */
+export const npcCombatSkill = (coc: Pick<NpcCocStats, 'attacks'> | null | undefined): number =>
+  Math.max(0, ...(coc?.attacks ?? []).map((attack) => attack.skill));
+
+/** Call of Cthulhu order: DEX, +50 with a firearm ready. */
+export const npcDexOrder = (dex: number, coc: Pick<NpcCocStats, 'firearmReady'> | null | undefined): number =>
+  dex + (coc?.firearmReady ? 50 : 0);
+
+/** Lowest hit points an NPC may have: an investigator's foes stop at 0, others may go below. */
+export const npcMinHP = (coc: boolean): number => (coc ? 0 : -9999);
+
 const NpcFieldsSchema = z.object({
   name: z.string().trim().min(1, 'Назовите НПС').max(80),
   portraitAssetId: AssetIdSchema.nullable(),
@@ -149,12 +195,14 @@ const NpcFieldsSchema = z.object({
   /** Initiative modifier; at a Call of Cthulhu table the NPC's DEX (everyone acts in DEX order). */
   initiativeBonus: z.number().int().min(-20).max(200),
   disposition: NpcDispositionSchema,
+  coc: NpcCocSchema.nullable(),
 });
 
 /** A quick NPC; it starts unhurt unless current hit points are given. */
 export const CreateNpcRequestSchema = NpcFieldsSchema.partial({ currentHP: true }).extend({
   portraitAssetId: AssetIdSchema.nullable().default(null),
   disposition: NpcDispositionSchema.default('hostile'),
+  coc: NpcCocSchema.nullable().default(null),
 });
 export type CreateNpcRequest = z.input<typeof CreateNpcRequestSchema>;
 
@@ -176,7 +224,8 @@ export type StartCombatRequest = z.input<typeof StartCombatRequestSchema>;
 export const AddCombatantsRequestSchema = ParticipantsSchema;
 export type AddCombatantsRequest = z.input<typeof AddCombatantsRequestSchema>;
 
-export const InitiativeRequestSchema = z.object({ value: z.number().int().min(-50).max(99) });
+/** Up to 200: a Call of Cthulhu order is DEX, +50 with a firearm ready. */
+export const InitiativeRequestSchema = z.object({ value: z.number().int().min(-50).max(200) });
 
 /** `from` is the turn the caller saw: a second click (or a click from another device) is not a second turn. */
 export const NextTurnRequestSchema = z.object({ from: z.uuid().nullable() });
@@ -239,6 +288,8 @@ export interface PartyHeroDto {
   subclass: string;
   level: number;
   portrait?: string;
+  /** The rules the hero was made by (`custom`: without a preset build). */
+  rules: PartyRules;
   vitals: HeroVitalsDto | null;
   /**
    * A master's hero the players do not see yet (only the master gets hidden heroes; a fight shows
@@ -257,6 +308,8 @@ export interface PartyNpcDto {
   armorClass: number;
   initiativeBonus: number;
   disposition: NpcDisposition;
+  /** Call of Cthulhu numbers; `null` for other NPCs. */
+  coc: NpcCocStats | null;
 }
 
 export interface CombatantDto {
@@ -297,6 +350,11 @@ export interface PartyDto {
   lore: string;
   setting: Setting;
   rules: PartyRules | null;
+  /**
+   * The rules a fight goes by: the table's own, or at a table of any rules (`rules: null`) Call of
+   * Cthulhu when every seated hero is an investigator (NPCs then act in DEX order too). `null`: d20.
+   */
+  combatRules: PartyRules | null;
   coverAssetId: string | null;
   role: PartyRole;
   masterId: string;

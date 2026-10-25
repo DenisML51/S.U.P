@@ -1,10 +1,11 @@
 import { randomInt } from 'node:crypto';
+import { npcDexOrder } from '@itd/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Transaction } from '../../db/client';
-import { parties, partyCombatants, partyCombats, partyHeroes, partyNpcs } from '../../db/schema';
+import { partyCombatants, partyCombats, partyHeroes, partyNpcs } from '../../db/schema';
 import { conflictError, notFound, sessionClosed, validationError } from '../../lib/errors';
 import { masterOnly, type PartyAccess, type PartyContext } from './partyAccess';
-import { combatantsOf } from './parties.queries';
+import { combatantsOf, combatRulesOf } from './parties.queries';
 import { nextTurn } from './turnOrder';
 
 interface Participants {
@@ -54,13 +55,27 @@ export class CombatService {
     });
   }
 
-  /** The hero's owner enters their roll (or the master does it for anyone). */
+  /**
+   * The hero's owner enters their roll (or the master does it for anyone). A player rolls while
+   * initiative is being rolled, or once for a hero brought into a fight already under way; the order
+   * of a running round is the master's to change. An investigator's order is their DEX, or DEX + 50
+   * with a firearm ready: nothing else is taken from a player.
+   */
   setInitiative(userId: string, partyId: string, combatantId: string, value: number): Promise<void> {
     return this.access.change(userId, partyId, 'member', async (context) => {
-      await this.requireCombat(context.tx, partyId);
+      const combat = await this.requireCombat(context.tx, partyId);
       const combatant = (await combatantsOf(context.tx, partyId)).find((entry) => entry.id === combatantId);
       if (!combatant) throw notFound('Участник боя не найден');
       if (!this.controls(context, combatant.ownerId)) throw masterOnly();
+      if (context.role !== 'master') {
+        if (combat.phase !== 'initiative' && combatant.initiative !== null) {
+          throw conflictError('Раунд уже идёт: порядок хода меняет мастер');
+        }
+        const dex = combatant.heroDex;
+        if (dex !== null && value !== dex && value !== dex + 50) {
+          throw validationError(`Порядок сыщика — его ЛВК (${dex}) или ЛВК + 50 с оружием наготове (${dex + 50})`);
+        }
+      }
       await context.tx
         .update(partyCombatants)
         .set({ initiative: value })
@@ -69,21 +84,22 @@ export class CombatService {
   }
 
   /**
-   * Initiative for every NPC still waiting: d20 + modifier, or at a Call of Cthulhu table the NPC's
-   * DEX (kept in the modifier's place), since there everyone acts in DEX order.
+   * Initiative for every NPC still waiting: d20 + modifier, or in a Call of Cthulhu fight the NPC's
+   * DEX (kept in the modifier's place), +50 with a firearm ready, since there everyone acts in DEX
+   * order (see `combatRulesFor` for a table of any rules). Ties of DEX go to the higher attack skill
+   * (`turnOrder`).
    */
   rollForNpcs(userId: string, partyId: string): Promise<void> {
     return this.access.change(userId, partyId, 'master', async ({ tx }) => {
       await this.requireCombat(tx, partyId);
-      const [table] = await tx.select({ rules: parties.rules }).from(parties).where(eq(parties.id, partyId));
-      const byDex = table?.rules === 'coc7';
+      const byDex = (await combatRulesOf(tx, partyId)) === 'coc7';
       const waiting = (await combatantsOf(tx, partyId)).filter(
         (entry) => entry.npcId && entry.initiative === null,
       );
       for (const npc of waiting) {
         await tx
           .update(partyCombatants)
-          .set({ initiative: byDex ? npc.bonus : randomInt(1, 21) + npc.bonus })
+          .set({ initiative: byDex ? npcDexOrder(npc.bonus, npc.npcCoc) : randomInt(1, 21) + npc.bonus })
           .where(eq(partyCombatants.id, npc.id));
       }
     });

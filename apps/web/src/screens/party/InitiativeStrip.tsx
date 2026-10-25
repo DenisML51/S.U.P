@@ -14,11 +14,17 @@ const TOKEN = { lg: 68, sm: 50 } as const;
 export const InitiativeStrip: React.FC<{
   combat: CombatDto;
   size?: keyof typeof TOKEN;
-  /** Clicking a portrait: the master sets anyone's roll, a player their own. */
+  /**
+   * Clicking a portrait: the master sets anyone's roll at any time, a player their own while
+   * initiative is rolled (or once, for a hero brought into a running fight). The server holds to it.
+   */
   onPick?: (combatant: CombatantDto) => void;
+  master?: boolean;
   className?: string;
-}> = ({ combat, size = 'lg', onPick, className }) => {
+}> = ({ combat, size = 'lg', onPick, master, className }) => {
   const side = TOKEN[size];
+  const pickable = (combatant: CombatantDto) =>
+    combatant.controlled && (master || combat.phase === 'initiative' || combatant.initiative === null);
   return (
     <LayoutGroup>
       <ol className={cx('ui-initiative flex min-w-0 items-start gap-3 overflow-x-auto px-1 pb-1 pt-3', className)} aria-label="Очерёдность хода">
@@ -29,7 +35,7 @@ export const InitiativeStrip: React.FC<{
             place={index + 1}
             side={side}
             current={combatant.id === combat.currentCombatantId}
-            onPick={onPick && (combatant.controlled ? () => onPick(combatant) : undefined)}
+            onPick={onPick && (pickable(combatant) ? () => onPick(combatant) : undefined)}
           />
         ))}
       </ol>

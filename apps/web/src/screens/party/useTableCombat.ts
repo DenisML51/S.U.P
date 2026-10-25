@@ -19,6 +19,27 @@ const writeBegun = (key: string, value: string) => {
   }
 };
 
+const BEGUN = 'itd.turn-begun.';
+const begunKey = (partyId: string, combatantId: string) => `${BEGUN}${partyId}.${combatantId}`;
+
+/**
+ * Forgets the turns of fights that are over: a party's marks stay only for combatants of its current
+ * fight (none once it ends). Marks of the old shape (`itd.turn-begun.<combatant>`, before they named
+ * their party) go too.
+ */
+const pruneBegun = (partyId: string, keep: ReadonlySet<string>) => {
+  try {
+    const own = `${BEGUN}${partyId}.`;
+    for (const key of Object.keys(localStorage)) {
+      if (!key.startsWith(BEGUN)) continue;
+      const legacy = !key.slice(BEGUN.length).includes('.');
+      if (legacy || (key.startsWith(own) && !keep.has(key.slice(own.length)))) localStorage.removeItem(key);
+    }
+  } catch {
+    // Storage unavailable: nothing was kept either.
+  }
+};
+
 /**
  * The fight as the signed-in user lives it: the initiative roll asked of them as soon as the master
  * starts a fight, and a word when their turn comes. `onMyTurn` runs once each time a turn of one of
@@ -71,13 +92,21 @@ export function useTableCombat(
   onMyTurn.current = options.onMyTurn;
   const ours = myCurrent && myCurrent.refId === options.forHero ? myCurrent : null;
   const turnKey = ours && fight ? `${fight.startedAt}:${fight.round}` : null;
+  const partyId = party?.id;
+
+  // On opening and whenever who fights changes (a fight ends, someone leaves it), old marks go.
+  const fighting = fight ? fight.combatants.map((c) => c.id).join(',') : '';
   useEffect(() => {
-    if (!turnKey || !ours || !onMyTurn.current) return;
-    const storageKey = `itd.turn-begun.${ours.id}`;
+    if (partyId) pruneBegun(partyId, new Set(fighting ? fighting.split(',') : []));
+  }, [partyId, fighting]);
+
+  useEffect(() => {
+    if (!turnKey || !ours || !onMyTurn.current || !partyId) return;
+    const storageKey = begunKey(partyId, ours.id);
     if (readBegun(storageKey) === turnKey) return;
     writeBegun(storageKey, turnKey);
     onMyTurn.current(ours);
-  }, [turnKey, ours]);
+  }, [turnKey, ours, partyId]);
 
   return { ...seat, rolling, roll: setRolling };
 }
