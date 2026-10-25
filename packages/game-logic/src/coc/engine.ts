@@ -12,8 +12,10 @@ import type { CharacteristicId, CocEra, CocVariant, PointsFormula, SkillBase, Sk
 
 export type Characteristics = Record<CharacteristicId, number>;
 
-const roll3d6 = (random: RandomSource) => rollDie(6, random) + rollDie(6, random) + rollDie(6, random);
-const roll2d6plus6 = (random: RandomSource) => rollDie(6, random) + rollDie(6, random) + 6;
+/** The dice of 3d6 and of the 2d6 in (2d6+6), in the order they are thrown. */
+const dice3d6 = (random: RandomSource) => [rollDie(6, random), rollDie(6, random), rollDie(6, random)];
+const dice2d6 = (random: RandomSource) => [rollDie(6, random), rollDie(6, random)];
+const sum = (dice: number[]) => dice.reduce((total, die) => total + die, 0);
 
 // ------------------------------------------------------------------------------------------------
 // Creation
@@ -24,20 +26,54 @@ export const POINT_BUY_TOTAL = 460;
 /** Bonus skill points a Pulp archetype gives. */
 export const ARCHETYPE_POINTS = 100;
 
+/** Rolled characteristics with the dice behind each one, for a table that shows the throw. */
+export interface CharacteristicRolls {
+  values: Characteristics;
+  /** The d6s of each characteristic: three for 3d6, two for (2d6+6). */
+  dice: Record<CharacteristicId, number[]>;
+}
+
+/** STR, CON, DEX, APP, POW: 3d6×5; SIZ, INT, EDU: (2d6+6)×5 — with the dice of each. */
+export function rollCharacteristicsDetailed(random: RandomSource = Math.random): CharacteristicRolls {
+  const dice = Object.fromEntries(
+    CHARACTERISTICS.map((c) => [c.id, c.roll === '3d6' ? dice3d6(random) : dice2d6(random)]),
+  ) as Record<CharacteristicId, number[]>;
+  const values = Object.fromEntries(
+    CHARACTERISTICS.map((c) => [c.id, (sum(dice[c.id]) + (c.roll === '3d6' ? 0 : 6)) * 5]),
+  ) as Characteristics;
+  return { values, dice };
+}
+
 /** STR, CON, DEX, APP, POW: 3d6×5; SIZ, INT, EDU: (2d6+6)×5. */
 export function rollCharacteristics(random: RandomSource = Math.random): Characteristics {
-  return Object.fromEntries(
-    CHARACTERISTICS.map((c) => [c.id, (c.roll === '3d6' ? roll3d6(random) : roll2d6plus6(random)) * 5]),
-  ) as Characteristics;
+  return rollCharacteristicsDetailed(random).values;
+}
+
+/** A Pulp archetype's core characteristic, (1d6+13)×5, with its die. */
+export function rollCoreCharacteristicDetailed(random: RandomSource = Math.random): {
+  value: number;
+  die: number;
+} {
+  const die = rollDie(6, random);
+  return { value: (die + 13) * 5, die };
 }
 
 /** A Pulp archetype's core characteristic: (1d6+13)×5. */
 export const rollCoreCharacteristic = (random: RandomSource = Math.random): number =>
-  (rollDie(6, random) + 13) * 5;
+  rollCoreCharacteristicDetailed(random).value;
+
+/** Luck, 3d6×5 or (2d6+6)×5 for Pulp heroes, with its dice. */
+export function rollLuckDetailed(
+  variant: CocVariant,
+  random: RandomSource = Math.random,
+): { value: number; dice: number[] } {
+  const dice = variant === 'pulp' ? dice2d6(random) : dice3d6(random);
+  return { value: (sum(dice) + (variant === 'pulp' ? 6 : 0)) * 5, dice };
+}
 
 /** Luck: 3d6×5, or (2d6+6)×5 for Pulp heroes. */
 export const rollLuck = (variant: CocVariant, random: RandomSource = Math.random): number =>
-  (variant === 'pulp' ? roll2d6plus6(random) : roll3d6(random)) * 5;
+  rollLuckDetailed(variant, random).value;
 
 export interface AgeRules {
   /** EDU improvement checks made at creation. */
@@ -61,14 +97,18 @@ export function ageRules(age: number): AgeRules {
   return { eduChecks: 4, physicalLoss: 80, youth: false, appLoss: 25, moveLoss: 5 };
 }
 
-/** One EDU improvement check: a d100 over EDU adds 1d10 (EDU stops at 99). */
+/**
+ * One EDU improvement check: a d100 over EDU adds 1d10 (EDU stops at 99). `die` is the d10 as
+ * thrown, before the cap, when the check passed.
+ */
 export function eduImprovement(
   edu: number,
   random: RandomSource = Math.random,
-): { roll: number; gain: number } {
+): { roll: number; gain: number; die?: number } {
   const roll = rollDie(100, random);
-  const gain = roll > edu ? Math.min(rollDie(10, random), 99 - edu) : 0;
-  return { roll, gain: Math.max(0, gain) };
+  if (roll <= edu) return { roll, gain: 0 };
+  const die = rollDie(10, random);
+  return { roll, gain: Math.max(0, Math.min(die, 99 - edu)), die };
 }
 
 /** Points of a formula ("EDU×2 + DEX or STR×2"): where the player may pick, the higher one counts. */

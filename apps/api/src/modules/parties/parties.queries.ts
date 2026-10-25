@@ -322,6 +322,7 @@ function heroDto(hero: HeroRow, visible: boolean): PartyHeroDto {
           tempHP: summary.tempHP,
           armorClass: summary.armorClass,
           initiative: summary.initiative,
+          coc: summary.coc,
           conditions: summary.conditions,
         }
       : null,

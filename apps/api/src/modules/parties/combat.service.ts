@@ -1,7 +1,7 @@
 import { randomInt } from 'node:crypto';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Transaction } from '../../db/client';
-import { partyCombatants, partyCombats, partyHeroes, partyNpcs } from '../../db/schema';
+import { parties, partyCombatants, partyCombats, partyHeroes, partyNpcs } from '../../db/schema';
 import { conflictError, notFound, sessionClosed, validationError } from '../../lib/errors';
 import { masterOnly, type PartyAccess, type PartyContext } from './partyAccess';
 import { combatantsOf } from './parties.queries';
@@ -68,17 +68,22 @@ export class CombatService {
     });
   }
 
-  /** Rolls d20 + modifier for every NPC still waiting for initiative. */
+  /**
+   * Initiative for every NPC still waiting: d20 + modifier, or at a Call of Cthulhu table the NPC's
+   * DEX (kept in the modifier's place), since there everyone acts in DEX order.
+   */
   rollForNpcs(userId: string, partyId: string): Promise<void> {
     return this.access.change(userId, partyId, 'master', async ({ tx }) => {
       await this.requireCombat(tx, partyId);
+      const [table] = await tx.select({ rules: parties.rules }).from(parties).where(eq(parties.id, partyId));
+      const byDex = table?.rules === 'coc7';
       const waiting = (await combatantsOf(tx, partyId)).filter(
         (entry) => entry.npcId && entry.initiative === null,
       );
       for (const npc of waiting) {
         await tx
           .update(partyCombatants)
-          .set({ initiative: randomInt(1, 21) + npc.bonus })
+          .set({ initiative: byDex ? npc.bonus : randomInt(1, 21) + npc.bonus })
           .where(eq(partyCombatants.id, npc.id));
       }
     });

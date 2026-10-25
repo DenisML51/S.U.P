@@ -7,82 +7,100 @@ import { RollingDie } from '../../ui/RollingDie';
 
 type Tone = 'crit' | 'fumble';
 
+/** A die of the roll as the toast throws it. */
+interface ThrownDie {
+  sides: number;
+  value: number;
+}
+
+/** At most this many dice tumble on a plate; a bigger handful shows the rest as "+N". */
+const SHOWN_DICE = 10;
+
+/** Between the landings of two dice of one roll, in ms. */
+const STAGGER_MS = 110;
+
+/** The edge of a thrown die on the plate: smaller as the handful grows. */
+const dieSize = (count: number) =>
+  count <= 1 ? '4.5rem' : count <= 3 ? '3.75rem' : count <= 6 ? '3rem' : '2.5rem';
+
+/**
+ * A roll as a plate: its dice tumble and land one after another (the d20 of a check or attack is
+ * tinted on a natural 20 or 1), then the total and the breakdown come in. The values are known from
+ * the start; only their reveal waits for the dice. A roll without dice shows its total at once.
+ */
 const RollToast: React.FC<{
   label: string;
   total: number;
   detail: string;
   tone?: Tone;
+  /** The dice thrown, in order. */
+  dice: ThrownDie[];
   /** The roll that follows this one ("Урон" after a hit), offered on the toast itself. */
   action?: { label: string; onClick: () => void };
-}> = ({ label, total, detail, tone, action }) => (
-  <div className="flex min-w-[220px] items-center gap-3">
-    <span
-      className="ui-display ui-numeric w-12 shrink-0 text-center text-3xl leading-none"
-      style={{
-        color: `rgb(var(--c-${tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : 'frame-bright'}))`,
-      }}
-    >
-      {total}
-    </span>
-    <span className="flex min-w-0 flex-col">
-      <span className="text-sm text-ink">{label}</span>
-      <span className="text-xs text-ink-muted">{detail}</span>
-    </span>
-    {action && (
-      <button
-        type="button"
-        className="ml-2 shrink-0 text-sm text-frame-bright underline-offset-4 hover:underline"
-        onClick={(event) => {
-          // The plate dismisses on click; the button runs its roll and then lets it go.
-          event.stopPropagation();
-          action.onClick();
-        }}
-      >
-        {action.label}
-      </button>
-    )}
-  </div>
-);
-
-/**
- * A d20 roll shown with its die: the d20 tumbles and lands on the natural roll, then the total and
- * the breakdown come in beside it.
- */
-const RollingToast: React.FC<{ label: string; die: number; total: number; detail: string; tone?: Tone }> = ({
-  label,
-  die,
-  total,
-  detail,
-  tone,
-}) => {
-  const [landed, setLanded] = useState(false);
-  const colour = tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : 'frame-bright';
+}> = ({ label, total, detail, tone, dice, action }) => {
+  const shown = dice.slice(0, SHOWN_DICE);
+  const [landed, setLanded] = useState(shown.length === 0);
+  const size = dieSize(shown.length);
+  const reveal = { opacity: landed ? 1 : 0, transition: { duration: 0.2 } };
+  const dieTone = tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : undefined;
+  // By importance: the dice and the total first and large, the label, breakdown and follow-up below.
   return (
-    <div className="flex min-w-[240px] items-center gap-3">
-      <RollingDie
-        sides={20}
-        value={die}
-        size="3.5rem"
-        tone={tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : undefined}
-        onLanded={() => setLanded(true)}
-      />
-      <motion.span
-        className="flex min-w-0 items-center gap-3"
-        initial={false}
-        animate={landed ? { opacity: 1, x: 0 } : { opacity: 0, x: -6 }}
-        transition={{ type: 'spring', stiffness: 380, damping: 24 }}
-      >
-        <span
-          className="ui-display ui-numeric shrink-0 text-3xl leading-none"
-          style={{ color: `rgb(var(--c-${colour}))` }}
+    <div className="flex min-w-[240px] max-w-[22rem] flex-col gap-2">
+      <div className="flex items-center gap-4">
+        {shown.length > 0 && (
+          <span className="flex max-w-[16rem] flex-wrap items-center gap-1.5">
+            {shown.map((die, index) => (
+              <RollingDie
+                key={index}
+                sides={die.sides}
+                value={die.value}
+                size={size}
+                delay={index * STAGGER_MS}
+                phase={index * 1.3 + die.sides * 0.1}
+                // Only the lone d20 of a check or attack is natural 20 or 1.
+                tone={die.sides === 20 && dice.length === 1 ? dieTone : undefined}
+                onLanded={index === shown.length - 1 ? () => setLanded(true) : undefined}
+              />
+            ))}
+            {dice.length > shown.length && (
+              <span className="text-xs text-ink-muted">+{dice.length - shown.length}</span>
+            )}
+          </span>
+        )}
+        <motion.span
+          className="ui-display ui-numeric min-w-[3rem] shrink-0 text-center text-5xl leading-none"
+          style={{
+            color: `rgb(var(--c-${tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : 'frame-bright'}))`,
+          }}
+          initial={false}
+          animate={landed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+          transition={{ type: 'spring', stiffness: 480, damping: 18 }}
+          aria-hidden={!landed}
         >
           {total}
-        </span>
-        <span className="flex min-w-0 flex-col">
+        </motion.span>
+      </div>
+      <div className="flex items-end gap-3">
+        <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-sm text-ink">{label}</span>
-          <span className="text-xs text-ink-muted">{detail}</span>
+          <motion.span className="text-xs text-ink-muted" initial={false} animate={reveal}>
+            {detail}
+          </motion.span>
         </span>
-      </motion.span>
+        {action && (
+          <button
+            type="button"
+            className="shrink-0 text-sm text-frame-bright underline-offset-4 hover:underline"
+            onClick={(event) => {
+              // The plate dismisses on click; the button runs its roll and then lets it go.
+              event.stopPropagation();
+              action.onClick();
+            }}
+          >
+            {action.label}
+          </button>
+        )}
+      </div>
     </div>
   );
 };
@@ -110,19 +128,21 @@ export function useRolls() {
   const logHistory = useCharacterStore((s) => s.logHistory);
 
   /**
-   * A d20 check or save with a modifier. `animated` shows the d20 tumbling and landing on the roll
-   * (initiative at the start of a fight) instead of the plain number.
+   * A d20 check or save with a modifier. `animated` (initiative at the start of a fight) keeps the
+   * plate a moment longer, so the landed die is seen after the tumble.
    */
   const check = (label: string, modifier: number, { animated = false } = {}) => {
     const die = rollDie(20);
     const total = die + modifier;
     const detail = `к20: ${die} ${signed(modifier)}`;
     toast(
-      animated ? (
-        <RollingToast label={label} die={die} total={total} detail={detail} tone={toneOf(die)} />
-      ) : (
-        <RollToast label={label} total={total} detail={detail} tone={toneOf(die)} />
-      ),
+      <RollToast
+        label={label}
+        total={total}
+        detail={detail}
+        tone={toneOf(die)}
+        dice={[{ sides: 20, value: die }]}
+      />,
       { duration: animated ? 6000 : 5000 },
     );
     logHistory(`${label}: ${total} (${detail})`);
@@ -133,9 +153,15 @@ export function useRolls() {
   const formula = (label: string, expression: string) => {
     const roll = rollFormula(expression);
     if (roll.rolls.length === 0 && roll.bonus === 0) return null;
-    toast(<RollToast label={label} total={roll.total} detail={`${expression}: ${describeDice(roll)}`} />, {
-      duration: 5000,
-    });
+    toast(
+      <RollToast
+        label={label}
+        total={roll.total}
+        detail={`${expression}: ${describeDice(roll)}`}
+        dice={roll.rolls}
+      />,
+      { duration: 5000 },
+    );
     logHistory(`${label}: ${roll.total} (${expression}: ${describeDice(roll)})`);
     return roll.total;
   };
@@ -154,9 +180,16 @@ export function useRolls() {
     const detail = parts.map((p) => `${p.roll.total}${p.type ? ` ${p.type.toLowerCase()}` : ''}`).join(' + ');
     const healing = parts.every((p) => p.type === 'Лечение');
     const title = healing ? `${label}: лечение` : critical ? `${label}: критический урон` : `${label}: урон`;
-    toast(<RollToast label={title} total={total} detail={detail} tone={critical ? 'crit' : undefined} />, {
-      duration: 6000,
-    });
+    toast(
+      <RollToast
+        label={title}
+        total={total}
+        detail={detail}
+        tone={critical ? 'crit' : undefined}
+        dice={parts.flatMap((p) => p.roll.rolls)}
+      />,
+      { duration: 6000 },
+    );
     logHistory(`${title}: ${total} (${detail})`);
     return total;
   };
@@ -178,6 +211,7 @@ export function useRolls() {
           total={total}
           detail={detail}
           tone={tone}
+          dice={[{ sides: 20, value: die }]}
           action={
             hasDamage && tone !== 'fumble'
               ? {

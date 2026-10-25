@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
   ARCHETYPE_POINTS,
@@ -13,9 +13,9 @@ import {
   formulaPoints,
   occupationDef,
   personalPoints,
-  rollCharacteristics,
-  rollCoreCharacteristic,
-  rollLuck,
+  rollCharacteristicsDetailed,
+  rollCoreCharacteristicDetailed,
+  rollLuckDetailed,
   skillBase,
   type CharacteristicId,
   type Characteristics,
@@ -29,6 +29,20 @@ import { useCharacterStore } from '../../../store/useCharacterStore';
 import { useClearDraft, useDraftState } from '../useDraftState';
 
 export type CharacteristicMethod = 'roll' | 'pointBuy' | 'manual';
+
+/** A throw made on this visit, kept only to show its dice tumbling; `serial` tells throws apart. */
+export interface Thrown<T> {
+  serial: number;
+  dice: T;
+}
+
+/** The latest throw of each kind, for the dice on screen (not part of the draft). */
+export interface CocThrows {
+  characteristics?: Thrown<Record<CharacteristicId, number[]>>;
+  luck?: Thrown<number[]>;
+  core?: Thrown<number>;
+  edu?: Thrown<{ roll: number; die?: number; gain: number }[]>;
+}
 type Pool = 'occupation' | 'personal' | 'archetype';
 
 /** The highest a skill may start at. */
@@ -98,6 +112,13 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
   const [name, setName] = useDraftState('name', '');
   const [images, setImages] = useDraftState<CharacterImages>('images', {});
   const [creating, setCreating] = useState(false);
+  const [throws, setThrows] = useState<CocThrows>({});
+  const throwSerial = useRef(0);
+  const thrown = <K extends keyof CocThrows>(kind: K, dice: NonNullable<CocThrows[K]>['dice']) => {
+    throwSerial.current += 1;
+    const next = { serial: throwSerial.current, dice };
+    setThrows((t) => ({ ...t, [kind]: next }));
+  };
 
   const pulp = variant === 'pulp';
   const archetypeInfo = pulp ? archetypeDef(archetype) : undefined;
@@ -302,7 +323,11 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
       }
     },
     core,
-    rollCore: (id: CharacteristicId) => setCore({ id, value: rollCoreCharacteristic() }),
+    rollCore: (id: CharacteristicId) => {
+      const { value, die } = rollCoreCharacteristicDetailed();
+      setCore({ id, value });
+      thrown('core', die);
+    },
     method,
     setMethod: (m: CharacteristicMethod) => {
       setMethodState(m);
@@ -310,12 +335,20 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     },
     base,
     setBase,
-    rollAll: () => setBase(rollCharacteristics()),
+    rollAll: () => {
+      const { values, dice } = rollCharacteristicsDetailed();
+      setBase(values);
+      thrown('characteristics', dice);
+    },
     rolled,
+    throws,
     luck,
     luckRolls,
-    rollLuck: () =>
-      setLuckRolls((r) => (rules.youth && r.length === 1 ? [...r, rollLuck(variant)] : [rollLuck(variant)])),
+    rollLuck: () => {
+      const { value, dice } = rollLuckDetailed(variant);
+      setLuckRolls((r) => (rules.youth && r.length === 1 ? [...r, value] : [value]));
+      thrown('luck', dice);
+    },
     age,
     setAge: (a: number) => {
       setAgeState(Math.max(15, Math.min(89, Math.round(a))));
@@ -331,13 +364,14 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     eduGains,
     rollEdu: () => {
       let edu = base.edu - (rules.youth ? 5 : 0);
-      const gains: number[] = [];
+      const checks: { roll: number; die?: number; gain: number }[] = [];
       for (let i = 0; i < rules.eduChecks; i++) {
-        const { gain } = eduImprovement(edu);
-        gains.push(gain);
-        edu += gain;
+        const check = eduImprovement(edu);
+        checks.push(check);
+        edu += check.gain;
       }
-      setEduGains(gains);
+      setEduGains(checks.map((c) => c.gain));
+      thrown('edu', checks);
     },
     characteristics,
     derived: derivedOf(characteristics, variant, age),

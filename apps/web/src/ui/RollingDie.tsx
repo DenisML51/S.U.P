@@ -45,7 +45,8 @@ export type RollTone = 'success' | 'danger';
  */
 export const RollingDie: React.FC<{
   sides: number;
-  value: number;
+  /** The face it lands on; a string for a labelled face ("00" of the tens die). */
+  value: number | string;
   /** Extra time before landing, in ms, so the dice of one throw land one after another. */
   delay?: number;
   tone?: RollTone;
@@ -118,3 +119,73 @@ export const RollingDie: React.FC<{
     </span>
   );
 };
+
+/** A die of a throw as RollingDice shows it. */
+export interface ThrownDie {
+  sides: number;
+  value: number | string;
+  tone?: RollTone;
+  dropped?: boolean;
+  className?: string;
+}
+
+/**
+ * The dice of one throw in a row, landing one after another from `delay` on; `onLanded` fires once
+ * the last one is down (at once for an empty throw is the caller's business).
+ */
+export const RollingDice: React.FC<{
+  dice: ThrownDie[];
+  size?: string;
+  /** Before the first landing, past the tumble, in ms. */
+  delay?: number;
+  /** Between two landings, in ms. */
+  stagger?: number;
+  className?: string;
+  onLanded?: () => void;
+}> = ({ dice, size, delay = 0, stagger = 110, className, onLanded }) => (
+  <span className={cx('flex flex-wrap items-center gap-1', className)}>
+    {dice.map((die, index) => (
+      <RollingDie
+        key={index}
+        sides={die.sides}
+        value={die.value}
+        tone={die.tone}
+        dropped={die.dropped}
+        className={die.className}
+        size={size}
+        delay={delay + index * stagger}
+        phase={index * 1.3 + die.sides * 0.1}
+        onLanded={index === dice.length - 1 ? onLanded : undefined}
+      />
+    ))}
+  </span>
+);
+
+/**
+ * A value held back until its dice are down, then popped in. Before that it keeps its place, so
+ * nothing around it moves.
+ */
+export const LandedValue: React.FC<{ landed: boolean; className?: string; children: React.ReactNode }> = ({
+  landed,
+  className,
+  children,
+}) => (
+  <motion.span
+    className={cx('inline-block', className)}
+    initial={false}
+    animate={landed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }}
+    transition={{ type: 'spring', stiffness: 460, damping: 18 }}
+    aria-hidden={!landed}
+  >
+    {children}
+  </motion.span>
+);
+
+/**
+ * Whether the throw `key` has landed, and the callback that marks it. A new key starts over; a null
+ * key (nothing thrown here, a value from before) counts as landed.
+ */
+export function useLanded(key: number | null): [boolean, () => void] {
+  const [landedKey, setLandedKey] = useState<number | null>(null);
+  return [key === null || landedKey === key, () => setLandedKey(key)];
+}

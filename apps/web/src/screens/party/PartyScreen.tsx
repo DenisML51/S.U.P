@@ -318,6 +318,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         setting={party.setting}
         combatant={combat.rolling}
         bonus={combat.rolling ? initiativeBonusOf(party, combat.rolling) : null}
+        byDex={party.rules === 'coc7' || (combat.rolling?.kind === 'hero' && !!party.heroes.find((h) => h.id === combat.rolling?.refId)?.vitals?.coc)}
         canRemove={isMaster}
         onClose={() => combat.roll(null)}
       />
@@ -331,7 +332,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
       />
       {overlay?.kind === 'combat' && <StartCombatDialog open party={party} onClose={close} />}
       {overlay?.kind === 'npc' && (
-        <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} onClose={close} />
+        <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} coc={party.rules === 'coc7'} onClose={close} />
       )}
       <LoreDialog
         open={overlay?.kind === 'lore'}

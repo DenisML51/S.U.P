@@ -16,6 +16,7 @@ import {
 import { IconCheck, IconMinus, IconPlus } from '../../ui/icons';
 import { cx } from '../../ui/primitives';
 import { Segmented } from '../../ui/forms';
+import { LandedValue, RollingDice, useLanded } from '../../ui/RollingDie';
 import { canBuyWithLuck, canPush, target, useCoc, useCocAnywhere, type RollRecord } from './context';
 import { InfoButton } from './details';
 
@@ -344,36 +345,47 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
   const { check } = record;
   const kept = check.total === 100 ? 0 : check.total - check.units;
   const luck = character.coc?.luck ?? 0;
+  // The d10s tumble first; the total, the level and the ladder come once the last one is down.
+  const [landed, markLanded] = useLanded(record.serial);
   return (
     <div className="coc-roll" data-level={check.level}>
-      <div className="coc-roll__head">
-        <span className="coc-roll__total">{check.total}</span>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm">
-            {record.label}
-            {record.pushed && <span className="opacity-60"> · повтор</span>}
-          </div>
-          <div
-            className="text-[13px]"
-            style={{ color: `rgb(var(--c-${check.success ? 'success' : 'danger'}))` }}
-          >
+      {/* By importance: the dice and the total first and large; the roll's name, level and the rest below. */}
+      <div className="coc-roll__head !items-center">
+        <div className="coc-roll__dice !mt-0 flex-wrap items-center">
+          <RollingDice
+            key={record.serial}
+            size={check.tens.length > 2 ? '3.1rem' : '3.6rem'}
+            onLanded={markLanded}
+            dice={[
+              // Every tens die, the kept one plain and the others greyed; then the units die.
+              ...check.tens.map((t) => ({
+                sides: 10,
+                value: t === 0 ? '00' : t,
+                className: cx('ui-rolling-die--ink', t !== kept && 'opacity-50'),
+              })),
+              { sides: 10, value: check.units, className: 'ui-rolling-die--ink' },
+            ]}
+          />
+          {(record.bonus ?? 0) > 0 && <span className="self-center text-[11px] opacity-60">бонусная</span>}
+          {(record.penalty ?? 0) > 0 && <span className="self-center text-[11px] opacity-60">штрафная</span>}
+        </div>
+        <span className="coc-roll__total !text-[3.6rem]">
+          <LandedValue landed={landed}>{check.total}</LandedValue>
+        </span>
+      </div>
+      <div className="mt-2 min-w-0">
+        <div className="truncate text-sm">
+          {record.label}
+          {record.pushed && <span className="opacity-60"> · повтор</span>}
+        </div>
+        <div
+          className="text-[13px]"
+          style={{ color: `rgb(var(--c-${check.success ? 'success' : 'danger'}))` }}
+        >
+          <LandedValue landed={landed}>
             {record.luckSpent ? `Успех за ${record.luckSpent} удачи` : SUCCESS_LABELS[check.level]}
             <span className="opacity-60"> · нужно ≤ {target(record)}</span>
-          </div>
-          <div className="coc-roll__dice">
-            {check.tens.map((t, i) => (
-              <span key={i} className="coc-die" data-kept={t === kept || undefined}>
-                {t === 0 ? '00' : t}
-              </span>
-            ))}
-            <span className="coc-die" data-units data-kept>
-              {check.units}
-            </span>
-            {(record.bonus ?? 0) > 0 && <span className="self-center text-[11px] opacity-60">бонусная</span>}
-            {(record.penalty ?? 0) > 0 && (
-              <span className="self-center text-[11px] opacity-60">штрафная</span>
-            )}
-          </div>
+          </LandedValue>
         </div>
       </div>
       {record.kind !== 'sanity' && (
@@ -382,7 +394,7 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
             <span
               key={step.level}
               className="coc-ladder__step"
-              data-reached={RANK[check.level] >= RANK[step.level] || undefined}
+              data-reached={(landed && RANK[check.level] >= RANK[step.level]) || undefined}
             >
               <b>{step.of(record.value)}</b>
               {step.label}
