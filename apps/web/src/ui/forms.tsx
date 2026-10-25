@@ -155,6 +155,8 @@ export const NumberField: React.FC<{
 // flips above the field when there is no room below.
 // ------------------------------------------------------------------------------------------------
 
+const POPOVER_MIN_WIDTH = 224;
+
 const Popover: React.FC<{
   anchor: React.RefObject<HTMLElement | null>;
   open: boolean;
@@ -198,6 +200,9 @@ const Popover: React.FC<{
   }, [open, onClose, anchor]);
 
   const below = rect ? window.innerHeight - rect.bottom > 260 || rect.top < 260 : true;
+  // A narrow field still gets a list wide enough to read, kept inside the window's 16px gutters.
+  const width = rect ? Math.min(Math.max(rect.width, POPOVER_MIN_WIDTH), window.innerWidth - 32) : 0;
+  const left = rect ? Math.max(16, Math.min(rect.left, window.innerWidth - width - 16)) : 0;
 
   return createPortal(
     <AnimatePresence>
@@ -206,8 +211,8 @@ const Popover: React.FC<{
           ref={panel}
           className="ui-popover ui-scroll"
           style={{
-            left: rect.left,
-            width: rect.width,
+            left,
+            width,
             ...(below ? { top: rect.bottom + 4 } : { bottom: window.innerHeight - rect.top + 4 }),
           }}
           initial={{ opacity: 0, y: below ? -4 : 4 }}
