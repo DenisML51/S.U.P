@@ -228,6 +228,12 @@ export const AbilitySchema = passthroughObject({
   hitBonus: optionalNumber,
   /** Using it starts concentration, which a new concentration, a failed save or incapacitation ends. */
   concentration: optionalFlag,
+  /** The most of `resourceId` one use may spend (Lay on Hands: the whole pool); the player chooses. */
+  resourceCostMax: optionalNumber,
+  /** Dice or points per unit spent (Lay on Hands: "1" — a hit point for a point). */
+  damagePerPoint: optionalShortText,
+  /** Turns a spell slot into points of `resourceId`, or points into a slot (Font of Magic). */
+  convert: text(z.enum(['slotToPoints', 'pointsToSlot']).optional()),
   /** Using it turns it on until it is ended (Rage, Bladesong); its effects count meanwhile. */
   stance: optionalFlag,
   /** Turning it on ends concentration (Rage). */

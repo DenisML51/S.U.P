@@ -748,7 +748,11 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
         description: feature.description,
         actionType: feature.action,
         resourceId: spends?.id,
-        resourceCost: spends ? (feature.usesResource?.cost ?? 1) : undefined,
+        // A conversion pays in its own way (Font of Magic): the slot and the points move together.
+        resourceCost: spends && !feature.convert ? (feature.usesResource?.cost ?? 1) : undefined,
+        resourceCostMax: feature.usesResource?.max !== undefined ? resolveAmount(feature.usesResource.max, ctx) : undefined,
+        damagePerPoint: feature.usesResource?.perPoint,
+        convert: feature.convert,
         effect: '',
         // Numbers that grow with level are written for the current one.
         damage: typeof feature.damage === 'function' ? feature.damage(ctx) : feature.damage,

@@ -82,7 +82,7 @@ const aberrant: SubclassDef = {
         description:
           'Бонусным действием вы тратите 1 или больше очков чародейства и на 10 минут меняете тело; за каждое очко выберите одно:\n\n- **Водная адаптация:** скорость плавания вдвое больше скорости, дыхание под водой.\n- **Блестящий полёт:** скорость полёта равна скорости, можно парить.\n- **Видеть невидимое:** вы видите невидимых существ в пределах 60 футов, кроме тех, что за полным укрытием.\n- **Червеобразное перемещение:** вы протискиваетесь в щель шириной 1 дюйм и тратите 5 футов перемещения, чтобы освободиться от немагических пут или захвата.',
         action: 'bonus',
-        usesResource: { id: SORCERY_POINTS, cost: 1 },
+        usesResource: { id: SORCERY_POINTS, cost: 1, max: 4 },
         iconName: 'tentacle-strike',
       },
     ],
@@ -233,7 +233,7 @@ const clockwork: SubclassDef = {
         description:
           'Действием «Магия» вы тратите от 1 до 5 очков чародейства и окружаете себя или видимое существо в пределах 30 футов защитой из стольких же к8. Получая урон, существо может бросить любое число этих костей и уменьшить урон на сумму. Защита держится до вашего продолжительного отдыха или до нового использования умения.',
         action: 'action',
-        usesResource: { id: SORCERY_POINTS, cost: 1 },
+        usesResource: { id: SORCERY_POINTS, cost: 1, max: 5, perPoint: '1d8' },
         iconName: 'energy-shield',
       },
     ],
@@ -542,9 +542,31 @@ export const SORCERER: ClassDef = {
           '- **Ячейка → очки** (без действия): потратьте ячейку и получите очки, равные её кругу.',
           '- **Очки → ячейка** (бонусное действие): 1 круг — 2 очка (с 2-го уровня), 2 круг — 3 очка (с 3-го), 3 круг — 5 очков (с 5-го), 4 круг — 6 очков (с 7-го), 5 круг — 7 очков (с 9-го). Ячейки выше 5-го круга создать нельзя; созданные ячейки пропадают после продолжительного отдыха.',
         ].join('\n'),
-        action: 'bonus',
+        // The pool itself; the two ways of turning it are their own abilities below.
+        action: 'passive',
         resource: { id: SORCERY_POINTS, name: 'Очки чародейства', max: (ctx) => ctx.classLevel, recharge: 'long', iconName: 'energise', color: '#b36ad9' },
         iconName: 'energise',
+      },
+      {
+        id: 'sorcerer.font-slot-to-points',
+        name: 'Ячейка → очки чародейства',
+        description: 'Без действия вы тратите ячейку заклинаний и получаете очки чародейства, равные её кругу (не больше максимума).',
+        action: 'passive',
+        usesResource: { id: SORCERY_POINTS },
+        convert: 'slotToPoints',
+        iconName: 'energise',
+        color: '#b36ad9',
+      },
+      {
+        id: 'sorcerer.font-points-to-slot',
+        name: 'Очки чародейства → ячейка',
+        description:
+          'Бонусным действием вы превращаете очки чародейства в ячейку: 1 круг — 2 очка, 2 — 3, 3 — 5, 4 — 6, 5 — 7. Ячейка не выше 5-го круга и только того круга, ячейки которого у вас уже есть; созданная исчезает после продолжительного отдыха.',
+        action: 'bonus',
+        usesResource: { id: SORCERY_POINTS },
+        convert: 'pointsToSlot',
+        iconName: 'magic-swirl',
+        color: '#b36ad9',
       },
       {
         id: 'sorcerer.metamagic',

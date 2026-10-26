@@ -147,7 +147,11 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
 
   if (!entry) return null;
   const parts = damageParts(entry);
-  const cost = costLabel(character, entry.resourceId, entry.resourceCost);
+  const cost = costLabel(
+    character,
+    entry.convert ? undefined : entry.resourceId,
+    entry.resourceCostMax ? `${entry.resourceCost ?? 1}–${entry.resourceCostMax}` : entry.resourceCost,
+  );
   const passive = !isUsable(entry);
   // Picks the sheet changes any time (the known forms of Wild Shape).
   const choices = character.build && entry.grant ? (rulesOf(character.build).sheetChoices?.(character.build, entry.grant) ?? []) : [];

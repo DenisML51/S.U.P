@@ -196,8 +196,13 @@ export interface FeatureDef {
   action?: ActionType;
   /** A pool of uses this feature brings. */
   resource?: ResourceDef;
-  /** Spending a pool of another feature (Channel Divinity options, maneuvers). */
-  usesResource?: { id: string; cost?: number };
+  /**
+   * Spending a pool (its own or another feature's: Channel Divinity options, maneuvers): `cost`
+   * a use, or as much as the player chooses up to `max`, each unit giving `perPoint` (Lay on Hands).
+   */
+  usesResource?: { id: string; cost?: number; max?: Amount; perPoint?: string };
+  /** Turns a spell slot into points of `usesResource`, or points into a slot (Font of Magic). */
+  convert?: 'slotToPoints' | 'pointsToSlot';
   /** Dice it deals or heals, growing with level when a function (`1d10` → `4d10` breath). */
   damage?: string | ((ctx: BuildContext) => string);
   /** `Лечение` for healing. */

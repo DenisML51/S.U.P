@@ -10,6 +10,7 @@ import {
   itemQuantity,
   remainingActions,
   resolveAmmunition,
+  slotConversions,
   spellColor,
   isUsable,
   strikesLeft,
@@ -56,7 +57,7 @@ export interface Slot {
   effect?: string;
 }
 
-const costFact = (character: Character, resourceId?: string, cost?: number): [string, string] | null => {
+const costFact = (character: Character, resourceId?: string, cost?: number | string): [string, string] | null => {
   const resource = resourceId ? character.resources.find((r) => r.id === resourceId) : undefined;
   return resource ? ['Стоимость', `${cost ?? 1} ${resource.name} (есть ${resource.current})`] : null;
 };
@@ -137,7 +138,11 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
       subtitle: isActiveFeature(character, ability.id) ? 'Умение · действует' : 'Умение',
       active: isActiveFeature(character, ability.id) || undefined,
       facts: facts(
-        costFact(character, ability.resourceId, ability.resourceCost),
+        costFact(
+          character,
+          ability.convert ? undefined : ability.resourceId,
+          ability.resourceCostMax ? `${ability.resourceCost ?? 1}–${ability.resourceCostMax}` : ability.resourceCost,
+        ),
         damageFact(ability),
         ['Попадание', hitLabel(character, ability) ?? ''],
       ),
@@ -145,7 +150,11 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
       // Ending what is on costs nothing.
       blocked: isActiveFeature(character, ability.id)
         ? null
-        : blockedBy(character, inCombat, ability.actionType, ability.resourceId, ability.resourceCost ?? 1),
+        : ability.convert && ability.resourceId
+          ? // A conversion (Font of Magic) needs one of its ways open, not points of its own.
+            blockedBy(character, inCombat, ability.actionType) ??
+            (slotConversions(character, ability.resourceId, ability.convert).every((o) => o.blocked) ? 'Сейчас нечего превращать' : null)
+          : blockedBy(character, inCombat, ability.actionType, ability.resourceId, ability.resourceCost ?? 1),
       description: ability.description,
       effect: ability.effect,
     }));
