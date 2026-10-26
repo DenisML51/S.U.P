@@ -56,7 +56,7 @@ export const EntryCardButton: React.FC<{ entry: EntryInfo; kind: IconKind; sourc
   <button type="button" className="ui-option flex-row items-center gap-3" onClick={onOpen}>
     <EntryTile entry={entry} kind={kind} />
     <span className="min-w-0 flex-1">
-      <span className="block truncate text-sm font-medium">{entry.name}</span>
+      <span className={cx('block text-sm font-medium leading-tight', source ? 'truncate' : 'line-clamp-2')}>{entry.name}</span>
       {source && <span className="ui-option__meta block truncate">{source}</span>}
     </span>
   </button>

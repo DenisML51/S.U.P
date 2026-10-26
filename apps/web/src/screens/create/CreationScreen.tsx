@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { pointsRemaining } from '@itd/game-logic';
+import { TALENTS } from '@itd/game-logic/coc';
 import { findBackground, findClass, findSubclass } from '@itd/game-logic/dnd';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 import { Button, Panel, cx } from '../../ui/primitives';
@@ -259,7 +260,7 @@ export const CreationScreen: React.FC<{
       label: 'Навыки',
       question: 'Чему он обучен?',
       issues: [],
-      content: <TrainingChoice creation={custom} columns={3} />,
+      content: <TrainingChoice creation={custom} />,
     },
     {
       id: 'identity',
@@ -332,7 +333,7 @@ export const CreationScreen: React.FC<{
           {
             id: 'coc-talents',
             label: 'Таланты',
-            value: coc.talents.length ? `${coc.talents.length}` : undefined,
+            value: coc.talents.map((id) => TALENTS.find((t) => t.id === id)?.name ?? id).join(', ') || undefined,
             question: 'Чем он особенный?',
             issues: coc.issues.talents,
             content: <TalentsStep creation={coc} />,
