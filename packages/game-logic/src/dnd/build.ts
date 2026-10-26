@@ -189,7 +189,11 @@ export function collect(build: DndBuild, level = build.level, scores?: Record<st
       if (count <= 0) continue;
       const picked = build.choices[key] ?? [];
       out.choices.push({ key, choice, count, picked, level: granted.level, owner: granted });
-      for (const pick of picked) visitPick(choice, pick, key, granted);
+      // A repeatable pick taken twice in one choice (Agonizing Blast for two cantrips) is two features.
+      picked.forEach((pick, index) => {
+        const repeat = picked.slice(0, index).filter((p) => p === pick).length;
+        visitPick(choice, pick, repeat > 0 ? `${key}#${repeat + 1}` : key, granted);
+      });
     }
   };
 
@@ -387,12 +391,15 @@ export function collect(build: DndBuild, level = build.level, scores?: Record<st
       ...(classDef.replaceable ?? []),
     ];
     for (const { pool, label } of pools) {
-      if (!out.poolPicks.some((p) => p.pool === pool && p.active && p.level < classLevel)) continue;
+      // A pool with an earlier pick still in force, or given up on this very level (a lone arcanum).
+      const givenUpHere = forgotten.filter((f) => f.pool === pool && f.level === classLevel).map((f) => f.id);
+      if (!out.poolPicks.some((p) => p.pool === pool && p.level < classLevel && (p.active || givenUpHere.includes(p.id)))) continue;
       const template = [...out.choices].reverse().find((c) => c.choice.pool === pool)?.choice;
       if (!template) continue;
       const given = build.choices[forgetKey(pool, classLevel)]?.length ?? 0;
+      // Picks of one fixed level (a Mystic Arcanum) stay of that level; known spells follow the class.
       const source =
-        template.options.from === 'spells' && casting && template.options.maxLevel !== 0
+        template.options.from === 'spells' && casting && template.options.maxLevel !== 0 && !template.spellResource
           ? {
               ...template.options,
               maxLevel: maxSpellLevel(casting, classLevel),
@@ -1265,6 +1272,8 @@ export interface OptionView {
   iconName?: string;
   /** Colour of the picture (a spell's damage type). */
   color?: string;
+  /** May be taken more than once, in this very choice too (Agonizing Blast). */
+  repeatable?: boolean;
 }
 
 const LANGUAGES = [
@@ -1396,6 +1405,7 @@ export function choiceOptions(build: DndBuild, level: number, open: OpenChoice):
           meta: [pre?.level && `${pre.level}+ уровень`, pre?.text].filter(Boolean).join(' · ') || ACTION_NAMES[entry.action ?? 'passive'],
           group: pre?.level ? `С ${pre.level}-го уровня` : 'Без требований',
           iconName: entry.iconName,
+          repeatable: entry.repeatable || undefined,
           disabled: ownPicks.has(entry.id) ? undefined : blocker,
         };
       });

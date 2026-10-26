@@ -52,6 +52,8 @@ const mysticArcanum = (spellLevel: number): FeatureDef => {
         id: 'spell',
         label: `Арканум: заклинание ${spellLevel} круга`,
         count: 1,
+        // Its own pool: on a later level the arcanum may be given up for another of its level.
+        pool: `arcanum-${spellLevel}`,
         spellAbility: 'charisma',
         spellResource: resource,
         options: { from: 'spells', lists: ['warlock'], minLevel: spellLevel, maxLevel: spellLevel },
@@ -547,7 +549,10 @@ export const WARLOCK: ClassDef = {
   subclassLevel: 3,
   subclasses: [archfey, celestial, fiend, greatOldOne, undead, vestige],
   startingEquipment: WARLOCK_KITS,
-  replaceable: [{ pool: INVOCATIONS_POOL, label: 'Замена воззвания' }],
+  replaceable: [
+    { pool: INVOCATIONS_POOL, label: 'Замена воззвания' },
+    ...[6, 7, 8, 9].map((level) => ({ pool: `arcanum-${level}`, label: `Замена арканума ${level} круга` })),
+  ],
   spellcasting: {
     ability: 'charisma',
     list: 'warlock',
