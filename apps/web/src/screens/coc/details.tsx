@@ -39,6 +39,7 @@ import { EditableText } from '../sheet/parts/EditableText';
 import { canRollDamage, useCoc } from './context';
 import { ConfirmButton } from './controls';
 import { RollModsBar } from './parts';
+import { tIn } from '../../i18n';
 
 /** What a card can show: an entry of one of the sheet's lists. */
 export type CocEntryKind =
@@ -239,8 +240,8 @@ function useCard(entry: CocEntry): CardContent | null {
       if (!def) return null;
       const value = cocCharacteristics(character)[def.id as CharacteristicId];
       return {
-        eyebrow: `Характеристика · ${def.short}`,
-        title: def.name,
+        eyebrow: `Характеристика · ${tIn('coc', def.short)}`,
+        title: tIn('coc', def.name),
         facts: [
           { label: 'Значение', value },
           { label: 'Половина', value: half(value) },

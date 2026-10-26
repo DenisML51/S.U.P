@@ -9,6 +9,7 @@ import { Segmented, Switch } from '../../ui/forms';
 import { Button, cx } from '../../ui/primitives';
 import { IconExit, IconSync } from '../../ui/icons';
 import type { Theme } from '../../ui/theme/settings';
+import { language, locale, setLanguage, type Language } from '../../i18n';
 
 const syncLine = (sync: SyncStatus, offline: boolean): { text: string; tone: string } => {
   if (offline || sync.state === 'offline') return { text: 'Нет связи: изменения сохраняются на устройстве', tone: 'text-warning' };
@@ -20,7 +21,7 @@ const syncLine = (sync: SyncStatus, offline: boolean): { text: string; tone: str
 };
 
 const time = (timestamp: number | null) =>
-  timestamp ? new Date(timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '—';
+  timestamp ? new Date(timestamp).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '—';
 
 /** Account, sync and the few preferences of this device. */
 export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
@@ -126,6 +127,19 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
             onChange={(fullscreen) => set({ fullscreen })}
             label="Полный экран"
           />
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="min-w-0 text-ink">Язык</div>
+            {/* Each language by its own name; choosing one reloads the page in it. */}
+            <Segmented<Language>
+              label="Язык"
+              value={language}
+              onChange={setLanguage}
+              options={[
+                { value: 'ru', label: 'Русский' },
+                { value: 'en', label: 'English' },
+              ]}
+            />
+          </div>
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div className="min-w-0 text-ink">Эффекты безумия</div>
             <Segmented<MadnessEffects>

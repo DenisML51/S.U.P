@@ -33,6 +33,7 @@ import { useSheetDialogs } from '../sheet/dialogs/context';
 import { ActionShape } from './Hotbar';
 import { longPress } from '../../ui/longPress';
 import { HudTip, below, useHudTip, useTouchHud, type TipBinding } from './HudTip';
+import { locale } from '../../i18n';
 
 interface Hint {
   key: string;
@@ -447,7 +448,7 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
           key: 'coins',
           title: 'Кошелёк',
           lines: [
-            `${gold.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} зм`,
+            `${gold.toLocaleString(locale, { maximumFractionDigits: 2 })} зм`,
             'Нажмите: получить или потратить',
           ],
         })}
@@ -586,8 +587,8 @@ export const ExperienceBar: React.FC<{ character: Character }> = ({ character })
         <span className="ui-display ui-numeric text-base text-frame-bright">{character.level}</span>
         ур.
         <span className="tabular-nums">
-          {character.experience.toLocaleString('ru-RU')}
-          {!progress.isMaxLevel && ` / ${progress.nextLevelXP.toLocaleString('ru-RU')}`}
+          {character.experience.toLocaleString(locale)}
+          {!progress.isMaxLevel && ` / ${progress.nextLevelXP.toLocaleString(locale)}`}
         </span>
         {progress.canLevelUp && <span className="text-xp">новый уровень</span>}
       </span>

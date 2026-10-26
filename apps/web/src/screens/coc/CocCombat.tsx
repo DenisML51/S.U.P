@@ -77,6 +77,7 @@ import {
   withBigTarget,
   type CocRound,
 } from './combatRules';
+import { compareText, tIn } from '../../i18n';
 
 const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
 
@@ -642,7 +643,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
     () =>
       [...coc.skills]
         .map((s) => ({ id: s.id, name: displaySkillName(s), hint: String(s.value) }))
-        .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
+        .sort((a, b) => compareText(a.name, b.name)),
     [coc.skills],
   );
 
@@ -827,7 +828,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               </div>
             )}
             <Track
-              label="Магия"
+              label={tIn('ui', 'Магия')}
               value={coc.magicPoints}
               max={Math.floor(c.pow / 5)}
               tone="accent"

@@ -1,11 +1,12 @@
 import React from 'react';
 import { DAMAGE_COLORS } from '@itd/game-logic';
+import { DIE } from '../i18n';
 import { cx } from './primitives';
 
-/** Dice written for people: `2d8+3` → `2к8 + 3`. */
+/** Dice written for people: `2d8+3` → `2к8 + 3` (in English, `2d8 + 3`). */
 export const readableDice = (formula: string) =>
   formula
-    .replace(/(\d*)d(\d+)/gi, '$1к$2')
+    .replace(/(\d*)d(\d+)/gi, `$1${DIE}$2`)
     .replace(/\+/g, ' + ')
     .replace(/(\d)-(\d)/g, '$1 − $2');
 

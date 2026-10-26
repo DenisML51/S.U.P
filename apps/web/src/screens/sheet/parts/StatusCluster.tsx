@@ -9,6 +9,7 @@ import { IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../../
 import { ConcentrationBadge } from '../Concentration';
 import { useSheetDialogs } from '../dialogs/context';
 import { useVitals } from '../useVitals';
+import { locale } from '../../../i18n';
 
 /**
  * One of the vitals: its picture, name and figures over the gauge. The setting decides what the
@@ -112,7 +113,7 @@ const LevelPlate: React.FC<{ character: Character; onClick: () => void }> = ({ c
 /** Experience on a plaque fixed under the vitals: the label and the figures over a graduated bar. */
 const ExperienceLine: React.FC<{ character: Character; onClick: () => void }> = ({ character, onClick }) => {
   const progress = experienceProgress(character.level, character.experience);
-  const format = (value: number) => value.toLocaleString('ru-RU');
+  const format = (value: number) => value.toLocaleString(locale);
   return (
     <button
       type="button"

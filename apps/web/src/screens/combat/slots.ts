@@ -13,13 +13,14 @@ import { itemClassName } from '../../ui/characterLabels';
 import type { GameIconId, IconKind } from '../../ui/GameIcon';
 import { damageFact as damageLine, damageParts, hitLabel, spellDamageParts } from '../sheet/parts/damage';
 import type { EntryKind } from '../sheet/dialogs/context';
+import { tIn } from '../../i18n';
 
 export type SlotGroup = 'attacks' | 'abilities' | 'spells' | 'items';
 
 export const SLOT_GROUPS: { id: SlotGroup; label: string; icon: GameIconId; empty: string }[] = [
   { id: 'attacks', label: 'Атаки', icon: 'crossed-swords', empty: 'Нет атак' },
   { id: 'abilities', label: 'Умения', icon: 'sparkles', empty: 'Нет активных умений' },
-  { id: 'spells', label: 'Магия', icon: 'spell-book', empty: 'Нет подготовленных заклинаний' },
+  { id: 'spells', label: tIn('ui', 'Магия'), icon: 'spell-book', empty: 'Нет подготовленных заклинаний' },
   { id: 'items', label: 'Вещи', icon: 'swap-bag', empty: 'Нет расходуемых вещей' },
 ];
 

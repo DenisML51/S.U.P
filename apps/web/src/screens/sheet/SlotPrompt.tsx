@@ -48,9 +48,9 @@ export const SlotPrompt: React.FC = () => {
                 }}
               >
                 <span>
-                  {level} круг
+                  {`${level} круг`}
                   <span className="ml-2 text-xs opacity-70">
-                    осталось {slot?.current ?? 0}/{slot?.max ?? 0}
+                    {`осталось ${slot?.current ?? 0}/${slot?.max ?? 0}`}
                   </span>
                 </span>
                 <DamageBlock parts={spellDamageParts(character, spell, level)} className="!border-0 !bg-transparent !p-0" />

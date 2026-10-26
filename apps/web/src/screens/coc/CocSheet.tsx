@@ -45,6 +45,7 @@ import { Track } from './parts';
 import { CocDetailsLayout, CocSelectionProvider, useCocSelection } from './details';
 import { GearSection, InvestigatorSection, SanitySection, StorySection, WeaponsSection } from './sections';
 import './coc.css';
+import { tIn } from '../../i18n';
 
 export type CocSection = 'investigator' | 'weapons' | 'sanity' | 'gear' | 'story' | 'journal';
 
@@ -53,7 +54,7 @@ const SECTIONS: { id: CocSection; label: string; Icon: React.FC<React.SVGProps<S
   { id: 'weapons', label: 'Оружие', Icon: IconAttacks },
   { id: 'sanity', label: 'Рассудок', Icon: IconSanity },
   { id: 'gear', label: 'Вещи', Icon: IconInventory },
-  { id: 'story', label: 'История', Icon: IconCharacter },
+  { id: 'story', label: tIn('ui', 'История'), Icon: IconCharacter },
   { id: 'journal', label: 'Журнал', Icon: IconHistory },
 ];
 
@@ -213,7 +214,7 @@ const InvestigatorColumn: React.FC<{
           )}
         </div>
         <Track
-          label="Магия"
+          label={tIn('ui', 'Магия')}
           value={coc.magicPoints}
           max={maxMP}
           tone="accent"

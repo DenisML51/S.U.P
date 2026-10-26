@@ -4,8 +4,9 @@ import type { PartyDto, TableDie, TableRollDto } from '@itd/schema';
 import { useTableRollStore } from '../../store/useTableRollStore';
 import { DieGlyph } from '../../ui/RollingDie';
 import { cx } from '../../ui/primitives';
+import { locale } from '../../i18n';
 
-const time = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
 /**
  * The table's dice log: every throw the viewer may see, newest at the bottom. Players' throws are

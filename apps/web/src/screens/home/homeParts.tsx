@@ -117,14 +117,7 @@ export const InviteCodeField: React.FC<{
 
 // ------------------------------------------------------------------------------------------------
 
-export const plural = (count: number, one: string, few: string, many: string) => {
-  const tens = count % 100;
-  const ones = count % 10;
-  if (tens >= 11 && tens <= 14) return many;
-  if (ones === 1) return one;
-  if (ones >= 2 && ones <= 4) return few;
-  return many;
-};
+export { plural } from '../../i18n';
 
 export const partyState = (party: PartyListItemDto) =>
   party.inCombat ? 'Идёт бой' : party.inSession ? 'Сессия идёт' : 'Ждёт сессии';
