@@ -204,6 +204,7 @@ const ORIGIN: FeatDef[] = [
       '- **Переброс лечения**: когда вы бросаете кость лечения заклинания или этой черты и выпадает 1, вы можете перебросить её и должны взять новый результат.',
     ].join('\n'),
     action: 'action',
+    effects: [{ type: 'damageRoll', rule: { name: 'Лекарь', on: 'healing', rerollOnes: true } }],
     iconName: 'medical-pack',
   },
   {
@@ -237,6 +238,7 @@ const ORIGIN: FeatDef[] = [
     category: 'origin',
     description: 'Раз в ход, попав по цели оружием, вы можете бросить кости урона этого оружия дважды и выбрать любой из двух результатов.',
     action: 'passive',
+    effects: [{ type: 'damageRoll', rule: { name: 'Неистово атакующий', on: 'weapon', twice: true, oncePerTurn: true } }],
     iconName: 'spiky-explosion',
   },
   {
@@ -258,10 +260,15 @@ const ORIGIN: FeatDef[] = [
       '- **Импровизированное оружие**: вы владеете им.',
       '- **Толчок**: раз в ход, попав по существу безоружным ударом в рамках действия «Атака» в свой ход, вы можете и нанести урон, и оттолкнуть цель на 5 футов.',
     ].join('\n'),
-    action: 'action',
-    damage: '1к4',
-    damageType: 'Дробящий',
-    effects: [{ type: 'proficiency', category: 'weapon', value: 'Импровизированное оружие' }],
+    action: 'passive',
+    effects: [
+      { type: 'proficiency', category: 'weapon', value: 'Импровизированное оружие' },
+      {
+        type: 'attack',
+        attack: { id: 'tavern-brawler.unarmed-strike', name: 'Безоружный удар', damage: '1d4', damageType: 'Дробящий', abilities: ['strength'], iconName: 'fist' },
+      },
+      { type: 'damageRoll', rule: { name: 'Дебошир', on: 'unarmed', rerollOnes: true } },
+    ],
     iconName: 'beer-stein',
   },
   {
@@ -447,11 +454,11 @@ const GENERAL: FeatDef[] = [
         options: {
           from: 'options',
           options: [
-            damageTypeOption('acid', 'Кислота'),
-            damageTypeOption('thunder', 'Звук'),
-            damageTypeOption('fire', 'Огонь'),
-            damageTypeOption('cold', 'Холод'),
-            damageTypeOption('lightning', 'Электричество'),
+            damageTypeOption('acid', 'Кислота', [{ type: 'damageRoll', rule: { name: 'Стихийный адепт', on: 'spell', damageType: 'Кислота', onesAsTwos: true } }]),
+            damageTypeOption('thunder', 'Звук', [{ type: 'damageRoll', rule: { name: 'Стихийный адепт', on: 'spell', damageType: 'Звук', onesAsTwos: true } }]),
+            damageTypeOption('fire', 'Огонь', [{ type: 'damageRoll', rule: { name: 'Стихийный адепт', on: 'spell', damageType: 'Огонь', onesAsTwos: true } }]),
+            damageTypeOption('cold', 'Холод', [{ type: 'damageRoll', rule: { name: 'Стихийный адепт', on: 'spell', damageType: 'Холод', onesAsTwos: true } }]),
+            damageTypeOption('lightning', 'Электричество', [{ type: 'damageRoll', rule: { name: 'Стихийный адепт', on: 'spell', damageType: 'Электричество', onesAsTwos: true } }]),
           ],
         },
       },
@@ -653,6 +660,10 @@ const GENERAL: FeatDef[] = [
     ].join('\n'),
     action: 'passive',
     choices: [increase(STR_DEX)],
+    effects: [
+      { type: 'damageRoll', rule: { name: 'Пронзатель', on: 'attack', damageType: 'Колющий', rerollLowest: true, oncePerTurn: true } },
+      { type: 'damageRoll', rule: { name: 'Пронзатель', on: 'attack', damageType: 'Колющий', extraCritDice: 1 } },
+    ],
     iconName: 'plain-dagger',
   },
   {

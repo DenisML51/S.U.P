@@ -244,6 +244,25 @@ export const AbilitySchema = passthroughObject({
   grant: optionalShortText,
 });
 
+/**
+ * A rule of a feature for damage dice (Savage Attacker, Piercer): what rolls it changes and how.
+ * Written from the build; `on` is `weapon`, `unarmed`, `attack` (any attack roll), `spell` or `healing`.
+ */
+export const DamageRuleSchema = passthroughObject({
+  id: nestedId,
+  name: shortText,
+  on: text(z.enum(['weapon', 'unarmed', 'attack', 'spell', 'healing'])),
+  /** Only damage of this type (Piercer: piercing). */
+  damageType: optionalShortText,
+  twice: optionalFlag,
+  rerollOnes: optionalFlag,
+  rerollLowest: optionalFlag,
+  onesAsTwos: optionalFlag,
+  extraCritDice: optionalNumber,
+  /** Only on the first roll of the turn it fits (in a fight). */
+  oncePerTurn: optionalFlag,
+});
+
 export const LimbSchema = passthroughObject({
   id: nestedId,
   name: shortText,
@@ -555,6 +574,10 @@ export const CharacterSchema = passthroughObject({
   limbs: list(LimbSchema),
   resistances: list(ResistanceSchema),
   conditions: list(shortString),
+  /** Rules of features for damage dice (Savage Attacker, Piercer), from the build. */
+  damageRules: optionalList(DamageRuleSchema),
+  /** Ids of the damage rules already used this turn (once a turn); a new turn clears them. */
+  turnUses: optionalList(shortString),
   /** Ids of the abilities that are on now (Rage, Bladesong): their effects count until they end. */
   activeFeatures: optionalList(shortString),
   /** The spell or ability the hero keeps concentration on; absent when not concentrating. */
@@ -630,6 +653,7 @@ export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 export type Resistance = z.infer<typeof ResistanceSchema>;
 export type ActionCounters = z.infer<typeof ActionCountersSchema>;
 export type Concentration = z.infer<typeof ConcentrationSchema>;
+export type DamageRule = z.infer<typeof DamageRuleSchema>;
 export type DeathSaves = z.infer<typeof DeathSavesSchema>;
 export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
 export type Build = z.infer<typeof BuildSchema>;
