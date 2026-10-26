@@ -54,6 +54,8 @@ export type Amount = number | ((ctx: BuildContext) => number);
 // ------------------------------------------------------------------------------------------------
 
 export type ProficiencyCategory = 'armor' | 'weapon' | 'tool' | 'language';
+export type SpeedCondition = 'unarmored' | 'noHeavyArmor';
+export type MovementMode = 'climb' | 'swim' | 'fly';
 
 export type Effect =
   /** Ability score increase; the score cannot go above `max` this way (20 unless stated). */
@@ -66,7 +68,15 @@ export type Effect =
   | { type: 'proficiency'; category: ProficiencyCategory; value: string }
   /** Walking speed set by the species; the largest base wins. */
   | { type: 'baseSpeed'; value: number }
-  | { type: 'speed'; amount: number }
+  /**
+   * Walking speed added, only while the gear allows it when `when` is set: `unarmored` without
+   * armour or a shield (Unarmored Movement), `noHeavyArmor` unless heavy armour is worn (Fast Movement).
+   */
+  | { type: 'speed'; amount: Amount; when?: SpeedCondition }
+  /** Climbing, swimming or flying speed in feet; without `feet` it equals the walking speed. */
+  | { type: 'movement'; mode: MovementMode; feet?: number }
+  /** Darkvision in feet; `extend` adds the range to darkvision the hero already has, else gives it. */
+  | { type: 'darkvision'; range: number; extend?: boolean }
   /** Extra maximum hit points per character level (Tough, Dwarven Toughness). */
   | { type: 'hpPerLevel'; amount: number }
   | { type: 'hp'; amount: Amount }

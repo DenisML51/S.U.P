@@ -18,6 +18,7 @@ export * from './rules/dice';
 export * from './rules/health';
 export * from './rules/history';
 export * from './rules/inventory';
+export * from './rules/movement';
 export * from './rules/pointBuy';
 export * from './rules/progression';
 export * from './rules/rest';

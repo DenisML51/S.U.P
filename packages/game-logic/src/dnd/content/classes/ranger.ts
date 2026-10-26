@@ -278,6 +278,7 @@ const gloomStalker: SubclassDef = {
         name: 'Теневой взор',
         description:
           'Вы получаете тёмное зрение на 60 футов (если оно уже есть — его дальность растёт на 60 футов). Пока вы целиком в темноте, существо, видящее вас там только тёмным зрением, считает вас невидимым.',
+        effects: [{ type: 'darkvision', range: 60, extend: true }],
         iconName: 'hooded-figure',
       },
     ],
@@ -706,7 +707,11 @@ export const RANGER: ClassDef = {
         name: 'Вездеходность',
         description: 'Пока вы не носите тяжёлый доспех, ваша скорость увеличивается на 10 футов. Вы также получаете скорость лазания и плавания, равные вашей скорости.',
         iconName: 'footprint',
-        effects: [{ type: 'speed', amount: 10 }],
+        effects: [
+          { type: 'speed', amount: 10, when: 'noHeavyArmor' },
+          { type: 'movement', mode: 'climb' },
+          { type: 'movement', mode: 'swim' },
+        ],
       },
     ],
     8: [abilityScoreImprovement('ranger', 8)],

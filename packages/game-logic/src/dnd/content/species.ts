@@ -20,6 +20,7 @@ const darkvision = (owner: string, range: number): FeatureDef => ({
   name: 'Тёмное зрение',
   description: `Видите в тусклом свете в пределах ${range} фт. как при ярком, а в темноте — как при тусклом (только оттенки серого).`,
   iconName: 'evil-eyes',
+  effects: [{ type: 'darkvision', range }],
 });
 
 const speedFeature = (owner: string, speed: number, size: string): FeatureDef => ({
@@ -277,6 +278,7 @@ const ELF_LINEAGES: OptionDef[] = [
         id: 'elf.drow-darkvision',
         name: 'Тёмное зрение дроу',
         description: 'Дальность Тёмного зрения увеличивается до 120 фт.',
+        effects: [{ type: 'darkvision', range: 120 }],
         iconName: 'evil-eyes',
       },
     ],

@@ -49,10 +49,6 @@ export function setExhaustion(character: Character, level: number): Character {
   return { ...character, exhaustion, conditions: exhaustion > 0 ? [...conditions, 'exhaustion'] : conditions };
 }
 
-/** Walking speed after exhaustion (−5 feet a level), never below 0. */
-export const speedOf = (character: Pick<Character, 'speed' | 'exhaustion' | 'conditions'>): number =>
-  Math.max(0, character.speed - 5 * exhaustionLevel(character));
-
 /** Keys of `advantageOn` that fit a test. */
 const featureKeys = (test: D20Test): string[] => {
   switch (test.kind) {

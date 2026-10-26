@@ -301,6 +301,7 @@ const thief: SubclassDef = {
         id: 'thief.second-story-work',
         name: 'Взлом с проникновением',
         description: '**Верхолаз.** Вы получаете скорость лазания, равную скорости ходьбы.\n\n**Прыгун.** Дальность прыжков вы можете определять Ловкостью вместо Силы.',
+        effects: [{ type: 'movement', mode: 'climb' }],
         iconName: 'rope-coil',
       },
     ],

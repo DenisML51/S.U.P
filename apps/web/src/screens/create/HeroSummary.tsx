@@ -7,6 +7,8 @@ import {
   formatModifier,
   initiativeModifier,
   maxSanityOf,
+  speedHint,
+  speedOf,
 } from '@itd/game-logic';
 import {
   DND_ICONS,
@@ -54,12 +56,13 @@ const IconBlock: React.FC<{
   );
 
 /** A round figure under the scores: initiative, hit points and hit die, armour, speed, sanity. */
-const Badge: React.FC<{ icon: React.ReactNode; value: React.ReactNode; label: string }> = ({
+const Badge: React.FC<{ icon: React.ReactNode; value: React.ReactNode; label: string; hint?: string }> = ({
   icon,
   value,
   label,
+  hint,
 }) => (
-  <div className="flex flex-col items-center gap-1" title={label}>
+  <div className="flex flex-col items-center gap-1" title={hint ?? label}>
     <span className="ui-summary__badge">
       {icon}
       <span className="ui-numeric">{value}</span>
@@ -160,7 +163,7 @@ export const HeroSummary: React.FC<{
             label={hitDie ? `Хиты к${hitDie}` : 'Хиты'}
           />
           <Badge icon={<IconArmor width={13} height={13} />} value={armorClassOf(sheet)} label="КБ" />
-          <Badge icon={<IconSpeed width={13} height={13} />} value={sheet.speed} label="Скорость" />
+          <Badge icon={<IconSpeed width={13} height={13} />} value={speedOf(sheet)} label="Скорость" hint={speedHint(sheet)} />
           <Badge icon={<IconSanity width={13} height={13} />} value={maxSanityOf(sheet)} label="Рассудок" />
         </div>
 

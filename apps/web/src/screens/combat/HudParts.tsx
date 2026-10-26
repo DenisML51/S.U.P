@@ -17,6 +17,7 @@ import {
   maxSanityOf,
   rollsDeathSaves,
   setActionLimit,
+  speedHint,
   speedOf,
   strikesLeft,
   setSpentActions,
@@ -624,7 +625,7 @@ export const CombatStats: React.FC<{
     {
       label: 'Скор.',
       value: speedOf(character),
-      hint: speedOf(character) < character.speed ? `Скорость, фт: ${character.speed} − истощение` : 'Скорость, фт',
+      hint: speedHint(character),
     },
     {
       label: character.spellcastingDifficultyName || 'СЛ',
