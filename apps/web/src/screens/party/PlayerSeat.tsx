@@ -77,7 +77,7 @@ export const MyHero: React.FC<{
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-frame-bright/80">Ваш герой</div>
           <div className="ui-display mt-1 truncate text-[1.6rem] leading-tight text-ink">{hero.name}</div>
-          <div className="truncate text-xs text-ink-muted">{[origin.calling || origin.race, !vitals?.coc && `${hero.level} ур.`].filter(Boolean).join(' · ')}</div>
+          <div className="truncate text-xs text-ink-muted">{origin.calling || origin.race}{!vitals?.coc && <>{(origin.calling || origin.race) && ' · '}{`${hero.level} ур.`}</>}</div>
         </div>
         {vitals && (
           <div className="flex items-center gap-3">

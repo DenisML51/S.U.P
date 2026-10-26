@@ -264,6 +264,55 @@ describe('parties', () => {
     ).toBe(404);
   });
 
+  it('makes copies of an NPC, each its own, with conditions, attacks and notes', async () => {
+    const app = await ctx.app();
+    const { master, partyId } = await table(app);
+
+    const created = await call(app, master, 'POST', `/parties/${partyId}/npcs`, {
+      name: 'Гоблин',
+      maxHP: 7,
+      armorClass: 15,
+      initiativeBonus: 2,
+      attacks: [{ name: 'Скимитар', hitBonus: 4, damage: '1d6 + 2 рубящий' }],
+      notes: 'Бегут при первой смерти',
+      count: 3,
+    });
+    expect(created.statusCode).toBe(201);
+    const { ids } = created.json<{ ids: string[] }>();
+    expect(ids).toHaveLength(3);
+
+    await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${ids[1]}`, { currentHP: 2, conditions: ['prone'] });
+    const npcs = (await view(app, master, partyId)).npcs!;
+    expect(npcs.map((n) => [n.name, n.currentHP, n.conditions])).toEqual(
+      expect.arrayContaining([
+        ['Гоблин 1', 7, []],
+        ['Гоблин 2', 2, ['prone']],
+        ['Гоблин 3', 7, []],
+      ]),
+    );
+    expect(npcs[0]).toMatchObject({ attacks: [{ name: 'Скимитар', hitBonus: 4 }], notes: 'Бегут при первой смерти' });
+  });
+
+  it('keeps the master’s notes and the heroes’ troubles to the master', async () => {
+    const app = await ctx.app();
+    const { master, player, partyId, playerHero } = await table(app);
+
+    expect((await call(app, master, 'PATCH', `/parties/${partyId}`, { masterNotes: 'Предатель — трактирщик' })).statusCode).toBe(204);
+    expect((await view(app, master, partyId)).masterNotes).toBe('Предатель — трактирщик');
+    expect((await view(app, player, partyId)).masterNotes).toBeNull();
+
+    // The hero falls: the master sees the death saves, the condition and the concentration lost.
+    const fallen = await call(app, player, 'GET', `/characters/${playerHero.id}`);
+    await saveHero(
+      app,
+      player,
+      { ...playerHero, currentHP: 0, conditions: ['unconscious'], deathSaves: { successes: 1, failures: 2 } },
+      fallen.json<{ revision: number }>().revision,
+    );
+    const seen = (await view(app, master, partyId)).heroes.find((h) => h.characterId === playerHero.id)!.vitals!;
+    expect(seen).toMatchObject({ conditions: ['unconscious'], deathSaves: { successes: 1, failures: 2 } });
+  });
+
   it('keeps NPCs to the master', async () => {
     const app = await ctx.app();
     const { master, player, partyId } = await table(app);

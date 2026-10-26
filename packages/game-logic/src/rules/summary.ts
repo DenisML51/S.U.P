@@ -38,5 +38,8 @@ export const summarizeCharacter = (character: Character): CharacterSummary => ({
   armorClass: armorClassOf(character),
   initiative: initiativeModifier(character),
   conditions: character.conditions,
+  ...(character.concentratingOn ? { concentration: character.concentratingOn.name } : {}),
+  ...(character.deathSaves && character.currentHP <= 0 ? { deathSaves: { ...character.deathSaves } } : {}),
+  ...(character.exhaustion ? { exhaustion: character.exhaustion } : {}),
   ...(character.build?.ruleset === 'coc7' && character.coc ? investigatorSummary(character) : {}),
 });

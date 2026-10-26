@@ -24,6 +24,7 @@ import {
   IconCopy,
   IconDice,
   IconInitiative,
+  IconNotes,
   IconPrev,
   IconQuill,
   IconSettings,
@@ -40,6 +41,7 @@ import { HeroPickDialog } from './HeroPickDialog';
 import { InitiativeDialog } from './InitiativeDialog';
 import { InitiativeStrip } from './InitiativeStrip';
 import { LoreDialog } from './LoreDialog';
+import { MasterNotesDialog } from './MasterNotesDialog';
 import { NpcDialog } from './NpcDialog';
 import { PartyCover } from './PartyCover';
 import { actsByDex, initiativeBonusOf, isCocFight, npcFirearmReady } from './partyView';
@@ -105,6 +107,7 @@ export const PartyScreen: React.FC<{ partyId: string; onOpenSettings: () => void
 
 type Overlay =
   | { kind: 'lore' }
+  | { kind: 'notes' }
   | { kind: 'leave' }
   | { kind: 'pick-hero' }
   | { kind: 'combat' }
@@ -220,6 +223,11 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                   Начать<span className="max-sm:hidden"> сессию</span>
                 </Button>
               ))}
+            {isMaster && (
+              <IconButton label="Заметки мастера" onClick={() => setOverlay({ kind: 'notes' })}>
+                <IconNotes width={20} height={20} />
+              </IconButton>
+            )}
             {isMaster && party.sessionStartedAt && (
               <IconButton label="Бросить кубики столу" onClick={() => setOverlay({ kind: 'dice' })}>
                 <IconDice width={20} height={20} />
@@ -400,6 +408,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
       {overlay?.kind === 'npc' && (
         <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} disposition={overlay.disposition} coc={isCocFight(party) || !!overlay.npc?.coc} onClose={close} />
       )}
+      {overlay?.kind === 'notes' && <MasterNotesDialog open party={party} onClose={close} />}
       <LoreDialog
         open={overlay?.kind === 'lore'}
         party={party}

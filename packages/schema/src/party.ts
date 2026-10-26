@@ -39,6 +39,12 @@ export interface CharacterSummary {
   /** Initiative modifier (D&D), or DEX for an investigator (Call of Cthulhu acts in DEX order). */
   initiative: number;
   conditions: string[];
+  /** The spell or ability the hero keeps concentration on. */
+  concentration?: string;
+  /** Death saving throws while the hero lies at 0 hit points. */
+  deathSaves?: { successes: number; failures: number };
+  /** Exhaustion level (D&D 2024), when there is any. */
+  exhaustion?: number;
   /** An investigator's numbers (Call of Cthulhu). */
   coc?: InvestigatorVitals;
 }
@@ -112,6 +118,8 @@ export const UpdatePartyRequestSchema = z
     name: PartyNameSchema,
     description: DescriptionSchema,
     lore: LoreSchema,
+    /** The master's own notes: only the master sends and gets them. */
+    masterNotes: z.string().trim().max(50_000, 'Заметки не длиннее 50 000 символов'),
     setting: SettingSchema,
     rules: PartyRulesSchema.nullable(),
     coverAssetId: AssetIdSchema.nullable(),
@@ -148,6 +156,14 @@ export const NpcAttackSchema = z.object({
   damage: z.string().trim().max(30, 'Урон не длиннее 30 символов').default(''),
 });
 export type NpcAttack = z.infer<typeof NpcAttackSchema>;
+
+/** One attack of a D&D NPC: its bonus to hit and its damage (`1d6 + 2 колющий`). */
+export const NpcDndAttackSchema = z.object({
+  name: z.string().trim().min(1, 'Назовите атаку').max(60),
+  hitBonus: z.number().int().min(-20).max(40),
+  damage: z.string().trim().max(60, 'Урон не длиннее 60 символов').default(''),
+});
+export type NpcDndAttack = z.infer<typeof NpcDndAttackSchema>;
 
 /** Dice like `1D4`, `+1D6`, `−1`, `0/1D6`: digits, D, +, −, / and spaces. */
 const diceText = (max: number) =>
@@ -196,13 +212,27 @@ const NpcFieldsSchema = z.object({
   initiativeBonus: z.number().int().min(-20).max(200),
   disposition: NpcDispositionSchema,
   coc: NpcCocSchema.nullable(),
+  /** Condition ids (`poisoned`, `prone`), as on a hero's sheet. */
+  conditions: z.array(z.string().trim().min(1).max(40)).max(20),
+  attacks: z.array(NpcDndAttackSchema).max(8),
+  notes: z.string().trim().max(5_000, 'Заметки не длиннее 5 000 символов'),
 });
 
-/** A quick NPC; it starts unhurt unless current hit points are given. */
+/** Most copies of one NPC made at once ("гоблин ×6"). */
+export const NPC_COPIES_MAX = 20;
+
+/**
+ * A quick NPC; it starts unhurt unless current hit points are given. `count` makes that many
+ * copies, each its own NPC with its own hit points, numbered after the name ("Гоблин 1", "Гоблин 2").
+ */
 export const CreateNpcRequestSchema = NpcFieldsSchema.partial({ currentHP: true }).extend({
   portraitAssetId: AssetIdSchema.nullable().default(null),
   disposition: NpcDispositionSchema.default('hostile'),
   coc: NpcCocSchema.nullable().default(null),
+  conditions: NpcFieldsSchema.shape.conditions.default([]),
+  attacks: NpcFieldsSchema.shape.attacks.default([]),
+  notes: NpcFieldsSchema.shape.notes.default(''),
+  count: z.number().int().min(1).max(NPC_COPIES_MAX).default(1),
 });
 export type CreateNpcRequest = z.input<typeof CreateNpcRequestSchema>;
 
@@ -273,6 +303,9 @@ export interface HeroVitalsDto {
   armorClass: number;
   initiative: number;
   conditions: string[];
+  concentration?: string;
+  deathSaves?: { successes: number; failures: number };
+  exhaustion?: number;
   coc?: InvestigatorVitals;
 }
 
@@ -310,6 +343,10 @@ export interface PartyNpcDto {
   disposition: NpcDisposition;
   /** Call of Cthulhu numbers; `null` for other NPCs. */
   coc: NpcCocStats | null;
+  conditions: string[];
+  /** D&D attacks (an investigator's foes keep theirs in `coc`). */
+  attacks: NpcDndAttack[];
+  notes: string;
 }
 
 export interface CombatantDto {
@@ -326,8 +363,18 @@ export interface CombatantDto {
   initiative: number | null;
   /** The viewer acts for it: rolls its initiative, ends its turn. */
   controlled: boolean;
-  /** Hit points and armour when the viewer may see them. */
-  vitals: { currentHP: number; maxHP: number; tempHP: number; armorClass: number } | null;
+  /** Hit points, armour and what weighs on it, when the viewer may see them. */
+  vitals: CombatantVitalsDto | null;
+}
+
+export interface CombatantVitalsDto {
+  currentHP: number;
+  maxHP: number;
+  tempHP: number;
+  armorClass: number;
+  conditions: string[];
+  concentration?: string;
+  deathSaves?: { successes: number; failures: number };
 }
 
 export type CombatPhase = 'initiative' | 'active';
@@ -364,6 +411,8 @@ export interface PartyDto {
   heroes: PartyHeroDto[];
   /** `null` for players. */
   npcs: PartyNpcDto[] | null;
+  /** The master's own notes; `null` for players. */
+  masterNotes: string | null;
   combat: CombatDto | null;
   /** When the running session began; `null` between sessions (only the master sees the table then). */
   sessionStartedAt: string | null;

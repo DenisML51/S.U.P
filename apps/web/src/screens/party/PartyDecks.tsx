@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LayoutGroup, motion } from 'framer-motion';
-import { npcMinHP, type NpcAttack, type PartyDto, type PartyHeroDto, type PartyNpcDto, type NpcDisposition } from '@itd/schema';
+import { npcMinHP, type NpcAttack, type NpcDndAttack, type PartyDto, type PartyHeroDto, type PartyNpcDto, type NpcDisposition } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
 import { usePartyStore } from '../../store/usePartyStore';
 import { CharacterArt } from '../../ui/CharacterArt';
@@ -18,10 +18,13 @@ import {
 import { IconButton, Meter, Panel, cx } from '../../ui/primitives';
 import { formatBonus, isCocFight } from './partyView';
 import { HeroRoll } from './TableDice';
+import { Troubles } from './Troubles';
 import { useMediaQuery } from '../../ui/useBreakpoint';
 
 /** "Нож 40% 1D4" — an attack of a Call of Cthulhu NPC on its card. */
 const attackLine = (attack: NpcAttack) => [attack.name, `${attack.skill}%`, attack.damage].filter(Boolean).join(' ');
+const dndAttackLine = (attack: NpcDndAttack) =>
+  [attack.name, formatBonus(attack.hitBonus), attack.damage].filter(Boolean).join(' ');
 
 const SPRING = { type: 'spring', stiffness: 260, damping: 30 } as const;
 /** How far each card behind peeks out of a stack (party.css reserves room for three: keep `--stack-peek` in step). */
@@ -528,7 +531,9 @@ const HeroCard: React.FC<{
               </span>
               {spread && (
                 <span className="block truncate text-xs text-ink-muted">
-                  {[origin.calling || origin.race, !vitals?.coc && `${hero.level} ур.`].filter(Boolean).join(' · ')}
+{/* Each part said on its own: one string would let "{0} ур." take the class in as its number. */}
+                  {origin.calling || origin.race}
+                  {!vitals?.coc && <>{(origin.calling || origin.race) && ' · '}{`${hero.level} ур.`}</>}
                 </span>
               )}
               {spread && vitals && (
@@ -559,6 +564,8 @@ const HeroCard: React.FC<{
                   )}
                 </span>
               )}
+              {/* What weighs on the hero (death saves first): read without opening the sheet, even stacked. */}
+              {vitals && <Troubles of={vitals} size={spread ? 14 : 12} />}
             </span>
           </>
         )}
@@ -740,6 +747,12 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
                     {stats.attacks.map(attackLine).join(' · ')}
                   </span>
                 )}
+                {!coc && npc.attacks.length > 0 && (
+                  <span className="block truncate text-[11px] text-ink-muted" title={npc.attacks.map(dndAttackLine).join('\n')}>
+                    {npc.attacks.map(dndAttackLine).join(' · ')}
+                  </span>
+                )}
+                <Troubles of={npc} />
                 <span className="block h-5" />
               </>
             )}
