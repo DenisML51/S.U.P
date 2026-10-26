@@ -3,13 +3,14 @@ import { LayoutGroup, motion } from 'framer-motion';
 import type { CombatantDto, CombatDto } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
 import { cx } from '../../ui/primitives';
+import { Troubles } from './Troubles';
 
 const TOKEN = { lg: 68, sm: 50 } as const;
 
 /**
  * The order of the fight as a row of portraits: highest initiative first, the one whose turn it is
- * raised and lit, those still to roll dimmed with a question mark. Hit points show under the
- * portraits the viewer may see.
+ * raised and lit, those still to roll dimmed with a question mark. Hit points and what weighs on
+ * them (conditions, concentration, death saves) show under the portraits the viewer may see.
  */
 export const InitiativeStrip: React.FC<{
   combat: CombatDto;
@@ -91,6 +92,8 @@ const Token: React.FC<{
           )}
         </span>
         <span className={cx('block w-full truncate text-[11px] leading-tight', current ? 'text-ink' : 'text-ink-muted')}>{combatant.name}</span>
+        {/* Conditions, concentration and death saves, to whoever may see the numbers. */}
+        {vitals && <Troubles of={vitals} size={11} className="justify-center" />}
       </Body>
       <span className="ui-initiative__badge ui-numeric pointer-events-none absolute -left-1 -top-2 grid min-w-[1.6rem] place-items-center px-1 text-xs">
         {waiting ? '?' : combatant.initiative}

@@ -338,32 +338,42 @@ export class PartiesService implements CharacterChangeListener {
   // NPCs
   // ------------------------------------------------------------------------------------------
 
-  createNpc(userId: string, partyId: string, input: CreateNpc): Promise<{ id: string }> {
+  /**
+   * Makes an NPC, or `count` copies of one: each its own NPC (hit points, conditions, turn), numbered
+   * after the name so the table tells them apart ("Гоблин 1", "Гоблин 2").
+   */
+  createNpc(userId: string, partyId: string, input: CreateNpc): Promise<{ id: string; ids: string[] }> {
     return this.access.change(userId, partyId, 'master', async ({ tx }) => {
       const [existing] = await tx
         .select({ value: count() })
         .from(partyNpcs)
         .where(eq(partyNpcs.partyId, partyId));
-      if ((existing?.value ?? 0) >= PARTY_LIMITS.npcs)
+      const copies = input.count;
+      if ((existing?.value ?? 0) + copies > PARTY_LIMITS.npcs)
         throw conflictError(`Не больше ${PARTY_LIMITS.npcs} НПС`);
       await assertOwnAsset(tx, userId, input.portraitAssetId);
       const currentHP = input.currentHP ?? input.maxHP;
       assertNpcHP(currentHP, input.maxHP, input.coc !== null || (await combatRulesOf(tx, partyId)) === 'coc7');
-      const [npc] = await tx
+      const rows = await tx
         .insert(partyNpcs)
-        .values({
-          partyId,
-          name: input.name,
-          portraitAssetId: input.portraitAssetId,
-          maxHp: input.maxHP,
-          currentHp: currentHP,
-          armorClass: input.armorClass,
-          initiativeBonus: input.initiativeBonus,
-          disposition: input.disposition,
-          coc: input.coc,
-        })
+        .values(
+          Array.from({ length: copies }, (_, index) => ({
+            partyId,
+            name: copies > 1 ? `${input.name} ${index + 1}`.slice(0, 80) : input.name,
+            portraitAssetId: input.portraitAssetId,
+            maxHp: input.maxHP,
+            currentHp: currentHP,
+            armorClass: input.armorClass,
+            initiativeBonus: input.initiativeBonus,
+            disposition: input.disposition,
+            coc: input.coc,
+            conditions: input.conditions,
+            attacks: input.attacks,
+            notes: input.notes,
+          })),
+        )
         .returning({ id: partyNpcs.id });
-      return npc!;
+      return { id: rows[0]!.id, ids: rows.map((row) => row.id) };
     });
   }
 
@@ -400,6 +410,9 @@ export class PartiesService implements CharacterChangeListener {
           initiativeBonus: input.initiativeBonus,
           disposition: input.disposition,
           coc: input.coc,
+          conditions: input.conditions,
+          attacks: input.attacks,
+          notes: input.notes,
         })
         .where(where);
     });

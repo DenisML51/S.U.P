@@ -178,6 +178,9 @@ const npcDto = (row: PartyNpcRow): PartyNpcDto => ({
   initiativeBonus: row.initiativeBonus,
   disposition: row.disposition,
   coc: row.coc ?? null,
+  conditions: row.conditions ?? [],
+  attacks: row.attacks ?? [],
+  notes: row.notes ?? '',
 });
 
 /** Read side of parties: every view is tailored to who is looking. */
@@ -316,6 +319,7 @@ export class PartyQueries {
           members: members.map((member) => ({ ...member, joinedAt: member.joinedAt.toISOString() })),
           heroes: heroDtos,
           npcs: isMaster ? npcs.map(npcDto) : null,
+          masterNotes: isMaster ? party.masterNotes : null,
           combat: combatDto,
           sessionStartedAt: party.sessionStartedAt?.toISOString() ?? null,
           createdAt: party.createdAt.toISOString(),
@@ -387,6 +391,9 @@ function heroDto(hero: HeroRow, visible: boolean): PartyHeroDto {
           initiative: summary.initiative,
           coc: summary.coc,
           conditions: summary.conditions,
+          concentration: summary.concentration,
+          deathSaves: summary.deathSaves,
+          exhaustion: summary.exhaustion,
         }
       : null,
   };
@@ -422,6 +429,9 @@ function combatantDto(
               maxHP: summary.maxHP,
               tempHP: summary.tempHP,
               armorClass: summary.armorClass,
+              conditions: summary.conditions ?? [],
+              concentration: summary.concentration,
+              deathSaves: summary.deathSaves,
             }
           : null,
     };
@@ -438,7 +448,7 @@ function combatantDto(
     initiative: entry.initiative,
     controlled: isMaster,
     vitals: isMaster
-      ? { currentHP: npc.currentHp, maxHP: npc.maxHp, tempHP: 0, armorClass: npc.armorClass }
+      ? { currentHP: npc.currentHp, maxHP: npc.maxHp, tempHP: 0, armorClass: npc.armorClass, conditions: npc.conditions ?? [] }
       : null,
   };
 }

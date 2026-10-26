@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import type { CharacterSummary, NpcCocStats, TableDie } from '@itd/schema';
+import type { CharacterSummary, NpcCocStats, NpcDndAttack, TableDie } from '@itd/schema';
 import {
   type AnyPgColumn,
   bigint,
@@ -160,6 +160,8 @@ export const parties = pgTable(
     description: text('description').notNull().default(''),
     /** The party's chronicle, Markdown. */
     lore: text('lore').notNull().default(''),
+    /** The master's own notes for the sessions, Markdown: never sent to players. */
+    masterNotes: text('master_notes').notNull().default(''),
     setting: text('setting').notNull(),
     /** `dnd2024`, `coc7` or `custom`; `null`: any rules (tables made before the choice). */
     rules: text('rules'),
@@ -233,6 +235,12 @@ export const partyNpcs = pgTable(
     disposition: text('disposition', { enum: ['hostile', 'friendly'] }).notNull().default('hostile'),
     /** Call of Cthulhu numbers (armour, build, attacks…); `null` for other NPCs. */
     coc: jsonb('coc').$type<NpcCocStats>(),
+    /** Conditions on it (`poisoned`, `prone`…), as on a hero's sheet. */
+    conditions: jsonb('conditions').$type<string[]>().notNull().default([]),
+    /** D&D attacks: to hit and damage. */
+    attacks: jsonb('attacks').$type<NpcDndAttack[]>().notNull().default([]),
+    /** The master's notes on it (tactics, what it knows). */
+    notes: text('notes').notNull().default(''),
     createdAt: createdAt(),
   },
   (t) => [index('party_npcs_party_id_idx').on(t.partyId)],

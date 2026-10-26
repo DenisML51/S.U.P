@@ -92,6 +92,13 @@
       "when": 1792978079801,
       "tag": "0012_party_rolls",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793007218004,
+      "tag": "0013_npc_conditions_notes",
+      "breakpoints": true
     }
   ]
 }
