@@ -371,7 +371,7 @@
   /* ---------------------------------------------------------------- Rail and hero column */
   .ui-rail { background: rgb(var(--c-bg-deep) / 0.85); border-right-color: rgb(var(--c-line)); }
   .ui-rail__item { font-family: var(--font-display); letter-spacing: 0.06em; }
-  .ui-rail__label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; }
+  .ui-rail__label { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.08em; }
   .ui-rail__item:not([aria-current]):hover { color: rgb(var(--c-ink)); background: rgb(var(--c-surface-2)); }
   /* The open section is a solid block of signal blue, like the selected record. */
   .ui-rail__item[aria-current='page'] { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); }

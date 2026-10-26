@@ -454,7 +454,7 @@
     box-shadow: inset -1px 0 0 rgb(var(--c-frame) / 0.7), inset -3px 0 0 rgb(var(--c-wood-dark)), inset -4px 0 0 rgb(var(--c-frame) / 0.3);
   }
   .ui-rail__item { color: rgb(var(--c-frame) / 0.9); }
-  .ui-rail__label { font-family: var(--font-typed); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .ui-rail__label { font-family: var(--font-typed); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.08em; }
   .ui-rail__item:not([aria-current]):hover { color: rgb(var(--c-frame-bright)); }
   .ui-rail__item[aria-current='page'] {
     color: rgb(var(--c-ink));

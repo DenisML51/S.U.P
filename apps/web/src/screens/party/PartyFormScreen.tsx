@@ -159,14 +159,19 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
                   if (!(worldChosen && draft.setting === id)) setFlourish({ setting: id, ...origin, key: Date.now() });
                   patch({ setting: id });
                   setWorldChosen(true);
+                  // One choice on the step: it goes on by itself, as the hero's creation does.
+                  window.setTimeout(() => setStep(party ? 'table' : 'rules'), 420);
                 }}
               />
             </div>
-            <footer className="flex justify-center py-5">
-              <Button variant="primary" disabled={!worldChosen} onClick={() => setStep(party ? 'table' : 'rules')}>
-                Дальше
-              </Button>
-            </footer>
+            {/* Back on the step with a world already chosen: the way on without choosing again. */}
+            {worldChosen && (
+              <footer className="flex justify-center py-5">
+                <Button variant="primary" onClick={() => setStep(party ? 'table' : 'rules')}>
+                  Дальше
+                </Button>
+              </footer>
+            )}
           </motion.main>
         ) : step === 'rules' ? (
           <motion.main
@@ -189,7 +194,7 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
                 value={rulesChosen ? draft.rules : null}
                 allowed={allowedRules}
                 setting={draft.setting}
-                chooseLabel="Создать"
+                chooseLabel="Выбрать"
                 onChange={(rules) => {
                   patch({ rules });
                   setRulesChosen(true);

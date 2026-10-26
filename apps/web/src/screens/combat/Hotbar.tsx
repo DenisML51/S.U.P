@@ -191,9 +191,12 @@ export const Hotbar: React.FC<{ character: Character; inCombat: boolean }> = ({ 
       .flat()
       .find((s) => s.key === tip.value.key);
 
+  // A hero without a spell keeps no empty magic panel; the others stay, empty or not, as places to fill.
+  const groups = SLOT_GROUPS.filter((group) => group.id !== 'spells' || character.spells.length > 0);
+
   return (
-    <div className="grid grid-cols-4 gap-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
-      {SLOT_GROUPS.map((group) => (
+    <div className={cx('grid gap-3 max-lg:grid-cols-2 max-sm:grid-cols-1', groups.length === 4 ? 'grid-cols-4' : 'grid-cols-3')}>
+      {groups.map((group) => (
         <Panel key={group.id} className="ui-hud-panel flex min-w-0 flex-col">
           <header className="ui-hud-panel__head">
             <CatalogIcon id={group.icon} size={16} className="text-frame-bright" />

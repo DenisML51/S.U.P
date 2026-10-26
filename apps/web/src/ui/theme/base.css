@@ -1510,7 +1510,7 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   border-right: 1px solid rgb(var(--c-line) / 0.7);
 }
 .ui-rail__item {
-  color: rgb(var(--c-ink-faint));
+  color: rgb(var(--c-ink-muted));
   transition: color 150ms, background-color 150ms;
 }
 .ui-rail__item:hover { color: rgb(var(--c-ink-muted)); }
