@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { baseMaxSanityOf, experienceProgress, maxSanityOf, totalMaxHP, type Coin } from '@itd/game-logic';
+import { DAMAGE_TYPES, baseMaxSanityOf, experienceProgress, maxSanityOf, totalMaxHP, type Coin } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { Dialog } from '../../../ui/Dialog';
-import { NumberField, Segmented } from '../../../ui/forms';
+import { NumberField, Segmented, Select } from '../../../ui/forms';
 import { Button, Field, Meter, cx, type MeterTone } from '../../../ui/primitives';
 import { useVitals } from '../useVitals';
 import { useSheetDialogs } from './context';
@@ -112,9 +112,19 @@ const Done: React.FC<{ onClose: () => void }> = ({ onClose }) => (
   </Button>
 );
 
+/** Damage types a hit may carry; healing is not one of them. */
+const HIT_TYPES = DAMAGE_TYPES.filter((type) => type !== 'Лечение');
+
+const DEFENCE_LABEL = { resistance: 'Сопротивление', vulnerability: 'Уязвимость', immunity: 'Иммунитет' } as const;
+
 export const HealthDialog: React.FC<VitalProps> = ({ open, onClose }) => {
   const character = useCharacterStore((s) => s.character) as Character;
   const vitals = useVitals();
+  const [type, setType] = useState<string>('');
+  // The hero's defences by kind, so the player sees why a type matters.
+  const defences = (['immunity', 'resistance', 'vulnerability'] as const)
+    .map((level) => [level, character.resistances.filter((r) => r.level === level).map((r) => r.type)] as const)
+    .filter(([, types]) => types.length > 0);
   const max = totalMaxHP(character);
   const down = character.currentHP <= 0;
   return (
@@ -142,13 +152,30 @@ export const HealthDialog: React.FC<VitalProps> = ({ open, onClose }) => {
         <AmountBar
           signed={{ minus: 0, plus: 1 }}
           actions={[
-            { label: 'Урон', variant: 'danger', onApply: (n) => vitals.damage(n) },
+            { label: 'Урон', variant: 'danger', onApply: (n) => vitals.damage(n, { type: type || undefined }) },
             { label: 'Лечение', onApply: vitals.heal },
             ...(down
-              ? [{ label: 'Крит. урон', variant: 'danger' as const, onApply: (n: number) => vitals.damage(n, { critical: true }) }]
+              ? [{ label: 'Крит. урон', variant: 'danger' as const, onApply: (n: number) => vitals.damage(n, { critical: true, type: type || undefined }) }]
               : [{ label: 'Временные', onApply: vitals.addTemp }]),
           ]}
         />
+        <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-2">
+          <Field label="Тип урона" className="w-56">
+            {({ id }) => (
+              <Select
+                id={id}
+                value={type}
+                onChange={setType}
+                options={[{ value: '', label: 'Без типа' }, ...HIT_TYPES.map((t) => ({ value: t, label: t }))]}
+              />
+            )}
+          </Field>
+          {defences.length > 0 && (
+            <p className="pb-2.5 text-xs text-ink-muted">
+              {defences.map(([level, types]) => `${DEFENCE_LABEL[level]}: ${types.join(', ')}`).join(' · ')}
+            </p>
+          )}
+        </div>
         {down && (
           <p className="mt-2 text-xs text-ink-faint">
             Урон при 0 хитов — провал спасброска, критический — два; урон не меньше максимума хитов убивает.
