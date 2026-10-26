@@ -13,9 +13,11 @@ import {
   occupationDef,
   setLuck,
   stabilise,
+  stabilisationLapses,
+  treatWithMedicine,
   weeklyRecovery,
 } from '@itd/game-logic/coc';
-import { maxSanityOf } from '@itd/game-logic';
+import { maxSanityOf, rollDie } from '@itd/game-logic';
 import { useNavStore } from '../../store/useNavStore';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { Rail, RailButton, RailDivider } from '../../ui/Rail';
@@ -187,12 +189,35 @@ const InvestigatorColumn: React.FC<{
               size="sm"
               variant="primary"
               onClick={() =>
-                update(stabilise, { message: 'Первая помощь: состояние стабильно, +1 хит', type: 'health' })
+                update(stabilise, { message: 'Первая помощь: стабилизирован на час, +1 хит', type: 'health' })
               }
-              title="Успешная первая помощь при смерти: +1 хит, жизнь вне опасности на час"
+              title="Успешная первая помощь при смерти: +1 хит и час; за этот час нужна Медицина"
             >
               Первая помощь
             </Button>
+          )}
+          {/* The hour First Aid bought: Medicine saves, without it the investigator is dying again. */}
+          {has(CONDITION_IDS.stabilised) && (
+            <>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => {
+                  const amount = rollDie(3);
+                  update(treatWithMedicine(amount), { message: `Медицина: опасность миновала, +${amount} хит.`, type: 'health' });
+                }}
+                title="Успешная Медицина в течение часа: +1d3 хита, опасность миновала"
+              >
+                Медицина
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => update(stabilisationLapses, { message: 'Час без медицины: снова при смерти', type: 'health' })}
+              >
+                Час без медицины
+              </Button>
+            </>
           )}
           {majorWound ? (
             <Button

@@ -535,10 +535,13 @@ export const AgeStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
             title="Проверки ОБР"
             count={{ picked: creation.eduGains ? rules.eduChecks : 0, total: rules.eduChecks }}
             hint="d100 выше Образования — оно растёт на 1d10."
+            // Thrown once, as at the table: the result stands (a new age asks for them again).
             aside={
-              <Button size="sm" variant={creation.eduGains ? 'ghost' : 'primary'} onClick={creation.rollEdu}>
-                {creation.eduGains ? 'Перебросить' : `Бросить (${rules.eduChecks})`}
-              </Button>
+              !creation.eduGains && (
+                <Button size="sm" variant="primary" onClick={creation.rollEdu}>
+                  {`Бросить (${rules.eduChecks})`}
+                </Button>
+              )
             }
           >
             {creation.eduGains && creation.throws.edu ? (
