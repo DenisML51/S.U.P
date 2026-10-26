@@ -93,18 +93,11 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
       {/* ---------------------------------------------------------------- The art, behind everything */}
       {/* The art's area is the right 58% on a wide screen; on a narrow one it keeps at least 44rem and
           runs on under the menu, so the hero is not shrunk while there is height to spare. */}
-      <motion.div className="absolute inset-y-0 left-[max(0px,min(42%,calc(100%-44rem)))] right-0" {...enter({ x: 40 }, 0.1)}>
-        {hero ? (
+      {hero && (
+        <motion.div className="absolute inset-y-0 left-[max(0px,min(42%,calc(100%-44rem)))] right-0" {...enter({ x: 40 }, 0.1)}>
           <HeroFigure key={hero.id} hero={hero} onTone={setTone} />
-        ) : (
-          <div className="flex h-full items-end justify-center pb-12">
-            <button type="button" onClick={create} className="ui-hero-place">
-              <IconCreate width={22} height={22} />
-              Здесь встанет ваш герой
-            </button>
-          </div>
-        )}
-      </motion.div>
+        </motion.div>
+      )}
 
       <div className="relative z-10 flex h-full flex-col">
         <HomeHeader onOpenSettings={onOpenSettings} />

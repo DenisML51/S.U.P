@@ -507,19 +507,101 @@
   .ui-number button:not(:disabled):hover { color: rgb(var(--c-frame-bright)); background: rgb(var(--c-frame) / 0.12); }
 
   /* ---------------------------------------------------------------- Toasts */
-  /* A plaque: gilt hairlines above and below. */
-  .ui-toast { border-color: rgb(var(--c-frame) / 0.6); }
-  .ui-toast::before,
-  .ui-toast::after {
-    content: '';
-    position: absolute;
-    left: 18%;
-    right: 18%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgb(var(--c-frame-bright) / 0.8), transparent);
+  /* A herald's proclamation: a strip of parchment between two gilt rods, "Глашатай возвещает" in small
+     capitals over a gilt rule, the message below. It unrolls from its middle. What was granted or
+     refused is sealed in wax (enamel green, or red); a natural 20 or 1 is hung with a ribbon. */
+  .ui-toast {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: min(15rem, calc(100vw - 2rem));
+    max-width: min(24rem, calc(100vw - 2rem));
+    padding: 0 1.25rem 1.15rem;
+    color: rgb(var(--c-paper-ink));
+    font-family: var(--font-numeric);
+    font-size: 1.02rem;
+    font-weight: 600;
+    border: 0;
+    border-radius: 0;
+    background:
+      var(--hf-rod) top / 100% 7px no-repeat,
+      var(--hf-rod) bottom / 100% 7px no-repeat,
+      linear-gradient(rgb(70 46 16 / 0.42), transparent) 0 7px / 100% 10px no-repeat,
+      linear-gradient(0deg, rgb(70 46 16 / 0.42), transparent) 0 calc(100% - 7px) / 100% 10px no-repeat,
+      radial-gradient(110% 80% at 50% 45%, rgb(255 248 224 / 0.4), transparent 70%),
+      var(--grain),
+      rgb(var(--c-paper));
+    box-shadow: inset 0 0 30px rgb(var(--c-paper-muted) / 0.55), 0 16px 32px -14px rgb(0 0 0 / 0.85);
+    backdrop-filter: none;
+    /* On parchment everything is inked: content coloured for the dark screen takes the paper's inks. */
+    /* The rods keep the screen's gilt: this plate redefines the frame inks below. */
+    --hf-rod: linear-gradient(180deg, rgb(228 204 146), rgb(170 142 90) 45%, rgb(92 70 36));
+    --c-ink: var(--c-paper-ink);
+    /* Small print needs a darker ink than the paper's own muted one to read. */
+    --c-ink-muted: 74 58 34;
+    --c-ink-faint: var(--c-paper-muted);
+    --c-frame-bright: 120 86 30;
+    --c-success: var(--c-enamel);
+    --c-danger: 140 36 26;
+    animation: hf-unroll 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  .ui-toast::before { top: 3px; }
-  .ui-toast::after { bottom: 3px; }
+  .ui-toast button { color: rgb(var(--c-enamel)); font-weight: 700; }
+  .ui-toast::before {
+    content: '✦ Глашатай возвещает ✦';
+    display: block;
+    margin-bottom: 0.6rem;
+    padding: 1.05rem 0 0.45rem;
+    font: 600 0.78rem/1.2 var(--font-display);
+    letter-spacing: 0.2em;
+    text-align: center;
+    color: rgb(var(--c-paper-ink) / 0.72);
+    background: linear-gradient(90deg, transparent, rgb(var(--c-frame)) 22%, rgb(var(--c-frame)) 78%, transparent) bottom / 100% 1px no-repeat;
+  }
+  /* Granted or refused: a wax seal on the head instead of an icon. */
+  .ui-toast:is(.ui-toast--error, .ui-toast--success) .ui-toast__body > svg { display: none; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success)::before { padding-inline: 2.2rem; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success)::after {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    font: 700 0.95rem/1 var(--font-numeric);
+    color: rgb(255 238 210 / 0.9);
+    border-radius: 52% 48% 55% 45% / 47% 53% 47% 53%;
+    background: radial-gradient(circle at 36% 32%, rgb(255 255 255 / 0.35), transparent 38%), radial-gradient(circle, var(--hf-wax) 55%, rgb(0 0 0 / 0.35) 100%);
+    box-shadow: 0 2px 4px rgb(40 20 6 / 0.55), inset 0 0 0 2px rgb(0 0 0 / 0.12);
+    text-shadow: 0 -1px 0 rgb(0 0 0 / 0.4);
+    animation: hf-seal 380ms 200ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  }
+  .ui-toast--success::after { content: '✓'; --hf-wax: rgb(var(--c-enamel)); }
+  .ui-toast--error::after { content: '✕'; --hf-wax: rgb(140 30 24); }
+  .ui-toast .ui-rolling-die { color: rgb(var(--c-paper-ink)); }
+  .ui-toast .ui-rolling-die .ui-die-glyph { color: currentColor; }
+  .ui-toast .ui-rolling-die--success { color: rgb(var(--c-success)); }
+  .ui-toast .ui-rolling-die--danger { color: rgb(var(--c-danger)); }
+  .ui-toast .ui-rolling-die__value { text-shadow: none; }
+  /* A natural 20 or 1: a forked ribbon hung right of the dice and the total, in room kept for it. */
+  .ui-toast .ui-roll-toast { position: relative; }
+  .ui-toast .ui-roll-toast[data-stamp] > :first-child { padding-right: 6.5rem; }
+  .ui-toast .ui-roll-toast[data-landed][data-stamp]::after {
+    position: absolute;
+    top: 0.7rem;
+    right: -0.4rem;
+    padding: 0.28rem 0.95rem;
+    font: 600 0.82rem/1 var(--font-display);
+    letter-spacing: 0.12em;
+    color: rgb(255 240 214);
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.18), transparent 60%), var(--hf-ribbon);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 50%, 100% 100%, 0 100%, 7px 50%);
+    filter: drop-shadow(0 2px 2px rgb(40 20 6 / 0.45));
+    transform: rotate(-4deg);
+    animation: hf-ribbon 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Триумф'; --hf-ribbon: rgb(var(--c-enamel)); }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Бесчестье'; --hf-ribbon: rgb(140 30 24); }
 
   /* ---------------------------------------------------------------- Dialogs */
   /* A card from an illuminated book: a second gilt frame inside the edge, large vine corners, the
@@ -768,4 +850,24 @@
   box-shadow:
     inset 0 1px 0 rgb(var(--c-frame-bright)),
     inset 0 -1px 0 rgb(var(--c-frame-bright));
+}
+
+/* ------------------------------------------------------------------ Toast motion */
+/* The proclamation unrolls from its middle; the seal is pressed, the ribbon drops in from the side. */
+@keyframes hf-unroll {
+  from { clip-path: inset(46% 0 46% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes hf-seal {
+  from { opacity: 0; transform: scale(1.9) rotate(-20deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes hf-ribbon {
+  from { opacity: 0; transform: translateX(14px) rotate(-4deg); }
+  to { opacity: 1; transform: rotate(-4deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='high-fantasy'] .ui-toast,
+  [data-setting='high-fantasy'] .ui-toast::after,
+  [data-setting='high-fantasy'] .ui-toast .ui-roll-toast[data-landed]::after { animation: none; }
 }
