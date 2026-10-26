@@ -890,6 +890,25 @@ html:has([role='dialog'][aria-modal='true']) .ui-toasts { bottom: 1.5rem !import
   50% { box-shadow: 0 0 22px rgb(var(--c-danger) / 0.45); }
 }
 
+/* The beast of a Wild Shape, in the portrait's corner. */
+.ui-hud-portrait__form {
+  position: absolute;
+  left: 0.45rem;
+  bottom: 0.45rem;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  color: rgb(var(--c-accent));
+  background: rgb(var(--c-bg-deep) / 0.88);
+  border: 1px solid rgb(var(--c-accent) / 0.75);
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgb(var(--c-accent) / 0.35);
+}
+
+/* On the sheet's art band, under the edit corner, clear of the name. */
+.ui-hud-portrait__form--sheet { left: auto; right: 1rem; bottom: auto; top: 1rem; }
+
 .ui-hud-portrait__temp {
   position: absolute;
   bottom: 0.6rem;

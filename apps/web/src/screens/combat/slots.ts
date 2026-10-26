@@ -1,8 +1,11 @@
 import {
   attacksPerActionOf,
   formatModifier,
+  activeFormOf,
   isActiveFeature,
+  isFormAttack,
   isStackable,
+  spellBlocker,
   isWeaponStack,
   itemQuantity,
   remainingActions,
@@ -85,7 +88,10 @@ const usableItem = (item: InventoryItem) => item.type === 'item' && isStackable(
 
 /** The combat bar's icons by group, with what blocks each of them right now. */
 export function buildSlots(character: Character, inCombat: boolean): Record<SlotGroup, Slot[]> {
-  const attacks = character.attacks.map((attack): Slot => {
+  // In a beast's shape the bar holds the beast's attacks; spells wait while something forbids them.
+  const inForm = !!activeFormOf(character);
+  const noSpells = !!spellBlocker(character);
+  const attacks = character.attacks.filter((attack) => !inForm || isFormAttack(attack)).map((attack): Slot => {
     // The next attack of an Attack action already taken (Extra Attack) needs no action of its own.
     const followUp = attack.actionType === 'action' && strikesLeft(character) > 0;
     let blocked = followUp ? null : blockedBy(character, inCombat, attack.actionType);
@@ -145,7 +151,7 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
     }));
 
   const spells = character.spells
-    .filter((s) => s.prepared)
+    .filter((s) => s.prepared && !noSpells)
     .sort((a, b) => a.level - b.level)
     .map((spell): Slot => ({
       key: `spell:${spell.id}`,

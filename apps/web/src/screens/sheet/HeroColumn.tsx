@@ -1,10 +1,11 @@
 import React from 'react';
-import { CONDITIONS, armorClassOf, exhaustionLevel, formatModifier, initiativeModifier, speedHint, speedOf } from '@itd/game-logic';
+import { CONDITIONS, activeFormOf, armorClassOf, exhaustionLevel, formatModifier, initiativeModifier, speedHint, speedOf } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
 import { IconClose, IconCondition, IconEdit } from '../../ui/icons';
 import { IconButton, cx } from '../../ui/primitives';
+import { GameIcon } from '../../ui/GameIcon';
 import { SyncStatus } from '../../ui/SyncStatus';
 import { useSheetDialogs } from './dialogs/context';
 import { ResourceList, StatusCluster } from './parts/StatusCluster';
@@ -47,6 +48,8 @@ export const HeroColumn: React.FC<{
   const roll = useRolls();
   const dialogs = useSheetDialogs();
   const origin = describeOrigin(character);
+  // The beast the hero has turned into (Wild Shape), marked on the art.
+  const form = activeFormOf(character);
   const conditions = character.conditions.map((id) => {
     const name = CONDITIONS.find((c) => c.id === id)?.name ?? id;
     return id === 'exhaustion' ? `${name} ${exhaustionLevel(character)}` : name;
@@ -59,6 +62,11 @@ export const HeroColumn: React.FC<{
         {/* The portrait suits this wide band better than the tall full art: the face stays in frame. */}
         <CharacterArt source={character} kind="portrait" position="50% 12%" className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent" />
+        {form && (
+          <span className="ui-hud-portrait__form ui-hud-portrait__form--sheet" title={form.name}>
+            <GameIcon name={form.iconName} kind="ability" size={22} />
+          </span>
+        )}
         <button
           type="button"
           onClick={() => dialogs.open({ kind: 'profile' })}

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { spellBlocker } from '@itd/game-logic';
 import type { ActionType, Character } from '@itd/schema';
 import { ACTION_TYPES } from '../../ui/actionTypes';
 import { CatalogIcon, GameIcon, tileStyle } from '../../ui/GameIcon';
@@ -191,6 +192,7 @@ export const Hotbar: React.FC<{ character: Character; inCombat: boolean }> = ({ 
       .flat()
       .find((s) => s.key === tip.value.key);
 
+  const blocker = spellBlocker(character);
   // A hero without a spell keeps no empty magic panel; the others stay, empty or not, as places to fill.
   const groups = SLOT_GROUPS.filter((group) => group.id !== 'spells' || character.spells.length > 0);
 
@@ -222,7 +224,7 @@ export const Hotbar: React.FC<{ character: Character; inCombat: boolean }> = ({ 
             {slots[group.id].length === 0 && (
               <p className="flex h-full w-full flex-col max-lg:py-2 items-center justify-center gap-2 text-center text-xs text-ink-faint">
                 <CatalogIcon id={group.icon} size={28} className="opacity-40" />
-                {group.empty}
+                {group.id === 'spells' && blocker ? `Пока действует «${blocker.name}», заклинания не творятся` : group.empty}
               </p>
             )}
           </div>
