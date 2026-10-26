@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameIcon } from '../../ui/GameIcon';
+import { ImageSlot } from '../../ui/ImageSlot';
 import { rollAbilityScores } from '@itd/game-logic/dnd';
 import { Panel, cx } from '../../ui/primitives';
 import { LandedValue, RollingDice, useLanded } from '../../ui/RollingDie';
@@ -14,9 +15,10 @@ export const EmblemGrid: React.FC<{
   onSelect: (id: string) => void;
   columns: number;
 }> = ({ items, selected, onSelect, columns }) => (
+  // Below the desktop the columns follow the room instead, so a long name keeps the width it needs.
   <div
-    className="grid justify-center gap-1.5"
-    style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 7.5rem))` }}
+    className="grid justify-center gap-1.5 [grid-template-columns:var(--emblem-columns)] max-lg:[grid-template-columns:repeat(auto-fill,minmax(6.75rem,1fr))]"
+    style={{ '--emblem-columns': `repeat(${columns}, minmax(0, 7.5rem))` } as React.CSSProperties}
   >
     {items.map((item) => (
       <button
@@ -165,3 +167,49 @@ export const ThrownScore: React.FC<{
     </>
   );
 };
+
+/** The pictures a hero is made with: the full art and the portrait, by asset id. */
+interface HeroImages {
+  full?: string;
+  portrait?: string;
+}
+
+/**
+ * The last step of every way of making a hero: the name, then the two pictures side by side at one
+ * height (the full art the wider), each under its own caption. Quiet on purpose: the hero's look is in the pictures.
+ */
+export const IdentityStep: React.FC<{
+  creation: { name: string; setName: (name: string) => void; images: HeroImages; setImages: (images: HeroImages) => void };
+  placeholder: string;
+}> = ({ creation, placeholder }) => (
+  <div className="mx-auto flex h-full w-full max-w-xl flex-col justify-center gap-6 max-sm:justify-start">
+    <label className="flex flex-col gap-1.5">
+      <span className="ui-label !mb-0">Имя</span>
+      <input
+        value={creation.name}
+        onChange={(e) => creation.setName(e.target.value)}
+        placeholder={placeholder}
+        autoFocus
+        className="ui-input ui-display h-12 text-center text-2xl"
+      />
+    </label>
+    <div className="grid h-72 grid-cols-[3fr_2fr] gap-4 max-sm:h-60">
+      <ImageSlot
+        label="Полный арт"
+        kind="full"
+        hint="Во весь рост"
+        asset={creation.images.full}
+        onUploaded={(full) => creation.setImages({ ...creation.images, full })}
+        className="h-full"
+      />
+      <ImageSlot
+        label="Портрет"
+        kind="portrait"
+        hint="Лицо"
+        asset={creation.images.portrait}
+        onUploaded={(portrait) => creation.setImages({ ...creation.images, portrait })}
+        className="h-full"
+      />
+    </div>
+  </div>
+);

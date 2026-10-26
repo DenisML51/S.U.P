@@ -29,7 +29,7 @@ const Field: React.FC<{ label: string; value: string; onChange: (value: string) 
 
 /** Race and class of the player's own making, each with an optional subrace or path. */
 export const OriginStep: React.FC<{ creation: Creation }> = ({ creation }) => (
-  <div className="mx-auto grid max-w-4xl grid-cols-2 gap-x-10 [&>.ui-section+.ui-section]:mt-0">
+  <div className="mx-auto grid max-w-4xl grid-cols-2 gap-x-10 max-sm:grid-cols-1 sm:[&>.ui-section+.ui-section]:mt-0">
     <Section title="Происхождение" hint="Кто герой по крови. Подраса — если она есть в вашем мире.">
       <div className="space-y-4">
         <Field label="Раса" value={creation.race} onChange={creation.setRace} placeholder="Например, азари" />
@@ -111,7 +111,7 @@ export const ScoresStep: React.FC<{ creation: Creation }> = ({ creation }) => {
         {method === 'manual' && <span>Значения по договорённости с мастером, от 3 до 20.</span>}
       </div>
 
-      <div className="mt-5 grid w-full auto-rows-fr grid-cols-3 gap-3">
+      <div className="mt-5 grid w-full auto-rows-fr grid-cols-3 gap-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
         {ATTRIBUTES_LIST.map((attribute, index) => {
           const score = attributes[attribute.id] ?? 8;
           const skills = SKILLS_LIST.filter((s) => s.attribute === attribute.id);

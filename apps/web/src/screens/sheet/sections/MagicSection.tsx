@@ -301,7 +301,7 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   };
 
   return (
-    <div ref={ref} className="flex h-full gap-8">
+    <div ref={ref} className="flex h-full gap-8 max-lg:flex-col">
       <SectionList>
         <LevelPicker levels={levels} value={level} onChange={setLevel} />
 

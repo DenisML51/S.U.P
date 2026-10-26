@@ -11,6 +11,7 @@ import { Gate, type GatePhase } from './screens/auth/Gate';
 import { DraftScope, clearDraft, draftScope } from './screens/create/useDraftState';
 import { toast } from 'react-hot-toast';
 import { Toasts } from './ui/Toasts';
+import { ScrollCues } from './ui/ScrollCues';
 import { TableRollOverlay } from './screens/party/TableDice';
 import { preloadSystem, systemHeroScreen } from './systems';
 
@@ -176,6 +177,7 @@ const App: React.FC = () => {
       </Suspense>
       <TableRollOverlay />
       <Toasts />
+      <ScrollCues />
     </MotionConfig>
   );
 };

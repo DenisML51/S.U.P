@@ -27,7 +27,7 @@ export const ActionsSection: React.FC<{ character: Character }> = ({ character }
   const active = character.abilities.filter(isUsable);
 
   return (
-    <div className="flex h-full gap-8">
+    <div className="flex h-full gap-8 max-lg:flex-col">
       <SectionList maxWidth={1180}>
         <div className="ui-section__columns grid min-h-0 flex-1 grid-cols-2 gap-8">
           <div className="flex min-h-0 min-w-0 flex-col gap-5">

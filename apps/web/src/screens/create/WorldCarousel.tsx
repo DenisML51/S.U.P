@@ -8,7 +8,8 @@ import { WORLD_LORE } from './worldLore';
 
 type Origin = { x: number; y: number };
 
-const CARD_HEIGHT = 'min(50vh, 500px)';
+/** Scaled down on a phone by the stage around it (`--stage-fit`), so the lore below still fits. */
+const CARD_HEIGHT = 'calc(min(50vh, 500px) * var(--stage-fit, 1))';
 const COUNT = SETTINGS.length;
 
 const centreOf = (element: Element | null | undefined): Origin => {
@@ -97,7 +98,8 @@ export const WorldCarousel: React.FC<{
         </IconButton>
       </div>
 
-      <div className="mt-7 h-32 w-full max-w-xl">
+      {/* On a phone the card says the world's name and that is enough: no room for its story. */}
+      <div className="mt-7 h-32 w-full max-w-xl max-sm:hidden">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={focused}
@@ -112,7 +114,7 @@ export const WorldCarousel: React.FC<{
           </motion.div>
         </AnimatePresence>
       </div>
-      <div className="mt-4 flex h-11 items-center">
+      <div className="mt-4 flex h-11 items-center max-sm:mt-6">
         {chosen === focused ? (
           <span className="flex items-center gap-2 text-frame-bright">
             <IconCheck width={16} height={16} />

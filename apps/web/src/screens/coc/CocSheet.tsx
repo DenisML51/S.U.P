@@ -23,6 +23,7 @@ import { HeroExits } from '../sheet/HeroExits';
 import { Button, IconButton, cx } from '../../ui/primitives';
 import { useAtLeast } from '../../ui/useBreakpoint';
 import { NumberField } from '../../ui/forms';
+import { useToastOffset } from '../../ui/Toasts';
 import {
   IconAttacks,
   IconAttributes,
@@ -147,7 +148,7 @@ const InvestigatorColumn: React.FC<{
       <div className="ui-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-3">
         <FollowUpBanners />
         <Track label="Хиты" value={character.currentHP} max={character.maxHP} tone="hp" />
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 max-lg:[&>button]:flex-1">
           <NumberField
             label="Сколько"
             value={amount}
@@ -170,7 +171,7 @@ const InvestigatorColumn: React.FC<{
             Лечение
           </Button>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 max-lg:[&>button]:flex-1">
           <span className="text-sm text-ink-muted">Броня</span>
           <NumberField
             label="Броня"
@@ -413,6 +414,8 @@ const NarrowLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
   const { close } = useCocSelection();
   const [section, setSection] = useState<CocSection>('investigator');
   const [drawer, setDrawer] = useState(false);
+  // Messages rise above the tabs along the bottom.
+  useToastOffset('calc(4.75rem + env(safe-area-inset-bottom))');
   const stage = madnessStage(character);
   const atTable = useNavStore((s) => s.place.screen === 'party');
   const coc = character.coc!;
@@ -458,11 +461,14 @@ const NarrowLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
               {character.name}
             </span>
             <span className="flex gap-3 overflow-hidden whitespace-nowrap text-xs tabular-nums text-ink-muted">
-              <span>
-                хиты <b className="font-normal text-hp">{character.currentHP}</b>/{character.maxHP}
+              {/* On a phone the colours say which is which: the words would push the sanity out. */}
+              <span title="Хиты">
+                <span className="max-sm:hidden">хиты </span>
+                <b className="font-normal text-hp">{character.currentHP}</b>/{character.maxHP}
               </span>
-              <span>
-                рассудок <b className="font-normal text-sanity">{character.sanity}</b>
+              <span title="Рассудок">
+                <span className="max-sm:hidden">рассудок </span>
+                <b className="font-normal text-sanity">{character.sanity}</b>/{maxSanityOf(character)}
               </span>
               <span className="max-sm:hidden">
                 магия <b className="font-normal text-accent">{coc.magicPoints}</b>/{maxMP}
@@ -498,7 +504,7 @@ const NarrowLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
         </CocDetailsLayout>
       </main>
 
-      <nav className="ui-rail coc-tabbar grid shrink-0 grid-cols-6" aria-label="Разделы листа">
+      <nav className="ui-rail ui-tabbar grid shrink-0 grid-cols-6" aria-label="Разделы листа">
         {SECTIONS.map(({ id, label, Icon }) => (
           <RailButton
             key={id}

@@ -12,7 +12,10 @@ import { useTurnLock } from '../party/useTurnLock';
 import { useFollowTurn } from '../party/useFollowTurn';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { Button, IconButton } from '../../ui/primitives';
-import { IconDice, IconExit, IconPrev, IconSettings } from '../../ui/icons';
+import { IconClose, IconDice, IconExit, IconHistory, IconPrev, IconSettings } from '../../ui/icons';
+import { Drawer } from '../../ui/Drawer';
+import { useToastOffset } from '../../ui/Toasts';
+import { useAtLeast } from '../../ui/useBreakpoint';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { settingOf } from '../../ui/theme/settings';
 import { SheetDialogsProvider, useSheetDialogs } from '../sheet/dialogs/context';
@@ -101,6 +104,8 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
 
   useFollowTurn(character.id);
   const locked = useCharacterStore((s) => s.turnLock) !== null;
+  // Below the desktop width the HUD's floating panels go one under another.
+  const desktop = useAtLeast('desktop');
 
   const start = () => {
     const initiative = roll.check('Инициатива', initiativeModifier(character), { animated: true });
@@ -115,6 +120,93 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
     updateCharacter((doc) => resetTurn(doc), { log: { message: 'Бой окончен', type: 'other' } });
     setCombat(IDLE);
   };
+
+  // The fight's state and its controls: the party's turn order at a table, the hero's own rounds alone.
+  const fight = party ? (
+    <PartyCombatBar
+      party={party}
+      characterId={character.id}
+      onMyTurn={() =>
+        updateCharacter((doc) => resetTurn(doc), { log: { message: 'Ваш ход', type: 'other' }, undoable: false })
+      }
+    />
+  ) : (
+    <AnimatePresence mode="wait" initial={false}>
+      {combat.inCombat ? (
+        <motion.div
+          key="fight"
+          className="flex flex-wrap items-center justify-center gap-3"
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.2 }}
+        >
+          <span className="ui-display text-lg text-frame-bright">Раунд {combat.round}</span>
+          <Button variant="primary" size="md" onClick={nextTurn}>
+            Следующий ход
+          </Button>
+          <Button variant="ghost" size="sm" onClick={finish}>
+            Выйти из боя
+          </Button>
+        </motion.div>
+      ) : (
+        <motion.div
+          key="calm"
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Button variant="primary" size="md" onClick={start} icon={<IconDice width={18} height={18} />}>
+            Начать бой · инициатива
+          </Button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+  // The master runs the table: one click back to it from any of their heroes' fights.
+  const toTable = party?.role === 'master' && (
+    <IconButton
+      label="Стол партии"
+      size={desktop ? 36 : 40}
+      onClick={() => {
+        goToCharacterList();
+        go({ screen: 'party', partyId: party.id });
+      }}
+    >
+      <IconExit width={20} height={20} />
+    </IconButton>
+  );
+  const stats = (
+    <div className="flex flex-wrap items-stretch justify-center gap-3">
+      <ResourceStrip character={character} />
+      <CombatStats
+        character={character}
+        initiative={party ? (partyInitiative ?? null) : combat.inCombat ? combat.initiative : null}
+        onInitiative={party ? undefined : start}
+      />
+    </div>
+  );
+  const hotbar = (
+    <div className={locked ? 'ui-turn-locked' : undefined}>
+      <Hotbar character={character} inCombat={inCombat} />
+    </div>
+  );
+
+  if (!desktop)
+    return (
+      <NarrowHud
+        character={character}
+        fight={fight}
+        toTable={toTable}
+        chat={party && <CombatChat party={party} userId={userId} />}
+        stats={stats}
+        hotbar={hotbar}
+        onSheet={() => setViewMode('tabs')}
+        onDice={() => dialogs.open({ kind: 'dice' })}
+        onOpenSettings={onOpenSettings}
+      />
+    );
 
   return (
     <>
@@ -136,69 +228,10 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
           <div className="ui-display truncate text-xl leading-tight text-ink">{character.name}</div>
           <div className="text-xs text-ink-faint">{character.level} уровень</div>
         </div>
-        <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2">
-          {party ? (
-            <PartyCombatBar
-              party={party}
-              characterId={character.id}
-              onMyTurn={() =>
-                updateCharacter((doc) => resetTurn(doc), { log: { message: 'Ваш ход', type: 'other' }, undoable: false })
-              }
-            />
-          ) : (
-            <AnimatePresence mode="wait" initial={false}>
-              {combat.inCombat ? (
-                <motion.div
-                  key="fight"
-                  className="flex items-center gap-3"
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <span className="ui-display text-lg text-frame-bright">Раунд {combat.round}</span>
-                  <Button variant="primary" size="md" onClick={nextTurn}>
-                    Следующий ход
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={finish}>
-                    Выйти из боя
-                  </Button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="calm"
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={start}
-                    icon={<IconDice width={18} height={18} />}
-                  >
-                    Начать бой · инициатива
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
-        </div>
+        <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2">{fight}</div>
         <div className="ml-auto flex items-center gap-1">
           <SyncStatus className="mr-2" />
-          {/* The master runs the table: one click back to it from any of their heroes' fights. */}
-          {party?.role === 'master' && (
-            <IconButton
-              label="Стол партии"
-              onClick={() => {
-                goToCharacterList();
-                go({ screen: 'party', partyId: party.id });
-              }}
-            >
-              <IconExit width={20} height={20} />
-            </IconButton>
-          )}
+          {toTable}
           <IconButton label="Кубики" onClick={() => dialogs.open({ kind: 'dice' })}>
             <IconDice width={20} height={20} />
           </IconButton>
@@ -242,21 +275,94 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
           <Portrait character={character} />
         </div>
         <div className="flex min-w-0 max-w-[76rem] flex-1 flex-col gap-2.5">
-          <div className="flex flex-wrap items-stretch justify-center gap-3">
-            <ResourceStrip character={character} />
-            <CombatStats
-              character={character}
-              initiative={party ? (partyInitiative ?? null) : combat.inCombat ? combat.initiative : null}
-              onInitiative={party ? undefined : start}
-            />
-          </div>
-          <div className={locked ? 'ui-turn-locked' : undefined}>
-            <Hotbar character={character} inCombat={inCombat} />
-          </div>
+          {stats}
+          {hotbar}
           <ExperienceBar character={character} />
         </div>
       </motion.div>
     </>
+  );
+};
+
+/**
+ * The fight on a phone or a tablet: the same pieces one under another, the page scrolling. A
+ * header keeps the ways out and the tools; the fight's controls stand under it; the log of what
+ * happened slides out as a drawer.
+ */
+const NarrowHud: React.FC<{
+  character: Character;
+  fight: React.ReactNode;
+  toTable: React.ReactNode;
+  chat: React.ReactNode;
+  stats: React.ReactNode;
+  hotbar: React.ReactNode;
+  onSheet: () => void;
+  onDice: () => void;
+  onOpenSettings: () => void;
+}> = ({ character, fight, toTable, chat, stats, hotbar, onSheet, onDice, onOpenSettings }) => {
+  const [log, setLog] = useState(false);
+  return (
+    <motion.div
+      className="ui-touch relative z-10 flex h-full flex-col"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={ENTER}
+    >
+      <header className="flex shrink-0 items-center gap-1 border-b border-line/70 bg-bg/60 px-4 py-1.5 backdrop-blur-sm">
+        <IconButton label="К листу" size={40} onClick={onSheet} className="-ml-2 shrink-0">
+          <IconPrev width={20} height={20} />
+        </IconButton>
+        <div className="min-w-0 flex-1">
+          <div className="ui-display truncate text-lg leading-tight text-ink">{character.name}</div>
+          <div className="text-xs text-ink-faint">{character.level} уровень</div>
+        </div>
+        <IconButton label="Журнал боя" size={40} onClick={() => setLog(true)} className="shrink-0">
+          <IconHistory width={20} height={20} />
+        </IconButton>
+        {toTable}
+        <IconButton label="Кубики" size={40} onClick={onDice} className="shrink-0">
+          <IconDice width={20} height={20} />
+        </IconButton>
+        <IconButton label="Настройки" size={40} onClick={onOpenSettings} className="-mr-2 shrink-0">
+          <IconSettings width={20} height={20} />
+        </IconButton>
+      </header>
+
+      <main className="ui-flow ui-scroll ui-scroll--bare min-h-0 flex-1 overflow-y-auto px-4 pb-8 pt-4">
+        <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-4">
+          <div className="flex justify-center">{fight}</div>
+          {chat}
+          {/* The hero: sanity and health on either side of the face, the turn's actions over it. */}
+          <VitalBars
+            character={character}
+            between={
+              <div className="flex flex-col items-center gap-2">
+                <ActionTokens character={character} />
+                <Portrait character={character} />
+              </div>
+            }
+          />
+          {stats}
+          {hotbar}
+          <ExperienceBar character={character} />
+        </div>
+      </main>
+
+      <Drawer open={log} onClose={() => setLog(false)} label="Журнал боя" side="right">
+        <div className="flex shrink-0 items-center justify-between border-b border-line/70 px-4 py-2">
+          <span className="ui-display text-lg text-ink">Журнал боя</span>
+          <IconButton label="Свернуть" size={40} onClick={() => setLog(false)} className="-mr-2">
+            <IconClose width={18} height={18} />
+          </IconButton>
+        </div>
+        <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-4 py-3">
+          <CombatLog character={character} />
+        </div>
+        <div className="shrink-0 border-t border-line/70 px-4 py-2">
+          <SyncStatus />
+        </div>
+      </Drawer>
+    </motion.div>
   );
 };
 
@@ -272,19 +378,14 @@ export const CombatScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenS
   const setting = listed && atTable ? listed.setting : settingOf(character);
   useDocumentSetting(setting);
 
-  // Messages rise above the combat bar instead of covering it.
-  useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty('--toast-offset', '22rem');
-    return () => {
-      root.style.removeProperty('--toast-offset');
-    };
-  }, []);
+  // Messages rise above the combat bar instead of covering it; a narrow screen has the bar in the
+  // page's flow, not pinned to the bottom.
+  useToastOffset('22rem', useAtLeast('desktop'));
   if (!character) return null;
 
   return (
     <SheetDialogsProvider>
-      <SettingScope setting={setting} className="relative h-screen overflow-clip bg-bg">
+      <SettingScope setting={setting} className="relative h-screen overflow-clip bg-bg max-lg:h-dvh">
         {/* The setting's atmosphere (the star atlas of high fantasy…) behind the bar, not the hero's art. */}
         <SettingBackdrop setting={setting} strength={0.85} frame={false} />
         <CombatHud character={character} onOpenSettings={onOpenSettings} />

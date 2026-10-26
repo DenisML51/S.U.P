@@ -88,8 +88,8 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
 
         <section className="mt-6">
           <h3 className="ui-label">Синхронизация</h3>
-          <div className="flex items-center justify-between gap-4">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="min-w-0">
               <div className={cx('text-sm', line.tone)}>{line.text}</div>
               <div className="text-xs text-ink-faint">последняя: {time(sync.lastSyncedAt)}</div>
             </div>
@@ -120,22 +120,14 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
             checked={settings.notifications}
             onChange={(notifications) => set({ notifications })}
             label="Уведомления"
-            hint="Сообщения об изменениях с кнопкой «Отменить», о тратах ресурсов и импорте героев"
           />
           <Switch
             checked={settings.fullscreen}
             onChange={(fullscreen) => set({ fullscreen })}
             label="Полный экран"
-            hint="Лист рассчитан на весь экран без прокрутки"
           />
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="text-ink">Эффекты безумия</div>
-              <div className="text-sm text-ink-faint">
-                Как безумие сыщика «Зова Ктулху» меняет экран. Спокойно — без мерцания, вспышек и
-                качки; при системной настройке «уменьшить движение» эффекты всегда спокойные
-              </div>
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="min-w-0 text-ink">Эффекты безумия</div>
             <Segmented<MadnessEffects>
               label="Эффекты безумия"
               value={settings.madnessEffects}

@@ -3,7 +3,8 @@ import { CONDITIONS, armorClassOf, formatModifier, initiativeModifier } from '@i
 import type { Character } from '@itd/schema';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
-import { IconCondition, IconEdit } from '../../ui/icons';
+import { IconClose, IconCondition, IconEdit } from '../../ui/icons';
+import { IconButton, cx } from '../../ui/primitives';
 import { SyncStatus } from '../../ui/SyncStatus';
 import { useSheetDialogs } from './dialogs/context';
 import { ResourceList, StatusCluster } from './parts/StatusCluster';
@@ -34,14 +35,21 @@ const StatCell: React.FC<{ label: string; value: React.ReactNode; onClick?: () =
  * Left column of the sheet, visible in every section: who the hero is and what changes from minute
  * to minute at the table — health, sanity, the core numbers, resources, conditions.
  */
-export const HeroColumn: React.FC<{ character: Character; onShowConditions: () => void }> = ({ character, onShowConditions }) => {
+export const HeroColumn: React.FC<{
+  character: Character;
+  onShowConditions: () => void;
+  /** Its width and edge: the fixed column beside the section by default, the drawer's own on a narrow screen. */
+  className?: string;
+  /** In a drawer: the button that puts it away. */
+  onClose?: () => void;
+}> = ({ character, onShowConditions, className = 'w-[340px] border-r', onClose }) => {
   const roll = useRolls();
   const dialogs = useSheetDialogs();
   const origin = describeOrigin(character);
   const conditions = character.conditions.map((id) => CONDITIONS.find((c) => c.id === id)?.name ?? id);
 
   return (
-    <aside className="flex h-full w-[340px] shrink-0 flex-col border-r border-line/70 bg-surface/40">
+    <aside className={cx('flex h-full shrink-0 flex-col border-line/70 bg-surface/40', className)}>
       {/* Art with the name over its lower edge */}
       <div className="relative h-[210px] shrink-0 overflow-hidden">
         {/* The portrait suits this wide band better than the tall full art: the face stays in frame. */}
@@ -53,7 +61,10 @@ export const HeroColumn: React.FC<{ character: Character; onShowConditions: () =
           className="group absolute inset-0 text-left"
           title="Профиль героя: имя, происхождение, сеттинг, изображения"
         >
-          <IconEdit width={16} height={16} className="absolute right-4 top-4 text-ink opacity-0 transition-opacity group-hover:opacity-70" />
+          {/* In the drawer its corner holds the close button. */}
+          {!onClose && (
+            <IconEdit width={16} height={16} className="absolute right-4 top-4 text-ink opacity-0 transition-opacity group-hover:opacity-70" />
+          )}
           <span className="absolute inset-x-5 bottom-3">
             <span className="ui-display block text-[1.7rem] leading-tight text-ink" role="heading" aria-level={1}>
               {character.name}
@@ -61,6 +72,11 @@ export const HeroColumn: React.FC<{ character: Character; onShowConditions: () =
             <span className="block truncate text-sm text-ink-muted">{[origin.race, origin.calling].filter(Boolean).join(' · ')}</span>
           </span>
         </button>
+        {onClose && (
+          <IconButton label="Свернуть" size={40} onClick={onClose} className="absolute right-3 top-3 bg-bg/60">
+            <IconClose width={18} height={18} />
+          </IconButton>
+        )}
       </div>
 
       <div className="ui-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-3">

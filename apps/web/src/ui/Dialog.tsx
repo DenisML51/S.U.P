@@ -194,12 +194,15 @@ export const Dialog: React.FC<DialogProps> = ({
                       <Rule className="ui-dialog__rule mt-3" />
                     </header>
                     {children && (
-                      <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 pb-5">{children}</div>
+                      <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 pb-5 max-sm:px-4">{children}</div>
                     )}
                     {(footer || footerStart) && (
-                      <footer className="ui-dialog__foot flex items-center gap-3 px-6 py-4">
+                      // On a phone the buttons share the width; what stands at the start goes on its own line.
+                      <footer className="ui-dialog__foot flex items-center gap-3 px-6 py-4 max-sm:flex-wrap max-sm:px-4 max-sm:py-3">
                         {footerStart}
-                        <div className="ml-auto flex gap-3">{footer}</div>
+                        <div className="ml-auto flex gap-3 max-sm:min-w-0 max-sm:flex-1 max-sm:justify-end max-sm:[&>*]:min-w-0 max-sm:[&>*]:flex-1">
+                          {footer}
+                        </div>
                       </footer>
                     )}
                   </motion.div>

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAtLeast } from '../../ui/useBreakpoint';
 import { useSheetDialogs } from './dialogs/context';
 import { EntryPane } from './EntryPane';
 
@@ -34,9 +35,13 @@ export const SectionAside: React.FC<{ width?: number; children?: React.ReactNode
   children,
 }) => {
   const { selected, clearSelection } = useSheetDialogs();
+  const desktop = useAtLeast('desktop');
 
   // The card belongs to this section's list: leaving the section closes it.
   useEffect(() => clearSelection, [clearSelection]);
+
+  // Below the desktop the information goes under the list across the width (the card is a dialog there).
+  if (!desktop) return children ? <aside className="flex flex-col gap-5">{children}</aside> : null;
 
   const shown = selected ? CARD_WIDTH : width;
   return (

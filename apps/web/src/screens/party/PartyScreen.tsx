@@ -25,9 +25,12 @@ import {
   IconDice,
   IconInitiative,
   IconPrev,
+  IconQuill,
   IconSettings,
   IconSync,
 } from '../../ui/icons';
+import { Drawer } from '../../ui/Drawer';
+import { useAtLeast } from '../../ui/useBreakpoint';
 import { Button, IconButton, Panel, Tabs, cx } from '../../ui/primitives';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
@@ -127,6 +130,10 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
   const close = () => setOverlay(null);
   const combat = useTableCombat(party);
   const isMaster = combat.isMaster;
+  // Below the desktop width the talk and the seats leave the table's side for a drawer.
+  const desktop = useAtLeast('desktop');
+  const [talkOpen, setTalkOpen] = useState(false);
+  const unread = useChatStore((s) => s.unread[party.id] ?? 0);
 
   const myHeroes = party.heroes.filter((hero) => hero.ownerId === userId);
   // The master's own heroes in the fight, in the order of turns: the master plays them from the combat
@@ -146,33 +153,53 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
     setOverlay({ kind: 'pick-hero' });
   }, [isMaster, myHeroes.length]);
 
+  const myHero = (
+    <div className="flex h-[20rem] shrink-0 flex-col">
+      <MyHero
+        hero={myHeroes[0]}
+        inCombat={party.combat !== null}
+        onOpen={(view) =>
+          myHeroes[0] && void loadCharacter(myHeroes[0].characterId, view === 'combat' ? 'hotbar' : 'tabs')
+        }
+        onBring={() => setOverlay({ kind: 'pick-hero' })}
+      />
+    </div>
+  );
+
   // A hero begun for this table and left unfinished is picked up where it was.
   const createHero = () => {
     startCreation({ world: party.setting, partyId: party.id, rules: party.rules ?? undefined });
   };
 
   return (
-    <SettingScope setting={party.setting} className="ui-morph relative h-screen overflow-clip bg-bg">
+    <SettingScope setting={party.setting} className="ui-morph relative h-screen overflow-clip bg-bg max-lg:h-dvh">
       {/* The table stands in its world: the setting's own backdrop, as on the hero's sheet, but without
           the screen-corner flourishes — the table's panels frame it already. */}
       <SettingBackdrop setting={party.setting} strength={0.7} frame={false} />
 
-      <div className="relative z-10 flex h-full flex-col gap-5 px-14 pb-8 pt-7">
+      <div className="relative z-10 flex h-full flex-col gap-5 px-14 pb-8 pt-7 max-lg:gap-3 max-lg:px-6 max-lg:pb-0 max-lg:pt-3 max-sm:px-4">
         <motion.header
-          className="flex items-center gap-4"
+          className="flex items-center gap-4 max-sm:gap-2"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0, transition: { ...ENTER, delay: 0.05 } }}
           exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }}
         >
-          <Button variant="ghost" size="sm" icon={<IconPrev width={16} height={16} />} onClick={onHome}>
-            Главная
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<IconPrev width={16} height={16} />}
+            onClick={onHome}
+            aria-label="Главная"
+            className="shrink-0"
+          >
+            <span className="max-sm:hidden">Главная</span>
           </Button>
-          <span className="text-[11px] uppercase tracking-[0.22em] text-ink-faint">
+          <span className="min-w-0 truncate text-[11px] uppercase tracking-[0.22em] text-ink-faint max-sm:hidden">
             {SETTING_INFO[party.setting].label} ·{' '}
             {isMaster ? 'вы мастер' : `мастер ${party.members[0]?.displayName ?? ''}`}
           </span>
-          <div className="ml-auto flex items-center gap-1">
-            <SyncStatus className="mr-2" />
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <SyncStatus className="mr-2 max-sm:hidden" />
             {isMaster &&
               (party.sessionStartedAt ? (
                 <Button
@@ -181,7 +208,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                   className="mr-2"
                   onClick={() => setOverlay({ kind: 'end-session' })}
                 >
-                  Завершить сессию
+                  Завершить<span className="max-sm:hidden"> сессию</span>
                 </Button>
               ) : (
                 <Button
@@ -190,7 +217,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                   className="mr-2"
                   onClick={() => void store.startSession(party.id)}
                 >
-                  Начать сессию
+                  Начать<span className="max-sm:hidden"> сессию</span>
                 </Button>
               ))}
             {isMaster && party.sessionStartedAt && (
@@ -210,15 +237,29 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                 <IconExit width={20} height={20} />
               </IconButton>
             )}
+            {!desktop && (
+              <IconButton
+                label={unread > 0 ? `Чат и места за столом: непрочитанных ${unread}` : 'Чат и места за столом'}
+                onClick={() => setTalkOpen(true)}
+                aria-expanded={talkOpen}
+                className="relative"
+              >
+                <IconQuill width={20} height={20} />
+                {unread > 0 && (
+                  <span className="ui-combat-chat__badge ui-numeric absolute -right-1 -top-1">{unread}</span>
+                )}
+              </IconButton>
+            )}
             <IconButton label="Настройки" onClick={onOpenSettings}>
               <IconSettings width={20} height={20} />
             </IconButton>
           </div>
         </motion.header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_20rem] gap-6">
+        <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_20rem] gap-6 max-lg:grid-cols-1">
+          {/* Below the desktop the table runs down the page and scrolls as a whole. */}
           <motion.main
-            className="flex min-h-0 min-w-0 flex-col gap-5"
+            className="ui-table-main ui-scroll flex min-h-0 min-w-0 flex-col gap-5 max-lg:gap-3 max-lg:overflow-y-auto max-lg:pb-6"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0, transition: { ...ENTER, delay: 0.1 } }}
             exit={{ opacity: 0, y: 14, transition: { duration: 0.2 } }}
@@ -285,10 +326,15 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                 onNpc={(npc, disposition) => setOverlay({ kind: 'npc', npc, disposition })}
               />
             ) : (
-              <Companions party={party} userId={userId} />
+              <>
+                {/* On a narrow screen the player's own hero comes first, before the others. */}
+                {!desktop && myHero}
+                <Companions party={party} userId={userId} />
+              </>
             )}
           </motion.main>
 
+          {desktop && (
           <motion.aside
             className="flex min-h-0 flex-col gap-5"
             initial={{ opacity: 0, x: 16 }}
@@ -304,22 +350,30 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
               onKick={(member) => setOverlay({ kind: 'kick', ...member })}
             />
             {/* A player's own hero waits in the corner: the way into its sheet and its fight. */}
-            {!isMaster && (
-              <div className="flex h-[20rem] shrink-0 flex-col">
-                <MyHero
-                  hero={myHeroes[0]}
-                  inCombat={party.combat !== null}
-                  onOpen={(view) =>
-                    myHeroes[0] &&
-                    void loadCharacter(myHeroes[0].characterId, view === 'combat' ? 'hotbar' : 'tabs')
-                  }
-                  onBring={() => setOverlay({ kind: 'pick-hero' })}
-                />
-              </div>
-            )}
+            {!isMaster && myHero}
           </motion.aside>
+          )}
         </div>
       </div>
+
+      {!desktop && (
+        <Drawer open={talkOpen} onClose={() => setTalkOpen(false)} label="Стол" side="right">
+          <div className="ui-touch relative flex min-h-0 flex-1 flex-col gap-4 p-4 pt-14">
+            <IconButton
+              label="Свернуть"
+              size={40}
+              onClick={() => setTalkOpen(false)}
+              className="absolute right-2 top-2"
+            >
+              <IconClose width={18} height={18} />
+            </IconButton>
+            {isMaster && party.inviteCode && (
+              <InvitePanel code={party.inviteCode} onRenew={() => setOverlay({ kind: 'new-code' })} />
+            )}
+            <TalkPanel party={party} userId={userId} onKick={(member) => setOverlay({ kind: 'kick', ...member })} />
+          </div>
+        </Drawer>
+      )}
 
       {/* --- Windows -------------------------------------------------------------------------- */}
       <InitiativeDialog
@@ -466,17 +520,23 @@ const Banner: React.FC<{
         aria-label="Открыть летопись партии"
         title="Летопись"
       />
-      <div className="pointer-events-none relative flex max-w-[44rem] flex-col justify-end gap-2 px-8 py-6">
+      {/* On a phone the master's action takes a line of its own at the foot of the cover, under the name. */}
+      <div
+        className={cx(
+          'pointer-events-none relative flex max-w-[44rem] flex-col justify-end gap-2 px-8 py-6 max-sm:px-4 max-sm:py-4',
+          !!action && 'max-sm:pb-20',
+        )}
+      >
         <h1
           className={cx(
             'ui-display ui-title leading-[1.05] text-ink transition-all',
-            compact ? 'text-[2rem]' : 'text-[2.8rem]',
+            compact ? 'text-[2rem] max-sm:text-[1.6rem]' : 'text-[2.8rem] max-sm:text-[2rem]',
           )}
         >
           {party.name}
         </h1>
         {!compact && party.description && (
-          <p className="line-clamp-3 whitespace-pre-line pr-2 text-[15px] leading-relaxed text-ink-muted">
+          <p className="line-clamp-3 whitespace-pre-line pr-2 text-[15px] leading-relaxed text-ink-muted max-sm:line-clamp-2 max-sm:text-sm">
             {party.description}
           </p>
         )}
@@ -487,7 +547,9 @@ const Banner: React.FC<{
           </span>
         )}
       </div>
-      {action && <div className="absolute bottom-6 right-6">{action}</div>}
+      {action && <div className="absolute bottom-6 right-6 max-sm:bottom-4 max-sm:left-4 max-sm:right-4 max-sm:[&>*]:block max-sm:[&>*]:w-full">
+          {action}
+        </div>}
     </motion.div>
   </Panel>
 );
@@ -551,8 +613,8 @@ const CombatPanel: React.FC<{
   const coc = isCocFight(party);
 
   return (
-    <Panel className="px-6 pb-4 pt-4">
-      <div className="flex items-center gap-4">
+    <Panel className="px-6 pb-4 pt-4 max-sm:px-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <div className="min-w-0">
           <div className="ui-display ui-title text-[1.35rem] leading-none text-frame-bright">
             {rolling ? (coc ? 'Порядок хода' : 'Бросок инициативы') : `Раунд ${fight.round}`}
@@ -569,7 +631,7 @@ const CombatPanel: React.FC<{
                 : 'Очередь пуста'}
           </div>
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:w-full">
           {seat.isMaster && rolling && npcsWaiting && (
             <Button
               variant="secondary"

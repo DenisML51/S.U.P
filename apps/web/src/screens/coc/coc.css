@@ -891,25 +891,6 @@
  * presses grows to 40px. The desktop above it is untouched.
  */
 
-/* The rail's places laid along the bottom: the mark of the open one runs along their top edge. */
-.coc-tabbar {
-  border-right: 0;
-  border-top: 1px solid rgb(var(--c-line) / 0.7);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-.coc-tabbar .ui-rail__item {
-  min-height: 3.5rem;
-  justify-content: center;
-}
-.coc-tabbar .ui-rail__item .ui-rail__mark {
-  top: 0;
-  bottom: auto;
-  left: 25%;
-  right: 25%;
-  width: auto !important;
-  height: 2px;
-}
-
 @media (max-width: 1023.98px) {
   .coc-skills--wide {
     columns: 2;
@@ -983,5 +964,13 @@
   }
   .coc-skill .coc-info {
     opacity: 0.6;
+  }
+}
+
+/* In a phone's grid of buttons the note of the next roll takes a row of its own, after them. */
+@media (max-width: 639.98px) {
+  .coc-sheet .max-sm\:grid > .coc-mods__note {
+    grid-column: 1 / -1;
+    order: 2;
   }
 }

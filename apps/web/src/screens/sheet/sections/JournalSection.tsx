@@ -60,7 +60,7 @@ export const JournalSection: React.FC<{ character: Character }> = ({ character }
 
   return (
     <div className="flex flex-col gap-3">
-      <nav className="flex gap-4" aria-label="Тип записей">
+      <nav className="flex flex-wrap gap-x-4 gap-y-1.5" aria-label="Тип записей">
         {FILTERS.map((option) => (
           <button
             key={option.id}

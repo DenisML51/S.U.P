@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { resolveValue, toast, useToaster, type Toast } from 'react-hot-toast';
 import { cx } from './primitives';
@@ -12,6 +12,21 @@ const ICON: Partial<Record<Toast['type'], React.ReactNode>> = {
   error: <IconWarning width={18} height={18} className="shrink-0 text-danger" />,
   loading: <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-frame/30 border-t-frame-bright" />,
 };
+
+/**
+ * Lifts the messages by `offset` (a CSS length) while the calling screen is shown and `active`, so
+ * they rise above a bar along the bottom instead of covering it.
+ */
+export function useToastOffset(offset: string, active = true): void {
+  useEffect(() => {
+    if (!active) return;
+    const root = document.documentElement;
+    root.style.setProperty('--toast-offset', offset);
+    return () => {
+      root.style.removeProperty('--toast-offset');
+    };
+  }, [offset, active]);
+}
 
 /**
  * Messages of the app (rolls, saves, errors) as plates in the language of the current setting.

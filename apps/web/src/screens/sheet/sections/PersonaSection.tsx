@@ -99,7 +99,7 @@ export const PersonaSection: React.FC<{ character: Character }> = ({ character }
   const groups = useFeatureGroups(character);
 
   return (
-    <div className="flex h-full gap-8">
+    <div className="flex h-full gap-8 max-lg:flex-col">
       {/* The pages grow down with their text; only a very long story scrolls the pages as a whole.
           The scroller keeps a margin round them, so the leaves heaped under each page are not cut.
           Where the room is narrow (a small screen, or an entry's card open beside), the pages

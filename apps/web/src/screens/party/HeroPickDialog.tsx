@@ -77,7 +77,7 @@ export const HeroPickDialog: React.FC<{
         </Button>
       }
     >
-      <div className="grid grid-cols-6 gap-3 pb-1 pt-2">
+      <div className="grid grid-cols-6 gap-3 pb-1 pt-2 max-lg:grid-cols-4 max-sm:grid-cols-2">
         <Panel
           as="button"
           interactive

@@ -35,14 +35,14 @@ const AmountBar: React.FC<{
   };
   return (
     <form
-      className="flex gap-2"
+      className="flex gap-2 max-sm:flex-wrap"
       onSubmit={(e) => {
         e.preventDefault();
         apply(0);
       }}
     >
       <input
-        className="ui-input w-24 text-center text-lg tabular-nums"
+        className="ui-input w-24 text-center text-lg tabular-nums max-sm:w-full"
         inputMode="numeric"
         placeholder="0"
         aria-label="Сколько"

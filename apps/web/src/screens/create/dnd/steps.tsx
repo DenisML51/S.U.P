@@ -21,14 +21,13 @@ import {
 } from '@itd/game-logic/dnd';
 import type { DndBuild } from '@itd/schema';
 import { GameIcon } from '../../../ui/GameIcon';
-import { ImageSlot } from '../../../ui/ImageSlot';
 import { NumberField, Segmented } from '../../../ui/forms';
 import { Facts, Section } from '../../../ui/Section';
 import { Button, IconButton, cx } from '../../../ui/primitives';
 import { IconCoins, IconDice, IconMinus, IconPlus } from '../../../ui/icons';
 import { ChoiceField } from '../../progression/ChoiceField';
 import { CLASS_SOURCES, LevelPlanView, planIssues } from '../../progression/LevelPlanView';
-import { EmblemGrid, Picked, ScoreCard, ThrownScore, throwAbilityScores } from '../kit';
+import { EmblemGrid, IdentityStep as SharedIdentityStep, Picked, ScoreCard, ThrownScore, throwAbilityScores } from '../kit';
 import type { DndCreation } from './useDndCreation';
 
 const skillName = (id: string) => SKILLS_LIST.find((s) => s.id === id)?.name ?? id;
@@ -118,7 +117,7 @@ const BackgroundBonuses: React.FC<{ build: DndBuild; onChange: (build: DndBuild)
         />
       }
     >
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 max-sm:grid-cols-1">
         {background.abilities.map((attribute) => (
           <button
             key={attribute}
@@ -310,7 +309,7 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
           {rolls ? 'Перебросить' : 'Бросить'}
         </Button>
       )}
-      <div className="mt-6 grid w-full grid-cols-6 gap-3">
+      <div className="mt-6 grid w-full grid-cols-6 gap-3 max-lg:grid-cols-3 max-sm:grid-cols-2">
         {ATTRIBUTES_LIST.map((attribute, index) => {
           const base = scores[attribute.id] ?? 8;
           const bonus = build.backgroundBonuses[attribute.id] ?? 0;
@@ -370,7 +369,7 @@ export const ProgressionStep: React.FC<{ creation: DndCreation }> = ({ creation 
   const spellsShown = shown === 'spells' && !!prepared;
   const level = spellsShown ? build.level : Math.min(shown === 'spells' ? 1 : shown, build.level);
   return (
-    <div className="grid grid-cols-[11rem_minmax(0,1fr)] gap-6">
+    <div className="grid grid-cols-[11rem_minmax(0,1fr)] gap-6 max-sm:grid-cols-1">
       <div className="flex min-h-0 flex-col">
         <label className="ui-label">Начальный уровень</label>
         <NumberField value={build.level} min={1} max={20} onChange={creation.setLevel} label="Начальный уровень" className="mb-4" />
@@ -481,20 +480,5 @@ export const EquipmentStep: React.FC<{ creation: DndCreation }> = ({ creation })
 /** Name and pictures; shared by both ways of creating a hero. */
 export const IdentityStep: React.FC<{
   creation: Pick<DndCreation, 'name' | 'setName' | 'images' | 'setImages'>;
-}> = ({ creation }) => (
-  <div className="mx-auto flex h-full max-w-3xl flex-col justify-center gap-8">
-    <input
-      value={creation.name}
-      onChange={(e) => creation.setName(e.target.value)}
-      placeholder="Имя героя"
-      aria-label="Имя героя"
-      autoFocus
-      className="ui-display border-b border-frame/50 bg-transparent pb-2 text-center text-4xl text-ink outline-none placeholder:text-ink-faint focus:border-frame-bright"
-    />
-    <div className="flex items-start justify-center gap-6">
-      <ImageSlot label="Полный арт" kind="full" hint="Во весь рост" asset={creation.images.full} onUploaded={(full) => creation.setImages({ ...creation.images, full })} className="h-[16.6rem] w-40" />
-      <ImageSlot label="Портрет" kind="portrait" hint="Лицо" asset={creation.images.portrait} onUploaded={(portrait) => creation.setImages({ ...creation.images, portrait })} className="h-[9.6rem] w-32" />
-    </div>
-  </div>
-);
+}> = ({ creation }) => <SharedIdentityStep creation={creation} placeholder="Имя героя" />;
 

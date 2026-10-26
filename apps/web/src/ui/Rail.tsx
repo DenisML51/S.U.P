@@ -31,3 +31,20 @@ export const RailButton: React.FC<{
 
 /** A thin rule between groups of the rail. */
 export const RailDivider: React.FC = () => <div className="ui-rail__divider mx-4 my-2 h-px" aria-hidden />;
+
+/**
+ * The rail's places laid along the bottom of a narrow screen, one column each, the open one marked
+ * along their top edge.
+ */
+export const TabBar: React.FC<{ label: string; children: React.ReactNode; className?: string }> = ({
+  label,
+  children,
+  className,
+}) => (
+  <nav
+    className={cx('ui-rail ui-tabbar grid shrink-0 grid-flow-col auto-cols-fr', className)}
+    aria-label={label}
+  >
+    {children}
+  </nav>
+);
