@@ -27,8 +27,7 @@ import {
   type PartyNpcRow,
 } from '../../db/schema';
 import { isOnline } from '../realtime/presence';
-import { sessionClosed } from '../../lib/errors';
-import { CODE_WAITS, partyNotFound } from './partyAccess';
+import { partyNotFound } from './partyAccess';
 import { turnOrder, type TurnEntry } from './turnOrder';
 
 type Executor = Database | Transaction;
@@ -257,8 +256,8 @@ export class PartyQueries {
           .innerJoin(parties, eq(parties.id, partyMembers.partyId))
           .where(and(eq(partyMembers.partyId, partyId), eq(partyMembers.userId, userId)));
         if (!seat) throw partyNotFound();
-        // Between sessions the table is the master's alone.
-        if (seat.role !== 'master' && !seat.party.sessionStartedAt) throw sessionClosed();
+        // Between sessions players see the table as a lobby: the chronicle, the seats, their heroes.
+        // Talk, dice and fights wait for the session (see the messages, rolls and combat services).
 
         const [members, heroes, npcs, [combat], combatants] = await Promise.all([
           tx
@@ -356,7 +355,6 @@ export class PartyQueries {
       .where(eq(parties.inviteCode, code));
     if (!row) throw partyNotFound();
     const { sessionStartedAt, ...preview } = row;
-    if (!sessionStartedAt && !preview.member) throw sessionClosed(CODE_WAITS);
     return {
       ...preview,
       setting: row.setting as Setting,

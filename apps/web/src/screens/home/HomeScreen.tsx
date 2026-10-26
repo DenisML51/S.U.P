@@ -24,6 +24,8 @@ import {
   usePartyEntry,
 } from './homeParts';
 import { rememberLastHero } from './lastHero';
+import { usePartyStore } from '../../store/usePartyStore';
+import { takeInviteCode } from '../../useBrowserHistory';
 import { useHasSoloDraft } from '../create/useDraftState';
 import { pageTone, readArt, type Rgb } from './artTone';
 import { figureMask } from './figureMask';
@@ -62,6 +64,14 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
   const fileInput = useRef<HTMLInputElement>(null);
   const { heroes, parties, lastHero: hero } = useHomeItems();
   const entry = usePartyEntry();
+  const preview = usePartyStore((s) => s.preview);
+  // Came by an invitation link: the invitation opens as if its code were typed.
+  useEffect(() => {
+    const code = takeInviteCode();
+    if (code) void preview(code).then((found) => found && entry.showInvite({ code, preview: found }));
+    // Once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // The colour where the hero's art meets the page; the dark around the hero takes a little of it.
   const [tone, setTone] = useState<Rgb | null>(null);
 

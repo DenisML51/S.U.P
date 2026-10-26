@@ -107,3 +107,15 @@ describe('templates of one line', () => {
     expect(t('Лёгкое\n\nМастерство: Быстрое')).toBe('Light\n\nMastery: Nick');
   });
 });
+
+describe('names the table gave', () => {
+  const names = new Set(['Тень']);
+  const exact = { [textKey('Тень')]: 'Shadow', [textKey('Сила')]: 'Strength' };
+  const t = createTranslator({ exact, templates: [['Лист: {0}', 'Sheet: {0}']] }, (text) => names.has(text));
+
+  it('stay as written, alone or inside a label', () => {
+    expect(t('Тень')).toBe('Тень');
+    expect(t('Лист: Тень')).toBe('Sheet: Тень');
+    expect(t('Сила')).toBe('Strength');
+  });
+});

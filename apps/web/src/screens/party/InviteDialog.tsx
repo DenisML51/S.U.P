@@ -57,6 +57,9 @@ export const InviteDialog: React.FC<{
             <p className="text-[15px] text-ink-faint">Мастер ещё не рассказал, что ждёт за этим столом.</p>
           )}
           {preview.member && <p className="text-sm text-frame-bright">Вы уже за этим столом.</p>}
+          {!preview.member && !preview.inSession && (
+            <p className="text-sm text-ink-muted">Сессия пока не идёт: можно сесть за стол и привести героя заранее.</p>
+          )}
         </div>
       )}
     </Dialog>

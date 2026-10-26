@@ -74,7 +74,14 @@ const nameLike = (text: string) =>
  * as it is; a name of theirs inside a label of the interface ("Лист: Мирабель") stays a name.
  * Results are remembered, so a text costs one lookup however often it is drawn.
  */
-export function createTranslator(dictionary: CompiledDictionary): Translate {
+export function createTranslator(
+  dictionary: CompiledDictionary,
+  /**
+   * Names the table gave (a hero "Тень", a party "QA стол"): said as written wherever they stand,
+   * alone or inside a label, even when they happen to be words the dictionary knows.
+   */
+  asWritten: (text: string) => boolean = () => false,
+): Translate {
   const { exact } = dictionary;
   let templates: Template[] | null = null;
   // By the separators a text may still be taken apart by: inside a group, fewer are left. The last
@@ -203,6 +210,7 @@ export function createTranslator(dictionary: CompiledDictionary): Translate {
     if (start < 0) return text;
     const end = text.search(/\s*$/);
     const core = text.slice(start, end);
+    if (asWritten(core)) return text;
     // A text inside another is remembered with how deep it sat: deeper, less is tried on it.
     const key = depth === 0 ? core : `${depth}\u0001${core}`;
     const cache = caches[depth === 0 ? WHOLE : level]!;
