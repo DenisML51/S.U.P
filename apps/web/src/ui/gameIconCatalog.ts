@@ -314,6 +314,21 @@ import GiRaven from '~icons/game-icons/raven';
 import GiDeer from '~icons/game-icons/deer';
 import GiCat from '~icons/game-icons/cat';
 import GiSpiderFace from '~icons/game-icons/spider-face';
+import GiRat from '~icons/game-icons/rat';
+import GiSittingDog from '~icons/game-icons/sitting-dog';
+import GiSnake from '~icons/game-icons/snake';
+import GiBoar from '~icons/game-icons/boar';
+import GiFeline from '~icons/game-icons/feline';
+import GiGecko from '~icons/game-icons/gecko';
+import GiHorseHead from '~icons/game-icons/horse-head';
+import GiMonkey from '~icons/game-icons/monkey';
+import GiWaspSting from '~icons/game-icons/wasp-sting';
+import GiTigerHead from '~icons/game-icons/tiger-head';
+import GiScorpion from '~icons/game-icons/scorpion';
+import GiElephantHead from '~icons/game-icons/elephant-head';
+import GiMammoth from '~icons/game-icons/mammoth';
+import GiCrocJaws from '~icons/game-icons/croc-jaws';
+import GiOwl from '~icons/game-icons/owl';
 import GiBeastEye from '~icons/game-icons/beast-eye';
 import GiClaws from '~icons/game-icons/claws';
 import GiFrog from '~icons/game-icons/frog';
@@ -667,6 +682,21 @@ export const ICONS = {
   deer: GiDeer,
   cat: GiCat,
   'spider-face': GiSpiderFace,
+  rat: GiRat,
+  'sitting-dog': GiSittingDog,
+  snake: GiSnake,
+  boar: GiBoar,
+  feline: GiFeline,
+  gecko: GiGecko,
+  'horse-head': GiHorseHead,
+  monkey: GiMonkey,
+  'wasp-sting': GiWaspSting,
+  'tiger-head': GiTigerHead,
+  scorpion: GiScorpion,
+  'elephant-head': GiElephantHead,
+  mammoth: GiMammoth,
+  'croc-jaws': GiCrocJaws,
+  owl: GiOwl,
   'beast-eye': GiBeastEye,
   claws: GiClaws,
   frog: GiFrog,
@@ -1028,6 +1058,21 @@ export const ICON_GROUPS: { label: string; icons: { id: GameIconId; label: strin
       { id: 'deer', label: 'Олень' },
       { id: 'cat', label: 'Кошка' },
       { id: 'spider-face', label: 'Паук' },
+      { id: 'rat', label: 'Крыса' },
+      { id: 'sitting-dog', label: 'Пёс' },
+      { id: 'snake', label: 'Змея' },
+      { id: 'boar', label: 'Кабан' },
+      { id: 'feline', label: 'Пантера' },
+      { id: 'gecko', label: 'Ящерица' },
+      { id: 'horse-head', label: 'Лошадь' },
+      { id: 'monkey', label: 'Обезьяна' },
+      { id: 'wasp-sting', label: 'Оса' },
+      { id: 'tiger-head', label: 'Тигр' },
+      { id: 'scorpion', label: 'Скорпион' },
+      { id: 'elephant-head', label: 'Слон' },
+      { id: 'mammoth', label: 'Мамонт' },
+      { id: 'croc-jaws', label: 'Крокодил' },
+      { id: 'owl', label: 'Сова' },
       { id: 'beast-eye', label: 'Глаз зверя' },
       { id: 'claws', label: 'Когти зверя' },
       { id: 'frog', label: 'Лягушка' },

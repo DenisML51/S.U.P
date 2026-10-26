@@ -6,10 +6,12 @@ import { rescaleLimbs } from '../rules/health';
 import { weaponAttack, weaponAttackId, weaponThrowId } from '../rules/inventory';
 import { averageHitPoints } from '../rules/rest';
 import { DND } from './content';
+import { beastFormFeature, beastSummary, challengeLabel } from './content/beasts';
 import { DND_ICONS } from './content/icons';
 import { proficiencyForLevel, resolveAmount } from './helpers';
 import type {
   AttributeId,
+  BeastFormDef,
   BuildContext,
   CatalogEntryDef,
   CatalogId,
@@ -54,6 +56,7 @@ export const findSpecies = (id: string | undefined): SpeciesDef | undefined => D
 export const findBackground = (id: string | undefined) => DND.backgrounds.find((b) => b.id === id);
 export const findFeat = (id: string | undefined): FeatDef | undefined => DND.feats.find((f) => f.id === id);
 export const findSpell = (id: string | undefined): SpellDef | undefined => DND.spells.find((s) => s.id === id);
+export const findBeast = (id: string | undefined): BeastFormDef | undefined => DND.beasts.find((b) => b.id === id);
 export const findCatalogEntry = (catalog: CatalogId, id: string | undefined): CatalogEntryDef | undefined =>
   DND.catalogs[catalog].find((e) => e.id === id);
 
@@ -229,6 +232,11 @@ export function collect(build: DndBuild, level = build.level, scores?: Record<st
         break;
       case 'forget':
         break;
+      case 'beasts': {
+        const beast = findBeast(pick);
+        if (beast) visitFeature(beastFormFeature(beast), choiceKey, owner.level, 'option');
+        break;
+      }
       case 'weapons': {
         const weapon = DND.weapons.find((w) => w.id === pick);
         if (weapon) out.masteries.push(weapon.id);
@@ -630,6 +638,12 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   const speedBonus = { unarmored: speedFrom('unarmored') || undefined, noHeavyArmor: speedFrom('noHeavyArmor') || undefined };
   const movement = movementFrom(ofType('movement'), speed);
   const darkvision = darkvisionFrom(ofType('darkvision'));
+  // In a beast's shape (Wild Shape) its stat block stands in for the body: physical scores, armour
+  // class, speeds, senses and attacks. Hit points, the mind and the features stay the druid's.
+  const form = findBeast(ofType('form')[0]?.beast);
+  const formArmorClass = form
+    ? Math.max(form.ac, ...ofType('wildShape').map((e) => (e.armorClass !== undefined ? resolveAmount(e.armorClass, ctx) : 0)))
+    : undefined;
   const initiative = ofType('initiative').reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0);
 
   // Resistances.
@@ -745,6 +759,9 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
         concentration: previous?.concentration,
         stance: feature.stance ? true : undefined,
         stanceEndsConcentration: feature.stance?.endsConcentration || undefined,
+        stanceNoSpells: (typeof feature.stance?.noSpells === 'function' ? feature.stance.noSpells(ctx) : feature.stance?.noSpells) || undefined,
+        stanceGroup: feature.stance?.group,
+        stanceTempHP: feature.stance?.tempHP !== undefined ? formTempHP(feature, ctx, effects) : undefined,
         iconName: previous?.iconName ?? feature.iconName,
         color: previous?.color ?? feature.color,
         grant: granted.key,
@@ -847,15 +864,15 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     subclass: subclass?.name ?? '',
     level,
     proficiencyBonus: proficiency,
-    attributes: { ...character.attributes, ...scores },
+    attributes: { ...character.attributes, ...scores, ...(form ? { strength: form.str, dexterity: form.dex, constitution: form.con } : {}) },
     savingThrowProficiencies,
     skills,
     maxHP,
     currentHP,
-    speed,
-    speedBonus: speedBonus.unarmored || speedBonus.noHeavyArmor ? speedBonus : undefined,
-    movement,
-    darkvision,
+    speed: form ? form.speed : speed,
+    speedBonus: !form && (speedBonus.unarmored || speedBonus.noHeavyArmor) ? speedBonus : undefined,
+    movement: form ? beastMovement(form) : movement,
+    darkvision: form ? form.darkvision : darkvision,
     initiativeBonus: initiative || undefined,
     halfProficiency,
     ritualsFromBook: casting?.mode === 'spellbook' || undefined,
@@ -868,6 +885,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
       manual: character.armorClassBonus?.manual,
       unarmored: unarmored?.attribute,
       unarmoredNoShield: unarmored?.noShield || undefined,
+      form: formArmorClass,
     },
     resistances,
     resources: [...resources, ...character.resources.filter((r) => !r.grant && !resources.some((g) => g.id === r.id))],
@@ -881,6 +899,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
       ? 8 + proficiency + abilityModifier(scores[casting.ability] ?? 10) + ofType('spellSaveDC').reduce((sum, e) => sum + e.amount, 0)
       : character.spellcastingDifficultyValue,
     attacks: [
+      ...(form ? beastAttacks(form, character.attacks) : []),
       ...grantedAttacks(collected, character.attacks, scores, proficiency, ctx),
       ...withThrows(character.attacks.filter((a) => !a.grant), character.inventory).map((attack) =>
         weaponAttackFor(attack, character.inventory, scores, proficiency, effects, ctx),
@@ -890,6 +909,37 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   };
 
   return { character: rescaleLimbs(result), missing: [...new Set(missing)] };
+}
+
+/** A beast's other speeds, in the sheet's terms. */
+const beastMovement = (beast: BeastFormDef): Character['movement'] =>
+  beast.climb || beast.swim || beast.fly ? { climb: beast.climb, swim: beast.swim, fly: beast.fly } : undefined;
+
+/** The attacks of a beast's stat block, with its own numbers, keeping the icons the player chose. */
+const beastAttacks = (beast: BeastFormDef, previous: Attack[]): Attack[] =>
+  beast.attacks.map((def, index) => {
+    const id = `g-form-${beast.id}-${index}`;
+    const before = previous.find((a) => a.id === id);
+    return {
+      id,
+      name: def.name,
+      description: def.note,
+      damage: def.damage,
+      damageType: def.damageType,
+      hitBonus: def.hit,
+      actionType: 'action',
+      iconName: before?.iconName ?? beast.iconName,
+      color: before?.color,
+      grant: `form:${beast.id}`,
+    };
+  });
+
+/** Temporary hit points a feature gives when it starts; a Moon druid's forms give three times as many. */
+function formTempHP(feature: FeatureDef, ctx: BuildContext, effects: Effect[]): number {
+  const base = resolveAmount(feature.stance?.tempHP ?? 0, ctx);
+  const isForm = resolveEffects(feature.stance?.effects, ctx).some((e) => e.type === 'form');
+  const multiplier = isForm ? Math.max(1, ...effects.flatMap((e) => (e.type === 'wildShape' && e.tempHPMultiplier ? [e.tempHPMultiplier] : []))) : 1;
+  return base * multiplier;
 }
 
 /**
@@ -1397,6 +1447,33 @@ export function choiceOptions(build: DndBuild, level: number, open: OpenChoice):
           };
         });
     }
+    case 'beasts': {
+      // Challenge 1/4 from level 2, 1/2 from 4, 1 from 8 (flying beasts too); Circle Forms go higher.
+      const base = level >= 8 ? 1 : level >= 4 ? 1 / 2 : 1 / 4;
+      const boosted = collected.effects.flatMap(({ effect }) =>
+        effect.type === 'wildShape' && effect.maxCR !== undefined ? [resolveAmount(effect.maxCR, ctx)] : [],
+      );
+      const maxCR = Math.max(base, ...boosted);
+      return [...DND.beasts]
+        .sort((a, b) => a.cr - b.cr || a.name.localeCompare(b.name, 'ru'))
+        .map((beast) => ({
+          id: beast.id,
+          name: beast.name,
+          description: beastSummary(beast),
+          meta: `Опасность ${challengeLabel(beast.cr)} · ${beast.size}`,
+          group: `Опасность ${challengeLabel(beast.cr)}`,
+          iconName: beast.iconName,
+          disabled: ownPicks.has(beast.id)
+            ? undefined
+            : beast.cr > maxCR
+              ? `Опасность выше ${challengeLabel(maxCR)}`
+              : beast.fly && level < 8
+                ? 'Летающие звери — с 8-го уровня'
+                : taken.has(beast.id)
+                  ? 'Уже известен'
+                  : undefined,
+        }));
+    }
     case 'tools':
       return (source.list ?? DND.gear.filter((g) => g.kind === 'tool').map((g) => g.name)).map((name) => ({ id: name, name, description: '' }));
     case 'languages': {
@@ -1416,6 +1493,11 @@ export function choiceOptions(build: DndBuild, level: number, open: OpenChoice):
         disabled: taken.has(o.id) && !ownPicks.has(o.id) ? 'Уже есть' : undefined,
       }));
   }
+}
+
+/** Choices whose picks the sheet changes directly, any time (the known forms of Wild Shape). */
+export function sheetChoices(build: DndBuild): OpenChoice[] {
+  return collect(build, build.level, buildScores(build)).choices.filter((c) => c.choice.onSheet);
 }
 
 /** Choices of a plan still waiting for picks (a choice with fewer options than its count is done when all are taken). */

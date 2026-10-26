@@ -66,6 +66,9 @@ const unarmoredParts = (character: ArmorSource): ArmorClassPart[] => {
  * (a fighting style) add their bonus.
  */
 function gearParts(character: ArmorSource): ArmorClassPart[] {
+  // A beast's shape has its own armour class; what the druid wore merges into the form.
+  const form = character.armorClassBonus?.form;
+  if (form) return [{ label: 'облик', value: form }];
   const armor = equippedArmor(character.inventory);
   const shield = hasShield(character);
   const shieldPart = { label: 'щит', value: shield ? SHIELD_ARMOR_BONUS : 0 };

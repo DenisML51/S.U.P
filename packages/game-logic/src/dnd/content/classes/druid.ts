@@ -1,10 +1,9 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, Effect, FeatureDef, KitOption, OptionDef, SubclassDef } from '../../types';
+import { WILD_SHAPE } from '../beasts';
 import { FULL_CASTER_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
 
 /** Друид of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
-
-const WILD_SHAPE = 'druid.wild-shape';
 
 /** Spell save DC of the druid: subclass effects use it too. */
 const spellDC = (ctx: BuildContext) => 8 + ctx.proficiencyBonus + ctx.modifier('wisdom');
@@ -184,6 +183,14 @@ const moon: SubclassDef = {
         description:
           'Принимая Дикий облик, вы получаете:\n\n- **Опасность.** Максимальный показатель опасности облика — уровень друида / 3 (округляя вниз).\n- **Класс защиты.** Пока вы в облике, ваш КЗ равен 13 + модификатор Мудрости, если это больше КЗ зверя.\n- **Временные хиты.** Уровень друида × 3.\n\nЗаклинания круга луны вы можете творить и в Диком облике.',
         action: 'passive',
+        effects: [
+          {
+            type: 'wildShape',
+            armorClass: (ctx) => 13 + ctx.modifier('wisdom'),
+            tempHPMultiplier: 3,
+            maxCR: (ctx) => Math.floor(ctx.classLevel / 3),
+          },
+        ],
         iconName: 'moon-claws',
       },
     ],
@@ -552,7 +559,8 @@ export const DRUID: ClassDef = {
         name: 'Дикий облик',
         description:
           'Бонусным действием вы превращаетесь в одного из известных вам зверей на (уровень друида / 2) часов — или пока не используете умение снова, не станете Недееспособным или не умрёте; вернуться можно бонусным действием. Принимая облик, вы получаете временные хиты, равные уровню друида.\n\n**Известные облики** (один можно заменить после продолжительного отдыха):\n\n- 2-й уровень: 4 облика, опасность до 1/4, без полёта;\n- 4-й уровень: 6 обликов, опасность до 1/2, без полёта;\n- 8-й уровень: 8 обликов, опасность до 1, полёт разрешён.\n\nВ облике статистика зверя заменяет вашу, но вы сохраняете хиты, кости хитов, Интеллект, Мудрость, Харизму, умения, языки, черты и владения навыками и спасбросками. Творить заклинания нельзя (уже наложенные и концентрация сохраняются).\n\nИспользований 2 (3 с 6-го уровня, 4 с 17-го); короткий отдых возвращает одно, продолжительный — все.',
-        action: 'bonus',
+        // The uses are spent by the forms: each known beast is its own ability on the sheet.
+        action: 'passive',
         resource: {
           id: WILD_SHAPE,
           name: 'Дикий облик',
@@ -561,6 +569,17 @@ export const DRUID: ClassDef = {
           shortRestRegain: 1,
           iconName: 'wolf-head',
         },
+        choices: [
+          {
+            id: 'forms',
+            label: 'Известные облики',
+            count: byClassLevel({ 2: 4, 4: 6, 8: 8 }),
+            pool: 'wild-shape-forms',
+            onSheet: true,
+            options: { from: 'beasts' },
+            hint: 'Звери, в которых вы превращаетесь. Один облик можно заменить после продолжительного отдыха — прямо в карточке Дикого облика.',
+          },
+        ],
         iconName: 'wolf-head',
       },
       {

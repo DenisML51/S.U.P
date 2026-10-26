@@ -18,6 +18,7 @@ import { MasterDiceDialog } from '../../party/MasterDiceDialog';
 
 /** Level-up is the build engine's own screen: it comes with the rules system, on demand. */
 const LevelUpDialog = lazy(() => import('../../progression/LevelUpDialog').then((m) => ({ default: m.LevelUpDialog })));
+const SheetChoicesDialog = lazy(() => import('../../progression/SheetChoicesDialog').then((m) => ({ default: m.SheetChoicesDialog })));
 
 /** The card of one entry, by its kind: shown as a dialog or, inside a pane scope, as the pane. */
 export const EntryCard: React.FC<{ kind: EntryKind; open: boolean; id?: string; edit?: boolean; onClose: () => void }> = ({
@@ -83,6 +84,12 @@ export const SheetDialogHost: React.FC = () => {
       return (
         <Suspense key={key} fallback={null}>
           <LevelUpDialog open={open} onClose={close} />
+        </Suspense>
+      );
+    case 'choices':
+      return (
+        <Suspense key={key} fallback={null}>
+          <SheetChoicesDialog open={open} grant={current.grant} onClose={close} />
         </Suspense>
       );
     case 'rest':

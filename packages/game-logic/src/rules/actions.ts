@@ -1,5 +1,5 @@
 import type { Ability, ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
-import { concentrationBlocker, isActiveFeature, startConcentration, startFeature } from './concentration';
+import { isActiveFeature, spellBlocker, startConcentration, startFeature } from './concentration';
 import { changeItemQuantity, isWeaponStack, itemQuantity } from './inventory';
 import { changeResource } from './resources';
 
@@ -174,8 +174,8 @@ export function performAction(character: Character, request: PerformActionReques
   } else if (spell && !spell.prepared) {
     return fail('not_prepared', `Заклинание «${source.name}» не подготовлено`);
   }
-  // Rage and the like forbid spells while they are on.
-  const blocker = spell ? concentrationBlocker(character) : undefined;
+  // Rage and Wild Shape forbid spells while they are on.
+  const blocker = spell ? spellBlocker(character) : undefined;
   if (blocker) return fail('blocked_by_feature', `Пока действует «${blocker.name}», заклинания не творятся`);
   const stance = request.kind === 'ability' && (source as Ability).stance ? (source as Ability) : undefined;
   if (stance && isActiveFeature(character, stance.id)) return fail('already_active', `«${source.name}» уже действует`);

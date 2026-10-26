@@ -51,14 +51,24 @@ export const isActiveFeature = (character: Pick<Character, 'activeFeatures'>, id
 export const activeFeaturesOf = (character: Pick<Character, 'abilities' | 'activeFeatures'>): Ability[] =>
   character.abilities.filter((a) => a.stance && isActiveFeature(character, a.id));
 
-/** A feature that is on and forbids concentration (Rage), if any. */
-export const concentrationBlocker = (character: Pick<Character, 'abilities' | 'activeFeatures'>): Ability | undefined =>
-  activeFeaturesOf(character).find((a) => a.stanceEndsConcentration);
+/** A feature that is on and forbids spells (Rage, Wild Shape), if any. */
+export const spellBlocker = (character: Pick<Character, 'abilities' | 'activeFeatures'>): Ability | undefined =>
+  activeFeaturesOf(character).find((a) => a.stanceNoSpells);
 
-/** Turns an ability on; one that forbids concentration ends it. */
-export function startFeature(character: Character, ability: Pick<Ability, 'id' | 'stanceEndsConcentration'>): Character {
-  const active = character.activeFeatures ?? [];
-  const next = active.includes(ability.id) ? character : { ...character, activeFeatures: [...active, ability.id] };
+/**
+ * Turns an ability on. Another of its group goes off (a new form of Wild Shape replaces the old);
+ * one that forbids concentration ends it; temporary hit points it gives replace smaller ones.
+ */
+export function startFeature(
+  character: Character,
+  ability: Pick<Ability, 'id' | 'stanceEndsConcentration' | 'stanceGroup' | 'stanceTempHP'>,
+): Character {
+  const rivals = ability.stanceGroup
+    ? character.abilities.filter((a) => a.id !== ability.id && a.stanceGroup === ability.stanceGroup).map((a) => a.id)
+    : [];
+  const active = (character.activeFeatures ?? []).filter((id) => !rivals.includes(id));
+  let next: Character = { ...character, activeFeatures: active.includes(ability.id) ? active : [...active, ability.id] };
+  if (ability.stanceTempHP) next = { ...next, tempHP: Math.max(next.tempHP, ability.stanceTempHP) };
   return ability.stanceEndsConcentration ? endConcentration(next) : next;
 }
 

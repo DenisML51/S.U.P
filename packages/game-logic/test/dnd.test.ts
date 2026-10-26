@@ -89,7 +89,7 @@ describe('D&D content', () => {
         }
       }
     };
-    scan([DND.classes, DND.species, DND.feats, DND.spells, DND.maneuvers, DND.catalogs]);
+    scan([DND.classes, DND.species, DND.feats, DND.spells, DND.maneuvers, DND.catalogs, DND.beasts]);
     expect([...used].filter((icon) => !known.has(icon))).toEqual([]);
   });
 });
