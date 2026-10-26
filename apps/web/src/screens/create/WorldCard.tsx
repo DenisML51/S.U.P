@@ -4,6 +4,7 @@ import { SETTING_ART } from '../../ui/art';
 import { Corners, SettingEmblem } from '../../ui/ornaments';
 import { SettingScope } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
+import { useAtLeast } from '../../ui/useBreakpoint';
 
 /**
  * A world to begin in, shown as a window into it: the setting's own atmosphere fills the card
@@ -17,6 +18,8 @@ export const WorldCard: React.FC<{ setting: Setting; selected: boolean; onSelect
   onSelect,
 }) => {
   const { Backdrop, WorldSigil } = SETTING_ART[setting];
+  // A phone card is small: its frame and corners would crowd the emblem and the name.
+  const ornate = useAtLeast('tablet');
   return (
     <SettingScope setting={setting} className="h-full">
       <button
@@ -29,10 +32,10 @@ export const WorldCard: React.FC<{ setting: Setting; selected: boolean; onSelect
         }}
       >
         <span className="ui-world__scene" aria-hidden>
-          <Backdrop />
+          <Backdrop frame={ornate} />
         </span>
         <span className="ui-world__veil" aria-hidden />
-        <Corners />
+        {ornate && <Corners />}
         <span className="ui-world__emblem">
           {WorldSigil && (
             <span className="ui-world__sigil" aria-hidden>

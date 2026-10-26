@@ -283,7 +283,8 @@ const OptionPicker: React.FC<{
         </Button>
       }
     >
-      <div className="grid h-[58vh] grid-cols-[minmax(0,24rem)_minmax(0,1fr)] gap-6">
+      {/* On a phone the description goes under the list rather than beside it. */}
+      <div className="grid h-[58vh] grid-cols-[minmax(0,24rem)_minmax(0,1fr)] gap-6 max-sm:h-[62vh] max-sm:grid-cols-1 max-sm:grid-rows-[minmax(0,1fr)_minmax(0,42%)] max-sm:gap-3">
         <div className="flex min-h-0 flex-col">
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск" aria-label="Поиск" className="ui-input mb-2 h-9 text-sm" data-autofocus />
           {groups.length > 1 && (
@@ -324,7 +325,7 @@ const OptionPicker: React.FC<{
             {shown.length === 0 && <p className="py-6 text-center text-sm text-ink-faint">Ничего не найдено</p>}
           </div>
         </div>
-        <div className="ui-scroll min-h-0 overflow-y-auto border-l border-line/60 pl-6">
+        <div className="ui-scroll min-h-0 overflow-y-auto border-l border-line/60 pl-6 max-sm:border-l-0 max-sm:border-t max-sm:pl-0 max-sm:pt-3">
           {focused && (
             <>
               <div className="flex items-center gap-4">

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { longPress } from '../../../ui/longPress';
 import { AnimatePresence, motion } from 'framer-motion';
 import { formatDice, parseDiceFormula, rollD20, rollDie, rollPercentile, type D20Mode } from '@itd/game-logic';
 import type { TableDie } from '@itd/schema';
@@ -54,14 +55,11 @@ const DieButton: React.FC<{
     <button
       type="button"
       onClick={() => onChange(1)}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onChange(-1);
-      }}
+      {...longPress(() => onChange(-1))}
       onPointerEnter={() => setHover(true)}
       onPointerLeave={() => setHover(false)}
       className={cx('ui-die', count > 0 && 'ui-die--in')}
-      title="Клик — добавить, правый клик — убрать"
+      title="Клик — добавить, правый клик или долгое нажатие — убрать"
     >
       <DieGlyph sides={sides} spin={hover ? 4 : count > 0 ? 2 : 0.6} phase={phase} />
       <span className="ui-display ui-numeric ui-die__name">d{sides}</span>

@@ -4,8 +4,10 @@ import type { CharacterPreview, PartyListItemDto } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
 import { CharacterArt, fullArtSrc } from '../../ui/CharacterArt';
-import { IconCombat, IconCreate, IconImport } from '../../ui/icons';
-import { Button, cx } from '../../ui/primitives';
+import { IconClose, IconCombat, IconCreate, IconImport, IconTable } from '../../ui/icons';
+import { Drawer } from '../../ui/Drawer';
+import { useAtLeast } from '../../ui/useBreakpoint';
+import { Button, IconButton, cx } from '../../ui/primitives';
 import { SettingScope } from '../../ui/theme/SettingScope';
 import { SETTING_INFO, settingOf } from '../../ui/theme/settings';
 import {
@@ -80,11 +82,54 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
     if (file) await importFromJSON(file).catch(() => {});
   };
   const newParty = () => go({ screen: 'party-form' });
+  // Below the tablet width the tables leave the page for a drawer.
+  const phone = !useAtLeast('tablet');
+  const [tablesOpen, setTablesOpen] = useState(false);
+  /** The tables one sits at: their list, a way to gather a new one and to join one by its code. */
+  const tables = (
+    <>
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <div>
+          <div className="whitespace-nowrap text-[11px] uppercase tracking-[0.26em] text-ink-faint">
+            Игра с мастером
+          </div>
+          <div className="mt-1 flex items-baseline gap-2 text-[1.6rem] font-semibold leading-tight text-ink">
+            Партии
+            {!!parties?.length && <span className="text-base font-normal text-ink-faint">{parties.length}</span>}
+          </div>
+        </div>
+        {!!parties?.length && (
+          <Button variant="secondary" size="sm" icon={<IconCreate width={15} height={15} />} onClick={newParty}>
+            Собрать партию
+          </Button>
+        )}
+      </div>
+
+      {parties?.length ? (
+        <TableList parties={parties} onOpen={entry.enter} />
+      ) : (
+        <div className="min-h-0 flex-1 pt-5">
+          {parties && (
+            <AddCard
+              title="Собрать партию"
+              hint="Станьте мастером своего стола — или сядьте за чужой по коду, который даст мастер"
+              onClick={newParty}
+            />
+          )}
+        </div>
+      )}
+
+      <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="shrink-0 text-sm text-ink-muted">Код приглашения</span>
+        <InviteCodeField onFound={entry.showInvite} className="min-w-[13rem] flex-1" />
+      </div>
+    </>
+  );
 
   return (
     <SettingScope
       setting="service"
-      className="ui-hub relative h-screen overflow-clip bg-bg"
+      className="ui-hub relative h-screen overflow-clip bg-bg max-lg:h-dvh"
       style={tone ? ({ '--hub-tone': `rgb(${tone.join(' ')})` } as React.CSSProperties) : undefined}
     >
       <HomeAtmosphere />
@@ -99,19 +144,47 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
         </motion.div>
       )}
 
+      {/* On a phone the hero's name stands over the art: the dark rises from below to hold it. */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-bg via-bg/75 to-transparent sm:hidden"
+        aria-hidden
+      />
+
       <div className="relative z-10 flex h-full flex-col">
-        <HomeHeader onOpenSettings={onOpenSettings} />
+        <HomeHeader
+          onOpenSettings={onOpenSettings}
+          extra={
+            phone && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<IconTable width={16} height={16} />}
+                onClick={() => setTablesOpen(true)}
+                aria-expanded={tablesOpen}
+              >
+                Партии
+                {!!parties?.length && <span className="text-ink-faint">{parties.length}</span>}
+              </Button>
+            )
+          }
+        />
 
         {/* The menu keeps its own width rather than the art's share of the screen: on a narrow window
             it no longer squeezes, and the art simply runs on underneath it. */}
-        <main className="flex min-h-0 w-full max-w-[46rem] flex-1 flex-col pb-[clamp(1.5rem,4.5vh,3rem)] pl-24 pr-6 pt-[clamp(1rem,3.5vh,2.5rem)]">
+        <main className="flex min-h-0 w-full max-w-[46rem] flex-1 flex-col pb-[clamp(1.5rem,4.5vh,3rem)] pl-24 pr-6 pt-[clamp(1rem,3.5vh,2.5rem)] max-lg:px-8 max-sm:px-4">
           {/* ---------------------------------------------------------------- The hero */}
-          <motion.section {...enter({ x: -24 }, 0.15)}>
+          {/* On a phone the hero stands at the foot of the art, as on a cover. */}
+          <motion.section className="max-sm:mt-auto" {...enter({ x: -24 }, 0.15)}>
             {hero ? (
               <>
                 <HeroTitle hero={hero} />
                 <div className="mt-[clamp(1.25rem,2.6vh,1.75rem)] flex items-center gap-3">
-                  <Button variant="primary" size="lg" className="min-w-[200px]" onClick={() => play(hero.id)}>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="min-w-[200px] max-sm:min-w-0 max-sm:flex-1"
+                    onClick={() => play(hero.id)}
+                  >
                     Лист
                   </Button>
                   <Button variant="secondary" size="lg" onClick={allHeroes}>
@@ -146,53 +219,38 @@ export const HomeScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
           </motion.section>
 
           {/* ---------------------------------------------------------------- The tables */}
-          <motion.section
-            className="ui-hub-smoke mt-[clamp(1.5rem,5vh,3rem)] flex min-h-0 flex-1 flex-col"
-            {...enter({ x: -24 }, 0.22)}
-          >
-            <div className="ui-hub-rule mb-6" aria-hidden />
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <div className="whitespace-nowrap text-[11px] uppercase tracking-[0.26em] text-ink-faint">
-                  Игра с мастером
-                </div>
-                <div className="mt-1 flex items-baseline gap-2 text-[1.6rem] font-semibold leading-tight text-ink">
-                  Партии
-                  {!!parties?.length && <span className="text-base font-normal text-ink-faint">{parties.length}</span>}
-                </div>
-              </div>
-              {!!parties?.length && (
-                <Button variant="secondary" size="sm" icon={<IconCreate width={15} height={15} />} onClick={newParty}>
-                  Собрать партию
-                </Button>
-              )}
-            </div>
-
-            {parties?.length ? (
-              <TableList parties={parties} onOpen={entry.enter} />
-            ) : (
-              <div className="min-h-0 flex-1 pt-5">
-                {parties && (
-                  <AddCard
-                    title="Собрать партию"
-                    hint="Станьте мастером своего стола — или сядьте за чужой по коду, который даст мастер"
-                    onClick={newParty}
-                  />
-                )}
-              </div>
-            )}
-
-            <div className="mt-5 flex items-center gap-4">
-              <span className="shrink-0 text-sm text-ink-muted">Код приглашения</span>
-              <InviteCodeField onFound={entry.showInvite} className="flex-1" />
-            </div>
-          </motion.section>
+          {!phone && (
+            <motion.section
+              className="ui-hub-smoke mt-[clamp(1.5rem,5vh,3rem)] flex min-h-0 flex-1 flex-col"
+              {...enter({ x: -24 }, 0.22)}
+            >
+              <div className="ui-hub-rule mb-6" aria-hidden />
+              {tables}
+            </motion.section>
+          )}
         </main>
       </div>
+      {/* A phone has no room for the tables beside the hero: they slide out from the header. */}
+      {phone && (
+        <Drawer open={tablesOpen} onClose={() => setTablesOpen(false)} label="Партии" side="right">
+          <SettingScope setting="service" className="ui-touch flex min-h-0 flex-1 flex-col px-4 pb-4 pt-12">
+            <IconButton
+              label="Свернуть"
+              size={40}
+              onClick={() => setTablesOpen(false)}
+              className="absolute right-2 top-2 z-10"
+            >
+              <IconClose width={18} height={18} />
+            </IconButton>
+            {tables}
+          </SettingScope>
+        </Drawer>
+      )}
       {entry.dialogs}
     </SettingScope>
   );
 };
+
 
 // ------------------------------------------------------------------------------------------------
 
@@ -328,7 +386,8 @@ const HeroFigure: React.FC<{ hero: CharacterPreview; onTone: (tone: Rgb | null) 
     if (!src) onTone(null);
   }, [src, onTone]);
   return (
-    <div className="ui-art-fit flex h-full items-end justify-center">
+    // On a phone the art fills the width and stands from just under the header, over the hero's name.
+    <div className="ui-art-fit flex h-full items-end justify-center max-sm:items-start max-sm:pt-12">
       <div
         className="ui-art-fit__box ui-hero-figure relative"
         style={{ '--art-ratio': ratio, '--art-scale': portrait ? 0.72 : 1 } as React.CSSProperties}

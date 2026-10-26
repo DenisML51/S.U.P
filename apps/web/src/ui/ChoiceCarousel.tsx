@@ -42,6 +42,8 @@ export function ChoiceCarousel<T extends string>({
   label: string;
 }) {
   const count = items.length;
+  // Scaled down on a phone by the stage around it (`--stage-fit`), so the words below still fit.
+  const fitted = `calc(${height} * var(--stage-fit, 1))`;
   const [index, setIndex] = useState(() =>
     Math.max(
       0,
@@ -76,7 +78,7 @@ export function ChoiceCarousel<T extends string>({
 
   return (
     <div className="flex w-full flex-col items-center">
-      <div className="relative w-full shrink-0" style={{ height, perspective: 1600 }}>
+      <div className="relative w-full shrink-0" style={{ height: fitted, perspective: 1600 }}>
         {items.map((item, i) => {
           const offset = offsets[i]!;
           const distance = Math.abs(offset);
@@ -87,7 +89,7 @@ export function ChoiceCarousel<T extends string>({
             <motion.div
               key={item.id}
               className="absolute left-1/2 top-0"
-              style={{ height, aspectRatio: '0.66', zIndex: 10 - distance }}
+              style={{ height: fitted, aspectRatio: '0.66', zIndex: 10 - distance }}
               initial={false}
               animate={{
                 x: `calc(-50% + ${Math.sign(offset) * (distance === 0 ? 0 : 92 + (distance - 1) * 50)}%)`,

@@ -92,7 +92,7 @@ export const StartCombatDialog: React.FC<{
     >
       <div className="space-y-5 pt-1">
         <Group title="Герои" items={heroes} picked={picked} onToggle={toggle} empty="Все герои уже в бою" />
-        <Group title="НПС" items={npcs} picked={picked} onToggle={toggle} empty="Добавьте НПС на панели справа" />
+        <Group title="НПС" items={npcs} picked={picked} onToggle={toggle} empty="Добавьте НПС в стопки «Враги» и «Союзники» на столе" />
       </div>
     </Dialog>
   );

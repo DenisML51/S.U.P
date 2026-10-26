@@ -31,7 +31,8 @@ import { IconAmmunition, IconCoins } from '../../ui/icons';
 import { useEndConcentration } from '../sheet/Concentration';
 import { useSheetDialogs } from '../sheet/dialogs/context';
 import { ActionShape } from './Hotbar';
-import { HudTip, below, useHudTip, type TipBinding } from './HudTip';
+import { longPress } from '../../ui/longPress';
+import { HudTip, below, useHudTip, useTouchHud, type TipBinding } from './HudTip';
 
 interface Hint {
   key: string;
@@ -112,13 +113,17 @@ const VitalBar: React.FC<{
   );
 };
 
-export const VitalBars: React.FC<{ character: Character }> = ({ character }) => {
+/**
+ * Sanity and health side by side; given `between` (the portrait on a narrow screen), they stand on
+ * either side of it instead.
+ */
+export const VitalBars: React.FC<{ character: Character; between?: React.ReactNode }> = ({ character, between }) => {
   const dialogs = useSheetDialogs();
   const { bind, view } = useHint();
   const maxHP = totalMaxHP(character);
   const maxSanity = maxSanityOf(character);
   return (
-    <div className="flex gap-2.5">
+    <div className={cx('flex', between ? 'items-end justify-center gap-3' : 'gap-2.5')}>
       <VitalBar
         label="Рассудок"
         value={character.sanity}
@@ -131,6 +136,7 @@ export const VitalBars: React.FC<{ character: Character }> = ({ character }) => 
           lines: [`${character.sanity} / ${maxSanity}`, 'Нажмите, чтобы изменить'],
         })}
       />
+      {between}
       <VitalBar
         label="Здоровье"
         value={character.currentHP}
@@ -290,6 +296,7 @@ export const ActionTokens: React.FC<{ character: Character }> = ({ character }) 
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const { bind, view } = useHint();
   const [editing, setEditing] = useState(false);
+  const touch = useTouchHud();
   const anchor = useRef<HTMLElement>(null);
   const limits = actionLimitsOf(character);
   const spent = spentActionsOf(character);
@@ -309,16 +316,16 @@ export const ActionTokens: React.FC<{ character: Character }> = ({ character }) 
                 key={i}
                 type="button"
                 onClick={() => toggle(slot, i)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  setEditing(true);
-                }}
+                {...longPress(() => setEditing(true))}
                 aria-pressed={used}
                 className={cx('ui-token', used && 'ui-token--spent')}
                 {...bind({
                   key: `${slot}:${i}`,
                   title: ACTION_TYPES[slot].label,
-                  lines: [used ? 'Потрачено' : 'Доступно', 'ЛКМ — отметить · ПКМ — сколько за ход'],
+                  lines: [
+                    used ? 'Потрачено' : 'Доступно',
+                    touch ? 'Нажать — отметить · удерживать — сколько за ход' : 'ЛКМ — отметить · ПКМ — сколько за ход',
+                  ],
                 })}
               >
                 <ActionShape type={slot} size={20} hollow={used} />
@@ -361,6 +368,7 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
   const updateResourceCount = useCharacterStore((s) => s.updateResourceCount);
   const dialogs = useSheetDialogs();
   const { bind, view } = useHint();
+  const touch = useTouchHud();
   const [expanded, setExpanded] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   // Room to the right of the strip: the laid-out set grows that way, then upward in rows.
@@ -392,15 +400,15 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
       key={resource.id}
       type="button"
       onClick={() => updateResourceCount(resource.id, -1)}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        dialogs.open({ kind: 'resource', id: resource.id });
-      }}
+      {...longPress(() => dialogs.open({ kind: 'resource', id: resource.id }))}
       className={cx('ui-hud-chip', resource.current === 0 && 'ui-hud-chip--empty')}
       {...bind({
         key: resource.id,
         title: resource.name,
-        lines: [`${resource.current} / ${resource.max}`, 'ЛКМ — потратить · ПКМ — карточка'],
+        lines: [
+          `${resource.current} / ${resource.max}`,
+          touch ? 'Нажать — потратить · удерживать — карточка' : 'ЛКМ — потратить · ПКМ — карточка',
+        ],
       })}
     >
       <GameIcon name={resource.iconName} kind="resource" size={20} color={resource.color} />
@@ -466,9 +474,9 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
   );
 
   return (
-    <div ref={box} className="relative">
+    <div ref={box} className="relative max-sm:w-full">
       {/* The bar keeps its place (and its width) while the full set lies over it. */}
-      <Panel className={cx('ui-hud-strip h-full', open && 'invisible')}>
+      <Panel className={cx('ui-hud-strip h-full max-sm:justify-center', open && 'invisible')}>
         {resources.slice(0, RESOURCES_SHOWN).map(tile)}
         {hiddenCount > 0 && toggle}
         {extras}
@@ -529,7 +537,7 @@ export const CombatStats: React.FC<{
     },
   ];
   return (
-    <Panel className="ui-hud-strip !gap-0 divide-x divide-line/60">
+    <Panel className="ui-hud-strip !gap-0 divide-x divide-line/60 max-lg:w-full">
       {stats.map((stat) => {
         const Tag = stat.onClick ? 'button' : 'div';
         return (
@@ -539,11 +547,11 @@ export const CombatStats: React.FC<{
             onClick={stat.onClick}
             title={stat.hint}
             className={cx(
-              'flex min-w-[3.6rem] flex-col items-center px-3',
+              'flex min-w-[3.6rem] flex-col items-center px-3 max-lg:min-w-0 max-lg:flex-1 max-lg:px-1',
               stat.onClick && 'transition-colors hover:text-frame-bright',
             )}
           >
-            <span className="text-[10px] uppercase tracking-[0.14em] text-ink-faint">{stat.label}</span>
+            <span className="text-[10px] uppercase tracking-[0.14em] text-ink-faint max-lg:max-w-full max-lg:truncate max-lg:tracking-normal">{stat.label}</span>
             <span className="ui-display ui-numeric text-lg leading-tight">{stat.value}</span>
           </Tag>
         );

@@ -25,14 +25,13 @@ import { NumberField, Segmented } from '../../../ui/forms';
 import { Facts, Section } from '../../../ui/Section';
 import { Button, Input, Panel, TextArea, cx } from '../../../ui/primitives';
 import { IconHealth, IconSanity, IconSparkle, IconSpells } from '../../../ui/icons';
-import { ImageSlot } from '../../../ui/ImageSlot';
 import { SettingEmblem } from '../../../ui/ornaments';
 import { WireDie } from '../../../ui/WireDie';
 import { LandedValue, RollingDice, useLanded, type ThrownDie } from '../../../ui/RollingDie';
 import { EditionCarousel } from '../../../ui/RulesetCards';
 import type { OptionView } from '@itd/game-logic/dnd';
 import { PickList } from '../../progression/ChoiceField';
-import { EmblemGrid, Picked, ScoreCard } from '../kit';
+import { EmblemGrid, IdentityStep as SharedIdentityStep, Picked, ScoreCard } from '../kit';
 import { choiceList, manualOutOfRange } from './creationRules';
 import { choiceOptions, type CocCreation } from './useCocCreation';
 
@@ -366,7 +365,8 @@ export const CharacteristicsStep: React.FC<{ creation: CocCreation }> = ({ creat
           { value: 'manual', label: 'Вручную' },
         ]}
       />
-      <div className="flex min-h-10 items-center gap-4 text-sm text-ink-muted">
+      {/* On a phone the hint goes over its button, centred, rather than squeezed beside it. */}
+      <div className="flex min-h-10 items-center gap-4 text-sm text-ink-muted max-sm:flex-col max-sm:gap-2 max-sm:text-center">
         {creation.method === 'roll' && (
           <>
             <span>3d6×5 или (2d6+6)×5 для каждой характеристики.</span>
@@ -424,7 +424,7 @@ export const CharacteristicsStep: React.FC<{ creation: CocCreation }> = ({ creat
           );
         })}
       </div>
-      <Panel ornate={false} className="flex items-center gap-5 px-6 py-4">
+      <Panel ornate={false} className="flex items-center gap-5 px-6 py-4 max-sm:w-full max-sm:flex-wrap max-sm:justify-center max-sm:gap-x-4 max-sm:gap-y-3 max-sm:px-4">
         <WireDie shape="d10" spin={creation.luck ? 0.6 : 2} className="h-11 w-11 text-frame-bright" />
         <div className="min-w-[8rem]">
           <div className="ui-stat__label">Удача · {creation.pulp ? '(2d6+6)×5' : '3d6×5'}</div>
@@ -483,7 +483,7 @@ export const AgeStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
           <NumberField label="Возраст" value={creation.age} min={15} max={89} onChange={creation.setAge} className="w-32" />
         </div>
       </div>
-      <div className="mt-6 grid grid-cols-7 gap-1.5">
+      <div className="mt-6 grid grid-cols-7 gap-1.5 max-lg:grid-cols-4 max-sm:grid-cols-2">
         {AGE_BRACKETS.map((b) => {
           const current = creation.age >= b.from && creation.age <= b.to;
           return (
@@ -614,8 +614,9 @@ export const OccupationStep: React.FC<{ creation: CocCreation }> = ({ creation }
     pickedRef.current?.scrollIntoView({ block: 'center' });
   }, []);
   return (
-    <div className="grid h-full grid-cols-[17rem_minmax(0,1fr)] gap-6">
-      <div className="flex min-h-0 flex-col">
+    // Below the desktop the list stands over what the picked occupation gives, scrolling in its own room.
+    <div className="grid h-full grid-cols-[17rem_minmax(0,1fr)] gap-6 max-lg:h-auto max-lg:grid-cols-1">
+      <div className="flex min-h-0 flex-col max-lg:h-[40vh]">
         <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Найти профессию" className="mb-2" />
         <div className="ui-scroll -mr-2 min-h-0 flex-1 space-y-1 overflow-y-auto pr-2">
           {shown.map((o) => (
@@ -797,7 +798,7 @@ export const SkillsStep: React.FC<{ creation: CocCreation }> = ({ creation }) =>
           <Budget label="Очки архетипа" left={creation.remaining.archetype} total={creation.budgets.archetype} />
         )}
       </div>
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-2">
         {range ? (
           <p className="text-sm text-ink-muted">
             Средства <span className="ui-numeric text-ink">{creation.creditRating}</span> из {range[0]}–{range[1]} ·{' '}
@@ -806,9 +807,10 @@ export const SkillsStep: React.FC<{ creation: CocCreation }> = ({ creation }) =>
         ) : (
           <span />
         )}
-        <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Найти навык" className="w-56" />
+        <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Найти навык" className="w-56 max-sm:w-full" />
       </div>
-      <table className="w-full text-sm">
+      {/* On a phone each row is a small card: the name and the total, the pools' fields under them. */}
+      <table className="coc-points w-full text-sm">
         <thead>
           <tr className="text-left text-[11px] uppercase tracking-[0.1em] text-ink-faint">
             <th className="py-1.5 font-normal">Навык</th>
@@ -828,9 +830,9 @@ export const SkillsStep: React.FC<{ creation: CocCreation }> = ({ creation }) =>
             {group.rows.map((row) => (
               <tr key={row.id} className="border-t border-line/40">
                 <td className={cx('py-1', row.own || row.arch ? 'text-ink' : 'text-ink-muted')}>{row.name}</td>
-                <td>{row.own && field('occupation', row.id, 'Профессия')}</td>
-                <td>{row.id !== 'credit-rating' && field('personal', row.id, 'Личные')}</td>
-                {creation.pulp && <td>{row.arch && field('archetype', row.id, 'Архетип')}</td>}
+                <td data-pool="Профессия">{row.own && field('occupation', row.id, 'Профессия')}</td>
+                <td data-pool="Личные">{row.id !== 'credit-rating' && field('personal', row.id, 'Личные')}</td>
+                {creation.pulp && <td data-pool="Архетип">{row.arch && field('archetype', row.id, 'Архетип')}</td>}
                 <td className="ui-display ui-numeric text-right text-base">{creation.skillValue(row.id)}</td>
               </tr>
             ))}
@@ -986,34 +988,7 @@ export const GearStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
 };
 
 export const IdentityStep: React.FC<{ creation: CocCreation }> = ({ creation }) => (
-  <div className="mx-auto flex h-full max-w-3xl flex-col justify-center gap-8">
-    <input
-      value={creation.name}
-      onChange={(e) => creation.setName(e.target.value)}
-      placeholder="Имя сыщика"
-      aria-label="Имя сыщика"
-      autoFocus
-      className="ui-display border-b border-frame/50 bg-transparent pb-2 text-center text-4xl text-ink outline-none placeholder:text-ink-faint focus:border-frame-bright"
-    />
-    <div className="flex items-end justify-center gap-6">
-      <ImageSlot
-        label="Полный арт"
-        kind="full"
-        hint="Во весь рост"
-        asset={creation.images.full}
-        onUploaded={(full) => creation.setImages({ ...creation.images, full })}
-        className="h-[16.6rem] w-40"
-      />
-      <ImageSlot
-        label="Портрет"
-        kind="portrait"
-        hint="Лицо"
-        asset={creation.images.portrait}
-        onUploaded={(portrait) => creation.setImages({ ...creation.images, portrait })}
-        className="h-[9.6rem] w-32"
-      />
-    </div>
-  </div>
+  <SharedIdentityStep creation={creation} placeholder="Имя сыщика" />
 );
 
 // ------------------------------------------------------------------------------------------------

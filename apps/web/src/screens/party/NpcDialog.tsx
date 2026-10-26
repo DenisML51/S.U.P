@@ -137,14 +137,14 @@ export const NpcDialog: React.FC<{
         </>
       }
     >
-      <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] gap-5 pt-1">
+      <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] gap-5 pt-1 max-sm:grid-cols-1">
         <ImageSlot
           label="Портрет"
           hint="Необязательно"
           kind="portrait"
           asset={draft.portraitAssetId ?? undefined}
           onUploaded={(id) => patch({ portraitAssetId: id ?? null })}
-          className="h-[11rem]"
+          className="h-[11rem] max-sm:mx-auto max-sm:w-[9.5rem]"
         />
         <div className="space-y-4">
           <Field label="Имя" error={touched && !draft.name.trim() ? 'Назовите НПС' : undefined}>
@@ -169,7 +169,7 @@ export const NpcDialog: React.FC<{
               { value: 'friendly', label: 'Дружелюбный', tone: 'success' },
             ]}
           />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-2">
             <Field label="Хиты">
               {({ id }) => (
                 <NumberField
@@ -202,7 +202,7 @@ export const NpcDialog: React.FC<{
           </div>
           {coc && (
             <>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-2">
                 <Field label="Комплекция">
                   {({ id }) => (
                     <NumberField

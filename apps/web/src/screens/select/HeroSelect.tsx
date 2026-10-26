@@ -72,6 +72,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
     },
     [loadCharacter],
   );
+  const panned = useRef(false);
   const step = useCallback((delta: number) => setIndex((i) => Math.max(0, Math.min(slots.length - 1, i + delta))), [slots.length]);
 
   useEffect(() => {
@@ -98,7 +99,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
   const background = focused.kind === 'hero' ? fullArtSrc(focused.hero) : undefined;
 
   return (
-    <SettingScope setting="service" className="relative h-screen overflow-clip bg-bg">
+    <SettingScope setting="service" className="relative h-screen overflow-clip bg-bg max-lg:h-dvh">
       {/* Atmosphere in the focused hero's world: its colours, its backdrop and the hero's art blurred
           into it. The account's controls over it are the service's own. */}
       <SettingScope setting={world} className="ui-morph ui-atmosphere pointer-events-none absolute inset-0 isolate bg-bg">
@@ -127,7 +128,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
 
       <div className="relative z-10 flex h-full flex-col">
         <motion.header
-          className="flex items-center justify-between px-24 pt-14"
+          className="flex items-center justify-between gap-4 px-24 pt-14 max-lg:px-8 max-lg:pt-8 max-sm:px-4 max-sm:pt-3"
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.15 } }}
           exit={{ opacity: 0, y: -12, transition: { duration: 0.25 } }}
@@ -141,17 +142,37 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
           </div>
         </motion.header>
 
-        <main className="relative flex min-h-0 flex-1 items-center justify-center">
+        {/* A finger swipes along the row of heroes, as the arrows step it. */}
+        <motion.main
+          className="relative flex min-h-0 flex-1 touch-pan-y items-center justify-center"
+          onPointerDownCapture={() => {
+            panned.current = false;
+          }}
+          onPanStart={() => {
+            panned.current = true;
+          }}
+          onPanEnd={(_, info) => {
+            if (Math.abs(info.offset.x) < 48 || Math.abs(info.offset.x) < Math.abs(info.offset.y)) return;
+            step(info.offset.x < 0 ? 1 : -1);
+          }}
+          // The finger lifted at the end of a swipe is not a tap on the card under it.
+          onClickCapture={(event) => {
+            if (!panned.current) return;
+            panned.current = false;
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+        >
           <Carousel slots={slots} index={focusIndex} onFocus={setIndex} onPlay={play} onCreate={onCreate} />
           {/* Moving along the row and the hero's own actions belong to the hero: they wear its world,
               which outranks the service theme (the service's type stays, as everywhere on this screen). */}
           <SettingScope setting={world} className="ui-service ui-morph contents">
-            <IconButton label="Предыдущий герой" className="absolute left-16" size={44} onClick={() => step(-1)} disabled={focusIndex === 0}>
+            <IconButton label="Предыдущий герой" className="absolute left-16 max-lg:left-4 max-sm:hidden" size={44} onClick={() => step(-1)} disabled={focusIndex === 0}>
               <IconPrev width={26} height={26} />
             </IconButton>
             <IconButton
               label="Следующий герой"
-              className="absolute right-16"
+              className="absolute right-16 max-lg:right-4 max-sm:hidden"
               size={44}
               onClick={() => step(1)}
               disabled={focusIndex === slots.length - 1}
@@ -159,22 +180,25 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
               <IconNext width={26} height={26} />
             </IconButton>
           </SettingScope>
-        </main>
+        </motion.main>
 
         <motion.footer
-          className="flex items-center justify-between gap-6 px-24 pb-14"
+          className="flex items-center justify-between gap-6 px-24 pb-14 max-lg:px-8 max-lg:pb-8 max-sm:flex-wrap max-sm:gap-x-2 max-sm:gap-y-3 max-sm:px-4 max-sm:pb-4"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.2 } }}
           exit={{ opacity: 0, y: 12, transition: { duration: 0.25 } }}
         >
-          <div className="flex w-64 gap-2">
+          <div className="flex w-64 gap-2 max-lg:w-40 max-sm:order-2 max-sm:w-auto">
             <Button variant="ghost" size="sm" icon={<IconImport width={16} height={16} />} onClick={() => fileInput.current?.click()}>
               Импорт
             </Button>
             <input ref={fileInput} type="file" accept=".json,application/json" className="hidden" onChange={onImport} />
           </div>
 
-          <SettingScope setting={world} className="ui-service ui-morph flex flex-col items-center gap-4">
+          <SettingScope
+            setting={world}
+            className="ui-service ui-morph flex min-w-0 flex-col items-center gap-4 max-sm:order-1 max-sm:w-full max-sm:gap-3"
+          >
             {focused.kind === 'hero' ? (
               <Button variant="primary" size="lg" className="min-w-[220px]" onClick={() => play(focused.hero)}>
                 Лист
@@ -187,7 +211,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
             <Strip slots={slots} index={focusIndex} onFocus={setIndex} />
           </SettingScope>
 
-          <div className="flex w-64 justify-end">
+          <div className="flex w-64 justify-end max-lg:w-40 max-sm:order-3 max-sm:w-auto">
             {focused.kind === 'hero' && (
               <SettingScope setting={world} className="ui-service ui-morph flex gap-1">
                 <IconButton label="Экспорт в файл" onClick={() => void exportToJSON(focused.hero.id)}>
@@ -226,7 +250,11 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
 
 // ------------------------------------------------------------------------------------------------
 
-const CARD_HEIGHT = 'min(64vh, 600px)';
+/**
+ * As tall as the room between the header and the footer allows (with space for the plates that hang
+ * over its edges), and on a phone narrow enough for the neighbours to show at its sides.
+ */
+const CARD_HEIGHT = 'min(64vh, 600px, calc(100% - 7.5rem), calc((100vw - 7rem) / 0.66))';
 
 /** Cards fanned around the focused one; neighbours recede and turn away. */
 const Carousel: React.FC<{
@@ -350,7 +378,11 @@ const NewHeroCard: React.FC<{ focused: boolean; onClick: () => void }> = ({ focu
 
 /** Portrait strip: every hero at a glance, and a quick way to jump far along the row. */
 const Strip: React.FC<{ slots: Slot[]; index: number; onFocus: (index: number) => void }> = ({ slots, index, onFocus }) => (
-  <div className="flex items-center gap-2" role="tablist" aria-label="Герои">
+  <div
+    className="ui-scroll ui-scroll--bare flex max-w-full items-center gap-2 overflow-x-auto px-1.5 py-1.5 [justify-content:safe_center]"
+    role="tablist"
+    aria-label="Герои"
+  >
     {slots.map((slot, i) => (
       <button
         key={slot.kind === 'hero' ? slot.hero.id : 'new'}
@@ -359,7 +391,7 @@ const Strip: React.FC<{ slots: Slot[]; index: number; onFocus: (index: number) =
         aria-label={slot.kind === 'hero' ? slot.hero.name : 'Новый герой'}
         onClick={() => onFocus(i)}
         className={cx(
-          'ui-strip-thumb h-11 w-11 overflow-hidden border transition-all',
+          'ui-strip-thumb h-11 w-11 shrink-0 overflow-hidden border transition-all',
           i === index ? 'scale-110 border-frame-bright' : 'border-line opacity-60 hover:opacity-100',
         )}
       >

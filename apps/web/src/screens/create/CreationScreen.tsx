@@ -4,8 +4,10 @@ import { pointsRemaining } from '@itd/game-logic';
 import { TALENTS } from '@itd/game-logic/coc';
 import { findBackground, findClass, findSubclass } from '@itd/game-logic/dnd';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
-import { Button, Panel, cx } from '../../ui/primitives';
-import { IconCheck, IconPrev } from '../../ui/icons';
+import { Button, IconButton, Panel, cx } from '../../ui/primitives';
+import { IconCharacter, IconCheck, IconClose, IconPrev } from '../../ui/icons';
+import { Drawer } from '../../ui/Drawer';
+import { useAtLeast } from '../../ui/useBreakpoint';
 import { RulesCarousel } from '../../ui/RulesetCards';
 import type { RulesChoice } from '../../systems';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
@@ -104,6 +106,10 @@ export const CreationScreen: React.FC<{
   onRestart: () => void;
 }> = ({ world, rules, onDone, onRestart }) => {
   const [confirmRestart, setConfirmRestart] = React.useState(false);
+  // Below the desktop width the steps and the hero's summary leave the sides for drawers.
+  const desktop = useAtLeast('desktop');
+  const [stepsOpen, setStepsOpen] = React.useState(false);
+  const [summaryOpen, setSummaryOpen] = React.useState(false);
   const [setting, setSetting] = useDraftState<Setting>('setting', world ?? DEFAULT_SETTING);
   const [worldChosen, setWorldChosen] = useDraftState('worldChosen', world !== undefined);
   const [path, setPath] = useDraftState<Path | null>('path', rules ? PATH_OF[rules] : null);
@@ -437,11 +443,50 @@ export const CreationScreen: React.FC<{
     </div>
   );
 
+  const stepList = (
+    <nav className="ui-scroll flex min-h-0 flex-col gap-0.5 overflow-y-auto" aria-label="Шаги">
+      {steps.map((s, i) => {
+        const done = i !== index && s.issues.length === 0 && reachable(i);
+        return (
+          <button
+            key={s.id}
+            type="button"
+            className="ui-steps__item"
+            aria-current={i === index ? 'step' : undefined}
+            data-done={done || undefined}
+            disabled={!reachable(i)}
+            onClick={() => {
+              setIndex(i);
+              setStepsOpen(false);
+            }}
+          >
+            <span className="ui-steps__mark">
+              <span>{done ? <IconCheck width={12} height={12} /> : i + 1}</span>
+            </span>
+            <span className="ui-steps__label">{s.label}</span>
+            <span className="ui-steps__value">{s.value ?? (i === index ? 'выбор…' : '—')}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+  const heroSummary =
+    path === 'coc' ? (
+      <CocSummary creation={coc} />
+    ) : (
+      <HeroSummary
+        sheet={summary}
+        setting={setting}
+        images={images}
+        classIcon={path === 'dnd' ? build.class : undefined}
+      />
+    );
+
   return (
     <SettingScope
       setting={shown}
       className={cx(
-        'ui-morph relative flex h-screen overflow-clip bg-bg',
+        'ui-morph relative flex h-screen overflow-clip bg-bg max-lg:h-dvh max-lg:flex-col',
         !worldChosen && !previewing && 'ui-service',
       )}
       data-flourish={flourish?.setting}
@@ -460,11 +505,11 @@ export const CreationScreen: React.FC<{
         className="pointer-events-none absolute inset-0 transition-opacity duration-700"
         style={{ opacity: index === 0 ? 1 : 0 }}
       >
-        <SettingBackdrop setting={shown} strength={0.6} />
+        <SettingBackdrop setting={shown} strength={0.6} frame={false} />
       </div>
       {/* The steps appear once the world is behind: choosing a world is a stage of its own. */}
       <AnimatePresence initial={false}>
-        {index > 0 && (
+        {index > 0 && desktop && (
           <motion.aside
             key="steps"
             initial={{ width: 0, opacity: 0 }}
@@ -481,64 +526,104 @@ export const CreationScreen: React.FC<{
                 Новый герой
               </h1>
               {restart}
-              <nav className="ui-scroll flex min-h-0 flex-col gap-0.5 overflow-y-auto" aria-label="Шаги">
-                {steps.map((s, i) => {
-                  const done = i !== index && s.issues.length === 0 && reachable(i);
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className="ui-steps__item"
-                      aria-current={i === index ? 'step' : undefined}
-                      data-done={done || undefined}
-                      disabled={!reachable(i)}
-                      onClick={() => setIndex(i)}
-                    >
-                      <span className="ui-steps__mark">
-                        <span>{done ? <IconCheck width={12} height={12} /> : i + 1}</span>
-                      </span>
-                      <span className="ui-steps__label">{s.label}</span>
-                      <span className="ui-steps__value">{s.value ?? (i === index ? 'выбор…' : '—')}</span>
-                    </button>
-                  );
-                })}
-              </nav>
+              {stepList}
             </div>
           </motion.aside>
         )}
       </AnimatePresence>
 
-      <div className="relative flex min-w-0 flex-1 flex-col">
+      {/* On a phone or a tablet the steps fold into a line along the top: where one is, and the
+          way to the list of them and to the hero as made so far. */}
+      {index > 0 && !desktop && (
+        <header className="ui-touch relative z-10 flex shrink-0 items-center gap-1 border-b border-line/50 px-4 py-1.5">
+          <IconButton label="К героям" size={40} onClick={onDone} className="-ml-2 shrink-0">
+            <IconPrev width={20} height={20} />
+          </IconButton>
+          <button
+            type="button"
+            onClick={() => setStepsOpen(true)}
+            aria-expanded={stepsOpen}
+            className="flex min-h-[44px] min-w-0 flex-1 flex-col justify-center text-left"
+          >
+            <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+              Шаг {index + 1} из {steps.length}
+            </span>
+            <span className="ui-display truncate text-lg leading-tight text-frame-bright">{step.label}</span>
+          </button>
+          {!step.stage && (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<IconCharacter width={16} height={16} />}
+              onClick={() => setSummaryOpen(true)}
+              aria-expanded={summaryOpen}
+              className="-mr-1 shrink-0"
+            >
+              Герой
+            </Button>
+          )}
+        </header>
+      )}
+      {!desktop && (
+        <>
+          <Drawer open={stepsOpen} onClose={() => setStepsOpen(false)} label="Шаги">
+            <div className="ui-touch flex min-h-0 flex-1 flex-col px-4 py-4">
+              <div className="flex items-center justify-between">
+                <h1 className={cx('ui-display ui-title px-2 text-xl text-frame-bright', !restart && 'mb-4')}>
+                  Новый герой
+                </h1>
+                <IconButton label="Свернуть" size={40} onClick={() => setStepsOpen(false)} className="-mr-2">
+                  <IconClose width={18} height={18} />
+                </IconButton>
+              </div>
+              {restart}
+              {stepList}
+            </div>
+          </Drawer>
+          <Drawer open={summaryOpen} onClose={() => setSummaryOpen(false)} label="Герой" side="right">
+            <div className="ui-touch relative flex min-h-0 flex-1 flex-col p-4 pt-14">
+              <IconButton
+                label="Свернуть"
+                size={40}
+                onClick={() => setSummaryOpen(false)}
+                className="absolute right-2 top-2 z-10"
+              >
+                <IconClose width={18} height={18} />
+              </IconButton>
+              {heroSummary}
+            </div>
+          </Drawer>
+        </>
+      )}
+
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         {step.stage ? (
           // A stage step (the world, the path): its question on top, its choices centred in the room left.
-          <main className="relative flex min-h-0 flex-1 flex-col px-10 pt-14">
-            {index === 0 && <div className="absolute left-24 top-14">{backToHeroes}</div>}
-            <h2 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">
+          <main className="ui-stage relative flex min-h-0 flex-1 flex-col px-10 pt-14 max-lg:px-4 max-lg:pt-4">
+            {index === 0 && (
+              <div className="absolute left-24 top-14 max-lg:static max-lg:mb-2">{backToHeroes}</div>
+            )}
+            <h2 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink max-sm:text-[1.5rem]">
               {step.question}
             </h2>
             <div className="flex min-h-0 flex-1 items-center">{content}</div>
           </main>
         ) : (
-          <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_20rem] gap-6 px-6 pt-6">
+          <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_20rem] gap-6 px-6 pt-6 max-lg:grid-cols-1 max-lg:px-4 max-lg:pt-3 max-sm:px-2">
             <Panel ornate className="flex min-h-0 flex-col">
-              <h2 className="ui-display ui-title border-b border-line/60 px-6 py-4 text-center text-[1.5rem] leading-tight text-frame-bright">
+              <h2 className="ui-display ui-title border-b border-line/60 px-6 py-4 text-center text-[1.5rem] leading-tight text-frame-bright max-sm:px-4 max-sm:py-3 max-sm:text-[1.25rem]">
                 {step.question}
               </h2>
               {/* Keyed by the step: each step opens at its top, not where the last one was scrolled. */}
-              <div key={step.id} className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5" data-creation-panel>
+              <div
+                key={step.id}
+                className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5 max-sm:px-4 max-sm:py-4"
+                data-creation-panel
+              >
                 {content}
               </div>
             </Panel>
-            {path === 'coc' ? (
-              <CocSummary creation={coc} />
-            ) : (
-              <HeroSummary
-                sheet={summary}
-                setting={setting}
-                images={images}
-                classIcon={path === 'dnd' ? build.class : undefined}
-              />
-            )}
+            {desktop && heroSummary}
           </main>
         )}
 
@@ -547,11 +632,13 @@ export const CreationScreen: React.FC<{
         <footer
           className={cx(
             'grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-4 transition-[margin] duration-[450ms]',
-            index > 0 && '-ml-60',
+            // Below the desktop: what is left above the buttons, the buttons sharing the width.
+            'max-lg:flex max-lg:flex-col-reverse max-lg:items-stretch max-lg:gap-2 max-lg:px-4 max-lg:py-3',
+            index > 0 && desktop && '-ml-60',
           )}
         >
-          <span />
-          <div className="flex gap-4">
+          <span className="max-lg:hidden" />
+          <div className="flex gap-4 max-lg:gap-3 max-lg:[&>*]:flex-1">
             <Button variant="secondary" disabled={index === 0} onClick={() => setIndex(index - 1)}>
               Назад
             </Button>
@@ -570,7 +657,8 @@ export const CreationScreen: React.FC<{
             )}
           </div>
           {/* What is left on this step: each one a link to its field on the panel. */}
-          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm text-ink-faint">
+          {/* On a narrow screen what is left keeps to one line that scrolls sideways. */}
+          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm text-ink-faint max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:whitespace-nowrap max-lg:[scrollbar-width:none]">
             {step.issues.length > 0 && (
               <>
                 Осталось выбрать:

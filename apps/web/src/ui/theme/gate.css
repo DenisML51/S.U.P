@@ -86,3 +86,20 @@
   .ui-d20--draw line { animation: none; stroke-dashoffset: 0; }
   .ui-gate__rule--loading::after, .ui-gate__hint { animation: none; }
 }
+
+/* ---------------------------------------------------------------- Phone */
+/* On a phone the form is the screen itself: no plate around it, it stands on the gate's dark. */
+@media (max-width: 639px) {
+  .ui-gate .ui-gate__form .ui-panel {
+    padding: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .ui-gate .ui-gate__form .ui-panel::before,
+  .ui-gate .ui-gate__form .ui-panel::after,
+  .ui-gate .ui-gate__form .ui-corner {
+    display: none;
+  }
+}

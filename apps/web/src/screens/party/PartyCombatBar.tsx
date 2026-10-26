@@ -70,7 +70,7 @@ export const PartyCombatBar: React.FC<{
               )}
               {!rolling && !seat.canPassTurn && seat.current && <span className="text-sm text-ink-muted">ходит {seat.current.name}</span>}
             </div>
-            <InitiativeStrip combat={fight} size="sm" onPick={seat.roll} master={seat.isMaster} className="max-w-[60vw] [justify-content:safe_center]" />
+            <InitiativeStrip combat={fight} size="sm" onPick={seat.roll} master={seat.isMaster} className="max-w-[60vw] max-lg:max-w-full [justify-content:safe_center]" />
           </motion.div>
         ) : (
           <motion.div

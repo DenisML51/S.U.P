@@ -51,7 +51,7 @@ const LimbPlate: React.FC<{ limb: Limb; armorClass: number; onChange: (delta: nu
       as="article"
       interactive
       ornate={false}
-      className="flex flex-col gap-2 px-4 py-3"
+      className="flex flex-col gap-2 px-4 py-3 max-sm:px-3"
       onClick={onOpen}
       role="button"
       tabIndex={0}
@@ -69,7 +69,7 @@ const LimbPlate: React.FC<{ limb: Limb; armorClass: number; onChange: (delta: nu
         {level === 'destroyed' ? (
           <span className="ui-display flex-1 text-center text-xl leading-none text-danger">{injury.label}</span>
         ) : (
-          <span className="ui-display ui-numeric flex-1 text-center text-2xl leading-none">
+          <span className="ui-display ui-numeric flex-1 whitespace-nowrap text-center text-2xl leading-none">
             <span className={cx(limb.currentHP <= 0 && 'text-danger')}>{limb.currentHP}</span>
             <span className="text-base text-ink-faint"> / {limb.maxHP}</span>
           </span>
@@ -114,7 +114,7 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
   };
 
   return (
-    <div className="grid h-full grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-8">
+    <div className="grid h-full grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-8 max-lg:grid-cols-1">
       <div className="flex min-h-0 min-w-0 flex-col gap-6">
         <section>
           <SectionTitle className="mb-4">Раны</SectionTitle>
@@ -153,7 +153,7 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
           {character.resistances.length === 0 ? (
             <p className="text-sm text-ink-faint">Сопротивлений и уязвимостей нет: урон проходит полностью.</p>
           ) : (
-            <ul className="grid grid-cols-2 gap-x-8 text-sm">
+            <ul className="grid grid-cols-2 gap-x-8 text-sm max-sm:grid-cols-1">
               {character.resistances.map((r) => (
                 <li key={r.id} className="flex justify-between gap-3 border-b border-line/50 py-1.5">
                   <span className="truncate text-ink">{r.type}</span>
@@ -169,7 +169,7 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
 
       {/* What acts on the hero now, in full; the rest wait folded behind "Отметить состояние". */}
       <Ledger
-        className="max-h-full self-start"
+        className="max-h-full self-start max-lg:order-first max-lg:self-stretch"
         title="Состояния"
         aside={<span>{active.size > 0 ? `действует: ${active.size}` : 'нет'}</span>}
         addLabel={marking ? 'Свернуть' : 'Отметить состояние'}

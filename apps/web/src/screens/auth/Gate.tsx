@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useSessionStore } from '../../store/useSessionStore';
 import { cx } from '../../ui/primitives';
 import { SettingScope } from '../../ui/theme/SettingScope';
+import { useAtLeast } from '../../ui/useBreakpoint';
 import { AuthForm } from './AuthForm';
 import { Icosahedron } from './Icosahedron';
 
@@ -28,6 +29,8 @@ export const Gate: React.FC<{ phase: GatePhase; onIntroDone: () => void }> = ({ 
   const user = useSessionStore((s) => s.user);
   const locked = phase === 'locked';
   const open = locked && unlocked;
+  // A phone keeps the form high, so the keyboard rising under it leaves the button in sight.
+  const tablet = useAtLeast('tablet');
 
   useEffect(() => {
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -62,7 +65,7 @@ export const Gate: React.FC<{ phase: GatePhase; onIntroDone: () => void }> = ({ 
   }, [locked, unlocked]);
 
   return (
-    <SettingScope setting="service" className="ui-service ui-gate relative h-screen overflow-hidden bg-bg">
+    <SettingScope setting="service" className="ui-service ui-gate relative h-screen overflow-hidden bg-bg max-sm:h-[100dvh]">
       <div className="ui-gate__atmosphere pointer-events-none absolute inset-0" aria-hidden />
       <motion.div
         className="pointer-events-none absolute inset-0 grid place-items-center"
@@ -80,7 +83,11 @@ export const Gate: React.FC<{ phase: GatePhase; onIntroDone: () => void }> = ({ 
       <motion.div
         className="absolute inset-x-0 flex justify-center"
         initial={false}
-        animate={{ top: open ? '27vh' : '50vh', y: '-50%', scale: open ? 0.6 : 1 }}
+        animate={{
+          top: open ? (tablet ? '27vh' : '12vh') : '50vh',
+          y: '-50%',
+          scale: open ? (tablet ? 0.6 : 0.5) : 1,
+        }}
         transition={{ duration: 0.9, ease: EASE }}
         exit={{ opacity: 0, y: '-130%', transition: { duration: 0.55, ease: [0.55, 0, 0.75, 0.2] } }}
       >
@@ -166,7 +173,7 @@ const LockScreen: React.FC<{ open: boolean }> = ({ open }) => (
     {open ? (
       <motion.div
         key="form"
-        className="pointer-events-auto absolute inset-x-0 top-[38vh] mx-auto w-full max-w-[380px]"
+        className="ui-gate__form pointer-events-auto absolute inset-x-0 top-[38vh] mx-auto w-full max-w-[380px] max-sm:top-[20vh] max-sm:px-6"
         initial={{ opacity: 0, y: 48 }}
         animate={{ opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE, delay: 0.2 } }}
         exit={{ opacity: 0, y: 32, transition: { duration: 0.3 } }}
@@ -181,7 +188,9 @@ const LockScreen: React.FC<{ open: boolean }> = ({ open }) => (
         animate={{ opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.5 } }}
         exit={{ opacity: 0, transition: { duration: 0.2 } }}
       >
-        Нажмите любую клавишу, чтобы войти
+        {/* A phone has no keys to press: the screen itself is touched. */}
+        <span className="[@media(hover:none)]:hidden">Нажмите любую клавишу, чтобы войти</span>
+        <span className="hidden [@media(hover:none)]:inline">Коснитесь экрана, чтобы войти</span>
       </motion.p>
     )}
   </AnimatePresence>

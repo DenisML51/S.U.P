@@ -1300,6 +1300,10 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 }
 
 .ui-section__aside { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; align-self: center; }
+/* On a phone a part's controls go under its name when both do not fit on one line. */
+@media (max-width: 639.98px) {
+  .ui-section__head { flex-wrap: wrap; row-gap: 0.4rem; }
+}
 
 .ui-section__hint { margin: -0.35rem 0 0.7rem; font-size: 0.8rem; line-height: 1.4; color: rgb(var(--c-ink-faint)); }
 
@@ -1510,6 +1514,92 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 }
 .ui-rail__item[aria-current='page'] .ui-rail__mark { background: rgb(var(--c-frame-bright)); }
 .ui-rail__divider { background: rgb(var(--c-line) / 0.7); }
+
+/* The rail's places along the bottom of a narrow screen: the mark of the open one runs along their top. */
+.ui-tabbar {
+  border-right: 0;
+  border-top: 1px solid rgb(var(--c-line) / 0.7);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.ui-tabbar .ui-rail__item {
+  min-width: 0;
+  min-height: 3.5rem;
+  justify-content: center;
+}
+.ui-rail.ui-tabbar .ui-rail__label {
+  max-width: 100%;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-tabbar .ui-rail__item .ui-rail__mark {
+  top: 0;
+  bottom: auto;
+  left: 25%;
+  right: 25%;
+  width: auto !important;
+  height: 2px;
+}
+
+/* Below the desktop what a finger presses grows to 40px (docs/MOBILE.md). */
+@media (max-width: 1023.98px) {
+  /* A section laid out to fill a desktop screen runs down the page instead: its panels take the
+     height of what they hold, and the page scrolls rather than each list inside it. */
+  .ui-flow .h-full {
+    height: auto;
+  }
+  /* Views of a list that do not fit the width scroll sideways under the finger. */
+  .ui-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .ui-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .ui-tabs__tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  /* A choice of a few that is wider than its place scrolls the same way, inside its frame. */
+  .ui-segmented {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ui-segmented::-webkit-scrollbar {
+    display: none;
+  }
+  .ui-segmented__option {
+    flex-shrink: 0;
+  }
+}
+@media (max-width: 639.98px) {
+  .ui-flow .ui-ledger__head {
+    flex-wrap: wrap;
+    padding-inline: 1rem;
+  }
+  .ui-flow .ui-ledger__list {
+    padding-inline: 1rem;
+  }
+}
+@media (max-width: 1023.98px) {
+  .ui-touch .ui-button--row,
+  .ui-touch .ui-button--sm,
+  .ui-touch .ui-button--md {
+    min-height: 2.5rem;
+  }
+  .ui-touch .ui-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+  }
+  .ui-touch .ui-icon-button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+}
 
 /* ------------------------------------------------------------------ Tabs */
 .ui-tabs {
@@ -1963,4 +2053,101 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 @media (prefers-reduced-motion: reduce) {
   .ui-flourish { display: none; }
   [data-flourish] { animation: none !important; }
+}
+
+/* Without a hover, what a pointer reveals by hovering its row (an edit pencil, "отменить до сюда",
+   a card's close button) is shown all the time: a finger has no other way to find it. */
+@media (hover: none) {
+  html [class*='group-hover:opacity-'],
+  html [class*='group-hover/text:opacity-'] {
+    opacity: 0.7;
+  }
+}
+
+/* What a held finger opens (a card, a menu) is not taken for text to select or a link to share. */
+.ui-hud-slot,
+.ui-hud-chip,
+.ui-token,
+.ui-die {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* A stage of the hero's creation (the world, the rules): on a phone its cards shrink a little, so
+   the card, its button and the step's buttons fit the screen without scrolling. */
+@media (max-width: 639.98px) {
+  .ui-stage {
+    --stage-fit: 0.85;
+  }
+  /* The worlds name themselves in their own type, sized for a full card: scaled with the card. */
+  .ui-stage .ui-world__name {
+    zoom: 0.75;
+  }
+}
+
+/* The skill points of creation on a phone: a row is a card, the name and total over the pools' fields. */
+@media (max-width: 639.98px) {
+  .coc-points thead {
+    display: none;
+  }
+  .coc-points tbody tr:not(:first-child) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 0.75rem;
+    padding: 0.6rem 0;
+  }
+  .coc-points tbody tr:not(:first-child) > td:first-child {
+    order: -2;
+  }
+  .coc-points tbody tr:not(:first-child) > td:last-child {
+    order: -1;
+  }
+  .coc-points td[data-pool] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    grid-column: 1 / -1;
+  }
+  .coc-points td[data-pool]:empty {
+    display: none;
+  }
+  .coc-points td[data-pool]::before {
+    content: attr(data-pool);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(var(--c-ink-faint));
+  }
+}
+
+/* ------------------------------------------------------------------ Phone scrolling */
+/* A phone shows no scrollbars: a caret at the bottom of a scroller says there is more (ScrollCues). */
+@media (max-width: 639px) {
+  /* Over every scroller's own bar style (.ui-scroll and the like), hence the !important. */
+  * { scrollbar-width: none !important; }
+  *::-webkit-scrollbar { display: none; }
+}
+.ui-scroll-cue {
+  position: fixed;
+  z-index: 150;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-left: -1rem;
+  border-radius: 9999px;
+  color: rgb(var(--c-frame-bright));
+  background: rgb(var(--c-bg-deep) / 0.72);
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(6px);
+}
+.ui-scroll-cue svg { animation: ui-scroll-cue-bob 1.8s ease-in-out infinite; }
+@keyframes ui-scroll-cue-bob {
+  50% { transform: translateY(2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-scroll-cue svg { animation: none; }
 }

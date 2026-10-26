@@ -89,7 +89,7 @@ export const EquipmentSection: React.FC<{ character: Character }> = ({ character
   const { toggleEquip, changeQuantity } = useInventory();
 
   return (
-    <div className="flex h-full gap-8">
+    <div className="flex h-full gap-8 max-lg:flex-col">
       <SectionList>
         <Tabs
           label="Тип вещей"

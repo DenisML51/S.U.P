@@ -19,7 +19,7 @@ export const SyncBadge: React.FC = () => {
   return (
     <div className="flex items-center gap-2.5 text-sm text-ink-muted" title={state.text}>
       <span className="h-1.5 w-1.5 rounded-full" style={{ background: `rgb(var(--c-${state.tone}))` }} aria-hidden />
-      <span>{user?.displayName}</span>
+      <span className="max-sm:hidden">{user?.displayName}</span>
       <span className="sr-only">{state.text}</span>
     </div>
   );
