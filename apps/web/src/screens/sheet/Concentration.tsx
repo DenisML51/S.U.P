@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { create } from 'zustand';
-import { concentrationSaveDC, endConcentration, formatModifier, savingThrowModifier } from '@itd/game-logic';
+import { activeFeaturesOf, concentrationSaveDC, endConcentration, endFeature, formatModifier, savingThrowModifier } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { ConfirmDialog, Dialog } from '../../ui/Dialog';
-import { CatalogIcon } from '../../ui/GameIcon';
+import { CatalogIcon, GameIcon } from '../../ui/GameIcon';
 import { Button, IconButton, cx } from '../../ui/primitives';
 import { IconClose, IconDice } from '../../ui/icons';
 import { useRolls } from './useRolls';
@@ -38,6 +38,34 @@ export function useEndConcentration() {
     updateCharacter(endConcentration, { log: { message: `Концентрация прекращена: ${name} (${reason})`, type: 'other' } });
   };
 }
+
+/** Turns off a feature that is on (Rage, Bladesong) and writes it into the log. */
+export function useEndFeature() {
+  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
+  return (id: string, name: string) =>
+    updateCharacter((doc) => endFeature(doc, id), { log: { message: `Прекращено: ${name}`, type: 'other' } });
+}
+
+/** The features that are on (Rage, Bladesong), each with a way to end it. Nothing when none is. */
+export const ActiveFeaturesBadge: React.FC<{ character: Character; className?: string }> = ({ character, className }) => {
+  const end = useEndFeature();
+  const active = activeFeaturesOf(character);
+  if (active.length === 0) return null;
+  return (
+    <div className={cx('space-y-1', className)}>
+      {active.map((ability) => (
+        <div key={ability.id} className="flex items-center gap-2 text-sm" title={`Действует: ${ability.name}`}>
+          <GameIcon name={ability.iconName} kind="ability" size={16} className="shrink-0 text-accent" />
+          <span className="shrink-0 text-xs uppercase tracking-[0.16em] text-ink-faint">Действует</span>
+          <span className="min-w-0 flex-1 truncate text-ink">{ability.name}</span>
+          <IconButton label={`Прекратить: ${ability.name}`} size={22} onClick={() => end(ability.id, ability.name)}>
+            <IconClose width={12} height={12} />
+          </IconButton>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 /** Small mark on a spell or ability that needs concentration; takes the colour of the text it sits in. */
 export const ConcentrationMark: React.FC<{ className?: string }> = ({ className }) => (

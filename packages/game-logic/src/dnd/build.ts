@@ -587,6 +587,13 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   const species = findSpecies(build.species);
   const proficiency = proficiencyForLevel(level);
 
+  // The features that are on (Rage, Bladesong) add their effects while they last.
+  const active = new Set(character.activeFeatures ?? []);
+  for (const granted of collected.features) {
+    if (granted.feature.stance && active.has(grantedId(granted))) {
+      for (const effect of resolveEffects(granted.feature.stance.effects, ctx)) collected.effects.push({ effect, owner: granted });
+    }
+  }
   const effects = collected.effects.map((e) => e.effect);
   const ofType = <T extends Effect['type']>(type: T) => effects.filter((e): e is Extract<Effect, { type: T }> => e.type === type);
 
@@ -736,6 +743,8 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
         saveDC: feature.saveDC !== undefined ? resolveAmount(feature.saveDC, ctx) : undefined,
         // Features have no concentration of their own; a player's mark survives the rebuild.
         concentration: previous?.concentration,
+        stance: feature.stance ? true : undefined,
+        stanceEndsConcentration: feature.stance?.endsConcentration || undefined,
         iconName: previous?.iconName ?? feature.iconName,
         color: previous?.color ?? feature.color,
         grant: granted.key,
@@ -815,6 +824,11 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     );
   }
 
+  // A feature that is on stays on only while the sheet still has it (a level given back takes it).
+  const stillActive = (character.activeFeatures ?? []).filter((id) =>
+    [...abilities, ...character.abilities.filter((a) => !a.grant)].some((a) => a.id === id && a.stance),
+  );
+
   const maxPreparedSpells = { ...character.maxPreparedSpells };
   if (casting?.mode === 'prepared' || casting?.mode === 'spellbook') maxPreparedSpells.total = resolveAmount(casting.prepared, ctx);
 
@@ -849,8 +863,8 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     attacksPerAction: attacksPerAction > 1 ? attacksPerAction : undefined,
     advantageOn: advantageOn.length > 0 ? advantageOn : undefined,
     armorClassBonus: {
-      always: ofType('armorClass').filter((e) => !e.armored).reduce((sum, e) => sum + e.amount, 0),
-      armored: ofType('armorClass').filter((e) => e.armored).reduce((sum, e) => sum + e.amount, 0),
+      always: ofType('armorClass').filter((e) => !e.armored).reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0),
+      armored: ofType('armorClass').filter((e) => e.armored).reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0),
       manual: character.armorClassBonus?.manual,
       unarmored: unarmored?.attribute,
       unarmoredNoShield: unarmored?.noShield || undefined,
@@ -858,17 +872,18 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     resistances,
     resources: [...resources, ...character.resources.filter((r) => !r.grant && !resources.some((g) => g.id === r.id))],
     abilities: [...abilities, ...character.abilities.filter((a) => !a.grant)],
+    activeFeatures: stillActive.length > 0 ? stillActive : undefined,
     traits: [...traits, ...character.traits.filter((t) => !t.grant)],
     spells: [...spells.values(), ...character.spells.filter((s) => !s.grant && !spells.has(s.id.replace(/^spell-/, '')))],
     maxPreparedSpells,
     spellcastingDifficultyName: casting ? 'СЛ заклинаний' : character.spellcastingDifficultyName,
     spellcastingDifficultyValue: casting
-      ? 8 + proficiency + abilityModifier(scores[casting.ability] ?? 10)
+      ? 8 + proficiency + abilityModifier(scores[casting.ability] ?? 10) + ofType('spellSaveDC').reduce((sum, e) => sum + e.amount, 0)
       : character.spellcastingDifficultyValue,
     attacks: [
       ...grantedAttacks(collected, character.attacks, scores, proficiency, ctx),
       ...withThrows(character.attacks.filter((a) => !a.grant), character.inventory).map((attack) =>
-        weaponAttackFor(attack, character.inventory, scores, proficiency, effects),
+        weaponAttackFor(attack, character.inventory, scores, proficiency, effects, ctx),
       ),
     ],
     build,
@@ -988,6 +1003,7 @@ function weaponAttackFor(
   scores: Record<string, number>,
   proficiency: number,
   effects: Effect[] = [],
+  ctx?: BuildContext,
 ): Character['attacks'][number] {
   const item = inventory.find((i) => i.id === attack.weaponId);
   const weapon = item && DND.weapons.find((w) => w.id === item.ref);
@@ -1020,7 +1036,8 @@ function weaponAttackFor(
   const melee = equippedTableWeapons(inventory).filter(({ weapon: w }) => w.kind === 'melee');
   const dueling =
     styles.has('dueling') && weapon.kind === 'melee' && !hasProperty(weapon, 'Двуручное') && melee.length <= 1 && !spendsItself;
-  const damageModifier = offHand && !styles.has('twoWeapon') ? Math.min(0, modifier) : modifier + (dueling ? 2 : 0);
+  const extra = ctx ? damageBonusFor(attribute, effects, ctx) : 0;
+  const damageModifier = (offHand && !styles.has('twoWeapon') ? Math.min(0, modifier) : modifier + (dueling ? 2 : 0)) + extra;
   const heavy = weapon.kind === 'melee' && (hasProperty(weapon, 'Двуручное') || hasProperty(weapon, 'Универсальное'));
   const twoHanded = !offHand && !spendsItself ? versatileDie(weapon) : undefined;
   return {
@@ -1030,11 +1047,17 @@ function weaponAttackFor(
     hitBonus: (weaponProficient(weapon, effects) ? proficiency : 0) + modifier + bonus,
     damage: signed(dice, damageModifier),
     // Dueling's +2 is for one hand: held in two, the versatile die goes without it.
-    damageTwoHanded: twoHanded ? signed(twoHanded, modifier) : undefined,
+    damageTwoHanded: twoHanded ? signed(twoHanded, modifier + extra) : undefined,
     minDie: styles.has('greatWeapon') && heavy && !spendsItself ? 3 : undefined,
     attribute,
   };
 }
+
+/** Damage the features add to an attack made with an ability (Rage: +2 with Strength). */
+const damageBonusFor = (attribute: string, effects: Effect[], ctx: BuildContext): number =>
+  effects
+    .filter((e): e is Extract<Effect, { type: 'damageBonus' }> => e.type === 'damageBonus' && (!e.ability || e.ability === attribute))
+    .reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0);
 
 /** Attacks the features give (Unarmed Strike with the Martial Arts die): rebuilt, keeping the player's icon. */
 function grantedAttacks(
@@ -1058,7 +1081,7 @@ function grantedAttacks(
       id,
       name: def.name,
       description: def.description,
-      damage: signed(dice, modifier),
+      damage: signed(dice, modifier + damageBonusFor(attribute, collected.effects.map((e) => e.effect), ctx)),
       damageType: def.damageType,
       hitBonus: proficiency + modifier,
       actionType: def.actionType ?? 'action',

@@ -261,10 +261,11 @@ export function useRolls() {
     label: string,
     modifier: number,
     components: DamageComponents,
-    // Great Weapon Fighting's floor on the dice; a versatile weapon's damage held in both hands.
-    { minDie, twoHanded }: { minDie?: number; twoHanded?: DamageComponents } = {},
+    // Great Weapon Fighting's floor on the dice; a versatile weapon's damage held in both hands; a
+    // spell's attack, which features may roll with advantage (Innate Sorcery).
+    { minDie, twoHanded, spell }: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean } = {},
   ) => {
-    const { plan, dice, kept: die } = throwD20({ kind: 'attack' });
+    const { plan, dice, kept: die } = throwD20({ kind: 'attack', spell });
     const total = die + modifier - plan.penalty;
     // A natural 1 always misses; the hero's crit range (a Champion's 19) always hits hard.
     const tone: Tone | undefined = die === 1 ? 'fumble' : character && isCriticalRoll(character, die) ? 'crit' : undefined;

@@ -82,7 +82,7 @@ export type Effect =
   | { type: 'hp'; amount: Amount }
   | { type: 'initiative'; amount: Amount }
   /** Armour class bonus, only while wearing armour when `armored` (Defense). */
-  | { type: 'armorClass'; amount: number; armored?: boolean }
+  | { type: 'armorClass'; amount: Amount; armored?: boolean }
   | { type: 'resistance'; damageType: string; level?: 'resistance' | 'immunity' }
   /**
    * A spell the hero always has. `alwaysPrepared` spells never count against the prepared limit;
@@ -114,8 +114,15 @@ export type Effect =
   | { type: 'extraAttack'; attacks: number }
   /** Weapon attacks are critical hits from this natural roll up (Champion: 19, then 18). */
   | { type: 'critRange'; min: number }
-  /** d20 rolls always made with advantage: `initiative`, `deathSave`, `skill:<id>`, `save:<ability>`, `check:<ability>`. */
+  /**
+   * d20 rolls always made with advantage: `initiative`, `deathSave`, `skill:<id>`, `save:<ability>`,
+   * `check:<ability>`, `attack:spell`, `attack:weapon`.
+   */
   | { type: 'advantage'; on: string[] }
+  /** Damage added to weapon and unarmed attacks made with this ability, any when absent (Rage: Strength). */
+  | { type: 'damageBonus'; amount: Amount; ability?: AttributeId }
+  /** Added to the spell save DC (Innate Sorcery). */
+  | { type: 'spellSaveDC'; amount: number }
   /** A bonus to attack rolls with weapons of a kind (Archery: +2 with ranged weapons). */
   | { type: 'attackBonus'; kind: 'melee' | 'ranged'; amount: number }
   /**
@@ -190,6 +197,16 @@ export interface FeatureDef {
   hidden?: boolean;
   /** Character level the feature opens at, for species and feats that grow (Draconic Flight at 5). */
   minLevel?: number;
+  /**
+   * Using it turns it on until it is ended (Rage, Bladesong, Draconic Flight): these effects count
+   * only meanwhile. Starting it ends concentration when `endsConcentration` (a raging barbarian).
+   */
+  stance?: StanceDef;
+}
+
+export interface StanceDef {
+  effects: Effect[] | ((ctx: BuildContext) => Effect[]);
+  endsConcentration?: boolean;
 }
 
 /** An inline option of a choice (an elf lineage, a dragon ancestry, a Channel Divinity option). */

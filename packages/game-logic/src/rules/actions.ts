@@ -1,5 +1,5 @@
 import type { Ability, ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
-import { startConcentration } from './concentration';
+import { concentrationBlocker, isActiveFeature, startConcentration, startFeature } from './concentration';
 import { changeItemQuantity, isWeaponStack, itemQuantity } from './inventory';
 import { changeResource } from './resources';
 
@@ -92,7 +92,9 @@ export type PerformActionFailure =
   | 'no_action_left'
   | 'not_enough_resource'
   | 'ammunition_unresolved'
-  | 'not_enough_ammunition';
+  | 'not_enough_ammunition'
+  | 'already_active'
+  | 'blocked_by_feature';
 
 export interface PerformActionCosts {
   slot?: ActionSlot;
@@ -172,6 +174,11 @@ export function performAction(character: Character, request: PerformActionReques
   } else if (spell && !spell.prepared) {
     return fail('not_prepared', `Заклинание «${source.name}» не подготовлено`);
   }
+  // Rage and the like forbid spells while they are on.
+  const blocker = spell ? concentrationBlocker(character) : undefined;
+  if (blocker) return fail('blocked_by_feature', `Пока действует «${blocker.name}», заклинания не творятся`);
+  const stance = request.kind === 'ability' && (source as Ability).stance ? (source as Ability) : undefined;
+  if (stance && isActiveFeature(character, stance.id)) return fail('already_active', `«${source.name}» уже действует`);
 
   let next = character;
   const costs: PerformActionCosts = {};
@@ -245,13 +252,15 @@ export function performAction(character: Character, request: PerformActionReques
   // A spell or ability that needs concentration starts it, ending any other.
   const concentrates = request.kind !== 'attack' && 'concentration' in source && !!source.concentration;
   if (concentrates) next = startConcentration(next, { kind: request.kind as 'spell' | 'ability', id: source.id, name: source.name });
+  // An ability that is on until ended (Rage) turns on.
+  if (stance) next = startFeature(next, stance);
 
   const paid = [
     costs.resource && `${costs.resource.name} −${costs.resource.amount}`,
     costs.ammunition && `${costs.ammunition.name} −${costs.ammunition.amount}`,
   ].filter(Boolean);
   const verb = request.kind === 'attack' ? 'Атака' : ritual ? 'Ритуал' : request.kind === 'spell' ? 'Заклинание' : 'Способность';
-  const message = `${verb}: ${source.name}${paid.length ? ` (${paid.join(', ')})` : ''}${strikeNote}${concentrates ? ' · концентрация' : ''}`;
+  const message = `${verb}: ${source.name}${paid.length ? ` (${paid.join(', ')})` : ''}${strikeNote}${concentrates ? ' · концентрация' : ''}${stance ? ' · действует' : ''}`;
 
   return { ok: true, character: next, costs, message };
 }

@@ -8,12 +8,13 @@ import { HALF_CASTER_SLOTS, abilityScoreImprovement, epicBoon, weaponMasteryChoi
 const CHANNEL_DIVINITY = 'paladin.channel-divinity';
 
 /** A capstone transformation: once per long rest, or again by spending a 5th-level slot. */
-const capstone = (id: string, name: string, description: string): FeatureDef => ({
+const capstone = (id: string, name: string, description: string, stance?: FeatureDef['stance']): FeatureDef => ({
   id,
   name,
   description: `${description}\n\nРаз в продолжительный отдых; повторно — потратив ячейку 5-го круга.`,
   action: 'bonus',
   resource: { id, name, max: 1, recharge: 'long' },
+  stance,
   iconName: 'sun-radiations',
 });
 
@@ -225,6 +226,7 @@ const vengeance: SubclassDef = {
         'vengeance.avenging-angel',
         'Ангел мести',
         'Бонусным действием вы на 10 минут обретаете крылья (скорость полёта 60 футов, можно парить) и ауру угрозы 30 футов: враг, впервые за ход входящий в неё или начинающий там ход, совершает спасбросок Мудрости или пугается на 1 минуту; атаки по испуганному совершаются с преимуществом.',
+        { effects: [{ type: 'movement', mode: 'fly', feet: 60 }] },
       ),
     ],
   },

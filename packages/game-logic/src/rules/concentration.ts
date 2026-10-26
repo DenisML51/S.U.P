@@ -1,4 +1,4 @@
-import type { Character, Concentration } from '@itd/schema';
+import type { Ability, Character, Concentration } from '@itd/schema';
 
 /** Conditions that leave the hero incapacitated, which ends concentration at once. */
 export const CONCENTRATION_BREAKING_CONDITIONS: readonly string[] = [
@@ -32,6 +32,45 @@ export const startConcentration = (
   now: number = Date.now(),
 ): Character => ({ ...character, concentratingOn: { ...target, startedAt: now } });
 
-/** Ends concentration the hero can no longer keep (0 hit points, incapacitated). */
+/**
+ * Ends what the hero can no longer keep up at 0 hit points or incapacitated: concentration, and
+ * the features that are on (Rage, Wild Shape).
+ */
 export const keepConcentration = (character: Character): Character =>
-  character.concentratingOn && !canConcentrate(character) ? endConcentration(character) : character;
+  canConcentrate(character) ? character : endAllFeatures(endConcentration(character));
+
+// ------------------------------------------------------------------------------------------------
+// Features that are on (Rage, Bladesong): kept, like concentration, while the hero can act
+// ------------------------------------------------------------------------------------------------
+
+/** Whether the ability is on now. */
+export const isActiveFeature = (character: Pick<Character, 'activeFeatures'>, id: string): boolean =>
+  !!character.activeFeatures?.includes(id);
+
+/** The abilities that are on now, in the order of the sheet. */
+export const activeFeaturesOf = (character: Pick<Character, 'abilities' | 'activeFeatures'>): Ability[] =>
+  character.abilities.filter((a) => a.stance && isActiveFeature(character, a.id));
+
+/** A feature that is on and forbids concentration (Rage), if any. */
+export const concentrationBlocker = (character: Pick<Character, 'abilities' | 'activeFeatures'>): Ability | undefined =>
+  activeFeaturesOf(character).find((a) => a.stanceEndsConcentration);
+
+/** Turns an ability on; one that forbids concentration ends it. */
+export function startFeature(character: Character, ability: Pick<Ability, 'id' | 'stanceEndsConcentration'>): Character {
+  const active = character.activeFeatures ?? [];
+  const next = active.includes(ability.id) ? character : { ...character, activeFeatures: [...active, ability.id] };
+  return ability.stanceEndsConcentration ? endConcentration(next) : next;
+}
+
+/** Turns an ability off; the field goes away with the last one. */
+export function endFeature(character: Character, id: string): Character {
+  const active = (character.activeFeatures ?? []).filter((a) => a !== id);
+  if (active.length === (character.activeFeatures?.length ?? 0)) return character;
+  if (active.length > 0) return { ...character, activeFeatures: active };
+  const { activeFeatures: _ended, ...rest } = character;
+  return rest;
+}
+
+/** Turns every ability off (a long rest, falling unconscious). */
+export const endAllFeatures = (character: Character): Character =>
+  (character.activeFeatures ?? []).reduce(endFeature, character);

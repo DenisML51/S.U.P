@@ -1,7 +1,7 @@
 import type { Character, Limb, Resource } from '@itd/schema';
 import { attributeModifier } from './abilities';
 import { resetTurn } from './actions';
-import { endConcentration } from './concentration';
+import { endAllFeatures, endConcentration } from './concentration';
 import { rollDie, type RandomSource } from './dice';
 import { exhaustionLevel, setExhaustion } from './d20';
 import { LIMB_LOST_HP, settleHealth, totalMaxHP } from './health';
@@ -145,7 +145,7 @@ export function shortRest(character: Character, options: ShortRestOptions = {}):
 export function longRest(character: Character): RestResult {
   const { resources, changes } = restoreResources(character, 'long');
   const maxHP = totalMaxHP(character);
-  let next: Character = endConcentration(resetTurn({ ...character, resources, currentHP: maxHP, tempHP: 0 }));
+  let next: Character = endAllFeatures(endConcentration(resetTurn({ ...character, resources, currentHP: maxHP, tempHP: 0 })));
 
   const pool = hitDiceOf(character);
   if (pool && pool.current < pool.max) {

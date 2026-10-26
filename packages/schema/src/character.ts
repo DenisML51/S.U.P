@@ -228,6 +228,10 @@ export const AbilitySchema = passthroughObject({
   hitBonus: optionalNumber,
   /** Using it starts concentration, which a new concentration, a failed save or incapacitation ends. */
   concentration: optionalFlag,
+  /** Using it turns it on until it is ended (Rage, Bladesong); its effects count meanwhile. */
+  stance: optionalFlag,
+  /** Turning it on ends concentration, and none can be kept while it is on (Rage). */
+  stanceEndsConcentration: optionalFlag,
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
@@ -524,7 +528,7 @@ export const CharacterSchema = passthroughObject({
   critRange: numeric(int.min(2).max(20).optional()),
   /**
    * d20 rolls the hero always makes with advantage, from features: `initiative`, `deathSave`,
-   * `skill:<id>`, `save:<ability>`, `check:<ability>`.
+   * `skill:<id>`, `save:<ability>`, `check:<ability>`, `attack:spell`, `attack:weapon`.
    */
   advantageOn: optionalList(shortString),
   /** Exhaustion level 0–6 (D&D 2024): −2 per level to every d20 test and −5 feet of speed; 6 is death. */
@@ -543,6 +547,8 @@ export const CharacterSchema = passthroughObject({
   limbs: list(LimbSchema),
   resistances: list(ResistanceSchema),
   conditions: list(shortString),
+  /** Ids of the abilities that are on now (Rage, Bladesong): their effects count until they end. */
+  activeFeatures: optionalList(shortString),
   /** The spell or ability the hero keeps concentration on; absent when not concentrating. */
   concentratingOn: text(ConcentrationSchema.optional()),
   /** Kept while the hero lies at 0 hit points; absent otherwise. */

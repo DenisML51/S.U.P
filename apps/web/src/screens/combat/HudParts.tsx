@@ -5,6 +5,7 @@ import {
   ACTION_SLOTS,
   CONDITIONS,
   actionLimitsOf,
+  activeFeaturesOf,
   armorClassOf,
   attacksPerActionOf,
   experienceProgress,
@@ -35,7 +36,7 @@ import { CONDITION_ICONS, CatalogIcon, GameIcon } from '../../ui/GameIcon';
 import { Panel, cx } from '../../ui/primitives';
 import { LevelReady } from '../../ui/ornaments';
 import { IconAdvantage, IconAmmunition, IconCoins, IconDisadvantage } from '../../ui/icons';
-import { useEndConcentration } from '../sheet/Concentration';
+import { useEndConcentration, useEndFeature } from '../sheet/Concentration';
 import { useRollMode } from '../sheet/RollMode';
 import { SaveMark } from '../sheet/parts/DeathSaves';
 import { useSheetDialogs } from '../sheet/dialogs/context';
@@ -214,6 +215,7 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
   const dialogs = useSheetDialogs();
   const { bind, view } = useHint();
   const endConcentration = useEndConcentration();
+  const endFeature = useEndFeature();
   const down = character.currentHP <= 0;
   const conditions = character.conditions.map((id) => ({ id, condition: CONDITIONS.find((c) => c.id === id) }));
   const shown = conditions.slice(0, CONDITIONS_SHOWN);
@@ -279,22 +281,37 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
           </button>
         )}
       </div>
-      {character.concentratingOn && (
-        <button
-          type="button"
-          onClick={() => endConcentration('по желанию')}
-          className="ui-hud-chip ui-hud-chip--mini absolute right-2 top-2"
-          style={{ color: 'rgb(var(--c-accent))', borderColor: 'rgb(var(--c-accent) / 0.6)' }}
-          aria-label={`Прекратить концентрацию: ${character.concentratingOn.name}`}
-          {...bind({
-            key: 'concentration',
-            title: `Концентрация: ${character.concentratingOn.name}`,
-            lines: ['Урон требует спасброска Телосложения', 'Нажмите, чтобы прекратить'],
-          })}
-        >
-          <CatalogIcon id="psychic-waves" size={16} />
-        </button>
-      )}
+      <div className="absolute right-2 top-2 flex flex-col gap-1">
+        {character.concentratingOn && (
+          <button
+            type="button"
+            onClick={() => endConcentration('по желанию')}
+            className="ui-hud-chip ui-hud-chip--mini"
+            style={{ color: 'rgb(var(--c-accent))', borderColor: 'rgb(var(--c-accent) / 0.6)' }}
+            aria-label={`Прекратить концентрацию: ${character.concentratingOn.name}`}
+            {...bind({
+              key: 'concentration',
+              title: `Концентрация: ${character.concentratingOn.name}`,
+              lines: ['Урон требует спасброска Телосложения', 'Нажмите, чтобы прекратить'],
+            })}
+          >
+            <CatalogIcon id="psychic-waves" size={16} />
+          </button>
+        )}
+        {activeFeaturesOf(character).map((ability) => (
+          <button
+            key={ability.id}
+            type="button"
+            onClick={() => endFeature(ability.id, ability.name)}
+            className="ui-hud-chip ui-hud-chip--mini"
+            style={{ color: 'rgb(var(--c-accent))', borderColor: 'rgb(var(--c-accent) / 0.6)' }}
+            aria-label={`Прекратить: ${ability.name}`}
+            {...bind({ key: `f:${ability.id}`, title: `Действует: ${ability.name}`, lines: ['Нажмите, чтобы прекратить'] })}
+          >
+            <GameIcon name={ability.iconName} kind="ability" size={16} />
+          </button>
+        ))}
+      </div>
       {character.tempHP > 0 && <span className="ui-hud-portrait__temp">+{character.tempHP}</span>}
       {down && rollsDeathSaves(character) && (
         <button
