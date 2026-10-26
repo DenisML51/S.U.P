@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { isCriticalRoll, planD20, rollD20, rollFormula, type D20Plan, type D20Test, type FormulaRoll } from '@itd/game-logic';
+import {
+  damageRulesFor,
+  isCriticalRoll,
+  planD20,
+  rollD20,
+  rollFormula,
+  rollOptionsOf,
+  spendTurnRules,
+  type D20Plan,
+  type D20Test,
+  type DamageSource,
+  type FormulaRoll,
+} from '@itd/game-logic';
+import type { DamageRule } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { announceRoll } from '../../store/useTableRollStore';
 import { RollingDie } from '../../ui/RollingDie';
@@ -162,6 +175,7 @@ export type DamageComponents = { damage: string; type?: string }[];
  */
 export function useRolls() {
   const logHistory = useCharacterStore((s) => s.logHistory);
+  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   // Every throw is also shown at the party table the hero sits at.
   const characterId = useCharacterStore((s) => s.character?.id);
   const show = (dice: ThrownDie[], label: string) => announceRoll(characterId, dice, label);
@@ -227,15 +241,37 @@ export function useRolls() {
   /**
    * Damage of an attack or effect: one roll per component, totalled, with each component's type
    * kept in the breakdown ("7 дробящий + 3 электричество"). A critical hit rolls every die twice.
+   * Features change the dice of what fits them (`source`): Savage Attacker rolls a weapon's twice,
+   * Piercer rolls a piercing die again; once-a-turn ones are spent for the turn in a fight (`tracked`).
    */
-  const damage = (label: string, components: DamageComponents, { critical = false, minDie }: { critical?: boolean; minDie?: number } = {}) => {
+  const damage = (
+    label: string,
+    components: DamageComponents,
+    { critical = false, minDie, source, tracked }: { critical?: boolean; minDie?: number; source?: DamageSource; tracked?: boolean } = {},
+  ) => {
+    const hero = useCharacterStore.getState().character;
+    const applied = new Map<string, DamageRule>();
     const parts = components
       .filter((c) => c.damage.trim())
-      .map((c) => ({ ...c, roll: rollFormula(c.damage, Math.random, { critical, minDie }) }))
+      .map((c) => {
+        const rules = hero && source ? damageRulesFor(hero, source, c.type) : [];
+        const healing = hero && !source && c.type === 'Лечение' ? damageRulesFor(hero, { kind: 'other' }, c.type) : [];
+        for (const rule of [...rules, ...healing]) applied.set(rule.id, rule);
+        return { ...c, roll: rollFormula(c.damage, Math.random, rollOptionsOf([...rules, ...healing], { critical, minDie })) };
+      })
       .filter((c) => c.roll.rolls.length > 0 || c.roll.bonus !== 0);
     if (parts.length === 0) return null;
+    if (tracked && applied.size > 0) {
+      updateCharacter((doc) => spendTurnRules(doc, [...applied.values()]), { undoable: false });
+    }
     const total = parts.reduce((sum, p) => sum + p.roll.total, 0);
-    const detail = parts.map((p) => `${p.roll.total}${p.type ? ` ${p.type.toLowerCase()}` : ''}`).join(' + ');
+    const rolledTwice = parts.flatMap((p) => (p.roll.discarded ? [p.roll.discarded.total] : []));
+    const ruleNames = [...new Set([...applied.values()].map((r) => r.name))];
+    const detail = [
+      parts.map((p) => `${p.roll.total}${p.type ? ` ${p.type.toLowerCase()}` : ''}`).join(' + '),
+      ...ruleNames,
+      ...(rolledTwice.length > 0 ? [`второй бросок ${rolledTwice.join(', ')}`] : []),
+    ].join(' · ');
     const healing = parts.every((p) => p.type === 'Лечение');
     const title = healing ? `${label}: лечение` : critical ? `${label}: критический урон` : `${label}: урон`;
     show(parts.flatMap((p) => p.roll.rolls), `${title}: ${total}`);
@@ -263,7 +299,13 @@ export function useRolls() {
     components: DamageComponents,
     // Great Weapon Fighting's floor on the dice; a versatile weapon's damage held in both hands; a
     // spell's attack, which features may roll with advantage (Innate Sorcery).
-    { minDie, twoHanded, spell }: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean } = {},
+    {
+      minDie,
+      twoHanded,
+      spell,
+      source,
+      tracked,
+    }: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean; source?: DamageSource; tracked?: boolean } = {},
   ) => {
     const { plan, dice, kept: die } = throwD20({ kind: 'attack', spell });
     const total = die + modifier - plan.penalty;
@@ -289,7 +331,7 @@ export function useRolls() {
                     label: tone === 'crit' ? 'Крит. урон' : 'Урон',
                     onClick: () => {
                       toast.dismiss(t.id);
-                      damage(label, components, { critical: tone === 'crit', minDie });
+                      damage(label, components, { critical: tone === 'crit', minDie, source, tracked });
                     },
                   },
                   ...(twoHanded
@@ -298,7 +340,7 @@ export function useRolls() {
                           label: 'Двумя руками',
                           onClick: () => {
                             toast.dismiss(t.id);
-                            damage(`${label} (двумя руками)`, twoHanded, { critical: tone === 'crit', minDie });
+                            damage(`${label} (двумя руками)`, twoHanded, { critical: tone === 'crit', minDie, source, tracked });
                           },
                         },
                       ]

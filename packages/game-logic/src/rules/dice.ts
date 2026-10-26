@@ -81,6 +81,8 @@ export interface FormulaRoll {
   total: number;
   rolls: { sides: number; value: number; type?: string }[];
   bonus: number;
+  /** Rolled twice (Savage Attacker): the roll that was not kept. */
+  discarded?: FormulaRoll;
 }
 
 export interface RollOptions {
@@ -88,19 +90,48 @@ export interface RollOptions {
   critical?: boolean;
   /** A die that lands lower counts as this (Great Weapon Fighting: 1 and 2 count as 3). */
   minDie?: number;
+  /** A die that lands on 1 is rolled again once and the new result kept (Tavern Brawler, Healer). */
+  rerollOnes?: boolean;
+  /** A 1 counts as 2 (Elemental Adept). */
+  onesAsTwos?: boolean;
+  /** The lowest die, when below its average, is rolled again and the new result kept (Piercer). */
+  rerollLowest?: boolean;
+  /** Dice added on a critical hit, of the formula's first die (Piercer: one). */
+  extraCritDice?: number;
+  /** The dice are rolled twice and the better total is kept (Savage Attacker). */
+  twice?: boolean;
 }
 
 export function rollFormula(formula: string, random: RandomSource = Math.random, options: RollOptions = {}): FormulaRoll {
   const { dice, bonus } = parseDiceFormula(formula);
-  const rolls = dice.flatMap((group) =>
-    Array.from({ length: options.critical ? group.count * 2 : group.count }, () => ({
-      sides: group.sides,
-      // A subtracted group ("1d20 - 1d4") contributes negative values.
-      value: group.sign * Math.max(group.sign > 0 ? Math.min(options.minDie ?? 1, group.sides) : 1, rollDie(group.sides, random)),
-      type: group.type,
-    })),
-  );
-  return { total: rolls.reduce((sum, r) => sum + r.value, bonus), rolls, bonus };
+  const die = (sides: number, sign: 1 | -1) => {
+    let value = rollDie(sides, random);
+    if (sign > 0) {
+      if (options.rerollOnes && value === 1) value = rollDie(sides, random);
+      if (options.onesAsTwos && value === 1 && sides > 1) value = 2;
+      value = Math.max(Math.min(options.minDie ?? 1, sides), value);
+    }
+    return sign * value;
+  };
+  const once = (): FormulaRoll => {
+    const rolls = dice.flatMap((group, index) =>
+      Array.from(
+        { length: (options.critical ? group.count * 2 : group.count) + (options.critical && index === 0 ? (options.extraCritDice ?? 0) : 0) },
+        // A subtracted group ("1d20 - 1d4") contributes negative values.
+        () => ({ sides: group.sides, value: die(group.sides, group.sign), type: group.type }),
+      ),
+    );
+    if (options.rerollLowest) {
+      const lowest = rolls.reduce<(typeof rolls)[number] | undefined>((low, r) => (r.value > 0 && (!low || r.value < low.value) ? r : low), undefined);
+      if (lowest && lowest.value < (lowest.sides + 1) / 2) lowest.value = die(lowest.sides, 1);
+    }
+    return { total: rolls.reduce((sum, r) => sum + r.value, bonus), rolls, bonus };
+  };
+  if (!options.twice) return once();
+  const first = once();
+  const second = once();
+  const [kept, other] = second.total > first.total ? [second, first] : [first, second];
+  return { ...kept, discarded: other };
 }
 
 export interface InitiativeRoll {

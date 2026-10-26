@@ -13,6 +13,7 @@ export * from './rules/collections';
 export * from './rules/concentration';
 export * from './rules/creation';
 export * from './rules/d20';
+export * from './rules/damageRules';
 export * from './rules/currency';
 export * from './rules/dice';
 export * from './rules/health';

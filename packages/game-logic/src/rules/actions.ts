@@ -63,7 +63,11 @@ export function strikesLeft(character: Character): number {
 const strikeOf = (strike: number, of: number) => `атака ${strike} из ${of}`;
 
 /** A new turn: every action is available again. */
-export const resetTurn = (character: Character): Character => ({ ...character, spentActions: { ...NO_SPENT_ACTIONS } });
+export const resetTurn = (character: Character): Character => {
+  // Once-a-turn rules (Savage Attacker) are free again.
+  const { turnUses: _used, ...rest } = character;
+  return { ...rest, spentActions: { ...NO_SPENT_ACTIONS } };
+};
 
 // ---------------------------------------------------------------------------------------------
 // Performing an attack, ability or spell

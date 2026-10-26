@@ -1,4 +1,4 @@
-import type { ActionType } from '@itd/schema';
+import type { ActionType, DamageRule } from '@itd/schema';
 import type { AttributeId } from '../content/attributes';
 
 /**
@@ -121,6 +121,8 @@ export type Effect =
   | { type: 'advantage'; on: string[] }
   /** Damage added to weapon and unarmed attacks made with this ability, any when absent (Rage: Strength). */
   | { type: 'damageBonus'; amount: Amount; ability?: AttributeId }
+  /** A rule for damage dice (Savage Attacker: rolled twice; Piercer: one die again). */
+  | { type: 'damageRoll'; rule: Omit<DamageRule, 'id'> }
   /** Added to the spell save DC (Innate Sorcery). */
   | { type: 'spellSaveDC'; amount: number }
   /** In the shape of a beast (Wild Shape): its physical scores, armour class, speeds, senses and attacks. */

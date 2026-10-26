@@ -888,6 +888,9 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
       form: formArmorClass,
     },
     resistances,
+    damageRules: ofType('damageRoll').length
+      ? ofType('damageRoll').map(({ rule }) => ({ ...rule, id: `g-rule-${hash(JSON.stringify(rule))}` }))
+      : undefined,
     resources: [...resources, ...character.resources.filter((r) => !r.grant && !resources.some((g) => g.id === r.id))],
     abilities: [...abilities, ...character.abilities.filter((a) => !a.grant)],
     activeFeatures: stillActive.length > 0 ? stillActive : undefined,

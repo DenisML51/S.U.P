@@ -1,5 +1,5 @@
 import type { Ability, Attack, Spell } from '@itd/schema';
-import { ammunitionChoices, castableSlots, isActiveFeature, resolveAmmunition, spellAttackBonusFor } from '@itd/game-logic';
+import { ammunitionChoices, castableSlots, isActiveFeature, resolveAmmunition, spellAttackBonusFor, type DamageSource } from '@itd/game-logic';
 import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { damageParts, spellDamageParts } from './parts/damage';
@@ -40,10 +40,11 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     label: string,
     hitBonus: number | undefined,
     parts: DamageComponents,
-    weapon: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean } = {},
+    weapon: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean; source?: DamageSource } = {},
   ) => {
-    if (hitBonus !== undefined) roll.attack(label, hitBonus, parts, weapon);
-    else roll.damage(label, parts, { minDie: weapon.minDie });
+    // In a fight a once-a-turn feature (Savage Attacker) is spent with the roll it changes.
+    if (hitBonus !== undefined) roll.attack(label, hitBonus, parts, { ...weapon, tracked: inCombat });
+    else roll.damage(label, parts, { minDie: weapon.minDie, source: weapon.source, tracked: inCombat });
   };
 
   const attack = (entry: Attack, ammunitionItemId?: string) => {
@@ -65,7 +66,11 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     const twoHanded = entry.damageTwoHanded
       ? [{ damage: entry.damageTwoHanded, type: damageParts(entry)[0]?.type }]
       : undefined;
-    strike(entry.name, entry.hitBonus, damageParts(entry), { minDie: entry.minDie, twoHanded });
+    const source: DamageSource = {
+      kind: entry.weaponId ? 'weapon' : entry.id.includes('unarmed-strike') ? 'unarmed' : 'other',
+      attack: true,
+    };
+    strike(entry.name, entry.hitBonus, damageParts(entry), { minDie: entry.minDie, twoHanded, source });
   };
 
   /** An entry that needs concentration asks first when it would end another one. */
@@ -94,7 +99,7 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     const rolls = hitBonus !== undefined || parts.length > 0;
     if (!performAction({ kind: 'spell', id: spell.id, trackActionEconomy: inCombat, slotLevel }, { quiet: rolls })?.ok) return;
     const upcast = slotLevel !== undefined && slotLevel > spell.level ? ` (${slotLevel} круг)` : '';
-    if (rolls) strike(`${spell.name}${upcast}`, hitBonus, parts, { spell: true });
+    if (rolls) strike(`${spell.name}${upcast}`, hitBonus, parts, { spell: true, source: { kind: 'spell', attack: hitBonus !== undefined } });
   };
 
   const castFrom = (spell: Spell) => {
@@ -114,7 +119,7 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     const hitBonus = spell.attackRoll ? spellAttackBonusFor(character, spell) : undefined;
     const rolls = hitBonus !== undefined || parts.length > 0;
     if (!performAction({ kind: 'spell', id: spell.id, asRitual: true }, { quiet: rolls })?.ok) return;
-    if (rolls) strike(`${spell.name} (ритуал)`, hitBonus, parts, { spell: true });
+    if (rolls) strike(`${spell.name} (ритуал)`, hitBonus, parts, { spell: true, source: { kind: 'spell', attack: hitBonus !== undefined } });
   };
 
   // An ability that is on (Rage) is ended by the same button, without an action.
