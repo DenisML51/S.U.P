@@ -55,6 +55,9 @@ export const RestDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
   const rolling = kind === 'short' && method === 'roll' && spend > 0;
   const constitution = formatModifier(attributeModifier(character, 'constitution'));
 
+  // A long rest needs at least 1 hit point to begin.
+  const cannotSleep = kind === 'long' && character.currentHP <= 0;
+
   const finish = () => {
     rest(kind, kind === 'short' ? { hitDice: spend, method } : undefined);
     onClose();
@@ -71,7 +74,7 @@ export const RestDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
           <Button variant="ghost" onClick={onClose}>
             Отмена
           </Button>
-          <Button variant="primary" onClick={finish}>
+          <Button variant="primary" onClick={finish} disabled={cannotSleep}>
             {kind === 'short' ? 'Отдохнуть час' : 'Лечь спать'}
           </Button>
         </>
@@ -88,6 +91,9 @@ export const RestDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
         className="w-full"
       />
       <p className="mt-3 text-sm text-ink-muted">{ABOUT[kind]}</p>
+      {cannotSleep && (
+        <p className="mt-2 text-sm text-danger">Долгий отдых начинают хотя бы с 1 хитом: сначала лечение или короткий отдых.</p>
+      )}
 
       {kind === 'short' && pool?.hitDie !== undefined && (
         <div className="mt-5 flex flex-wrap items-end gap-4">

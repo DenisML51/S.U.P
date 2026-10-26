@@ -310,6 +310,12 @@ export const ConcentrationSchema = passthroughObject({
   startedAt: numeric(num),
 });
 
+/** Death saving throws of a hero at 0 hit points: three successes steady them, three failures kill. */
+export const DeathSavesSchema = passthroughObject({
+  successes: numeric(int.min(0).max(3).default(0)),
+  failures: numeric(int.min(0).max(3).default(0)),
+});
+
 export const ActionCountersSchema =passthroughObject({
   action: numeric(int.min(0).default(0)),
   bonus: numeric(int.min(0).default(0)),
@@ -503,6 +509,8 @@ export const CharacterSchema = passthroughObject({
   conditions: list(shortString),
   /** The spell or ability the hero keeps concentration on; absent when not concentrating. */
   concentratingOn: text(ConcentrationSchema.optional()),
+  /** Kept while the hero lies at 0 hit points; absent otherwise. */
+  deathSaves: text(DeathSavesSchema.optional()),
 
   attributes: numberMap(64),
   attributeBonuses: numberMap(64),
@@ -572,6 +580,7 @@ export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 export type Resistance = z.infer<typeof ResistanceSchema>;
 export type ActionCounters = z.infer<typeof ActionCountersSchema>;
 export type Concentration = z.infer<typeof ConcentrationSchema>;
+export type DeathSaves = z.infer<typeof DeathSavesSchema>;
 export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
 export type Build = z.infer<typeof BuildSchema>;
 export type DndBuild = z.infer<typeof DndBuildSchema>;

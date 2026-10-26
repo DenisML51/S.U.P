@@ -6,15 +6,19 @@ import {
   clampSanity,
   experienceProgress,
   grantTempHP,
-  keepConcentration,
+  isDead,
   maxSanityOf,
+  rollDeathSave,
+  rollDie,
+  setDeathSaves,
+  settleHealth,
   receiveCoins,
   setExperience,
   spendCoins,
   totalMaxHP,
   type Coin,
 } from '@itd/game-logic';
-import type { Character } from '@itd/schema';
+import type { Character, DeathSaves } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useConcentrationPrompt } from './Concentration';
 
@@ -29,11 +33,22 @@ export function useVitals() {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const max = totalMaxHP(character);
 
-  const damage = (value: number) => {
-    const preview = applyDamage(character, value);
-    const absorbed = preview.absorbed ? ` (${preview.absorbed} поглощено временными)` : '';
-    updateCharacter((doc) => applyDamage(doc, value).character, { log: { message: `Получен урон: ${value}${absorbed} — ${preview.character.currentHP}/${max}`, type: 'health' },
+  const damage = (value: number, { critical = false } = {}) => {
+    const preview = applyDamage(character, value, { critical });
+    // Pieces joined by " — ", each said on its own in the other language.
+    const parts = [
+      `Получен урон: ${value}`,
+      ...(preview.absorbed ? [`поглощено временными: ${preview.absorbed}`] : []),
+      `${preview.character.currentHP}/${max}`,
+    ];
+    if (isDead(preview.character)) parts.push('погиб');
+    else if (character.currentHP <= 0 && preview.character.deathSaves)
+      parts.push(`провалов спасбросков: ${preview.character.deathSaves.failures}`);
+    else if (preview.character.currentHP <= 0 && character.currentHP > 0) parts.push('без сознания');
+    updateCharacter((doc) => applyDamage(doc, value, { critical }).character, {
+      log: { message: parts.join(' — '), type: 'health' },
     });
+    if (isDead(preview.character)) toast.error(`${character.name} погибает`);
     // Concentration that survives the hit still has to survive a Constitution save.
     if (preview.character.concentratingOn) useConcentrationPrompt.getState().askSave(value);
   };
@@ -53,7 +68,29 @@ export function useVitals() {
   const setHealthField = (field: 'maxHP' | 'maxHPBonus' | 'tempHP' | 'currentHP', value: number) =>
     updateCharacter((doc) => {
       const next = { ...doc, [field]: Math.max(field === 'maxHPBonus' ? -Infinity : 0, value) };
-      return keepConcentration({ ...next, currentHP: Math.min(next.currentHP, totalMaxHP(next)) });
+      return settleHealth({ ...next, currentHP: Math.min(next.currentHP, totalMaxHP(next)) });
+    });
+
+  /** A death saving throw: the d20 is thrown once, then the result is written. */
+  const deathSave = (roll: (label: string, die: number) => void) => {
+    const die = rollDie(20);
+    const { outcome } = rollDeathSave(character, die);
+    roll('Спасбросок от смерти', die);
+    const said = {
+      success: 'успех',
+      failure: die <= 1 ? 'два провала' : 'провал',
+      stable: 'третий успех — стабилен',
+      dead: 'третий провал — погиб',
+      revived: 'приходит в себя с 1 хитом',
+    }[outcome];
+    updateCharacter((doc) => rollDeathSave(doc, die).character, {
+      log: { message: `Спасбросок от смерти: ${die} — ${said}`, type: 'health' },
+    });
+  };
+
+  const markDeathSaves = (saves: DeathSaves) =>
+    updateCharacter((doc) => setDeathSaves(doc, saves), {
+      log: { message: `Спасброски от смерти: успехов ${saves.successes}, провалов ${saves.failures}`, type: 'health' },
     });
 
   const changeSanity = (delta: number) => {
@@ -111,6 +148,8 @@ export function useVitals() {
     addTemp,
     healFully,
     setHealthField,
+    deathSave,
+    markDeathSaves,
     changeSanity,
     setSanityBonus,
     addExperience,

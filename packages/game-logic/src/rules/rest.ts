@@ -3,7 +3,7 @@ import { attributeModifier } from './abilities';
 import { resetTurn } from './actions';
 import { endConcentration } from './concentration';
 import { rollDie, type RandomSource } from './dice';
-import { totalMaxHP } from './health';
+import { settleHealth, totalMaxHP } from './health';
 
 /** Hit points of a hit die taken as its average instead of a roll: d10 → 6. */
 export const averageHitPoints = (hitDie: number): number => hitDie / 2 + 1;
@@ -110,11 +110,12 @@ export function shortRest(character: Character, options: ShortRestOptions = {}):
       healing += Math.max(1, die + constitution);
     }
     const currentHP = Math.min(totalMaxHP(character), character.currentHP + healing);
-    next = {
+    // Healed off the floor, the hero wakes and the death saves end.
+    next = settleHealth({
       ...next,
       currentHP,
       resources: replaceResource(next.resources, { ...pool, current: pool.current - spent }),
-    };
+    });
     changes.unshift(
       { id: 'hp', label: 'Хиты', before: character.currentHP, after: currentHP, max: totalMaxHP(character) },
       { id: pool.id, label: pool.name, before: pool.current, after: pool.current - spent, max: pool.max },

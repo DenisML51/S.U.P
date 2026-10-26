@@ -143,10 +143,15 @@ export function useRolls() {
 
   /**
    * A d20 check or save with a modifier. `animated` (initiative at the start of a fight) keeps the
-   * plate a moment longer, so the landed die is seen after the tumble.
+   * plate a moment longer, so the landed die is seen after the tumble. `die` shows a d20 already
+   * thrown (its result is written by the caller), and `unlogged` leaves the log to the caller.
    */
-  const check = (label: string, modifier: number, { animated = false } = {}) => {
-    const die = rollDie(20);
+  const check = (
+    label: string,
+    modifier: number,
+    { animated = false, die: thrown, unlogged = false }: { animated?: boolean; die?: number; unlogged?: boolean } = {},
+  ) => {
+    const die = thrown ?? rollDie(20);
     const total = die + modifier;
     const detail = `к20: ${die} ${signed(modifier)}`;
     show([{ sides: 20, value: die }], `${label}: ${total}`);
@@ -160,7 +165,7 @@ export function useRolls() {
       />,
       { duration: animated ? 6000 : 5000 },
     );
-    logHistory(`${label}: ${total} (${detail})`);
+    if (!unlogged) logHistory(`${label}: ${total} (${detail})`);
     return total;
   };
 
