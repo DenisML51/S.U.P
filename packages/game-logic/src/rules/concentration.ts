@@ -1,4 +1,4 @@
-import type { Ability, Character, Concentration } from '@itd/schema';
+import type { Ability, Attack, Character, Concentration } from '@itd/schema';
 
 /** Conditions that leave the hero incapacitated, which ends concentration at once. */
 export const CONCENTRATION_BREAKING_CONDITIONS: readonly string[] = [
@@ -84,3 +84,13 @@ export function endFeature(character: Character, id: string): Character {
 /** Turns every ability off (a long rest, falling unconscious). */
 export const endAllFeatures = (character: Character): Character =>
   (character.activeFeatures ?? []).reduce(endFeature, character);
+
+/** Abilities of this group are shapes the hero takes (Wild Shape): the beast's attacks stand in for theirs. */
+export const FORM_GROUP = 'wild-shape';
+
+/** The shape the hero is in (a form of Wild Shape), if any. */
+export const activeFormOf = (character: Pick<Character, 'abilities' | 'activeFeatures'>): Ability | undefined =>
+  activeFeaturesOf(character).find((a) => a.stanceGroup === FORM_GROUP);
+
+/** An attack of the shape's stat block (a wolf's bite), written by the rules system with this grant. */
+export const isFormAttack = (attack: Pick<Attack, 'grant'>): boolean => !!attack.grant?.startsWith('form:');

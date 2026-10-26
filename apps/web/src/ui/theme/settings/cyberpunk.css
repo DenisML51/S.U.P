@@ -546,7 +546,8 @@
   }
   .ui-hud-portrait--shielded { border-color: rgb(var(--c-neon) / 0.8); }
   .ui-hud-portrait--down { border-color: rgb(var(--c-danger)); box-shadow: inset 0 -3px 0 rgb(var(--c-danger)); }
-  .ui-hud-portrait__temp { border-radius: 0; }
+  .ui-hud-portrait__temp,
+  .ui-hud-portrait__form { border-radius: 0; }
   .ui-vbar__track::after {
     content: '';
     position: absolute;

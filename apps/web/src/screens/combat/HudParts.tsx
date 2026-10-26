@@ -6,6 +6,7 @@ import {
   CONDITIONS,
   actionLimitsOf,
   activeFeaturesOf,
+  activeFormOf,
   armorClassOf,
   attacksPerActionOf,
   experienceProgress,
@@ -216,6 +217,7 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
   const { bind, view } = useHint();
   const endConcentration = useEndConcentration();
   const endFeature = useEndFeature();
+  const form = activeFormOf(character);
   const down = character.currentHP <= 0;
   const conditions = character.conditions.map((id) => ({ id, condition: CONDITIONS.find((c) => c.id === id) }));
   const shown = conditions.slice(0, CONDITIONS_SHOWN);
@@ -312,6 +314,15 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
           </button>
         ))}
       </div>
+      {form && (
+        <span
+          className="ui-hud-portrait__form"
+          aria-label={form.name}
+          {...bind({ key: 'form', title: form.name, lines: ['Звериный облик: атаки зверя на панели', 'Прекратить — на портрете справа'] })}
+        >
+          <GameIcon name={form.iconName} kind="ability" size={22} />
+        </span>
+      )}
       {character.tempHP > 0 && <span className="ui-hud-portrait__temp">+{character.tempHP}</span>}
       {down && rollsDeathSaves(character) && (
         <button
