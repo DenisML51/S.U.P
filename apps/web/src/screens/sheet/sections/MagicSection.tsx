@@ -11,8 +11,10 @@ import {
   spellLevelName,
   toggleKnownSchool,
   togglePrepared,
+  rulesOf,
 } from '@itd/game-logic';
 import type { Character, Spell } from '@itd/schema';
+import { SpellCatalogDialog } from '../dialogs/SpellCatalogDialog';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { Ledger, LedgerBullet, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
@@ -276,6 +278,9 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   const [level, setLevel] = useState<LevelFilter>('all');
   const [preparedOnly, setPreparedOnly] = useState(false);
   const [query, setQuery] = useState('');
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  // A hero of a rules system adds from its book of spells; a spell of one's own is made by hand.
+  const hasCatalog = !!character.build && !!rulesOf(character.build).spellCatalog;
   const { ref, narrow } = useNarrow<HTMLDivElement>(NARROW);
 
   const levels = useMemo(
@@ -332,7 +337,7 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
           }
           className="min-h-0"
           addLabel="Добавить заклинание"
-          onAdd={() => dialogs.open({ kind: 'spell' })}
+          onAdd={() => (hasCatalog ? setCatalogOpen(true) : dialogs.open({ kind: 'spell' }))}
         >
           {groups.map((group) => (
             <React.Fragment key={group.level}>
@@ -408,6 +413,16 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
             </li>
           )}
         </Ledger>
+        {catalogOpen && (
+          <SpellCatalogDialog
+            open
+            onClose={() => setCatalogOpen(false)}
+            onOwn={() => {
+              setCatalogOpen(false);
+              dialogs.open({ kind: 'spell' });
+            }}
+          />
+        )}
         {narrow && <CastingInfo character={character} below />}
       </SectionList>
 

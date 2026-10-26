@@ -501,6 +501,23 @@ const SOURCE_ICONS: Record<SourceKind, string> = {
 
 const CATEGORY_TITLES: Record<string, string> = { armor: 'Доспехи', weapon: 'Оружие', tool: 'Инструменты', language: 'Языки' };
 
+/** A spell of the book as the player's own entry on the sheet (not granted by the build). */
+export function catalogSpellEntry(id: string): Spell | undefined {
+  const def = findSpell(id);
+  return def ? spellEntry(def, undefined, { prepared: false }) : undefined;
+}
+
+/** The book of spells as the picker lists them for a hero: the class list first, castable levels marked. */
+export function catalogSpells(build: DndBuild): { def: SpellDef; ownList: boolean; castable: boolean }[] {
+  const casting = spellcastingOf(build);
+  const highest = maxSpellLevel(casting, build.level);
+  return DND.spells.map((def) => ({
+    def,
+    ownList: !!casting && def.lists.includes(casting.list),
+    castable: def.level === 0 || def.level <= highest,
+  }));
+}
+
 function spellEntry(def: SpellDef, previous: Spell | undefined, patch: Partial<Spell>): Spell {
   const duration = def.concentration ? `Концентрация, ${def.duration}` : def.duration;
   const description = [def.description, def.higherLevels && `**На больших уровнях.** ${def.higherLevels}`].filter(Boolean).join('\n\n');

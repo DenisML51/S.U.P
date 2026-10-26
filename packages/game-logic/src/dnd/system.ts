@@ -1,6 +1,6 @@
 import type { Build, DndBuild } from '@itd/schema';
 import type { RuleSystem } from '../systems';
-import { applyBuild, describeGrant, featureOrigins } from './build';
+import { applyBuild, catalogSpellEntry, catalogSpells, describeGrant, featureOrigins } from './build';
 
 const dnd = (build: Build): DndBuild => {
   if (build.ruleset !== 'dnd2024') throw new Error(`Not a D&D 2024 build: ${build.ruleset}`);
@@ -24,4 +24,18 @@ export const DND_2024: RuleSystem = {
       ]),
     ),
   describeGrant: (build, grant) => describeGrant(dnd(build), grant),
+  spellCatalog: {
+    list: (build) =>
+      catalogSpells(dnd(build)).map(({ def, ownList, castable }) => ({
+        id: def.id,
+        name: def.name,
+        level: def.level,
+        school: def.school,
+        ritual: !!def.ritual,
+        concentration: !!def.concentration,
+        ownList,
+        castable,
+      })),
+    entry: (_build, id) => catalogSpellEntry(id),
+  },
 };
