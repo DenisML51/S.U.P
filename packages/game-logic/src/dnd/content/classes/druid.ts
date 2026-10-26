@@ -464,6 +464,7 @@ const elementalFury: FeatureDef = {
                 name: 'Мощные заклинания',
                 description: 'К урону, который вы наносите заговорами друида, прибавляется модификатор Мудрости.',
                 action: 'passive',
+                effects: [{ type: 'spellDamage', list: 'druid', cantrips: true, amount: (ctx) => ctx.modifier('wisdom') }],
                 iconName: 'bolt-spell-cast',
               },
               {

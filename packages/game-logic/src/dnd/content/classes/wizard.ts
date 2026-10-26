@@ -201,6 +201,7 @@ const evoker: SubclassDef = {
           id: 'evoker.empowered-evocation',
           name: 'Усиленное воплощение',
           description: 'К одному броску урона любого вашего заклинания волшебника школы Воплощения вы добавляете модификатор Интеллекта.',
+          effects: [{ type: 'spellDamage', list: 'wizard', school: 'Воплощение', amount: (ctx) => ctx.modifier('intelligence') }],
           iconName: 'lightning-helix',
         },
       ],

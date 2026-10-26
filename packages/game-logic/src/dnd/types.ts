@@ -119,8 +119,16 @@ export type Effect =
    * `check:<ability>`, `attack:spell`, `attack:weapon`.
    */
   | { type: 'advantage'; on: string[] }
-  /** Damage added to weapon and unarmed attacks made with this ability, any when absent (Rage: Strength). */
-  | { type: 'damageBonus'; amount: Amount; ability?: AttributeId }
+  /**
+   * Damage added to weapon and unarmed attacks made with this ability, any when absent (Rage:
+   * Strength); only with Heavy weapons when `heavy` (Great Weapon Master).
+   */
+  | { type: 'damageBonus'; amount: Amount; ability?: AttributeId; heavy?: boolean }
+  /**
+   * Damage added to spells that fit: one spell, a class list, its cantrips, a school, a damage type
+   * (Agonizing Blast, Potent Spellcasting, Empowered Evocation, Elemental Affinity).
+   */
+  | { type: 'spellDamage'; amount: Amount; spell?: string; list?: SpellListId; cantrips?: boolean; school?: string; damageType?: string }
   /** A rule for damage dice (Savage Attacker: rolled twice; Piercer: one die again). */
   | { type: 'damageRoll'; rule: Omit<DamageRule, 'id'> }
   /** Added to the spell save DC (Innate Sorcery). */

@@ -575,6 +575,7 @@ const blessedStrikes: FeatureDef = {
                 name: 'Могущественные заклинания',
                 description: 'Нанося урон заговором жреца, вы прибавляете к нему модификатор Мудрости.',
                 action: 'passive',
+                effects: [{ type: 'spellDamage', list: 'cleric', cantrips: true, amount: (ctx) => ctx.modifier('wisdom') }],
                 iconName: 'bolt-spell-cast',
               },
               {
