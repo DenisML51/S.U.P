@@ -6,7 +6,7 @@ import { partyCombatants, partyCombats, partyHeroes, partyNpcs } from '../../db/
 import { conflictError, notFound, sessionClosed, validationError } from '../../lib/errors';
 import { masterOnly, type PartyAccess, type PartyContext } from './partyAccess';
 import { combatantsOf, combatRulesOf, D20_FIGHT, type CombatantEntry } from './parties.queries';
-import { nextTurn } from './turnOrder';
+import { nextTurn, previousTurn } from './turnOrder';
 
 interface Participants {
   heroIds: string[];
@@ -81,6 +81,12 @@ export class CombatService {
         if (dex !== null && value !== dex && value !== dex + 50) {
           throw validationError(`Порядок сыщика — его ЛВК (${dex}) или ЛВК + 50 с оружием наготове (${dex + 50})`);
         }
+        // A d20 and the hero's modifier: what a die can show, give or take exhaustion's −2 a level.
+        const lowest = combatant.bonus + 1 - 10;
+        const highest = combatant.bonus + 20;
+        if (dex === null && (value < lowest || value > highest)) {
+          throw validationError(`Инициатива — к20 + ${combatant.bonus}: от ${combatant.bonus + 1} до ${highest}`);
+        }
       }
       await context.tx
         .update(partyCombatants)
@@ -144,6 +150,27 @@ export class CombatService {
       await context.tx
         .update(partyCombats)
         .set({ currentCombatantId: turn?.next.id ?? null, round: combat.round + (turn?.wrapped ? 1 : 0) })
+        .where(eq(partyCombats.partyId, partyId));
+    });
+  }
+
+  /**
+   * Gives the turn back to the one before (a "next" clicked too soon). The master's call only; `from`
+   * guards against a double click as in `next`. Going back past the round's first turn returns to
+   * the round before, never below the first.
+   */
+  previous(userId: string, partyId: string, from: string | null): Promise<void> {
+    return this.access.change(userId, partyId, 'master', async ({ tx }) => {
+      const combat = await this.requireCombat(tx, partyId);
+      if (combat.phase !== 'active') throw conflictError('Сначала все бросают инициативу');
+      if (combat.currentCombatantId !== from) return;
+      const combatants = await combatantsOf(tx, partyId);
+      const turn = previousTurn(combatants, from, downOf(combatants));
+      if (!turn) return;
+      if (turn.wrapped && combat.round <= 1) throw conflictError('Это первый ход боя');
+      await tx
+        .update(partyCombats)
+        .set({ currentCombatantId: turn.previous.id, round: combat.round - (turn.wrapped ? 1 : 0) })
         .where(eq(partyCombats.partyId, partyId));
     });
   }

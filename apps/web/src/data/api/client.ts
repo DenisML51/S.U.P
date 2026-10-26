@@ -234,5 +234,7 @@ export const api = {
     begin: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/combat/begin`, { method: 'POST' }),
     next: (id: string, from: string | null) =>
       apiClient.request<void>(`/parties/${encode(id)}/combat/next`, { method: 'POST', body: { from } }),
+    previous: (id: string, from: string | null) =>
+      apiClient.request<void>(`/parties/${encode(id)}/combat/previous`, { method: 'POST', body: { from } }),
   },
 };

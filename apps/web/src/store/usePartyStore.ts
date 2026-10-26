@@ -62,6 +62,8 @@ interface PartyState {
   rollNpcInitiative(id: string): Promise<boolean>;
   beginRounds(id: string): Promise<boolean>;
   nextTurn(id: string, from: string | null): Promise<boolean>;
+  /** The master gives the turn back to the one before. */
+  previousTurn(id: string, from: string | null): Promise<boolean>;
   endCombat(id: string): Promise<boolean>;
 
   /** Binds the store to the signed-in account (or clears it on sign-out). */
@@ -249,6 +251,7 @@ export const usePartyStore = create<PartyState>((set, get) => {
     rollNpcInitiative: (id) => change(id, () => api.combat.rollNpcs(id)),
     beginRounds: (id) => change(id, () => api.combat.begin(id)),
     nextTurn: (id, from) => change(id, () => api.combat.next(id, from)),
+    previousTurn: (id, from) => change(id, () => api.combat.previous(id, from)),
     endCombat: (id) => change(id, () => api.combat.end(id)),
 
     attach: (workspace) => {

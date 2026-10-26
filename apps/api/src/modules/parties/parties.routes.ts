@@ -276,4 +276,13 @@ export const partyRoutes: FastifyPluginAsyncZod<PartyRoutesOptions> = async (
       return reply.status(204).send();
     },
   );
+
+  app.post(
+    '/parties/:id/combat/previous',
+    { schema: { params: PartyParamsSchema, body: NextTurnRequestSchema } },
+    async (request, reply) => {
+      await combat.previous(request.userId, request.params.id, request.body.from);
+      return reply.status(204).send();
+    },
+  );
 };

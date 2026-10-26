@@ -1,4 +1,5 @@
 import { TABLE_ROLLS_KEPT, TABLE_ROLL_SHOWN_MS, type TableDie, type TableRollDto } from '@itd/schema';
+import { toast } from 'react-hot-toast';
 import { create } from 'zustand';
 import { api } from '../data/api/client';
 import type { Workspace } from '../data/workspace';
@@ -107,8 +108,8 @@ export const useTableRollStore = create<TableRollState>((set, get) => {
 
 /**
  * Shows a hero's throw at the tables where the hero sits while a session runs (on its portrait, and
- * in the dice log with `label`); elsewhere it stays the player's own. Fire and forget: the throw has
- * already happened, the table only sees it.
+ * in the dice log with `label`); elsewhere it stays the player's own. The throw has already happened
+ * and stands; if the table did not get it (no connection), the player is told, so they can say it aloud.
  */
 export function announceRoll(characterId: string | undefined, dice: TableDie[], label = ''): void {
   if (!characterId || tableDice(dice).length === 0) return;
@@ -118,7 +119,7 @@ export function announceRoll(characterId: string | undefined, dice: TableDie[], 
   for (const party of tables)
     void api.rolls
       .send(party.id, { characterId, dice: tableDice(dice), label: label.slice(0, 120) })
-      .catch(() => {});
+      .catch(() => toast.error('Бросок не дошёл до стола — назовите результат мастеру', { id: 'roll-lost' }));
 }
 
 /** The master's own throw, for everyone at the table or only for the owners of `heroIds`. */
