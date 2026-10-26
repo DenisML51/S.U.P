@@ -8,8 +8,10 @@ import {
   changeLimbHP,
   getLimbInjuryLevel,
   getLimbType,
+  exhaustionLevel,
   limbArmorClassOf,
   setCondition,
+  setExhaustion,
 } from '@itd/game-logic';
 import type { Character, Limb, ResistanceLevel } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
@@ -110,8 +112,18 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
 
   const toggleCondition = (id: string, name: string) => {
     const on = !active.has(id);
+    if (id === 'exhaustion') return changeExhaustion(on ? 1 : 0);
     updateCharacter((doc) => setCondition(doc, id, on), { log: { message: on ? `Состояние: ${name}` : `Состояние снято: ${name}`, type: 'other' } });
   };
+
+  const exhaustion = exhaustionLevel(character);
+  const changeExhaustion = (level: number) =>
+    updateCharacter((doc) => setExhaustion(doc, level), {
+      log: {
+        message: level >= 6 ? 'Истощение 6 — герой погибает' : level > 0 ? `Истощение: уровень ${level}` : 'Истощение снято',
+        type: 'other',
+      },
+    });
 
   return (
     <div className="grid h-full grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-8 max-lg:grid-cols-1">
@@ -175,21 +187,47 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
         addLabel={marking ? 'Свернуть' : 'Отметить состояние'}
         onAdd={() => setMarking(!marking)}
       >
-        {current.map((condition) => (
-          <LedgerRow
-            key={condition.id}
-            title={condition.name}
-            meta={condition.description}
-            wrapMeta
-            active
-            onOpen={() => toggleCondition(condition.id, condition.name)}
-            action={
-              <IconButton label={`Снять: ${condition.name}`} size={26} onClick={() => toggleCondition(condition.id, condition.name)}>
-                <IconClose width={14} height={14} />
-              </IconButton>
-            }
-          />
-        ))}
+        {current.map((condition) =>
+          condition.id === 'exhaustion' ? (
+            // Exhaustion has levels: the row steps them, down to gone.
+            <LedgerRow
+              key={condition.id}
+              title={`${condition.name}: ${exhaustion}`}
+              meta={`${condition.description} Сейчас: −${2 * exhaustion} к к20, −${5 * exhaustion} фт скорости.`}
+              wrapMeta
+              active
+              action={
+                <span className="flex items-center gap-1">
+                  <IconButton label="Снять уровень истощения" size={26} onClick={() => changeExhaustion(exhaustion - 1)}>
+                    <IconMinus width={14} height={14} />
+                  </IconButton>
+                  <IconButton
+                    label="Добавить уровень истощения"
+                    size={26}
+                    disabled={exhaustion >= 6}
+                    onClick={() => changeExhaustion(exhaustion + 1)}
+                  >
+                    <IconPlus width={14} height={14} />
+                  </IconButton>
+                </span>
+              }
+            />
+          ) : (
+            <LedgerRow
+              key={condition.id}
+              title={condition.name}
+              meta={condition.description}
+              wrapMeta
+              active
+              onOpen={() => toggleCondition(condition.id, condition.name)}
+              action={
+                <IconButton label={`Снять: ${condition.name}`} size={26} onClick={() => toggleCondition(condition.id, condition.name)}>
+                  <IconClose width={14} height={14} />
+                </IconButton>
+              }
+            />
+          ),
+        )}
         {current.length === 0 && !marking && <li className="py-4 text-sm opacity-60">Ничто не мешает герою</li>}
         {marking && (
           <li className="flex flex-wrap gap-1.5 py-3">
@@ -198,7 +236,6 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
                 key={condition.id}
                 type="button"
                 className="ui-chip flex items-center gap-1.5"
-                title={condition.description}
                 onClick={() => toggleCondition(condition.id, condition.name)}
               >
                 <CatalogIcon id={CONDITION_ICONS[condition.id] ?? 'terror'} size={14} />

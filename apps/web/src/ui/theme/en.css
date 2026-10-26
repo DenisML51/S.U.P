@@ -1,0 +1,56 @@
+/*
+ * The words the settings write into their messages from CSS (a herald's heading, a stamp on a natural
+ * 20), said in English when the page is. The settings' own files keep the Russian ones; these win by
+ * the page's language.
+ */
+
+:is(html[lang='en'][data-setting='high-fantasy'], html[lang='en'] [data-setting='high-fantasy']) {
+  .ui-toast::before { content: '✦ The herald proclaims ✦'; }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Triumph'; }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Disgrace'; }
+}
+
+:is(html[lang='en'][data-setting='dark-fantasy'], html[lang='en'] [data-setting='dark-fantasy']) {
+  .ui-toast::before { content: 'A note'; }
+  .ui-toast--success::before { content: 'A good omen'; }
+  .ui-toast--error::before { content: 'An ill omen'; }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Grace of the gods'; }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Cursed'; }
+}
+
+:is(html[lang='en'][data-setting='elden-ring'], html[lang='en'] [data-setting='elden-ring']) {
+  .ui-toast::before { content: 'Message'; }
+  .ui-toast--success::before { content: 'Acquired'; }
+  .ui-toast--error::before { content: 'Not meant to be'; }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Enemy felled'; }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'You died'; }
+}
+
+:is(html[lang='en'][data-setting='sci-fi'], html[lang='en'] [data-setting='sci-fi']) {
+  .ui-toast::before { content: '▸ Incoming transmission'; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success)::before { content: '▸ Transmission'; }
+  .ui-toast--success::after { content: 'Confirmed'; }
+  .ui-toast--error::after { content: 'Failure'; }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Target down'; }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Critical failure'; }
+}
+
+:is(html[lang='en'][data-setting='cyberpunk'], html[lang='en'] [data-setting='cyberpunk']) {
+  .ui-toast::before { content: '▌Incoming // neurolink'; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success)::before { content: '▌Neurolink'; }
+  .ui-toast--success::after { content: 'Accepted'; }
+  .ui-toast--error::after { content: 'Access denied'; }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Lethal'; }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'System crash'; }
+}
+
+:is(html[lang='en'][data-setting='lovecraft'], html[lang='en'] [data-setting='lovecraft']) {
+  .ui-toast::before { content: '— Telegram —'; }
+  .ui-toast__text::after { content: ' STOP'; }
+  .ui-toast--error::after { content: 'Refused'; }
+  .ui-toast--success::after { content: 'Received'; }
+  .ui-toast .ui-roll-toast__detail::after { content: ' STOP'; }
+  .ui-toast .coc-roll__stop::after { content: ' STOP '; }
+  .ui-toast .coc-roll[data-landed] .coc-roll__level::after,
+  .ui-toast .coc-roll__verdict::after { content: ' STOP'; }
+}

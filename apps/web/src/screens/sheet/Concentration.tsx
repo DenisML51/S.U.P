@@ -102,7 +102,7 @@ const SaveDialog: React.FC<{ character: Character; damage: number; onClose: () =
         <Button
           variant="secondary"
           icon={<IconDice width={16} height={16} />}
-          onClick={() => setResult(roll.check(`Концентрация (СЛ ${dc})`, bonus))}
+          onClick={() => setResult(roll.check(`Концентрация (СЛ ${dc})`, bonus, { test: { kind: 'save', attribute: 'constitution' } }))}
         >
           Бросить
         </Button>

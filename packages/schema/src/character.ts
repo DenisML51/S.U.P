@@ -493,6 +493,15 @@ export const CharacterSchema = passthroughObject({
   initiativeBonus: optionalNumber,
   /** Half the proficiency bonus on checks without proficiency, initiative included (Jack of All Trades). */
   halfProficiency: optionalFlag,
+  /** The lowest natural d20 of a weapon attack that is a critical hit (19 for a Champion); absent means 20. */
+  critRange: numeric(int.min(2).max(20).optional()),
+  /**
+   * d20 rolls the hero always makes with advantage, from features: `initiative`, `deathSave`,
+   * `skill:<id>`, `save:<ability>`, `check:<ability>`.
+   */
+  advantageOn: optionalList(shortString),
+  /** Exhaustion level 0–6 (D&D 2024): −2 per level to every d20 test and −5 feet of speed; 6 is death. */
+  exhaustion: numeric(int.min(0).max(6).optional()),
 
   sanity: numberOr(50),
   /**

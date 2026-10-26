@@ -847,7 +847,6 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 {conditions.map((x) => (
                   <span
                     key={x!.id}
-                    title={x!.description}
                     className="border border-danger/50 px-2 py-0.5 text-[11px] text-danger"
                   >
                     {x!.name}

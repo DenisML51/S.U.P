@@ -798,6 +798,10 @@
 }
 
 /* A small square of the HUD: a condition, a defence, a resource. */
+/* Over an open window the messages keep to the bottom edge: lifted above a HUD they would cover the
+   window's own controls. */
+html:has([role='dialog'][aria-modal='true']) .ui-toasts { bottom: 1.5rem !important; }
+
 .ui-hud-chip {
   position: relative;
   display: grid;

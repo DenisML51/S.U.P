@@ -3,6 +3,7 @@ import { attributeModifier } from './abilities';
 import { resetTurn } from './actions';
 import { endConcentration } from './concentration';
 import { rollDie, type RandomSource } from './dice';
+import { exhaustionLevel, setExhaustion } from './d20';
 import { settleHealth, totalMaxHP } from './health';
 
 /** Hit points of a hit die taken as its average instead of a roll: d10 → 6. */
@@ -128,8 +129,8 @@ export function shortRest(character: Character, options: ShortRestOptions = {}):
 
 /**
  * A long rest: full hit points, no temporary ones, every short- and long-rest resource (spell slots
- * among them) restored, half of the hit dice back (at least one), this turn's actions reset and
- * concentration over.
+ * among them) restored, half of the hit dice back (at least one), one level of exhaustion gone, this
+ * turn's actions reset and concentration over.
  * Sanity does not come back with sleep.
  */
 export function longRest(character: Character): RestResult {
@@ -142,6 +143,11 @@ export function longRest(character: Character): RestResult {
     const current = Math.min(pool.max, pool.current + Math.max(1, Math.floor(pool.max / 2)));
     next = { ...next, resources: replaceResource(next.resources, { ...pool, current }) };
     changes.unshift({ id: pool.id, label: pool.name, before: pool.current, after: current, max: pool.max });
+  }
+  const exhaustion = exhaustionLevel(character);
+  if (exhaustion > 0) {
+    next = setExhaustion(next, exhaustion - 1);
+    changes.push({ id: 'exhaustion', label: 'Истощение', before: exhaustion, after: exhaustion - 1 });
   }
   if (character.tempHP > 0)
     changes.unshift({ id: 'tempHP', label: 'Временные хиты', before: character.tempHP, after: 0 });

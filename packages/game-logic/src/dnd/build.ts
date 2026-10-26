@@ -584,6 +584,8 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     bonus: skillBonuses.get(skill.id) || undefined,
   }));
   const halfProficiency = ofType('halfProficiency').length > 0 || undefined;
+  const critRange = Math.min(20, ...ofType('critRange').map((e) => e.min));
+  const advantageOn = [...new Set(ofType('advantage').flatMap((e) => e.on))];
   const unarmored = ofType('unarmoredDefense')[0];
 
   // Hit points: keep the damage already taken.
@@ -812,6 +814,8 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     speed,
     initiativeBonus: initiative || undefined,
     halfProficiency,
+    critRange: critRange < 20 ? critRange : undefined,
+    advantageOn: advantageOn.length > 0 ? advantageOn : undefined,
     armorClassBonus: {
       always: ofType('armorClass').filter((e) => !e.armored).reduce((sum, e) => sum + e.amount, 0),
       armored: ofType('armorClass').filter((e) => e.armored).reduce((sum, e) => sum + e.amount, 0),

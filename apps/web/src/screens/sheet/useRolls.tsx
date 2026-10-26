@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { rollDie, rollFormula, type FormulaRoll } from '@itd/game-logic';
+import { isCriticalRoll, planD20, rollD20, rollFormula, type D20Plan, type D20Test, type FormulaRoll } from '@itd/game-logic';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { announceRoll } from '../../store/useTableRollStore';
 import { RollingDie } from '../../ui/RollingDie';
+import { useRollMode } from './RollMode';
 
 type Tone = 'crit' | 'fumble';
 
@@ -33,17 +34,21 @@ const RollToast: React.FC<{
   label: string;
   total: number;
   detail: string;
+  /** A critical hit or a natural 1 of an attack: the plate is stamped and the total coloured. */
   tone?: Tone;
   /** The dice thrown, in order. */
   dice: ThrownDie[];
+  /** The d20 that counts, tinted on a natural 20 or 1 (a check's too, though only attacks crit). */
+  kept?: number;
   /** The roll that follows this one ("Урон" after a hit), offered on the toast itself. */
   action?: { label: string; onClick: () => void };
-}> = ({ label, total, detail, tone, dice, action }) => {
+}> = ({ label, total, detail, tone, dice, kept, action }) => {
   const shown = dice.slice(0, SHOWN_DICE);
   const [landed, setLanded] = useState(shown.length === 0);
   const size = dieSize(shown.length);
   const reveal = { opacity: landed ? 1 : 0, transition: { duration: 0.2 } };
-  const dieTone = tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : undefined;
+  const keptTone = kept === 20 ? 'success' : kept === 1 ? 'danger' : undefined;
+  const keptIndex = kept === undefined ? -1 : dice.findIndex((die) => die.sides === 20 && die.value === kept);
   // By importance: the dice and the total first and large, the label, breakdown and follow-up below.
   return (
     <div
@@ -64,8 +69,8 @@ const RollToast: React.FC<{
                 size={size}
                 delay={index * STAGGER_MS}
                 phase={index * 1.3 + die.sides * 0.1}
-                // Only the lone d20 of a check or attack is natural 20 or 1.
-                tone={die.sides === 20 && dice.length === 1 ? dieTone : undefined}
+                // Only the d20 that counts is a natural 20 or 1.
+                tone={index === keptIndex ? keptTone : undefined}
                 onLanded={index === shown.length - 1 ? () => setLanded(true) : undefined}
               />
             ))}
@@ -123,7 +128,22 @@ const describeDice = (roll: FormulaRoll) =>
     .filter(Boolean)
     .join(' ');
 
-const toneOf = (die: number): Tone | undefined => (die === 20 ? 'crit' : die === 1 ? 'fumble' : undefined);
+const MODE_NAME = { advantage: 'с преимуществом', disadvantage: 'с помехой' } as const;
+
+/**
+ * "к20: 15 и 7 → 15 + 6 · истощение −2 · преимущество: особенность": how the d20 total came about,
+ * in pieces joined by " · " so each is said on its own in the other language.
+ */
+function describeD20(plan: D20Plan, dice: number[], kept: number, modifier: number): string {
+  const thrown = dice.length > 1 ? `к20: ${dice[0]} и ${dice[1]} → ${kept}` : `к20: ${kept}`;
+  const pieces = [`${thrown} ${signed(modifier)}`];
+  if (plan.penalty) pieces.push(`истощение −${plan.penalty}`);
+  if (plan.mode !== 'normal')
+    pieces.push(`${MODE_NAME[plan.mode]}: ${(plan.mode === 'advantage' ? plan.advantage : plan.disadvantage).join(', ')}`);
+  else if (plan.advantage.length > 0 && plan.disadvantage.length > 0) pieces.push('преимущество и помеха гасят друг друга');
+  if (plan.autoFail) pieces.push(`автоматический провал: ${plan.autoFail}`);
+  return pieces.join(' · ');
+}
 
 /** How long a hit stays on screen waiting for its damage to be rolled. */
 const HIT_TOAST_MS = 15000;
@@ -141,33 +161,45 @@ export function useRolls() {
   const characterId = useCharacterStore((s) => s.character?.id);
   const show = (dice: ThrownDie[], label: string) => announceRoll(characterId, dice, label);
 
+  const character = useCharacterStore((s) => s.character);
+
   /**
-   * A d20 check or save with a modifier. `animated` (initiative at the start of a fight) keeps the
-   * plate a moment longer, so the landed die is seen after the tumble. `die` shows a d20 already
-   * thrown (its result is written by the caller), and `unlogged` leaves the log to the caller.
+   * A d20 thrown for a test: advantage or disadvantage from the hero's conditions and features and
+   * from the player's switch (spent by this roll), exhaustion's penalty taken off.
    */
-  const check = (
+  const throwD20 = (test: D20Test) => {
+    const chosen = useRollMode.getState().take();
+    const plan: D20Plan = character
+      ? planD20(character, test, chosen)
+      : { mode: chosen ?? 'normal', advantage: [], disadvantage: [], penalty: 0 };
+    return { plan, ...rollD20(plan.mode) };
+  };
+
+  /**
+   * A d20 check or save with a modifier; `test` says what for, so the rules on advantage apply.
+   * `animated` (initiative at the start of a fight) keeps the plate a moment longer, so the landed
+   * die is seen after the tumble; `unlogged` leaves the log to the caller. Returns the total and
+   * the die that counted.
+   */
+  const roll20 = (
     label: string,
     modifier: number,
-    { animated = false, die: thrown, unlogged = false }: { animated?: boolean; die?: number; unlogged?: boolean } = {},
+    { animated = false, unlogged = false, test = { kind: 'check' } }: { animated?: boolean; unlogged?: boolean; test?: D20Test } = {},
   ) => {
-    const die = thrown ?? rollDie(20);
-    const total = die + modifier;
-    const detail = `к20: ${die} ${signed(modifier)}`;
-    show([{ sides: 20, value: die }], `${label}: ${total}`);
-    toast(
-      <RollToast
-        label={label}
-        total={total}
-        detail={detail}
-        tone={toneOf(die)}
-        dice={[{ sides: 20, value: die }]}
-      />,
-      { duration: animated ? 6000 : 5000 },
-    );
+    const { plan, dice, kept } = throwD20(test);
+    const total = kept + modifier - plan.penalty;
+    const detail = describeD20(plan, dice, kept, modifier);
+    const thrown = dice.map((value) => ({ sides: 20, value }));
+    show(thrown, `${label}: ${total}`);
+    toast(<RollToast label={label} total={total} detail={detail} dice={thrown} kept={kept} />, {
+      duration: animated ? 6000 : 5000,
+    });
     if (!unlogged) logHistory(`${label}: ${total} (${detail})`);
-    return total;
+    return { total, die: kept };
   };
+
+  const check = (label: string, modifier: number, options?: Parameters<typeof roll20>[2]) =>
+    roll20(label, modifier, options).total;
 
   /** A damage or effect formula such as `2d6+3`. */
   const formula = (label: string, expression: string) => {
@@ -221,12 +253,14 @@ export function useRolls() {
    * hit's toast carries the damage roll; a natural 20 doubles its dice, a natural 1 misses outright.
    */
   const attack = (label: string, modifier: number, components: DamageComponents) => {
-    const die = rollDie(20);
-    const total = die + modifier;
-    const tone = toneOf(die);
-    const detail = `к20: ${die} ${signed(modifier)}${tone === 'crit' ? ' · критическое попадание' : tone === 'fumble' ? ' · промах' : ''}`;
+    const { plan, dice, kept: die } = throwD20({ kind: 'attack' });
+    const total = die + modifier - plan.penalty;
+    // A natural 1 always misses; the hero's crit range (a Champion's 19) always hits hard.
+    const tone: Tone | undefined = die === 1 ? 'fumble' : character && isCriticalRoll(character, die) ? 'crit' : undefined;
+    const detail = `${describeD20(plan, dice, die, modifier)}${tone === 'crit' ? ' · критическое попадание' : tone === 'fumble' ? ' · промах' : ''}`;
     const hasDamage = components.some((c) => c.damage.trim());
-    show([{ sides: 20, value: die }], `${label}: попадание ${total}`);
+    const thrown = dice.map((value) => ({ sides: 20, value }));
+    show(thrown, `${label}: попадание ${total}`);
     toast(
       (t) => (
         <RollToast
@@ -234,7 +268,8 @@ export function useRolls() {
           total={total}
           detail={detail}
           tone={tone}
-          dice={[{ sides: 20, value: die }]}
+          dice={thrown}
+          kept={die}
           action={
             hasDamage && tone !== 'fumble'
               ? {
@@ -254,5 +289,5 @@ export function useRolls() {
     return total;
   };
 
-  return { check, formula, damage, attack };
+  return { check, roll20, formula, damage, attack };
 }

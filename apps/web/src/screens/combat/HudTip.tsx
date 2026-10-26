@@ -86,7 +86,8 @@ export const HudTip: React.FC<{
           data-hud-tip
           // The padding toward the icon bridges the gap, so the cursor can travel onto the hint.
           className={cx(
-            'fixed z-[60]',
+            // Above the toasts (z-200): a hint asked for is read over a passing message.
+            'fixed z-[250]',
             below(rect) ? 'pt-3' : 'pb-3',
             hold ? 'pointer-events-auto' : 'pointer-events-none',
           )}
