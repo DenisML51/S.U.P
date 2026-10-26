@@ -30,7 +30,7 @@ const dieSize = (count: number) =>
  * tinted on a natural 20 or 1), then the total and the breakdown come in. The values are known from
  * the start; only their reveal waits for the dice. A roll without dice shows its total at once.
  */
-const RollToast: React.FC<{
+export const RollToast: React.FC<{
   label: string;
   total: number;
   detail: string;
