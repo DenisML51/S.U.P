@@ -213,6 +213,104 @@ describe('sync engine', () => {
     await phone.sync.sync();
     expect(server.stored('eisenhorn')?.data).toMatchObject({ currentHP: 19 });
   });
+
+  it('offers refused characters again when synced by hand', async () => {
+    const server = new FakeServer();
+    const phone = device(server);
+    await phone.repository.create(hero());
+    const original = server.characters.put;
+    server.characters.put = async () => {
+      const { ApiError } = await import('../src/data/api/client');
+      throw new ApiError(400, 'validation_error', 'invalid', { error: 'validation_error', message: 'invalid' });
+    };
+    await phone.sync.sync();
+    expect(phone.sync.getStatus().rejected).toHaveLength(1);
+
+    // The rules changed (an update of the app): asked by hand, the sheet goes through.
+    server.characters.put = original;
+    await phone.sync.syncNow();
+    expect(server.stored('eisenhorn')?.revision).toBe(1);
+    expect(phone.sync.getStatus()).toMatchObject({ pending: 0, rejected: [] });
+  });
+
+  it('settles a copy that claims a later revision than the server has (another history)', async () => {
+    const server = new FakeServer();
+    const phone = device(server);
+    await phone.repository.create(hero());
+    await phone.sync.sync();
+
+    // The copy was taken over from another account's history: its base and revision are not the
+    // server's, and the player has edited it since.
+    const other = hero({ name: 'Чужой Эйзенхорн', sanity: 5 });
+    await phone.repository.applyRemote([{ ...server.stored('eisenhorn')!, revision: 30, data: other }]);
+    await phone.repository.update('eisenhorn', (c) => ({ ...c, currentHP: 7 }));
+
+    await phone.sync.sync();
+
+    // The server's sheet with this device's own edit on it; nothing of the other history.
+    expect(server.stored('eisenhorn')).toMatchObject({ revision: 2, data: { name: 'Эйзенхорн', sanity: 50, currentHP: 7 } });
+    expect(phone.sync.getStatus()).toMatchObject({ state: 'idle', pending: 0, rejected: [] });
+  });
+
+  it('starts over when its cursor is past the account’s newest change', async () => {
+    const server = new FakeServer();
+    const laptop = device(server);
+    const phone = device(server);
+    await laptop.repository.create(hero());
+    await laptop.sync.sync();
+    await phone.sync.sync();
+
+    // The phone's database got another account's records and cursor.
+    await phone.repository.applyRemote([{ ...server.stored('eisenhorn')!, revision: 9, data: hero({ name: 'Чужой' }) }]);
+    await phone.repository.setCursor('70');
+
+    await laptop.repository.update('eisenhorn', (c) => ({ ...c, currentHP: 3 }));
+    await laptop.sync.sync();
+    await phone.sync.sync();
+
+    expect(await phone.repository.get('eisenhorn')).toMatchObject({ name: 'Эйзенхорн', currentHP: 3 });
+    expect(await phone.repository.getCursor()).toBe('2');
+  });
+
+  it('keeps trying a write that keeps conflicting instead of giving it up', async () => {
+    const server = new FakeServer();
+    const phone = device(server);
+    await phone.repository.create(hero());
+    await phone.sync.sync();
+    await phone.repository.update('eisenhorn', (c) => ({ ...c, currentHP: 4 }));
+
+    const original = server.characters.put;
+    server.characters.put = async (id, _base, data) => {
+      // Another device writes before every attempt of this one.
+      await original(id, server.stored(id)!.revision, server.stored(id)!.data);
+      return original(id, server.stored(id)!.revision - 1, data);
+    };
+    await phone.sync.sync();
+    expect(phone.sync.getStatus()).toMatchObject({ state: 'error', rejected: [] });
+    expect(await phone.repository.pending()).toHaveLength(1);
+
+    server.characters.put = original;
+    await phone.sync.sync();
+    expect(server.stored('eisenhorn')?.data).toMatchObject({ currentHP: 4 });
+  });
+
+  it('applies no answer that arrives after it was stopped', async () => {
+    const server = new FakeServer();
+    const laptop = device(server);
+    const phone = device(server);
+    await laptop.repository.create(hero());
+    await laptop.sync.sync();
+
+    const original = server.characters.pull;
+    server.characters.pull = async (since) => {
+      phone.sync.stop(); // the account changed while the request was out
+      return original(since);
+    };
+    await phone.sync.sync();
+
+    expect(await phone.repository.get('eisenhorn')).toBeUndefined();
+    expect(await phone.repository.getCursor()).toBe('0');
+  });
 });
 
 describe('repository', () => {

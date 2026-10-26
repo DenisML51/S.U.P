@@ -23,7 +23,8 @@ const RETRY_DELAYS_MS = [2_000, 5_000, 15_000, 30_000, 60_000];
 
 /**
  * Reconciles the local repository with the server: uploads pending edits and deletions, pulls
- * changes since the last cursor, resolves conflicts by three-way merge.
+ * changes since the last cursor, resolves conflicts by three-way merge on the server's record.
+ * A stopped engine (its account signed out or changed) applies no answer that was still on its way.
  *
  * Runs are serialised within a tab and, via the Web Locks API, across tabs of the same account
  * (they share one IndexedDB database).
@@ -123,11 +124,16 @@ export class SyncEngine {
     for (let attempt = 0; row && row.dirty && row.syncError === null; attempt++) {
       try {
         const record = await this.upload(row);
+        // Stopped while the request was out (the account changed): its answer is not this database's.
+        if (this.stopped) return;
         await this.repository.acknowledgeUpload(row.id, row.localVersion, record);
         return;
       } catch (error) {
+        if (this.stopped) return;
         const conflict = conflictOf(error);
-        if (conflict && attempt < MAX_CONFLICT_RETRIES) {
+        if (conflict) {
+          // Another device keeps writing it: try again later rather than give up on the edit.
+          if (attempt >= MAX_CONFLICT_RETRIES) throw error;
           await this.repository.resolveConflict(conflict.current);
           row = await this.repository.getStored(row.id);
           continue;
@@ -156,13 +162,30 @@ export class SyncEngine {
 
   private async pull(): Promise<void> {
     let cursor = await this.repository.getCursor();
+    // Set when the cursor turned out to belong to another history: everything is pulled again and
+    // the server's records are taken over whatever the local copies claim.
+    let startedOver = false;
     for (;;) {
       const page = await this.characters.pull(cursor);
-      await this.repository.applyRemote(page.items);
+      if (this.stopped) return;
+      if (!startedOver && page.latest !== undefined && BigInt(cursor) > BigInt(page.latest)) {
+        startedOver = true;
+        cursor = '0';
+        await this.repository.setCursor(cursor);
+        continue;
+      }
+      await this.repository.applyRemote(page.items, { authoritative: startedOver });
       cursor = page.cursor;
       await this.repository.setCursor(cursor);
       if (!page.hasMore || this.stopped) return;
     }
+  }
+
+  /** A sync asked for by hand: the characters the server refused are offered to it once more. */
+  async syncNow(): Promise<void> {
+    if (this.stopped) return;
+    await this.repository.clearRejections();
+    await this.sync();
   }
 
   private handleFailure(error: unknown): void {

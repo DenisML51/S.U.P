@@ -75,12 +75,16 @@ export class CharactersService {
       .where(and(eq(characters.userId, userId), gt(characters.changeSeq, since)))
       .orderBy(asc(characters.changeSeq))
       .limit(SYNC_PAGE_SIZE);
+    // Read after the rows: a change committed in between only raises it, so it is never below a
+    // cursor this page hands out.
+    const [owner] = await this.db.select({ latest: users.changeCounter }).from(users).where(eq(users.id, userId));
 
     const last = rows.at(-1);
     return {
       items: rows.map(toRecordDto),
       cursor: (last?.changeSeq ?? since).toString(),
       hasMore: rows.length === SYNC_PAGE_SIZE,
+      latest: (owner?.latest ?? 0n).toString(),
     };
   }
 

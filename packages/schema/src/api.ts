@@ -136,6 +136,11 @@ export interface SyncResponse {
   cursor: string;
   /** `true` when the page was truncated and the client should pull again right away. */
   hasMore: boolean;
+  /**
+   * The account's newest change. A client whose cursor is past it holds another history (another
+   * account's, or a database restored from backup) and must pull everything again.
+   */
+  latest: string;
 }
 
 export interface ConflictResponse extends ErrorResponse {
