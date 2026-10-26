@@ -1,5 +1,5 @@
 import React from 'react';
-import { CONDITIONS, armorClassOf, exhaustionLevel, formatModifier, initiativeModifier, speedOf } from '@itd/game-logic';
+import { CONDITIONS, armorClassOf, exhaustionLevel, formatModifier, initiativeModifier, speedHint, speedOf } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
@@ -114,7 +114,7 @@ export const HeroColumn: React.FC<{
           <StatCell
             label="Скорость"
             value={speedOf(character)}
-            hint={speedOf(character) < character.speed ? `${character.speed} − истощение` : undefined}
+            hint={speedHint(character)}
           />
           <StatCell label="Мастерство" value={formatModifier(character.proficiencyBonus)} />
         </div>

@@ -10,8 +10,10 @@ import {
   getLimbType,
   exhaustionLevel,
   limbArmorClassOf,
+  movementOf,
   setCondition,
   setExhaustion,
+  speedBreakdown,
 } from '@itd/game-logic';
 import type { Character, Limb, ResistanceLevel } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
@@ -99,6 +101,27 @@ const LimbPlate: React.FC<{ limb: Limb; armorClass: number; onChange: (delta: nu
  * The body: wounds by limb, conditions, and what the hero is protected against. Everything that
  * answers "what is wrong with me right now" in one place.
  */
+/**
+ * Speed as the gear allows it now, with its terms when there are more than the base, then other
+ * movement and darkvision: "45 фт (основа 30 · без доспехов +15) · лазание 45 · тёмное зрение 60".
+ */
+const Movement: React.FC<{ character: Character }> = ({ character }) => {
+  const speed = speedBreakdown(character);
+  const more = [...movementOf(character).map((m) => m.text), ...(character.darkvision ? [`тёмное зрение ${character.darkvision}`] : [])];
+  return (
+    <div className="mb-3 flex items-baseline gap-3">
+      <span className="text-sm text-ink-faint">Скорость</span>
+      <p className="min-w-0 text-sm text-ink-faint">
+        <span className="ui-display ui-numeric text-2xl leading-none text-ink">{speed.total}</span> фт
+        {speed.parts.length > 1 && <> ({speed.parts.map((p) => p.text).join(' · ')})</>}
+        {more.map((text) => (
+          <React.Fragment key={text}> · {text}</React.Fragment>
+        ))}
+      </p>
+    </div>
+  );
+};
+
 export const BodySection: React.FC<{ character: Character }> = ({ character }) => {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const dialogs = useSheetDialogs();
@@ -169,6 +192,7 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
             <span className="text-sm text-ink-faint">Класс брони</span>
             <ArmorClassSum breakdown={armorClass} large className="min-w-0" />
           </div>
+          <Movement character={character} />
           {character.resistances.length === 0 ? (
             <p className="text-sm text-ink-faint">Сопротивлений и уязвимостей нет: урон проходит полностью.</p>
           ) : (

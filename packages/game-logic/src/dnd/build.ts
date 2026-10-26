@@ -25,6 +25,7 @@ import type {
   SpeciesDef,
   SpellDef,
   SpellcastingDef,
+  SpeedCondition,
   SubclassDef,
   WeaponDef,
 } from './types';
@@ -616,7 +617,12 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
 
   // Speed and initiative.
   const baseSpeed = Math.max(0, ...ofType('baseSpeed').map((e) => e.value), species?.speed ?? 0) || 30;
-  const speed = baseSpeed + ofType('speed').reduce((sum, e) => sum + e.amount, 0);
+  const speedFrom = (when: SpeedCondition | undefined) =>
+    ofType('speed').filter((e) => e.when === when).reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0);
+  const speed = baseSpeed + speedFrom(undefined);
+  const speedBonus = { unarmored: speedFrom('unarmored') || undefined, noHeavyArmor: speedFrom('noHeavyArmor') || undefined };
+  const movement = movementFrom(ofType('movement'), speed);
+  const darkvision = darkvisionFrom(ofType('darkvision'));
   const initiative = ofType('initiative').reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0);
 
   // Resistances.
@@ -833,6 +839,9 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     maxHP,
     currentHP,
     speed,
+    speedBonus: speedBonus.unarmored || speedBonus.noHeavyArmor ? speedBonus : undefined,
+    movement,
+    darkvision,
     initiativeBonus: initiative || undefined,
     halfProficiency,
     ritualsFromBook: casting?.mode === 'spellbook' || undefined,
@@ -866,6 +875,28 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   };
 
   return { character: rescaleLimbs(result), missing: [...new Set(missing)] };
+}
+
+/**
+ * Climbing, swimming and flying speeds of the effects, 0 for one equal to the walking speed; of
+ * two grants of one kind the faster stays.
+ */
+function movementFrom(effects: Extract<Effect, { type: 'movement' }>[], walking: number): Character['movement'] {
+  const out: NonNullable<Character['movement']> = {};
+  for (const { mode, feet } of effects) {
+    const current = out[mode];
+    const value = feet ?? 0;
+    const speedOf = (v: number) => (v === 0 ? walking : v);
+    if (current === undefined || speedOf(value) > speedOf(current)) out[mode] = value;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/** Darkvision: the longest range given outright, then every "+N, or N if you had none". */
+function darkvisionFrom(effects: Extract<Effect, { type: 'darkvision' }>[]): number | undefined {
+  let range = Math.max(0, ...effects.filter((e) => !e.extend).map((e) => e.range));
+  for (const effect of effects.filter((e) => e.extend)) range = range > 0 ? range + effect.range : effect.range;
+  return range > 0 ? range : undefined;
 }
 
 const signed = (dice: string, modifier: number): string =>

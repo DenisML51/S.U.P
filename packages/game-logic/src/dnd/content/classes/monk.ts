@@ -462,7 +462,7 @@ export const MONK: ClassDef = {
         id: 'monk.unarmored-movement',
         name: 'Движение без доспехов',
         description: 'Пока вы не носите ни доспехов, ни щита, ваша скорость увеличивается: +10 футов, +15 с 6-го уровня, +20 с 10-го, +25 с 14-го, +30 с 18-го.',
-        effects: (ctx) => [{ type: 'speed', amount: byClassLevel({ 2: 10, 6: 15, 10: 20, 14: 25, 18: 30 })(ctx) }],
+        effects: [{ type: 'speed', amount: byClassLevel({ 2: 10, 6: 15, 10: 20, 14: 25, 18: 30 }), when: 'unarmored' }],
         iconName: 'run',
       },
       {

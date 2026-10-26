@@ -487,6 +487,15 @@ export const CharacterSchema = passthroughObject({
   level: numeric(int.min(1).max(100).default(1)),
   experience: numberOr(0),
   speed: numberOr(30),
+  /**
+   * Walking speed features add only while the gear allows it: `unarmored` without armour or a
+   * shield (Unarmored Movement), `noHeavyArmor` unless heavy armour is worn (Fast Movement).
+   */
+  speedBonus: text(passthroughObject({ unarmored: optionalNumber, noHeavyArmor: optionalNumber }).optional()),
+  /** Climbing, swimming and flying speed in feet; 0 means equal to the walking speed. */
+  movement: text(passthroughObject({ climb: optionalNumber, swim: optionalNumber, fly: optionalNumber }).optional()),
+  /** Darkvision range in feet. */
+  darkvision: optionalNumber,
   /** The armour class as older versions stored it; read once to derive `armorClassBonus.manual`. */
   armorClass: numberOr(10),
   /**

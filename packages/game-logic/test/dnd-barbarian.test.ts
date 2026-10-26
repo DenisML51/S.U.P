@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
-import { armorClassOf, startingSkills } from '../src';
+import { armorClassOf, speedOf, startingSkills } from '../src';
 import { DND, applyBuild, createDndHero, levelPlan, setPicks } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
@@ -60,7 +60,7 @@ describe('Barbarian', () => {
   it('grows rage uses, speed, Brutal Strike and the capstone with level', () => {
     const rage = (level: number) => apply(build({ level })).resources.find((r) => r.id === 'barbarian.rage')?.max;
     expect([1, 3, 6, 12, 17].map(rage)).toEqual([2, 3, 4, 5, 6]);
-    expect(apply(build({ level: 5 })).speed).toBe(40);
+    expect(speedOf(apply(build({ level: 5 })))).toBe(40);
     expect(ability(apply(build({ level: 9 })), 'Жестокий удар')?.damage).toBe('1d10');
     expect(ability(apply(build({ level: 17 })), 'Жестокий удар')?.damage).toBe('2d10');
     const twenty = apply(build({ level: 20 }));

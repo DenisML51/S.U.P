@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
-import { startingSkills } from '../src';
+import { speedOf, startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, levelPlan } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
@@ -90,7 +90,7 @@ describe('ranger', () => {
 
   it('adds Roving speed, Tireless and Nature’s Veil with Wisdom uses', () => {
     const c10 = apply(build({ level: 10 }));
-    expect(c10.speed).toBe(40);
+    expect(speedOf(c10)).toBe(40);
     expect(resource(c10, 'ranger.tireless')?.max).toBe(2);
     expect(ability(c10, 'Неутомимость')).toMatchObject({ actionType: 'action', damage: '1d8+2' });
     const c14 = apply(build({ level: 14 }));

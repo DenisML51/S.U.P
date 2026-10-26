@@ -254,7 +254,10 @@ export const INVOCATIONS: CatalogEntryDef[] = [
     action: 'passive',
     iconName: 'wave-crest',
     resource: { id: 'gift-of-the-depths', name: 'Подводное дыхание без ячейки', max: 1, recharge: 'long' },
-    effects: [{ type: 'spell', spell: 'water-breathing', alwaysPrepared: true }],
+    effects: [
+      { type: 'spell', spell: 'water-breathing', alwaysPrepared: true },
+      { type: 'movement', mode: 'swim' },
+    ],
     prerequisite: { level: 5 },
   },
   {
