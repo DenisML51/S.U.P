@@ -264,6 +264,7 @@ export const malfunctions = (roll: number, malfunction: number | undefined): boo
 export const CONDITION_IDS = {
   majorWound: 'major-wound',
   dying: 'dying',
+  stabilised: 'stabilised',
   unconscious: 'unconscious',
   temporaryInsanity: 'temporary-insanity',
   indefiniteInsanity: 'indefinite-insanity',
@@ -282,6 +283,11 @@ export const COC_CONDITIONS: { id: string; name: string; description: string }[]
     id: CONDITION_IDS.dying,
     name: 'При смерти',
     description: 'Каждый раунд бросок ВЫН, иначе смерть. Спасает первая помощь, затем медицина.',
+  },
+  {
+    id: CONDITION_IDS.stabilised,
+    name: 'Стабилизирован',
+    description: 'Первая помощь удержала на час. Нужна успешная Медицина, иначе снова при смерти.',
   },
   {
     id: CONDITION_IDS.unconscious,
@@ -526,7 +532,9 @@ export function rollLuckRecovery(
   const pulp = isPulp(character);
   if (!passed && !pulp) return { roll, gain: 0, dice: [] };
   const dice = Array.from({ length: pulp && passed ? 2 : 1 }, () => rollDie(10, random));
-  const flat = pulp ? (passed ? 10 : 5) : 0;
+  // The Lucky talent (Pulp) adds 10 to every recovery.
+  const lucky = character.build?.ruleset === 'coc7' && character.build.talents.includes('lucky') ? 10 : 0;
+  const flat = (pulp ? (passed ? 10 : 5) : 0) + lucky;
   return { roll, gain: Math.max(0, Math.min(sum(dice) + flat, LUCK_CAP - luck)), dice };
 }
 

@@ -19,6 +19,7 @@ import {
   SUCCESS_LABELS,
   addMadness,
   afterIntRoll,
+  afterWoundRoll,
   afterSkillRoll,
   checkSkill,
   cocCharacteristics,
@@ -347,6 +348,8 @@ export const CocSheetProvider: React.FC<{
       update(
         (doc) => {
           const edited = skill ? afterSkillRoll(skill, next.check)(doc) : doc;
+          // A wound's CON roll decides: unconscious after a major wound, dead while dying.
+          if (request.combat === 'wound') return afterWoundRoll(next.check.success)(edited);
           return request.kind === 'int' ? afterIntRoll(next.check.success)(edited) : edited;
         },
         { message: describe(next), type: 'other' },
