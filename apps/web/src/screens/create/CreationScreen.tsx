@@ -14,8 +14,7 @@ import { Flourish } from '../../ui/Flourish';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { WorldCarousel } from './WorldCarousel';
 import { HeroSummary } from './HeroSummary';
-import { TrainingChoice } from './parts';
-import { OriginStep, PointBuyStep } from './custom/steps';
+import { OriginStep, ScoresStep } from './custom/steps';
 import {
   AbilitiesStep,
   BackgroundStep,
@@ -250,17 +249,15 @@ export const CreationScreen: React.FC<{
     {
       id: 'attributes',
       label: 'Характеристики',
-      value: `${27 - custom.points}/27`,
-      question: 'В чём его сила?',
-      issues: custom.valid.attributes ? [] : ['Очки характеристик'],
-      content: <PointBuyStep creation={custom} />,
-    },
-    {
-      id: 'training',
-      label: 'Навыки',
-      question: 'Чему он обучен?',
-      issues: [],
-      content: <TrainingChoice creation={custom} />,
+      value:
+        custom.method === 'pointBuy'
+          ? `${METHOD_NAMES.pointBuy} · ${27 - custom.points}/27`
+          : METHOD_NAMES[custom.method],
+      question: 'В чём его сила и чему он обучен?',
+      issues: custom.valid.attributes
+        ? []
+        : [custom.method === 'roll' ? 'Бросок характеристик' : custom.method === 'manual' ? 'Значения от 3 до 20' : 'Очки характеристик'],
+      content: <ScoresStep creation={custom} />,
     },
     {
       id: 'identity',
