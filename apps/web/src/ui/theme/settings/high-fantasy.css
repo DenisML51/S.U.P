@@ -557,27 +557,32 @@
     color: rgb(var(--c-paper-ink) / 0.72);
     background: linear-gradient(90deg, transparent, rgb(var(--c-frame)) 22%, rgb(var(--c-frame)) 78%, transparent) bottom / 100% 1px no-repeat;
   }
-  /* Granted or refused: a wax seal on the head instead of an icon. */
+  /* Granted or refused: a wax seal pressed onto the head instead of an icon — a blob with a
+     scalloped rim, a stamped ring and the herald's sigil, set aslant on the parchment's left. */
   .ui-toast:is(.ui-toast--error, .ui-toast--success) .ui-toast__body > svg { display: none; }
-  .ui-toast:is(.ui-toast--error, .ui-toast--success)::before { padding-inline: 2.2rem; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success)::before { padding-inline: 2.6rem; }
   .ui-toast:is(.ui-toast--error, .ui-toast--success)::after {
     position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
+    top: 0.55rem;
+    left: 0.7rem;
     display: grid;
     place-items: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    font: 700 0.95rem/1 var(--font-numeric);
-    color: rgb(255 238 210 / 0.9);
-    border-radius: 52% 48% 55% 45% / 47% 53% 47% 53%;
-    background: radial-gradient(circle at 36% 32%, rgb(255 255 255 / 0.35), transparent 38%), radial-gradient(circle, var(--hf-wax) 55%, rgb(0 0 0 / 0.35) 100%);
-    box-shadow: 0 2px 4px rgb(40 20 6 / 0.55), inset 0 0 0 2px rgb(0 0 0 / 0.12);
-    text-shadow: 0 -1px 0 rgb(0 0 0 / 0.4);
+    width: 2.15rem;
+    height: 2.15rem;
+    font: 700 0.85rem/1 var(--font-display);
+    color: rgb(255 236 206 / 0.88);
+    text-shadow: 0 1px 0 rgb(255 255 255 / 0.2), 0 -1px 0 rgb(0 0 0 / 0.45);
+    background:
+      radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.32), transparent 34%),
+      radial-gradient(circle, transparent 0 50%, rgb(0 0 0 / 0.28) 51% 55%, rgb(255 255 255 / 0.12) 56% 58%, transparent 59%),
+      radial-gradient(circle, var(--hf-wax) 62%, color-mix(in srgb, var(--hf-wax), black 35%) 100%);
+    clip-path: polygon(50% 0%, 61% 4%, 71% 2%, 78% 10%, 89% 12%, 91% 23%, 99% 31%, 96% 42%, 100% 52%, 95% 61%, 97% 72%, 88% 79%, 85% 90%, 74% 92%, 65% 99%, 55% 95%, 45% 100%, 35% 94%, 25% 96%, 18% 87%, 8% 83%, 7% 72%, 1% 63%, 4% 52%, 0% 41%, 6% 32%, 5% 21%, 14% 15%, 20% 5%, 31% 6%, 40% 1%);
+    filter: drop-shadow(0 2px 2px rgb(40 20 6 / 0.55));
+    transform: rotate(-14deg);
     animation: hf-seal 380ms 200ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
   }
-  .ui-toast--success::after { content: '✓'; --hf-wax: rgb(var(--c-enamel)); }
-  .ui-toast--error::after { content: '✕'; --hf-wax: rgb(140 30 24); }
+  .ui-toast--success::after { content: '✦'; --hf-wax: rgb(var(--c-enamel)); }
+  .ui-toast--error::after { content: '!'; --hf-wax: rgb(140 30 24); }
   .ui-toast .ui-rolling-die { color: rgb(var(--c-paper-ink)); }
   .ui-toast .ui-rolling-die .ui-die-glyph { color: currentColor; }
   .ui-toast .ui-rolling-die--success { color: rgb(var(--c-success)); }
@@ -861,8 +866,8 @@
   to { clip-path: inset(0 0 0 0); }
 }
 @keyframes hf-seal {
-  from { opacity: 0; transform: scale(1.9) rotate(-20deg); }
-  to { opacity: 1; transform: scale(1) rotate(0deg); }
+  from { opacity: 0; transform: scale(1.9) rotate(-30deg); }
+  to { opacity: 1; transform: scale(1) rotate(-14deg); }
 }
 @keyframes hf-ribbon {
   from { opacity: 0; transform: translateX(14px) rotate(-4deg); }
