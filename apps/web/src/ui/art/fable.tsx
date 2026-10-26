@@ -297,35 +297,125 @@ const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => (
 
 /* ------------------------------------------------------------------ Hero select */
 
-/**
- * What Albion says of a hero, as the game shows a villager's opinion: two words for their
- * reputation, chosen by the hero's id so they stay the same.
- */
-const REPUTATIONS = ['Задира', 'Растяпа', 'Умница', 'Сорвиголова', 'Гуляка', 'Легенда', 'Знаменитость', 'Обжора', 'Зануда', 'Душа компании'];
+/** A spiral of `turns` turns from (x, y), growing outwards to `r`, starting at angle `a0`. */
+const spiral = (x: number, y: number, r: number, turns: number, a0: number, dir: 1 | -1) =>
+  Array.from({ length: 36 }, (_, i) => {
+    const t = i / 35;
+    const a = a0 + dir * t * turns * Math.PI * 2;
+    const rr = r * (1 - t * 0.85);
+    return `${i ? 'L' : 'M'}${f(x + Math.cos(a) * rr)} ${f(y + Math.sin(a) * rr)}`;
+  }).join('');
 
-const hashOf = (id: string) => {
-  let hash = 0;
-  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return hash;
+/** The vine's stem, 60×400, rising from the foot and swaying from side to side. */
+const VINE_AT = (t: number) => ({ x: 30 + 13 * Math.sin(t * Math.PI * 2.6), y: 400 - t * 392 });
+const VINE_STEM = Array.from({ length: 61 }, (_, i) => {
+  const { x, y } = VINE_AT(i / 60);
+  return `${i ? 'L' : 'M'}${f(x)} ${f(y)}`;
+}).join('');
+/** Leaves along the vine, side to side, smaller towards its tip. */
+const VINE_LEAVES = Array.from({ length: 13 }, (_, i) => {
+  const t = 0.05 + i * 0.072;
+  const { x, y } = VINE_AT(t);
+  const side = i % 2 ? 1 : -1;
+  const s = 1 - t * 0.55;
+  return leafPath(x, y, x + side * 17 * s, y - 9 * s, 4.6 * s);
+}).join('');
+/** Tendrils curling off the vine. */
+const VINE_TENDRILS = [0.28, 0.55, 0.82]
+  .map((t, i) => {
+    const { x, y } = VINE_AT(t);
+    const side = i % 2 ? -1 : 1;
+    return `M${f(x)} ${f(y)}Q${f(x + side * 10)} ${f(y - 4)} ${f(x + side * 13)} ${f(y - 14)}${spiral(x + side * 13, y - 20, 6, 1.2, Math.PI / 2, side === 1 ? -1 : 1).replace('M', 'L')}`;
+  })
+  .join('');
+
+/** A leaf from (x, y) to its tip, `width` across at the middle. */
+function leafPath(x: number, y: number, tx: number, ty: number, width: number) {
+  const mx = (x + tx) / 2;
+  const my = (y + ty) / 2;
+  const len = Math.hypot(tx - x, ty - y) || 1;
+  const px = (-(ty - y) / len) * width;
+  const py = ((tx - x) / len) * width;
+  return `M${f(x)} ${f(y)}Q${f(mx + px)} ${f(my + py)} ${f(tx)} ${f(ty)}Q${f(mx - px)} ${f(my - py)} ${f(x)} ${f(y)}Z`;
+}
+
+/** Scrollwork over the arch, 200×60: curls to both sides of a sparkle, leaves at their ends. */
+const CREST_SCROLLS = [-1, 1]
+  .map(
+    (d) =>
+      `M${100 + d * 12} 40C${100 + d * 34} 40 ${100 + d * 44} 22 ${100 + d * 66} 26C${100 + d * 86} 30 ${100 + d * 90} 46 ${100 + d * 76} 48C${100 + d * 66} 50 ${100 + d * 64} 40 ${100 + d * 72} 38` +
+      `M${100 + d * 66} 26C${100 + d * 78} 18 ${100 + d * 92} 20 ${100 + d * 98} 30`,
+  )
+  .join('');
+const CREST_LEAVES = [-1, 1].map((d) => leafPath(100 + d * 40, 30, 100 + d * 52, 16, 3.6) + leafPath(100 + d * 82, 22, 100 + d * 94, 12, 3)).join('');
+
+/** Fireflies round the focused card: where each hovers, how large, when it glows. */
+const FIREFLIES = (() => {
+  const next = random(31);
+  return Array.from({ length: 12 }, (_, i) => {
+    const side = i % 2 ? 1 : -1;
+    return {
+      left: `${f(side > 0 ? 100 + next() * 14 : -14 + next() * 14)}%`,
+      top: `${f(8 + next() * 84)}%`,
+      size: 3 + next() * 4,
+      delay: -next() * 6,
+      gold: next() < 0.35,
+    };
+  });
+})();
+
+/** A level as a storybook numbers its chapters. */
+const roman = (n: number) => {
+  const glyphs: [string, number][] = [
+    ['M', 1000], ['CM', 900], ['D', 500], ['CD', 400], ['C', 100], ['XC', 90],
+    ['L', 50], ['XL', 40], ['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1],
+  ];
+  let left = Math.max(1, n);
+  let out = '';
+  for (const [glyph, value] of glyphs) {
+    while (left >= value) {
+      out += glyph;
+      left -= value;
+    }
+  }
+  return out;
 };
 
 /**
- * The opinion card tucked beside the focused hero card: a wine-red card with the reputations in a
- * flowing hand, and a parchment ribbon with the hero's level (or age) across its foot.
+ * The page round the focused hero's card illuminated as in a storybook: the screen's gilt tendrils in
+ * the card's own corners, a fine vine with leaves up each side, scrollwork with the sparkle on its top
+ * edge under the chapter (the hero's level), fireflies drifting round. The lines draw themselves in
+ * when the card comes to the front.
  */
-const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ id, level, age }) => {
-  const hash = hashOf(id);
-  const first = REPUTATIONS[hash % REPUTATIONS.length];
-  const second = REPUTATIONS[(hash >>> 4) % REPUTATIONS.length] === first ? REPUTATIONS[(hash + 3) % REPUTATIONS.length] : REPUTATIONS[(hash >>> 4) % REPUTATIONS.length];
-  return (
-    <div className="fb-opinion" aria-hidden>
-      <span className="fb-opinion__head">Репутация</span>
-      <span className="fb-opinion__word">{first}</span>
-      <span className="fb-opinion__word fb-opinion__word--late">{second}</span>
-      <span className="fb-opinion__ribbon">{age !== undefined ? `Возраст ${age}` : `Уровень ${level}`}</span>
-    </div>
-  );
-};
+const HeroReadout: NonNullable<SettingArt['HeroReadout']> = ({ level, age }) => (
+  <div className="fb-herald" aria-hidden>
+    <span className="fb-herald__chapter">{age !== undefined ? `Возраст ${age}` : `Глава ${roman(level)}`}</span>
+    {(['l', 'r'] as const).map((side) => (
+      <svg key={side} className={`fb-herald__vine fb-herald__vine--${side}`} viewBox="0 0 60 400" preserveAspectRatio="none" fill="none">
+        <path className="fb-draw" d={VINE_STEM} pathLength={1} stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        <path className="fb-draw" d={VINE_TENDRILS} pathLength={1} stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
+        <path className="fb-herald__leaves" d={VINE_LEAVES} fill="currentColor" />
+      </svg>
+    ))}
+    <svg className="fb-herald__crest" viewBox="0 0 200 60" fill="none">
+      <path className="fb-draw" d={CREST_SCROLLS} pathLength={1} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path className="fb-herald__leaves" d={CREST_LEAVES} fill="currentColor" />
+      <path className="fb-herald__spark" d={sparkle(100, 36, 14, 0.13)} fill="currentColor" />
+    </svg>
+    {(['tl', 'tr', 'bl', 'br'] as const).map((corner) => (
+      <span key={corner} className={`fb-herald__corner fb-herald__corner--${corner}`}>
+        <ScreenCorner />
+      </span>
+    ))}
+    {FIREFLIES.map(({ left, top, size, delay, gold }, i) => (
+      <i
+        key={i}
+        className={gold ? 'fb-firefly fb-firefly--gold' : 'fb-firefly'}
+        style={{ left, top, width: size, height: size, animationDelay: `${delay.toFixed(2)}s` }}
+      />
+    ))}
+  </div>
+);
 
 /* ------------------------------------------------------------------ Status level */
 

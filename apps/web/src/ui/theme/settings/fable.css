@@ -5,8 +5,8 @@
  * everything is the four-pointed sparkle of the quest tracker and the fairy's dust. A serif with a
  * storybook hand (Alegreya) and its small capitals for headings; the chosen thing is ivory; records
  * are heaps of parchment. Wine-red, the card a villager tells the hero what they think of them on, is
- * kept for what must stand out (danger, a refusal, the bookmark, the hero's reputation); a
- * reputation itself is written in a flowing hand.
+ * kept for what must stand out (danger, a refusal, the bookmark); a word of praise or shame is written
+ * in a flowing hand.
  */
 
 [data-setting='fable'] {
@@ -16,7 +16,7 @@
   --font-numeric: 'Alegreya', Georgia, serif;
   /* Headings of a tracker and labels: the face's small capitals. */
   --font-caps: 'Alegreya SC', Georgia, serif;
-  /* A reputation, written in a flowing hand. */
+  /* A word of praise or shame, written in a flowing hand. */
   --font-script: 'Marck Script', 'Segoe Script', cursive;
   --display-tracking: 0.01em;
   --display-weight: 500;
@@ -40,19 +40,19 @@
   /* The chosen thing is ivory, as the game lights the option under the stick. */
   --c-accent: 238 226 194;
   --c-accent-ink: 18 40 44;
-  /* Records are kept on parchment, as the ribbon under an opinion is: a heap of loose sheets. */
+  /* Records are kept on parchment, as the ribbon under a villager's opinion is: a heap of loose sheets. */
   --c-paper: 238 226 196;
   --c-paper-ink: 52 36 28;
   --c-paper-muted: 134 106 76;
   /* The top sheet of a heap, its edge worn uneven like the sheets under it. */
   --ragged-top: polygon(0.0% 0.0px, 3.6% 1.1px, 7.1% 0.5px, 10.7% 1.3px, 14.3% 0.8px, 17.9% 1.5px, 21.4% 0.7px, 25.0% 0.1px, 28.6% 0.4px, 32.1% 1.3px, 35.7% 0.9px, 39.3% 0.9px, 42.9% 0.1px, 46.4% 1.2px, 50.0% 1.8px, 53.6% 1.3px, 57.1% 0.5px, 60.7% 0.4px, 64.3% 0.0px, 67.9% 1.1px, 71.4% 0.4px, 75.0% 1.4px, 78.6% 0.7px, 82.1% 0.6px, 85.7% 0.9px, 89.3% 0.4px, 92.9% 1.9px, 96.4% 2.1px, 100.0% 0.8px, calc(100% - 1.5px) 10.0%, calc(100% - 0.1px) 20.0%, calc(100% - 1.8px) 30.0%, calc(100% - 0.0px) 40.0%, calc(100% - 2.1px) 50.0%, calc(100% - 0.5px) 60.0%, calc(100% - 0.4px) 70.0%, calc(100% - 1.0px) 80.0%, calc(100% - 0.8px) 90.0%, calc(100% - 0.6px) 100.0%, 96.4% calc(100% - 2.1px), 92.9% calc(100% - 1.0px), 89.3% calc(100% - 1.0px), 85.7% calc(100% - 2.2px), 82.1% calc(100% - 6.3px), 78.6% calc(100% - 1.3px), 75.0% calc(100% - 2.0px), 71.4% calc(100% - 1.0px), 67.9% calc(100% - 0.3px), 64.3% calc(100% - 1.3px), 60.7% calc(100% - 1.9px), 57.1% calc(100% - 1.4px), 53.6% calc(100% - 8.5px), 50.0% calc(100% - 0.6px), 46.4% calc(100% - 0.4px), 42.9% calc(100% - 2.1px), 39.3% calc(100% - 2.0px), 35.7% calc(100% - 0.1px), 32.1% calc(100% - 1.4px), 28.6% calc(100% - 2.1px), 25.0% calc(100% - 5.2px), 21.4% calc(100% - 0.8px), 17.9% calc(100% - 0.2px), 14.3% calc(100% - 1.0px), 10.7% calc(100% - 6.5px), 7.1% calc(100% - 4.4px), 3.6% calc(100% - 1.3px), 0.0% calc(100% - 1.5px), 1.2px 90.0%, 2.0px 80.0%, 0.3px 70.0%, 1.4px 60.0%, 0.3px 50.0%, 0.4px 40.0%, 1.1px 30.0%, 1.6px 20.0%, 0.4px 10.0%);
 
-  /* The wine-red card of an opinion, and its parchment ribbon. */
+  /* The wine-red of a villager's opinion card, and the parchment of its ribbon. */
   --c-wine: 92 28 42;
   --c-wine-deep: 56 15 26;
   --c-parchment: 238 226 196;
   --c-parchment-ink: 54 34 28;
-  /* The fairy's light: the glow of dust, of a reputation's words. */
+  /* The fairy's light: the glow of dust, of a word written in a flowing hand. */
   --c-fairy: 132 230 216;
 
   /* Health is green, as the hero's bar in Albion is. */
@@ -573,7 +573,7 @@
   /* A notice as the game shows a new place or a new business: a band of dark glass fading out at
      both ends, gilt hairlines over and under it, a small-capital heading between two sparkles over
      the words; it rises into view out of a blur. A natural 20 or 1 is written across it in the
-     flowing hand of a reputation. */
+     flowing hand, as the game writes what Albion thinks of the hero. */
   .ui-toast {
     /* Messages are drawn outside the screen's scope, under <body>: they take the serif themselves. */
     font-family: var(--setting-display);
@@ -789,57 +789,70 @@
   .ui-rolling-die { color: rgb(var(--c-frame-bright)); }
 
   /* ---------------------------------------------------------------- Hero cards (hero select) */
-  /* The hero as on the cover: a gilt hairline round the picture; looked at, the frame lights and
-     the opinion card is tucked beside it. */
+  /* The hero as a picture in a storybook, flat on the page: a gilt hairline round it. Looked at, the
+     page is illuminated round it: gilt tendrils in its corners, a fine vine up each side, the chapter
+     written over scrollwork on its top edge, fireflies. */
   &.ui-hero-card > .ui-panel {
     border-radius: 16px;
-    border-color: rgb(var(--c-frame) / 0.4);
+    border-color: rgb(var(--c-frame) / 0.45);
     box-shadow: inset 0 0 0 4px rgb(var(--c-bg-deep) / 0.35), 0 22px 44px -18px rgb(0 0 0 / 0.9);
     transition: border-color 400ms, box-shadow 400ms;
   }
   &.ui-hero-card[data-focused] > .ui-panel {
     border-color: rgb(var(--c-frame-bright) / 0.9);
-    box-shadow: inset 0 0 0 4px rgb(var(--c-bg-deep) / 0.35), 0 0 34px -8px rgb(var(--c-frame-bright) / 0.6), 0 22px 44px -18px rgb(0 0 0 / 0.9);
+    box-shadow: inset 0 0 0 4px rgb(var(--c-bg-deep) / 0.35), 0 0 34px -8px rgb(var(--c-frame-bright) / 0.5), 0 22px 44px -18px rgb(0 0 0 / 0.9);
   }
   &.ui-hero-card .ui-fx { border-radius: inherit; }
 
-  .fb-opinion {
+  .fb-herald {
     position: absolute;
-    top: 9%;
-    right: -5.4rem;
+    inset: -46px -40px -26px;
     z-index: 3;
-    display: grid;
-    justify-items: center;
-    gap: 0.05rem;
-    width: 9.5rem;
-    padding: 0.7rem 0.6rem 1.7rem;
-    text-align: center;
-    background: radial-gradient(120% 60% at 50% 0%, rgb(130 46 62 / 0.85), transparent 70%), var(--wine);
-    border: 1px solid rgb(236 176 150 / 0.45);
-    border-radius: 14px;
-    box-shadow: inset 0 0 0 3px rgb(var(--c-wine-deep) / 0.6), inset 0 0 0 4px rgb(var(--c-frame) / 0.35), 0 16px 30px -12px rgb(0 0 0 / 0.9);
     pointer-events: none;
+    color: rgb(var(--c-frame-bright));
+    filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.5)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.6));
     opacity: 0;
-    transform: translateX(-10px) rotate(3deg);
-    transition: opacity 400ms, transform 500ms cubic-bezier(0.2, 1.3, 0.4, 1);
+    transition: opacity 500ms;
   }
-  &.ui-hero-card[data-focused] .fb-opinion { opacity: 1; transform: rotate(3deg); }
-  .fb-opinion__head { margin-bottom: 0.15rem; font: 500 0.78rem/1.2 var(--font-caps); letter-spacing: 0.08em; color: rgb(244 208 176); }
-  .fb-opinion__word { font: 400 1.35rem/1.15 var(--font-script); color: rgb(var(--c-fairy)); text-shadow: 0 0 10px rgb(var(--c-fairy) / 0.55); }
-  .fb-opinion__word--late { margin-left: 1.2rem; }
-  /* The parchment ribbon across the card's foot, its ends folded back. */
-  .fb-opinion__ribbon {
+  &.ui-hero-card[data-focused] .fb-herald { opacity: 1; }
+  .fb-herald__chapter {
     position: absolute;
-    left: -0.6rem;
-    right: -0.6rem;
-    bottom: -0.65rem;
-    padding: 0.32rem 0.8rem 0.36rem;
-    font: 700 0.82rem/1 var(--font-caps);
-    letter-spacing: 0.06em;
-    color: rgb(var(--c-parchment-ink));
-    background: linear-gradient(180deg, rgb(250 242 220), rgb(var(--c-parchment)) 60%, rgb(214 196 160));
-    clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 50%, 100% 100%, 0 100%, 8px 50%);
+    top: -30px;
+    left: 50%;
+    white-space: nowrap;
+    font: 500 1.05rem/1 var(--font-caps);
+    letter-spacing: 0.16em;
+    transform: translateX(-50%);
   }
+  /* The scrollwork with the sparkle on the card's top edge. */
+  .fb-herald__crest { position: absolute; top: 4px; left: 50%; width: 170px; transform: translateX(-50%); }
+  /* A fine vine climbs each side, on the card's edge. */
+  .fb-herald__vine { position: absolute; top: 30%; width: 36px; height: 52%; }
+  .fb-herald__vine--l { left: 22px; }
+  .fb-herald__vine--r { right: 22px; transform: scaleX(-1); }
+  /* The screen's gilt tendrils, small, in the card's own corners. */
+  /* Kept within the card's margin, clear of what is written on it. */
+  .fb-herald__corner { position: absolute; width: 50px; height: 50px; opacity: 0; transition: opacity 600ms 300ms; }
+  .fb-herald__corner > svg { width: 100%; height: 100%; }
+  .fb-herald__corner--tl { top: 51px; left: 45px; }
+  .fb-herald__corner--tr { top: 51px; right: 45px; transform: scaleX(-1); }
+  .fb-herald__corner--bl { bottom: 31px; left: 45px; transform: scaleY(-1); }
+  .fb-herald__corner--br { bottom: 31px; right: 45px; transform: scale(-1); }
+  &.ui-hero-card[data-focused] .fb-herald__corner { opacity: 0.9; }
+  /* The vines and the scrollwork draw themselves in; their leaves and the sparkle come after. */
+  .fb-draw { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.6s cubic-bezier(0.3, 0.6, 0.3, 1) 0.1s; }
+  &.ui-hero-card[data-focused] .fb-draw { stroke-dashoffset: 0; }
+  .fb-herald__leaves,
+  .fb-herald__spark { opacity: 0; transition: opacity 700ms 1s; }
+  &.ui-hero-card[data-focused] :is(.fb-herald__leaves, .fb-herald__spark) { opacity: 1; }
+  .fb-firefly {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(226 255 248), rgb(120 226 214 / 0.8) 35%, transparent 70%);
+    box-shadow: 0 0 8px 2px rgb(120 226 214 / 0.45);
+    animation: fb-firefly 6s ease-in-out infinite;
+  }
+  .fb-firefly--gold { background: radial-gradient(circle, rgb(255 250 226), rgb(246 212 136 / 0.8) 35%, transparent 70%); box-shadow: 0 0 8px 2px rgb(246 212 136 / 0.45); }
 
   /* ---------------------------------------------------------------- Atmosphere (backdrop) */
   /* The deep sea-green of the wood, lighter where the sun comes in from above. */
@@ -902,6 +915,11 @@
   0%, 100% { opacity: 0.25; }
   50% { opacity: 1; }
 }
+@keyframes fb-firefly {
+  0%, 100% { opacity: 0.3; transform: translate(0, 0); }
+  35% { opacity: 1; transform: translate(6px, -12px); }
+  65% { opacity: 0.6; transform: translate(-5px, -20px); }
+}
 @keyframes fb-mist {
   from { transform: translateX(-4%); }
   to { transform: translateX(4%); }
@@ -917,7 +935,7 @@
   to { opacity: 1; transform: rotate(-8deg) scale(1); filter: blur(0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='fable'] :is(.fb-light, .fb-motes, .fb-mote, .fb-mist) { animation: none; }
+  [data-setting='fable'] :is(.fb-light, .fb-motes, .fb-mote, .fb-mist, .fb-firefly) { animation: none; }
   [data-setting='fable'] .ui-toast,
   [data-setting='fable'] .ui-toast .ui-roll-toast[data-landed]::after { animation: none; }
 }
@@ -1072,18 +1090,35 @@
   border-radius: 999px;
   box-shadow: inset 0 0 0 2px rgb(14 38 42), inset 0 0 0 3px rgb(var(--c-frame) / 0.3);
 }
-/* Under the hero card it is the parchment ribbon, its ends folded back. */
+/* Under the hero card it is the name of a choice as the game sets it: a sea-green nameplate in a gilt
+   rim, and gilt hairlines leaving it to both sides, beaded, a sparkle at each end. */
 [data-setting='fable'] .ui-rulebook-plate .ui-rulebook {
-  padding: 0.5rem 2.2rem 0.55rem;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: rgb(var(--c-parchment-ink));
-  background: linear-gradient(180deg, rgb(250 242 220), rgb(var(--c-parchment)) 60%, rgb(214 196 160));
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 50%, 100% 100%, 0 100%, 12px 50%);
+  position: relative;
+  padding: 0.42rem 1.6rem 0.48rem;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: rgb(var(--c-frame-bright));
+  background: var(--nameplate);
+  border: 1px solid rgb(var(--c-frame-bright) / 0.6);
+  box-shadow: inset 0 0 0 2px rgb(14 38 42), inset 0 0 0 3px rgb(var(--c-frame) / 0.35), 0 8px 18px -8px rgb(0 0 0 / 0.9);
+  text-shadow: 0 0 10px rgb(var(--c-frame-bright) / 0.35);
 }
-/* The cut ends clip a shadow of the ribbon's own, so the plate it hangs from casts it. */
-[data-setting='fable'] .ui-rulebook-plate { filter: drop-shadow(0 6px 8px rgb(0 0 0 / 0.6)); }
+[data-setting='fable'] .ui-rulebook-plate .ui-rulebook::before,
+[data-setting='fable'] .ui-rulebook-plate .ui-rulebook::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 64px;
+  height: 10px;
+  margin-top: -5px;
+  border: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgb(var(--c-frame-bright)) 0 2px, transparent 2.5px) 70% 50% / 10px 10px no-repeat,
+    linear-gradient(rgb(var(--c-frame-bright) / 0.7), rgb(var(--c-frame-bright) / 0.7)) 100% 50% / 100% 1px no-repeat,
+    linear-gradient(rgb(var(--c-frame-bright)), rgb(var(--c-frame-bright))) 0 50% / 10px 10px no-repeat;
+  -webkit-mask: var(--spark) 0 50% / 10px 10px no-repeat, linear-gradient(#000 0 0) 100% 50% / calc(100% - 14px) 100% no-repeat;
+  mask: var(--spark) 0 50% / 10px 10px no-repeat, linear-gradient(#000 0 0) 100% 50% / calc(100% - 14px) 100% no-repeat;
+}
+[data-setting='fable'] .ui-rulebook-plate .ui-rulebook::before { right: calc(100% + 6px); left: auto; }
+[data-setting='fable'] .ui-rulebook-plate .ui-rulebook::after { left: calc(100% + 6px); transform: scaleX(-1); }
