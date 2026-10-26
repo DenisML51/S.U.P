@@ -468,14 +468,11 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       if (await repository.has(character.id)) character = { ...character, id: newCharacterId() };
 
       await repository.create(character);
-      set({
-        character,
-        charactersList: [...get().charactersList, toCharacterPreview(character)],
-        viewMode: 'tabs',
-        undoable: [],
-      });
-      rememberOpen(character.id);
+      set({ charactersList: [...get().charactersList, toCharacterPreview(character)] });
       notify(`Персонаж ${character.name} импортирован`);
+      // Opened the way any hero is: its rules system loaded first, then one change of screen. Setting
+      // it straight away showed the sheet before its rules and left the screen dark mid-transition.
+      await get().loadCharacter(character.id);
       return character.id;
     },
 
