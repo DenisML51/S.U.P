@@ -103,7 +103,16 @@ export const useSessionStore = create<SessionState>((set, get) => {
   sessionManager.setListeners({
     onSessionLost: () => void handleSessionLost(),
     onUserChanged: (user) => {
-      if (get().status === 'authenticated') set({ user, offline: false });
+      if (get().status !== 'authenticated') return;
+      set({ user, offline: false });
+      // The refresh cookie is the browser's, not the tab's: signing in to another account in
+      // another tab hands this tab that account's tokens. Its data must follow, or this account's
+      // database would be filled with the other's characters and written to the other's account.
+      if (workspace && workspace.userId !== user.id) {
+        closeWorkspace();
+        void openWorkspace(user, true);
+        toast(`В другой вкладке выполнен вход как ${user.displayName} — показаны его герои`, { duration: 6000 });
+      }
     },
   });
 
@@ -161,7 +170,7 @@ export const useSessionStore = create<SessionState>((set, get) => {
     },
 
     async syncNow() {
-      await workspace?.sync.sync();
+      await workspace?.sync.syncNow();
     },
 
     async changePassword(currentPassword, newPassword) {

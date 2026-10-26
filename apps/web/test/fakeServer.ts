@@ -32,6 +32,7 @@ export class FakeServer {
         items: items.map((row) => structuredClone(row.record)),
         cursor: String(items.at(-1)?.seq ?? since),
         hasMore: false,
+        latest: String(this.seq),
       };
       return response;
     },
