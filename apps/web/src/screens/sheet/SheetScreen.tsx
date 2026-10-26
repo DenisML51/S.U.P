@@ -8,6 +8,8 @@ import { Drawer } from '../../ui/Drawer';
 import { IconCombat, IconDice, IconPrev, IconSettings } from '../../ui/icons';
 import { IconButton } from '../../ui/primitives';
 import { RailButton, TabBar } from '../../ui/Rail';
+import { SETTING_ART } from '../../ui/art';
+import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { useToastOffset } from '../../ui/Toasts';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { settingOf } from '../../ui/theme/settings';
@@ -59,7 +61,9 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
   };
   return (
     <SheetDialogsProvider>
-      <SettingScope setting={setting} className="h-screen overflow-clip bg-bg max-lg:h-dvh">
+      <SettingScope setting={setting} className="relative isolate h-screen overflow-clip bg-bg max-lg:h-dvh">
+        {/* Glass panels show the world behind them; other settings keep the sheet on their own ground. */}
+        {SETTING_ART[setting].glass && <SettingBackdrop setting={setting} strength={1} frame={false} className="-z-10" />}
         {desktop ? <WideLayout {...layout} /> : <NarrowLayout {...layout} />}
         <SheetDialogHost />
         <SlotPrompt />

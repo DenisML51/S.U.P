@@ -20,6 +20,11 @@ export interface SettingArt {
    * corners (combat, where the bar has its own ornaments).
    */
   Backdrop: React.FC<{ frame?: boolean }>;
+  /**
+   * The setting's panels are glass: the sheet, which has no atmosphere of its own, lays the backdrop
+   * under them so the world shows through.
+   */
+  glass?: boolean;
   /** Laid over the experience bar when a new level can be taken: the setting's own marvel. */
   LevelReady: React.FC;
   /** Drawn round the emblem of the setting's world card, if the setting has such a thing. */
