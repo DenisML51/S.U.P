@@ -86,3 +86,21 @@ describe('fighting styles and weapon properties', () => {
     expect(twf.attacks.find((a) => a.id.endsWith('_offhand'))!.damage).toBe('1d6+3');
   });
 });
+
+describe('rituals', () => {
+  const spell = (patch: Record<string, unknown>) => ({
+    id: 'detect', name: 'Обнаружение магии', level: 1, school: '', castingTime: '', actionType: 'action' as const, range: '', components: '',
+    duration: '', description: '', effect: '', prepared: false, ritual: true, resourceId: 'slot-1', resourceCost: 1, ...patch,
+  });
+  const slots = [{ id: 'slot-1', name: 'Ячейки 1', current: 0, max: 2, description: '', iconName: '', spellSlotLevel: 1, recovery: 'long' as const }];
+
+  it('cast as a ritual take no slot; only a Wizard casts them unprepared, never in a fight', () => {
+    const cleric = makeCharacter({ spells: [spell({ prepared: true })], resources: slots });
+    expect(performAction(cleric, { kind: 'spell', id: 'detect', asRitual: true }).ok).toBe(true);
+    expect(performAction(cleric, { kind: 'spell', id: 'detect' }).ok).toBe(false);
+    const unprepared = makeCharacter({ spells: [spell({})], resources: slots });
+    expect(performAction(unprepared, { kind: 'spell', id: 'detect', asRitual: true }).ok).toBe(false);
+    expect(performAction({ ...unprepared, ritualsFromBook: true }, { kind: 'spell', id: 'detect', asRitual: true }).ok).toBe(true);
+    expect(performAction(cleric, { kind: 'spell', id: 'detect', asRitual: true, trackActionEconomy: true }).ok).toBe(false);
+  });
+});

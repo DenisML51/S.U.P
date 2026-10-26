@@ -106,8 +106,23 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     else castWith(spell, slots[0]);
   };
 
+  /** A ritual: no slot, ten minutes longer, so out of a fight's turn; what it deals still rolls. */
+  const ritual = (spell: Spell) => {
+    if (!character) return;
+    const parts = spellDamageParts(character, spell, spell.level);
+    const hitBonus = spell.attackRoll ? spellAttackBonusFor(character, spell) : undefined;
+    const rolls = hitBonus !== undefined || parts.length > 0;
+    if (!performAction({ kind: 'spell', id: spell.id, asRitual: true }, { quiet: rolls })?.ok) return;
+    if (rolls) strike(`${spell.name} (ритуал)`, hitBonus, parts);
+  };
+
   const activate = (entry: Ability) => onTurn(entry, () => concentrating(entry, () => use(entry)));
   const cast = (spell: Spell) => onTurn(spell, () => concentrating(spell, () => castFrom(spell)));
 
-  return { attack: (entry: Attack) => onTurn(entry, () => attack(entry)), activate, cast };
+  return {
+    attack: (entry: Attack) => onTurn(entry, () => attack(entry)),
+    activate,
+    cast,
+    ritual: (spell: Spell) => concentrating(spell, () => ritual(spell)),
+  };
 }

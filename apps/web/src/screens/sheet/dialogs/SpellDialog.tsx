@@ -311,19 +311,34 @@ export const SpellDialog: React.FC<{ open: boolean; id?: string; edit?: boolean;
       onEdit={startEditing}
       primary={
         entry.prepared ? (
-          <Button variant="primary" onClick={() => acts.cast(entry)} data-autofocus>
-            Сотворить
-          </Button>
+          <>
+            {entry.ritual && (
+              <Button variant="secondary" onClick={() => acts.ritual(entry)} title="Без ячейки, на 10 минут дольше">
+                Ритуалом
+              </Button>
+            )}
+            <Button variant="primary" onClick={() => acts.cast(entry)} data-autofocus>
+              Сотворить
+            </Button>
+          </>
         ) : (
-          <Button
-            variant="primary"
-            disabled={blocker !== null}
-            title={blocker ?? undefined}
-            onClick={() => updateCharacter((doc) => togglePrepared(doc, entry.id))}
-            data-autofocus
-          >
-            Подготовить
-          </Button>
+          <>
+            {/* A Wizard's ritual comes straight from the book, unprepared. */}
+            {entry.ritual && character.ritualsFromBook && (
+              <Button variant="secondary" onClick={() => acts.ritual(entry)} title="Без ячейки, на 10 минут дольше">
+                Ритуалом
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              disabled={blocker !== null}
+              title={blocker ?? undefined}
+              onClick={() => updateCharacter((doc) => togglePrepared(doc, entry.id))}
+              data-autofocus
+            >
+              Подготовить
+            </Button>
+          </>
         )
       }
     >

@@ -270,7 +270,8 @@ const CastingInfo: React.FC<{ character: Character; below?: boolean }> = ({ char
 /** Spells: the whole spellbook, preparation for the day and casting, in one place. */
 export const MagicSection: React.FC<{ character: Character }> = ({ character }) => {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
-  const { cast } = useActs();
+  const acts = useActs();
+  const { cast } = acts;
   const dialogs = useSheetDialogs();
   const [level, setLevel] = useState<LevelFilter>('all');
   const [preparedOnly, setPreparedOnly] = useState(false);
@@ -380,10 +381,20 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
                     selected={dialogs.isSelected('spell', spell.id)}
                     onOpen={() => dialogs.openEntry('spell', spell.id)}
                     action={
-                      spell.prepared && (
-                        <Button size="row" variant="secondary" onClick={() => cast(spell)}>
-                          Сотворить
-                        </Button>
+                      (spell.prepared || (spell.ritual && character.ritualsFromBook)) && (
+                        <span className="flex gap-1.5">
+                          {/* A ritual takes no slot; a Wizard's comes straight from the book. */}
+                          {spell.ritual && (
+                            <Button size="row" variant="ghost" onClick={() => acts.ritual(spell)} title="Без ячейки, на 10 минут дольше">
+                              Ритуал
+                            </Button>
+                          )}
+                          {spell.prepared && (
+                            <Button size="row" variant="secondary" onClick={() => cast(spell)}>
+                              Сотворить
+                            </Button>
+                          )}
+                        </span>
                       )
                     }
                   />

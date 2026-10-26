@@ -9,6 +9,8 @@
   "coc|Выносливость": "Constitution",
   "coc|ТЕЛ": "SIZ",
   "coc|Телосложение": "Size",
+  "d20|Помеха": "Disadvantage",
+  "d20|Преимущество": "Advantage",
   "ui|История": "Backstory",
   "ui|Магия": "Magic",
   "{0} ({1})": "{0} ({1})",
