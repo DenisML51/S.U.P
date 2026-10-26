@@ -1,4 +1,4 @@
-import type { PartyMessageDto, WsClientMessage, WsServerMessage } from '@itd/schema';
+import type { PartyMessageDto, TableRollDto, WsClientMessage, WsServerMessage } from '@itd/schema';
 import { API_BASE, CLIENT_SESSION_ID } from '../api/client';
 
 const PING_INTERVAL_MS = 25_000;
@@ -14,6 +14,7 @@ export interface RealtimeHandlers {
   onPartyChanged: (partyId: string) => void;
   /** Someone wrote at a party's table, to everyone or to this user. */
   onPartyMessage: (partyId: string, message: PartyMessageDto) => void;
+  onPartyRoll: (partyId: string, roll: TableRollDto) => void;
 }
 
 const socketUrl = (): string => {
@@ -98,6 +99,8 @@ export class RealtimeClient {
         this.handlers.onPartyChanged(message.partyId);
       } else if (message.type === 'party.message') {
         this.handlers.onPartyMessage(message.partyId, message.message);
+      } else if (message.type === 'party.roll') {
+        this.handlers.onPartyRoll(message.partyId, message.roll);
       }
     };
 

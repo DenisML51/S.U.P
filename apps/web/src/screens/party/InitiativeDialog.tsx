@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { rollDie } from '@itd/game-logic';
+import { announceRoll } from '../../store/useTableRollStore';
 import type { CombatantDto, Setting } from '@itd/schema';
 import { usePartyStore } from '../../store/usePartyStore';
 import { Dialog } from '../../ui/Dialog';
@@ -35,6 +36,10 @@ export const InitiativeDialog: React.FC<{
 }> = ({ partyId, setting, combatant, bonus, canRemove, byDex, firearmReady, quickDraw, onClose }) => {
   const setInitiative = usePartyStore((s) => s.setInitiative);
   const removeCombatant = usePartyStore((s) => s.removeCombatant);
+  // A hero's initiative is a throw the table sees on its portrait, like any other.
+  const heroCharacter = usePartyStore((s) =>
+    combatant?.kind === 'hero' ? s.parties[partyId]?.heroes.find((h) => h.id === combatant.refId)?.characterId : undefined,
+  );
   const [manual, setManual] = useState<number>(() => combatant?.initiative ?? 10 + (bonus ?? 0));
   const [rolled, setRolled] = useState<{ die: number; total: number } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -60,6 +65,7 @@ export const InitiativeDialog: React.FC<{
     const die = rollDie(20);
     const total = die + (bonus ?? 0);
     setRolled({ die, total });
+    announceRoll(heroCharacter, [{ sides: 20, value: die }], `Инициатива: ${total}`);
   };
 
   // The die tumbles and lands first; the number then stays on screen a moment before the window closes.

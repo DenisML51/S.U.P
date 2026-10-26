@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { formatDice, parseDiceFormula, rollD20, rollDie, rollPercentile, type D20Mode } from '@itd/game-logic';
+import type { TableDie } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
+import { announceRoll } from '../../../store/useTableRollStore';
 import { Dialog } from '../../../ui/Dialog';
 import { Segmented } from '../../../ui/forms';
 import { Button, Input, cx } from '../../../ui/primitives';
@@ -118,11 +120,26 @@ type D100Mode = 'normal' | 'bonus' | 'penalty';
 /**
  * The dice tray: dice clicked into a pool (or a formula typed), a single d20 with advantage or
  * disadvantage — or, for an investigator, a single d100 with a bonus or a penalty die — and the
- * throw shown die by die. Every throw goes to the hero's log.
+ * throw shown die by die. Every throw goes to the hero's log and to the party table the hero sits at;
+ * a tray without a hero (the master's at the table) hands its throws to `onThrown` instead, with
+ * `children` above the dice to say who they are for.
  */
-export const DiceDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+export const DiceDialog: React.FC<{
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  /** Starts on 1d100 (a Call of Cthulhu table) rather than 1d20. */
+  percentile?: boolean;
+  /** A throw: its dice and what it was ("2d6 + 3: 11"), for the table. */
+  onThrown?: (dice: TableDie[], label: string) => void;
+  children?: React.ReactNode;
+}> = ({ open, onClose, title = 'Кубики', percentile: percentileTable, onThrown, children }) => {
   const logHistory = useCharacterStore((s) => s.logHistory);
-  const percentile = useCharacterStore((s) => s.character?.build?.ruleset === 'coc7');
+  const characterId = useCharacterStore((s) => s.character?.id);
+  const heroPercentile = useCharacterStore((s) => s.character?.build?.ruleset === 'coc7');
+  const percentile = percentileTable ?? heroPercentile;
+  const thrown = (dice: TableDie[], label: string) =>
+    onThrown ? onThrown(dice, label) : announceRoll(characterId, dice, label);
   const [formula, setFormula] = useState(percentile ? '1d100' : '1d20');
   const [mode, setMode] = useState<D20Mode>('normal');
   const [d100Mode, setD100Mode] = useState<D100Mode>('normal');
@@ -149,6 +166,7 @@ export const DiceDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
         { sides: 10, value: d100.units, label: String(d100.units) },
       ];
       const label = `1d100 (${d100Mode === 'bonus' ? 'бонусная кость' : 'штрафная кость'})`;
+      thrown(dice, `${label}: ${d100.total}`);
       setResults((previous) =>
         [{ id: Date.now(), formula: label, total: d100.total, dice, bonus: 0 }, ...previous].slice(0, 6),
       );
@@ -172,6 +190,7 @@ export const DiceDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
       singleD20 && mode !== 'normal'
         ? `${formula} (${mode === 'advantage' ? 'преимущество' : 'помеха'})`
         : formula;
+    thrown(dice, `${label}: ${total}`);
     setResults((previous) =>
       [{ id: Date.now(), formula: label, total, dice, bonus }, ...previous].slice(0, 6),
     );
@@ -183,7 +202,8 @@ export const DiceDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
   const [latest, ...earlier] = results;
 
   return (
-    <Dialog open={open} onClose={onClose} title="Кубики" width="lg">
+    <Dialog open={open} onClose={onClose} title={title} width="lg">
+      {children}
       <div className="grid grid-cols-7 gap-2">
         {DICE.map((sides, index) => (
           <DieButton
