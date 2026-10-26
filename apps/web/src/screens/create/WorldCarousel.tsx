@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { DEFAULT_SETTING, SETTINGS, type Setting } from '@itd/schema';
 import { Button, IconButton } from '../../ui/primitives';
@@ -11,6 +11,18 @@ type Origin = { x: number; y: number };
 /** Scaled down on a phone by the stage around it (`--stage-fit`), so the lore below still fits. */
 const CARD_HEIGHT = 'calc(min(50vh, 500px) * var(--stage-fit, 1))';
 const COUNT = SETTINGS.length;
+/** How many cards stand on each side of the one in front. */
+const HALF = Math.floor(COUNT / 2);
+/** The size of a card and the dark it stands in, by how far it is from the front. */
+const SCALES = [1, 0.8, 0.68, 0.58];
+const SHADES = [0, 0.55, 0.72, 0.82];
+/**
+ * The faces the worlds speak in, loaded as the ring appears: a face arriving in the middle of a
+ * turn makes the browser lay out every picture on the screen again.
+ */
+/** A Cyrillic letter and a Latin one: each face is loaded for both alphabets. */
+const FACE_SAMPLE = `${String.fromCharCode(0x416)}W`;
+const WORLD_FACES = ['Oswald', 'Old Standard TT', 'Cinzel', 'Forum', 'Alegreya', 'Alegreya SC', 'Cormorant SC', 'Cormorant Garamond', 'Poiret One', 'Tektur'];
 
 const centreOf = (element: Element | null | undefined): Origin => {
   const rect = element?.getBoundingClientRect();
@@ -19,7 +31,7 @@ const centreOf = (element: Element | null | undefined): Origin => {
 
 /**
  * The worlds to begin in, the one in front and the others fanned round it, as heroes are on hero
- * select. Five worlds make a ring, so two always stand on each side; the one in front stays awake
+ * select. The worlds make a ring, as many standing on each side; the one in front stays awake
  * (its hover marvel plays) and is told of below. The screen takes the look of the world in front
  * (`onFocus`); a world is chosen by clicking it in front or with the button under it.
  */
@@ -35,6 +47,9 @@ export const WorldCarousel: React.FC<{
   const cards = useRef<Partial<Record<Setting, HTMLDivElement | null>>>({});
 
   useEffect(() => onFocus(focused), [focused, onFocus]);
+  useEffect(() => {
+    for (const face of WORLD_FACES) for (const weight of [400, 700]) void document.fonts.load(`${weight} 1em "${face}"`, FACE_SAMPLE).catch(() => undefined);
+  }, []);
 
   const step = useCallback((delta: number) => setIndex((i) => (i + delta + COUNT) % COUNT), []);
   useEffect(() => {
@@ -46,9 +61,22 @@ export const WorldCarousel: React.FC<{
     return () => window.removeEventListener('keydown', onKey);
   }, [step]);
 
-  // Offsets round the ring, from -2 to 2. A card that wraps from one end to the other jumps there
-  // rather than flying across the one in front.
-  const offsets = SETTINGS.map((_, i) => ((i - index + COUNT + 2) % COUNT) - 2);
+  // A click on the card in front chooses it, on another brings it to the front. The handlers stay
+  // the same from render to render, so a card is drawn again only when its place changes.
+  const latest = useRef({ index, onChoose });
+  latest.current = { index, onChoose };
+  const handlers = useMemo(
+    () =>
+      SETTINGS.map((id, i) => (origin: Origin) => {
+        if (latest.current.index === i) latest.current.onChoose(id, origin);
+        else setIndex(i);
+      }),
+    [],
+  );
+
+  // Offsets round the ring, as many on each side. A card that wraps from one end to the other
+  // jumps there rather than flying across the one in front.
+  const offsets = SETTINGS.map((_, i) => ((i - index + COUNT + HALF) % COUNT) - HALF);
   const previous = useRef<Partial<Record<Setting, number>>>({});
   useEffect(() => {
     SETTINGS.forEach((id, i) => {
@@ -64,29 +92,35 @@ export const WorldCarousel: React.FC<{
           const distance = Math.abs(offset);
           const isFocused = offset === 0;
           const before = previous.current[id];
-          const jump = before !== undefined && Math.abs(before - offset) > 2;
+          const jump = before !== undefined && Math.abs(before - offset) > HALF;
           return (
             <motion.div
               key={id}
               ref={(element: HTMLDivElement | null) => {
                 cards.current[id] = element;
               }}
-              className="absolute left-1/2 top-0"
+              className="absolute left-1/2 top-0 will-change-transform"
               style={{ height: CARD_HEIGHT, aspectRatio: '0.62', zIndex: 10 - distance }}
               initial={false}
+              // Only the card's transform moves; its dimming is a layer of dark over it that fades,
+              // so nothing in the card is drawn again while the ring turns.
               animate={{
-                x: `calc(-50% + ${Math.sign(offset) * (distance === 0 ? 0 : 80 + (distance - 1) * 50)}%)`,
-                scale: isFocused ? 1 : distance === 1 ? 0.8 : 0.68,
+                x: `calc(-50% + ${Math.sign(offset) * (distance === 0 ? 0 : 80 + (distance - 1) * 48)}%)`,
+                scale: SCALES[distance],
                 rotateY: offset === 0 ? 0 : offset > 0 ? -22 : 22,
-                filter: isFocused
-                  ? 'brightness(1) saturate(1)'
-                  : `brightness(${hovered === i ? 0.75 : distance === 1 ? 0.42 : 0.26}) saturate(0.6)`,
               }}
               transition={jump ? { duration: 0 } : { type: 'spring', stiffness: 220, damping: 30 }}
               onPointerEnter={() => setHovered(i)}
               onPointerLeave={() => setHovered((h) => (h === i ? null : h))}
             >
-              <WorldCard setting={id} selected={isFocused} onSelect={(origin) => (isFocused ? onChoose(id, origin) : setIndex(i))} />
+              <WorldCard
+                setting={id}
+                selected={isFocused}
+                awake={isFocused}
+                distant={distance === HALF}
+                shade={isFocused ? 0 : hovered === i ? 0.3 : SHADES[distance]}
+                onSelect={handlers[i]!}
+              />
             </motion.div>
           );
         })}

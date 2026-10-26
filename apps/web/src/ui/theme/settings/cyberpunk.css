@@ -407,7 +407,7 @@
     box-shadow: none;
     --cp-stripe: var(--c-accent);
     --cp-tone: var(--c-neon);
-    animation: cp-glitch 460ms steps(1, end) both;
+    animation: cp-toast-glitch 460ms steps(1, end) both;
   }
   .ui-toast--error { --cp-stripe: var(--c-danger); --cp-tone: var(--c-danger); border-color: rgb(var(--c-danger) / 0.6); }
   .ui-toast--success { --cp-tone: var(--c-success); }
@@ -901,7 +901,7 @@
 /* ------------------------------------------------------------------ Toast motion */
 /* The message breaks in: the plate jumps sideways in hard steps (the individual `translate` and
    `opacity`, so the toaster's own transform is left alone) while its text splits into red and cyan. */
-@keyframes cp-glitch {
+@keyframes cp-toast-glitch {
   0% { opacity: 0; translate: 0 0; }
   10% { opacity: 1; translate: -6px 0; }
   22% { opacity: 0.6; translate: 5px 0; }

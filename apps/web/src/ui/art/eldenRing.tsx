@@ -249,14 +249,18 @@ const Roots: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+/* ------------------------------------------------------------------ Motes and leaves */
+
 /**
  * Motes of gold rising through the dark at three depths: far ones many, fine and slow to cross the
  * screen; nearer ones fewer and larger; the nearest few big, soft and out of focus, drifting most.
+ * Each is a soft dot whose glow is in its own picture, on one animation of fixed keyframes, so the
+ * compositor runs them.
  */
 const MOTE_DEPTHS = [
-  { depth: 'far', count: 10, size: [1, 1.6], time: [26, 40] },
-  { depth: 'mid', count: 8, size: [1.8, 2.8], time: [18, 28] },
-  { depth: 'near', count: 3, size: [5, 9], time: [14, 22] },
+  { depth: 'far', count: 8, size: [3, 4.5], time: [26, 40] },
+  { depth: 'mid', count: 6, size: [5, 7.5], time: [18, 28] },
+  { depth: 'near', count: 3, size: [12, 20], time: [14, 22] },
 ] as const;
 
 const MOTES = (() => {
@@ -268,8 +272,6 @@ const MOTES = (() => {
       size: size[0] + next() * (size[1] - size[0]),
       duration: `${(time[0] + next() * (time[1] - time[0])).toFixed(1)}s`,
       delay: `${(-next() * time[1]).toFixed(1)}s`,
-      // Which way it drifts as it rises; how far is the depth's (fixed in the keyframes, so the
-      // compositor can run them).
       side: next() < 0.5 ? 'l' : 'r',
     })),
   );
@@ -278,10 +280,10 @@ const MOTES = (() => {
 /** Leaves of the Erdtree drifting down, each on its own time, drift and tumble. */
 const LEAVES = (() => {
   const next = random(2203);
-  return Array.from({ length: 6 }, () => ({
+  return Array.from({ length: 5 }, () => ({
     left: `${(4 + next() * 92).toFixed(1)}%`,
     size: 4 + Math.round(next() * 3),
-    duration: `${(22 + next() * 18).toFixed(1)}s`,
+    duration: `${(24 + next() * 16).toFixed(1)}s`,
     delay: `${(-next() * 40).toFixed(1)}s`,
     // How far aside it drifts as it falls: a little or a long way.
     reach: next() < 0.5 ? 'short' : 'long',
@@ -299,11 +301,13 @@ const Leaf: React.FC = () => (
 
 /**
  * Behind the interface: a near-black dark, and light falling into it from high at the right in
- * slow shafts, as the Erdtree's light falls through its crown; a faint haze drifting; motes of gold rising at three depths and leaves of the tree
- * drifting down through it; darkness at the edges and the screen set in a gilt frame at its corners.
+ * slow shafts, as the Erdtree's light falls through its crown; a faint haze drifting; motes of gold
+ * rising and leaves of the tree drifting down through it; darkness at the edges and the screen set
+ * in a gilt frame at its corners. Every moving thing is a layer of its own that only fades or
+ * moves (no blur, no blending), so the dark under it is never drawn again.
  */
 const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => (
-  <div className="absolute inset-0 overflow-hidden text-frame">
+  <div className="er-depth absolute inset-0 overflow-hidden text-frame">
     <svg width="0" height="0" className="absolute" aria-hidden>
       <defs>
         <linearGradient id="er-leaf-gold" x1="0" y1="0" x2="0" y2="1">
@@ -311,18 +315,14 @@ const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => (
           <stop offset="1" stopColor="rgb(202 148 70)" />
         </linearGradient>
       </defs>
-    </svg>
-    <svg width="0" height="0" className="absolute" aria-hidden>
       <Filters />
     </svg>
-    <div className="er-depth absolute inset-0" />
-    <div className="er-haze absolute inset-[-20%]" />
-    <Roots className="er-roots absolute inset-x-0 bottom-0 w-full" />
+    <div className="er-haze absolute inset-[-10%]" />
     <div className="er-shafts absolute inset-0">
       <i />
       <i />
     </div>
-    {/* One animation to a mote, on fixed keyframes: rising and drifting its own way. */}
+    <Roots className="er-roots absolute inset-x-0 bottom-0 w-full" />
     {MOTES.map(({ depth, left, size, duration, delay, side }) => (
       <i
         key={left + delay}
@@ -338,7 +338,6 @@ const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => (
       </span>
     ))}
     <div className="er-vignette absolute inset-0" />
-    <div className="er-grain absolute inset-[-10%]" />
     {frame &&
       (['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map((position) => (
         <div key={position} className={`er-screen-corner absolute m-4 ${position}`}>
@@ -408,25 +407,20 @@ const DOOR_MASK = `url("data:image/svg+xml,${encodeURIComponent(
  */
 const WorldSigil: React.FC = () => (
   <>
-    {/* The fog is laid over the doorway as page layers, not drawn in the arch, so it rises on the compositor. */}
+    {/* The fog and the grace are laid over the doorway as page layers, not drawn in the arch, so they change on the compositor. */}
     <span className="er-arch__fog" style={{ maskImage: DOOR_MASK, WebkitMaskImage: DOOR_MASK, ['--fog' as string]: `url("${GATE_FOG}")` }}>
       <i />
       <i />
     </span>
+    <span className="er-arch__grace" style={{ maskImage: DOOR_MASK, WebkitMaskImage: DOOR_MASK }} />
     <WorldArch />
+    <WorldArch lit />
   </>
 );
 
-const WorldArch: React.FC = () => (
-  <svg viewBox="-100 -150 200 230" fill="none" aria-hidden className="er-arch">
-    <defs>
-      <radialGradient id="er-arch-grace" cx="0" cy="66" r="110" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 66) scale(1 1.3) translate(0 -66)">
-        <stop offset="0" stopColor="rgb(255 226 160)" stopOpacity="0.55" />
-        <stop offset="0.4" stopColor="rgb(255 200 110)" stopOpacity="0.16" />
-        <stop offset="1" stopColor="rgb(255 200 110)" stopOpacity="0" />
-      </radialGradient>
-    </defs>
-    <path d={`${pointedArch(64, -36, 66, 96)}Z`} fill="url(#er-arch-grace)" className="er-arch__grace" />
+/** The arch itself; `lit` is the copy that fades in over it when the card is looked at. */
+const WorldArch: React.FC<{ lit?: boolean }> = ({ lit }) => (
+  <svg viewBox="-100 -150 200 230" fill="none" aria-hidden className={lit ? 'er-arch er-arch--lit' : 'er-arch'}>
     <g stroke="currentColor" className="er-arch__lines">
       <path d={pointedArch(70, -36, 66, 104)} strokeWidth="1.3" />
       <path d={pointedArch(64, -36, 66, 96)} strokeWidth="0.5" />

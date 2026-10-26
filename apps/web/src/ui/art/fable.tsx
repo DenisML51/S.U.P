@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React, { useEffect, useRef } from 'react';
 import GiFairy from '~icons/game-icons/fairy';
 import type { SettingArt } from './types';
 
@@ -114,81 +114,172 @@ const ScreenCorner: React.FC = () => (
 
 /* ------------------------------------------------------------------ Atmosphere */
 
-const DUST_W = 1600;
-const DUST_H = 1000;
+/** The trail is drawn on a 1600×900 sheet, scaled to cover the screen from its middle. */
+const SHEET_W = 1600;
+const SHEET_H = 900;
 
-/** Fireflies and fairy dust: three swarms, most of them low, a few up in the light. */
-const MOTES = (() => {
-  const next = random(4242);
-  return [0, 1, 2].map((swarm) =>
-    Array.from({ length: 16 }, () => ({
-      x: next() * DUST_W,
-      y: DUST_H * (0.3 + next() ** 0.7 * 0.66),
-      r: 1.2 + next() * 2.2,
-      gold: next() < 0.3,
-      delay: -next() * 9 - swarm,
-    })),
-  );
+/**
+ * The hero's trail, as Albion lays it before them: a winding line of golden dust running from near
+ * at the foot of the screen away into the distance, narrowing as it goes. Two curves, in sheet
+ * coordinates.
+ */
+const TRAIL = [
+  [1250, 980, 1070, 850, 1020, 740, 1180, 670],
+  [1180, 670, 1310, 615, 1360, 540, 1460, 474],
+] as const;
+const TRAIL_PATH = `M${TRAIL[0][0]} ${TRAIL[0][1]}${TRAIL.map((c) => `C${c.slice(2).join(' ')}`).join('')}`;
+
+/** A point on one of the trail's curves. */
+const trailAt = (c: readonly number[], t: number) => {
+  const u = 1 - t;
+  return [
+    u ** 3 * c[0]! + 3 * u * u * t * c[2]! + 3 * u * t * t * c[4]! + t ** 3 * c[6]!,
+    u ** 3 * c[1]! + 3 * u * u * t * c[3]! + 3 * u * t * t * c[5]! + t ** 3 * c[7]!,
+  ] as const;
+};
+
+/**
+ * The dust along the trail: grains and now and then a sparkle, strewn a little to either side of
+ * its line. Near the foot of the screen the grains are large and far apart; towards the distance
+ * smaller and closer, as a road narrows to the horizon.
+ */
+const TRAIL_DUST = (() => {
+  const next = random(1907);
+  // The trail as a chain of points close together, to walk along it by distance.
+  const points = TRAIL.flatMap((c) => Array.from({ length: 120 }, (_, i) => trailAt(c, i / 120)));
+  points.push(trailAt(TRAIL[1], 1));
+  /** How near a point of the trail is: 1 at the foot of the screen, a fifth on the horizon. */
+  const nearAt = (y: number) => 0.2 + 0.8 * Math.max(0, Math.min(1, (y - 474) / (980 - 474))) ** 1.4;
+  let grains = '';
+  let sparkles = '';
+  const left: [number, number][] = [];
+  const right: [number, number][] = [];
+  let walked = 0;
+  let due = 0;
+  for (let i = 1; i < points.length; i++) {
+    const [x0, y0] = points[i - 1]!;
+    const [x1, y1] = points[i]!;
+    const step = Math.hypot(x1 - x0, y1 - y0);
+    const normal = Math.atan2(y1 - y0, x1 - x0) + Math.PI / 2;
+    // The glowing band the dust lies in, as wide as the trail is near.
+    const half = 16 * nearAt(y1);
+    left.push([x1 + Math.cos(normal) * half, y1 + Math.sin(normal) * half]);
+    right.push([x1 - Math.cos(normal) * half, y1 - Math.sin(normal) * half]);
+    // Grains strewn along this stretch, thicker on the line than at its edges.
+    while (due < walked + step) {
+      const t = (due - walked) / step;
+      const px = x0 + (x1 - x0) * t;
+      const py = y0 + (y1 - y0) * t;
+      const near = nearAt(py);
+      due += (1.2 + 3.4 * near) * (0.4 + next() * 1.2);
+      const aside = (next() + next() + next() - 1.5) * 26 * near;
+      const x = px + Math.cos(normal) * aside;
+      const y = py + Math.sin(normal) * aside;
+      if (next() < 0.035) {
+        sparkles += sparkle(x, y, (5 + next() * 6) * near, 0.15);
+      } else {
+        const r = (0.5 + next() ** 3 * 2) * near;
+        grains += `M${f(x - r)} ${f(y)}a${f(r)} ${f(r)} 0 1 0 ${f(r * 2)} 0a${f(r)} ${f(r)} 0 1 0 ${f(-r * 2)} 0`;
+      }
+    }
+    walked += step;
+  }
+  const band = `M${left.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}L${right.reverse().map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}Z`;
+  return { grains, sparkles, band };
 })();
 
-/** The motes over the screen: the only thing behind it that moves. */
-const Motes: React.FC = () => {
-  const id = useId().replace(/:/g, '');
-  return (
-    <svg viewBox={`0 0 ${DUST_W} ${DUST_H}`} preserveAspectRatio="xMidYMid slice" aria-hidden className="absolute inset-0 h-full w-full">
-      <defs>
-        <radialGradient id={`${id}-mote`} cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor="rgb(220 255 248)" />
-          <stop offset="0.3" stopColor="rgb(120 226 214)" stopOpacity="0.8" />
-          <stop offset="1" stopColor="rgb(120 226 214)" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id={`${id}-mote-gold`} cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor="rgb(255 250 226)" />
-          <stop offset="0.3" stopColor="rgb(246 212 136)" stopOpacity="0.8" />
-          <stop offset="1" stopColor="rgb(246 212 136)" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      {MOTES.map((swarm, i) => (
-        <g key={i} className={`fb-motes fb-motes--${i}`}>
-          {swarm.map(({ x, y, r, gold, delay }, j) => (
-            <circle
-              key={j}
-              className="fb-mote"
-              cx={f(x)}
-              cy={f(y)}
-              r={f(r * 3)}
-              fill={`url(#${id}-${gold ? 'mote-gold' : 'mote'})`}
-              style={{ animationDelay: `${delay.toFixed(2)}s` }}
-            />
-          ))}
-        </g>
-      ))}
-    </svg>
-  );
+/** The trail, drawn once: a haze of light under it, the dust over it. */
+const Trail: React.FC = () => (
+  <svg viewBox={`0 0 ${SHEET_W} ${SHEET_H}`} className="fb-trail" aria-hidden>
+    <defs>
+      <filter id="fb-trail-glow" filterUnits="userSpaceOnUse" x="800" y="380" width="800" height="620">
+        <feGaussianBlur stdDeviation="12" />
+      </filter>
+      <filter id="fb-trail-shine" filterUnits="userSpaceOnUse" x="800" y="380" width="800" height="620">
+        <feGaussianBlur stdDeviation="2.4" />
+      </filter>
+    </defs>
+    <path d={TRAIL_DUST.band} fill="rgb(250 214 140)" opacity="0.22" filter="url(#fb-trail-glow)" />
+    <g fill="rgb(255 226 160)" filter="url(#fb-trail-shine)" opacity="0.9">
+      <path d={TRAIL_DUST.grains + TRAIL_DUST.sparkles} />
+    </g>
+    <path d={TRAIL_DUST.grains} fill="rgb(255 244 214)" opacity="0.85" />
+    <path d={TRAIL_DUST.sparkles} fill="rgb(255 250 232)" />
+  </svg>
+);
+
+/** Fireflies and fairy dust over the glade: where each hovers, how large, which way it drifts. */
+const GLADE_FIREFLIES = (() => {
+  const next = random(4242);
+  return Array.from({ length: 22 }, (_, i) => ({
+    left: `${(next() * 100).toFixed(1)}%`,
+    top: `${(30 + next() ** 0.7 * 66).toFixed(1)}%`,
+    size: 5 + next() * 7,
+    gold: next() < 0.3,
+    // Three ways of drifting, fixed in the keyframes so the compositor runs them.
+    way: i % 3,
+    duration: `${(9 + next() * 9).toFixed(1)}s`,
+    delay: `${(-next() * 18).toFixed(1)}s`,
+  }));
+})();
+
+/**
+ * Keeps the trail's sheet covering the screen: its scale, set on the element whenever the screen
+ * changes size (the sheet is laid out in its own pixels, so the sparks can run along its path).
+ */
+const useCoverScale = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry!.contentRect;
+      element.style.setProperty('--fb-cover', String(Math.max(width / SHEET_W, height / SHEET_H)));
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  return ref;
 };
 
 /**
  * Albion behind the screen, told by its light alone: the deep sea-green of the wood, warm sunlight
- * falling from above in soft rays, mist along the foot, fireflies and fairy dust drifting up; the
- * edges dim, gilt tendrils in the corners.
+ * falling from above in soft rays, mist along the foot, and the hero's trail of golden dust winding
+ * away into the distance, sparks running along it now and then; fireflies drifting over it all; the
+ * edges dim, gilt tendrils in the corners. The picture is still: only whole layers fade or move.
  */
-const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => (
-  <div className="fb-glade absolute inset-0 overflow-hidden">
-    <div className="fb-sun absolute inset-0" />
-    <div className="fb-light absolute inset-x-[-10%] top-[-5%] h-[110%]" />
-    <div className="fb-mist absolute inset-x-[-20%] bottom-[-4%] h-[42%]" />
-    <Motes />
-    <div className="fb-veil absolute inset-0" />
-    {frame &&
-      (['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map(
-        (position) => (
-          <div key={position} className={`fb-screen-corner absolute m-4 ${position}`}>
-            <ScreenCorner />
-          </div>
-        ),
-      )}
-  </div>
-);
+const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => {
+  const cover = useCoverScale();
+  return (
+    <div ref={cover} className="fb-glade absolute inset-0 overflow-hidden">
+      <div className="fb-sun absolute inset-0" />
+      <div className="fb-light absolute inset-x-[-10%] top-[-5%] h-[110%]" />
+      <div className="fb-mist absolute inset-x-[-20%] bottom-[-4%] h-[42%]" />
+      <div className="fb-sheet" style={{ ['--fb-path' as string]: `path('${TRAIL_PATH}')` }}>
+        <Trail />
+        <i className="fb-spark" />
+        <i className="fb-spark" />
+        <i className="fb-spark" />
+      </div>
+      {GLADE_FIREFLIES.map(({ left, top, size, gold, way, duration, delay }, i) => (
+        <i
+          key={i}
+          className={`fb-mote fb-mote--${way}${gold ? ' fb-mote--gold' : ''}`}
+          style={{ left, top, width: size, height: size, animationDuration: duration, animationDelay: delay }}
+        />
+      ))}
+      <div className="fb-veil absolute inset-0" />
+      {frame &&
+        (['left-0 top-0', 'right-0 top-0 -scale-x-100', 'bottom-0 left-0 -scale-y-100', 'bottom-0 right-0 -scale-100'] as const).map(
+          (position) => (
+            <div key={position} className={`fb-screen-corner absolute m-4 ${position}`}>
+              <ScreenCorner />
+            </div>
+          ),
+        )}
+    </div>
+  );
+};
 
 /* ------------------------------------------------------------------ Level ready */
 
