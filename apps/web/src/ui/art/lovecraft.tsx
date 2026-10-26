@@ -264,8 +264,9 @@ export const Kraken: React.FC<{
       });
     draw(0);
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    // The backdrops of every setting stay mounted and cross-fade; only the visible one moves.
-    const scope = root.closest<HTMLElement>('[data-setting]');
+    // The backdrops of every setting stay mounted and cross-fade, and only the card in front of a
+    // carousel is awake: a sleeping one is marked `data-dormant` and its arms keep still. (Asking the
+    // style instead would make the browser work out the whole page's styles on every frame.)
     let frame = 0;
     let last = 0;
     let clock = 0;
@@ -275,7 +276,7 @@ export const Kraken: React.FC<{
       if (now - last < 33) return;
       const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
       last = now;
-      if (scope && getComputedStyle(scope).opacity === '0') return;
+      if (root.closest('[data-dormant]')) return;
       rate += (pace.current - rate) * Math.min(1, dt * 2);
       clock += dt * rate;
       draw(clock);

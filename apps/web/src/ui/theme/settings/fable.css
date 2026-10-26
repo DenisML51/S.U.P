@@ -863,35 +863,74 @@
   }
   /* The sun itself, a warm glow over the top edge. */
   .fb-sun { background: radial-gradient(45% 32% at 50% -4%, rgb(250 230 170 / 0.32), rgb(240 214 150 / 0.08) 55%, transparent 80%); }
-  /* Its rays fanning down through the canopy, soft-edged, fading before the foot; they breathe as
-     a cloud passes (the layer as a whole, so nothing is painted again). */
+  /* Its rays fanning down through the canopy, soft-edged (each ray its own soft fall-off, no blur),
+     fading before the foot; they breathe as a cloud passes (the layer as a whole, so nothing is
+     painted again). */
   .fb-light {
     background: conic-gradient(
       from 152deg at 50% -6%,
       transparent 0deg,
-      rgb(255 238 196 / 0.1) 5deg, transparent 10deg,
-      transparent 15deg, rgb(255 238 196 / 0.07) 18deg, transparent 23deg,
-      transparent 27deg, rgb(255 238 196 / 0.12) 32deg, transparent 38deg,
-      transparent 44deg, rgb(255 238 196 / 0.06) 47deg, transparent 51deg,
+      rgb(255 238 196 / 0.04) 3deg, rgb(255 238 196 / 0.09) 5deg, rgb(255 238 196 / 0.04) 7deg, transparent 10deg,
+      transparent 14deg, rgb(255 238 196 / 0.03) 16deg, rgb(255 238 196 / 0.065) 18deg, rgb(255 238 196 / 0.03) 20deg, transparent 23deg,
+      transparent 26deg, rgb(255 238 196 / 0.05) 29deg, rgb(255 238 196 / 0.11) 32deg, rgb(255 238 196 / 0.05) 35deg, transparent 38deg,
+      transparent 43deg, rgb(255 238 196 / 0.025) 45deg, rgb(255 238 196 / 0.055) 47deg, rgb(255 238 196 / 0.025) 49deg, transparent 51deg,
       transparent 56deg
     );
     -webkit-mask: linear-gradient(180deg, #000 10%, transparent 85%);
     mask: linear-gradient(180deg, #000 10%, transparent 85%);
-    filter: blur(8px);
     will-change: opacity;
     animation: fb-rays 11s ease-in-out infinite alternate;
   }
-  .fb-motes { animation: fb-drift 18s ease-in-out infinite alternate; }
-  .fb-motes--1 { animation-duration: 24s; animation-direction: alternate-reverse; }
-  .fb-motes--2 { animation-duration: 31s; }
-  .fb-mote { animation: fb-twinkle 3.4s ease-in-out infinite; }
+  /* The trail's sheet, laid out in its own pixels and scaled to cover the screen from its middle. */
+  .fb-sheet {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 1600px;
+    height: 900px;
+    transform: translate(-50%, -50%) scale(var(--fb-cover, 1));
+    pointer-events: none;
+  }
+  .fb-trail { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; opacity: 0.75; }
+  /* Now and then a spark of the fairy's light runs along the trail, away into the distance, growing
+     small as it goes: on the trail's own path, so the browser only moves it. */
+  .fb-spark {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(255 252 236), rgb(255 226 160 / 0.6) 30%, transparent 70%);
+    offset-path: var(--fb-path);
+    offset-rotate: 0deg;
+    opacity: 0;
+    will-change: offset-distance, opacity;
+    animation: fb-spark 9s cubic-bezier(0.3, 0, 0.6, 1) infinite;
+  }
+  .fb-spark + .fb-spark { animation-delay: -3s; }
+  .fb-spark + .fb-spark + .fb-spark { animation-delay: -6s; }
+  /* Fireflies and fairy dust: a soft dot of light each, drifting its own way and glowing as it goes
+     (transform and opacity only, on fixed keyframes). */
+  .fb-mote {
+    position: absolute;
+    display: block;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(220 255 248), rgb(120 226 214 / 0.7) 30%, transparent 68%);
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: fb-float-0 ease-in-out infinite;
+  }
+  .fb-mote--gold { background: radial-gradient(circle, rgb(255 250 226), rgb(246 212 136 / 0.7) 30%, transparent 68%); }
+  .fb-mote--1 { animation-name: fb-float-1; }
+  .fb-mote--2 { animation-name: fb-float-2; }
   /* Mist lying along the foot, drifting. */
   .fb-mist {
     background:
       radial-gradient(40% 50% at 25% 60%, rgb(190 220 210 / 0.1), transparent 70%),
       radial-gradient(35% 45% at 70% 70%, rgb(200 226 214 / 0.09), transparent 70%),
       radial-gradient(55% 40% at 50% 95%, rgb(180 210 200 / 0.12), transparent 75%);
-    filter: blur(10px);
+    will-change: transform;
     animation: fb-mist 40s ease-in-out infinite alternate;
   }
   /* The edges of the screen dim, as round a picture in a storybook. */
@@ -907,13 +946,27 @@
   from { opacity: 0.55; }
   to { opacity: 1; }
 }
-@keyframes fb-drift {
-  from { transform: translate(-14px, 10px); }
-  to { transform: translate(18px, -36px); }
+@keyframes fb-float-0 {
+  0%, 100% { opacity: 0.15; transform: translate(0, 0); }
+  30% { opacity: 1; }
+  50% { opacity: 0.5; transform: translate(14px, -28px); }
+  75% { opacity: 0.9; }
 }
-@keyframes fb-twinkle {
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 1; }
+@keyframes fb-float-1 {
+  0%, 100% { opacity: 0.2; transform: translate(0, 0); }
+  40% { opacity: 0.95; transform: translate(-18px, -16px); }
+  70% { opacity: 0.35; }
+}
+@keyframes fb-float-2 {
+  0%, 100% { opacity: 0.1; transform: translate(0, 0); }
+  25% { opacity: 0.8; }
+  60% { opacity: 1; transform: translate(8px, -40px); }
+}
+@keyframes fb-spark {
+  0% { offset-distance: 0%; opacity: 0; transform: scale(1); }
+  8% { opacity: 1; }
+  70% { opacity: 0.8; }
+  100% { offset-distance: 100%; opacity: 0; transform: scale(0.3); }
 }
 @keyframes fb-firefly {
   0%, 100% { opacity: 0.3; transform: translate(0, 0); }
@@ -935,7 +988,9 @@
   to { opacity: 1; transform: rotate(-8deg) scale(1); filter: blur(0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='fable'] :is(.fb-light, .fb-motes, .fb-mote, .fb-mist, .fb-firefly) { animation: none; }
+  [data-setting='fable'] :is(.fb-light, .fb-mote, .fb-mist, .fb-firefly) { animation: none; }
+  [data-setting='fable'] .fb-spark { display: none; }
+  [data-setting='fable'] .fb-mote { opacity: 0.6; }
   [data-setting='fable'] .ui-toast,
   [data-setting='fable'] .ui-toast .ui-roll-toast[data-landed]::after { animation: none; }
 }
@@ -994,11 +1049,12 @@
   & > .ui-world :is(.ui-corner, .fb-screen-corner) { display: none; }
   .fb-sigil { color: rgb(var(--c-frame-bright)); opacity: 0.7; transition: opacity 600ms; }
   .fb-sigil__rays { opacity: 0; transform-origin: 0 0; transition: opacity 800ms; }
-  & > .ui-world .fb-motes { opacity: 0.6; transition: opacity 800ms; }
+  /* On the card the trail runs up its middle, from its foot towards the fairy. */
+  & > .ui-world .fb-sheet { --fb-card: calc(var(--fb-cover, 1) * 1.5); transform: translate(calc(-50% - 470px * var(--fb-card)), calc(-50% - 300px * var(--fb-card))) scale(var(--fb-card)); }
+  & > .ui-world .fb-trail { opacity: 1; }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) { transform: translateY(-4px); border-color: rgb(var(--c-frame-bright)); box-shadow: 0 0 40px -10px rgb(var(--c-frame-bright) / 0.6), var(--shadow-panel); }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .fb-sigil { opacity: 1; }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .fb-sigil__rays { opacity: 0.55; animation: fb-turn 40s linear infinite; }
-  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .fb-motes { opacity: 1; }
   & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { color: rgb(255 248 226); filter: drop-shadow(0 0 16px rgb(var(--c-frame-bright) / 0.8)); }
 }
 @keyframes fb-turn { to { transform: rotate(360deg); } }
