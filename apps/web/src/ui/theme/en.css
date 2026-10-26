@@ -54,3 +54,11 @@
   .ui-toast .coc-roll[data-landed] .coc-roll__level::after,
   .ui-toast .coc-roll__verdict::after { content: ' STOP'; }
 }
+
+:is(html[lang='en'][data-setting='fable'], html[lang='en'] [data-setting='fable']) {
+  .ui-toast::before { content: 'News'; }
+  .ui-toast--success::before { content: 'Good fortune'; }
+  .ui-toast--error::before { content: 'Alas'; }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Heroic!'; }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'How shameful'; }
+}

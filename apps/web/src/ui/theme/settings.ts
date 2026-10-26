@@ -18,6 +18,14 @@ import '@fontsource/cinzel/400.css';
 import '@fontsource/cinzel/500.css';
 import '@fontsource/cinzel/600.css';
 import '@fontsource/forum/400.css';
+import '@fontsource/alegreya/400.css';
+import '@fontsource/alegreya/400-italic.css';
+import '@fontsource/alegreya/500.css';
+import '@fontsource/alegreya/700.css';
+import '@fontsource/alegreya-sc/400.css';
+import '@fontsource/alegreya-sc/500.css';
+import '@fontsource/alegreya-sc/700.css';
+import '@fontsource/marck-script/400.css';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 
 export interface SettingInfo {
@@ -37,6 +45,7 @@ export const SETTING_INFO: Record<Setting, SettingInfo> = {
   cyberpunk: { id: 'cyberpunk', label: 'Cyberpunk' },
   lovecraft: { id: 'lovecraft', label: 'Lovecraft' },
   'elden-ring': { id: 'elden-ring', label: 'Elden Ring' },
+  fable: { id: 'fable', label: 'Fable' },
 };
 
 export const SETTING_LIST = Object.values(SETTING_INFO);
