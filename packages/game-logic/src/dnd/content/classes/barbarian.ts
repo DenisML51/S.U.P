@@ -364,6 +364,7 @@ export const BARBARIAN: ClassDef = {
         name: 'Чувство опасности',
         description: 'Вы совершаете спасброски Ловкости с преимуществом, если не недееспособны.',
         action: 'passive',
+        effects: [{ type: 'advantage', on: ['save:dexterity'] }],
         iconName: 'dodge',
       },
       {
@@ -416,6 +417,7 @@ export const BARBARIAN: ClassDef = {
         name: 'Дикий инстинкт',
         description: 'Вы совершаете броски инициативы с преимуществом.',
         action: 'passive',
+        effects: [{ type: 'advantage', on: ['initiative'] }],
         iconName: 'beast-eye',
       },
       {

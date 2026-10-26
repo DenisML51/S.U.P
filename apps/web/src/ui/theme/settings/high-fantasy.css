@@ -674,6 +674,8 @@
     box-shadow: inset 0 0 0 1px rgb(var(--c-bg-deep)), 0 0 0 1px rgb(var(--portrait-frame) / 0.25), var(--shadow-panel);
   }
   .ui-hud-portrait > button { border-radius: 1rem; }
+  /* What sits on the portrait follows its rounded frame. */
+  .ui-hud-portrait .ui-hud-chip { border-radius: 0.6rem; }
   .ui-vbar__track { border-radius: 999px; border-color: rgb(var(--c-frame) / 0.6); }
 
   /* ---------------------------------------------------------------- Image framing */

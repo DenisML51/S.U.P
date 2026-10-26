@@ -962,6 +962,7 @@ const FIGHTING_STYLES: FeatDef[] = [
     prerequisite: STYLE,
     description: 'Вы получаете +2 к броскам атаки дальнобойным оружием.',
     iconName: 'bow-arrow',
+    effects: [{ type: 'attackBonus', kind: 'ranged', amount: 2 }],
   },
   {
     id: 'blind-fighting',

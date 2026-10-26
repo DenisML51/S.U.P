@@ -16,6 +16,7 @@ import {
   maxSanityOf,
   rollsDeathSaves,
   setActionLimit,
+  speedOf,
   setSpentActions,
   spentActionsOf,
   totalCopper,
@@ -30,8 +31,10 @@ import { NumberField } from '../../ui/forms';
 import { CONDITION_ICONS, CatalogIcon, GameIcon } from '../../ui/GameIcon';
 import { Panel, cx } from '../../ui/primitives';
 import { LevelReady } from '../../ui/ornaments';
-import { IconAmmunition, IconCoins } from '../../ui/icons';
+import { IconAdvantage, IconAmmunition, IconCoins, IconDisadvantage } from '../../ui/icons';
 import { useEndConcentration } from '../sheet/Concentration';
+import { useRollMode } from '../sheet/RollMode';
+import { SaveMark } from '../sheet/parts/DeathSaves';
 import { useSheetDialogs } from '../sheet/dialogs/context';
 import { ActionShape } from './Hotbar';
 import { longPress } from '../../ui/longPress';
@@ -251,7 +254,7 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
               {...bind({
                 key: `c:${id}`,
                 title: condition?.name ?? id,
-                lines: [condition?.description ?? '', 'Нажмите: тело и состояния'],
+                lines: ['Нажмите: тело и состояния'],
               })}
             >
               <CatalogIcon id={CONDITION_ICONS[id] ?? 'terror'} size={16} />
@@ -309,8 +312,16 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
             'Погиб'
           ) : (
             <>
-              <span style={{ color: 'rgb(var(--c-success))' }}>{'●'.repeat(character.deathSaves?.successes ?? 0).padEnd(3, '○')}</span>
-              <span>{'●'.repeat(character.deathSaves?.failures ?? 0).padEnd(3, '○')}</span>
+              <span className="flex gap-0.5">
+                {[1, 2, 3].map((mark) => (
+                  <SaveMark key={mark} size={11} tone="success" on={mark <= (character.deathSaves?.successes ?? 0)} />
+                ))}
+              </span>
+              <span className="flex gap-0.5">
+                {[1, 2, 3].map((mark) => (
+                  <SaveMark key={mark} size={11} tone="danger" on={mark <= (character.deathSaves?.failures ?? 0)} />
+                ))}
+              </span>
             </>
           )}
         </button>
@@ -536,6 +547,44 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
   );
 };
 
+/** Advantage or disadvantage on the next d20, as two pictures beside the fight's numbers. */
+const RollModeIcons: React.FC = () => {
+  const chosen = useRollMode((s) => s.chosen);
+  const choose = useRollMode((s) => s.choose);
+  const { bind, view } = useHint();
+  const options = [
+    { value: 'advantage', Icon: IconAdvantage, tone: 'success', title: 'С преимуществом', line: 'Следующий бросок к20 — два кубика, берётся больший' },
+    { value: 'disadvantage', Icon: IconDisadvantage, tone: 'danger', title: 'С помехой', line: 'Следующий бросок к20 — два кубика, берётся меньший' },
+  ] as const;
+  return (
+    <div role="group" aria-label="Следующий бросок к20" className="flex items-center gap-1 px-2">
+      {options.map(({ value, Icon, tone, title, line }) => {
+        const on = chosen === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={on}
+            aria-label={title}
+            onClick={() => choose(on ? null : value)}
+            className="grid h-9 w-9 place-items-center border transition-colors"
+            style={{
+              borderRadius: 'var(--radius)',
+              color: on ? 'rgb(var(--c-bg))' : `rgb(var(--c-${tone}))`,
+              backgroundColor: on ? `rgb(var(--c-${tone}))` : 'transparent',
+              borderColor: `rgb(var(--c-${tone}) / ${on ? 1 : 0.45})`,
+            }}
+            {...bind({ key: `mode:${value}`, title, lines: [line, on ? 'Нажмите, чтобы отменить' : 'Действует на один бросок'] })}
+          >
+            <Icon width={18} height={18} />
+          </button>
+        );
+      })}
+      {view}
+    </div>
+  );
+};
+
 /** The numbers a fight asks for: armour, initiative, proficiency, speed and spell difficulty. */
 export const CombatStats: React.FC<{
   character: Character;
@@ -558,7 +607,11 @@ export const CombatStats: React.FC<{
       hint: initiative !== null ? 'Выпавшая инициатива' : onInitiative ? 'Бросить инициативу и начать бой' : 'Модификатор инициативы',
     },
     { label: 'Мастер.', value: formatModifier(character.proficiencyBonus), hint: 'Бонус мастерства' },
-    { label: 'Скор.', value: character.speed, hint: 'Скорость, фт' },
+    {
+      label: 'Скор.',
+      value: speedOf(character),
+      hint: speedOf(character) < character.speed ? `Скорость, фт: ${character.speed} − истощение` : 'Скорость, фт',
+    },
     {
       label: character.spellcastingDifficultyName || 'СЛ',
       value: character.spellcastingDifficultyValue ?? '—',
@@ -567,6 +620,7 @@ export const CombatStats: React.FC<{
   ];
   return (
     <Panel className="ui-hud-strip !gap-0 divide-x divide-line/60 max-lg:w-full">
+      <RollModeIcons />
       {stats.map((stat) => {
         const Tag = stat.onClick ? 'button' : 'div';
         return (

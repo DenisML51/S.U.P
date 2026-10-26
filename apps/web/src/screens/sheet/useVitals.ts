@@ -9,7 +9,6 @@ import {
   isDead,
   maxSanityOf,
   rollDeathSave,
-  rollDie,
   setDeathSaves,
   settleHealth,
   receiveCoins,
@@ -71,11 +70,9 @@ export function useVitals() {
       return settleHealth({ ...next, currentHP: Math.min(next.currentHP, totalMaxHP(next)) });
     });
 
-  /** A death saving throw: the d20 is thrown once, then the result is written. */
-  const deathSave = (roll: (label: string, die: number) => void) => {
-    const die = rollDie(20);
-    const { outcome } = rollDeathSave(character, die);
-    roll('Спасбросок от смерти', die);
+  /** A death saving throw already thrown (`die` the d20 that counted, `modifier` what was added). */
+  const deathSave = (die: number, modifier = 0) => {
+    const { outcome } = rollDeathSave(character, die, modifier);
     const said = {
       success: 'успех',
       failure: die <= 1 ? 'два провала' : 'провал',
@@ -83,8 +80,9 @@ export function useVitals() {
       dead: 'третий провал — погиб',
       revived: 'приходит в себя с 1 хитом',
     }[outcome];
-    updateCharacter((doc) => rollDeathSave(doc, die).character, {
-      log: { message: `Спасбросок от смерти: ${die} — ${said}`, type: 'health' },
+    updateCharacter((doc) => rollDeathSave(doc, die, modifier).character, {
+      // A natural 1 or 20 is what counts; otherwise the total, exhaustion taken off.
+      log: { message: `Спасбросок от смерти: ${die === 1 || die === 20 ? die : die + modifier} — ${said}`, type: 'health' },
     });
   };
 

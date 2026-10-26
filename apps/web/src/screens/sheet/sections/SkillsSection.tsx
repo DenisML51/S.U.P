@@ -155,8 +155,16 @@ export const SkillsSection: React.FC<{ character: Character }> = ({ character })
               character={character}
               attribute={attribute}
               onEdit={() => dialogs.open({ kind: 'attribute', id: attribute.id })}
-              onCheck={() => roll.check(`Проверка: ${attribute.name}`, attributeModifier(character, attribute.id))}
-              onSave={() => roll.check(`Спасбросок: ${attribute.name}`, savingThrowModifier(character, attribute.id))}
+              onCheck={() =>
+                roll.check(`Проверка: ${attribute.name}`, attributeModifier(character, attribute.id), {
+                  test: { kind: 'check', attribute: attribute.id },
+                })
+              }
+              onSave={() =>
+                roll.check(`Спасбросок: ${attribute.name}`, savingThrowModifier(character, attribute.id), {
+                  test: { kind: 'save', attribute: attribute.id },
+                })
+              }
             />
           ))}
         </div>
@@ -183,7 +191,11 @@ export const SkillsSection: React.FC<{ character: Character }> = ({ character })
                   <ProficiencyMark skill={skill} onCycle={() => cycleProficiency(skill)} />
                   <button
                     type="button"
-                    onClick={() => roll.check(skill.name, skillModifier(character, skill.id))}
+                    onClick={() =>
+                      roll.check(skill.name, skillModifier(character, skill.id), {
+                        test: { kind: 'check', attribute: skill.attribute, skill: skill.id },
+                      })
+                    }
                     className="min-w-0 flex-1 truncate text-left text-[15px] text-ink transition-colors hover:text-frame-bright"
                     title={`Бросить: ${skill.name}`}
                   >

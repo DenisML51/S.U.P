@@ -63,14 +63,14 @@ export const AttributeDialog: React.FC<Props & { id: string }> = ({ open, onClos
           <Button
             variant="secondary"
             icon={<IconDice width={16} height={16} />}
-            onClick={() => roll.check(`Спасбросок: ${definition.name}`, save)}
+            onClick={() => roll.check(`Спасбросок: ${definition.name}`, save, { test: { kind: 'save', attribute: definition.id } })}
           >
             Спасбросок
           </Button>
           <Button
             variant="primary"
             icon={<IconDice width={16} height={16} />}
-            onClick={() => roll.check(`Проверка: ${definition.name}`, modifier)}
+            onClick={() => roll.check(`Проверка: ${definition.name}`, modifier, { test: { kind: 'check', attribute: definition.id } })}
           >
             Проверка
           </Button>

@@ -86,9 +86,9 @@ export const rollsDeathSaves = (character: Pick<Character, 'build'>): boolean =>
 
 const NO_SAVES: DeathSaves = { successes: 0, failures: 0 };
 
-/** Three failed death saves: the hero is dead. */
-export const isDead = (character: Pick<Character, 'currentHP' | 'deathSaves'>): boolean =>
-  character.currentHP <= 0 && (character.deathSaves?.failures ?? 0) >= 3;
+/** Three failed death saves, or the sixth level of exhaustion: the hero is dead. */
+export const isDead = (character: Pick<Character, 'currentHP' | 'deathSaves'> & Partial<Pick<Character, 'exhaustion'>>): boolean =>
+  (character.currentHP <= 0 && (character.deathSaves?.failures ?? 0) >= 3) || (character.exhaustion ?? 0) >= 6;
 
 /** Three successful death saves: the hero stays unconscious at 0 hit points but stops rolling. */
 export const isStable = (character: Pick<Character, 'currentHP' | 'deathSaves'>): boolean =>
@@ -150,14 +150,19 @@ export function applyHealing(character: Character, healing: number): HealthChang
 export type DeathSaveOutcome = 'success' | 'failure' | 'stable' | 'dead' | 'revived';
 
 /**
- * One death saving throw on the d20 rolled: 10 or more succeeds, a 1 fails twice, a 20 brings the
- * hero back with 1 hit point. A stable or dead hero does not roll.
+ * One death saving throw on the d20 rolled: 10 or more succeeds (after `modifier`, exhaustion's
+ * penalty), a natural 1 fails twice, a natural 20 brings the hero back with 1 hit point. A stable or
+ * dead hero does not roll.
  */
-export function rollDeathSave(character: Character, die: number): { character: Character; outcome: DeathSaveOutcome } {
+export function rollDeathSave(
+  character: Character,
+  die: number,
+  modifier = 0,
+): { character: Character; outcome: DeathSaveOutcome } {
   if (character.currentHP > 0 || isDead(character) || isStable(character)) return { character, outcome: 'failure' };
   if (die >= 20) return { character: wakeUp({ ...character, currentHP: 1 }), outcome: 'revived' };
   const saves = character.deathSaves ?? NO_SAVES;
-  if (die >= 10) {
+  if (die > 1 && die + modifier >= 10) {
     const successes = Math.min(3, saves.successes + 1);
     return { character: { ...character, deathSaves: { ...saves, successes } }, outcome: successes >= 3 ? 'stable' : 'success' };
   }

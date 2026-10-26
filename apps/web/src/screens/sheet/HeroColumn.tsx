@@ -1,5 +1,5 @@
 import React from 'react';
-import { CONDITIONS, armorClassOf, formatModifier, initiativeModifier } from '@itd/game-logic';
+import { CONDITIONS, armorClassOf, exhaustionLevel, formatModifier, initiativeModifier, speedOf } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
@@ -8,6 +8,7 @@ import { IconButton, cx } from '../../ui/primitives';
 import { SyncStatus } from '../../ui/SyncStatus';
 import { useSheetDialogs } from './dialogs/context';
 import { ResourceList, StatusCluster } from './parts/StatusCluster';
+import { RollModeToggle } from './RollMode';
 import { useRolls } from './useRolls';
 
 const StatCell: React.FC<{ label: string; value: React.ReactNode; onClick?: () => void; hint?: string }> = ({
@@ -46,7 +47,10 @@ export const HeroColumn: React.FC<{
   const roll = useRolls();
   const dialogs = useSheetDialogs();
   const origin = describeOrigin(character);
-  const conditions = character.conditions.map((id) => CONDITIONS.find((c) => c.id === id)?.name ?? id);
+  const conditions = character.conditions.map((id) => {
+    const name = CONDITIONS.find((c) => c.id === id)?.name ?? id;
+    return id === 'exhaustion' ? `${name} ${exhaustionLevel(character)}` : name;
+  });
 
   return (
     <aside className={cx('flex h-full shrink-0 flex-col border-line/70 bg-surface/40', className)}>
@@ -104,12 +108,18 @@ export const HeroColumn: React.FC<{
           <StatCell
             label="Инициатива"
             value={formatModifier(initiativeModifier(character))}
-            onClick={() => roll.check('Инициатива', initiativeModifier(character))}
+            onClick={() => roll.check('Инициатива', initiativeModifier(character), { test: { kind: 'initiative' } })}
             hint="Бросить инициативу"
           />
-          <StatCell label="Скорость" value={character.speed} />
+          <StatCell
+            label="Скорость"
+            value={speedOf(character)}
+            hint={speedOf(character) < character.speed ? `${character.speed} − истощение` : undefined}
+          />
           <StatCell label="Мастерство" value={formatModifier(character.proficiencyBonus)} />
         </div>
+
+        <RollModeToggle className="-mt-1" />
 
         <ResourceList character={character} />
 

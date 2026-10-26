@@ -125,6 +125,7 @@ const champion: SubclassDef = {
         description: 'Ваши атаки оружием и безоружные удары совершают критическое попадание при результате 19–20 на к20.',
         action: 'passive',
         iconName: 'crossed-swords',
+        effects: [{ type: 'critRange', min: 19 }],
       },
       {
         id: 'champion.remarkable-athlete',
@@ -132,6 +133,7 @@ const champion: SubclassDef = {
         description:
           'Вы совершаете с преимуществом броски инициативы и проверки Силы (Атлетика). Сразу после критического попадания вы можете переместиться на половину скорости, не провоцируя атак.',
         action: 'passive',
+        effects: [{ type: 'advantage', on: ['initiative', 'skill:athletics'] }],
       },
     ],
     7: [
@@ -156,6 +158,7 @@ const champion: SubclassDef = {
         name: 'Превосходный критический удар',
         description: 'Критическое попадание происходит при результате 18–20 на к20.',
         action: 'passive',
+        effects: [{ type: 'critRange', min: 18 }],
       },
     ],
     18: [
@@ -165,6 +168,7 @@ const champion: SubclassDef = {
         description:
           '**Отказ смерти.** Спасброски от смерти вы совершаете с преимуществом, а результат 18–20 считается выпавшей «20».\n\n**Героическое сплочение.** В начале своего хода, если у вас осталось не больше половины хитов (но больше 0), вы восстанавливаете 5 + модификатор Телосложения хитов.',
         action: 'passive',
+        effects: [{ type: 'advantage', on: ['deathSave'] }],
       },
     ],
   },
