@@ -81,9 +81,11 @@ export const RollingDie: React.FC<{
       className={cx(
         'ui-rolling-die',
         sides === 100 && 'ui-rolling-die--pair',
-        tone && `ui-rolling-die--${tone}`,
+        // What the face means (a natural 20 or 1, the die advantage drops) shows only with its number:
+        // a tinted die still tumbling would give the result away.
+        landed && tone && `ui-rolling-die--${tone}`,
         landed && 'ui-rolling-die--landed',
-        dropped && 'ui-rolling-die--dropped',
+        landed && dropped && 'ui-rolling-die--dropped',
         className,
       )}
       style={size ? ({ '--die-size': size } as React.CSSProperties) : undefined}
@@ -180,6 +182,27 @@ export const LandedValue: React.FC<{ landed: boolean; className?: string; childr
     {children}
   </motion.span>
 );
+
+/** How long a throw of `count` dice takes to land, `stagger` ms between two landings. */
+export const landingMs = (count: number, stagger = 110): number => TUMBLE_MS + Math.max(0, count - 1) * stagger;
+
+/** A throw older than this (by its own time) is from before: it is told at once. */
+const FRESH_MS = 15_000;
+
+/**
+ * Whether a throw made at `at` (an ISO time) may be told yet. A fresh one waits as long as its dice
+ * take to land where they are shown, counted from when it arrived here, so a log beside the dice
+ * never says the result before they do; one from before is told at once.
+ */
+export function useHeldUntilLanded(at: string, count: number, stagger?: number): boolean {
+  const [ready, setReady] = useState(() => Math.abs(Date.now() - Date.parse(at)) > FRESH_MS);
+  useEffect(() => {
+    if (ready) return;
+    const timer = window.setTimeout(() => setReady(true), landingMs(count, stagger));
+    return () => window.clearTimeout(timer);
+  }, [ready, count, stagger]);
+  return ready;
+}
 
 /**
  * Whether the throw `key` has landed, and the callback that marks it. A new key starts over; a null
