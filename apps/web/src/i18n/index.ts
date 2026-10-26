@@ -27,7 +27,7 @@ const translator: Translate | null =
     : null;
 
 /**
- * Names of heroes, NPCs and players: never translated, though "Тень" is a word the
+ * Names of heroes, NPCs, tables and players: never translated, though "Тень" is a word the
  * dictionary knows. Fed by the stores as names arrive; a name already shown elsewhere translated is
  * redrawn as written once its screen renders again.
  */
