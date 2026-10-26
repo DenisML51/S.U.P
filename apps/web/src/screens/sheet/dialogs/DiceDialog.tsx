@@ -21,12 +21,25 @@ interface DieResult {
   label?: string;
 }
 
+/** One handful of dice: the whole throw, or one of the separate throws of a press. */
+interface Cast {
+  total: number;
+  dice: DieResult[];
+  /** Whom it was for, when one press threw for several. */
+  target?: string;
+}
+
 interface Result {
   id: number;
   formula: string;
-  total: number;
-  dice: DieResult[];
   bonus: number;
+  casts: Cast[];
+}
+
+/** Someone a press can throw for on their own: a hero at the table. */
+export interface DiceTarget {
+  id: string;
+  name: string;
 }
 
 /** A die of the picker: turns slowly at rest, winds up under the pointer or while it is in the pool. */
@@ -72,8 +85,9 @@ const signedBonus = (bonus: number) => (bonus > 0 ? `+ ${bonus}` : `− ${-bonus
  */
 const Throw: React.FC<{ result: Result }> = ({ result }) => {
   const [revealed, setRevealed] = useState(false);
+  const cast = result.casts[0]!;
   // Larger dice first, in the order they were thrown within a size.
-  const dice = [...result.dice].sort((a, b) => b.sides - a.sides);
+  const dice = [...cast.dice].sort((a, b) => b.sides - a.sides);
   const size = thrownSize(dice.length);
   return (
     <div className="flex flex-col items-center gap-4">
@@ -101,8 +115,53 @@ const Throw: React.FC<{ result: Result }> = ({ result }) => {
         transition={{ type: 'spring', stiffness: 420, damping: 18 }}
         aria-hidden={!revealed}
       >
-        {result.total}
+        {cast.total}
       </motion.span>
+    </div>
+  );
+};
+
+/** Several throws of one press, a row each: for whom, the dice landing small, the total. */
+const SeparateThrows: React.FC<{ result: Result }> = ({ result }) => {
+  const [revealed, setRevealed] = useState(0);
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="text-center text-sm text-ink-muted">{result.formula} · каждому свой бросок</div>
+      <ul className="divide-y divide-line/50">
+        {result.casts.map((cast, row) => {
+          const dice = [...cast.dice].sort((a, b) => b.sides - a.sides);
+          return (
+            <li key={row} className="flex items-center gap-4 py-2">
+              <span className="w-32 shrink-0 truncate text-sm text-ink">{cast.target}</span>
+              <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                {dice.map((die, index) => (
+                  <RollingDie
+                    key={index}
+                    sides={die.sides}
+                    value={die.label ?? die.value}
+                    delay={(row * dice.length + index) * (STAGGER_MS / 2)}
+                    size="2.5rem"
+                    phase={index * 1.3 + die.sides * 0.1 + row}
+                    dropped={die.dropped}
+                    tone={die.label ? undefined : die.value === die.sides ? 'success' : die.value === 1 ? 'danger' : undefined}
+                    onLanded={index === dice.length - 1 ? () => setRevealed((n) => Math.max(n, row + 1)) : undefined}
+                  />
+                ))}
+                {result.bonus !== 0 && <span className="text-sm text-ink-muted">{signedBonus(result.bonus)}</span>}
+              </span>
+              <motion.span
+                className="ui-display ui-numeric w-14 shrink-0 text-right text-3xl leading-none text-frame-bright"
+                initial={false}
+                animate={revealed > row ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+                aria-hidden={revealed <= row}
+              >
+                {cast.total}
+              </motion.span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 };
@@ -122,7 +181,8 @@ type D100Mode = 'normal' | 'bonus' | 'penalty';
  * disadvantage — or, for an investigator, a single d100 with a bonus or a penalty die — and the
  * throw shown die by die. Every throw goes to the hero's log and to the party table the hero sits at;
  * a tray without a hero (the master's at the table) hands its throws to `onThrown` instead, with
- * `children` above the dice to say who they are for.
+ * `children` above the dice to say who they are for. Given several `targets`, one press throws the
+ * dice once for each of them, each throw handed over with its target.
  */
 export const DiceDialog: React.FC<{
   open: boolean;
@@ -130,16 +190,18 @@ export const DiceDialog: React.FC<{
   title?: string;
   /** Starts on 1d100 (a Call of Cthulhu table) rather than 1d20. */
   percentile?: boolean;
-  /** A throw: its dice and what it was ("2d6 + 3: 11"), for the table. */
-  onThrown?: (dice: TableDie[], label: string) => void;
+  /** A throw: its dice, what it was ("2d6 + 3: 11") and whom it was for, for the table. */
+  onThrown?: (dice: TableDie[], label: string, target?: DiceTarget) => void;
+  /** Throw separately for each of these (two or more); otherwise once. */
+  targets?: DiceTarget[];
   children?: React.ReactNode;
-}> = ({ open, onClose, title = 'Кубики', percentile: percentileTable, onThrown, children }) => {
+}> = ({ open, onClose, title = 'Кубики', percentile: percentileTable, onThrown, targets, children }) => {
   const logHistory = useCharacterStore((s) => s.logHistory);
   const characterId = useCharacterStore((s) => s.character?.id);
   const heroPercentile = useCharacterStore((s) => s.character?.build?.ruleset === 'coc7');
   const percentile = percentileTable ?? heroPercentile;
-  const thrown = (dice: TableDie[], label: string) =>
-    onThrown ? onThrown(dice, label) : announceRoll(characterId, dice, label);
+  const thrown = (dice: TableDie[], label: string, target?: DiceTarget) =>
+    onThrown ? onThrown(dice, label, target) : announceRoll(characterId, dice, label);
   const [formula, setFormula] = useState(percentile ? '1d100' : '1d20');
   const [mode, setMode] = useState<D20Mode>('normal');
   const [d100Mode, setD100Mode] = useState<D100Mode>('normal');
@@ -154,8 +216,8 @@ export const DiceDialog: React.FC<{
     setFormula(formatDice(next, bonus));
   };
 
-  const roll = () => {
-    if (empty) return;
+  /** One handful by the tray's settings: its dice and total, what it was, and the dice as the log spells them. */
+  const cast = (): { dice: DieResult[]; total: number; label: string; detail: string } => {
     if (singleD100 && d100Mode !== 'normal') {
       // The tens dice (one kept, the others greyed) and the units die, as the sheet's telegram shows them.
       const d100 = rollPercentile(d100Mode === 'bonus' ? 1 : 0, d100Mode === 'penalty' ? 1 : 0);
@@ -165,13 +227,12 @@ export const DiceDialog: React.FC<{
         ...d100.tens.map((t, index) => ({ sides: 10, value: t, label: t === 0 ? '00' : String(t), dropped: index !== keptIndex })),
         { sides: 10, value: d100.units, label: String(d100.units) },
       ];
-      const label = `1d100 (${d100Mode === 'bonus' ? 'бонусная кость' : 'штрафная кость'})`;
-      thrown(dice, `${label}: ${d100.total}`);
-      setResults((previous) =>
-        [{ id: Date.now(), formula: label, total: d100.total, dice, bonus: 0 }, ...previous].slice(0, 6),
-      );
-      logHistory(`Бросок ${label}: ${d100.total} (десятки ${d100.tens.join(', ')}; единицы ${d100.units})`);
-      return;
+      return {
+        dice,
+        total: d100.total,
+        label: `1d100 (${d100Mode === 'bonus' ? 'бонусная кость' : 'штрафная кость'})`,
+        detail: `десятки ${d100.tens.join(', ')}; единицы ${d100.units}`,
+      };
     }
     const dice: DieResult[] = [];
     for (const [sides, count] of Object.entries(byDie).map(([s, c]) => [Number(s), c] as const)) {
@@ -185,17 +246,31 @@ export const DiceDialog: React.FC<{
         for (let i = 0; i < count; i += 1) dice.push({ sides, value: rollDie(sides) });
       }
     }
-    const total = dice.filter((d) => !d.dropped).reduce((sum, d) => sum + d.value, bonus);
-    const label =
-      singleD20 && mode !== 'normal'
-        ? `${formula} (${mode === 'advantage' ? 'преимущество' : 'помеха'})`
-        : formula;
-    thrown(dice, `${label}: ${total}`);
+    return {
+      dice,
+      total: dice.filter((d) => !d.dropped).reduce((sum, d) => sum + d.value, bonus),
+      label:
+        singleD20 && mode !== 'normal'
+          ? `${formula} (${mode === 'advantage' ? 'преимущество' : 'помеха'})`
+          : formula,
+      detail: dice.map((d) => (d.dropped ? `[${d.value}]` : d.value)).join(', '),
+    };
+  };
+
+  const roll = () => {
+    if (empty) return;
+    const each = targets && targets.length > 1 ? targets : [undefined];
+    let label = formula;
+    const casts = each.map((target): Cast => {
+      const handful = cast();
+      label = handful.label;
+      thrown(handful.dice, `${handful.label}: ${handful.total}`, target);
+      logHistory(`Бросок ${handful.label}${target ? ` (${target.name})` : ''}: ${handful.total} (${handful.detail})`);
+      return { total: handful.total, dice: handful.dice, target: target?.name };
+    });
+    const percentileThrow = singleD100 && d100Mode !== 'normal';
     setResults((previous) =>
-      [{ id: Date.now(), formula: label, total, dice, bonus }, ...previous].slice(0, 6),
-    );
-    logHistory(
-      `Бросок ${label}: ${total} (${dice.map((d) => (d.dropped ? `[${d.value}]` : d.value)).join(', ')})`,
+      [{ id: Date.now(), formula: label, bonus: percentileThrow ? 0 : bonus, casts }, ...previous].slice(0, 6),
     );
   };
 
@@ -276,7 +351,7 @@ export const DiceDialog: React.FC<{
               exit={{ opacity: 0, transition: { duration: 0.1 } }}
               transition={{ duration: 0.15 }}
             >
-              <Throw result={latest} />
+              {latest.casts.length > 1 ? <SeparateThrows result={latest} /> : <Throw result={latest} />}
             </motion.div>
           ) : (
             <p className="pt-24 text-center text-sm text-ink-faint">
@@ -289,7 +364,7 @@ export const DiceDialog: React.FC<{
             {earlier.map((r) => (
               <li key={r.id} className="flex justify-between gap-4 text-ink-faint">
                 <span className="truncate">{r.formula}</span>
-                <span className="tabular-nums text-ink-muted">{r.total}</span>
+                <span className="tabular-nums text-ink-muted">{r.casts.map((c) => c.total).join(' · ')}</span>
               </li>
             ))}
           </ul>

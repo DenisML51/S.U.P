@@ -384,15 +384,88 @@
   .ui-number button:not(:disabled):hover { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); }
 
   /* ---------------------------------------------------------------- Toasts */
-  /* A message on the optics: a yellow edge, a corner cut. */
+  /* A message dropped onto the optics over the neural link: a hazard stripe down the left edge, two
+     corners cut, scan lines, a header in neon ("▌Входящее // нейролинк"). It breaks in as a glitch, the
+     picture jumping and its colours splitting before it holds. Granted or refused is a tag in the
+     header ("Доступ запрещён" in red); a natural 20 or 1 flashes up as a skewed neon block. */
   .ui-toast {
-    background: rgb(var(--c-surface) / 0.98);
-    border-color: rgb(var(--c-frame) / 0.6);
-    border-left: 3px solid rgb(var(--c-accent));
-    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
-    box-shadow: 0 14px 30px -12px rgb(0 0 0 / 0.8);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: min(15rem, calc(100vw - 2rem));
+    max-width: min(23rem, calc(100vw - 2rem));
+    padding: 0 1.1rem 0.9rem 1.4rem;
+    border: 1px solid rgb(var(--c-frame) / 0.55);
+    border-left: 0;
+    border-radius: 0;
+    background:
+      repeating-linear-gradient(-45deg, rgb(var(--cp-stripe)) 0 5px, rgb(var(--c-bg-deep)) 5px 10px) left / 6px 100% no-repeat,
+      repeating-linear-gradient(0deg, rgb(255 255 255 / 0.03) 0 1px, transparent 1px 3px),
+      radial-gradient(90% 120% at 100% 0%, rgb(var(--c-neon) / 0.08), transparent 60%),
+      linear-gradient(100deg, rgb(var(--c-surface-2) / 0.98), rgb(var(--c-surface) / 0.98) 65%);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    box-shadow: none;
+    --cp-stripe: var(--c-accent);
+    --cp-tone: var(--c-neon);
+    animation: cp-glitch 460ms steps(1, end) both;
   }
-  .ui-toast--error { border-left-color: rgb(var(--c-danger)); }
+  .ui-toast--error { --cp-stripe: var(--c-danger); --cp-tone: var(--c-danger); border-color: rgb(var(--c-danger) / 0.6); }
+  .ui-toast--success { --cp-tone: var(--c-success); }
+  .ui-toast::before {
+    content: '▌Входящее // нейролинк';
+    display: block;
+    margin: 0 -1.1rem 0.6rem -1.4rem;
+    padding: 0.55rem 1.1rem 0.4rem 1.4rem;
+    font: 500 0.7rem/1.2 var(--font-numeric);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgb(var(--c-neon));
+    text-shadow: 0 0 8px rgb(var(--c-neon) / 0.6);
+    border-bottom: 1px solid rgb(var(--c-frame) / 0.5);
+    background: linear-gradient(90deg, rgb(var(--c-neon) / 0.12), transparent 70%);
+  }
+  /* The picture jumps and splits on arrival; the text keeps the split for a moment. */
+  .ui-toast__body { animation: cp-split 460ms steps(1, end) both; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success) .ui-toast__body > svg { display: none; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success)::after {
+    position: absolute;
+    top: 0.48rem;
+    right: 1.4rem;
+    padding: 0.1rem 0.4rem;
+    font: 600 0.6rem/1.2 var(--font-numeric);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgb(var(--c-bg-deep));
+    background: rgb(var(--cp-tone));
+    box-shadow: 0 0 10px rgb(var(--cp-tone) / 0.6);
+  }
+  /* Beside a tag the header shortens, so the two never meet on a narrow plate. */
+  .ui-toast:is(.ui-toast--error, .ui-toast--success) { min-width: min(18.5rem, calc(100vw - 2rem)); }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success)::before { content: '▌Нейролинк'; }
+  .ui-toast--success::after { content: 'Принято'; }
+  .ui-toast--error::after { content: 'Доступ запрещён'; animation: cp-flicker 1.2s 300ms steps(1, end) 2; }
+  .ui-toast--error::before { color: rgb(var(--c-danger)); text-shadow: 0 0 8px rgb(var(--c-danger) / 0.6); background: linear-gradient(90deg, rgb(var(--c-danger) / 0.14), transparent 70%); }
+  /* A natural 20 or 1: a skewed neon block right of the dice and the total, in room kept for it. */
+  .ui-toast .ui-roll-toast { position: relative; }
+  .ui-toast .ui-roll-toast[data-stamp] > :first-child { padding-right: 6.5rem; }
+  .ui-toast .ui-roll-toast[data-landed][data-stamp]::after {
+    position: absolute;
+    top: 0.95rem;
+    right: 0.2rem;
+    max-width: 6.25rem;
+    padding: 0.25rem 0.55rem;
+    font: 600 0.72rem/1.15 var(--font-numeric);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+    color: rgb(var(--c-bg-deep));
+    background: rgb(var(--cp-hit));
+    box-shadow: -3px 0 0 rgb(255 0 80 / 0.7), 3px 0 0 rgb(0 240 255 / 0.7), 0 0 14px rgb(var(--cp-hit) / 0.55);
+    transform: skewX(-12deg);
+    animation: cp-hit 420ms steps(1, end) both;
+  }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Летальный'; --cp-hit: var(--c-accent); }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Сбой системы'; --cp-hit: var(--c-danger); }
 
   /* ---------------------------------------------------------------- Dialogs */
   .ui-dialog__head { margin-bottom: 1rem; border-bottom: 1px solid rgb(var(--c-frame) / 0.5); }
@@ -822,4 +895,44 @@
 }
 @media (prefers-reduced-motion: reduce) {
   [data-setting='cyberpunk'] .ui-rulebook { animation: none; }
+}
+
+/* ------------------------------------------------------------------ Toast motion */
+/* The message breaks in: the plate jumps sideways in hard steps (the individual `translate` and
+   `opacity`, so the toaster's own transform is left alone) while its text splits into red and cyan. */
+@keyframes cp-glitch {
+  0% { opacity: 0; translate: 0 0; }
+  10% { opacity: 1; translate: -6px 0; }
+  22% { opacity: 0.6; translate: 5px 0; }
+  34% { opacity: 1; translate: -2px 0; }
+  48% { opacity: 0.85; translate: 3px 0; }
+  62% { opacity: 1; translate: 0 0; }
+  100% { opacity: 1; translate: 0 0; }
+}
+@keyframes cp-split {
+  0% { text-shadow: -3px 0 rgb(255 0 80 / 0.9), 3px 0 rgb(0 240 255 / 0.9); }
+  22% { text-shadow: 4px 0 rgb(255 0 80 / 0.9), -4px 0 rgb(0 240 255 / 0.9); }
+  48% { text-shadow: -1px 0 rgb(255 0 80 / 0.8), 1px 0 rgb(0 240 255 / 0.8); }
+  70% { text-shadow: none; }
+  100% { text-shadow: none; }
+}
+@keyframes cp-flicker {
+  0% { opacity: 1; }
+  8% { opacity: 0.2; }
+  14% { opacity: 1; }
+  20% { opacity: 0.4; }
+  26% { opacity: 1; }
+}
+@keyframes cp-hit {
+  0% { opacity: 0; transform: skewX(-12deg) translateX(10px); }
+  20% { opacity: 1; transform: skewX(-12deg) translateX(-4px); }
+  40% { opacity: 0.4; transform: skewX(-12deg) translateX(2px); }
+  60% { opacity: 1; transform: skewX(-12deg); }
+  100% { opacity: 1; transform: skewX(-12deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='cyberpunk'] .ui-toast,
+  [data-setting='cyberpunk'] .ui-toast__body,
+  [data-setting='cyberpunk'] .ui-toast::after,
+  [data-setting='cyberpunk'] .ui-toast .ui-roll-toast[data-landed]::after { animation: none; }
 }
