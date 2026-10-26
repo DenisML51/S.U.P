@@ -108,7 +108,8 @@ const CombatLog: React.FC<{ character: Character }> = ({ character }) => {
   const recent = foldRepeats([...character.history].sort((a, b) => a.timestamp - b.timestamp)).slice(-9);
   if (recent.length === 0) return null;
   return (
-    <ol className="space-y-1.5 text-sm" aria-label="Последние события">
+    // Short of room, the oldest lines go first: the newest stay at the bottom, in sight.
+    <ol className="flex min-h-0 flex-col justify-end gap-1.5 overflow-hidden text-sm" aria-label="Последние события">
       {recent.map(({ entry, count }, index) => (
         <li
           key={entry.id}
@@ -880,14 +881,15 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
         {/* Right: the weapon and its shot, then what happened. */}
         <motion.div
           className={cx(
-            'absolute right-6 top-20 z-10 flex w-[22rem] flex-col gap-4 max-lg:static max-lg:w-auto max-lg:min-w-[min(100%,18rem)] max-lg:flex-1',
+            // It ends above the dock, so what happened never slides under the round's actions.
+            'absolute bottom-[12.5rem] right-6 top-20 z-10 flex w-[22rem] flex-col gap-4 max-lg:static max-lg:w-auto max-lg:min-w-[min(100%,18rem)] max-lg:flex-1',
             locked && 'ui-turn-locked',
           )}
           initial={{ x: 24, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ ...ENTER, delay: 0.05 }}
         >
-          <Panel crest className="flex flex-col gap-3 px-5 pb-5 pt-6">
+          <Panel crest className="flex shrink-0 flex-col gap-3 px-5 pb-5 pt-6">
             <div className="ui-display ui-title text-center text-lg text-frame-bright">Оружие</div>
             <div className="flex flex-col gap-1">
               {character.attacks.map((a) => {

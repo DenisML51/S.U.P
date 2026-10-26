@@ -266,6 +266,8 @@
   .ui-button--ghost:not(:disabled):hover { color: rgb(var(--c-frame-bright)); background: none; filter: none; }
   .ui-button--ghost:not(:disabled):hover::before { transform: scaleX(1); }
   .ui-button--row { --step: 2px; font-family: var(--font-typed); font-size: 0.7rem; letter-spacing: 0.1em; }
+  /* Poiret One's hairline capitals blur at a small size («Е» reads as «Г»): small plates are typed. */
+  .ui-button--sm { font-family: var(--font-typed); font-size: 0.74rem; letter-spacing: 0.1em; }
   .ui-panel--paper :is(.ui-button--secondary, .ui-button--row) {
     --rim: rgb(var(--c-paper-ink) / 0.55);
     --fill: rgb(var(--c-paper));
@@ -313,6 +315,8 @@
   .ui-ledger__row:last-child { border-bottom: 0; }
   .ui-ledger__row:hover { background-color: rgb(var(--c-paper-ink) / 0.05); }
   .ui-ledger__title { font-family: var(--font-typed); font-size: 0.95rem; letter-spacing: 0; color: rgb(var(--c-paper-ink)); }
+  /* A heading typed on a paper reads like a ledger's title: Poiret One's hairlines fade on the paper. */
+  .ui-panel--paper h3.ui-display { font-family: var(--font-typed); font-size: 0.95rem; font-weight: 700; letter-spacing: 0; color: rgb(var(--c-paper-ink)); }
   .ui-ledger__meta { color: rgb(var(--c-paper-muted)); }
   .ui-ledger__bullet { color: rgb(var(--c-paper-muted)); }
   .ui-ledger__row[data-active] .ui-ledger__bullet { color: rgb(var(--c-pen)); }
