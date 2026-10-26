@@ -571,7 +571,7 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
         {canBuyWithLuck(record, luck) && (
           <ToastButton onClick={buyWithLuck}>Удача: −{check.total - target(record)}</ToastButton>
         )}
-        {canRollDamage(record) && (
+        {canRollDamage(record, verdict) && (
           <ToastButton strong onClick={rollDamage}>
             Урон
           </ToastButton>

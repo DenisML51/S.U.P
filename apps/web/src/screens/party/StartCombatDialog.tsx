@@ -5,6 +5,7 @@ import { usePartyStore } from '../../store/usePartyStore';
 import { Dialog } from '../../ui/Dialog';
 import { IconCheck, IconCombat } from '../../ui/icons';
 import { Button, cx } from '../../ui/primitives';
+import { isCocFight } from './partyView';
 
 interface Candidate {
   id: string;
@@ -69,7 +70,15 @@ export const StartCombatDialog: React.FC<{
       width="lg"
       eyebrow="Бой"
       title={joining ? 'Кто вступает в бой' : 'В бой!'}
-      subtitle={joining ? 'Новые участники бросят инициативу и займут место в очереди' : 'Отмеченные бросят инициативу, затем начнётся первый раунд'}
+      subtitle={
+        isCocFight(party)
+          ? joining
+            ? 'Новые участники заявят порядок по ЛВК и займут место в очереди'
+            : 'Отмеченные встанут в очередь по ЛВК, затем начнётся первый раунд'
+          : joining
+            ? 'Новые участники бросят инициативу и займут место в очереди'
+            : 'Отмеченные бросят инициативу, затем начнётся первый раунд'
+      }
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>

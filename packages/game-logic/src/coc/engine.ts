@@ -1,5 +1,5 @@
 import type { Character, CocBuild, CocSheet, CocSkill } from '@itd/schema';
-import { rollDie, rollFormula, type RandomSource } from '../rules/dice';
+import { rollDie, rollFormula, rollPercentile, type PercentileRoll, type RandomSource } from '../rules/dice';
 import { CHARACTERISTICS } from './content/characteristics';
 import { SKILLS, skillDef, skillName } from './content/skills';
 import { cocMaxSanity } from './meta';
@@ -232,29 +232,8 @@ export function passes(level: SuccessLevel, difficulty: Difficulty = 'regular'):
   return RANK[level] >= RANK[difficulty] && level !== 'fumble';
 }
 
-export interface PercentileRoll {
-  units: number;
-  /** Every tens die rolled; one more per bonus or penalty die. */
-  tens: number[];
-  total: number;
-}
-
-/**
- * A d100: one units die and a tens die, plus one extra tens die for each bonus (keep the lowest)
- * or penalty die (keep the highest). Bonus and penalty dice cancel each other out first.
- */
-export function rollPercentile(
-  bonusDice = 0,
-  penaltyDice = 0,
-  random: RandomSource = Math.random,
-): PercentileRoll {
-  const net = Math.max(-2, Math.min(2, bonusDice - penaltyDice));
-  const units = rollDie(10, random) - 1;
-  const tens = Array.from({ length: 1 + Math.abs(net) }, () => (rollDie(10, random) - 1) * 10);
-  const totals = tens.map((t) => (t + units === 0 ? 100 : t + units));
-  const total = net > 0 ? Math.min(...totals) : net < 0 ? Math.max(...totals) : totals[0];
-  return { units, tens, total };
-}
+// The d100 with bonus and penalty dice lives with the dice (the dice tray rolls it too).
+export { rollPercentile, type PercentileRoll };
 
 export interface SkillCheck extends PercentileRoll {
   value: number;
@@ -446,7 +425,10 @@ export interface DamageResult {
 export const absorbArmor = (damage: number, armor = 0): number =>
   Math.max(0, Math.max(0, damage) - Math.max(0, armor));
 
-/** One blow: half the maximum at once is a major wound; at 0 a major wound means dying. */
+/**
+ * One blow: half the maximum at once is a major wound. At 0 hit points the investigator falls
+ * unconscious, and with a major wound is dying as well.
+ */
 export function takeDamage(
   character: Pick<Character, 'currentHP' | 'maxHP' | 'conditions'>,
   amount: number,
@@ -458,7 +440,7 @@ export function takeDamage(
     currentHP,
     majorWound,
     dying: currentHP === 0 && majorWound,
-    unconscious: currentHP === 0 && !majorWound,
+    unconscious: currentHP === 0,
     dead: amount > character.maxHP,
   };
 }

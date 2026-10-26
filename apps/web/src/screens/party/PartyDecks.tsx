@@ -116,7 +116,11 @@ export const TableDecks: React.FC<{
       id: 'enemies',
       title: 'Враги',
       cards: npcCards(true),
-      add: { label: 'Быстрый НПС', hint: 'Хиты, КБ и инициатива — видите только вы', onAdd: () => onNpc() },
+      add: {
+        label: 'Быстрый НПС',
+        hint: isCocFight(party) ? 'Хиты, броня и ЛВК — видите только вы' : 'Хиты, КБ и инициатива — видите только вы',
+        onAdd: () => onNpc(),
+      },
     },
     {
       id: 'allies',
@@ -617,7 +621,7 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
                 )}
               >
                 {hostile ? 'враг' : 'союзник'}
-                {inFight && <span className="text-ink-muted"> · в бою</span>}
+                {inFight && <span className="text-ink-muted">{down ? ' · выбыл' : ' · в бою'}</span>}
               </span>
             )}
             <span

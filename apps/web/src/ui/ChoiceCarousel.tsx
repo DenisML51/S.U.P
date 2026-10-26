@@ -21,6 +21,7 @@ export function ChoiceCarousel<T extends string>({
   chosen,
   onChoose,
   onFocus,
+  preferred,
   chooseLabel,
   chosenLabel,
   disabledLabel,
@@ -31,6 +32,8 @@ export function ChoiceCarousel<T extends string>({
   chosen: T | null;
   onChoose: (id: T) => void;
   onFocus?: (id: T) => void;
+  /** The card in front at first when nothing is chosen yet (the rules that go with the world). */
+  preferred?: T;
   chooseLabel: string;
   chosenLabel: string;
   disabledLabel?: string;
@@ -42,7 +45,7 @@ export function ChoiceCarousel<T extends string>({
   const [index, setIndex] = useState(() =>
     Math.max(
       0,
-      items.findIndex((item) => item.id === chosen),
+      items.findIndex((item) => item.id === (chosen ?? preferred)),
     ),
   );
   const [hovered, setHovered] = useState<number | null>(null);

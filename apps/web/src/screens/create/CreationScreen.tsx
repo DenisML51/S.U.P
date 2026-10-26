@@ -162,6 +162,7 @@ export const CreationScreen: React.FC<{
         <RulesCarousel
           value={path ? RULES_OF[path] : null}
           allowed={rules ? [rules] : undefined}
+          setting={setting}
           onChange={(choice) => {
             setPath(PATH_OF[choice]);
             setIndex(2);
@@ -542,7 +543,14 @@ export const CreationScreen: React.FC<{
           </main>
         )}
 
-        <footer className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-4">
+        {/* Centred on the screen, not on the room beside the steps: when the steps slide in, «Дальше»
+            does not turn into «Назад» under the pointer. */}
+        <footer
+          className={cx(
+            'grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-4 transition-[margin] duration-[450ms]',
+            index > 0 && '-ml-60',
+          )}
+        >
           <span />
           <div className="flex gap-4">
             <Button variant="secondary" disabled={index === 0} onClick={() => setIndex(index - 1)}>

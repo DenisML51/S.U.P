@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { damageBonusOfBuild } from '@itd/game-logic';
 import { npcMinHP, type NpcAttack, type NpcCocStats, type NpcDisposition, type PartyNpcDto, type Setting } from '@itd/schema';
 import { usePartyStore } from '../../store/usePartyStore';
 import { Dialog } from '../../ui/Dialog';
@@ -201,7 +202,25 @@ export const NpcDialog: React.FC<{
             <>
               <div className="grid grid-cols-3 gap-3">
                 <Field label="Комплекция">
-                  {({ id }) => <NumberField id={id} value={draft.coc.build} min={-2} max={20} signed onChange={(build) => patchCoc({ build })} />}
+                  {({ id }) => (
+                    <NumberField
+                      id={id}
+                      value={draft.coc.build}
+                      min={-2}
+                      max={20}
+                      signed
+                      onChange={(build) =>
+                        // The damage bonus follows the Build by the table, unless the master wrote their own.
+                        patchCoc({
+                          build,
+                          ...(draft.coc.damageBonus === '' ||
+                          draft.coc.damageBonus === damageBonusOfBuild(draft.coc.build)
+                            ? { damageBonus: damageBonusOfBuild(build) }
+                            : {}),
+                        })
+                      }
+                    />
+                  )}
                 </Field>
                 <Field label="Бонус урона">
                   {({ id }) => (

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import {
@@ -10,7 +10,9 @@ import {
   displaySkillName,
   absorbArmor,
   applyHitDamage,
+  damageDieOf,
   firearmModifiers,
+  hasTalent,
   firearmRangeOf,
   fireWeapon,
   initiativeOf,
@@ -21,18 +23,18 @@ import {
   reloadWeapon,
   skillName,
   skillValue,
-  castSpell,
   applyDamage,
   changeMagic,
   heal,
   setLuck,
+  spendLuck,
   weaponDamageDetailed,
   type Defence,
   type FirearmRange,
   type RollModifiers,
   type SuccessLevel,
 } from '@itd/game-logic/coc';
-import { maxSanityOf } from '@itd/game-logic';
+import { maxSanityOf, rollDie } from '@itd/game-logic';
 import type { Attack, Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useTableOfCharacter } from '../../store/usePartyStore';
@@ -56,9 +58,13 @@ import { setRollVerdict, useRollShown, type RollVerdict } from './verdict';
 import { InsanityVeil, madnessStage } from './InsanityVeil';
 import { Track } from './parts';
 import { PickerDialog } from './picker';
+import { CocEntryDialog, CocSelectionProvider, useCocSelection } from './details';
 import {
   BIG_TARGET_BUILD,
+  TALENT_LUCK,
+  afterHurt,
   diveForCover,
+  shrugOff,
   enterRound,
   fightBackSkill,
   freshRound,
@@ -178,6 +184,12 @@ const DockTile: React.FC<{
   </button>
 );
 
+/** Opens a spell's card (inside the cards' provider), where its price is chosen and paid. */
+const SpellCards: React.FC<{ children: (open: (id: string) => void) => React.ReactNode }> = ({ children }) => {
+  const { open } = useCocSelection();
+  return <>{children((id) => open('spell', id))}</>;
+};
+
 const LEVELS: SuccessLevel[] = ['failure', 'regular', 'hard', 'extreme', 'critical'];
 
 const RANGE_LABELS: Record<FirearmRange, string> = {
@@ -256,6 +268,31 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   const derived = derivedOf(c, build?.variant, build?.age);
   const coc = character.coc!;
   const armor = coc.armor ?? 0;
+  /** Pulp talents the fight works out by itself, or offers to spend Luck on. */
+  const talent = {
+    nimble: hasTalent(character, 'nimble'),
+    rapidFire: hasTalent(character, 'rapid-fire'),
+    beadyEye: hasTalent(character, 'beady-eye'),
+    outmaneuver: hasTalent(character, 'outmaneuver'),
+    fastLoad: hasTalent(character, 'fast-load'),
+    quickDraw: hasTalent(character, 'quick-draw'),
+    heavyHitter: hasTalent(character, 'heavy-hitter'),
+    toughGuy: hasTalent(character, 'tough-guy'),
+    rapidAttack: hasTalent(character, 'rapid-attack'),
+  };
+  const canSpendTalentLuck = coc.luck >= TALENT_LUCK;
+  /** Dying, unconscious or dead: no action, no defence (rolls the rules ask for stay). */
+  const downed = [CONDITION_IDS.dying, CONDITION_IDS.unconscious, CONDITION_IDS.dead].find((id) =>
+    character.conditions.includes(id),
+  );
+  const downedNote =
+    downed === CONDITION_IDS.dead
+      ? 'Сыщик мёртв'
+      : downed === CONDITION_IDS.dying
+        ? 'Сыщик при смерти — ни действий, ни защиты'
+        : downed
+          ? 'Сыщик без сознания — ни действий, ни защиты'
+          : null;
 
   const [weaponId, setWeaponId] = useState<string>(() => character.attacks[0]?.id ?? '');
   const weapon = character.attacks.find((a) => a.id === weaponId) ?? character.attacks[0];
@@ -286,6 +323,10 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   const [gunReady, setGunReady] = useState(false);
   const [amount, setAmount] = useState(1);
   const [throughArmor, setThroughArmor] = useState(true);
+  /** Pulp «Крепкий орешек» chosen for the next blow. */
+  const [shrugNext, setShrugNext] = useState(false);
+  /** The roll whose damage «Тяжёлая рука» already raised. */
+  const [heavySerial, setHeavySerial] = useState<number | null>(null);
   const [volley, setVolley] = useState<{ weaponId: string; shots: ShotOutcome[] } | null>(null);
 
   // The master may pick a foe of the fight: its Build (when its sheet has one) settles a big target
@@ -325,33 +366,61 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
           intoMelee: shot.intoMelee,
           targetDivedForCover: shot.cover,
           targetHidden: shot.hidden,
+          rapidFire: talent.rapidFire && weapon?.skill === 'firearms:handgun',
+          beadyEye: talent.beadyEye,
         }),
         shot.bigTarget,
       )
     : meleeModifiers({ defenderReactedThisRound: melee.outnumbering ? 1 : 0, hampered: melee.hampered });
 
   const actionDone = inCombat && round.actionUsed;
-  /** Actions wait for the hero's turn at a table and for a new round; defences and wounds never do. */
-  const noAction = actionDone || locked;
-  const actionNote = locked
-    ? turnLock
-    : actionDone
-      ? 'Действие раунда потрачено — защищаться ещё можно'
-      : null;
+  /**
+   * Actions wait for the hero's turn at a table and for a new round; defences and wounds never do.
+   * A hero down (dying, unconscious, dead) does nothing at all.
+   */
+  const noAction = actionDone || locked || !!downed;
+  const actionNote = downedNote
+    ? downedNote
+    : locked
+      ? turnLock
+      : actionDone
+        ? 'Действие раунда потрачено — защищаться ещё можно'
+        : null;
   /** An action of the round, refused with the reason out of the hero's turn (as the D&D sheet does). */
   const onTurn = (run: () => void) => {
-    if (turnLock) toast.error(turnLock, { id: 'turn-lock' });
+    if (downedNote) toast.error(downedNote, { id: 'turn-lock' });
+    else if (turnLock) toast.error(turnLock, { id: 'turn-lock' });
     else if (actionDone) toast.error('Действие раунда уже потрачено', { id: 'turn-lock' });
     else run();
   };
 
+  // A new round: the shot's situation (point blank, a melee, cover) is the last round's no more;
+  // what the target is (big, how far) stays.
+  const stillDying = character.conditions.includes(CONDITION_IDS.dying);
+  const [conDue, setConDue] = useState(false);
+  const seenRound = useRef(round.round);
+  useEffect(() => {
+    if (seenRound.current === round.round) return;
+    seenRound.current = round.round;
+    setShot((s) => ({ ...s, pointBlank: false, intoMelee: false, cover: false, hidden: false }));
+    setMelee({ outnumbering: false, hampered: false });
+    setVolley(null);
+    // The dying roll CON at the end of every round.
+    if (stillDying) setConDue(true);
+  }, [round.round, stillDying]);
+  // Hurt: an aim is lost.
+  const seenHP = useRef(character.currentHP);
+  useEffect(() => {
+    if (character.currentHP < seenHP.current) setRound(afterHurt);
+    seenHP.current = character.currentHP;
+  }, [character.currentHP, setRound]);
+
   const spendAction = () => setRound((r) => ({ ...r, actionUsed: true, aimedWith: undefined }));
-  const cast = (spell: { name: string; cost: string }) =>
-    onTurn(() => {
-      const result = castSpell(character, spell.cost);
-      update(result.edit, { message: `Сотворено «${spell.name}»`, type: 'sanity' });
-      spendAction();
-    });
+  /**
+   * A spell opens its card: there the magic points of a variable spell are chosen, a first casting
+   * rolls POW and the sanity it costs follows the rules; casting it spends the round's action.
+   */
+  const castFrom = (open: (id: string) => void) => (id: string) => onTurn(() => open(id));
 
   /**
    * The attack: every shot of a volley is its own roll with the volley's penalty die, a round
@@ -380,6 +449,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
           penalty: mods.penalty,
           band,
           damageRolled: ownDamage,
+          combat: 'attack',
         });
         // Dice are rolled here, once: the edit that logs them runs twice (screen and stored copy).
         const hit =
@@ -421,20 +491,32 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   const [defence, setDefence] = useState<{ mode: DefenceMode; serial: number } | null>(null);
   const [incoming, setIncoming] = useState<SuccessLevel | null>(null);
   const defend = (mode: DefenceMode) => {
+    if (downedNote) {
+      toast.error(downedNote, { id: 'turn-lock' });
+      return;
+    }
     const id = mode === 'fightBack' ? fightBackId : 'dodge';
     const record = roll(
       mode === 'fightBack' && fightWith
         ? // With a weapon the roll is its attack: a won fight back rolls that weapon's damage.
-          { label: `Контратака · ${fightWith.name}`, value: skillValue(character, id), kind: 'attack', id: fightWith.id, skill: id }
+          {
+            label: `Контратака · ${fightWith.name}`,
+            value: skillValue(character, id),
+            kind: 'attack',
+            id: fightWith.id,
+            skill: id,
+            combat: 'fightBack',
+          }
         : {
             label: mode === 'dodge' ? 'Уклонение' : mode === 'cover' ? 'Укрыться от выстрела' : 'Контратака',
             value: skillValue(character, id),
             kind: 'skill',
             id,
+            combat: mode,
           },
     );
     if (mode === 'cover') {
-      if (inCombat) setRound(diveForCover);
+      if (inCombat) setRound((r) => diveForCover(r, talent.nimble));
     } else {
       setRound((r) => ({ ...r, reactions: r.reactions + 1 }));
     }
@@ -478,13 +560,16 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   const rollToastShown = useRollShown();
   const [spellsOpen, setSpellsOpen] = useState(false);
 
-  const manoeuvre = manoeuvreChance(derived.build, targetBuild);
+  // Pulp «Ловкий приём»: the hero's Build counts one more for a manoeuvre.
+  const manoeuvre = manoeuvreChance(derived.build + (talent.outmaneuver ? 1 : 0), targetBuild);
 
+  // Pulp «Быстрое выхватывание»: the +50 of a ready firearm without holding one ready.
+  const readyForOrder = gunReady || talent.quickDraw;
   const start = () => {
-    const initiative = initiativeOf(c.dex, gunReady);
+    const initiative = initiativeOf(c.dex, readyForOrder);
     setRound(freshRound(`solo:${Date.now()}`, 1, initiative));
     update((doc) => doc, {
-      message: `Бой начался · порядок хода ${initiative} (ЛВК${gunReady ? ' +50' : ''})`,
+      message: `Бой начался · порядок хода ${initiative} (ЛВК${readyForOrder ? ' +50' : ''})`,
       type: 'other',
     });
   };
@@ -494,13 +579,58 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
     update((doc) => doc, { message: 'Бой окончен', type: 'other' });
   };
 
+  // The 10 Luck buy the round's 5 points once: what the first blow left over costs nothing more.
+  const shrugPaid = (round.shrugged ?? 0) > 0;
+  const shrugAvailable =
+    talent.toughGuy && inCombat && (shrugPaid || canSpendTalentLuck) && shrugOff(round, amount) > 0;
   const takeHit = () => {
     const worn = throughArmor ? armor : 0;
     const taken = absorbArmor(amount, worn);
-    update(throughArmor ? applyHitDamage(amount) : applyDamage(amount), {
-      message: worn > 0 ? `Урон ${amount} − броня ${amount - taken} = ${taken}` : `Урон ${amount}`,
-      type: 'health',
+    // Pulp «Крепкий орешек»: 10 Luck and up to 5 hit points of the round's blows go unnoticed.
+    const shrug = shrugNext && shrugAvailable ? shrugOff(round, taken) : 0;
+    const parts = [`Урон ${amount}`, worn > 0 && `броня ${amount - taken}`, shrug > 0 && `крепкий орешек ${shrug}`];
+    update(
+      (doc) => {
+        const hurt = shrug > 0 && !shrugPaid ? spendLuck(TALENT_LUCK)(doc) : doc;
+        return shrug > 0 || !throughArmor ? applyDamage(taken - shrug)(hurt) : applyHitDamage(amount)(hurt);
+      },
+      {
+        message: parts.filter(Boolean).length > 1 ? `${parts.filter(Boolean).join(' − ')} = ${taken - shrug}` : `Урон ${amount}`,
+        type: 'health',
+      },
+    );
+    if (shrug > 0) setRound((r) => ({ ...r, shrugged: (r.shrugged ?? 0) + shrug }));
+    setShrugNext(false);
+  };
+
+  // Pulp «Тяжёлая рука»: a melee hit whose damage is rolled takes one more of the weapon's dice.
+  const lastWeapon = last?.kind === 'attack' ? character.attacks.find((a) => a.id === last.id) : undefined;
+  const heavyDie = lastWeapon && !isFirearm(lastWeapon) ? damageDieOf(lastWeapon.damage) : undefined;
+  const heavyOffer =
+    talent.heavyHitter && canSpendTalentLuck && !!last?.damage && heavyDie !== undefined && heavySerial !== last.serial;
+  const hitHarder = () => {
+    if (!last?.damage || heavyDie === undefined || !lastWeapon) return;
+    const die = rollDie(heavyDie);
+    setHeavySerial(last.serial);
+    update(spendLuck(TALENT_LUCK), {
+      message: `Тяжёлая рука: ${lastWeapon.name} +${die} (1d${heavyDie}), урон ${last.damage.total + die} · −${TALENT_LUCK} удачи`,
+      type: 'other',
     });
+  };
+
+  // Pulp «Стремительная атака»: after the round's action, 10 Luck buy one more melee attack.
+  const rapidOffer =
+    talent.rapidAttack &&
+    inCombat &&
+    round.actionUsed &&
+    !round.rapidAttack &&
+    !locked &&
+    !downed &&
+    canSpendTalentLuck &&
+    !firearm;
+  const attackAgain = () => {
+    update(spendLuck(TALENT_LUCK), { message: `Стремительная атака: ещё удар · −${TALENT_LUCK} удачи`, type: 'other' });
+    setRound((r) => ({ ...r, actionUsed: false, rapidAttack: true }));
   };
 
   const conditions = character.conditions
@@ -520,6 +650,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
   const shownVolley = volley && volley.weaponId === weapon?.id ? volley.shots : null;
 
   return (
+    <CocSelectionProvider onCast={spendAction}>
     <div className="coc-touch relative h-full overflow-hidden">
       <SettingBackdrop setting={settingOf(character)} strength={0.55} />
 
@@ -527,7 +658,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
           go one under another (two abreast on a tablet) in a page that scrolls down. */}
       <div className="contents max-lg:absolute max-lg:inset-0 max-lg:z-10 max-lg:flex max-lg:flex-wrap max-lg:content-start max-lg:gap-4 max-lg:overflow-y-auto max-lg:px-4 max-lg:pb-6 max-lg:pt-3">
         {/* Top: back to the sheet, the turn order, the tools. */}
-        <header className="relative z-20 flex h-16 items-center gap-4 px-6 max-lg:h-auto max-lg:basis-full max-lg:flex-wrap max-lg:gap-x-2 max-lg:gap-y-3 max-lg:px-0 max-lg:pt-2">
+        <header className="relative z-20 flex h-16 items-center gap-4 pl-20 pr-20 pt-3 max-lg:h-auto max-lg:basis-full max-lg:flex-wrap max-lg:gap-x-2 max-lg:gap-y-3 max-lg:px-0 max-lg:pt-2">
           <Button
             variant="ghost"
             size="sm"
@@ -542,6 +673,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               <PartyCombatBar
                 party={party}
                 characterId={character.id}
+                quickDraw={talent.quickDraw}
                 onMyTurn={() => {
                   // The round was entered when it began; the turn itself only says so.
                   if (partyFight)
@@ -676,6 +808,24 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 )}
               </div>
             )}
+            {talent.toughGuy && inCombat && (
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-faint">
+                <Chip
+                  on={shrugNext && shrugAvailable}
+                  onClick={() => shrugAvailable && setShrugNext(!shrugNext)}
+                  title={`Крепкий орешек: ${TALENT_LUCK} удачи — до 5 хитов урона за раунд не замечены`}
+                >
+                  {shrugPaid ? 'Крепкий орешек · оплачен' : `Крепкий орешек · −${TALENT_LUCK} удачи`}
+                </Chip>
+                <span>
+                  {shrugAvailable
+                    ? `не заметит до ${shrugOff(round, 99)} хитов следующего удара`
+                    : shrugPaid
+                      ? 'в этом раунде уже потрачено'
+                      : 'не хватает удачи'}
+                </span>
+              </div>
+            )}
             <Track
               label="Магия"
               value={coc.magicPoints}
@@ -708,16 +858,19 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
               <Button
                 size="sm"
                 variant="danger"
-                onClick={() =>
+                className={cx(dying && conDue && 'ring-2 ring-danger/70')}
+                onClick={() => {
+                  setConDue(false);
                   roll({
                     label: dying ? 'При смерти: бросок ВЫН' : 'Серьёзная рана: бросок ВЫН',
                     value: c.con,
                     kind: 'characteristic',
-                  })
-                }
+                    combat: 'wound',
+                  });
+                }}
                 title={dying ? 'Каждый раунд: провал — смерть' : 'Провал — потеря сознания'}
               >
-                Бросок ВЫН
+                {dying && conDue ? 'Конец раунда: бросок ВЫН' : 'Бросок ВЫН'}
               </Button>
             )}
           </Panel>
@@ -797,13 +950,17 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
             {firearm ? (
               <div className="flex flex-col gap-2 border-t border-line/50 pt-3">
                 <div className="flex flex-wrap gap-1.5">
-                  {!inCombat && (
+                  {!inCombat && !party && (
                     <Chip
-                      on={gunReady}
-                      onClick={() => setGunReady(!gunReady)}
-                      title="Оружие уже в руке: +50 к порядку хода в первом раунде"
+                      on={readyForOrder}
+                      onClick={() => !talent.quickDraw && setGunReady(!gunReady)}
+                      title={
+                        talent.quickDraw
+                          ? 'Быстрое выхватывание: +50 к порядку хода без оружия наготове'
+                          : 'Оружие уже в руке: +50 к порядку хода'
+                      }
                     >
-                      Наготове +50
+                      {talent.quickDraw ? 'Быстрое выхватывание +50' : 'Наготове +50'}
                     </Chip>
                   )}
                   <Chip
@@ -918,6 +1075,20 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 ))}
               </ol>
             )}
+            {(heavyOffer || rapidOffer) && (
+              <div className="flex flex-col gap-2">
+                {heavyOffer && (
+                  <Button size="sm" onClick={hitHarder} title="Тяжёлая рука: ещё один кубик урона к удачному удару">
+                    Тяжёлая рука · +1d{heavyDie} · −{TALENT_LUCK} удачи
+                  </Button>
+                )}
+                {rapidOffer && (
+                  <Button size="sm" onClick={attackAgain} title="Стремительная атака: ещё одна атака в ближнем бою за раунд">
+                    Стремительная атака · ещё удар · −{TALENT_LUCK} удачи
+                  </Button>
+                )}
+              </div>
+            )}
             {firearm && weapon && (
               <div className="flex gap-2">
                 <Button
@@ -939,10 +1110,12 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                     size="sm"
                     className="flex-1"
                     disabled={noAction}
+                    title={talent.fastLoad ? 'Быстрая перезарядка: действие раунда не тратится' : undefined}
                     onClick={() =>
                       onTurn(() => {
                         update(reloadWeapon(weapon.id), { message: `${weapon.name}: перезаряжено`, type: 'inventory' });
-                        spendAction();
+                        // Pulp «Быстрая перезарядка»: reload and fire in the same round.
+                        if (!talent.fastLoad) spendAction();
                       })
                     }
                   >
@@ -989,6 +1162,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                       value={skillValue(character, 'dodge')}
                       hint="ничья — ваша"
                       title="Ничья в вашу пользу"
+                      disabled={!!downed}
                       onClick={() => defend('dodge')}
                     />
                     <DockTile
@@ -996,6 +1170,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                       value={skillValue(character, fightBackId)}
                       hint={fightWith ? fightWith.name : 'драка'}
                       title={`${fightWith ? fightWith.name : 'Драка'}: оружие ближнего боя выбирается в списке «Оружие». Ничья — атакующему`}
+                      disabled={!!downed}
                       onClick={() => defend('fightBack')}
                     />
                   </>
@@ -1004,8 +1179,13 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                   <DockTile
                     label="Укрыться"
                     value={skillValue(character, 'dodge')}
-                    hint="теряете атаку"
-                    title="Бросок Уклонения: успех — стрелку штрафная кость. Удачно или нет, следующая атака потеряна"
+                    hint={talent.nimble ? 'проворный: атака остаётся' : 'теряете атаку'}
+                    title={
+                      talent.nimble
+                        ? 'Бросок Уклонения: успех — стрелку штрафная кость. Проворный: следующая атака не теряется'
+                        : 'Бросок Уклонения: успех — стрелку штрафная кость. Удачно или нет, следующая атака потеряна'
+                    }
+                    disabled={!!downed}
                     onClick={() => defend('cover')}
                   />
                 )}
@@ -1042,6 +1222,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                         difficulty: manoeuvre.difficulty,
                         bonus: manoeuvre.bonus,
                         penalty: manoeuvre.penalty,
+                        combat: 'manoeuvre',
                       });
                       spendAction();
                     })
@@ -1053,17 +1234,21 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                   disabled={noAction}
                   onClick={() => onTurn(() => setSkillPicker(true))}
                 />
-                {coc.spells
-                  .slice(0, coc.spells.length > INLINE_SPELLS ? INLINE_SPELLS - 1 : INLINE_SPELLS)
-                  .map((sp) => (
-                    <DockTile
-                      key={sp.id}
-                      label={sp.name}
-                      hint={sp.cost}
-                      disabled={noAction}
-                      onClick={() => cast(sp)}
-                    />
-                  ))}
+                <SpellCards>
+                  {(open) =>
+                    coc.spells
+                      .slice(0, coc.spells.length > INLINE_SPELLS ? INLINE_SPELLS - 1 : INLINE_SPELLS)
+                      .map((sp) => (
+                        <DockTile
+                          key={sp.id}
+                          label={sp.name}
+                          hint={sp.cost}
+                          disabled={noAction}
+                          onClick={() => castFrom(open)(sp.id)}
+                        />
+                      ))
+                  }
+                </SpellCards>
                 {coc.spells.length > INLINE_SPELLS && (
                   <DockTile
                     label="Заклинания"
@@ -1080,20 +1265,23 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                 />
               </DockCard>
             </div>
-            {/* One line under the dock: what the last defence came to, or why the action waits. */}
+            {/* One line under the dock: what the last defence came to, or why the action waits. It
+                takes the dock's width and wraps (w-0 min-w-full), so a long line never shifts the dock. */}
             {defending === 'cover' && last ? (
-              <Panel ornate={false} className="px-4 py-2 text-center text-sm">
+              <Panel ornate={false} className="w-0 min-w-full px-4 py-2 text-center text-sm">
                 <span role="status" className={last.check.success ? 'text-success' : 'text-danger'}>
                   {last.check.success
                     ? 'Вы укрылись — стрелок бросает со штрафной костью'
                     : 'Укрыться не успели — выстрел без штрафа'}
                 </span>
-                <span className="ml-2 text-ink-muted">· следующая атака потеряна</span>
+                <span className="ml-2 text-ink-muted">
+                  · {talent.nimble ? 'проворный: атака остаётся' : 'следующая атака потеряна'}
+                </span>
               </Panel>
             ) : defending && last ? (
               <Panel
                 ornate={false}
-                className="flex flex-wrap items-center justify-center gap-1.5 px-4 py-2 text-sm"
+                className="flex w-0 min-w-full flex-wrap items-center justify-center gap-1.5 px-4 py-2 text-sm"
               >
                 <span className="text-ink-muted">
                   {last.label}: {SUCCESS_LABELS[last.check.level].toLowerCase()}. Атака по вам была:
@@ -1127,7 +1315,7 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
             ) : (
               actionNote &&
               inCombat && (
-                <p className="text-center text-xs text-ink-faint" role="status">
+                <p className="w-0 min-w-full text-center text-xs text-ink-faint" role="status">
                   {actionNote}
                 </p>
               )
@@ -1155,17 +1343,21 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
                   {[sp.cost, sp.castingTime].filter(Boolean).join(' · ') || 'без цены'}
                 </span>
               </span>
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={noAction}
-                onClick={() => {
-                  cast(sp);
-                  setSpellsOpen(false);
-                }}
-              >
-                Сотворить
-              </Button>
+              <SpellCards>
+                {(open) => (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={noAction}
+                    onClick={() => {
+                      setSpellsOpen(false);
+                      castFrom(open)(sp.id);
+                    }}
+                  >
+                    Сотворить
+                  </Button>
+                )}
+              </SpellCards>
             </li>
           ))}
         </ul>
@@ -1185,7 +1377,9 @@ export const CocCombatView: React.FC<{ onOpenSettings: () => void; onDice: () =>
           })
         }
       />
+      <CocEntryDialog />
       <InsanityVeil stage={madnessStage(character)} />
     </div>
+    </CocSelectionProvider>
   );
 };

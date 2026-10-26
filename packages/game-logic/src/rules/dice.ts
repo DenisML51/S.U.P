@@ -141,6 +141,30 @@ export function rollD20(mode: D20Mode = 'normal', random: RandomSource = Math.ra
   return { dice, kept: mode === 'advantage' ? Math.max(...dice) : Math.min(...dice) };
 }
 
+export interface PercentileRoll {
+  units: number;
+  /** Every tens die rolled; one more per bonus or penalty die. */
+  tens: number[];
+  total: number;
+}
+
+/**
+ * A d100 (Call of Cthulhu): one units die and a tens die, plus one extra tens die for each bonus
+ * (keep the lowest) or penalty die (keep the highest). Bonus and penalty dice cancel out first.
+ */
+export function rollPercentile(
+  bonusDice = 0,
+  penaltyDice = 0,
+  random: RandomSource = Math.random,
+): PercentileRoll {
+  const net = Math.max(-2, Math.min(2, bonusDice - penaltyDice));
+  const units = rollDie(10, random) - 1;
+  const tens = Array.from({ length: 1 + Math.abs(net) }, () => (rollDie(10, random) - 1) * 10);
+  const totals = tens.map((t) => (t + units === 0 ? 100 : t + units));
+  const total = net > 0 ? Math.min(...totals) : net < 0 ? Math.max(...totals) : totals[0]!;
+  return { units, tens, total };
+}
+
 /** Builds a formula from dice counts and a bonus: `{ 6: 2, 8: 1 }, 3` → `2d6 + 1d8 + 3`. */
 export function formatDice(counts: Record<number, number>, bonus = 0): string {
   const dice = Object.entries(counts)

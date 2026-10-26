@@ -214,11 +214,16 @@ export const RulesCarousel: React.FC<{
   allowed?: RulesChoice[];
   height?: string;
   chooseLabel?: string;
-}> = ({ value, onChange, allowed, height, chooseLabel = 'Играть по этим правилам' }) => (
+  /** The world chosen before: its own rules come in front first (Lovecraft: Call of Cthulhu). */
+  setting?: string;
+}> = ({ value, onChange, allowed, height, chooseLabel = 'Играть по этим правилам', setting }) => (
   <ChoiceCarousel
     label="правила"
     height={height}
     chosen={value}
+    preferred={
+      allowed?.length === 1 ? allowed[0] : setting === 'lovecraft' ? 'coc7' : undefined
+    }
     onChoose={onChange}
     chooseLabel={chooseLabel}
     chosenLabel="Эти правила выбраны"

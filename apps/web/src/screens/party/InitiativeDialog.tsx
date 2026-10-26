@@ -29,8 +29,10 @@ export const InitiativeDialog: React.FC<{
   byDex?: boolean;
   /** An NPC that keeps its firearm drawn: the +50 starts ticked. */
   firearmReady?: boolean;
+  /** A Pulp hero with «Быстрое выхватывание»: the +50 without a firearm held ready. */
+  quickDraw?: boolean;
   onClose: () => void;
-}> = ({ partyId, setting, combatant, bonus, canRemove, byDex, firearmReady, onClose }) => {
+}> = ({ partyId, setting, combatant, bonus, canRemove, byDex, firearmReady, quickDraw, onClose }) => {
   const setInitiative = usePartyStore((s) => s.setInitiative);
   const removeCombatant = usePartyStore((s) => s.removeCombatant);
   const [manual, setManual] = useState<number>(() => combatant?.initiative ?? 10 + (bonus ?? 0));
@@ -41,9 +43,10 @@ export const InitiativeDialog: React.FC<{
   // DEX comes from the sheet (the server takes nothing else from a player); written in only when unknown.
   const [dexInput, setDexInput] = useState(50);
   const dex = bonus ?? dexInput;
-  const [gunReady, setGunReady] = useState(() =>
+  const [gunReadyPicked, setGunReady] = useState(() =>
     combatant?.initiative != null && bonus !== null ? combatant.initiative === bonus + 50 : !!firearmReady,
   );
+  const gunReady = gunReadyPicked || !!quickDraw;
 
   const submit = async (value: number) => {
     if (!combatant) return;
@@ -71,7 +74,7 @@ export const InitiativeDialog: React.FC<{
       onClose={onClose}
       setting={setting}
       width="sm"
-      eyebrow="Инициатива"
+      eyebrow={byDex ? 'Порядок хода' : 'Инициатива'}
       title={combatant?.name ?? ''}
       subtitle={byDex ? 'Ходят по порядку ЛВК, без броска' : bonus !== null ? `Модификатор ${formatBonus(bonus)}` : undefined}
       footerStart={
@@ -100,10 +103,14 @@ export const InitiativeDialog: React.FC<{
             )}
             <span className="ui-display ui-numeric text-[4rem] leading-none text-frame-bright">{dex + (gunReady ? 50 : 0)}</span>
           </div>
-          <label className="flex items-center gap-2 text-sm text-ink-muted">
-            <input type="checkbox" checked={gunReady} onChange={(e) => setGunReady(e.target.checked)} />
-            Огнестрельное оружие наготове: +50 к порядку
-          </label>
+          {quickDraw ? (
+            <p className="text-sm text-ink-muted">Быстрое выхватывание: +50 к порядку без оружия наготове</p>
+          ) : (
+            <label className="flex items-center gap-2 text-sm text-ink-muted">
+              <input type="checkbox" checked={gunReady} onChange={(e) => setGunReady(e.target.checked)} />
+              Огнестрельное оружие наготове: +50 к порядку
+            </label>
+          )}
           <Button variant="primary" size="lg" disabled={busy} onClick={() => void submit(dex + (gunReady ? 50 : 0))} data-autofocus>
             Заявить
           </Button>

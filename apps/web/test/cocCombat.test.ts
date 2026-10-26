@@ -78,3 +78,24 @@ describe('a big target', () => {
     expect(withBigTarget(firearmModifiers({ intoMelee: true }), false)).toMatchObject({ penalty: 1 });
   });
 });
+
+describe('what a round keeps', () => {
+  it('loses an aim to a wound, and nimble keeps the action after diving for cover', async () => {
+    const { afterHurt } = await import('../src/screens/coc/combatRules');
+    const aimed = { ...freshRound('f'), aimedWith: 'gun' };
+    expect(afterHurt(aimed).aimedWith).toBeUndefined();
+    const nimble = diveForCover(freshRound('f'), true);
+    expect(nimble.actionUsed).toBe(false);
+    expect(nimble.forfeitNext).toBeFalsy();
+    expect(diveForCover(aimed, true).aimedWith).toBeUndefined();
+  });
+
+  it('shrugs off up to 5 hit points a round, and a new round starts the count again', async () => {
+    const { shrugOff } = await import('../src/screens/coc/combatRules');
+    const round = freshRound('f');
+    expect(shrugOff(round, 8)).toBe(5);
+    expect(shrugOff({ ...round, shrugged: 3 }, 8)).toBe(2);
+    expect(shrugOff({ ...round, shrugged: 5 }, 8)).toBe(0);
+    expect(enterRound({ ...round, shrugged: 5, rapidAttack: true }, 2)).toMatchObject({ shrugged: 0, rapidAttack: false });
+  });
+});

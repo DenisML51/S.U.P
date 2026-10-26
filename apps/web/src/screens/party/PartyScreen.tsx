@@ -401,7 +401,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
       <ConfirmDialog
         open={overlay?.kind === 'end-combat'}
         title="Завершить бой?"
-        message="Очерёдность и броски инициативы сбросятся."
+        message={isCocFight(party) ? 'Очерёдность хода сбросится.' : 'Очерёдность и броски инициативы сбросятся.'}
         confirmLabel="Завершить"
         onCancel={close}
         onConfirm={() => {
@@ -536,19 +536,23 @@ const CombatPanel: React.FC<{
   const waiting = fight.combatants.filter((c) => c.initiative === null);
   const npcsWaiting = waiting.some((c) => c.kind === 'npc');
   const rolling = fight.phase === 'initiative';
+  /** Call of Cthulhu: the order is DEX (+50 with a firearm ready), declared rather than rolled. */
+  const coc = isCocFight(party);
 
   return (
     <Panel className="px-6 pb-4 pt-4">
       <div className="flex items-center gap-4">
         <div className="min-w-0">
           <div className="ui-display ui-title text-[1.35rem] leading-none text-frame-bright">
-            {rolling ? 'Бросок инициативы' : `Раунд ${fight.round}`}
+            {rolling ? (coc ? 'Порядок хода' : 'Бросок инициативы') : `Раунд ${fight.round}`}
           </div>
           <div className="mt-1 truncate text-xs text-ink-muted">
             {rolling
               ? waiting.length > 0
-                ? `Ждём бросков: ${waiting.map((c) => c.name).join(', ')}`
-                : 'Все бросили — можно начинать'
+                ? `${coc ? 'Ждём заявок' : 'Ждём бросков'}: ${waiting.map((c) => c.name).join(', ')}`
+                : coc
+                  ? 'Все заявили — можно начинать'
+                  : 'Все бросили — можно начинать'
               : seat.current
                 ? `Ходит ${seat.current.name}`
                 : 'Очередь пуста'}
@@ -562,12 +566,12 @@ const CombatPanel: React.FC<{
               icon={<IconInitiative width={15} height={15} />}
               onClick={() => void store.rollNpcInitiative(party.id)}
             >
-              Бросить за НПС
+              {coc ? 'НПС по ЛВК' : 'Бросить за НПС'}
             </Button>
           )}
           {!seat.isMaster && seat.toRoll[0] && (
             <Button variant="primary" size="sm" onClick={() => seat.roll(seat.toRoll[0]!)}>
-              Бросить инициативу
+              {actsByDex(party, seat.toRoll[0]) ? 'Заявить порядок' : 'Бросить инициативу'}
             </Button>
           )}
           {seat.isMaster && rolling && (

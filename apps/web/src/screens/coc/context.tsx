@@ -36,6 +36,7 @@ import {
 } from '@itd/game-logic/coc';
 import type { Character } from '@itd/schema';
 import { NO_MODS, diceOnly, modsAfterRoll, modsToRoll, type RollMods } from './sheetRules';
+import { rollVerdictOf, type RollVerdict } from './verdict';
 
 /** What was rolled: a skill (ticked on success), a characteristic, Luck, Sanity, an attack, INT, a roll the rules make (a week's recovery, a first casting: neither pushed nor bought with Luck). */
 export type RollKind = 'skill' | 'characteristic' | 'luck' | 'sanity' | 'attack' | 'int' | 'rule';
@@ -57,6 +58,11 @@ export interface RollRequest {
   band?: number;
   /** The screen that rolled the attack rolls its damage itself (a volley, a farther band): no "Урон" on the toast. */
   damageRolled?: boolean;
+  /**
+   * A roll of the fight: combat rolls are never pushed (7th edition), and a fight back deals its
+   * damage only once the opposed roll is won.
+   */
+  combat?: 'attack' | 'dodge' | 'fightBack' | 'cover' | 'manoeuvre' | 'wound';
 }
 
 export interface RollRecord extends RollRequest {
@@ -202,9 +208,11 @@ export const canBuyWithLuck = (record: RollRecord, luck: number): boolean =>
   !['luck', 'sanity', 'int', 'rule'].includes(record.kind) &&
   luckToSucceed(record.check.total, target(record)) <= luck;
 
+/** A failed skill or characteristic roll may be pushed once; never a roll of the fight (7th edition). */
 export const canPush = (record: RollRecord): boolean =>
   !record.check.success &&
   !record.pushed &&
+  !record.combat &&
   !record.luckSpent &&
   (record.kind === 'skill' || record.kind === 'characteristic');
 
@@ -216,9 +224,20 @@ export const target = (record: Pick<RollRecord, 'value' | 'difficulty'>): number
       ? Math.floor(record.value / 2)
       : record.value;
 
-/** A hit whose damage is still to roll from the toast (not when the screen rolled it already). */
-export const canRollDamage = (record: RollRecord | null): record is RollRecord =>
-  !!record && record.kind === 'attack' && record.check.success && !record.damage && !record.damageRolled;
+/**
+ * A hit whose damage is still to roll from the toast (not when the screen rolled it already). A
+ * fight back hits only when it won the opposed roll: its damage waits for the verdict.
+ */
+export const canRollDamage = (
+  record: RollRecord | null,
+  verdict?: Pick<RollVerdict, 'tone'> | null,
+): record is RollRecord =>
+  !!record &&
+  record.kind === 'attack' &&
+  record.check.success &&
+  !record.damage &&
+  !record.damageRolled &&
+  (record.combat !== 'fightBack' || verdict?.tone === 'success');
 
 /** What a roll bought with Luck reaches: the level its difficulty asked for. */
 export const boughtLevel = (record: Pick<RollRecord, 'difficulty'>): Difficulty => record.difficulty ?? 'regular';
@@ -359,7 +378,7 @@ export const CocSheetProvider: React.FC<{
   const damageBonus = damageBonusOf(c.str + c.siz).damageBonus;
 
   const rollDamage = useCallback(() => {
-    if (!canRollDamage(last)) return;
+    if (!canRollDamage(last, last && rollVerdictOf(last.serial))) return;
     const weapon = character.attacks.find((a) => a.id === last.id);
     if (!weapon) return;
     const damage = weaponDamageDetailed(weapon, damageBonus, last.check.level, Math.random, last.band ?? 0);
@@ -479,10 +498,27 @@ export const CocSheetProvider: React.FC<{
     toast.dismiss(ROLL_TOAST);
   }, []);
 
+  // The roll's toast waits for its follow-ups (damage, Luck, a push) as long as nothing else
+  // happens: another action on the sheet or a turn passing takes it away, the roll stays known.
+  const hideRoll = useCallback(() => toast.dismiss(ROLL_TOAST), []);
+  const act = useCallback<CocSheetApi['update']>(
+    (edit, log, options) => {
+      if (!options?.quiet) hideRoll();
+      update(edit, log, options);
+    },
+    [update, hideRoll],
+  );
+  const turnSeen = useRef(turnLock);
+  useEffect(() => {
+    if (turnSeen.current === turnLock) return;
+    turnSeen.current = turnLock;
+    hideRoll();
+  }, [turnLock, hideRoll]);
+
   const api = useMemo<CocSheetApi>(
     () => ({
       character,
-      update,
+      update: act,
       last,
       roll,
       rollModded,
@@ -509,7 +545,7 @@ export const CocSheetProvider: React.FC<{
     }),
     [
       character,
-      update,
+      act,
       last,
       roll,
       rollModded,
@@ -540,14 +576,15 @@ export const CocSheetProvider: React.FC<{
   }, [store, api]);
 
   // The toast comes up for a new roll or a follow-up of it (Luck, damage); its content follows the
-  // sheet by itself. Once it is gone (timed out, closed), a change of the sheet does not bring it back.
+  // sheet by itself. It has no timer (see `hideRoll`); once it is gone (closed, another action, a
+  // turn passing), a change of the sheet does not bring it back.
   const shown = useRef<RollRecord | null>(null);
   useEffect(() => {
     if (!last || !renderRoll || shown.current === last) return;
     shown.current = last;
     toast(() => <ApiStoreContext.Provider value={store}>{renderRoll(last)}</ApiStoreContext.Provider>, {
       id: ROLL_TOAST,
-      duration: last.check.success || last.pushed || last.luckSpent ? 7000 : 12000,
+      duration: Infinity,
     });
   }, [last, renderRoll, store]);
   useEffect(() => () => toast.dismiss(ROLL_TOAST), []);
