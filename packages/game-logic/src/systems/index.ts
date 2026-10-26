@@ -1,4 +1,4 @@
-import type { Build, Character, RulesetId } from '@itd/schema';
+import type { Build, Character, RulesetId, Spell } from '@itd/schema';
 
 /** Where a granted entry of the sheet comes from, in terms the generic sheet can group by. */
 export interface FeatureOrigin {
@@ -8,6 +8,20 @@ export interface FeatureOrigin {
   parent?: string;
   /** What it is, when its name alone does not say ("Черта"). */
   label?: string;
+}
+
+/** A spell of a system's book, as the picker lists it. */
+export interface CatalogSpell {
+  id: string;
+  name: string;
+  level: number;
+  school: string;
+  ritual: boolean;
+  concentration: boolean;
+  /** On the hero's own class list. */
+  ownList: boolean;
+  /** Within the levels the hero can cast now. */
+  castable: boolean;
 }
 
 /**
@@ -24,6 +38,14 @@ export interface RuleSystem {
   featureOrigins(build: Build): Map<string, FeatureOrigin>;
   /** Where a granted entry comes from, for people ("Паладин, 2 уровень"). */
   describeGrant(build: Build, grant: string | undefined): string | undefined;
+  /**
+   * The system's spells for the hero to write onto the sheet themselves (a Wizard copying a spell
+   * into the book, a scroll learned): the list, and a sheet entry of one of them.
+   */
+  spellCatalog?: {
+    list(build: Build): CatalogSpell[];
+    entry(build: Build, id: string): Spell | undefined;
+  };
 }
 
 /**
