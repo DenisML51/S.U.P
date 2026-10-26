@@ -8,6 +8,8 @@ import { Button, Field, Meter, cx, type MeterTone } from '../../../ui/primitives
 import { useVitals } from '../useVitals';
 import { useSheetDialogs } from './context';
 import { DeathSaves } from '../parts/DeathSaves';
+import { SIGN_HINT, cleanAmount, signedAmount } from '../parts/amount';
+import { toast } from 'react-hot-toast';
 import { locale } from '../../../i18n';
 
 interface VitalProps {
@@ -17,7 +19,8 @@ interface VitalProps {
 
 /**
  * An amount and what to do with it: "8 → Урон". Enter applies the first action, so the most
- * common one is a number and a key away.
+ * common one is a number and a key away — unless `signed` names the actions of a minus and a plus
+ * (health, sanity): there a bare number could mean either, so Enter wants "−8" or "+8".
  */
 const AmountBar: React.FC<{
   actions: {
@@ -25,23 +28,30 @@ const AmountBar: React.FC<{
     variant?: 'primary' | 'secondary' | 'danger';
     onApply: (amount: number) => void;
   }[];
+  signed?: { minus: number; plus: number };
   children?: React.ReactNode;
-}> = ({ actions, children }) => {
+}> = ({ actions, signed, children }) => {
   const [text, setText] = useState('');
-  const amount = Number(text);
-  const valid = text.trim() !== '' && Number.isFinite(amount) && amount > 0;
+  const { sign, value: amount } = signedAmount(text);
+  const valid = amount > 0;
   const apply = (index: number) => {
     if (!valid) return;
     actions[index]!.onApply(amount);
     setText('');
+  };
+  const enter = () => {
+    if (!signed) return apply(0);
+    if (sign) apply(sign === '-' ? signed.minus : signed.plus);
+    else if (valid) toast(SIGN_HINT, { id: 'amount-sign' });
   };
   return (
     <form
       className="flex gap-2 max-sm:flex-wrap"
       onSubmit={(e) => {
         e.preventDefault();
-        apply(0);
+        enter();
       }}
+      title={signed ? SIGN_HINT : undefined}
     >
       <input
         className="ui-input w-24 text-center text-lg tabular-nums max-sm:w-full"
@@ -49,17 +59,17 @@ const AmountBar: React.FC<{
         placeholder="0"
         aria-label="Сколько"
         value={text}
-        onChange={(e) => setText(e.target.value.replace(/[^\d]/g, ''))}
+        onChange={(e) => setText(signed ? cleanAmount(e.target.value) : e.target.value.replace(/[^\d]/g, ''))}
         data-autofocus
       />
       {children}
       {actions.map((action, index) => (
         <Button
           key={action.label}
-          type={index === 0 ? 'submit' : 'button'}
+          type="button"
           variant={action.variant ?? 'secondary'}
           disabled={!valid}
-          onClick={index === 0 ? undefined : () => apply(index)}
+          onClick={() => apply(index)}
           className="flex-1"
         >
           {action.label}
@@ -130,6 +140,7 @@ export const HealthDialog: React.FC<VitalProps> = ({ open, onClose }) => {
       <DeathSaves character={character} className="mx-auto mt-4 max-w-sm" />
       <div className="mt-6">
         <AmountBar
+          signed={{ minus: 0, plus: 1 }}
           actions={[
             { label: 'Урон', variant: 'danger', onApply: (n) => vitals.damage(n) },
             { label: 'Лечение', onApply: vitals.heal },
@@ -222,6 +233,7 @@ export const SanityDialog: React.FC<VitalProps> = ({ open, onClose }) => {
       />
       <div className="mt-6">
         <AmountBar
+          signed={{ minus: 0, plus: 1 }}
           actions={[
             { label: 'Потеря', variant: 'danger', onApply: (n) => vitals.changeSanity(-n) },
             { label: 'Восстановить', onApply: (n) => vitals.changeSanity(n) },

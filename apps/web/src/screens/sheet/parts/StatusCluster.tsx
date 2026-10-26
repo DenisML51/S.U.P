@@ -11,6 +11,8 @@ import { DeathSaves } from './DeathSaves';
 import { useSheetDialogs } from '../dialogs/context';
 import { useVitals } from '../useVitals';
 import { locale } from '../../../i18n';
+import { toast } from 'react-hot-toast';
+import { SIGN_HINT, cleanAmount, signedAmount } from './amount';
 
 /**
  * One of the vitals: its picture, name and figures over the gauge. The setting decides what the
@@ -42,8 +44,8 @@ const StatusBar: React.FC<{
 const QuickHealth: React.FC = () => {
   const vitals = useVitals();
   const [amount, setAmount] = useState('');
-  const value = Number(amount);
-  const valid = amount.trim() !== '' && Number.isFinite(value) && value > 0;
+  const { sign, value } = signedAmount(amount);
+  const valid = value > 0;
 
   const apply = (kind: 'damage' | 'heal') => {
     if (!valid) return;
@@ -57,9 +59,11 @@ const QuickHealth: React.FC = () => {
       className="flex gap-1.5"
       onSubmit={(event) => {
         event.preventDefault();
-        apply('damage');
+        // Enter needs a sign: a bare number could be either, and a heal taken as damage hurts.
+        if (sign) apply(sign === '-' ? 'damage' : 'heal');
+        else if (valid) toast(SIGN_HINT, { id: 'health-sign' });
       }}
-      title="Введите число: Enter — урон"
+      title={SIGN_HINT}
     >
       {/* The amount sits among the buttons and takes their silhouette. */}
       <span className="ui-keyfield w-16 shrink-0">
@@ -69,12 +73,13 @@ const QuickHealth: React.FC = () => {
           placeholder="0"
           aria-label="Количество здоровья"
           value={amount}
-          onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
+          onChange={(e) => setAmount(cleanAmount(e.target.value))}
         />
       </span>
       <button
-        type="submit"
+        type="button"
         disabled={!valid}
+        onClick={() => apply('damage')}
         className="ui-button ui-button--danger ui-button--row !h-8 min-w-0 flex-1"
       >
         Урон
