@@ -308,6 +308,8 @@ export const SpellSchema = passthroughObject({
   cantripScaling: optionalFlag,
   /** The spellcasting modifier is added to the damage or healing. */
   addModifier: optionalFlag,
+  /** Added to the damage by features (Agonizing Blast, Potent Spellcasting). */
+  damageBonus: optionalNumber,
   /** A spell attack roll (`melee`/`ranged`) or the ability of the target's saving throw. */
   attackRoll: text(z.enum(['melee', 'ranged']).optional()),
   saveAttribute: optionalShortText,

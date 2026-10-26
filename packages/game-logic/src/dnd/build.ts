@@ -846,6 +846,26 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     [...abilities, ...character.abilities.filter((a) => !a.grant)].some((a) => a.id === id && a.stance),
   );
 
+  // Damage features add to the spells they fit (Agonizing Blast, Potent Spellcasting).
+  const spellDamage = ofType('spellDamage');
+  if (spellDamage.length > 0) {
+    for (const [id, entry] of spells) {
+      const def = findSpell(id);
+      if (!def) continue;
+      const bonus = spellDamage
+        .filter(
+          (e) =>
+            (!e.spell || e.spell === def.id) &&
+            (!e.list || def.lists.includes(e.list)) &&
+            (!e.cantrips || def.level === 0) &&
+            (!e.school || e.school === def.school) &&
+            (!e.damageType || e.damageType === def.damageType),
+        )
+        .reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0);
+      spells.set(id, { ...entry, damageBonus: bonus || undefined });
+    }
+  }
+
   const maxPreparedSpells = { ...character.maxPreparedSpells };
   if (casting?.mode === 'prepared' || casting?.mode === 'spellbook') maxPreparedSpells.total = resolveAmount(casting.prepared, ctx);
 
@@ -1089,7 +1109,7 @@ function weaponAttackFor(
   const melee = equippedTableWeapons(inventory).filter(({ weapon: w }) => w.kind === 'melee');
   const dueling =
     styles.has('dueling') && weapon.kind === 'melee' && !hasProperty(weapon, 'Двуручное') && melee.length <= 1 && !spendsItself;
-  const extra = ctx ? damageBonusFor(attribute, effects, ctx) : 0;
+  const extra = ctx ? damageBonusFor(attribute, effects, ctx, hasProperty(weapon, 'Тяжёлое')) : 0;
   const damageModifier = (offHand && !styles.has('twoWeapon') ? Math.min(0, modifier) : modifier + (dueling ? 2 : 0)) + extra;
   const heavy = weapon.kind === 'melee' && (hasProperty(weapon, 'Двуручное') || hasProperty(weapon, 'Универсальное'));
   const twoHanded = !offHand && !spendsItself ? versatileDie(weapon) : undefined;
@@ -1106,10 +1126,13 @@ function weaponAttackFor(
   };
 }
 
-/** Damage the features add to an attack made with an ability (Rage: +2 with Strength). */
-const damageBonusFor = (attribute: string, effects: Effect[], ctx: BuildContext): number =>
+/** Damage the features add to an attack made with an ability (Rage: +2 with Strength; Great Weapon Master with a Heavy one). */
+const damageBonusFor = (attribute: string, effects: Effect[], ctx: BuildContext, heavy = false): number =>
   effects
-    .filter((e): e is Extract<Effect, { type: 'damageBonus' }> => e.type === 'damageBonus' && (!e.ability || e.ability === attribute))
+    .filter(
+      (e): e is Extract<Effect, { type: 'damageBonus' }> =>
+        e.type === 'damageBonus' && (!e.ability || e.ability === attribute) && (!e.heavy || heavy),
+    )
     .reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0);
 
 /** Attacks the features give (Unarmed Strike with the Martial Arts die): rebuilt, keeping the player's icon. */

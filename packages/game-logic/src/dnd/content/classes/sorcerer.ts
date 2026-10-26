@@ -162,7 +162,10 @@ const draconic: SubclassDef = {
                 id: e.id,
                 name: e.name,
                 description: `Сопротивление: ${e.name.toLowerCase()}; +модификатор Харизмы к одному броску урона заклинаний этого типа.`,
-                effects: [{ type: 'resistance' as const, damageType: e.damageType }],
+                effects: [
+                  { type: 'resistance' as const, damageType: e.damageType },
+                  { type: 'spellDamage' as const, list: 'sorcerer' as const, damageType: e.damageType, amount: (ctx: BuildContext) => ctx.modifier('charisma') },
+                ],
               })),
             },
           },

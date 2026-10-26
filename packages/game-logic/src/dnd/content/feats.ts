@@ -513,7 +513,10 @@ const GENERAL: FeatDef[] = [
       '- **Сечь**: сразу после критического попадания рукопашным оружием или когда оно опускает хиты существа до 0, вы можете бонусным действием атаковать этим же оружием ещё раз.',
     ].join('\n'),
     action: 'bonus',
-    effects: [{ type: 'attribute', attribute: 'strength', amount: 1, max: 20 }],
+    effects: [
+      { type: 'attribute', attribute: 'strength', amount: 1, max: 20 },
+      { type: 'damageBonus', heavy: true, amount: proficiencyBonus },
+    ],
     iconName: 'battle-axe',
   },
   {

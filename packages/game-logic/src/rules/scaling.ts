@@ -84,6 +84,8 @@ export function spellDamageAt(character: Character, spell: Spell, slotLevel = sp
     const modifier = modifierFor(character, spell);
     if (modifier !== 0) formula = combineDice(formula, 1, String(modifier));
   }
+  // Eldritch Blast is rolled beam by beam, so a bonus (Agonizing Blast) lands on each of them.
+  if (spell.damageBonus) formula = combineDice(formula, 1, String(spell.damageBonus));
   return formula;
 }
 

@@ -1,4 +1,4 @@
-import type { CatalogEntryDef, ChoiceDef, OptionDef, SpellListId } from '../types';
+import type { CatalogEntryDef, ChoiceDef, Effect, OptionDef, SpellListId } from '../types';
 import { PACT_SLOTS } from './classes/shared';
 
 /**
@@ -21,16 +21,17 @@ const CANTRIPS: Record<string, string> = {
   'toll-the-dead': 'Погребальный звон',
 };
 
-const cantripOptions = (ids: string[]): OptionDef[] => ids.map((id) => ({ id, name: CANTRIPS[id]!, description: '' }));
+const cantripOptions = (ids: string[], effects?: (id: string) => Effect[]): OptionDef[] =>
+  ids.map((id) => ({ id, name: CANTRIPS[id]!, description: '', ...(effects ? { effects: effects(id) } : {}) }));
 
 /** The cantrip a repeatable cantrip invocation improves; a new one each time it is taken. */
-const cantripChoice = (invocation: string, ids: string[]): ChoiceDef => ({
+const cantripChoice = (invocation: string, ids: string[], effects?: (id: string) => Effect[]): ChoiceDef => ({
   id: 'cantrip',
   label: 'Заговор',
   count: 1,
   pool: `${invocation}-cantrips`,
   hint: 'Известный вам заговор колдуна, наносящий урон.',
-  options: { from: 'options', options: cantripOptions(ids) },
+  options: { from: 'options', options: cantripOptions(ids, effects) },
 });
 
 const DAMAGING = 'заговор колдуна, наносящий урон';
@@ -94,7 +95,9 @@ export const INVOCATIONS: CatalogEntryDef[] = [
     iconName: 'fire-ray',
     prerequisite: { level: 2, text: DAMAGING },
     repeatable: true,
-    choices: [cantripChoice('agonizing-blast', Object.keys(CANTRIPS))],
+    choices: [
+      cantripChoice('agonizing-blast', Object.keys(CANTRIPS), (spell) => [{ type: 'spellDamage', spell, amount: (ctx) => ctx.modifier('charisma') }]),
+    ],
   },
   {
     id: 'eldritch-spear',
