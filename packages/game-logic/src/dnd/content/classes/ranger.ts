@@ -697,6 +697,7 @@ export const RANGER: ClassDef = {
         description: 'Совершая действие «Атака» в свой ход, вы атакуете дважды вместо одного раза.',
         action: 'passive',
         iconName: 'arrow-cluster',
+        effects: [{ type: 'extraAttack', attacks: 2 }],
       },
     ],
     6: [

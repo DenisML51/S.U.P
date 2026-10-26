@@ -6,6 +6,7 @@ import {
   CONDITIONS,
   actionLimitsOf,
   armorClassOf,
+  attacksPerActionOf,
   experienceProgress,
   formatModifier,
   initiativeModifier,
@@ -17,6 +18,7 @@ import {
   rollsDeathSaves,
   setActionLimit,
   speedOf,
+  strikesLeft,
   setSpentActions,
   spentActionsOf,
   totalCopper,
@@ -374,6 +376,22 @@ export const ActionTokens: React.FC<{ character: Character }> = ({ character }) 
           })}
         </div>
       ))}
+      {/* Extra Attack: attacks made of the Attack action taken, the rest free of a new action. */}
+      {(spent.strikes ?? 0) > 0 && attacksPerActionOf(character) > 1 && (
+        <span
+          className="ui-hud-chip !h-7 !w-auto px-2 text-xs tabular-nums"
+          {...bind({
+            key: 'strikes',
+            title: 'Действие «Атака»',
+            lines: [
+              `Атак: ${spent.strikes} из ${attacksPerActionOf(character)}`,
+              strikesLeft(character) > 0 ? 'Следующая атака — без нового действия' : 'Все атаки действия сделаны',
+            ],
+          })}
+        >
+          {spent.strikes}/{attacksPerActionOf(character)}
+        </span>
+      )}
       <Flyout anchor={anchor} open={editing} onClose={() => setEditing(false)}>
         <div className="mb-2 text-xs uppercase tracking-[0.16em] text-ink-muted">Действий за ход</div>
         <div className="grid grid-cols-3 gap-2">

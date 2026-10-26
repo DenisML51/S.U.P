@@ -21,6 +21,7 @@ const extraAttack = (level: number, attacks: number, name: string): FeatureDef =
   description: `Совершая действие «Атака» в свой ход, вы атакуете ${attacks === 2 ? 'дважды' : attacks === 3 ? 'трижды' : 'четырежды'} вместо одного раза.`,
   action: 'passive',
   iconName: 'crossed-swords',
+  effects: [{ type: 'extraAttack', attacks }],
 });
 
 // ------------------------------------------------------------------------------------------------

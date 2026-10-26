@@ -98,6 +98,8 @@ export type Effect =
   | { type: 'halfProficiency' }
   /** An attack the hero always has, without a weapon (a Monk's Unarmed Strike, Psychic Blades). */
   | { type: 'attack'; attack: GrantedAttackDef }
+  /** Attacks made with one Attack action (Extra Attack: 2; a Fighter's 3 and 4). */
+  | { type: 'extraAttack'; attacks: number }
   /** Weapon attacks are critical hits from this natural roll up (Champion: 19, then 18). */
   | { type: 'critRange'; min: number }
   /** d20 rolls always made with advantage: `initiative`, `deathSave`, `skill:<id>`, `save:<ability>`, `check:<ability>`. */

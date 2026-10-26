@@ -1,4 +1,5 @@
 import {
+  attacksPerActionOf,
   formatModifier,
   isStackable,
   itemQuantity,
@@ -6,6 +7,7 @@ import {
   resolveAmmunition,
   spellColor,
   isUsable,
+  strikesLeft,
 } from '@itd/game-logic';
 import type { ActionType, Character, InventoryItem } from '@itd/schema';
 import { ACTION_TYPES } from '../../ui/actionTypes';
@@ -80,7 +82,9 @@ const usableItem = (item: InventoryItem) => item.type === 'item' && isStackable(
 /** The combat bar's icons by group, with what blocks each of them right now. */
 export function buildSlots(character: Character, inCombat: boolean): Record<SlotGroup, Slot[]> {
   const attacks = character.attacks.map((attack): Slot => {
-    let blocked = blockedBy(character, inCombat, attack.actionType);
+    // The next attack of an Attack action already taken (Extra Attack) needs no action of its own.
+    const followUp = attack.actionType === 'action' && strikesLeft(character) > 0;
+    let blocked = followUp ? null : blockedBy(character, inCombat, attack.actionType);
     const ammunition = attack.usesAmmunition ? resolveAmmunition(character, attack) : undefined;
     if (!blocked && ammunition && itemQuantity(ammunition) < (attack.ammunitionCost ?? 1))
       blocked = `Кончились: ${ammunition.name}`;
@@ -96,6 +100,7 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
       facts: facts(
         ['Попадание', formatModifier(attack.hitBonus)],
         damageFact(attack),
+        attack.actionType === 'action' && attacksPerActionOf(character) > 1 && ['Атак за действие', `${attacksPerActionOf(character)}`],
         ammunition && ['Боеприпасы', `${ammunition.name}: ${itemQuantity(ammunition)}`],
       ),
       actionType: attack.actionType,
