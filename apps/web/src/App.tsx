@@ -14,6 +14,8 @@ import { Toasts } from './ui/Toasts';
 import { ScrollCues } from './ui/ScrollCues';
 import { TableRollOverlay } from './screens/party/TableDice';
 import { preloadSystem, systemHeroScreen } from './systems';
+import { useBrowserHistory } from './useBrowserHistory';
+import { useNamesAsWritten } from './i18n/useNames';
 
 /**
  * The gate and the home page are all the first paint needs; every other screen is its own chunk.
@@ -88,6 +90,8 @@ const App: React.FC = () => {
     [],
   );
   useTableCalls();
+  useBrowserHistory(introDone && status === 'authenticated' && isLoaded);
+  useNamesAsWritten();
 
   const signedIn = status === 'authenticated';
   useEffect(() => {

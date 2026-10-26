@@ -13,7 +13,6 @@ import { SyncBadge } from '../select/SyncBadge';
 import { Wordmark } from '../select/Wordmark';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope } from '../../ui/theme/SettingScope';
-import { ClosedTableDialog } from '../party/ClosedTableDialog';
 import { InviteDialog } from '../party/InviteDialog';
 import { readLastHero } from './lastHero';
 import { rulebookLabel } from '../../systems';
@@ -33,19 +32,16 @@ export const useHomeItems = () => {
 
 // ------------------------------------------------------------------------------------------------
 
-/** Opening a table from home: a player's closed table offers to take the hero back instead. */
+/** Opening a table from home; between sessions a player finds it as a lobby (seats, heroes, chronicle). */
 export const usePartyEntry = () => {
   const go = useNavStore((s) => s.go);
-  const [waiting, setWaiting] = useState<PartyListItemDto | null>(null);
   const [invite, setInvite] = useState<{ code: string; preview: InvitePreviewDto } | null>(null);
   const openTable = (partyId: string) => go({ screen: 'party', partyId });
 
-  const enter = (party: PartyListItemDto) =>
-    party.role === 'player' && !party.inSession ? setWaiting(party) : openTable(party.id);
+  const enter = (party: PartyListItemDto) => openTable(party.id);
 
   const dialogs = (
     <>
-      <ClosedTableDialog party={waiting} onClose={() => setWaiting(null)} />
       <InviteDialog
         invite={invite}
         onClose={() => setInvite(null)}

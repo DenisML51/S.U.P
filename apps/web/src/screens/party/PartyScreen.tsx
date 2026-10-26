@@ -22,6 +22,7 @@ import {
   IconExit,
   IconHistory,
   IconCopy,
+  IconLink,
   IconDice,
   IconInitiative,
   IconNotes,
@@ -42,6 +43,7 @@ import { InitiativeDialog } from './InitiativeDialog';
 import { InitiativeStrip } from './InitiativeStrip';
 import { LoreDialog } from './LoreDialog';
 import { MasterNotesDialog } from './MasterNotesDialog';
+import { inviteLink } from '../../useBrowserHistory';
 import { MassDamageDialog } from './MassDamageDialog';
 import { NpcFightDialog } from './NpcFightDialog';
 import { NpcDialog } from './NpcDialog';
@@ -281,21 +283,25 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
               compact={party.combat !== null}
               onOpen={() => setOverlay({ kind: 'lore' })}
               action={
-                isMaster &&
-                !party.combat &&
-                (!party.sessionStartedAt ? (
+                // Between sessions the table is a lobby: say so to both sides.
+                !party.sessionStartedAt ? (
                   <span className="ui-session-closed text-sm">
-                    Сессия не идёт — игроки ждут, стол закрыт для них
+                    {isMaster
+                      ? 'Сессия не идёт — игроки видят стол и готовят героев'
+                      : 'Сессия не идёт — можно приготовить героя; чат и броски откроются с сессией'}
                   </span>
                 ) : (
-                  <Button
-                    variant="primary"
-                    icon={<IconCombat width={18} height={18} />}
-                    onClick={() => setOverlay({ kind: 'combat' })}
-                  >
-                    Начать бой
-                  </Button>
-                ))
+                  isMaster &&
+                  !party.combat && (
+                    <Button
+                      variant="primary"
+                      icon={<IconCombat width={18} height={18} />}
+                      onClick={() => setOverlay({ kind: 'combat' })}
+                    >
+                      Начать бой
+                    </Button>
+                  )
+                )
               }
             />
             <AnimatePresence initial={false}>
@@ -510,7 +516,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
       <ConfirmDialog
         open={overlay?.kind === 'end-session'}
         title="Завершить сессию?"
-        message="Игроки выйдут из мира, бой закончится. НПС, их хиты, чат и летопись сохранятся; войти за стол можно будет, когда вы начнёте следующую сессию."
+        message="Бой закончится, чат и броски замрут до следующей сессии. Игроки остаются за столом и могут готовить героев; НПС, их хиты, чат и летопись сохранятся."
         confirmLabel="Завершить сессию"
         onCancel={close}
         onConfirm={() => {
@@ -587,13 +593,13 @@ const Banner: React.FC<{
   </Panel>
 );
 
-/** The master's invite code: read out, copied, or replaced when it leaked. */
+/** The master's invite code: read out, copied (alone or as a link), or replaced when it leaked. */
 const InvitePanel: React.FC<{ code: string; onRenew: () => void }> = ({ code, onRenew }) => {
   const shown = formatInviteCode(code);
-  const copy = async () => {
+  const copy = async (what: 'code' | 'link') => {
     try {
-      await navigator.clipboard.writeText(shown);
-      toast.success('Код скопирован');
+      await navigator.clipboard.writeText(what === 'link' ? inviteLink(shown) : shown);
+      toast.success(what === 'link' ? 'Ссылка-приглашение скопирована' : 'Код скопирован');
     } catch {
       toast.error('Не удалось скопировать — выделите код вручную');
     }
@@ -603,7 +609,10 @@ const InvitePanel: React.FC<{ code: string; onRenew: () => void }> = ({ code, on
       <div className="flex items-center justify-between">
         <span className="ui-label !mb-0">Код приглашения</span>
         <div className="flex gap-0.5">
-          <IconButton label="Скопировать код" size={30} onClick={() => void copy()}>
+          <IconButton label="Скопировать ссылку-приглашение" size={30} onClick={() => void copy('link')}>
+            <IconLink width={16} height={16} />
+          </IconButton>
+          <IconButton label="Скопировать код" size={30} onClick={() => void copy('code')}>
             <IconCopy width={16} height={16} />
           </IconButton>
           <IconButton label="Сменить код" size={30} onClick={onRenew}>
@@ -613,13 +622,13 @@ const InvitePanel: React.FC<{ code: string; onRenew: () => void }> = ({ code, on
       </div>
       <button
         type="button"
-        onClick={() => void copy()}
+        onClick={() => void copy('code')}
         className="ui-invite-code ui-numeric mt-1 block w-full select-all text-left text-[1.7rem] text-frame-bright"
         title="Скопировать"
       >
         {shown}
       </button>
-      <p className="mt-1 text-xs text-ink-faint">Игроки вводят его на главной, в блоке «Партии»</p>
+      <p className="mt-1 text-xs text-ink-faint">Игроки вводят его на главной — или открывают ссылку-приглашение</p>
     </Panel>
   );
 };

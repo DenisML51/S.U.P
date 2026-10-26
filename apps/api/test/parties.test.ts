@@ -904,7 +904,7 @@ describe('dice at the table', () => {
 });
 
 describe('sessions', () => {
-  it('closes the table between sessions, keeping everything but the fight', async () => {
+  it('closes the table between sessions to all but its lobby, keeping everything but the fight', async () => {
     const app = await ctx.app();
     const { master, player, partyId, code } = await table(app);
     const npcId = (
@@ -922,10 +922,9 @@ describe('sessions', () => {
     expect((await call(app, player, 'DELETE', `/parties/${partyId}/session`)).statusCode).toBe(403);
     expect((await call(app, master, 'DELETE', `/parties/${partyId}/session`)).statusCode).toBe(204);
 
-    // Players are out; the master keeps the table, its NPCs and the talk, but not the fight.
-    const closed = await call(app, player, 'GET', `/parties/${partyId}`);
-    expect(closed.statusCode).toBe(409);
-    expect(closed.json()).toMatchObject({ error: 'session_closed' });
+    // Players see the lobby (no fight, no NPCs, no talk); the master keeps the table, its NPCs and the talk.
+    expect(await view(app, player, partyId)).toMatchObject({ sessionStartedAt: null, combat: null, npcs: null });
+    expect((await call(app, player, 'GET', `/parties/${partyId}/messages`)).statusCode).toBe(409);
     expect((await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>()[0]).toMatchObject({
       inSession: false,
     });
@@ -942,14 +941,15 @@ describe('sessions', () => {
       (await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [npcId] })).statusCode,
     ).toBe(409);
 
-    // The code waits for the next session.
+    // The code works between sessions: a newcomer takes a seat and brings a hero ahead of the game.
     const late = await registerUser(app, 'Опоздавший');
-    expect((await call(app, late, 'GET', `/invites/${code}`)).statusCode).toBe(409);
-    expect((await call(app, late, 'POST', `/invites/${code}/accept`)).statusCode).toBe(409);
+    expect((await call(app, late, 'GET', `/invites/${code}`)).json()).toMatchObject({ inSession: false, member: false });
+    expect((await call(app, late, 'POST', `/invites/${code}/accept`)).statusCode).toBe(200);
+    const lateHero = await saveHero(app, late, { name: 'Новичок' });
+    expect((await call(app, late, 'POST', `/parties/${partyId}/heroes`, { characterId: lateHero.id })).statusCode).toBe(201);
 
     expect((await call(app, master, 'POST', `/parties/${partyId}/session`)).statusCode).toBe(204);
     expect((await view(app, player, partyId)).sessionStartedAt).not.toBeNull();
-    expect((await call(app, late, 'POST', `/invites/${code}/accept`)).statusCode).toBe(200);
   });
 
   it('lets a player leave between sessions; their hero goes with them and keeps what happened to it', async () => {

@@ -16,12 +16,28 @@ export const locale = language === 'en' ? 'en-US' : 'ru-RU';
  * JSX runtime, so the first render waits for them. In Russian nothing is fetched and the runtime
  * adds nothing.
  */
+/** Names the table gave, said as written (see `keepAsWritten`). */
+const names = new Set<string>();
+
 const translator: Translate | null =
   language === 'en'
     ? await Promise.all([import('./engine'), import('virtual:i18n/en')]).then(([engine, dictionary]) =>
-        engine.createTranslator(dictionary.default),
+        engine.createTranslator(dictionary.default, (text) => names.has(text)),
       )
     : null;
+
+/**
+ * Names of heroes, NPCs, tables and players: never translated, though "Тень" is a word the
+ * dictionary knows. Fed by the stores as names arrive; a name already shown elsewhere translated is
+ * redrawn as written once its screen renders again.
+ */
+export function keepAsWritten(texts: Iterable<string | null | undefined>): void {
+  if (!translator) return;
+  for (const text of texts) {
+    const name = text?.trim();
+    if (name) names.add(name);
+  }
+}
 
 if (typeof document !== 'undefined') document.documentElement.lang = language;
 
