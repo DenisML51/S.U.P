@@ -8,6 +8,7 @@ import {
   grantTempHP,
   isDead,
   maxSanityOf,
+  rescaleLimbs,
   rollDeathSave,
   setDeathSaves,
   settleHealth,
@@ -67,7 +68,9 @@ export function useVitals() {
   const setHealthField = (field: 'maxHP' | 'maxHPBonus' | 'tempHP' | 'currentHP', value: number) =>
     updateCharacter((doc) => {
       const next = { ...doc, [field]: Math.max(field === 'maxHPBonus' ? -Infinity : 0, value) };
-      return settleHealth({ ...next, currentHP: Math.min(next.currentHP, totalMaxHP(next)) });
+      // A new maximum carries the limbs along (their wounds stay).
+      const limbs = field === 'maxHP' || field === 'maxHPBonus' ? rescaleLimbs(next) : next;
+      return settleHealth({ ...limbs, currentHP: Math.min(limbs.currentHP, totalMaxHP(limbs)) });
     });
 
   /** A death saving throw already thrown (`die` the d20 that counted, `modifier` what was added). */

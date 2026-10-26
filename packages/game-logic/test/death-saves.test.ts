@@ -90,3 +90,15 @@ describe('death saves and rest', () => {
     expect(rested.conditions).not.toContain('unconscious');
   });
 });
+
+describe('limbs follow the hit points', () => {
+  it('grow with the maximum and keep their wounds', async () => {
+    const { rescaleLimbs, getDefaultLimbs } = await import('../src');
+    const hero = makeCharacter({ maxHP: 10, currentHP: 10, limbs: getDefaultLimbs(10, 12) });
+    const hurt = { ...hero, limbs: hero.limbs.map((l) => (l.id === 'head' ? { ...l, currentHP: l.maxHP - 3 } : l)) };
+    const grown = rescaleLimbs({ ...hurt, maxHP: 30 });
+    const head = grown.limbs.find((l) => l.id === 'head')!;
+    expect(head.maxHP).toBe(16);
+    expect(head.currentHP).toBe(13);
+  });
+});

@@ -2,6 +2,7 @@ import type { Ability, Attack, Build, Character, DndBuild, CharacterDraft, Inven
 import { ATTRIBUTES_LIST, SKILLS_LIST } from '../content/attributes';
 import { spellColor } from '../content/combat';
 import { abilityModifier } from '../rules/abilities';
+import { rescaleLimbs } from '../rules/health';
 import { weaponAttack, weaponAttackId, weaponThrowId } from '../rules/inventory';
 import { averageHitPoints } from '../rules/rest';
 import { DND } from './content';
@@ -632,7 +633,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
       iconName: 'rolling-dices',
       current: 0,
       max: level,
-      description: 'Короткий отдых: потратьте кости, чтобы восстановить хиты (бросок + модификатор Телосложения). Долгий отдых возвращает половину.',
+      description: 'Короткий отдых: потратьте кости, чтобы восстановить хиты (бросок + модификатор Телосложения). Долгий отдых возвращает все.',
       hitDie: classDef.hitDie,
       recovery: 'long',
       grant: 'build',
@@ -845,7 +846,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     build,
   };
 
-  return { character: result, missing: [...new Set(missing)] };
+  return { character: rescaleLimbs(result), missing: [...new Set(missing)] };
 }
 
 const signed = (dice: string, modifier: number): string =>

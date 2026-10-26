@@ -108,7 +108,14 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
   const others = CONDITIONS.filter((c) => !active.has(c.id));
   const [marking, setMarking] = useState(false);
 
-  const changeLimb = (limb: Limb, delta: number) => updateCharacter((doc) => changeLimbHP(doc, limb.id, delta));
+  // Every wound or mending of a limb is in the log, and so can be undone.
+  const changeLimb = (limb: Limb, delta: number) =>
+    updateCharacter((doc) => changeLimbHP(doc, limb.id, delta), {
+      log: {
+        message: `${limb.name}: ${delta < 0 ? 'рана' : 'лечение'} ${delta > 0 ? '+' : '−'}${Math.abs(delta)} — ${Math.max(LIMB_LOST_HP, Math.min(limb.maxHP, limb.currentHP + delta))}/${limb.maxHP}`,
+        type: 'health',
+      },
+    });
 
   const toggleCondition = (id: string, name: string) => {
     const on = !active.has(id);

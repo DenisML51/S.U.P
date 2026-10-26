@@ -1,6 +1,6 @@
 import type { Character, DeathSaves, Limb } from '@itd/schema';
 import type { InjuryLevel, LimbType } from '../content/combat';
-import { abilityModifier } from './abilities';
+import { abilityModifier, attributeScore } from './abilities';
 import { keepConcentration } from './concentration';
 
 export const LIMB_IDS = ['head', 'torso', 'rightArm', 'leftArm', 'rightLeg', 'leftLeg'] as const;
@@ -22,6 +22,24 @@ export const calculateLimbMaxHP = (maxHP: number, constitution: number): number 
 export function getDefaultLimbs(maxHP: number, constitution: number): Limb[] {
   const limbMaxHP = calculateLimbMaxHP(maxHP, constitution);
   return LIMB_IDS.map((id) => ({ id, name: LIMB_NAMES[id], currentHP: limbMaxHP, maxHP: limbMaxHP, ac: 0, acBonus: 0 }));
+}
+
+/**
+ * Limbs follow the hero's hit points: when the maximum grows (a level, a bonus, Constitution) so
+ * does each limb's, and the damage a limb has taken stays taken. Sheets without the standard limbs
+ * keep theirs.
+ */
+export function rescaleLimbs<C extends Pick<Character, 'limbs' | 'maxHP' | 'maxHPBonus' | 'attributes' | 'attributeBonuses'>>(character: C): C {
+  if (character.limbs.length === 0) return character;
+  const max = calculateLimbMaxHP(totalMaxHP(character), attributeScore(character, 'constitution'));
+  let changed = false;
+  const limbs = character.limbs.map((limb) => {
+    if (!(LIMB_IDS as readonly string[]).includes(limb.id) || limb.maxHP === max) return limb;
+    changed = true;
+    const damage = limb.maxHP - limb.currentHP;
+    return { ...limb, maxHP: max, currentHP: Math.max(LIMB_LOST_HP, max - damage) };
+  });
+  return changed ? { ...character, limbs } : character;
 }
 
 /** Hit points of a lost limb: wounds never take it lower. */

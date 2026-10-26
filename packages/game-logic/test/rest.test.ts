@@ -87,10 +87,20 @@ describe('long rest', () => {
     expect(current(character)).toEqual({ hd: 5, wind: 3, surge: 2, slots: 4, luck: 0 });
   });
 
-  it('returns half of the hit dice, at least one', () => {
+  it('returns every hit die (2024)', () => {
     const spent = (max: number) => makeCharacter({ resources: [{ ...hitDice, current: 0, max }] });
-    expect(current(longRest(spent(5)).character).hd).toBe(2);
-    expect(current(longRest(spent(1)).character).hd).toBe(1);
+    expect(current(longRest(spent(5)).character).hd).toBe(5);
+  });
+
+  it('mends limbs by half their maximum, a lost one stays lost', () => {
+    const hurt = makeCharacter({
+      limbs: [
+        { id: 'head', name: 'Голова', currentHP: -3, maxHP: 10, ac: 0 },
+        { id: 'leftArm', name: 'Левая рука', currentHP: -10, maxHP: 10, ac: 0 },
+        { id: 'torso', name: 'Торс', currentHP: 8, maxHP: 10, ac: 0 },
+      ],
+    });
+    expect(longRest(hurt).character.limbs.map((l) => l.currentHP)).toEqual([2, -10, 10]);
   });
 
   it('resets the actions of the turn and keeps sanity', () => {
