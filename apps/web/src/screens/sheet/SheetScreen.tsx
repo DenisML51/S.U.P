@@ -27,7 +27,6 @@ const ENTER = { duration: 0.45, ease: [0.22, 1, 0.36, 1] } as const;
  */
 export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
   const character = useCharacterStore((s) => s.character);
-  const goToCharacterList = useCharacterStore((s) => s.goToCharacterList);
   const setViewMode = useCharacterStore((s) => s.setViewMode);
   const [section, setSection] = useState<SheetSection>('attributes');
   const setting = settingOf(character);
@@ -46,7 +45,6 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
             <SheetRail
               section={section}
               onSection={setSection}
-              onBack={goToCharacterList}
               onCombat={() => setViewMode('hotbar')}
               onSettings={onOpenSettings}
             />

@@ -19,6 +19,7 @@ import { maxSanityOf } from '@itd/game-logic';
 import { useNavStore } from '../../store/useNavStore';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { Rail, RailButton, RailDivider } from '../../ui/Rail';
+import { HeroExits } from '../sheet/HeroExits';
 import { Button, IconButton, cx } from '../../ui/primitives';
 import { useAtLeast } from '../../ui/useBreakpoint';
 import { NumberField } from '../../ui/forms';
@@ -301,7 +302,6 @@ const SectionBody: React.FC<{ section: CocSection; journal?: React.ReactNode }> 
 
 /** The desktop sheet: the rail, the investigator's column, the section beside them. */
 const WideLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
-  onBack,
   onCombat,
   onDice,
   onSettings,
@@ -314,8 +314,6 @@ const WideLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
   const { close } = useCocSelection();
   const [section, setSection] = useState<CocSection>('investigator');
   const stage = madnessStage(character);
-  // Opened from a party's table, the investigator goes back to it.
-  const atTable = useNavStore((s) => s.place.screen === 'party');
 
   return (
     <div className={cx('coc-sheet relative flex h-full', className)}>
@@ -330,12 +328,7 @@ const WideLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
           transition={ENTER}
         >
           <Rail label="Разделы листа">
-            <RailButton
-              label={atTable ? 'Стол' : 'Герои'}
-              Icon={IconPrev}
-              onClick={onBack ?? (() => undefined)}
-              hint={atTable ? 'К столу партии' : 'К выбору героя'}
-            />
+            <HeroExits />
             <RailDivider />
             <div className="flex flex-1 flex-col">
               {SECTIONS.map(({ id, label, Icon }) => (

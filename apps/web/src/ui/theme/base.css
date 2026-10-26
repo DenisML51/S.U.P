@@ -969,7 +969,7 @@
 
 .ui-hud-xp__fill { display: block; height: 100%; background: rgb(var(--c-xp) / 0.85); }
 
-button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
+button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 
 /* Long descriptions in a hint fade out instead of growing past the screen. */
 /* A long description scrolls inside the hint; the hint stays open while the cursor is on it. */
