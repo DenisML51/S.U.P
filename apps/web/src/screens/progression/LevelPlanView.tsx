@@ -17,7 +17,8 @@ import {
 import type { DndBuild } from '@itd/schema';
 import type { IconKind } from '../../ui/GameIcon';
 import { Segmented } from '../../ui/forms';
-import { Button, cx } from '../../ui/primitives';
+import { Section } from '../../ui/Section';
+import { Button } from '../../ui/primitives';
 import { IconDice } from '../../ui/icons';
 import { ChoiceField } from './ChoiceField';
 import { EntryCardButton, EntryDetails, type EntryInfo } from './EntryDetails';
@@ -79,12 +80,8 @@ const HitPointsField: React.FC<{ build: DndBuild; level: number; hitDie: number;
   const set = (method: 'average' | 'roll', value: number) =>
     onChange({ ...build, hitPoints: [...build.hitPoints.filter((e) => e.level !== level), { level, method, value }] });
   return (
-    <section>
-      <div className="mb-2 flex items-baseline gap-3">
-        <h4 className="ui-display text-[1.05rem] leading-tight text-ink">Хиты</h4>
-        <span className="text-xs text-ink-faint">к{hitDie} + модификатор Телосложения</span>
-      </div>
-      <div className="flex items-center gap-3">
+    <Section title="Хиты" hint={`к${hitDie} + модификатор Телосложения`}>
+      <div className="flex flex-wrap items-center gap-4">
         <Segmented
           label="Способ"
           value={entry?.method ?? 'average'}
@@ -99,14 +96,12 @@ const HitPointsField: React.FC<{ build: DndBuild; level: number; hitDie: number;
           <span className="ui-display text-2xl text-ink">+{gained}</span> к максимуму хитов
         </span>
         {entry?.method === 'roll' && (
-          <>
-            <Button size="sm" variant="ghost" icon={<IconDice width={16} height={16} />} onClick={() => set('roll', rollDie(hitDie))}>
-              Перебросить
-            </Button>
-          </>
+          <Button size="sm" variant="ghost" icon={<IconDice width={16} height={16} />} onClick={() => set('roll', rollDie(hitDie))}>
+            Перебросить
+          </Button>
         )}
       </div>
-    </section>
+    </Section>
   );
 };
 
@@ -142,19 +137,15 @@ export const LevelPlanView: React.FC<{
   };
 
   return (
-    <div className={cx('space-y-6', className)}>
+    <div className={className}>
       {subclassDue && classDef && (
-        <section>
-          <div className="mb-2 flex items-baseline gap-3">
-            <h4 className="ui-display text-[1.05rem] leading-tight text-ink">Подкласс</h4>
-            <span className={cx('ui-numeric text-xs', build.subclass ? 'text-success' : 'text-ink-faint')}>{build.subclass ? '1 / 1' : '0 / 1'}</span>
-          </div>
-          <div className="grid grid-cols-4 gap-2">
+        <Section title="Подкласс" count={{ picked: build.subclass ? 1 : 0, total: 1 }}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2">
             {classDef.subclasses.map((subclass) => (
               <button
                 key={subclass.id}
                 type="button"
-                className="ui-option"
+                className="ui-option gap-1 px-4 py-3"
                 aria-pressed={build.subclass === subclass.id}
                 onClick={() => chooseSubclass(subclass.id)}
               >
@@ -164,19 +155,17 @@ export const LevelPlanView: React.FC<{
               </button>
             ))}
           </div>
-        </section>
+        </Section>
       )}
 
       {features.length > 0 && (
-        <section>
-          <h4 className="ui-display mb-2 text-[1.05rem] leading-tight text-ink">Вы получаете</h4>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2">
+        <Section title="Вы получаете">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-2">
             {features.map((granted) => (
               <EntryCardButton
                 key={granted.key}
                 entry={featureEntry(build, granted)}
                 kind={featureKind(granted)}
-                source={describeGrant(build, granted.key)}
                 onOpen={() => setOpen(granted)}
               />
             ))}
@@ -186,7 +175,7 @@ export const LevelPlanView: React.FC<{
             source={open ? describeGrant(build, open.key) : undefined}
             onClose={() => setOpen(null)}
           />
-        </section>
+        </Section>
       )}
 
       {choices.map((open) => (

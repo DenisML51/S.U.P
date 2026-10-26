@@ -1258,14 +1258,84 @@ button:hover > .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 
 .ui-option[data-focus]:not([aria-pressed='true']) { border-color: rgb(var(--c-frame) / 0.8); background: rgb(var(--c-surface-2)); }
 
-/* The feature a choice comes from, beside the choice's name. */
-.ui-choice-origin {
-  padding: 0.05rem 0.45rem;
-  font-size: 0.72rem;
-  color: rgb(var(--c-frame-bright));
-  border: 1px solid rgb(var(--c-frame) / 0.5);
+/* A short pick (a skill, a language, a weapon): one line, the same height everywhere. */
+.ui-option--chip {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  padding: 0 0.9rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ Creation sections */
+/* A part of a creation step (a choice, the scores, a kit): its name, where it comes from, how much
+   of it is done. Every step is built of these, so every choice reads the same way. */
+.ui-section + .ui-section { margin-top: 1.75rem; }
+
+.ui-section__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-width: 0;
+  margin-bottom: 0.7rem;
+}
+
+.ui-section__title {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  line-height: 1.2;
+  color: rgb(var(--c-ink));
+}
+
+.ui-section__origin {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  color: rgb(var(--c-ink-faint));
+}
+
+.ui-section__aside { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; align-self: center; }
+
+.ui-section__hint { margin: -0.35rem 0 0.7rem; font-size: 0.8rem; line-height: 1.4; color: rgb(var(--c-ink-faint)); }
+
+/* How much of a choice is made: quiet while open, the setting's "done" once it is. */
+.ui-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 1.5rem;
+  padding: 0 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: rgb(var(--c-ink-muted));
+  border: 1px solid rgb(var(--c-line));
   border-radius: var(--radius);
 }
+
+.ui-count[data-done] { color: rgb(var(--c-success)); border-color: rgb(var(--c-success) / 0.45); }
+
+/* What an entry is in a few numbers, in a row under its name: hit die, skills, size. */
+.ui-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  border-top: 1px solid rgb(var(--c-line) / 0.7);
+  border-bottom: 1px solid rgb(var(--c-line) / 0.7);
+}
+
+.ui-facts > div { padding: 0.65rem 1rem; text-align: center; }
+
+.ui-facts > div + div { border-left: 1px solid rgb(var(--c-line) / 0.7); }
+
+.ui-facts dt { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgb(var(--c-ink-faint)); }
+
+.ui-facts dd { margin-top: 0.2rem; font-size: 0.9rem; line-height: 1.35; color: rgb(var(--c-ink)); }
 
 /* ------------------------------------------------------------------ Journey steps */
 /* The steps of hero creation down the left edge, each with what was chosen on it, as in a game's

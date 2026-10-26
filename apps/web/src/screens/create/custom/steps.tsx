@@ -1,54 +1,76 @@
 import React from 'react';
 import { ATTRIBUTES_LIST, abilityModifier, formatModifier } from '@itd/game-logic';
-import { IconButton, Panel, cx } from '../../../ui/primitives';
+import { Section } from '../../../ui/Section';
+import { IconButton, Input } from '../../../ui/primitives';
 import { IconMinus, IconPlus } from '../../../ui/icons';
+import { ScoreCard } from '../kit';
 import type { Creation } from '../useCreation';
 
-const field =
-  'w-full border-b border-frame/40 bg-transparent pb-1 text-ink outline-none placeholder:text-ink-faint focus:border-frame-bright';
+/** A named field of the origin: its label over a plain input. */
+const Field: React.FC<{ label: string; value: string; onChange: (value: string) => void; placeholder: string }> = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+}) => (
+  <label className="flex flex-col">
+    <span className="ui-label">{label}</span>
+    <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+  </label>
+);
 
 /** Race and class of the player's own making, each with an optional subrace or path. */
 export const OriginStep: React.FC<{ creation: Creation }> = ({ creation }) => (
-  <div className="mx-auto grid max-w-4xl grid-cols-2 gap-5">
-    {(
-      [
-        ['Происхождение', creation.race, creation.setRace, 'Раса, например азари', creation.subrace, creation.setSubrace, 'Подраса, если есть'],
-        ['Призвание', creation.characterClass, creation.setCharacterClass, 'Класс, например биотик', creation.subclass, creation.setSubclass, 'Путь, если есть'],
-      ] as const
-    ).map(([title, value, set, placeholder, sub, setSub, subPlaceholder]) => (
-      <Panel key={title} className="px-6 py-6">
-        <h3 className="ui-display ui-title text-xl text-frame-bright">{title}</h3>
-        <input value={value} onChange={(e) => set(e.target.value)} placeholder={placeholder} aria-label={placeholder} className={cx(field, 'mt-5 text-lg')} />
-        <input value={sub} onChange={(e) => setSub(e.target.value)} placeholder={subPlaceholder} aria-label={subPlaceholder} className={cx(field, 'mt-4 text-sm')} />
-      </Panel>
-    ))}
+  <div className="mx-auto grid max-w-4xl grid-cols-2 gap-x-10 [&>.ui-section+.ui-section]:mt-0">
+    <Section title="Происхождение" hint="Кто герой по крови. Подраса — если она есть в вашем мире.">
+      <div className="space-y-4">
+        <Field label="Раса" value={creation.race} onChange={creation.setRace} placeholder="Например, азари" />
+        <Field label="Подраса" value={creation.subrace} onChange={creation.setSubrace} placeholder="Необязательно" />
+      </div>
+    </Section>
+    <Section title="Призвание" hint="Чем герой занимается. Путь — специализация внутри класса.">
+      <div className="space-y-4">
+        <Field label="Класс" value={creation.characterClass} onChange={creation.setCharacterClass} placeholder="Например, биотик" />
+        <Field label="Путь" value={creation.subclass} onChange={creation.setSubclass} placeholder="Необязательно" />
+      </div>
+    </Section>
   </div>
 );
 
 /** Point buy of the six scores. */
 export const PointBuyStep: React.FC<{ creation: Creation }> = ({ creation }) => (
-  <div className="mx-auto max-w-5xl">
-    <p className={cx('mb-6 text-center text-sm tabular-nums', creation.points === 0 ? 'text-success' : 'text-ink-muted')}>
-      {creation.points === 0 ? 'Все очки распределены' : `Осталось очков: ${creation.points} из 27`}
+  <div className="mx-auto flex max-w-5xl flex-col items-center">
+    <p className="mb-6 h-6 text-sm text-ink-muted">
+      {creation.points === 0 ? (
+        <span className="text-success">Все очки распределены</span>
+      ) : (
+        <>
+          Осталось очков: <span className="ui-numeric text-ink">{creation.points}</span> из 27 · до 13 — по 1 очку, 14 и 15 — по 2
+        </>
+      )}
     </p>
-    <div className="grid grid-cols-6 gap-3">
+    <div className="grid w-full grid-cols-6 gap-3">
       {ATTRIBUTES_LIST.map((attribute) => {
         const score = creation.attributes[attribute.id] ?? 8;
         return (
-          <Panel key={attribute.id} ornate={false} className="flex flex-col items-center px-3 py-5 text-center">
-            <span className="ui-stat__label">{attribute.name}</span>
-            <span className="ui-display ui-numeric my-2 text-5xl leading-none text-ink">{score}</span>
+          <ScoreCard
+            key={attribute.id}
+            label={attribute.name}
+            description={attribute.description}
+            controls={
+              <span className="flex gap-2">
+                <IconButton label="Уменьшить" size={30} onClick={() => creation.lower(attribute.id)} disabled={!creation.canLower(attribute.id)}>
+                  <IconMinus width={14} height={14} />
+                </IconButton>
+                <IconButton label="Увеличить" size={30} onClick={() => creation.raise(attribute.id)} disabled={!creation.canRaise(attribute.id)}>
+                  <IconPlus width={14} height={14} />
+                </IconButton>
+              </span>
+            }
+          >
+            <span className="ui-display ui-numeric mb-2 text-5xl leading-none text-ink">{score}</span>
             <span className="text-frame-bright">{formatModifier(abilityModifier(score))}</span>
-            <span className="mt-3 flex gap-2">
-              <IconButton label="Уменьшить" size={30} onClick={() => creation.lower(attribute.id)} disabled={!creation.canLower(attribute.id)}>
-                <IconMinus width={14} height={14} />
-              </IconButton>
-              <IconButton label="Увеличить" size={30} onClick={() => creation.raise(attribute.id)} disabled={!creation.canRaise(attribute.id)}>
-                <IconPlus width={14} height={14} />
-              </IconButton>
-            </span>
-            <span className="mt-3 text-xs text-ink-faint">{attribute.description}</span>
-          </Panel>
+          </ScoreCard>
         );
       })}
     </div>
