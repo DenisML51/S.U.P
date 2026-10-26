@@ -1,3 +1,4 @@
+import { hasCyrillic } from './cyrillic';
 import { textKey } from './hash';
 
 /**
@@ -12,8 +13,7 @@ export interface CompiledDictionary {
 
 export type Translate = (text: string) => string;
 
-const CYRILLIC = /[А-Яа-яЁё]/;
-export const hasCyrillic = (text: string): boolean => CYRILLIC.test(text);
+export { hasCyrillic };
 
 interface Template {
   /** The longest fixed piece: a text without it cannot match, and is not run through the pattern. */

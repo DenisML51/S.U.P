@@ -1,8 +1,8 @@
-import { createTranslator, type Translate } from './engine';
+import type { Translate } from './engine';
 import { readLanguage, storeLanguage, type Language } from './language';
 
 export { LANGUAGES, type Language } from './language';
-export { hasCyrillic } from './engine';
+export { hasCyrillic } from './cyrillic';
 
 /** The language the page was opened in; changing it reloads the page (`setLanguage`). */
 export const language: Language = readLanguage();
@@ -11,12 +11,17 @@ export const language: Language = readLanguage();
 export const locale = language === 'en' ? 'en-US' : 'ru-RU';
 
 /**
- * The English dictionary is a chunk of its own, fetched only by those who chose English, and
- * before anything is drawn: every module with JSX imports this one through the JSX runtime, so the
- * first render waits for it. In Russian nothing is fetched and the runtime adds nothing.
+ * The English dictionary and the translator are chunks of their own, fetched only by those who
+ * chose English, and before anything is drawn: every module with JSX imports this one through the
+ * JSX runtime, so the first render waits for them. In Russian nothing is fetched and the runtime
+ * adds nothing.
  */
 const translator: Translate | null =
-  language === 'en' ? createTranslator((await import('virtual:i18n/en')).default) : null;
+  language === 'en'
+    ? await Promise.all([import('./engine'), import('virtual:i18n/en')]).then(([engine, dictionary]) =>
+        engine.createTranslator(dictionary.default),
+      )
+    : null;
 
 if (typeof document !== 'undefined') document.documentElement.lang = language;
 
