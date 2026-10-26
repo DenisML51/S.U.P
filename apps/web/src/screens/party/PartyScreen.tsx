@@ -42,6 +42,8 @@ import { InitiativeDialog } from './InitiativeDialog';
 import { InitiativeStrip } from './InitiativeStrip';
 import { LoreDialog } from './LoreDialog';
 import { MasterNotesDialog } from './MasterNotesDialog';
+import { MassDamageDialog } from './MassDamageDialog';
+import { NpcFightDialog } from './NpcFightDialog';
 import { NpcDialog } from './NpcDialog';
 import { PartyCover } from './PartyCover';
 import { actsByDex, initiativeBonusOf, isCocFight, npcFirearmReady } from './partyView';
@@ -117,6 +119,8 @@ type Overlay =
   | { kind: 'kick'; userId: string; name: string }
   | { kind: 'new-code' }
   | { kind: 'end-combat' }
+  | { kind: 'mass-damage' }
+  | { kind: 'npc-fight'; npcId: string }
   | { kind: 'end-session' };
 
 const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () => void }> = ({
@@ -308,6 +312,8 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                     combat={combat}
                     onAdd={() => setOverlay({ kind: 'combat' })}
                     onEnd={() => setOverlay({ kind: 'end-combat' })}
+                    onNpc={(npcId) => setOverlay({ kind: 'npc-fight', npcId })}
+                    onMassDamage={() => setOverlay({ kind: 'mass-damage' })}
                     onPlay={
                       isMaster && fighterToPlay
                         ? () => void loadCharacter(fighterToPlay.characterId, 'hotbar')
@@ -409,6 +415,24 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} disposition={overlay.disposition} coc={isCocFight(party) || !!overlay.npc?.coc} onClose={close} />
       )}
       {overlay?.kind === 'notes' && <MasterNotesDialog open party={party} onClose={close} />}
+      {overlay?.kind === 'mass-damage' && <MassDamageDialog open party={party} onClose={close} />}
+      {overlay?.kind === 'npc-fight' &&
+        (() => {
+          const npc = party.npcs?.find((n) => n.id === overlay.npcId);
+          const token = party.combat?.combatants.find((c) => c.refId === overlay.npcId) ?? null;
+          return npc ? (
+            <NpcFightDialog
+              open
+              party={party}
+              npc={npc}
+              onInitiative={() => {
+                close();
+                combat.roll(token);
+              }}
+              onClose={close}
+            />
+          ) : null;
+        })()}
       <LoreDialog
         open={overlay?.kind === 'lore'}
         party={party}
@@ -612,7 +636,11 @@ const CombatPanel: React.FC<{
   onEnd: () => void;
   /** The master's way into the fight for their own heroes. */
   onPlay?: () => void;
-}> = ({ party, combat: seat, onAdd, onEnd, onPlay }) => {
+  /** The master opens an NPC of the fight from its token: hit points, conditions, attacks. */
+  onNpc: (npcId: string) => void;
+  /** The master's blow on several NPCs at once. */
+  onMassDamage: () => void;
+}> = ({ party, combat: seat, onAdd, onEnd, onPlay, onNpc, onMassDamage }) => {
   const store = usePartyStore.getState();
   const fight = party.combat!;
   const waiting = fight.combatants.filter((c) => c.initiative === null);
@@ -631,7 +659,12 @@ const CombatPanel: React.FC<{
           <div className="mt-1 truncate text-xs text-ink-muted">
             {rolling
               ? waiting.length > 0
-                ? `${coc ? 'Ждём заявок' : 'Ждём бросков'}: ${waiting.map((c) => c.name).join(', ')}`
+                ? // The words and the names apart: the names are the table's own and stay as written.
+                  <>
+                    {coc ? 'Ждём заявок' : 'Ждём бросков'}
+                    {': '}
+                    {waiting.map((c) => c.name).join(', ')}
+                  </>
                 : coc
                   ? 'Все заявили — можно начинать'
                   : 'Все бросили — можно начинать'
@@ -660,6 +693,20 @@ const CombatPanel: React.FC<{
             <Button variant="primary" size="sm" onClick={() => void store.beginRounds(party.id)}>
               {waiting.length > 0 ? 'Начать без них' : 'Начать раунд'}
             </Button>
+          )}
+          {seat.isMaster && !rolling && fight.combatants.some((c) => c.kind === 'npc') && (
+            <Button variant="secondary" size="sm" onClick={onMassDamage}>
+              Урон по нескольким
+            </Button>
+          )}
+          {seat.isMaster && !rolling && (
+            <IconButton
+              label="Вернуть ход предыдущему"
+              size={32}
+              onClick={() => void store.previousTurn(party.id, fight.currentCombatantId)}
+            >
+              <IconPrev width={16} height={16} />
+            </IconButton>
           )}
           {seat.canPassTurn && (
             <Button
@@ -692,7 +739,13 @@ const CombatPanel: React.FC<{
           )}
         </div>
       </div>
-      <InitiativeStrip combat={fight} onPick={seat.roll} master={seat.isMaster} className="mt-3 [justify-content:safe_center]" />
+      <InitiativeStrip
+        combat={fight}
+        // The master opens an NPC in the round; its initiative is a button inside. Otherwise a token sets initiative.
+        onPick={(c) => (seat.isMaster && !rolling && c.kind === 'npc' ? onNpc(c.refId) : seat.roll(c))}
+        master={seat.isMaster}
+        className="mt-3 [justify-content:safe_center]"
+      />
     </Panel>
   );
 };

@@ -8,7 +8,7 @@ import type {
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { characters, partyCombats } from '../src/db/schema';
-import { nextTurn, turnOrder } from '../src/modules/parties/turnOrder';
+import { nextTurn, previousTurn, turnOrder } from '../src/modules/parties/turnOrder';
 import { makeCharacter, registerUser, useTestApp } from './helpers';
 
 const ctx = useTestApp();
@@ -134,6 +134,12 @@ describe('turn order', () => {
     expect(nextTurn(entries, 'b')).toMatchObject({ next: { id: 'd' }, wrapped: true });
     expect(nextTurn(entries, 'c', new Set(['a', 'b']))).toMatchObject({ next: { id: 'd' }, wrapped: true });
     expect(nextTurn(entries, 'a', new Set(['a', 'b', 'c', 'd']))).toBeNull();
+  });
+
+  it('gives the turn back, into the round before from the first turn', () => {
+    expect(previousTurn(entries, 'a')).toMatchObject({ previous: { id: 'c' }, wrapped: false });
+    expect(previousTurn(entries, 'd')).toMatchObject({ previous: { id: 'b' }, wrapped: true });
+    expect(previousTurn(entries, 'a', new Set(['c']))).toMatchObject({ previous: { id: 'd' }, wrapped: false });
   });
 });
 
@@ -311,6 +317,23 @@ describe('parties', () => {
     );
     const seen = (await view(app, master, partyId)).heroes.find((h) => h.characterId === playerHero.id)!.vitals!;
     expect(seen).toMatchObject({ conditions: ['unconscious'], deathSaves: { successes: 1, failures: 2 } });
+  });
+
+  it('turns back to the one before, but not before the first turn of the fight', async () => {
+    const app = await ctx.app();
+    const { master, partyId } = await table(app);
+    await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Гуль', maxHP: 9, armorClass: 12, initiativeBonus: 0, count: 2 });
+    const npcIds = (await view(app, master, partyId)).npcs!.map((n) => n.id);
+    await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds });
+    await call(app, master, 'POST', `/parties/${partyId}/combat/roll-npcs`);
+    await call(app, master, 'POST', `/parties/${partyId}/combat/begin`);
+    const first = (await view(app, master, partyId)).combat!;
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat/previous`, { from: first.currentCombatantId })).statusCode).toBe(409);
+    await call(app, master, 'POST', `/parties/${partyId}/combat/next`, { from: first.currentCombatantId });
+    const second = (await view(app, master, partyId)).combat!;
+    expect(second.currentCombatantId).not.toBe(first.currentCombatantId);
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat/previous`, { from: second.currentCombatantId })).statusCode).toBe(204);
+    expect((await view(app, master, partyId)).combat!.currentCombatantId).toBe(first.currentCombatantId);
   });
 
   it('keeps NPCs to the master', async () => {

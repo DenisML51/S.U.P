@@ -86,7 +86,11 @@ export const formatInviteCode = (code: string): string => `${code.slice(0, 4)}-$
 // Requests
 // ---------------------------------------------------------------------------------------------
 
-const PartyNameSchema = z.string().trim().min(1, 'Назовите партию').max(80, 'Название не длиннее 80 символов');
+const PartyNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Назовите партию')
+  .max(80, 'Название не длиннее 80 символов');
 const DescriptionSchema = z.string().trim().max(2000, 'Описание не длиннее 2000 символов');
 /** The party's chronicle: the long story in Markdown, read by everyone at the table. */
 const LoreSchema = z.string().trim().max(50_000, 'Летопись не длиннее 50 000 символов');
@@ -240,7 +244,10 @@ export const UpdateNpcRequestSchema = NpcFieldsSchema.partial();
 export type UpdateNpcRequest = z.input<typeof UpdateNpcRequestSchema>;
 
 const ParticipantsSchema = z.object({
-  heroIds: z.array(z.uuid()).max(PARTY_LIMITS.members * PARTY_LIMITS.masterHeroes).default([]),
+  heroIds: z
+    .array(z.uuid())
+    .max(PARTY_LIMITS.members * PARTY_LIMITS.masterHeroes)
+    .default([]),
   npcIds: z.array(z.uuid()).max(PARTY_LIMITS.npcs).default([]),
 });
 
@@ -462,14 +469,20 @@ export type SendMessageRequest = z.input<typeof SendMessageRequestSchema>;
 // ---------------------------------------------------------------------------------------------
 
 /** A die of a throw shown at the table: its size and the face it landed on, nothing more. */
-export const TableDieSchema = z.object({
-  sides: z.number().int().min(2).max(100),
-  value: z.number().int().min(0).max(100),
-  /** What the die shows when it is not its own number (a percentile tens die: "00", "70"). */
-  label: z.string().trim().max(3).optional(),
-  /** Thrown but not counted (the other die of advantage, a tens die not kept). */
-  dropped: z.boolean().optional(),
-});
+export const TableDieSchema = z
+  .object({
+    sides: z.number().int().min(2).max(100),
+    value: z.number().int().min(0).max(100),
+    /** What the die shows when it is not its own number (a percentile tens die: "00", "70"). */
+    label: z.string().trim().max(3).optional(),
+    /** Thrown but not counted (the other die of advantage, a tens die not kept). */
+    dropped: z.boolean().optional(),
+  })
+  // No face beyond the die's own (a tens die of a d100 shows 00–90).
+  .refine((die) => die.value <= die.sides || (die.sides === 10 && die.value % 10 === 0 && die.value <= 90), {
+    message: 'На кубике нет такой грани',
+    path: ['value'],
+  });
 export type TableDie = z.infer<typeof TableDieSchema>;
 
 /** Dice of one throw the table may see at most. */

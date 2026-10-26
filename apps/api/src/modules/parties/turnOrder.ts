@@ -26,6 +26,25 @@ export const turnOrder = <T extends TurnEntry>(entries: readonly T[]): T[] =>
   );
 
 /**
+ * Whose turn came before `currentId` (skipping `leaving`), and whether that steps back into the
+ * round before. `null` when there is nobody to go back to.
+ */
+export function previousTurn<T extends TurnEntry>(
+  entries: readonly T[],
+  currentId: string | null,
+  leaving: ReadonlySet<string> = new Set(),
+): { previous: T; wrapped: boolean } | null {
+  const order = turnOrder(entries);
+  const index = order.findIndex((entry) => entry.id === currentId);
+  if (index < 0) return null;
+  for (let step = 1; step < order.length; step++) {
+    const candidate = order[(index - step + order.length) % order.length]!;
+    if (!leaving.has(candidate.id)) return { previous: candidate, wrapped: index - step < 0 };
+  }
+  return null;
+}
+
+/**
  * Whose turn follows `currentId` once `leaving` are out of the fight, and whether a new round starts.
  * `null` when nobody is left.
  */

@@ -18,7 +18,7 @@ export const MasterDiceDialog: React.FC<{
   onClose: () => void;
   hero?: { characterId: string; name: string };
 }> = ({ open, party, onClose, hero }) => {
-  const [audience, setAudience] = useState<'all' | 'some'>('all');
+  const [audience, setAudience] = useState<'all' | 'some' | 'me'>('all');
   const [spread, setSpread] = useState<'shared' | 'each'>('shared');
   const [chosen, setChosen] = useState<string[]>([]);
   const heroes = party.heroes.filter((h) => h.ownerId !== party.masterId);
@@ -29,6 +29,8 @@ export const MasterDiceDialog: React.FC<{
     : undefined;
 
   const thrown = (dice: TableDie[], label: string, target?: DiceTarget) => {
+    // A secret throw: the master sees it in the tray, the table never does.
+    if (audience === 'me') return;
     if (audience === 'all' && hero) {
       announceRoll(hero.characterId, dice, label);
       return;
@@ -60,6 +62,7 @@ export const MasterDiceDialog: React.FC<{
           options={[
             { value: 'all', label: 'всем' },
             { value: 'some', label: 'выбранным героям' },
+            { value: 'me', label: 'только мне' },
           ]}
         />
         {audience === 'some' &&
