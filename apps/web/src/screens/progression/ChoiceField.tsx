@@ -57,10 +57,14 @@ export const ChoiceField: React.FC<{
   const source = open.choice.options;
   const picks = open.picked;
   const set = (next: string[]) => onChange(setPicks(build, open.key, next));
+  // A pick taken twice (a repeatable invocation) goes one copy at a time.
   const toggle = (id: string) => {
-    if (picks.includes(id)) set(picks.filter((p) => p !== id));
+    if (picks.includes(id)) set(picks.filter((_, index) => index !== picks.lastIndexOf(id)));
     else if (open.count === 1) set([id]);
     else if (picks.length < open.count) set([...picks, id]);
+  };
+  const again = (id: string) => {
+    if (picks.length < open.count) set([...picks, id]);
   };
 
   const label = stripCount(open.choice.label);
@@ -172,6 +176,7 @@ export const ChoiceField: React.FC<{
       count={open.count}
       kind={kind}
       onToggle={toggle}
+      onAgain={again}
     />,
   );
 };
@@ -189,9 +194,11 @@ export const PickList: React.FC<{
   count: number;
   kind: IconKind;
   onToggle: (id: string) => void;
+  /** Takes a repeatable option once more. */
+  onAgain?: (id: string) => void;
   /** The cards tell what each pick does (two lines of its text), not just its name. */
   detailed?: boolean;
-}> = ({ title, origin, hint, options, picks, count, kind, onToggle, detailed }) => {
+}> = ({ title, origin, hint, options, picks, count, kind, onToggle, onAgain, detailed }) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const picked = picks.map((id) => options.find((o) => o.id === id) ?? { id, name: id, description: '' });
   const left = Math.max(0, count - picks.length);
@@ -203,8 +210,8 @@ export const PickList: React.FC<{
   return (
     <>
       <div className={CARD_GRID}>
-        {picked.map((option) => (
-          <div key={option.id} className="ui-option flex-row items-center gap-3" aria-pressed>
+        {picked.map((option, index) => (
+          <div key={`${option.id}#${index}`} className="ui-option flex-row items-center gap-3" aria-pressed>
             <OptionIcon option={option} kind={kind} />
             <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setPickerOpen(true)}>
               <span className="block truncate text-sm font-medium" title={option.name}>
@@ -241,6 +248,7 @@ export const PickList: React.FC<{
         count={count}
         kind={kind}
         onToggle={onToggle}
+        onAgain={onAgain}
       />
     </>
   );
@@ -261,7 +269,8 @@ const OptionPicker: React.FC<{
   count: number;
   kind: IconKind;
   onToggle: (id: string) => void;
-}> = ({ open, onClose, title, origin, hint, options, picks, count, kind, onToggle }) => {
+  onAgain?: (id: string) => void;
+}> = ({ open, onClose, title, origin, hint, options, picks, count, kind, onToggle, onAgain }) => {
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState<string | null>(null);
   const [focus, setFocus] = useState<string | null>(picks[0] ?? null);
@@ -340,9 +349,16 @@ const OptionPicker: React.FC<{
               <Prose className="mt-4 text-[15px] text-ink-muted">{focused.description || 'Без описания.'}</Prose>
               <div className="mt-5">
                 {picks.includes(focused.id) ? (
-                  <Button variant="secondary" onClick={() => onToggle(focused.id)}>
-                    Убрать
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" onClick={() => onToggle(focused.id)}>
+                      Убрать
+                    </Button>
+                    {focused.repeatable && onAgain && (
+                      <Button variant="primary" disabled={full} onClick={() => onAgain(focused.id)}>
+                        {`Взять ещё раз (взято: ${picks.filter((p) => p === focused.id).length})`}
+                      </Button>
+                    )}
+                  </div>
                 ) : focused.disabled ? (
                   <span className="text-sm text-warning">{focused.disabled}</span>
                 ) : (
