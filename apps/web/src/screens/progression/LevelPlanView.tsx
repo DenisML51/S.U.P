@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-hot-toast';
 import {
   abilityModifier,
   averageHitPoints,
@@ -18,8 +19,7 @@ import type { DndBuild } from '@itd/schema';
 import type { IconKind } from '../../ui/GameIcon';
 import { Segmented } from '../../ui/forms';
 import { Section } from '../../ui/Section';
-import { Button } from '../../ui/primitives';
-import { IconDice } from '../../ui/icons';
+import { RollToast } from '../sheet/useRolls';
 import { ChoiceField } from './ChoiceField';
 import { EntryCardButton, EntryDetails, type EntryInfo } from './EntryDetails';
 
@@ -65,41 +65,52 @@ const featureEntry = (build: DndBuild, { key, feature, level }: GrantedFeature):
 /** Features used in play look like abilities; passive traits like the sheet's features. */
 const featureKind = ({ feature }: GrantedFeature): IconKind => (feature.action && feature.action !== 'passive' ? 'ability' : 'item');
 
-/** Hit points of a level: the fixed average or a roll of the hit die, as the player decides. */
-const HitPointsField: React.FC<{ build: DndBuild; level: number; hitDie: number; onChange: (build: DndBuild) => void }> = ({
-  build,
-  level,
-  hitDie,
-  onChange,
-}) => {
+/**
+ * Hit points of a level: the fixed average or a roll of the hit die, as the player decides. The die
+ * is thrown once and its result stands; `onRolled` keeps it beyond the dialog.
+ */
+const HitPointsField: React.FC<{
+  build: DndBuild;
+  level: number;
+  hitDie: number;
+  onChange: (build: DndBuild) => void;
+  onRolled?: (value: number) => void;
+}> = ({ build, level, hitDie, onChange, onRolled }) => {
   const entry = build.hitPoints.find((e) => e.level === level);
   const average = averageHitPoints(hitDie);
   const die = entry?.value ?? average;
   const constitution = abilityModifier(buildScores(build, level).constitution ?? 10);
   const gained = Math.max(1, die + constitution);
+  const rolled = entry?.method === 'roll';
   const set = (method: 'average' | 'roll', value: number) =>
     onChange({ ...build, hitPoints: [...build.hitPoints.filter((e) => e.level !== level), { level, method, value }] });
+  const roll = () => {
+    const value = rollDie(hitDie);
+    set('roll', value);
+    const label = `Хиты, уровень ${level}`;
+    toast(<RollToast label={label} total={value} detail={`к${hitDie}: ${value}`} dice={[{ sides: hitDie, value }]} />, { duration: 5000 });
+    onRolled?.(value);
+  };
   return (
     <Section title="Хиты" hint={`к${hitDie} + модификатор Телосложения`}>
       <div className="flex flex-wrap items-center gap-4">
-        <Segmented
-          label="Способ"
-          value={entry?.method ?? 'average'}
-          onChange={(method) => set(method, method === 'average' ? average : rollDie(hitDie))}
-          options={[
-            { value: 'average', label: `Среднее (${average})` },
-            { value: 'roll', label: `Бросок к${hitDie}` },
-          ]}
-        />
+        {rolled ? (
+          <span className="text-sm text-ink-muted">{`Выпало на к${hitDie} — бросок окончательный`}</span>
+        ) : (
+          <Segmented
+            label="Способ"
+            value="average"
+            onChange={(method) => (method === 'roll' ? roll() : set('average', average))}
+            options={[
+              { value: 'average', label: `Среднее (${average})` },
+              { value: 'roll', label: `Бросок к${hitDie}` },
+            ]}
+          />
+        )}
         <span className="ui-numeric text-sm text-ink-muted">
           {die} {constitution >= 0 ? '+' : '−'} {Math.abs(constitution)} ={' '}
           <span className="ui-display text-2xl text-ink">+{gained}</span> к максимуму хитов
         </span>
-        {entry?.method === 'roll' && (
-          <Button size="sm" variant="ghost" icon={<IconDice width={16} height={16} />} onClick={() => set('roll', rollDie(hitDie))}>
-            Перебросить
-          </Button>
-        )}
       </div>
     </Section>
   );
@@ -115,7 +126,9 @@ export const LevelPlanView: React.FC<{
   onChange: (build: DndBuild) => void;
   sources?: SourceKind[];
   className?: string;
-}> = ({ build, level, onChange, sources, className }) => {
+  /** The hit die of the level is thrown: the result is kept on the hero at once (level-up). */
+  onHitDieRolled?: (level: number, value: number) => void;
+}> = ({ build, level, onChange, sources, className, onHitDieRolled }) => {
   const [open, setOpen] = useState<GrantedFeature | null>(null);
   const plan = levelPlan(build, level);
   const classDef = findClass(build.class);
@@ -182,7 +195,15 @@ export const LevelPlanView: React.FC<{
         <ChoiceField key={open.key} build={build} level={level} open={open} onChange={onChange} />
       ))}
 
-      {showHitPoints && <HitPointsField build={build} level={level} hitDie={plan.hitDie} onChange={onChange} />}
+      {showHitPoints && (
+        <HitPointsField
+          build={build}
+          level={level}
+          hitDie={plan.hitDie}
+          onChange={onChange}
+          onRolled={onHitDieRolled && ((value) => onHitDieRolled(level, value))}
+        />
+      )}
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import { applyBuild, dndBuildOf, findClass } from '@itd/game-logic/dnd';
 import type { DndBuild, Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { announceRoll } from '../../store/useTableRollStore';
 import { Dialog } from '../../ui/Dialog';
 import { Button } from '../../ui/primitives';
 import { LevelPlanView, planIssues } from './LevelPlanView';
@@ -22,6 +23,22 @@ export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = (
   if (!draft) return null;
 
   const issues = planIssues(draft, level);
+
+  // A thrown hit die stands: it goes onto the hero at once (closing the dialog does not undo it)
+  // and the table sees it like any other throw.
+  const keepHitDie = (at: number, value: number) => {
+    const hitDie = findClass(draft.class)?.hitDie ?? value;
+    announceRoll(character.id, [{ sides: hitDie, value }], `Хиты, уровень ${at}: ${value}`);
+    updateCharacter(
+      (doc) => {
+        const build = dndBuildOf(doc);
+        if (!build) return doc;
+        const hitPoints = [...build.hitPoints.filter((e) => e.level !== at), { level: at, method: 'roll' as const, value }];
+        return { ...doc, build: { ...build, hitPoints } };
+      },
+      { log: { message: `Хиты, уровень ${at}: бросок к${hitDie} = ${value}`, type: 'exp' }, undoable: false },
+    );
+  };
   const confirm = () => {
     updateCharacter((doc) => applyBuild(doc, draft).character, {
       log: { message: `Уровень повышен до ${level}`, type: 'exp' },
@@ -51,7 +68,7 @@ export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = (
         </>
       }
     >
-      <LevelPlanView build={draft} level={level} onChange={setDraft} />
+      <LevelPlanView build={draft} level={level} onChange={setDraft} onHitDieRolled={keepHitDie} />
     </Dialog>
   );
 };
