@@ -34,7 +34,8 @@ import {
   type SanityOutcome,
   type SkillCheck,
 } from '@itd/game-logic/coc';
-import type { Character } from '@itd/schema';
+import type { Character, TableDie } from '@itd/schema';
+import { announceRoll } from '../../store/useTableRollStore';
 import { NO_MODS, diceOnly, modsAfterRoll, modsToRoll, type RollMods } from './sheetRules';
 import { rollVerdictOf, type RollVerdict } from './verdict';
 
@@ -247,6 +248,19 @@ const describe = (record: RollRecord): string =>
     SUCCESS_LABELS[record.check.level]
   }${record.jammed ? ', осечка' : ''}`;
 
+/**
+ * A percentile throw as the table sees it: every tens die (those not kept greyed) and the units die,
+ * as the roll's telegram shows them.
+ */
+export function percentileDice(check: Pick<SkillCheck, 'tens' | 'units' | 'total'>): TableDie[] {
+  const kept = check.total === 100 ? 0 : check.total - check.units;
+  const keptIndex = check.tens.indexOf(kept);
+  return [
+    ...check.tens.map((t, index) => ({ sides: 10, value: t, label: t === 0 ? '00' : String(t), dropped: index !== keptIndex })),
+    { sides: 10, value: check.units, label: String(check.units) },
+  ];
+}
+
 /** The one toast that carries the latest roll; a new roll or a follow-up replaces its content. */
 const ROLL_TOAST = 'coc-roll';
 
@@ -292,6 +306,7 @@ export const CocSheetProvider: React.FC<{
   const [bout, setBout] = useState<string | null>(null);
   const [jams, setJams] = useState<Record<string, true>>({});
   const serial = useRef(0);
+  const characterId = character.id;
 
   const show = useCallback((request: RollRequest, check: SkillCheck, extra: Partial<RollRecord> = {}) => {
     serial.current += 1;
@@ -303,12 +318,13 @@ export const CocSheetProvider: React.FC<{
       ...extra,
     };
     setLast(next);
+    announceRoll(characterId, percentileDice(check), describe(next));
     if (next.jammed && request.kind === 'attack' && request.id) {
       const id = request.id;
       setJams((current) => ({ ...current, [id]: true }));
     }
     return next;
-  }, []);
+  }, [characterId]);
 
   const record = useCallback(
     (request: RollRequest, extra: Partial<RollRecord> = {}): RollRecord =>
@@ -383,12 +399,13 @@ export const CocSheetProvider: React.FC<{
     if (!weapon) return;
     const damage = weaponDamageDetailed(weapon, damageBonus, last.check.level, Math.random, last.band ?? 0);
     setLast({ ...last, damage });
+    announceRoll(characterId, damage.dice, `${weapon.name}: урон ${damage.total}`);
     update(
       (doc) => doc,
       { message: `${weapon.name}: урон ${damage.total} (${damage.formula})`, type: 'other' },
       { quiet: true },
     );
-  }, [last, character.attacks, damageBonus, update]);
+  }, [last, character.attacks, damageBonus, update, characterId]);
 
   const indefinite = character.conditions.includes(CONDITION_IDS.indefiniteInsanity);
   const sanityLost = useCallback<CocSheetApi['sanityLost']>(
@@ -426,6 +443,11 @@ export const CocSheetProvider: React.FC<{
           type: 'sanity',
         },
         { quiet: true },
+      );
+      announceRoll(
+        character.id,
+        [...percentileDice(result.check), ...(result.lossDice ?? [])],
+        `${label} (${spec}): ${result.check.total} из ${character.sanity} — потеряно ${result.loss} рассудка`,
       );
       sanityLost(label, result);
     },

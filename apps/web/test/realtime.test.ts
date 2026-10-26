@@ -42,6 +42,7 @@ const handlers = () => ({
   onConnected: vi.fn(),
   onPartyChanged: vi.fn(),
   onPartyMessage: vi.fn(),
+  onPartyRoll: vi.fn(),
 });
 
 beforeEach(() => {

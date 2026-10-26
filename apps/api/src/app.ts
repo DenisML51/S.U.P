@@ -18,6 +18,7 @@ import { characterRoutes } from './modules/characters/characters.routes';
 import { CharactersService } from './modules/characters/characters.service';
 import { CombatService } from './modules/parties/combat.service';
 import { MessagesService } from './modules/parties/messages.service';
+import { RollsService } from './modules/parties/rolls.service';
 import { PartyAccess } from './modules/parties/partyAccess';
 import { PartyQueries } from './modules/parties/parties.queries';
 import { partyRoutes } from './modules/parties/parties.routes';
@@ -38,6 +39,7 @@ export interface AppServices {
   combat: CombatService;
   partyQueries: PartyQueries;
   messages: MessagesService;
+  rolls: RollsService;
   /** Sockets of this process. */
   hub: RealtimeHub;
   presence: PresenceService;
@@ -65,6 +67,7 @@ export function createServices(config: Config, { db, sql }: DatabaseConnection):
     combat,
     partyQueries: new PartyQueries(db),
     messages: new MessagesService(db, notifier),
+    rolls: new RollsService(db, notifier),
     assets: new AssetsService(db),
   };
 }
@@ -137,6 +140,7 @@ export async function buildApp(
         combat: services.combat,
         queries: services.partyQueries,
         messages: services.messages,
+        rolls: services.rolls,
       });
       await api.register(assetRoutes, { auth: services.auth, assets: services.assets });
       await api.register(realtimeRoutes, { auth: services.auth, hub: services.hub, presence: services.presence });

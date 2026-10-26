@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { EntityIdSchema } from './character';
-import type { PartyMessageDto } from './party';
+import type { PartyMessageDto, TableRollDto } from './party';
 
 /**
  * HTTP and WebSocket contracts between the web client and the API. Request schemas are validated
@@ -185,4 +185,6 @@ export type WsServerMessage =
   | { type: 'party.changed'; partyId: string }
   /** A message for this user at a party's table (public, or private to them). */
   | { type: 'party.message'; partyId: string; message: PartyMessageDto }
+  /** Dice thrown at a party's table, for this user's screens (see `TableRollRequestSchema`). */
+  | { type: 'party.roll'; partyId: string; roll: TableRollDto }
   | { type: 'error'; error: ErrorCode; message: string };

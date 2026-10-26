@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { rollDie, rollFormula, type FormulaRoll } from '@itd/game-logic';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { announceRoll } from '../../store/useTableRollStore';
 import { RollingDie } from '../../ui/RollingDie';
 
 type Tone = 'crit' | 'fumble';
@@ -136,6 +137,9 @@ export type DamageComponents = { damage: string; type?: string }[];
  */
 export function useRolls() {
   const logHistory = useCharacterStore((s) => s.logHistory);
+  // Every throw is also shown at the party table the hero sits at.
+  const characterId = useCharacterStore((s) => s.character?.id);
+  const show = (dice: ThrownDie[], label: string) => announceRoll(characterId, dice, label);
 
   /**
    * A d20 check or save with a modifier. `animated` (initiative at the start of a fight) keeps the
@@ -145,6 +149,7 @@ export function useRolls() {
     const die = rollDie(20);
     const total = die + modifier;
     const detail = `к20: ${die} ${signed(modifier)}`;
+    show([{ sides: 20, value: die }], `${label}: ${total}`);
     toast(
       <RollToast
         label={label}
@@ -163,6 +168,7 @@ export function useRolls() {
   const formula = (label: string, expression: string) => {
     const roll = rollFormula(expression);
     if (roll.rolls.length === 0 && roll.bonus === 0) return null;
+    show(roll.rolls, `${label}: ${roll.total}`);
     toast(
       <RollToast
         label={label}
@@ -190,6 +196,7 @@ export function useRolls() {
     const detail = parts.map((p) => `${p.roll.total}${p.type ? ` ${p.type.toLowerCase()}` : ''}`).join(' + ');
     const healing = parts.every((p) => p.type === 'Лечение');
     const title = healing ? `${label}: лечение` : critical ? `${label}: критический урон` : `${label}: урон`;
+    show(parts.flatMap((p) => p.roll.rolls), `${title}: ${total}`);
     toast(
       <RollToast
         label={title}
@@ -214,6 +221,7 @@ export function useRolls() {
     const tone = toneOf(die);
     const detail = `к20: ${die} ${signed(modifier)}${tone === 'crit' ? ' · критическое попадание' : tone === 'fumble' ? ' · промах' : ''}`;
     const hasDamage = components.some((c) => c.damage.trim());
+    show([{ sides: 20, value: die }], `${label}: попадание ${total}`);
     toast(
       (t) => (
         <RollToast

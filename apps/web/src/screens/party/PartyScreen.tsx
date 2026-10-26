@@ -6,6 +6,7 @@ import {
   PARTY_LIMITS,
   type PartyDto,
   type PartyHeroDto,
+  type NpcDisposition,
   type PartyNpcDto,
 } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
@@ -21,6 +22,7 @@ import {
   IconExit,
   IconHistory,
   IconCopy,
+  IconDice,
   IconInitiative,
   IconPrev,
   IconSettings,
@@ -41,6 +43,8 @@ import { actsByDex, initiativeBonusOf, isCocFight, npcFirearmReady } from './par
 import { StartCombatDialog } from './StartCombatDialog';
 import { TableDecks } from './PartyDecks';
 import { Companions, MyHero } from './PlayerSeat';
+import { MasterDiceDialog } from './MasterDiceDialog';
+import { DiceLog } from './DiceLog';
 import { useTableCombat } from './useTableCombat';
 import { SyncStatus } from '../../ui/SyncStatus';
 
@@ -101,7 +105,8 @@ type Overlay =
   | { kind: 'leave' }
   | { kind: 'pick-hero' }
   | { kind: 'combat' }
-  | { kind: 'npc'; npc?: PartyNpcDto }
+  | { kind: 'npc'; npc?: PartyNpcDto; disposition?: NpcDisposition }
+  | { kind: 'dice' }
   | { kind: 'remove-hero'; hero: PartyHeroDto }
   | { kind: 'kick'; userId: string; name: string }
   | { kind: 'new-code' }
@@ -188,6 +193,11 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                   Начать сессию
                 </Button>
               ))}
+            {isMaster && party.sessionStartedAt && (
+              <IconButton label="Бросить кубики столу" onClick={() => setOverlay({ kind: 'dice' })}>
+                <IconDice width={20} height={20} />
+              </IconButton>
+            )}
             {isMaster ? (
               <IconButton
                 label="Настройки партии"
@@ -272,7 +282,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
                   )
                 }
                 onRemoveHero={(hero) => setOverlay({ kind: 'remove-hero', hero })}
-                onNpc={(npc) => setOverlay({ kind: 'npc', npc })}
+                onNpc={(npc, disposition) => setOverlay({ kind: 'npc', npc, disposition })}
               />
             ) : (
               <Companions party={party} userId={userId} />
@@ -331,9 +341,10 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         onClose={close}
         onCreate={createHero}
       />
+      {overlay?.kind === 'dice' && <MasterDiceDialog open party={party} onClose={close} />}
       {overlay?.kind === 'combat' && <StartCombatDialog open party={party} onClose={close} />}
       {overlay?.kind === 'npc' && (
-        <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} coc={isCocFight(party) || !!overlay.npc?.coc} onClose={close} />
+        <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} disposition={overlay.disposition} coc={isCocFight(party) || !!overlay.npc?.coc} onClose={close} />
       )}
       <LoreDialog
         open={overlay?.kind === 'lore'}
@@ -623,7 +634,7 @@ const TalkPanel: React.FC<{
   userId: string | undefined;
   onKick: (member: { userId: string; name: string }) => void;
 }> = ({ party, userId, onKick }) => {
-  const [tab, setTab] = useState<'chat' | 'seats'>('chat');
+  const [tab, setTab] = useState<'chat' | 'dice' | 'seats'>('chat');
   const unread = useChatStore((s) => s.unread[party.id] ?? 0);
   return (
     <Panel className="flex min-h-0 flex-1 flex-col px-5 pb-4 pt-4">
@@ -633,12 +644,15 @@ const TalkPanel: React.FC<{
         onChange={setTab}
         items={[
           { id: 'chat', label: 'Чат', count: unread > 0 ? unread : undefined },
+          { id: 'dice', label: 'Кубы' },
           { id: 'seats', label: 'За столом', count: party.members.length },
         ]}
       />
       <div className="mt-3 flex min-h-0 flex-1 flex-col">
         {tab === 'chat' ? (
           <ChatPanel party={party} userId={userId} />
+        ) : tab === 'dice' ? (
+          <DiceLog party={party} userId={userId} />
         ) : (
           <Seats party={party} userId={userId} onKick={onKick} />
         )}

@@ -1,4 +1,10 @@
-import type { PartyDto, PartyListItemDto, PartyMessagesDto, WsServerMessage } from '@itd/schema';
+import type {
+  PartyDto,
+  PartyListItemDto,
+  PartyMessagesDto,
+  TableRollsDto,
+  WsServerMessage,
+} from '@itd/schema';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { characters, partyCombats } from '../src/db/schema';
@@ -10,10 +16,20 @@ const ctx = useTestApp();
 type App = Awaited<ReturnType<typeof ctx.app>>;
 type User = Awaited<ReturnType<typeof registerUser>>;
 
-const call = (app: App, user: User, method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, payload?: object) =>
-  app.inject({ method, url: `/api${url}`, headers: user.auth, payload });
+const call = (
+  app: App,
+  user: User,
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  url: string,
+  payload?: object,
+) => app.inject({ method, url: `/api${url}`, headers: user.auth, payload });
 
-async function saveHero(app: App, user: User, overrides: Parameters<typeof makeCharacter>[0] = {}, baseRevision: number | null = null) {
+async function saveHero(
+  app: App,
+  user: User,
+  overrides: Parameters<typeof makeCharacter>[0] = {},
+  baseRevision: number | null = null,
+) {
   const hero = makeCharacter(overrides);
   const response = await call(app, user, 'PUT', `/characters/${hero.id}`, { baseRevision, data: hero });
   expect(response.statusCode).toBe(200);
@@ -30,7 +46,10 @@ const view = async (app: App, user: User, partyId: string) => {
 async function table(app: App) {
   const master = await registerUser(app, 'Мастер');
   const player = await registerUser(app, 'Игрок');
-  const created = await call(app, master, 'POST', '/parties', { name: 'Тени Ульдуара', setting: 'dark-fantasy' });
+  const created = await call(app, master, 'POST', '/parties', {
+    name: 'Тени Ульдуара',
+    setting: 'dark-fantasy',
+  });
   expect(created.statusCode).toBe(201);
   const partyId = created.json<{ id: string }>().id;
   const code = (await view(app, master, partyId)).inviteCode!;
@@ -42,8 +61,14 @@ async function table(app: App) {
 
   const masterHero = await saveHero(app, master, { name: 'Страж', currentHP: 30, maxHP: 30 });
   const playerHero = await saveHero(app, player, { name: 'Охотник', currentHP: 18, maxHP: 22 });
-  expect((await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: masterHero.id })).statusCode).toBe(201);
-  expect((await call(app, player, 'POST', `/parties/${partyId}/heroes`, { characterId: playerHero.id })).statusCode).toBe(201);
+  expect(
+    (await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: masterHero.id }))
+      .statusCode,
+  ).toBe(201);
+  expect(
+    (await call(app, player, 'POST', `/parties/${partyId}/heroes`, { characterId: playerHero.id }))
+      .statusCode,
+  ).toBe(201);
   return { master, player, partyId, code, masterHero, playerHero };
 }
 
@@ -53,7 +78,14 @@ const investigator = (name: string, dex: number, brawl = 25) =>
     name,
     currentHP: 11,
     maxHP: 11,
-    build: { ruleset: 'coc7', variant: 'classic', era: '1920s', occupation: 'professor', talents: [], age: 40 },
+    build: {
+      ruleset: 'coc7',
+      variant: 'classic',
+      era: '1920s',
+      occupation: 'professor',
+      talents: [],
+      age: 40,
+    },
     coc: { characteristics: { dex, pow: 50 }, skills: [{ id: 'fighting:brawl', value: brawl }] },
   }) as unknown as Parameters<typeof makeCharacter>[0];
 
@@ -61,7 +93,11 @@ const investigator = (name: string, dex: number, brawl = 25) =>
 async function cocTable(app: App, rules: 'coc7' | null) {
   const master = await registerUser(app, 'Хранитель');
   const player = await registerUser(app, 'Сыщик');
-  const created = await call(app, master, 'POST', '/parties', { name: 'Ужас Данвича', setting: 'lovecraft', rules });
+  const created = await call(app, master, 'POST', '/parties', {
+    name: 'Ужас Данвича',
+    setting: 'lovecraft',
+    rules,
+  });
   expect(created.statusCode).toBe(201);
   const partyId = created.json<{ id: string }>().id;
   const code = (await view(app, master, partyId)).inviteCode!;
@@ -69,8 +105,14 @@ async function cocTable(app: App, rules: 'coc7' | null) {
   expect((await call(app, player, 'POST', `/invites/${code}/accept`)).statusCode).toBe(200);
   const masterHero = await saveHero(app, master, investigator('Профессор', 40));
   const playerHero = await saveHero(app, player, investigator('Репортёр', 60, 50));
-  expect((await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: masterHero.id })).statusCode).toBe(201);
-  expect((await call(app, player, 'POST', `/parties/${partyId}/heroes`, { characterId: playerHero.id })).statusCode).toBe(201);
+  expect(
+    (await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: masterHero.id }))
+      .statusCode,
+  ).toBe(201);
+  expect(
+    (await call(app, player, 'POST', `/parties/${partyId}/heroes`, { characterId: playerHero.id }))
+      .statusCode,
+  ).toBe(201);
   return { master, player, partyId };
 }
 
@@ -107,43 +149,68 @@ describe('parties', () => {
       ['Игрок', 'player'],
     ]);
     expect(asMaster.heroes.every((hero) => hero.vitals !== null)).toBe(true);
-    expect(asMaster.heroes.find((h) => h.characterId === playerHero.id)?.vitals).toMatchObject({ currentHP: 18, maxHP: 22 });
+    expect(asMaster.heroes.find((h) => h.characterId === playerHero.id)?.vitals).toMatchObject({
+      currentHP: 18,
+      maxHP: 22,
+    });
 
     const lore = '## Пролог\nТуман над гаванью.';
     expect((await call(app, master, 'PATCH', `/parties/${partyId}`, { lore })).statusCode).toBe(204);
     const shown = asMaster.heroes.find((h) => h.characterId === masterHero.id)!.id;
-    expect((await call(app, master, 'PATCH', `/parties/${partyId}/heroes/${shown}`, { hidden: false })).statusCode).toBe(204);
+    expect(
+      (await call(app, master, 'PATCH', `/parties/${partyId}/heroes/${shown}`, { hidden: false })).statusCode,
+    ).toBe(204);
     const asPlayer = await view(app, player, partyId);
     expect(asPlayer.role).toBe('player');
     expect(asPlayer.lore).toBe(lore);
-    expect((await call(app, player, 'PATCH', `/parties/${partyId}`, { lore: 'чужая правка' })).statusCode).toBe(403);
+    expect(
+      (await call(app, player, 'PATCH', `/parties/${partyId}`, { lore: 'чужая правка' })).statusCode,
+    ).toBe(403);
     expect(asPlayer.inviteCode).toBeNull();
     expect(asPlayer.npcs).toBeNull();
     expect(asPlayer.heroes.find((h) => h.characterId === masterHero.id)?.vitals).toBeNull();
     expect(asPlayer.heroes.find((h) => h.characterId === playerHero.id)?.vitals).not.toBeNull();
 
     const list = (await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>();
-    expect(list).toMatchObject([{ id: partyId, role: 'player', masterName: 'Мастер', memberCount: 2, heroCount: 2 }]);
+    expect(list).toMatchObject([
+      { id: partyId, role: 'player', masterName: 'Мастер', memberCount: 2, heroCount: 2 },
+    ]);
     expect(list[0]!.myCharacterIds).toEqual([playerHero.id]);
   });
 
   it('seats only heroes made by the rules of the table', async () => {
     const app = await ctx.app();
     const master = await registerUser(app, 'Хранитель');
-    const created = await call(app, master, 'POST', '/parties', { name: 'Ужас Данвича', setting: 'lovecraft', rules: 'coc7' });
+    const created = await call(app, master, 'POST', '/parties', {
+      name: 'Ужас Данвича',
+      setting: 'lovecraft',
+      rules: 'coc7',
+    });
     expect(created.statusCode).toBe(201);
     const partyId = created.json<{ id: string }>().id;
     expect((await view(app, master, partyId)).rules).toBe('coc7');
 
     const ownRules = await saveHero(app, master, { name: 'Свой герой' });
-    const refused = await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: ownRules.id });
+    const refused = await call(app, master, 'POST', `/parties/${partyId}/heroes`, {
+      characterId: ownRules.id,
+    });
     expect(refused.statusCode).toBe(409);
 
     const investigator = await saveHero(app, master, {
       name: 'Сыщик',
-      build: { ruleset: 'coc7', variant: 'classic', era: '1920s', occupation: 'professor', talents: [], age: 40 },
+      build: {
+        ruleset: 'coc7',
+        variant: 'classic',
+        era: '1920s',
+        occupation: 'professor',
+        talents: [],
+        age: 40,
+      },
     });
-    expect((await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: investigator.id })).statusCode).toBe(201);
+    expect(
+      (await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: investigator.id }))
+        .statusCode,
+    ).toBe(201);
   });
 
   it('seats the master and four players, no more', async () => {
@@ -164,7 +231,10 @@ describe('parties', () => {
     const stranger = await registerUser(app, 'Чужак');
 
     expect((await call(app, stranger, 'GET', `/parties/${partyId}`)).statusCode).toBe(404);
-    expect((await call(app, stranger, 'GET', `/invites/${code}`)).json()).toMatchObject({ name: 'Тени Ульдуара', member: false });
+    expect((await call(app, stranger, 'GET', `/invites/${code}`)).json()).toMatchObject({
+      name: 'Тени Ульдуара',
+      member: false,
+    });
 
     expect((await call(app, master, 'POST', `/parties/${partyId}/invite`)).statusCode).toBe(204);
     expect((await call(app, stranger, 'POST', `/invites/${code}/accept`)).statusCode).toBe(404);
@@ -179,12 +249,19 @@ describe('parties', () => {
     const tooMany = await call(app, player, 'POST', `/parties/${partyId}/heroes`, { characterId: second.id });
     expect(tooMany.statusCode).toBe(409);
 
-    const other = (await call(app, player, 'POST', '/parties', { name: 'Своя', setting: 'sci-fi' })).json<{ id: string }>();
-    const taken = await call(app, player, 'POST', `/parties/${other.id}/heroes`, { characterId: playerHero.id });
+    const other = (await call(app, player, 'POST', '/parties', { name: 'Своя', setting: 'sci-fi' })).json<{
+      id: string;
+    }>();
+    const taken = await call(app, player, 'POST', `/parties/${other.id}/heroes`, {
+      characterId: playerHero.id,
+    });
     expect(taken.statusCode).toBe(409);
 
     // Nobody brings someone else's character.
-    expect((await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: playerHero.id })).statusCode).toBe(404);
+    expect(
+      (await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: playerHero.id }))
+        .statusCode,
+    ).toBe(404);
   });
 
   it('keeps NPCs to the master', async () => {
@@ -197,15 +274,32 @@ describe('parties', () => {
     expect(created.statusCode).toBe(201);
     const npcId = created.json<{ id: string }>().id;
 
-    expect((await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${npcId}`, { currentHP: 9 })).statusCode).toBe(204);
-    expect((await view(app, master, partyId)).npcs).toMatchObject([{ name: 'Гуль', currentHP: 9, maxHP: 22, armorClass: 13 }]);
+    expect(
+      (await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${npcId}`, { currentHP: 9 })).statusCode,
+    ).toBe(204);
+    expect((await view(app, master, partyId)).npcs).toMatchObject([
+      { name: 'Гуль', currentHP: 9, maxHP: 22, armorClass: 13 },
+    ]);
 
     // Sides are seen by the whole table once the NPC fights; its numbers are not.
-    const ally = await call(app, master, 'POST', `/parties/${partyId}/npcs`, { ...npc, name: 'Проводник', disposition: 'friendly' });
+    const ally = await call(app, master, 'POST', `/parties/${partyId}/npcs`, {
+      ...npc,
+      name: 'Проводник',
+      disposition: 'friendly',
+    });
     const allyId = ally.json<{ id: string }>().id;
     await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [npcId, allyId] });
-    const sides = (await view(app, player, partyId)).combat!.combatants.map((c) => [c.name, c.hostile, c.vitals]);
-    expect(sides).toEqual(expect.arrayContaining([['Гуль', true, null], ['Проводник', false, null]]));
+    const sides = (await view(app, player, partyId)).combat!.combatants.map((c) => [
+      c.name,
+      c.hostile,
+      c.vitals,
+    ]);
+    expect(sides).toEqual(
+      expect.arrayContaining([
+        ['Гуль', true, null],
+        ['Проводник', false, null],
+      ]),
+    );
   });
 
   it('keeps the master’s heroes from the players until shown, but not out of a fight', async () => {
@@ -213,7 +307,8 @@ describe('parties', () => {
     const { master, player, partyId } = await table(app);
     const names = async (user: User) => (await view(app, user, partyId)).heroes.map((hero) => hero.name);
     const strangers = async () =>
-      (await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>().find((p) => p.id === partyId)!.heroCount;
+      (await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>().find((p) => p.id === partyId)!
+        .heroCount;
 
     expect(await names(master)).toEqual(['Страж', 'Охотник']);
     expect((await view(app, master, partyId)).heroes.map((hero) => hero.hidden)).toEqual([true, false]);
@@ -243,12 +338,23 @@ describe('parties', () => {
     const app = await ctx.app();
     const { master, player, partyId } = await table(app);
     const npcId = (
-      await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Гуль', maxHP: 22, armorClass: 13, initiativeBonus: 2 })
+      await call(app, master, 'POST', `/parties/${partyId}/npcs`, {
+        name: 'Гуль',
+        maxHP: 22,
+        armorClass: 13,
+        initiativeBonus: 2,
+      })
     ).json<{ id: string }>().id;
     const heroIds = (await view(app, master, partyId)).heroes.map((hero) => hero.id);
 
-    expect((await call(app, player, 'POST', `/parties/${partyId}/combat`, { heroIds, npcIds: [npcId] })).statusCode).toBe(403);
-    expect((await call(app, master, 'POST', `/parties/${partyId}/combat`, { heroIds, npcIds: [npcId] })).statusCode).toBe(204);
+    expect(
+      (await call(app, player, 'POST', `/parties/${partyId}/combat`, { heroIds, npcIds: [npcId] }))
+        .statusCode,
+    ).toBe(403);
+    expect(
+      (await call(app, master, 'POST', `/parties/${partyId}/combat`, { heroIds, npcIds: [npcId] }))
+        .statusCode,
+    ).toBe(204);
     expect((await call(app, master, 'POST', `/parties/${partyId}/combat`, { heroIds })).statusCode).toBe(409);
 
     const fight = (await view(app, player, partyId)).combat!;
@@ -269,15 +375,24 @@ describe('parties', () => {
     const started = (await view(app, master, partyId)).combat!;
     const order = started.combatants.map((c) => c.id);
     expect(started).toMatchObject({ phase: 'active', round: 1, currentCombatantId: order[0] });
-    expect(started.combatants.map((c) => c.initiative)).toEqual([...started.combatants.map((c) => c.initiative)].sort((a, b) => b! - a!));
+    expect(started.combatants.map((c) => c.initiative)).toEqual(
+      [...started.combatants.map((c) => c.initiative)].sort((a, b) => b! - a!),
+    );
 
     // Pass every turn of the round; the one whose turn it is (or the master) passes it.
     for (const [index, id] of order.entries()) {
       const actor = id === mine.id ? player : master;
-      if (id !== mine.id) expect((await call(app, player, 'POST', `/parties/${partyId}/combat/next`, { from: id })).statusCode).toBe(403);
-      expect((await call(app, actor, 'POST', `/parties/${partyId}/combat/next`, { from: id })).statusCode).toBe(204);
+      if (id !== mine.id)
+        expect(
+          (await call(app, player, 'POST', `/parties/${partyId}/combat/next`, { from: id })).statusCode,
+        ).toBe(403);
+      expect(
+        (await call(app, actor, 'POST', `/parties/${partyId}/combat/next`, { from: id })).statusCode,
+      ).toBe(204);
       // A second click with the same turn changes nothing.
-      expect((await call(app, master, 'POST', `/parties/${partyId}/combat/next`, { from: id })).statusCode).toBe(204);
+      expect(
+        (await call(app, master, 'POST', `/parties/${partyId}/combat/next`, { from: id })).statusCode,
+      ).toBe(204);
       const now = (await view(app, master, partyId)).combat!;
       expect(now.currentCombatantId).toBe(order[(index + 1) % order.length]);
       expect(now.round).toBe(index === order.length - 1 ? 2 : 1);
@@ -294,7 +409,9 @@ describe('parties', () => {
     await call(app, master, 'POST', `/parties/${partyId}/combat`, { heroIds });
     const fight = (await view(app, master, partyId)).combat!;
     const playerCombatant = fight.combatants.find((c) => c.name === 'Охотник')!;
-    await call(app, master, 'PUT', `/parties/${partyId}/combat/combatants/${playerCombatant.id}/initiative`, { value: 25 });
+    await call(app, master, 'PUT', `/parties/${partyId}/combat/combatants/${playerCombatant.id}/initiative`, {
+      value: 25,
+    });
     await call(app, master, 'POST', `/parties/${partyId}/combat/begin`);
     expect((await view(app, master, partyId)).combat!.currentCombatantId).toBe(playerCombatant.id);
 
@@ -305,14 +422,24 @@ describe('parties', () => {
     await expect.poll(() => messages.some((m) => m.type === 'ready')).toBe(true);
 
     await saveHero(app, player, { ...playerHero, currentHP: 5 }, 1);
-    await expect.poll(() => messages.some((m) => m.type === 'party.changed' && m.partyId === partyId)).toBe(true);
     await expect
-      .poll(async () => (await view(app, master, partyId)).heroes.find((h) => h.characterId === playerHero.id)?.vitals?.currentHP)
+      .poll(() => messages.some((m) => m.type === 'party.changed' && m.partyId === partyId))
+      .toBe(true);
+    await expect
+      .poll(
+        async () =>
+          (await view(app, master, partyId)).heroes.find((h) => h.characterId === playerHero.id)?.vitals
+            ?.currentHP,
+      )
       .toBe(5);
 
-    expect((await call(app, player, 'DELETE', `/characters/${playerHero.id}?baseRevision=2`)).statusCode).toBe(200);
+    expect(
+      (await call(app, player, 'DELETE', `/characters/${playerHero.id}?baseRevision=2`)).statusCode,
+    ).toBe(200);
     const remaining = fight.combatants.find((c) => c.id !== playerCombatant.id)!.id;
-    await expect.poll(async () => (await view(app, master, partyId)).combat!.currentCombatantId).toBe(remaining);
+    await expect
+      .poll(async () => (await view(app, master, partyId)).combat!.currentCombatantId)
+      .toBe(remaining);
     const after = await view(app, master, partyId);
     expect(after.heroes).toHaveLength(1);
     expect(after.combat!.combatants.map((c) => c.id)).toEqual([remaining]);
@@ -323,9 +450,15 @@ describe('parties', () => {
     const app = await ctx.app();
     const { master, player, partyId } = await table(app);
 
-    expect((await call(app, player, 'DELETE', `/parties/${partyId}/members/${master.user.id}`)).statusCode).toBe(403);
-    expect((await call(app, master, 'DELETE', `/parties/${partyId}/members/${master.user.id}`)).statusCode).toBe(403);
-    expect((await call(app, player, 'DELETE', `/parties/${partyId}/members/${player.user.id}`)).statusCode).toBe(204);
+    expect(
+      (await call(app, player, 'DELETE', `/parties/${partyId}/members/${master.user.id}`)).statusCode,
+    ).toBe(403);
+    expect(
+      (await call(app, master, 'DELETE', `/parties/${partyId}/members/${master.user.id}`)).statusCode,
+    ).toBe(403);
+    expect(
+      (await call(app, player, 'DELETE', `/parties/${partyId}/members/${player.user.id}`)).statusCode,
+    ).toBe(204);
 
     const party = await view(app, master, partyId);
     expect(party.members).toHaveLength(1);
@@ -353,7 +486,10 @@ describe('Call of Cthulhu at the table', () => {
       expect(created.statusCode).toBe(201);
       return created.json<{ id: string }>().id;
     };
-    const gunman = await npc('Бутлегер', 50, { firearmReady: true, attacks: [{ name: 'Револьвер', skill: 45, damage: '1D10' }] });
+    const gunman = await npc('Бутлегер', 50, {
+      firearmReady: true,
+      attacks: [{ name: 'Револьвер', skill: 45, damage: '1D10' }],
+    });
     const brute = await npc('Громила', 60, {
       armor: 1,
       build: 1,
@@ -372,7 +508,14 @@ describe('Call of Cthulhu at the table', () => {
     });
 
     const heroIds = (await view(app, master, partyId)).heroes.map((hero) => hero.id);
-    expect((await call(app, master, 'POST', `/parties/${partyId}/combat`, { heroIds, npcIds: [gunman, brute, plain] })).statusCode).toBe(204);
+    expect(
+      (
+        await call(app, master, 'POST', `/parties/${partyId}/combat`, {
+          heroIds,
+          npcIds: [gunman, brute, plain],
+        })
+      ).statusCode,
+    ).toBe(204);
     const fight = (await view(app, player, partyId)).combat!;
     const mine = fight.combatants.find((c) => c.controlled)!;
     const professor = fight.combatants.find((c) => c.name === 'Профессор')!;
@@ -401,16 +544,21 @@ describe('Call of Cthulhu at the table', () => {
     expect((await roll(master, mine.id, 110)).statusCode).toBe(204);
 
     // Hit points of a Call of Cthulhu NPC stay between 0 and the maximum.
-    const hp = (npcId: string, currentHP: number) => call(app, master, 'PATCH', `/parties/${partyId}/npcs/${npcId}`, { currentHP });
+    const hp = (npcId: string, currentHP: number) =>
+      call(app, master, 'PATCH', `/parties/${partyId}/npcs/${npcId}`, { currentHP });
     expect((await hp(brute, -3)).statusCode).toBe(400);
     expect((await hp(brute, 13)).statusCode).toBe(400);
     expect((await hp(brute, 0)).statusCode).toBe(204);
     expect((await hp(plain, -1)).statusCode).toBe(400);
 
     // The rules stay while the fight goes on, and fit the heroes at the table.
-    const rules = (value: string | null) => call(app, master, 'PATCH', `/parties/${partyId}`, { rules: value });
+    const rules = (value: string | null) =>
+      call(app, master, 'PATCH', `/parties/${partyId}`, { rules: value });
     expect((await rules('dnd2024')).statusCode).toBe(409);
-    expect((await call(app, master, 'PATCH', `/parties/${partyId}`, { rules: 'coc7', name: 'Ужас Данвича II' })).statusCode).toBe(204);
+    expect(
+      (await call(app, master, 'PATCH', `/parties/${partyId}`, { rules: 'coc7', name: 'Ужас Данвича II' }))
+        .statusCode,
+    ).toBe(204);
     expect((await call(app, master, 'DELETE', `/parties/${partyId}/combat`)).statusCode).toBe(204);
     const refused = await rules('dnd2024');
     expect(refused.statusCode).toBe(409);
@@ -444,12 +592,21 @@ describe('Call of Cthulhu at the table', () => {
     const fighter = await saveHero(app, player, { name: 'Воин' });
     const seat = (await view(app, player, partyId)).heroes.find((hero) => hero.ownerId === player.user.id)!;
     expect((await call(app, player, 'DELETE', `/parties/${partyId}/heroes/${seat.id}`)).statusCode).toBe(204);
-    expect((await call(app, player, 'POST', `/parties/${partyId}/heroes`, { characterId: fighter.id })).statusCode).toBe(201);
+    expect(
+      (await call(app, player, 'POST', `/parties/${partyId}/heroes`, { characterId: fighter.id })).statusCode,
+    ).toBe(201);
     expect((await view(app, master, partyId)).combatRules).toBeNull();
     const orc = (
-      await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Орк', maxHP: 15, armorClass: 13, initiativeBonus: 1 })
+      await call(app, master, 'POST', `/parties/${partyId}/npcs`, {
+        name: 'Орк',
+        maxHP: 15,
+        armorClass: 13,
+        initiativeBonus: 1,
+      })
     ).json<{ id: string }>().id;
-    expect((await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${orc}`, { currentHP: -5 })).statusCode).toBe(204);
+    expect(
+      (await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${orc}`, { currentHP: -5 })).statusCode,
+    ).toBe(204);
     expect((await call(app, master, 'PATCH', `/parties/${partyId}`, { rules: 'coc7' })).statusCode).toBe(409);
   });
 
@@ -457,16 +614,28 @@ describe('Call of Cthulhu at the table', () => {
     const app = await ctx.app();
     const { master, partyId } = await cocTable(app, null);
     const cultist = (
-      await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Культист', maxHP: 10, armorClass: 0, initiativeBonus: 45, coc: {} })
+      await call(app, master, 'POST', `/parties/${partyId}/npcs`, {
+        name: 'Культист',
+        maxHP: 10,
+        armorClass: 0,
+        initiativeBonus: 45,
+        coc: {},
+      })
     ).json<{ id: string }>().id;
-    expect((await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [cultist] })).statusCode).toBe(204);
+    expect(
+      (await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [cultist] })).statusCode,
+    ).toBe(204);
 
     // A D&D hero joins the table: the running fight still goes by DEX.
     const fighter = await saveHero(app, master, { name: 'Воин' });
-    expect((await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: fighter.id })).statusCode).toBe(201);
+    expect(
+      (await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: fighter.id })).statusCode,
+    ).toBe(201);
     expect((await view(app, master, partyId)).combatRules).toBe('coc7');
     expect((await call(app, master, 'POST', `/parties/${partyId}/combat/roll-npcs`)).statusCode).toBe(204);
-    expect((await view(app, master, partyId)).combat!.combatants.find((c) => c.kind === 'npc')!.initiative).toBe(45);
+    expect(
+      (await view(app, master, partyId)).combat!.combatants.find((c) => c.kind === 'npc')!.initiative,
+    ).toBe(45);
 
     // A fight started before fights kept their rules goes by the table as it is now.
     await ctx.db.update(partyCombats).set({ rules: null });
@@ -475,7 +644,9 @@ describe('Call of Cthulhu at the table', () => {
     // Once it is over, the next one goes by the heroes at the table: d20.
     expect((await call(app, master, 'DELETE', `/parties/${partyId}/combat`)).statusCode).toBe(204);
     expect((await view(app, master, partyId)).combatRules).toBeNull();
-    expect((await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [cultist] })).statusCode).toBe(204);
+    expect(
+      (await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [cultist] })).statusCode,
+    ).toBe(204);
     const seat = (await view(app, master, partyId)).heroes.find((hero) => hero.name === 'Воин')!;
     expect((await call(app, master, 'DELETE', `/parties/${partyId}/heroes/${seat.id}`)).statusCode).toBe(204);
     expect((await view(app, master, partyId)).combatRules).toBeNull();
@@ -485,9 +656,16 @@ describe('Call of Cthulhu at the table', () => {
     const app = await ctx.app();
     const { master, partyId } = await cocTable(app, null);
     const fighter = await saveHero(app, master, { name: 'Воин' });
-    expect((await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: fighter.id })).statusCode).toBe(201);
+    expect(
+      (await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: fighter.id })).statusCode,
+    ).toBe(201);
     const orc = (
-      await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Орк', maxHP: 15, armorClass: 13, initiativeBonus: 1 })
+      await call(app, master, 'POST', `/parties/${partyId}/npcs`, {
+        name: 'Орк',
+        maxHP: 15,
+        armorClass: 13,
+        initiativeBonus: 1,
+      })
     ).json<{ id: string }>().id;
     const patch = (body: object) => call(app, master, 'PATCH', `/parties/${partyId}/npcs/${orc}`, body);
     expect((await patch({ currentHP: -3 })).statusCode).toBe(204);
@@ -499,7 +677,10 @@ describe('Call of Cthulhu at the table', () => {
 
     // A rename sends the hit points back as they were: saved, raised to the floor.
     expect((await patch({ name: 'Орк-вожак', currentHP: -3 })).statusCode).toBe(204);
-    expect((await view(app, master, partyId)).npcs!.find((npc) => npc.id === orc)).toMatchObject({ name: 'Орк-вожак', currentHP: 0 });
+    expect((await view(app, master, partyId)).npcs!.find((npc) => npc.id === orc)).toMatchObject({
+      name: 'Орк-вожак',
+      currentHP: 0,
+    });
     // New hit points below the floor are still refused.
     expect((await patch({ currentHP: -2 })).statusCode).toBe(400);
   });
@@ -513,7 +694,10 @@ describe('character summaries', () => {
     await ctx.db.update(characters).set({ summary: null });
 
     expect(await ctx.services.characters.backfillSummaries()).toBe(1);
-    const [row] = await ctx.db.select({ summary: characters.summary }).from(characters).where(eq(characters.id, hero.id));
+    const [row] = await ctx.db
+      .select({ summary: characters.summary })
+      .from(characters)
+      .where(eq(characters.id, hero.id));
     expect(row!.summary).toMatchObject({ currentHP: 7, maxHP: 12 });
     expect(await ctx.services.characters.backfillSummaries()).toBe(0);
   });
@@ -541,9 +725,19 @@ describe('table talk', () => {
     expect((await send(player, 'Эй, Третий', other.user.id)).statusCode).toBe(403);
 
     const read = async (user: User) =>
-      (await call(app, user, 'GET', `/parties/${partyId}/messages`)).json<PartyMessagesDto>().items.map((m) => m.body);
-    expect(await read(player)).toEqual(['Кто-нибудь слышал колокол?', 'Ты чувствуешь запах соли.', 'Я отхожу к двери.']);
-    expect(await read(master)).toEqual(['Кто-нибудь слышал колокол?', 'Ты чувствуешь запах соли.', 'Я отхожу к двери.']);
+      (await call(app, user, 'GET', `/parties/${partyId}/messages`))
+        .json<PartyMessagesDto>()
+        .items.map((m) => m.body);
+    expect(await read(player)).toEqual([
+      'Кто-нибудь слышал колокол?',
+      'Ты чувствуешь запах соли.',
+      'Я отхожу к двери.',
+    ]);
+    expect(await read(master)).toEqual([
+      'Кто-нибудь слышал колокол?',
+      'Ты чувствуешь запах соли.',
+      'Я отхожу к двери.',
+    ]);
     expect(await read(other)).toEqual(['Кто-нибудь слышал колокол?']);
 
     await expect.poll(() => received.filter((m) => m.type === 'party.message').length).toBe(1);
@@ -556,12 +750,84 @@ describe('table talk', () => {
   it('pages back through older messages', async () => {
     const app = await ctx.app();
     const { master, partyId } = await table(app);
-    for (let i = 1; i <= 5; i++) await call(app, master, 'POST', `/parties/${partyId}/messages`, { body: `#${i}` });
-    const first = (await call(app, master, 'GET', `/parties/${partyId}/messages?limit=2`)).json<PartyMessagesDto>();
+    for (let i = 1; i <= 5; i++)
+      await call(app, master, 'POST', `/parties/${partyId}/messages`, { body: `#${i}` });
+    const first = (
+      await call(app, master, 'GET', `/parties/${partyId}/messages?limit=2`)
+    ).json<PartyMessagesDto>();
     expect(first.items.map((m) => m.body)).toEqual(['#4', '#5']);
     expect(first.hasMore).toBe(true);
-    const next = (await call(app, master, 'GET', `/parties/${partyId}/messages?limit=2&before=${first.items[0]!.id}`)).json<PartyMessagesDto>();
+    const next = (
+      await call(app, master, 'GET', `/parties/${partyId}/messages?limit=2&before=${first.items[0]!.id}`)
+    ).json<PartyMessagesDto>();
     expect(next.items.map((m) => m.body)).toEqual(['#2', '#3']);
+  });
+});
+
+describe('dice at the table', () => {
+  it("shows a player's throws to all, the master's to whom they were meant, and logs them", async () => {
+    const app = await ctx.app();
+    const { master, player, partyId, code, playerHero, masterHero } = await table(app);
+    const other = await registerUser(app, 'Третий');
+    await call(app, other, 'POST', `/invites/${code}/accept`);
+    const otherHero = await saveHero(app, other, { name: 'Бард' });
+    await call(app, other, 'POST', `/parties/${partyId}/heroes`, { characterId: otherHero.id });
+
+    const socket = await app.injectWS('/api/ws');
+    const received: WsServerMessage[] = [];
+    socket.on('message', (raw) => received.push(JSON.parse(raw.toString()) as WsServerMessage));
+    socket.send(JSON.stringify({ type: 'auth', token: other.accessToken }));
+    await expect.poll(() => received.some((m) => m.type === 'ready')).toBe(true);
+
+    const roll = (user: User, body: object) => call(app, user, 'POST', `/parties/${partyId}/rolls`, body);
+    const d20 = [{ sides: 20, value: 17 }];
+    const first = await roll(player, { characterId: playerHero.id, dice: d20, label: 'Восприятие: 19' });
+    expect(first.statusCode, first.body).toBe(204);
+    // Someone else's hero, or the master's own throw by a player: refused.
+    expect((await roll(other, { characterId: playerHero.id, dice: d20 })).statusCode).toBe(403);
+    expect((await roll(player, { characterId: null, dice: d20 })).statusCode).toBe(403);
+
+    const seats = (await view(app, master, partyId)).heroes;
+    const hunter = seats.find((hero) => hero.name === 'Охотник')!;
+    expect(
+      (await roll(master, { characterId: null, dice: [{ sides: 6, value: 4 }], heroIds: [hunter.id] }))
+        .statusCode,
+    ).toBe(204);
+    expect(
+      (await roll(master, { characterId: null, dice: [{ sides: 100, value: 42 }], label: 'Всем' }))
+        .statusCode,
+    ).toBe(204);
+    // The master's hero the players have not been shown throws for the master alone.
+    expect((await roll(master, { characterId: masterHero.id, dice: d20 })).statusCode).toBe(204);
+
+    const log = async (user: User) =>
+      (await call(app, user, 'GET', `/parties/${partyId}/rolls`)).json<TableRollsDto>().items;
+    expect((await log(player)).map((r) => [r.kind, r.heroName, r.dice[0]!.value])).toEqual([
+      ['hero', 'Охотник', 17],
+      ['master', null, 4],
+      ['master', null, 42],
+    ]);
+    expect((await log(other)).map((r) => r.dice[0]!.value)).toEqual([17, 42]);
+    const masterLog = await log(master);
+    expect(masterLog.map((r) => r.dice[0]!.value)).toEqual([17, 4, 42, 17]);
+    expect(masterLog[1]!.audienceNames).toEqual(['Охотник']);
+    expect(masterLog[3]!.audienceNames).toEqual([]);
+    expect(masterLog[0]).toMatchObject({ label: 'Восприятие: 19', audienceNames: null });
+
+    // The third player's devices heard the throws meant for them only.
+    await expect.poll(() => received.filter((m) => m.type === 'party.roll').length).toBe(2);
+    socket.terminate();
+  });
+
+  it('shows nothing while the table is closed', async () => {
+    const app = await ctx.app();
+    const { master, player, partyId, playerHero } = await table(app);
+    expect((await call(app, master, 'DELETE', `/parties/${partyId}/session`)).statusCode).toBe(204);
+    const response = await call(app, player, 'POST', `/parties/${partyId}/rolls`, {
+      characterId: playerHero.id,
+      dice: [{ sides: 20, value: 3 }],
+    });
+    expect(response.statusCode).toBe(409);
   });
 });
 
@@ -570,7 +836,12 @@ describe('sessions', () => {
     const app = await ctx.app();
     const { master, player, partyId, code } = await table(app);
     const npcId = (
-      await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Тролль', maxHP: 84, armorClass: 15, initiativeBonus: -1 })
+      await call(app, master, 'POST', `/parties/${partyId}/npcs`, {
+        name: 'Тролль',
+        maxHP: 84,
+        armorClass: 15,
+        initiativeBonus: -1,
+      })
     ).json<{ id: string }>().id;
     await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${npcId}`, { currentHP: 40 });
     await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [npcId] });
@@ -583,13 +854,21 @@ describe('sessions', () => {
     const closed = await call(app, player, 'GET', `/parties/${partyId}`);
     expect(closed.statusCode).toBe(409);
     expect(closed.json()).toMatchObject({ error: 'session_closed' });
-    expect((await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>()[0]).toMatchObject({ inSession: false });
+    expect((await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>()[0]).toMatchObject({
+      inSession: false,
+    });
     const asMaster = await view(app, master, partyId);
     expect(asMaster).toMatchObject({ sessionStartedAt: null, combat: null });
     expect(asMaster.npcs).toMatchObject([{ name: 'Тролль', currentHP: 40 }]);
-    expect((await call(app, master, 'GET', `/parties/${partyId}/messages`)).json<PartyMessagesDto>().items).toHaveLength(1);
-    expect((await call(app, player, 'POST', `/parties/${partyId}/messages`, { body: 'Эй?' })).statusCode).toBe(409);
-    expect((await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [npcId] })).statusCode).toBe(409);
+    expect(
+      (await call(app, master, 'GET', `/parties/${partyId}/messages`)).json<PartyMessagesDto>().items,
+    ).toHaveLength(1);
+    expect(
+      (await call(app, player, 'POST', `/parties/${partyId}/messages`, { body: 'Эй?' })).statusCode,
+    ).toBe(409);
+    expect(
+      (await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [npcId] })).statusCode,
+    ).toBe(409);
 
     // The code waits for the next session.
     const late = await registerUser(app, 'Опоздавший');
@@ -607,9 +886,15 @@ describe('sessions', () => {
     await saveHero(app, player, { ...playerHero, currentHP: 3 }, 1);
     await call(app, master, 'DELETE', `/parties/${partyId}/session`);
 
-    expect((await call(app, player, 'DELETE', `/parties/${partyId}/members/${player.user.id}`)).statusCode).toBe(204);
-    expect((await view(app, master, partyId)).heroes.map((hero) => hero.characterId)).not.toContain(playerHero.id);
-    const sheet = (await call(app, player, 'GET', `/characters/${playerHero.id}`)).json<{ data: { currentHP: number } }>();
+    expect(
+      (await call(app, player, 'DELETE', `/parties/${partyId}/members/${player.user.id}`)).statusCode,
+    ).toBe(204);
+    expect((await view(app, master, partyId)).heroes.map((hero) => hero.characterId)).not.toContain(
+      playerHero.id,
+    );
+    const sheet = (await call(app, player, 'GET', `/characters/${playerHero.id}`)).json<{
+      data: { currentHP: number };
+    }>();
     expect(sheet.data.currentHP).toBe(3);
   });
 
@@ -622,7 +907,9 @@ describe('sessions', () => {
     expect(listed).toMatchObject({ inSession: false, myCharacterIds: [playerHero.id] });
     expect(listed!.myHeroes).toEqual([{ id: expect.any(String), characterId: playerHero.id }]);
 
-    expect((await call(app, player, 'DELETE', `/parties/${partyId}/heroes/${listed!.myHeroes[0]!.id}`)).statusCode).toBe(204);
+    expect(
+      (await call(app, player, 'DELETE', `/parties/${partyId}/heroes/${listed!.myHeroes[0]!.id}`)).statusCode,
+    ).toBe(204);
     const after = (await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>();
     expect(after[0]).toMatchObject({ myCharacterIds: [], myHeroes: [] });
     // Still at the table, without a hero, until they leave too.

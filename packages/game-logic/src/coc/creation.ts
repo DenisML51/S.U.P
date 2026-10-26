@@ -80,7 +80,8 @@ export function createInvestigator(input: InvestigatorInput): CharacterDraft {
   for (const skill of sheetSkills(build.era)) if (!skill.specialities) add(skill.id);
   // The paper sheet prints these specialities; others appear once the investigator has them.
   for (const id of STANDARD_SPECIALITIES) add(id);
-  for (const id of Object.keys(input.skills)) if (skillDef(id)) add(id);
+  // An occupation skill stays on the sheet even with no points on it (an Art/Craft picked, left at base).
+  for (const id of [...Object.keys(input.skills), ...occupation]) if (skillDef(id)) add(id);
 
   const creditRating = input.skills['credit-rating'] ?? 0;
   const wealth = wealthOf(creditRating, build.era);

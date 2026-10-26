@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LayoutGroup, motion } from 'framer-motion';
-import { npcMinHP, type NpcAttack, type PartyDto, type PartyHeroDto, type PartyNpcDto } from '@itd/schema';
+import { npcMinHP, type NpcAttack, type PartyDto, type PartyHeroDto, type PartyNpcDto, type NpcDisposition } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
 import { usePartyStore } from '../../store/usePartyStore';
 import { CharacterArt } from '../../ui/CharacterArt';
@@ -17,6 +17,7 @@ import {
 } from '../../ui/icons';
 import { IconButton, Meter, Panel, cx } from '../../ui/primitives';
 import { formatBonus, isCocFight } from './partyView';
+import { HeroRoll } from './TableDice';
 
 /** "Нож 40% 1D4" — an attack of a Call of Cthulhu NPC on its card. */
 const attackLine = (attack: NpcAttack) => [attack.name, `${attack.skill}%`, attack.damage].filter(Boolean).join(' ');
@@ -47,7 +48,8 @@ export const TableDecks: React.FC<{
   onBring: () => void;
   onPlay: (hero: PartyHeroDto) => void;
   onRemoveHero: (hero: PartyHeroDto) => void;
-  onNpc: (npc?: PartyNpcDto) => void;
+  /** An NPC to edit, or a new one of the stack it is added to. */
+  onNpc: (npc?: PartyNpcDto, disposition?: NpcDisposition) => void;
 }> = ({ party, userId, canBring, onBring, onPlay, onRemoveHero, onNpc }) => {
   const [open, setOpen] = useState<GroupId | null>(null);
   const setHeroHidden = usePartyStore((s) => s.setHeroHidden);
@@ -66,6 +68,7 @@ export const TableDecks: React.FC<{
       key: hero.id,
       render: (mode) => (
         <HeroCard
+          partyId={party.id}
           hero={hero}
           // Players' heroes carry no owner name on the card; the master's own show whether players see them.
           label={mine ? seen : ''}
@@ -119,14 +122,14 @@ export const TableDecks: React.FC<{
       add: {
         label: 'Быстрый НПС',
         hint: isCocFight(party) ? 'Хиты, броня и ЛВК — видите только вы' : 'Хиты, КБ и инициатива — видите только вы',
-        onAdd: () => onNpc(),
+        onAdd: () => onNpc(undefined, 'hostile'),
       },
     },
     {
       id: 'allies',
       title: 'Союзники',
       cards: npcCards(false),
-      add: { label: 'Быстрый НПС', hint: 'Друзья отряда; цифры видите только вы', onAdd: () => onNpc() },
+      add: { label: 'Быстрый НПС', hint: 'Друзья отряда; цифры видите только вы', onAdd: () => onNpc(undefined, 'friendly') },
     },
   ];
 
@@ -404,6 +407,7 @@ const AddCard: React.FC<{ label: string; hint: string; mode: DeckMode; onAdd: ()
 };
 
 const HeroCard: React.FC<{
+  partyId: string;
   hero: PartyHeroDto;
   label: string;
   mine: boolean;
@@ -413,7 +417,7 @@ const HeroCard: React.FC<{
   onRemove: () => void;
   /** The master's own hero: shown to the players or kept from them. */
   onToggleHidden?: () => void;
-}> = ({ hero, label, mine, mode, canRemove, onPlay, onRemove, onToggleHidden }) => {
+}> = ({ partyId, hero, label, mine, mode, canRemove, onPlay, onRemove, onToggleHidden }) => {
   const spread = mode === 'spread';
   const hidden = hero.hidden;
   const origin = describeOrigin(hero);
@@ -434,6 +438,8 @@ const HeroCard: React.FC<{
           className={cx('absolute inset-0 h-full w-full', hidden && 'ui-hero-card__art--hidden')}
           position="50% 20%"
         />
+        {/* The hero's throws land on its card while the squad lies open. */}
+        {spread && <HeroRoll partyId={partyId} heroId={hero.id} />}
         {mode !== 'small' && (
           <>
             <span className="absolute inset-0 bg-gradient-to-t from-bg-deep from-15% via-bg-deep/60 via-40% to-transparent to-65%" />
