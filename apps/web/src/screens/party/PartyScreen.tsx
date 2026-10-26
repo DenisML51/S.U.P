@@ -283,15 +283,12 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
               compact={party.combat !== null}
               onOpen={() => setOverlay({ kind: 'lore' })}
               action={
-                // Between sessions the table is a lobby: say so to both sides.
+                // Whether a session runs, said plainly; the master starts a fight from here.
                 !party.sessionStartedAt ? (
-                  <span className="ui-session-closed text-sm">
-                    {isMaster
-                      ? 'Сессия не идёт — игроки видят стол и готовят героев'
-                      : 'Сессия не идёт — можно приготовить героя; чат и броски откроются с сессией'}
-                  </span>
+                  <span className="ui-session-closed text-sm">Сессия не идёт</span>
+                ) : !isMaster ? (
+                  !party.combat && <span className="ui-session-closed text-sm">Сессия идёт</span>
                 ) : (
-                  isMaster &&
                   !party.combat && (
                     <Button
                       variant="primary"
