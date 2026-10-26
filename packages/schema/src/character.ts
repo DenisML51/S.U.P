@@ -284,6 +284,8 @@ export const SpellSchema = passthroughObject({
   saveAttribute: optionalShortText,
   /** Casting it starts concentration, which a new concentration, a failed save or incapacitation ends. */
   concentration: optionalFlag,
+  /** Can be cast as a ritual: 10 minutes longer, without a spell slot. */
+  ritual: optionalFlag,
   prepared: flag(false),
   /** Granted by a feature (oath spells): always prepared and not counted against the limit. */
   alwaysPrepared: optionalFlag,
@@ -505,6 +507,8 @@ export const CharacterSchema = passthroughObject({
   initiativeBonus: optionalNumber,
   /** Half the proficiency bonus on checks without proficiency, initiative included (Jack of All Trades). */
   halfProficiency: optionalFlag,
+  /** Ritual spells of the spellbook are cast as rituals without being prepared (a Wizard). */
+  ritualsFromBook: optionalFlag,
   /** Attacks one Attack action makes (Extra Attack); absent means one. */
   attacksPerAction: numeric(int.min(1).max(8).optional()),
   /** The lowest natural d20 of a weapon attack that is a critical hit (19 for a Champion); absent means 20. */

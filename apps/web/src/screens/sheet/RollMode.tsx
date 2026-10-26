@@ -1,5 +1,6 @@
 import React from 'react';
 import { create } from 'zustand';
+import { tIn } from '../../i18n';
 import { cx } from '../../ui/primitives';
 
 type Chosen = 'advantage' | 'disadvantage';
@@ -24,8 +25,9 @@ export const useRollMode = create<RollModeState>((set, get) => ({
 }));
 
 const OPTIONS: { value: Chosen; label: string; hint: string; tone: string }[] = [
-  { value: 'advantage', label: 'С преимуществом', hint: 'Следующий бросок к20 — два кубика, берётся больший', tone: 'success' },
-  { value: 'disadvantage', label: 'С помехой', hint: 'Следующий бросок к20 — два кубика, берётся меньший', tone: 'danger' },
+  // Said in the words of the d20 rules: "Помеха" alone is Call of Cthulhu's "Hampered" in English.
+  { value: 'advantage', label: tIn('d20', 'Преимущество'), hint: 'Следующий бросок к20 — два кубика, берётся больший', tone: 'success' },
+  { value: 'disadvantage', label: tIn('d20', 'Помеха'), hint: 'Следующий бросок к20 — два кубика, берётся меньший', tone: 'danger' },
 ];
 
 /**
@@ -37,9 +39,9 @@ export const RollModeToggle: React.FC<{ className?: string }> = ({ className }) 
   const choose = useRollMode((s) => s.choose);
   // The setting's own segmented control: a pick shows in its tone, a second click takes it back.
   return (
-    <div className={cx('flex items-center gap-2', className)}>
-      <span className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-ink-faint">к20</span>
-      <div role="radiogroup" aria-label="Следующий бросок к20" className="ui-segmented ui-segmented--compact !h-8 min-w-0 flex-1">
+    <div className={cx('flex flex-col gap-1', className)}>
+      <span className="text-[11px] uppercase tracking-[0.14em] text-ink-faint">Следующий бросок к20</span>
+      <div role="radiogroup" aria-label="Следующий бросок к20" className="ui-segmented ui-segmented--compact !h-8 w-full">
         {OPTIONS.map((option) => {
           const on = chosen === option.value;
           return (

@@ -80,12 +80,15 @@ export interface PerformActionRequest {
   trackActionEconomy?: boolean;
   /** Cast a spell with a slot of this level (higher than its own to upcast). */
   slotLevel?: number;
+  /** Cast a ritual spell as a ritual: no slot, 10 minutes longer, so never in a fight's turn. */
+  asRitual?: boolean;
 }
 
 export type PerformActionFailure =
   | 'not_found'
   | 'passive'
   | 'not_prepared'
+  | 'not_ritual'
   | 'no_action_left'
   | 'not_enough_resource'
   | 'ammunition_unresolved'
@@ -159,7 +162,14 @@ export function performAction(character: Character, request: PerformActionReques
   if (free && !(request.kind === 'ability' && isUsable(source as Ability))) {
     return fail('passive', `«${source.name}» — пассивная способность`);
   }
-  if (request.kind === 'spell' && !(source as Character['spells'][number]).prepared) {
+  const spell = request.kind === 'spell' ? (source as Character['spells'][number]) : undefined;
+  const ritual = !!request.asRitual && !!spell;
+  if (ritual) {
+    if (!spell!.ritual) return fail('not_ritual', `«${source.name}» нельзя сотворить ритуалом`);
+    if (request.trackActionEconomy) return fail('not_ritual', 'Ритуал идёт на 10 минут дольше — не в ход боя');
+    // A Wizard casts a ritual straight from the spellbook; everyone else from what they prepared.
+    if (!spell!.prepared && !character.ritualsFromBook) return fail('not_prepared', `Заклинание «${source.name}» не подготовлено`);
+  } else if (spell && !spell.prepared) {
     return fail('not_prepared', `Заклинание «${source.name}» не подготовлено`);
   }
 
@@ -192,7 +202,8 @@ export function performAction(character: Character, request: PerformActionReques
     request.kind === 'spell' && request.slotLevel !== undefined
       ? next.resources.find((r) => r.spellSlotLevel === request.slotLevel)?.id
       : undefined;
-  const resourceId = chosenSlot ?? ('resourceId' in source ? source.resourceId : undefined);
+  // A ritual takes no slot.
+  const resourceId = ritual ? undefined : (chosenSlot ?? ('resourceId' in source ? source.resourceId : undefined));
   if (resourceId) {
     const amount = ('resourceCost' in source ? source.resourceCost : undefined) ?? 1;
     const resource = next.resources.find((r) => r.id === resourceId);
@@ -239,7 +250,7 @@ export function performAction(character: Character, request: PerformActionReques
     costs.resource && `${costs.resource.name} −${costs.resource.amount}`,
     costs.ammunition && `${costs.ammunition.name} −${costs.ammunition.amount}`,
   ].filter(Boolean);
-  const verb = request.kind === 'attack' ? 'Атака' : request.kind === 'spell' ? 'Заклинание' : 'Способность';
+  const verb = request.kind === 'attack' ? 'Атака' : ritual ? 'Ритуал' : request.kind === 'spell' ? 'Заклинание' : 'Способность';
   const message = `${verb}: ${source.name}${paid.length ? ` (${paid.join(', ')})` : ''}${strikeNote}${concentrates ? ' · концентрация' : ''}`;
 
   return { ok: true, character: next, costs, message };
