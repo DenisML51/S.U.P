@@ -892,24 +892,9 @@
     pointer-events: none;
   }
   .fb-trail { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; opacity: 0.75; }
-  /* Now and then a spark of the fairy's light runs along the trail, away into the distance, growing
-     small as it goes: on the trail's own path, so the browser only moves it. */
-  .fb-spark {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgb(255 252 236), rgb(255 226 160 / 0.6) 30%, transparent 70%);
-    offset-path: var(--fb-path);
-    offset-rotate: 0deg;
-    opacity: 0;
-    will-change: offset-distance, opacity;
-    animation: fb-spark 9s cubic-bezier(0.3, 0, 0.6, 1) infinite;
-  }
-  .fb-spark + .fb-spark { animation-delay: -3s; }
-  .fb-spark + .fb-spark + .fb-spark { animation-delay: -6s; }
+  /* The dust lies in stretches, lit one after another: waves of light flow along the trail into
+     the distance (each stretch a layer of its own that only fades). */
+  .fb-trail__glint { opacity: 0.15; will-change: opacity; animation: fb-flow 4s linear infinite; }
   /* Fireflies and fairy dust: a soft dot of light each, drifting its own way and glowing as it goes
      (transform and opacity only, on fixed keyframes). */
   .fb-mote {
@@ -962,11 +947,12 @@
   25% { opacity: 0.8; }
   60% { opacity: 1; transform: translate(8px, -40px); }
 }
-@keyframes fb-spark {
-  0% { offset-distance: 0%; opacity: 0; transform: scale(1); }
-  8% { opacity: 1; }
-  70% { opacity: 0.8; }
-  100% { offset-distance: 100%; opacity: 0; transform: scale(0.3); }
+/* A stretch lights up quickly and dims slowly: the wave's crest has a glow trailing behind it. */
+@keyframes fb-flow {
+  0% { opacity: 1; }
+  40% { opacity: 0.15; }
+  84% { opacity: 0.15; }
+  100% { opacity: 1; }
 }
 @keyframes fb-firefly {
   0%, 100% { opacity: 0.3; transform: translate(0, 0); }
@@ -988,8 +974,7 @@
   to { opacity: 1; transform: rotate(-8deg) scale(1); filter: blur(0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='fable'] :is(.fb-light, .fb-mote, .fb-mist, .fb-firefly) { animation: none; }
-  [data-setting='fable'] .fb-spark { display: none; }
+  [data-setting='fable'] :is(.fb-light, .fb-mote, .fb-mist, .fb-firefly, .fb-trail__glint) { animation: none; }
   [data-setting='fable'] .fb-mote { opacity: 0.6; }
   [data-setting='fable'] .ui-toast,
   [data-setting='fable'] .ui-toast .ui-roll-toast[data-landed]::after { animation: none; }

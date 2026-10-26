@@ -127,7 +127,6 @@ const TRAIL = [
   [1250, 980, 1070, 850, 1020, 740, 1180, 670],
   [1180, 670, 1310, 615, 1360, 540, 1460, 474],
 ] as const;
-const TRAIL_PATH = `M${TRAIL[0][0]} ${TRAIL[0][1]}${TRAIL.map((c) => `C${c.slice(2).join(' ')}`).join('')}`;
 
 /** A point on one of the trail's curves. */
 const trailAt = (c: readonly number[], t: number) => {
@@ -139,9 +138,18 @@ const trailAt = (c: readonly number[], t: number) => {
 };
 
 /**
+ * The dust lies in this many sets, in stretches one after another along the trail: lit in turn,
+ * they send waves of light running along it away into the distance.
+ */
+const GLINTS = 6;
+/** How long a wave takes to pass one stretch to the next and back to the first (seconds). */
+const FLOW_S = 4;
+
+/**
  * The dust along the trail: grains and now and then a sparkle, strewn a little to either side of
  * its line. Near the foot of the screen the grains are large and far apart; towards the distance
- * smaller and closer, as a road narrows to the horizon.
+ * smaller and closer, as a road narrows to the horizon. Each grain belongs to the stretch of the
+ * trail it lies in; the stretches are shorter towards the distance, so the waves slow as they go.
  */
 const TRAIL_DUST = (() => {
   const next = random(1907);
@@ -150,12 +158,14 @@ const TRAIL_DUST = (() => {
   points.push(trailAt(TRAIL[1], 1));
   /** How near a point of the trail is: 1 at the foot of the screen, a fifth on the horizon. */
   const nearAt = (y: number) => 0.2 + 0.8 * Math.max(0, Math.min(1, (y - 474) / (980 - 474))) ** 1.4;
-  let grains = '';
-  let sparkles = '';
+  const grains = Array.from({ length: GLINTS }, () => '');
+  const sparkles = Array.from({ length: GLINTS }, () => '');
   const left: [number, number][] = [];
   const right: [number, number][] = [];
   let walked = 0;
   let due = 0;
+  /** How many stretches have been walked: the set a grain belongs to is its whole part. */
+  let stretch = 0;
   for (let i = 1; i < points.length; i++) {
     const [x0, y0] = points[i - 1]!;
     const [x1, y1] = points[i]!;
@@ -171,41 +181,60 @@ const TRAIL_DUST = (() => {
       const px = x0 + (x1 - x0) * t;
       const py = y0 + (y1 - y0) * t;
       const near = nearAt(py);
+      const set = Math.floor(stretch + (t * step) / (34 * near)) % GLINTS;
       due += (1.2 + 3.4 * near) * (0.4 + next() * 1.2);
       const aside = (next() + next() + next() - 1.5) * 26 * near;
       const x = px + Math.cos(normal) * aside;
       const y = py + Math.sin(normal) * aside;
       if (next() < 0.035) {
-        sparkles += sparkle(x, y, (5 + next() * 6) * near, 0.15);
+        sparkles[set] += sparkle(x, y, (5 + next() * 6) * near, 0.15);
       } else {
         const r = (0.5 + next() ** 3 * 2) * near;
-        grains += `M${f(x - r)} ${f(y)}a${f(r)} ${f(r)} 0 1 0 ${f(r * 2)} 0a${f(r)} ${f(r)} 0 1 0 ${f(-r * 2)} 0`;
+        grains[set] += `M${f(x - r)} ${f(y)}a${f(r)} ${f(r)} 0 1 0 ${f(r * 2)} 0a${f(r)} ${f(r)} 0 1 0 ${f(-r * 2)} 0`;
       }
     }
     walked += step;
+    stretch += step / (34 * nearAt(y1));
   }
   const band = `M${left.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}L${right.reverse().map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}Z`;
   return { grains, sparkles, band };
 })();
 
-/** The trail, drawn once: a haze of light under it, the dust over it. */
+/**
+ * The trail: a haze of light under it and the dust in it softly aglow, drawn once; over that the
+ * dust itself in its sets, each a layer of its own lit in its turn, so the light flows along the
+ * trail away into the distance without anything being drawn again.
+ */
 const Trail: React.FC = () => (
-  <svg viewBox={`0 0 ${SHEET_W} ${SHEET_H}`} className="fb-trail" aria-hidden>
-    <defs>
-      <filter id="fb-trail-glow" filterUnits="userSpaceOnUse" x="800" y="380" width="800" height="620">
-        <feGaussianBlur stdDeviation="12" />
-      </filter>
-      <filter id="fb-trail-shine" filterUnits="userSpaceOnUse" x="800" y="380" width="800" height="620">
-        <feGaussianBlur stdDeviation="2.4" />
-      </filter>
-    </defs>
-    <path d={TRAIL_DUST.band} fill="rgb(250 214 140)" opacity="0.22" filter="url(#fb-trail-glow)" />
-    <g fill="rgb(255 226 160)" filter="url(#fb-trail-shine)" opacity="0.9">
-      <path d={TRAIL_DUST.grains + TRAIL_DUST.sparkles} />
-    </g>
-    <path d={TRAIL_DUST.grains} fill="rgb(255 244 214)" opacity="0.85" />
-    <path d={TRAIL_DUST.sparkles} fill="rgb(255 250 232)" />
-  </svg>
+  <>
+    <svg viewBox={`0 0 ${SHEET_W} ${SHEET_H}`} className="fb-trail" aria-hidden>
+      <defs>
+        <filter id="fb-trail-glow" filterUnits="userSpaceOnUse" x="800" y="380" width="800" height="620">
+          <feGaussianBlur stdDeviation="12" />
+        </filter>
+        <filter id="fb-trail-shine" filterUnits="userSpaceOnUse" x="800" y="380" width="800" height="620">
+          <feGaussianBlur stdDeviation="2.4" />
+        </filter>
+      </defs>
+      <path d={TRAIL_DUST.band} fill="rgb(250 214 140)" opacity="0.22" filter="url(#fb-trail-glow)" />
+      <path d={TRAIL_DUST.grains.join('') + TRAIL_DUST.sparkles.join('')} fill="rgb(255 226 160)" filter="url(#fb-trail-shine)" opacity="0.3" />
+    </svg>
+    {TRAIL_DUST.grains.map((grains, i) => (
+      <svg
+        key={i}
+        viewBox={`0 0 ${SHEET_W} ${SHEET_H}`}
+        className="fb-trail fb-trail__glint"
+        // The nearer stretch is lit first, each next one a little later.
+        style={{ animationDuration: `${FLOW_S}s`, animationDelay: `${(-((GLINTS - i) % GLINTS) * FLOW_S) / GLINTS}s` }}
+        aria-hidden
+      >
+        {/* The stretch's own glow, so a wave's crest shines as it passes. */}
+        <path d={grains + TRAIL_DUST.sparkles[i]} fill="rgb(255 226 160)" filter="url(#fb-trail-shine)" />
+        <path d={grains} fill="rgb(255 244 214)" />
+        <path d={TRAIL_DUST.sparkles[i]} fill="rgb(255 250 232)" />
+      </svg>
+    ))}
+  </>
 );
 
 /** Fireflies and fairy dust over the glade: where each hovers, how large, which way it drifts. */
@@ -225,7 +254,7 @@ const GLADE_FIREFLIES = (() => {
 
 /**
  * Keeps the trail's sheet covering the screen: its scale, set on the element whenever the screen
- * changes size (the sheet is laid out in its own pixels, so the sparks can run along its path).
+ * changes size (the sheet is laid out in its own pixels, the trail on it).
  */
 const useCoverScale = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -245,7 +274,7 @@ const useCoverScale = () => {
 /**
  * Albion behind the screen, told by its light alone: the deep sea-green of the wood, warm sunlight
  * falling from above in soft rays, mist along the foot, and the hero's trail of golden dust winding
- * away into the distance, sparks running along it now and then; fireflies drifting over it all; the
+ * away into the distance, its light flowing along it; fireflies drifting over it all; the
  * edges dim, gilt tendrils in the corners. The picture is still: only whole layers fade or move.
  */
 const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => {
@@ -255,11 +284,8 @@ const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => {
       <div className="fb-sun absolute inset-0" />
       <div className="fb-light absolute inset-x-[-10%] top-[-5%] h-[110%]" />
       <div className="fb-mist absolute inset-x-[-20%] bottom-[-4%] h-[42%]" />
-      <div className="fb-sheet" style={{ ['--fb-path' as string]: `path('${TRAIL_PATH}')` }}>
+      <div className="fb-sheet">
         <Trail />
-        <i className="fb-spark" />
-        <i className="fb-spark" />
-        <i className="fb-spark" />
       </div>
       {GLADE_FIREFLIES.map(({ left, top, size, gold, way, duration, delay }, i) => (
         <i
