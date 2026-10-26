@@ -68,8 +68,9 @@ const CombatLog: React.FC<{ character: Character }> = ({ character }) => {
       {recent.map(({ entry, count }, index) => (
         <li
           key={entry.id}
-          className="text-ink-muted"
-          style={{ opacity: 0.35 + (0.65 * (index + 1)) / recent.length }}
+          // The newest reads in full ink; older ones fade, never below what can still be read.
+          className={index === recent.length - 1 ? 'text-ink' : 'text-ink-muted'}
+          style={{ opacity: 0.6 + (0.4 * (index + 1)) / recent.length }}
         >
           {entry.message}
           {count > 1 && <span className="ml-2 tabular-nums opacity-60">×{count}</span>}

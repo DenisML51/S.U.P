@@ -449,7 +449,7 @@
     box-shadow: inset -1px 0 0 rgb(var(--c-frame) / 0.4);
   }
   .ui-rail__item { color: rgb(var(--c-frame) / 0.85); }
-  .ui-rail__label { font-family: var(--setting-display); font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.1em; }
+  .ui-rail__label { font-family: var(--setting-display); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; }
   .ui-rail__item:not([aria-current]):hover { color: rgb(var(--c-frame-bright)); }
   .ui-rail__item[aria-current='page'] {
     color: rgb(255 240 204);

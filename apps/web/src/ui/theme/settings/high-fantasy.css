@@ -455,7 +455,7 @@
     border-right: 0;
     box-shadow: inset -1px 0 0 rgb(var(--c-frame) / 0.4), inset -4px 0 0 rgb(var(--c-bg-deep)), inset -5px 0 0 rgb(var(--c-frame) / 0.15);
   }
-  .ui-rail__item { color: rgb(var(--c-ink-faint)); }
+  .ui-rail__item { color: rgb(var(--c-ink-muted)); }
   .ui-rail__item:hover { color: rgb(var(--c-frame)); }
   .ui-rail__item[aria-current='page'] {
     color: rgb(var(--c-frame-bright));
