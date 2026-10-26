@@ -214,13 +214,8 @@ export const EquipmentSection: React.FC<{ character: Character }> = ({ character
             </div>
           </button>
         </Panel>
-        <div className="mt-auto">
-          <SectionNotes
-            title="О снаряжении"
-            value={character.equipmentNotes}
-            onSave={saveText('equipmentNotes')}
-          />
-        </div>
+        {/* Right under what is worn, not pinned to the screen's foot far from it. */}
+        <SectionNotes title="О снаряжении" value={character.equipmentNotes} onSave={saveText('equipmentNotes')} />
       </SectionAside>
     </div>
   );

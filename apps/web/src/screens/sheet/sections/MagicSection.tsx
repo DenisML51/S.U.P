@@ -264,7 +264,7 @@ const CastingInfo: React.FC<{ character: Character; below?: boolean }> = ({ char
     <>
       {difficulty}
       {schools}
-      <div className="mt-auto">{notes}</div>
+      {notes}
     </>
   );
 };

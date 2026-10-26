@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import type { CharacterPreview, PartyListItemDto } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
-import { CharacterArt, fullArtSrc } from '../../ui/CharacterArt';
+import { fullArtSrc } from '../../ui/CharacterArt';
 import { IconClose, IconCombat, IconCreate, IconImport, IconTable } from '../../ui/icons';
 import { Drawer } from '../../ui/Drawer';
 import { useAtLeast } from '../../ui/useBreakpoint';
@@ -413,7 +413,8 @@ const HeroFigure: React.FC<{ hero: CharacterPreview; onTone: (tone: Rgb | null) 
           />
         )}
         <span className="ui-hero-figure__art absolute inset-0" style={{ maskImage: mask, WebkitMaskImage: mask }}>
-          {src ? (
+          {/* Without a picture the hub's right side stays empty. */}
+          {src && (
             <img
               src={src}
               alt={hero.name}
@@ -427,8 +428,6 @@ const HeroFigure: React.FC<{ hero: CharacterPreview; onTone: (tone: Rgb | null) 
                 onTone(reading && pageTone(reading.edge));
               }}
             />
-          ) : (
-            <CharacterArt source={hero} kind="full" className="h-full w-full" />
           )}
         </span>
       </div>
