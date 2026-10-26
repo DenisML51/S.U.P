@@ -337,30 +337,6 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   aspect-ratio: var(--art-ratio);
 }
 
-/* Before the first hero: the place where they will stand, a faint glow and a quiet line. */
-.ui-hero-place {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  height: min(78%, 40rem);
-  aspect-ratio: 2 / 3;
-  padding-bottom: 12%;
-  border-radius: 999px 999px 0 0 / 30% 30% 0 0;
-  border: 1px solid rgb(var(--c-frame) / 0.3);
-  border-bottom: none;
-  background: radial-gradient(ellipse 70% 55% at 50% 45%, rgb(var(--c-frame-bright) / 0.09), transparent 70%);
-  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 95%);
-  mask-image: linear-gradient(to bottom, #000 55%, transparent 95%);
-  color: rgb(var(--c-ink-faint));
-  font-size: 0.875rem;
-  letter-spacing: 0.04em;
-  transition: color 0.3s, border-color 0.3s;
-}
-.ui-hero-place:hover,
-.ui-hero-place:focus-visible { color: rgb(var(--c-ink-muted)); border-color: rgb(var(--c-frame-bright) / 0.35); outline: none; }
-
 /* ---------------------------------------------------------------- Home: the tables as a list */
 .ui-hub-rule {
   height: 1px;

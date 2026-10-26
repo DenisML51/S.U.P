@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { pointsRemaining } from '@itd/game-logic';
+import { TALENTS } from '@itd/game-logic/coc';
 import { findBackground, findClass, findSubclass } from '@itd/game-logic/dnd';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 import { Button, Panel, cx } from '../../ui/primitives';
@@ -13,8 +14,7 @@ import { Flourish } from '../../ui/Flourish';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { WorldCarousel } from './WorldCarousel';
 import { HeroSummary } from './HeroSummary';
-import { TrainingChoice } from './parts';
-import { OriginStep, PointBuyStep } from './custom/steps';
+import { OriginStep, ScoresStep } from './custom/steps';
 import {
   AbilitiesStep,
   BackgroundStep,
@@ -162,6 +162,7 @@ export const CreationScreen: React.FC<{
         <RulesCarousel
           value={path ? RULES_OF[path] : null}
           allowed={rules ? [rules] : undefined}
+          setting={setting}
           onChange={(choice) => {
             setPath(PATH_OF[choice]);
             setIndex(2);
@@ -248,17 +249,15 @@ export const CreationScreen: React.FC<{
     {
       id: 'attributes',
       label: 'Характеристики',
-      value: `${27 - custom.points}/27`,
-      question: 'В чём его сила?',
-      issues: custom.valid.attributes ? [] : ['Очки характеристик'],
-      content: <PointBuyStep creation={custom} />,
-    },
-    {
-      id: 'training',
-      label: 'Навыки',
-      question: 'Чему он обучен?',
-      issues: [],
-      content: <TrainingChoice creation={custom} columns={3} />,
+      value:
+        custom.method === 'pointBuy'
+          ? `${METHOD_NAMES.pointBuy} · ${27 - custom.points}/27`
+          : METHOD_NAMES[custom.method],
+      question: 'В чём его сила и чему он обучен?',
+      issues: custom.valid.attributes
+        ? []
+        : [custom.method === 'roll' ? 'Бросок характеристик' : custom.method === 'manual' ? 'Значения от 3 до 20' : 'Очки характеристик'],
+      content: <ScoresStep creation={custom} />,
     },
     {
       id: 'identity',
@@ -331,7 +330,7 @@ export const CreationScreen: React.FC<{
           {
             id: 'coc-talents',
             label: 'Таланты',
-            value: coc.talents.length ? `${coc.talents.length}` : undefined,
+            value: coc.talents.map((id) => TALENTS.find((t) => t.id === id)?.name ?? id).join(', ') || undefined,
             question: 'Чем он особенный?',
             issues: coc.issues.talents,
             content: <TalentsStep creation={coc} />,
@@ -525,7 +524,8 @@ export const CreationScreen: React.FC<{
               <h2 className="ui-display ui-title border-b border-line/60 px-6 py-4 text-center text-[1.5rem] leading-tight text-frame-bright">
                 {step.question}
               </h2>
-              <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5" data-creation-panel>
+              {/* Keyed by the step: each step opens at its top, not where the last one was scrolled. */}
+              <div key={step.id} className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5" data-creation-panel>
                 {content}
               </div>
             </Panel>
@@ -542,7 +542,14 @@ export const CreationScreen: React.FC<{
           </main>
         )}
 
-        <footer className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-4">
+        {/* Centred on the screen, not on the room beside the steps: when the steps slide in, «Дальше»
+            does not turn into «Назад» under the pointer. */}
+        <footer
+          className={cx(
+            'grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-4 transition-[margin] duration-[450ms]',
+            index > 0 && '-ml-60',
+          )}
+        >
           <span />
           <div className="flex gap-4">
             <Button variant="secondary" disabled={index === 0} onClick={() => setIndex(index - 1)}>

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import type { CharacterSummary, NpcCocStats } from '@itd/schema';
+import type { CharacterSummary, NpcCocStats, TableDie } from '@itd/schema';
 import {
   type AnyPgColumn,
   bigint,
@@ -293,6 +293,30 @@ export const partyMessages = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('party_messages_party_created_idx').on(t.partyId, t.createdAt, t.id)],
+);
+
+/**
+ * Dice thrown at a party's table, for its log: a hero's throw (`hero_id`, its name kept as it was)
+ * or the master's own. `audience` null: everyone at the table may read it; otherwise only these users.
+ */
+export const partyRolls = pgTable(
+  'party_rolls',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    partyId: uuid('party_id')
+      .notNull()
+      .references(() => parties.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    heroId: uuid('hero_id').references(() => partyHeroes.id, { onDelete: 'set null' }),
+    heroName: text('hero_name'),
+    audience: uuid('audience').array(),
+    dice: jsonb('dice').$type<TableDie[]>().notNull(),
+    label: text('label').notNull().default(''),
+    createdAt: createdAt(),
+  },
+  (t) => [index('party_rolls_party_created_idx').on(t.partyId, t.createdAt, t.id)],
 );
 
 export type UserRow = typeof users.$inferSelect;

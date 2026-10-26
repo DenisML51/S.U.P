@@ -9,7 +9,9 @@ import { useCharacterStore } from './store/useCharacterStore';
 import { useSessionStore } from './store/useSessionStore';
 import { Gate, type GatePhase } from './screens/auth/Gate';
 import { DraftScope, clearDraft, draftScope } from './screens/create/useDraftState';
+import { toast } from 'react-hot-toast';
 import { Toasts } from './ui/Toasts';
+import { TableRollOverlay } from './screens/party/TableDice';
 import { preloadSystem, systemHeroScreen } from './systems';
 
 /**
@@ -74,6 +76,16 @@ const App: React.FC = () => {
   useEffect(() => {
     void boot();
   }, [boot]);
+  // Leaving a hero takes its messages along at once: rolls and undos of that hero mean nothing
+  // elsewhere. Synchronous with the store, so a message sent on the way out (the hero was deleted
+  // elsewhere) still shows.
+  useEffect(
+    () =>
+      useCharacterStore.subscribe((state, previous) => {
+        if (previous.character && state.character?.id !== previous.character.id) toast.remove();
+      }),
+    [],
+  );
   useTableCalls();
 
   const signedIn = status === 'authenticated';
@@ -162,6 +174,7 @@ const App: React.FC = () => {
       <Suspense fallback={null}>
         <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       </Suspense>
+      <TableRollOverlay />
       <Toasts />
     </MotionConfig>
   );

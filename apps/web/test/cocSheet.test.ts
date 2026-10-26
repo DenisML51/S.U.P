@@ -151,6 +151,17 @@ describe('the roll toast', () => {
     expect(canRollDamage({ ...hit, damage: { total: 3, formula: '1d6' } })).toBe(false);
     expect(canRollDamage(null)).toBe(false);
   });
+
+  it('never pushes a roll of the fight; a fight back deals damage only once it won', () => {
+    const dodge = record({ kind: 'skill', combat: 'dodge', check: {} });
+    expect(canPush(dodge)).toBe(false);
+    expect(canPush(record({ kind: 'skill', check: {} }))).toBe(true);
+    expect(canBuyWithLuck(dodge, 99)).toBe(true);
+    const fightBack = record({ kind: 'attack', combat: 'fightBack', check: { success: true, level: 'regular' } });
+    expect(canRollDamage(fightBack)).toBe(false);
+    expect(canRollDamage(fightBack, { tone: 'danger' })).toBe(false);
+    expect(canRollDamage(fightBack, { tone: 'success' })).toBe(true);
+  });
 });
 
 describe('edits run twice by the store give the same sheet', () => {

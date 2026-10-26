@@ -17,73 +17,22 @@ import {
   findFeat,
   kitItems,
   preparedSpellsChoice,
-  rollAbilityScores,
   type KitOption,
 } from '@itd/game-logic/dnd';
 import type { DndBuild } from '@itd/schema';
 import { GameIcon } from '../../../ui/GameIcon';
 import { ImageSlot } from '../../../ui/ImageSlot';
 import { NumberField, Segmented } from '../../../ui/forms';
-import { Button, IconButton, Panel, cx } from '../../../ui/primitives';
+import { Facts, Section } from '../../../ui/Section';
+import { Button, IconButton, cx } from '../../../ui/primitives';
 import { IconCoins, IconDice, IconMinus, IconPlus } from '../../../ui/icons';
-import { LandedValue, RollingDice, useLanded } from '../../../ui/RollingDie';
 import { ChoiceField } from '../../progression/ChoiceField';
 import { CLASS_SOURCES, LevelPlanView, planIssues } from '../../progression/LevelPlanView';
+import { EmblemGrid, Picked, ScoreCard, ThrownScore, throwAbilityScores } from '../kit';
 import type { DndCreation } from './useDndCreation';
 
 const skillName = (id: string) => SKILLS_LIST.find((s) => s.id === id)?.name ?? id;
 const attributeName = (id: string) => ATTRIBUTES_LIST.find((a) => a.id === id)?.name ?? id;
-
-// ------------------------------------------------------------------------------------------------
-// Layout pieces
-// ------------------------------------------------------------------------------------------------
-
-/** A grid of emblems to pick one from, as the class grid of a game's character creator. */
-const OriginGrid: React.FC<{
-  items: { id: string; name: string; icon?: string }[];
-  selected: string;
-  onSelect: (id: string) => void;
-  columns: number;
-  size?: number;
-}> = ({ items, selected, onSelect, columns, size = 44 }) => (
-  <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
-    {items.map((item) => (
-      <button key={item.id} type="button" className="ui-origin" aria-pressed={selected === item.id} onClick={() => onSelect(item.id)}>
-        <GameIcon name={item.icon} kind="ability" size={size} className="ui-origin__icon" />
-        <span className="ui-origin__name">{item.name}</span>
-      </button>
-    ))}
-  </div>
-);
-
-/** What the picked entry is, under the grid: its name, its text, then what it gives and asks. */
-const Details: React.FC<{ title?: string; text?: string; empty: string; children?: React.ReactNode }> = ({
-  title,
-  text,
-  empty,
-  children,
-}) =>
-  title ? (
-    <div className="mt-5 border-t border-line/60 pt-5">
-      <h3 className="ui-display ui-title text-center text-[1.5rem] leading-tight text-frame-bright">{title}</h3>
-      {text && <p className="mx-auto mt-1 max-w-2xl text-center text-sm text-ink-muted">{text}</p>}
-      <div className="mt-5">{children}</div>
-    </div>
-  ) : (
-    <p className="mt-8 text-center text-sm text-ink-faint">{empty}</p>
-  );
-
-/** Small facts of an entry in a row: "Навыки: …  Инструменты: …". */
-const Facts: React.FC<{ facts: [string, React.ReactNode][] }> = ({ facts }) => (
-  <dl className="mb-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-    {facts.map(([label, value]) => (
-      <React.Fragment key={label}>
-        <dt className="text-ink-faint">{label}</dt>
-        <dd className="text-ink">{value}</dd>
-      </React.Fragment>
-    ))}
-  </dl>
-);
 
 // ------------------------------------------------------------------------------------------------
 // Species
@@ -94,15 +43,29 @@ export const SpeciesStep: React.FC<{ creation: DndCreation }> = ({ creation }) =
   const species = DND.species.find((s) => s.id === build.species);
   return (
     <>
-      <OriginGrid
+      <EmblemGrid
         columns={5}
         items={DND.species.map((s) => ({ id: s.id, name: s.name, icon: DND_ICONS.species[s.id] }))}
         selected={build.species}
         onSelect={creation.setSpecies}
       />
-      <Details title={species?.name} text={species && `${species.description} ${species.size}, скорость ${species.speed} фт.`} empty="Выберите вид, чтобы узнать о нём.">
+      <Picked
+        title={species?.name}
+        text={species?.description}
+        empty="Выберите вид, чтобы узнать о нём."
+        facts={
+          species && (
+            <Facts
+              facts={[
+                ['Размер', species.size],
+                ['Скорость', `${species.speed} фт.`],
+              ]}
+            />
+          )
+        }
+      >
         <LevelPlanView build={build} level={1} sources={['species']} onChange={creation.setBuild} />
-      </Details>
+      </Picked>
     </>
   );
 };
@@ -139,12 +102,13 @@ const BackgroundBonuses: React.FC<{ build: DndBuild; onChange: (build: DndBuild)
     onChange({ ...build, backgroundBonuses: next });
   };
   return (
-    <section className="mb-6">
-      <div className="mb-2 flex items-center gap-3">
-        <h4 className="ui-display text-[1.05rem] text-ink">Увеличение характеристик</h4>
+    <Section
+      title="Увеличение характеристик"
+      hint={split === 'two' ? 'Нажмите на характеристику, чтобы дать ей +2.' : 'Каждая из трёх получает +1.'}
+      aside={
         <Segmented
           label="Распределение"
-          value={Object.keys(bonuses).length === 0 ? ('' as 'two') : split}
+          value={split}
           onChange={setMode}
           options={[
             { value: 'two', label: '+2 и +1' },
@@ -152,26 +116,23 @@ const BackgroundBonuses: React.FC<{ build: DndBuild; onChange: (build: DndBuild)
           ]}
           className="ui-segmented--compact"
         />
-      </div>
+      }
+    >
       <div className="grid grid-cols-3 gap-2">
         {background.abilities.map((attribute) => (
           <button
             key={attribute}
             type="button"
-            className="ui-option items-center"
+            className="ui-option flex-row items-center justify-between px-4 py-3"
             aria-pressed={(bonuses[attribute] ?? 0) > 0}
             onClick={() => pick(attribute)}
-            disabled={Object.keys(bonuses).length === 0}
           >
             <span className="text-sm">{attributeName(attribute)}</span>
-            <span className="ui-numeric text-xl leading-none">{bonuses[attribute] ? `+${bonuses[attribute]}` : '—'}</span>
+            <span className="ui-display ui-numeric text-xl leading-none">{bonuses[attribute] ? `+${bonuses[attribute]}` : '—'}</span>
           </button>
         ))}
       </div>
-      {split === 'two' && Object.keys(bonuses).length > 0 && (
-        <p className="mt-1.5 text-xs text-ink-faint">Нажмите на характеристику, чтобы дать ей +2.</p>
-      )}
-    </section>
+    </Section>
   );
 };
 
@@ -181,16 +142,18 @@ export const BackgroundStep: React.FC<{ creation: DndCreation }> = ({ creation }
   const feat = findFeat(background?.feat);
   return (
     <>
-      <OriginGrid
+      <EmblemGrid
         columns={8}
-        size={38}
         items={DND.backgrounds.map((b) => ({ id: b.id, name: b.name, icon: DND_ICONS.backgrounds[b.id] }))}
         selected={build.background}
         onSelect={creation.setBackground}
       />
-      <Details title={background?.name} text={background?.description} empty="Выберите предысторию — прошлое героя до приключений.">
-        {background && (
-          <>
+      <Picked
+        title={background?.name}
+        text={background?.description}
+        empty="Выберите предысторию — прошлое героя до приключений."
+        facts={
+          background && (
             <Facts
               facts={[
                 ['Навыки', background.skills.map(skillName).join(', ')],
@@ -198,11 +161,16 @@ export const BackgroundStep: React.FC<{ creation: DndCreation }> = ({ creation }
                 ['Черта', feat?.name ?? background.feat],
               ]}
             />
+          )
+        }
+      >
+        {background && (
+          <div className="space-y-7">
             <BackgroundBonuses build={build} onChange={creation.setBuild} />
             <LevelPlanView build={build} level={1} sources={['background']} onChange={creation.setBuild} />
-          </>
+          </div>
         )}
-      </Details>
+      </Picked>
     </>
   );
 };
@@ -221,44 +189,55 @@ export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => 
     : [];
   return (
     <>
-      <OriginGrid
-        columns={4}
-        size={56}
+      <EmblemGrid
+        columns={6}
         items={DND.classes.map((c) => ({ id: c.id, name: c.name, icon: DND_ICONS.classes[c.id] }))}
         selected={build.class}
         onSelect={creation.setClass}
       />
-      <Details title={classDef?.name} text={classDef?.description} empty="Выберите класс — то, чему герой посвятил жизнь.">
-        {classDef && (
-          <>
+      <Picked
+        title={classDef?.name}
+        text={classDef?.description}
+        empty="Выберите класс — то, чему герой посвятил жизнь."
+        facts={
+          classDef && (
             <Facts
               facts={[
                 ['Кость хитов', `к${classDef.hitDie}`],
                 ['Основные', classDef.primary.map(attributeName).join(', ')],
                 ['Спасброски', classDef.saves.map(attributeName).join(', ')],
+                ['Подкласс', `с ${classDef.subclassLevel}-го уровня`],
               ]}
             />
-            <h4 className="ui-display mb-2 text-[1.05rem] text-ink">Подклассы с {classDef.subclassLevel}-го уровня</h4>
-            <div className="mb-6 grid grid-cols-4 gap-1.5">
-              {classDef.subclasses.map((subclass) => (
-                <div key={subclass.id} className="ui-origin cursor-default" title={[subclass.source, subclass.description].filter(Boolean).join(' · ')}>
-                  <GameIcon name={DND_ICONS.subclasses[subclass.id]} kind="ability" size={34} className="ui-origin__icon" />
-                  <span className="ui-origin__name">{subclass.name}</span>
-                </div>
-              ))}
-            </div>
-            <h4 className="ui-display mb-2 text-[1.05rem] text-ink">Развитие</h4>
-            <div className="grid grid-cols-[2rem_1fr] gap-x-2 gap-y-1 text-[13px]">
-              {levels.map(([level, names]) => (
-                <React.Fragment key={level}>
-                  <span className="ui-numeric text-ink-faint">{level}</span>
-                  <span className="text-ink-muted">{names.join(', ')}</span>
-                </React.Fragment>
-              ))}
-            </div>
+          )
+        }
+      >
+        {classDef && (
+          <>
+            {/* Only to read: the subclass is picked on the level that brings it, on «Развитие». */}
+            <Section title="Подклассы" hint={`Подкласс выбирается на ${classDef.subclassLevel}-м уровне, на шаге «Развитие».`}>
+              <ul className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-x-6 gap-y-2.5">
+                {classDef.subclasses.map((subclass) => (
+                  <li key={subclass.id} className="flex items-center gap-2.5 text-sm text-ink-muted" title={subclass.description}>
+                    <GameIcon name={DND_ICONS.subclasses[subclass.id]} kind="ability" size={22} className="ui-origin__icon shrink-0" />
+                    {subclass.name}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+            <Section title="Развитие по уровням">
+              <ol className="divide-y divide-line/40 border-y border-line/40 text-[13px]">
+                {levels.map(([level, names]) => (
+                  <li key={level} className="grid grid-cols-[3rem_1fr] items-baseline py-1.5">
+                    <span className="ui-numeric text-center text-ink-faint">{level}</span>
+                    <span className="text-ink-muted">{names.join(', ')}</span>
+                  </li>
+                ))}
+              </ol>
+            </Section>
           </>
         )}
-      </Details>
+      </Picked>
     </>
   );
 };
@@ -267,37 +246,6 @@ export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => 
 // Ability scores
 // ------------------------------------------------------------------------------------------------
 
-/**
- * A score with the 4d6 that made it: the dice tumble under it (the lowest one dropped) and the score
- * comes in once they are down. Without a throw on this visit the score simply stands.
- */
-const ThrownScore: React.FC<{
-  dice?: number[];
-  throwKey: number | null;
-  delay: number;
-  children: React.ReactNode;
-}> = ({ dice, throwKey, delay, children }) => {
-  const [landed, markLanded] = useLanded(dice ? throwKey : null);
-  const lowest = dice ? dice.indexOf(Math.min(...dice)) : -1;
-  return (
-    <>
-      <LandedValue landed={landed} className="flex flex-col items-center">
-        {children}
-      </LandedValue>
-      {dice && throwKey !== null && (
-        <RollingDice
-          key={throwKey}
-          className="mt-3 justify-center"
-          size="1.55rem"
-          delay={delay}
-          stagger={70}
-          dice={dice.map((value, i) => ({ sides: 6, value, dropped: i === lowest }))}
-          onLanded={markLanded}
-        />
-      )}
-    </>
-  );
-};
 
 export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation }) => {
   const { build, setBuild, rolls, setRolls } = creation;
@@ -317,17 +265,8 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
   /** The four d6 behind each score of the latest throw, to show it tumbling; gone once scores move. */
   const [thrown, setThrown] = useState<{ serial: number; dice: number[][] } | null>(null);
   const roll = () => {
-    // The scores are 4d6 each, thrown in order: the random draws behind them give back every die.
-    const draws: number[] = [];
-    const values = rollAbilityScores(() => {
-      const r = Math.random();
-      draws.push(r);
-      return r;
-    });
-    setThrown({
-      serial: Date.now(),
-      dice: values.map((_, i) => draws.slice(i * 4, i * 4 + 4).map((r) => Math.floor(r * 6) + 1)),
-    });
+    const { values, dice } = throwAbilityScores();
+    setThrown({ serial: Date.now(), dice });
     setRolls(values);
     setScores(Object.fromEntries(ATTRIBUTES_LIST.map((a, i) => [a.id, values[i]!])));
   };
@@ -339,6 +278,8 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
     setThrown(null);
   };
   const points = pointsRemaining(scores);
+  /** The class's main scores, marked on their cards: where the points matter most. */
+  const primary = new Set<string>(findClass(build.class)?.primary ?? []);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col items-center">
@@ -353,7 +294,14 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
         ]}
       />
       <p className="mt-3 h-6 text-sm text-ink-muted">
-        {method === 'pointBuy' && (points === 0 ? <span className="text-success">Все очки распределены</span> : `Осталось очков: ${points} из 27`)}
+        {method === 'pointBuy' &&
+          (points === 0 ? (
+            <span className="text-success">Все очки распределены</span>
+          ) : (
+            <>
+              Осталось очков: <span className="ui-numeric text-ink">{points}</span> из 27 · до 13 — по 1 очку, 14 и 15 — по 2
+            </>
+          ))}
         {method === 'roll' && (rolls ? 'Нажмите на две характеристики, чтобы поменять значения местами.' : 'Бросьте кости: 4к6, наименьшая отбрасывается.')}
         {method === 'manual' && 'Значения по договорённости с мастером, от 3 до 20.'}
       </p>
@@ -368,41 +316,41 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
           const bonus = build.backgroundBonuses[attribute.id] ?? 0;
           const total = base + bonus;
           return (
-            <Panel
+            <ScoreCard
               key={attribute.id}
-              ornate={false}
-              interactive={method === 'roll' && !!rolls}
+              label={attribute.name}
+              primary={primary.has(attribute.id) ? 'основная' : undefined}
+              description={attribute.description}
               active={swap === attribute.id}
-              onClick={() => clickForSwap(attribute.id)}
-              className="flex flex-col items-center px-3 py-5 text-center"
+              onClick={method === 'roll' && rolls ? () => clickForSwap(attribute.id) : undefined}
+              controls={
+                method === 'pointBuy' ? (
+                  <span className="flex gap-2">
+                    <IconButton label="Уменьшить" size={30} disabled={!canDecrement(scores, attribute.id)} onClick={() => setScores({ ...scores, [attribute.id]: base - 1 })}>
+                      <IconMinus width={14} height={14} />
+                    </IconButton>
+                    <IconButton label="Увеличить" size={30} disabled={!canIncrement(scores, attribute.id)} onClick={() => setScores({ ...scores, [attribute.id]: base + 1 })}>
+                      <IconPlus width={14} height={14} />
+                    </IconButton>
+                  </span>
+                ) : method === 'manual' ? (
+                  <NumberField value={base} min={3} max={20} onChange={(value) => setScores({ ...scores, [attribute.id]: value })} label={attribute.name} className="w-28" />
+                ) : undefined
+              }
             >
-              <span className="ui-stat__label">{attribute.name}</span>
               <ThrownScore
                 throwKey={method === 'roll' ? (thrown?.serial ?? null) : null}
                 dice={method === 'roll' ? thrown?.dice[index] : undefined}
                 delay={index * 90}
               >
-                <span className="ui-display ui-numeric my-2 text-5xl leading-none text-ink">{total}</span>
+                <span className="ui-display ui-numeric mb-2 text-5xl leading-none text-ink">{total}</span>
                 <span className="text-frame-bright">{formatModifier(abilityModifier(total))}</span>
-                <span className="mt-2 text-xs text-ink-faint">
+                <span className="mt-1.5 text-xs text-ink-faint">
                   {base}
                   {bonus > 0 && <span className="text-success"> +{bonus}</span>}
                 </span>
               </ThrownScore>
-              {method === 'pointBuy' && (
-                <span className="mt-3 flex gap-2">
-                  <IconButton label="Уменьшить" size={30} disabled={!canDecrement(scores, attribute.id)} onClick={() => setScores({ ...scores, [attribute.id]: base - 1 })}>
-                    <IconMinus width={14} height={14} />
-                  </IconButton>
-                  <IconButton label="Увеличить" size={30} disabled={!canIncrement(scores, attribute.id)} onClick={() => setScores({ ...scores, [attribute.id]: base + 1 })}>
-                    <IconPlus width={14} height={14} />
-                  </IconButton>
-                </span>
-              )}
-              {method === 'manual' && (
-                <NumberField value={base} min={3} max={20} onChange={(value) => setScores({ ...scores, [attribute.id]: value })} label={attribute.name} className="mt-3 w-28" />
-              )}
-            </Panel>
+            </ScoreCard>
           );
         })}
       </div>
@@ -465,14 +413,14 @@ export const ProgressionStep: React.FC<{ creation: DndCreation }> = ({ creation 
 // ------------------------------------------------------------------------------------------------
 
 /** One starting kit to choose: its items as pictures with names, and its gold. */
-const KitChoice: React.FC<{ title: string; kits: KitOption[]; selected?: string; onSelect: (id: string) => void }> = ({
+const KitChoice: React.FC<{ title: string; origin: string; kits: KitOption[]; selected?: string; onSelect: (id: string) => void }> = ({
   title,
+  origin,
   kits,
   selected,
   onSelect,
 }) => (
-  <section>
-    <h4 className="ui-display mb-3 text-[1.15rem] text-ink">{title}</h4>
+  <Section title={title} origin={origin} count={{ picked: selected ? 1 : 0, total: 1 }}>
     <div className="grid grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] gap-3">
       {kits.map((kit) => {
         const items = kitItems(kit);
@@ -512,16 +460,16 @@ const KitChoice: React.FC<{ title: string; kits: KitOption[]; selected?: string;
         );
       })}
     </div>
-  </section>
+  </Section>
 );
 
 export const EquipmentStep: React.FC<{ creation: DndCreation }> = ({ creation }) => {
   const classDef = findClass(creation.build.class);
   const background = findBackground(creation.build.background);
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      {classDef && <KitChoice title={`Снаряжение класса: ${classDef.name}`} kits={classDef.startingEquipment} selected={creation.classKitId} onSelect={creation.setClassKitId} />}
-      {background && <KitChoice title={`Снаряжение предыстории: ${background.name}`} kits={background.equipment} selected={creation.backgroundKitId} onSelect={creation.setBackgroundKitId} />}
+    <div className="mx-auto max-w-5xl">
+      {classDef && <KitChoice title="Снаряжение класса" origin={classDef.name} kits={classDef.startingEquipment} selected={creation.classKitId} onSelect={creation.setClassKitId} />}
+      {background && <KitChoice title="Снаряжение предыстории" origin={background.name} kits={background.equipment} selected={creation.backgroundKitId} onSelect={creation.setBackgroundKitId} />}
     </div>
   );
 };

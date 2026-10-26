@@ -7,6 +7,7 @@ import { IconArmor, IconCombat, IconCreate, IconInitiative, IconSanity } from '.
 import { Corners } from '../../ui/ornaments';
 import { Button, Meter, Panel, SectionTitle } from '../../ui/primitives';
 import { formatBonus } from './partyView';
+import { HeroRoll } from './TableDice';
 
 const art = (hero: PartyHeroDto) => ({ name: hero.name, images: hero.portrait ? { portrait: hero.portrait } : undefined });
 
@@ -30,6 +31,7 @@ export const Companions: React.FC<{ party: PartyDto; userId: string | undefined 
             >
               <span className="ui-companion relative block h-40 w-40 overflow-hidden">
                 <CharacterArt source={art(hero)} kind="portrait" className="h-full w-full" />
+                <HeroRoll partyId={party.id} heroId={hero.id} />
                 <Corners />
               </span>
               <span className="ui-display block w-full truncate text-lg leading-tight text-ink">{hero.name}</span>

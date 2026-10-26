@@ -14,6 +14,7 @@ import {
   PartyParamsSchema,
   SendMessageRequestSchema,
   StartCombatRequestSchema,
+  TableRollRequestSchema,
   UpdateNpcRequestSchema,
   UpdatePartyHeroRequestSchema,
   UpdatePartyRequestSchema,
@@ -25,6 +26,7 @@ import type { CombatService } from './combat.service';
 import type { MessagesService } from './messages.service';
 import type { PartyQueries } from './parties.queries';
 import type { PartiesService } from './parties.service';
+import type { RollsService } from './rolls.service';
 
 interface PartyRoutesOptions {
   auth: AuthService;
@@ -32,6 +34,7 @@ interface PartyRoutesOptions {
   combat: CombatService;
   queries: PartyQueries;
   messages: MessagesService;
+  rolls: RollsService;
 }
 
 /** Invite codes are guessable only by brute force; keep that slow. */
@@ -43,7 +46,7 @@ const INVITE_RATE_LIMIT = { rateLimit: { max: 20, timeWindow: '1 minute' } };
  */
 export const partyRoutes: FastifyPluginAsyncZod<PartyRoutesOptions> = async (
   app,
-  { auth, parties, combat, queries, messages },
+  { auth, parties, combat, queries, messages, rolls },
 ) => {
   app.addHook('preHandler', authenticate(auth));
 
@@ -183,6 +186,24 @@ export const partyRoutes: FastifyPluginAsyncZod<PartyRoutesOptions> = async (
     },
     async (request, reply) =>
       reply.status(201).send(await messages.send(request.userId, request.params.id, request.body)),
+  );
+
+  // --- Dice at the table ----------------------------------------------------------------------
+
+  app.get('/parties/:id/rolls', { schema: { params: PartyParamsSchema } }, async (request) =>
+    rolls.list(request.userId, request.params.id),
+  );
+
+  app.post(
+    '/parties/:id/rolls',
+    {
+      schema: { params: PartyParamsSchema, body: TableRollRequestSchema },
+      config: { rateLimit: { max: 120, timeWindow: '1 minute' } },
+    },
+    async (request, reply) => {
+      await rolls.announce(request.userId, request.params.id, request.body);
+      return reply.status(204).send();
+    },
   );
 
   // --- Combat ---------------------------------------------------------------------------------

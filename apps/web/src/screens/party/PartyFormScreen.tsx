@@ -178,6 +178,7 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
               <RulesCarousel
                 value={rulesChosen ? draft.rules : null}
                 allowed={allowedRules}
+                setting={draft.setting}
                 chooseLabel="Играть за столом по этим правилам"
                 onChange={(rules) => {
                   patch({ rules });

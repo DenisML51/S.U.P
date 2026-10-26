@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { damageBonusOfBuild } from '@itd/game-logic';
 import { npcMinHP, type NpcAttack, type NpcCocStats, type NpcDisposition, type PartyNpcDto, type Setting } from '@itd/schema';
 import { usePartyStore } from '../../store/usePartyStore';
 import { Dialog } from '../../ui/Dialog';
@@ -22,7 +23,7 @@ const NO_COC: NpcCocStats = { armor: 0, build: 0, damageBonus: '', attacks: [], 
 /** Attacks an NPC may list (the schema's limit). */
 const ATTACKS = 8;
 
-const draftOf = (npc: PartyNpcDto | undefined, coc: boolean): Draft => ({
+const draftOf = (npc: PartyNpcDto | undefined, coc: boolean, disposition: NpcDisposition): Draft => ({
   name: npc?.name ?? '',
   portraitAssetId: npc?.portraitAssetId ?? null,
   maxHP: npc?.maxHP ?? 10,
@@ -31,7 +32,7 @@ const draftOf = (npc: PartyNpcDto | undefined, coc: boolean): Draft => ({
   // A Call of Cthulhu NPC has no armour class (its armour is `coc.armor`); initiative is its DEX.
   armorClass: npc?.armorClass ?? (coc ? 0 : 12),
   initiativeBonus: npc?.initiativeBonus ?? (coc ? 50 : 0),
-  disposition: npc?.disposition ?? 'hostile',
+  disposition: npc?.disposition ?? disposition,
   coc: { ...NO_COC, ...npc?.coc },
 });
 
@@ -63,14 +64,16 @@ export const NpcDialog: React.FC<{
   partyId: string;
   setting: Setting;
   npc?: PartyNpcDto;
+  /** A new NPC starts on the side of the stack it was added from. */
+  disposition?: NpcDisposition;
   /** A Call of Cthulhu NPC (see `isCocFight`). */
   coc?: boolean;
   onClose: () => void;
-}> = ({ open, partyId, setting, npc, coc = false, onClose }) => {
+}> = ({ open, partyId, setting, npc, disposition = 'hostile', coc = false, onClose }) => {
   const createNpc = usePartyStore((s) => s.createNpc);
   const updateNpc = usePartyStore((s) => s.updateNpc);
   const removeNpc = usePartyStore((s) => s.removeNpc);
-  const [draft, setDraft] = useState(() => draftOf(npc, coc));
+  const [draft, setDraft] = useState(() => draftOf(npc, coc, disposition));
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const patch = (next: Partial<Draft>) => setDraft((current) => ({ ...current, ...next }));
@@ -201,7 +204,25 @@ export const NpcDialog: React.FC<{
             <>
               <div className="grid grid-cols-3 gap-3">
                 <Field label="Комплекция">
-                  {({ id }) => <NumberField id={id} value={draft.coc.build} min={-2} max={20} signed onChange={(build) => patchCoc({ build })} />}
+                  {({ id }) => (
+                    <NumberField
+                      id={id}
+                      value={draft.coc.build}
+                      min={-2}
+                      max={20}
+                      signed
+                      onChange={(build) =>
+                        // The damage bonus follows the Build by the table, unless the master wrote their own.
+                        patchCoc({
+                          build,
+                          ...(draft.coc.damageBonus === '' ||
+                          draft.coc.damageBonus === damageBonusOfBuild(draft.coc.build)
+                            ? { damageBonus: damageBonusOfBuild(build) }
+                            : {}),
+                        })
+                      }
+                    />
+                  )}
                 </Field>
                 <Field label="Бонус урона">
                   {({ id }) => (

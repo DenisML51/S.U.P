@@ -123,6 +123,18 @@ describe('Call of Cthulhu content', () => {
 });
 
 describe('Call of Cthulhu creation', () => {
+  it('keeps an occupation skill on the sheet with no points on it, at its base', () => {
+    const draft = createInvestigator({
+      name: 'Маргарет',
+      build: build({ occupation: 'antiquarian' }),
+      characteristics: harvey,
+      luck: 55,
+      skills: { appraise: 45 },
+      occupationSkills: ['appraise', 'art-craft:forgery'],
+    });
+    expect(draft.coc!.skills.find((s) => s.id === 'art-craft:forgery')).toMatchObject({ value: 5, occupation: true });
+  });
+
   it('rolls characteristics in steps of five within their ranges', () => {
     const c = rollCharacteristics(sequence(0));
     expect(c.str).toBe(15);
@@ -252,7 +264,7 @@ describe('Call of Cthulhu sanity, wounds and development', () => {
     const doc = investigator();
     expect(takeDamage(doc, 5)).toMatchObject({ currentHP: 7, majorWound: false });
     expect(takeDamage(doc, 6)).toMatchObject({ currentHP: 6, majorWound: true });
-    expect(takeDamage({ ...doc, currentHP: 4 }, 6)).toMatchObject({ currentHP: 0, dying: true });
+    expect(takeDamage({ ...doc, currentHP: 4 }, 6)).toMatchObject({ currentHP: 0, dying: true, unconscious: true });
     expect(takeDamage({ ...doc, currentHP: 4 }, 4)).toMatchObject({
       currentHP: 0,
       unconscious: true,
@@ -303,7 +315,7 @@ describe('Call of Cthulhu mechanics on the sheet', () => {
     const wounded = applyDamage(6)(doc);
     expect(wounded).toMatchObject({ currentHP: 6, conditions: ['major-wound'] });
     const dying = applyDamage(6)(wounded);
-    expect(dying.conditions).toEqual(['major-wound', 'dying']);
+    expect(dying.conditions).toEqual(['major-wound', 'dying', 'unconscious']);
     const saved = heal(1)(dying);
     expect(saved).toMatchObject({ currentHP: 1, conditions: ['major-wound'] });
     expect(heal(99)(saved).conditions).toEqual([]);
@@ -364,6 +376,9 @@ describe('Call of Cthulhu mechanics on the sheet', () => {
     });
     expect(weaponDamage({ damage: '1d3+DB' }, '-1', 'regular', low).total).toBe(0);
     expect(weaponDamage({ damage: '4d6/2d6/1d6' }, '0', 'regular', low).total).toBe(4);
+    // The Russian sheet writes the damage bonus "БУ".
+    expect(weaponDamage({ damage: '1d4+2+БУ' }, '+1d6', 'extreme', low).total).toBe(12);
+    expect(weaponDamage({ damage: '1d4+½БУ' }, '+1d6', 'extreme', low).total).toBe(7);
   });
 
   it('shows the dice behind a hit, the same throw as the plain damage', () => {
@@ -446,6 +461,33 @@ describe('Call of Cthulhu combat rules', () => {
     });
     expect(firearmModifiers({ range: 'long' }).difficulty).toBe('hard');
     expect(firearmModifiers({ range: 'veryLong' }).difficulty).toBe('extreme');
+  });
+
+  it('works out the Pulp talents of a shot', async () => {
+    const { firearmModifiers } = await import('../src/coc');
+    // «Беглый огонь»: no penalty die for several handgun shots.
+    expect(firearmModifiers({ shots: 3, rapidFire: true })).toMatchObject({ bonus: 0, penalty: 0 });
+    // «Зоркий глаз»: an aimed shot ignores a small target and a melee; unaimed it does not.
+    expect(firearmModifiers({ aimed: true, beadyEye: true, intoMelee: true, targetHidden: true })).toMatchObject({
+      bonus: 1,
+      penalty: 0,
+    });
+    expect(firearmModifiers({ beadyEye: true, intoMelee: true, targetHidden: true })).toMatchObject({ penalty: 2 });
+  });
+
+  it('finds a Pulp talent on the sheet and the die a heavy hitter adds', async () => {
+    const { hasTalent, damageDieOf } = await import('../src/coc');
+    expect(hasTalent({ traits: [{ grant: 'talent:nimble' }] }, 'nimble')).toBe(true);
+    expect(hasTalent({ traits: [{ grant: 'talent:nimble' }, {}] }, 'tough-guy')).toBe(false);
+    expect(damageDieOf('1d8+2+DB')).toBe(8);
+    expect(damageDieOf('2d6/1d6')).toBe(6);
+    expect(damageDieOf('горение')).toBeUndefined();
+  });
+
+  it('gives an NPC the damage bonus of its Build', async () => {
+    const { damageBonusOfBuild, damageBonusOf } = await import('../src/coc');
+    for (const strSiz of [60, 80, 100, 150, 180, 250, 300, 400])
+      expect(damageBonusOfBuild(damageBonusOf(strSiz).build)).toBe(damageBonusOf(strSiz).damageBonus);
   });
 
   it('allows manoeuvres by Build and gives outnumbering a bonus die', async () => {
@@ -558,13 +600,22 @@ describe('Call of Cthulhu rules by the book', () => {
     expect(once.coc!.skills.some((s) => s.check)).toBe(false);
   });
 
-  it('recovers luck on a roll over it, up to the starting luck for Pulp heroes', () => {
+  it('recovers luck by the edition: 1d10 over it; Pulp 2d10+10 over it, 1d10+5 otherwise; never past 99', () => {
     const doc = investigator();
-    expect(rollLuckRecovery(doc, sequence(face(80, 100), face(7, 10)))).toEqual({ roll: 80, gain: 7, die: 7 });
-    expect(rollLuckRecovery(doc, sequence(face(30, 100)))).toEqual({ roll: 30, gain: 0 });
+    expect(rollLuckRecovery(doc, sequence(face(80, 100), face(7, 10)))).toEqual({ roll: 80, gain: 7, dice: [7] });
+    expect(rollLuckRecovery(doc, sequence(face(30, 100)))).toEqual({ roll: 30, gain: 0, dice: [] });
     const pulp = investigator({ variant: 'pulp' });
-    const capped = { ...pulp, coc: { ...pulp.coc!, startingLuck: 60 } };
-    expect(rollLuckRecovery(capped, sequence(face(80, 100), face(7, 10))).gain).toBe(5);
+    const hero = { ...pulp, coc: { ...pulp.coc!, luck: 55, startingLuck: 55 } };
+    // Over the luck: 2d10+10, past the luck rolled at creation.
+    expect(rollLuckRecovery(hero, sequence(face(80, 100), face(7, 10), face(4, 10)))).toEqual({
+      roll: 80,
+      gain: 21,
+      dice: [7, 4],
+    });
+    // At or under it: still 1d10+5.
+    expect(rollLuckRecovery(hero, sequence(face(30, 100), face(3, 10)))).toEqual({ roll: 30, gain: 8, dice: [3] });
+    const lucky = { ...pulp, coc: { ...pulp.coc!, luck: 90 } };
+    expect(rollLuckRecovery(lucky, sequence(face(95, 100), face(10, 10), face(10, 10))).gain).toBe(9);
     expect(recoverLuck(7)(doc).coc!.luck).toBe(62);
     expect(recoverLuck(50)(doc).coc!.luck).toBe(99);
   });

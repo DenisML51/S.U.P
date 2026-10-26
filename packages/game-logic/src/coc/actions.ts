@@ -306,9 +306,10 @@ export function weaponDamageDetailed(
 ): DetailedDamage {
   const bands = attack.damage.split('/');
   const chosen = bands[Math.max(0, Math.min(bands.length - 1, Math.trunc(band)))];
-  const halfDb = /\+½DB/i.test(chosen);
-  const fullDb = !halfDb && /\+DB/i.test(chosen);
-  const dice = chosen.replace(/\+½?DB/i, '').trim();
+  // The damage bonus is written "+DB" or, as the Russian sheet says it, "+БУ" (half: "+½DB").
+  const halfDb = /\+½(DB|БУ)/i.test(chosen);
+  const fullDb = !halfDb && /\+(DB|БУ)/i.test(chosen);
+  const dice = chosen.replace(/\+½?(DB|БУ)/i, '').trim();
   const db = damageBonus === '0' ? '' : damageBonus.replace(/^\+/, '');
   const highest = () => 0.999999;
   const thrown: DamageDie[] = [];

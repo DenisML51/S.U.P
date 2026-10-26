@@ -2,15 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { PartyDto } from '@itd/schema';
 import { useChatStore } from '../../store/useChatStore';
+import { useTableRollStore } from '../../store/useTableRollStore';
+import { DieGlyph } from '../../ui/RollingDie';
 import { IconClose, IconQuill } from '../../ui/icons';
-import { IconButton, Panel, cx } from '../../ui/primitives';
+import { IconButton, Panel, Tabs, cx } from '../../ui/primitives';
 import { ChatPanel } from './ChatPanel';
+import { DiceLog } from './DiceLog';
 
 const PREVIEW = 3;
 
 /**
- * The table's talk over the combat screen. Folded, it is just the last few lines, quiet and out of
- * the way; opened, it is the full chat with its input, so a player can speak without leaving the fight.
+ * The table's talk over the combat screen, with the table's throws: in a fight the others' dice show
+ * here (the squad's portraits are out of sight). Folded, it is just the last few lines of either,
+ * quiet and out of the way; opened, the full chat with its input, or the dice log.
  */
 export const CombatChat: React.FC<{ party: PartyDto; userId: string | undefined; className?: string }> = ({
   party,
@@ -18,6 +22,12 @@ export const CombatChat: React.FC<{ party: PartyDto; userId: string | undefined;
   className,
 }) => {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<'chat' | 'dice'>('chat');
+  const rolls = useTableRollStore((s) => s.logs[party.id]);
+  const loadLog = useTableRollStore((s) => s.loadLog);
+  useEffect(() => {
+    void loadLog(party.id);
+  }, [party.id, loadLog]);
   const load = useChatStore((s) => s.load);
   const items = useChatStore((s) => s.chats[party.id]?.items);
   const unread = useChatStore((s) => s.unread[party.id] ?? 0);
@@ -25,7 +35,13 @@ export const CombatChat: React.FC<{ party: PartyDto; userId: string | undefined;
     void load(party.id);
   }, [party.id, load]);
 
-  const last = (items ?? []).slice(-PREVIEW);
+  // The last lines of the talk and the throws together, in the order they came.
+  const last = [
+    ...(items ?? []).slice(-PREVIEW).map((message) => ({ at: message.createdAt, message, roll: null })),
+    ...(rolls ?? []).slice(-PREVIEW).map((roll) => ({ at: roll.createdAt, message: null, roll })),
+  ]
+    .sort((a, b) => a.at.localeCompare(b.at))
+    .slice(-PREVIEW);
   const masterId = party.masterId;
 
   return (
@@ -41,12 +57,24 @@ export const CombatChat: React.FC<{ party: PartyDto; userId: string | undefined;
           >
             <Panel className="relative flex h-[min(52vh,30rem)] flex-col px-4 pb-3 pt-3">
               <div className="mb-2 flex items-center justify-between">
-                <span className="ui-label !mb-0">Чат стола</span>
+                <Tabs
+                  label="Стол"
+                  value={tab}
+                  onChange={setTab}
+                  items={[
+                    { id: 'chat', label: 'Чат' },
+                    { id: 'dice', label: 'Кубы' },
+                  ]}
+                />
                 <IconButton label="Свернуть чат" size={28} onClick={() => setOpen(false)}>
                   <IconClose width={14} height={14} />
                 </IconButton>
               </div>
-              <ChatPanel party={party} userId={userId} />
+              {tab === 'chat' ? (
+                <ChatPanel party={party} userId={userId} />
+              ) : (
+                <DiceLog party={party} userId={userId} />
+              )}
             </Panel>
           </motion.div>
         ) : (
@@ -70,18 +98,54 @@ export const CombatChat: React.FC<{ party: PartyDto; userId: string | undefined;
               <span className="block text-xs text-ink-faint">Пока тихо — нажмите, чтобы написать</span>
             ) : (
               <ol className="space-y-1">
-                {last.map((message, index) => (
-                  <li
-                    key={message.id}
-                    className={cx('truncate text-[13px] leading-snug', message.recipientId ? 'text-accent' : 'text-ink-muted')}
-                    style={{ opacity: 0.5 + (0.5 * (index + 1)) / last.length }}
-                  >
-                    <span className={cx('font-semibold', message.authorId === masterId ? 'text-frame-bright' : 'text-ink')}>
-                      {message.authorId === userId ? 'Вы' : message.authorName}
-                    </span>
-                    {message.recipientId && ' (лично)'}: {message.body}
-                  </li>
-                ))}
+                {last.map(({ message, roll }, index) =>
+                  roll ? (
+                    <li
+                      key={roll.id}
+                      className="flex items-center gap-1.5 truncate text-[13px] leading-snug text-ink-muted"
+                      style={{ opacity: 0.5 + (0.5 * (index + 1)) / last.length }}
+                    >
+                      <DieGlyph
+                        sides={roll.dice[0]?.sides ?? 20}
+                        className="h-3.5 w-3.5 shrink-0 text-frame-bright"
+                      />
+                      <span
+                        className={cx(
+                          'font-semibold',
+                          roll.kind === 'master' ? 'text-frame-bright' : 'text-ink',
+                        )}
+                      >
+                        {roll.kind === 'master'
+                          ? roll.authorId === userId
+                            ? 'Вы'
+                            : roll.authorName
+                          : (roll.heroName ?? roll.authorName)}
+                      </span>
+                      <span className="truncate">
+                        {roll.label || roll.dice.map((die) => die.label ?? die.value).join(' · ')}
+                      </span>
+                    </li>
+                  ) : (
+                    <li
+                      key={message!.id}
+                      className={cx(
+                        'truncate text-[13px] leading-snug',
+                        message!.recipientId ? 'text-accent' : 'text-ink-muted',
+                      )}
+                      style={{ opacity: 0.5 + (0.5 * (index + 1)) / last.length }}
+                    >
+                      <span
+                        className={cx(
+                          'font-semibold',
+                          message!.authorId === masterId ? 'text-frame-bright' : 'text-ink',
+                        )}
+                      >
+                        {message!.authorId === userId ? 'Вы' : message!.authorName}
+                      </span>
+                      {message!.recipientId && ' (лично)'}: {message!.body}
+                    </li>
+                  ),
+                )}
               </ol>
             )}
           </motion.button>

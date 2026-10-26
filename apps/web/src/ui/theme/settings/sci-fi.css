@@ -409,14 +409,113 @@
   .ui-number button:not(:disabled):hover { color: rgb(var(--c-accent-ink)); background: rgb(var(--c-accent)); }
 
   /* ---------------------------------------------------------------- Toasts */
-  /* A readout with a lit edge. */
+  /* An incoming transmission on the ship's comm: a glass pane in HUD corner brackets, a header strip
+     with its signal bars, faint scan lines. It powers up as a holo panel does, a bright line opening
+     into the pane, and a scan sweeps it once. Confirmed or failed is a tag on the header; a natural
+     20 or 1 locks on like a target. */
   .ui-toast {
-    background: rgb(var(--c-surface) / 0.98);
-    border-color: rgb(var(--c-line));
-    border-left: 3px solid rgb(var(--c-accent));
-    box-shadow: 0 14px 30px -12px rgb(0 0 0 / 0.8);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: min(15rem, calc(100vw - 2rem));
+    max-width: min(23rem, calc(100vw - 2rem));
+    padding: 0 1rem 0.9rem;
+    overflow: hidden;
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 0;
+    background:
+      var(--sf-corner) top left / 12px 1.5px no-repeat,
+      var(--sf-corner) top left / 1.5px 12px no-repeat,
+      var(--sf-corner) top right / 12px 1.5px no-repeat,
+      var(--sf-corner) top right / 1.5px 12px no-repeat,
+      var(--sf-corner) bottom left / 12px 1.5px no-repeat,
+      var(--sf-corner) bottom left / 1.5px 12px no-repeat,
+      var(--sf-corner) bottom right / 12px 1.5px no-repeat,
+      var(--sf-corner) bottom right / 1.5px 12px no-repeat,
+      repeating-linear-gradient(0deg, rgb(var(--c-accent) / 0.045) 0 1px, transparent 1px 3px),
+      radial-gradient(120% 90% at 0% 0%, rgb(var(--c-accent) / 0.1), transparent 60%),
+      linear-gradient(180deg, rgb(var(--c-surface-2) / 0.97), rgb(var(--c-surface) / 0.97));
+    box-shadow: 0 0 0 1px rgb(var(--c-bg-deep)), 0 0 26px -8px rgb(var(--c-accent) / 0.45), 0 14px 30px -12px rgb(0 0 0 / 0.8);
+    --sf-corner: linear-gradient(rgb(var(--c-frame-bright)) 0 0);
+    --sf-tone: var(--c-accent);
+    animation: sf-uplink 520ms ease-out both;
+    isolation: isolate;
   }
-  .ui-toast--error { border-left-color: rgb(var(--c-danger)); }
+  .ui-toast--error { --sf-tone: var(--c-danger); border-color: rgb(var(--c-danger) / 0.45); }
+  .ui-toast--success { --sf-tone: var(--c-success); }
+  .ui-toast::before {
+    content: '▸ Входящая передача';
+    display: block;
+    margin: 0 -1rem 0.65rem;
+    padding: 0.55rem 3rem 0.45rem 1rem;
+    font: 500 0.62rem/1.2 var(--font-numeric);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgb(var(--c-frame-bright));
+    border-bottom: 1px solid rgb(var(--c-line));
+    /* Signal bars at the right end of the strip, in the message's tone. */
+    background:
+      linear-gradient(rgb(var(--sf-tone)) 0 0) right 0.9rem bottom 0.5rem / 3px 11px no-repeat,
+      linear-gradient(rgb(var(--sf-tone)) 0 0) right 1.25rem bottom 0.5rem / 3px 8px no-repeat,
+      linear-gradient(rgb(var(--sf-tone)) 0 0) right 1.6rem bottom 0.5rem / 3px 5px no-repeat,
+      linear-gradient(90deg, rgb(var(--sf-tone) / 0.16), transparent 75%);
+  }
+  /* The scan: one bright band down the pane as it arrives. */
+  .ui-toast__body::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgb(var(--sf-tone) / 0.22) 48%, rgb(var(--sf-tone) / 0.5) 50%, transparent 52%);
+    background-size: 100% 220%;
+    background-repeat: no-repeat;
+    animation: sf-scan 1100ms 300ms ease-in-out both;
+  }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success) .ui-toast__body > svg { display: none; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success)::after {
+    position: absolute;
+    top: 0.45rem;
+    right: 2.35rem;
+    padding: 0.12rem 0.4rem;
+    font: 500 0.55rem/1.2 var(--font-numeric);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgb(var(--sf-tone));
+    background: rgb(var(--sf-tone) / 0.12);
+    border: 1px solid rgb(var(--sf-tone) / 0.7);
+    text-shadow: 0 0 6px rgb(var(--sf-tone) / 0.7);
+  }
+  /* Beside a tag the header shortens, so the two never meet on a narrow pane. */
+  .ui-toast:is(.ui-toast--error, .ui-toast--success) { min-width: min(18rem, calc(100vw - 2rem)); }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success)::before { content: '▸ Передача'; }
+  .ui-toast--success::after { content: 'Подтверждено'; }
+  .ui-toast--error::after { content: 'Сбой'; animation: sf-blink 900ms 400ms steps(2) 2; }
+  /* A natural 20 or 1: a lock-on badge right of the dice and the total, in room kept for it. */
+  .ui-toast .ui-roll-toast { position: relative; }
+  .ui-toast .ui-roll-toast[data-stamp] > :first-child { padding-right: 6.75rem; }
+  .ui-toast .ui-roll-toast[data-landed][data-stamp]::after {
+    position: absolute;
+    top: 0.9rem;
+    right: 0;
+    max-width: 6.5rem;
+    padding: 0.3rem 0.55rem;
+    font: 500 0.62rem/1.2 var(--font-numeric);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-align: center;
+    color: rgb(var(--sf-lock));
+    background:
+      linear-gradient(rgb(var(--sf-lock)) 0 0) top left / 7px 1.5px no-repeat,
+      linear-gradient(rgb(var(--sf-lock)) 0 0) top left / 1.5px 7px no-repeat,
+      linear-gradient(rgb(var(--sf-lock)) 0 0) bottom right / 7px 1.5px no-repeat,
+      linear-gradient(rgb(var(--sf-lock)) 0 0) bottom right / 1.5px 7px no-repeat,
+      rgb(var(--sf-lock) / 0.1);
+    text-shadow: 0 0 8px rgb(var(--sf-lock) / 0.8);
+    animation: sf-lock 520ms ease-out both;
+  }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Цель поражена'; --sf-lock: var(--c-success); }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Критический сбой'; --sf-lock: var(--c-danger); }
 
   /* ---------------------------------------------------------------- Dialogs */
   /* A terminal window: a hairline under the header, the code line in blue. */
@@ -749,4 +848,36 @@
   margin-top: -2.5px;
   background: rgb(var(--c-accent));
   box-shadow: 0 0 6px rgb(var(--c-accent));
+}
+
+/* ------------------------------------------------------------------ Toast motion */
+/* The pane powers up: a bright line flickers on and opens into the panel; the scan then sweeps it. */
+@keyframes sf-uplink {
+  0% { opacity: 0; clip-path: inset(50% 0 50% 0); }
+  30% { opacity: 1; clip-path: inset(49% 0 49% 0); }
+  42% { opacity: 0.45; }
+  55% { opacity: 1; }
+  100% { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+@keyframes sf-scan {
+  from { background-position: 0 100%; opacity: 1; }
+  to { background-position: 0 0; opacity: 0; }
+}
+@keyframes sf-blink {
+  50% { opacity: 0.25; }
+}
+/* The lock-on: brackets close in from wide, the badge blinks twice and holds. */
+@keyframes sf-lock {
+  0% { opacity: 0; transform: scale(1.6); }
+  40% { opacity: 1; transform: scale(1); }
+  55% { opacity: 0.3; }
+  70% { opacity: 1; }
+  85% { opacity: 0.4; }
+  100% { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='sci-fi'] .ui-toast,
+  [data-setting='sci-fi'] .ui-toast::after,
+  [data-setting='sci-fi'] .ui-toast .ui-roll-toast[data-landed]::after { animation: none; }
+  [data-setting='sci-fi'] .ui-toast__body::before { display: none; }
 }

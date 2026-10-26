@@ -100,6 +100,10 @@ export interface FirearmSituation {
   targetDivedForCover?: boolean;
   /** The target is small, fast or half hidden: a penalty die. */
   targetHidden?: boolean;
+  /** Pulp «Беглый огонь»: several handgun shots in a round carry no penalty die. */
+  rapidFire?: boolean;
+  /** Pulp «Зоркий глаз»: an aimed shot ignores a small target and shooting into a melee. */
+  beadyEye?: boolean;
 }
 
 /** What a shot rolls with, by the situation; bonus and penalty dice cancel each other. */
@@ -115,21 +119,31 @@ export function firearmModifiers(s: FirearmSituation): RollModifiers {
     bonus++;
     reasons.push('прицелился: бонусная кость');
   }
+  const sharpAim = !!(s.beadyEye && s.aimed);
   if ((s.shots ?? 1) > 1) {
-    penalty++;
-    reasons.push(`${s.shots} выстрела: штрафная кость на каждый`);
+    if (s.rapidFire) reasons.push(`${s.shots} выстрела: беглый огонь, без штрафа`);
+    else {
+      penalty++;
+      reasons.push(`${s.shots} выстрела: штрафная кость на каждый`);
+    }
   }
   if (s.intoMelee) {
-    penalty++;
-    reasons.push('в свалку: штрафная кость');
+    if (sharpAim) reasons.push('в свалку: зоркий глаз, без штрафа');
+    else {
+      penalty++;
+      reasons.push('в свалку: штрафная кость');
+    }
   }
   if (s.targetDivedForCover) {
     penalty++;
     reasons.push('цель в укрытии: штрафная кость');
   }
   if (s.targetHidden) {
-    penalty++;
-    reasons.push('цель скрыта или мала: штрафная кость');
+    if (sharpAim) reasons.push('мелкая цель: зоркий глаз, без штрафа');
+    else {
+      penalty++;
+      reasons.push('цель скрыта или мала: штрафная кость');
+    }
   }
   const bands = Math.max(1, s.bands ?? 1);
   const impossible = s.range === 'beyond';
@@ -193,6 +207,16 @@ export function manoeuvreChance(attackerBuild: number, targetBuild: number): Man
   if (gap === 2) return { possible: true, difficulty: 'regular', bonus: 0, penalty: 2, reasons: ['цель крупнее на 2: две штрафные кости'] };
   if (gap === 1) return { possible: true, difficulty: 'regular', bonus: 0, penalty: 1, reasons: ['цель крупнее на 1: штрафная кость'] };
   return { possible: true, difficulty: 'regular', bonus: 0, penalty: 0, reasons: [] };
+}
+
+/** A Pulp hero's talent: the build writes each onto the sheet as a trait granted `talent:<id>`. */
+export const hasTalent = (character: { traits: { grant?: string }[] }, id: string): boolean =>
+  character.traits.some((trait) => trait.grant === `talent:${id}`);
+
+/** The first die of a damage formula ("1d8+2+DB" → 8): what Pulp «Тяжёлая рука» adds once more. */
+export function damageDieOf(damage: string): number | undefined {
+  const match = /\d*d(\d+)/i.exec(damage.split('/')[0] ?? '');
+  return match ? Number(match[1]) : undefined;
 }
 
 /** One round of a combatant: the action, and how often they defended (outnumbering counts it). */

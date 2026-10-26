@@ -15,6 +15,8 @@ import type {
   PartyDto,
   PartyListItemDto,
   PartyMessageDto,
+  TableRollRequest,
+  TableRollsDto,
   PartyMessagesDto,
   RegisterRequest,
   StartCombatRequest,
@@ -205,6 +207,11 @@ export const api = {
       apiClient.request<PartyMessagesDto>(`/parties/${encode(id)}/messages${before ? `?before=${encode(before)}` : ''}`),
     send: (id: string, body: string, recipientId: string | null) =>
       apiClient.request<PartyMessageDto>(`/parties/${encode(id)}/messages`, { method: 'POST', body: { body, recipientId } }),
+  },
+  rolls: {
+    list: (id: string) => apiClient.request<TableRollsDto>(`/parties/${encode(id)}/rolls`),
+    send: (id: string, body: TableRollRequest) =>
+      apiClient.request<void>(`/parties/${encode(id)}/rolls`, { method: 'POST', body }),
   },
   invites: {
     preview: (code: string) => apiClient.request<InvitePreviewDto>(`/invites/${encode(code)}`),

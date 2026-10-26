@@ -32,6 +32,8 @@ export { default as IconHistory } from '~icons/game-icons/scroll-quill';
 export { default as IconRest } from '~icons/ph/campfire-fill';
 export { default as IconSettings } from '~icons/game-icons/cog';
 export { default as IconExit } from '~icons/ph/sign-out-bold';
+export { default as IconHub } from '~icons/ph/house-fill';
+export { default as IconTable } from '~icons/game-icons/round-table';
 export { default as IconWound } from '~icons/ph/drop-fill';
 export { default as IconCondition } from '~icons/ph/flask-fill';
 export { default as IconResource } from '~icons/ph/lightning-fill';

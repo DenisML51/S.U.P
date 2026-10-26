@@ -121,6 +121,8 @@ export interface CombatantEntry extends TurnEntry {
   heroDex: number | null;
   /** The NPC's Call of Cthulhu numbers; `null` for heroes and other NPCs. */
   npcCoc: PartyNpcRow['coc'];
+  /** An NPC at 0 hit points: out of the fight (dead or down), its turns are passed over. */
+  down: boolean;
 }
 
 /** An investigator's best fighting or firearms skill: breaks a tie of DEX. */
@@ -148,6 +150,7 @@ export async function combatantsOf(db: Executor, partyId: string): Promise<Comba
       heroSkill: heroCombatSkill,
       npcBonus: partyNpcs.initiativeBonus,
       npcCoc: partyNpcs.coc,
+      npcHp: partyNpcs.currentHp,
     })
     .from(partyCombatants)
     .leftJoin(partyHeroes, eq(partyHeroes.id, partyCombatants.heroId))
@@ -157,8 +160,9 @@ export async function combatantsOf(db: Executor, partyId: string): Promise<Comba
     )
     .leftJoin(partyNpcs, eq(partyNpcs.id, partyCombatants.npcId))
     .where(eq(partyCombatants.partyId, partyId));
-  return rows.map(({ heroInitiative, heroSkill, npcBonus, ...row }) => ({
+  return rows.map(({ heroInitiative, heroSkill, npcBonus, npcHp, ...row }) => ({
     ...row,
+    down: row.npcId !== null && npcHp !== null && npcHp <= 0,
     bonus: heroInitiative ?? npcBonus ?? 0,
     skill: row.heroId ? (heroSkill ?? 0) : npcCombatSkill(row.npcCoc),
   }));

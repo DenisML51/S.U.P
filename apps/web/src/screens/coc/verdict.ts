@@ -56,6 +56,10 @@ const subscribe = (listener: () => void) => {
   };
 };
 
+/** The verdict on the roll `serial` now, outside React (an action of the roll checks it). */
+export const rollVerdictOf = (serial: number): RollVerdict | null =>
+  current?.serial === serial ? current : null;
+
 /** The verdict on the roll `serial`, if one was reached. */
 export function useRollVerdict(serial: number): RollVerdict | null {
   const verdict = useSyncExternalStore(subscribe, () => current);

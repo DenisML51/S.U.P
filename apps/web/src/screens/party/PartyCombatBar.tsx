@@ -6,7 +6,7 @@ import { IconCombat, IconInitiative } from '../../ui/icons';
 import { Button } from '../../ui/primitives';
 import { InitiativeDialog } from './InitiativeDialog';
 import { InitiativeStrip } from './InitiativeStrip';
-import { actsByDex, initiativeBonusOf, npcFirearmReady } from './partyView';
+import { actsByDex, initiativeBonusOf, isCocFight, npcFirearmReady } from './partyView';
 import { StartCombatDialog } from './StartCombatDialog';
 import { useTableCombat } from './useTableCombat';
 
@@ -18,8 +18,10 @@ import { useTableCombat } from './useTableCombat';
 export const PartyCombatBar: React.FC<{
   party: PartyDto;
   characterId: string;
+  /** The hero has Pulp «Быстрое выхватывание»: the +50 of a ready firearm comes without one. */
+  quickDraw?: boolean;
   onMyTurn: () => void;
-}> = ({ party, characterId, onMyTurn }) => {
+}> = ({ party, characterId, quickDraw, onMyTurn }) => {
   const store = usePartyStore.getState();
   const heroId = party.heroes.find((hero) => hero.characterId === characterId)?.id;
   const seat = useTableCombat(party, { forHero: heroId, onMyTurn });
@@ -27,6 +29,8 @@ export const PartyCombatBar: React.FC<{
   const fight = party.combat;
   const rolling = fight?.phase === 'initiative';
   const npcsWaiting = fight?.combatants.some((c) => c.kind === 'npc' && c.initiative === null) ?? false;
+  /** Call of Cthulhu: the order is DEX, nothing is rolled. */
+  const coc = isCocFight(party);
 
   return (
     <>
@@ -42,16 +46,16 @@ export const PartyCombatBar: React.FC<{
           >
             <div className="flex items-center gap-3">
               <span className="ui-display ui-title text-lg leading-none text-frame-bright">
-                {rolling ? 'Инициатива' : `Раунд ${fight.round}`}
+                {rolling ? (coc ? 'Порядок хода' : 'Инициатива') : `Раунд ${fight.round}`}
               </span>
               {seat.toRoll[0] && (
                 <Button variant="primary" size="sm" icon={<IconInitiative width={15} height={15} />} onClick={() => seat.roll(seat.toRoll[0]!)}>
-                  Бросить инициативу
+                  {actsByDex(party, seat.toRoll[0]) ? 'Заявить порядок' : 'Бросить инициативу'}
                 </Button>
               )}
               {seat.isMaster && rolling && npcsWaiting && (
                 <Button variant="secondary" size="sm" onClick={() => void store.rollNpcInitiative(party.id)}>
-                  За НПС
+                  {coc ? 'НПС по ЛВК' : 'За НПС'}
                 </Button>
               )}
               {seat.isMaster && rolling && (
@@ -98,6 +102,7 @@ export const PartyCombatBar: React.FC<{
         bonus={seat.rolling ? initiativeBonusOf(party, seat.rolling) : null}
         byDex={actsByDex(party, seat.rolling)}
         firearmReady={npcFirearmReady(party, seat.rolling)}
+        quickDraw={!!quickDraw && seat.rolling?.kind === 'hero' && seat.rolling.refId === heroId}
         canRemove={seat.isMaster}
         onClose={() => seat.roll(null)}
       />

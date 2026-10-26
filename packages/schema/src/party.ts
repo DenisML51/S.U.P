@@ -408,6 +408,70 @@ export const SendMessageRequestSchema = z.object({
 });
 export type SendMessageRequest = z.input<typeof SendMessageRequestSchema>;
 
+// ---------------------------------------------------------------------------------------------
+// Dice at the table
+// ---------------------------------------------------------------------------------------------
+
+/** A die of a throw shown at the table: its size and the face it landed on, nothing more. */
+export const TableDieSchema = z.object({
+  sides: z.number().int().min(2).max(100),
+  value: z.number().int().min(0).max(100),
+  /** What the die shows when it is not its own number (a percentile tens die: "00", "70"). */
+  label: z.string().trim().max(3).optional(),
+  /** Thrown but not counted (the other die of advantage, a tens die not kept). */
+  dropped: z.boolean().optional(),
+});
+export type TableDie = z.infer<typeof TableDieSchema>;
+
+/** Dice of one throw the table may see at most. */
+export const TABLE_ROLL_DICE = 20;
+
+/**
+ * A throw shown at the table, never stored. A hero's (`characterId`, by its owner or the master)
+ * lands on its portrait for everyone; the master's own (`characterId` null) lands over the screens
+ * of the whole table, or only of the owners of `heroIds`.
+ */
+export const TableRollRequestSchema = z
+  .object({
+    characterId: z.string().trim().min(1).max(200).nullable(),
+    dice: z.array(TableDieSchema).min(1).max(TABLE_ROLL_DICE),
+    /** The master's throw for some heroes only (party hero ids); everyone when absent. */
+    heroIds: z.array(z.uuid()).min(1).max(32).optional(),
+    /** What was thrown, for the table's dice log ("Внимание: 21 — трудный успех"); the dice on screen go without it. */
+    label: z.string().trim().max(120).default(''),
+  })
+  .refine((roll) => !(roll.characterId && roll.heroIds), { message: 'Бросок героя виден всем', path: ['heroIds'] });
+export type TableRollRequest = z.input<typeof TableRollRequestSchema>;
+
+export interface TableRollDto {
+  /** Tells two throws apart, so the same dice thrown twice show twice. */
+  id: string;
+  /** A hero's throw (shown on its portrait), or the master's own (shown over the screen). */
+  kind: 'hero' | 'master';
+  /** The party hero who threw; `null` for the master's own throw, or a hero no longer at the table. */
+  heroId: string | null;
+  /** The hero's name as it was when it threw; `null` for the master's own throw. */
+  heroName: string | null;
+  authorId: string;
+  authorName: string;
+  dice: TableDie[];
+  label: string;
+  /** The master's throw meant for some players only: their names. `null`: for everyone. */
+  audienceNames: string[] | null;
+  createdAt: string;
+}
+
+/** The dice log of a table: the latest throws the viewer may see, oldest first. */
+export interface TableRollsDto {
+  items: TableRollDto[];
+}
+
+/** Throws a table's dice log keeps. */
+export const TABLE_ROLLS_KEPT = 200;
+
+/** How long a throw stays on the table's screens, in ms. */
+export const TABLE_ROLL_SHOWN_MS = 5000;
+
 /** Older messages than the one given (by id), newest page first when absent. */
 export const MessagesQuerySchema = z.object({
   before: z.uuid().optional(),

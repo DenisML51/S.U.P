@@ -5,7 +5,7 @@ import type { Transaction } from '../../db/client';
 import { partyCombatants, partyCombats, partyHeroes, partyNpcs } from '../../db/schema';
 import { conflictError, notFound, sessionClosed, validationError } from '../../lib/errors';
 import { masterOnly, type PartyAccess, type PartyContext } from './partyAccess';
-import { combatantsOf, combatRulesOf, D20_FIGHT } from './parties.queries';
+import { combatantsOf, combatRulesOf, D20_FIGHT, type CombatantEntry } from './parties.queries';
 import { nextTurn } from './turnOrder';
 
 interface Participants {
@@ -14,6 +14,10 @@ interface Participants {
 }
 
 const noFight = () => conflictError('Бой не идёт');
+
+/** NPCs at 0 hit points: still in the fight's list (the master may heal them), but their turns are passed over. */
+const downOf = (combatants: readonly CombatantEntry[]): Set<string> =>
+  new Set(combatants.filter((entry) => entry.down).map((entry) => entry.id));
 
 /**
  * A party's fight: the master starts it, everyone rolls initiative, then turns go round in order.
@@ -112,7 +116,8 @@ export class CombatService {
     return this.access.change(userId, partyId, 'master', async ({ tx }) => {
       const combat = await this.requireCombat(tx, partyId);
       if (combat.phase === 'active') return;
-      const first = nextTurn(await combatantsOf(tx, partyId), null);
+      const combatants = await combatantsOf(tx, partyId);
+      const first = nextTurn(combatants, null, downOf(combatants));
       if (!first) throw validationError('В бою никого нет');
       await tx
         .update(partyCombats)
@@ -135,7 +140,7 @@ export class CombatService {
       const current = combatants.find((entry) => entry.id === from);
       if (!this.controls(context, current ? current.ownerId : null)) throw masterOnly();
 
-      const turn = nextTurn(combatants, from);
+      const turn = nextTurn(combatants, from, downOf(combatants));
       await context.tx
         .update(partyCombats)
         .set({ currentCombatantId: turn?.next.id ?? null, round: combat.round + (turn?.wrapped ? 1 : 0) })
@@ -173,7 +178,7 @@ export class CombatService {
         .map((entry) => entry.id),
     );
     if (!gone.has(combat.currentCombatantId)) return;
-    const turn = nextTurn(combatants, combat.currentCombatantId, gone);
+    const turn = nextTurn(combatants, combat.currentCombatantId, new Set([...gone, ...downOf(combatants)]));
     await tx
       .update(partyCombats)
       .set({ currentCombatantId: turn?.next.id ?? null, round: combat.round + (turn?.wrapped ? 1 : 0) })

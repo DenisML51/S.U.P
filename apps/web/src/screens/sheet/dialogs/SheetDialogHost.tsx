@@ -12,6 +12,9 @@ import { ArmorDialog, AttributeDialog, LimbDialog } from './StatDialogs';
 import { TraitDialog } from './TraitDialog';
 import { CurrencyDialog, ExperienceDialog, HealthDialog, SanityDialog } from './VitalDialogs';
 import { useSheetDialogs, type EntryKind, type SheetDialog } from './context';
+import { useCharacterStore } from '../../../store/useCharacterStore';
+import { usePartyStore } from '../../../store/usePartyStore';
+import { MasterDiceDialog } from '../../party/MasterDiceDialog';
 
 /** Level-up is the build engine's own screen: it comes with the rules system, on demand. */
 const LevelUpDialog = lazy(() => import('../../progression/LevelUpDialog').then((m) => ({ default: m.LevelUpDialog })));
@@ -85,8 +88,31 @@ export const SheetDialogHost: React.FC = () => {
     case 'rest':
       return <RestDialog key={key} open={open} onClose={close} />;
     case 'dice':
-      return <DiceDialog key={key} open={open} onClose={close} />;
+      return <HeroDiceDialog key={key} open={open} onClose={close} />;
     default:
       return null;
   }
+};
+
+/**
+ * The open hero's dice tray. A master playing one of their own heroes at a table in session (in a
+ * fight, above all) gets the master's tray instead: the throw for everyone, or for chosen heroes,
+ * one shared or each their own.
+ */
+const HeroDiceDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+  const character = useCharacterStore((s) => s.character);
+  const table = usePartyStore((s) =>
+    character
+      ? Object.values(s.parties).find(
+          (party) =>
+            party.role === 'master' &&
+            party.sessionStartedAt !== null &&
+            party.heroes.some((hero) => hero.characterId === character.id && hero.ownerId === party.masterId),
+        )
+      : undefined,
+  );
+  if (!table || !character) return <DiceDialog open={open} onClose={onClose} />;
+  return (
+    <MasterDiceDialog open={open} onClose={onClose} party={table} hero={{ characterId: character.id, name: character.name }} />
+  );
 };

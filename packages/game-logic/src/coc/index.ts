@@ -8,6 +8,7 @@ export * from './engine';
 export * from './creation';
 export * from './actions';
 export * from './combat';
+export { damageBonusOfBuild } from './meta';
 export { CHARACTERISTICS, characteristicDef } from './content/characteristics';
 export { SKILLS, SOCIAL_SKILLS, skillDef, skillName } from './content/skills';
 export { OCCUPATIONS, occupationDef } from './content/occupations';

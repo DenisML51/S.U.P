@@ -1,4 +1,4 @@
-import type { PartyMessageDto } from '@itd/schema';
+import type { PartyMessageDto, TableRollDto } from '@itd/schema';
 import { api } from './api/client';
 import { CharacterRepository } from './local/characterRepository';
 import { openCharacterDatabase } from './local/database';
@@ -9,7 +9,8 @@ import type { SessionManager } from './session/sessionManager';
 /** What the server pushes about parties: a change to fetch (`partyId` null: reconnected), or a message. */
 export type PartyEvent =
   | { type: 'changed'; partyId: string | null }
-  | { type: 'message'; partyId: string; message: PartyMessageDto };
+  | { type: 'message'; partyId: string; message: PartyMessageDto }
+  | { type: 'roll'; partyId: string; roll: TableRollDto };
 
 /**
  * Everything bound to one signed-in account on this device: its local database, the sync engine and
@@ -39,6 +40,7 @@ export function createWorkspace(userId: string, session: SessionManager): Worksp
     },
     onPartyChanged: (partyId) => emitParty({ type: 'changed', partyId }),
     onPartyMessage: (partyId, message) => emitParty({ type: 'message', partyId, message }),
+    onPartyRoll: (partyId, roll) => emitParty({ type: 'roll', partyId, roll }),
   });
 
   const unsubscribe = repository.subscribe((change) => {
