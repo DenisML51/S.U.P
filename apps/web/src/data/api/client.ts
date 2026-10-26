@@ -25,11 +25,12 @@ import type {
   UpdatePartyRequest,
   UserDto,
 } from '@itd/schema';
+import { randomId } from '@itd/schema';
 
 export const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
 
 /** Identifies this browser tab to the server, so the tab can ignore notifications about its own writes. */
-export const CLIENT_SESSION_ID = crypto.randomUUID();
+export const CLIENT_SESSION_ID = randomId();
 
 /** The server answered with an error. */
 export class ApiError extends Error {

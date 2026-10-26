@@ -8,6 +8,7 @@ import {
   type RulesetId,
   type Setting,
 } from './character';
+import { randomId } from './id';
 
 /** What the character list needs; derived from the document, never stored separately. */
 export interface CharacterPreview {
@@ -60,7 +61,7 @@ export const toCharacterPreview = (character: Character): CharacterPreview => ({
   investigator: investigatorOf(character),
 });
 
-export const newCharacterId = (): string => crypto.randomUUID();
+export const newCharacterId = (): string => randomId();
 
 /** Gives a draft its identity and validates it, producing a storable document. */
 export const createCharacterDocument = (draft: CharacterDraft, id: string = newCharacterId()): Character =>

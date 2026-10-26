@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CHARACTER_SCHEMA_VERSION, CharacterSchema, EntityIdSchema, type Character } from './character';
+import { randomId } from './id';
 
 export class CharacterMigrationError extends Error {
   constructor(
@@ -95,7 +96,7 @@ export function migrateCharacter(input: unknown, options: MigrateOptions = {}): 
     throw new CharacterMigrationError('Ожидался объект персонажа');
   }
 
-  const createId = options.createId ?? (() => crypto.randomUUID());
+  const createId = options.createId ?? randomId;
   const declared = input.schemaVersion;
   let version = declared === undefined ? 0 : Number(declared);
 

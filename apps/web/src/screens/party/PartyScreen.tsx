@@ -590,12 +590,30 @@ const Banner: React.FC<{
   </Panel>
 );
 
+/**
+ * The clipboard API exists only in a secure context; a table opened over the local network by its
+ * address copies through a hidden text field instead.
+ */
+async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard) return navigator.clipboard.writeText(text);
+  const field = document.createElement('textarea');
+  field.value = text;
+  field.setAttribute('readonly', '');
+  field.style.position = 'fixed';
+  field.style.opacity = '0';
+  document.body.append(field);
+  field.select();
+  const copied = document.execCommand('copy');
+  field.remove();
+  if (!copied) throw new Error('copy failed');
+}
+
 /** The master's invite code: read out, copied (alone or as a link), or replaced when it leaked. */
 const InvitePanel: React.FC<{ code: string; onRenew: () => void }> = ({ code, onRenew }) => {
   const shown = formatInviteCode(code);
   const copy = async (what: 'code' | 'link') => {
     try {
-      await navigator.clipboard.writeText(what === 'link' ? inviteLink(shown) : shown);
+      await copyText(what === 'link' ? inviteLink(shown) : shown);
       toast.success(what === 'link' ? 'Ссылка-приглашение скопирована' : 'Код скопирован');
     } catch {
       toast.error('Не удалось скопировать — выделите код вручную');
