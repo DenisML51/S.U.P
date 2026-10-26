@@ -35,9 +35,14 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
    * What an entry rolls once it is used. With an attack roll the hit comes first and its damage is
    * rolled from the hit's toast; a saving throw or an effect that always lands rolls straight away.
    */
-  const strike = (label: string, hitBonus: number | undefined, parts: DamageComponents) => {
-    if (hitBonus !== undefined) roll.attack(label, hitBonus, parts);
-    else roll.damage(label, parts);
+  const strike = (
+    label: string,
+    hitBonus: number | undefined,
+    parts: DamageComponents,
+    weapon: { minDie?: number; twoHanded?: DamageComponents } = {},
+  ) => {
+    if (hitBonus !== undefined) roll.attack(label, hitBonus, parts, weapon);
+    else roll.damage(label, parts, { minDie: weapon.minDie });
   };
 
   const attack = (entry: Attack, ammunitionItemId?: string) => {
@@ -55,7 +60,11 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     // The roll tells what happened; spending the action or the arrow shows no message of its own.
     const pays = entry.usesAmmunition || entry.thrown || inCombat;
     if (pays && !performAction({ kind: 'attack', id: entry.id, trackActionEconomy: inCombat, ammunitionItemId }, { quiet: true })?.ok) return;
-    strike(entry.name, entry.hitBonus, damageParts(entry));
+    // A versatile weapon offers its two-handed damage beside the one-handed.
+    const twoHanded = entry.damageTwoHanded
+      ? [{ damage: entry.damageTwoHanded, type: damageParts(entry)[0]?.type }]
+      : undefined;
+    strike(entry.name, entry.hitBonus, damageParts(entry), { minDie: entry.minDie, twoHanded });
   };
 
   /** An entry that needs concentration asks first when it would end another one. */

@@ -41,8 +41,8 @@ const RollToast: React.FC<{
   /** The d20 that counts, tinted on a natural 20 or 1 (a check's too, though only attacks crit). */
   kept?: number;
   /** The roll that follows this one ("Урон" after a hit), offered on the toast itself. */
-  action?: { label: string; onClick: () => void };
-}> = ({ label, total, detail, tone, dice, kept, action }) => {
+  actions?: { label: string; onClick: () => void }[];
+}> = ({ label, total, detail, tone, dice, kept, actions = [] }) => {
   const shown = dice.slice(0, SHOWN_DICE);
   const [landed, setLanded] = useState(shown.length === 0);
   const size = dieSize(shown.length);
@@ -103,18 +103,23 @@ const RollToast: React.FC<{
             {detail}
           </motion.span>
         </span>
-        {action && (
-          <button
-            type="button"
-            className="shrink-0 text-sm text-frame-bright underline-offset-4 hover:underline"
-            onClick={(event) => {
-              // The plate dismisses on click; the button runs its roll and then lets it go.
-              event.stopPropagation();
-              action.onClick();
-            }}
-          >
-            {action.label}
-          </button>
+        {actions.length > 0 && (
+          <span className="flex shrink-0 flex-col items-end gap-1">
+            {actions.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                className="text-sm text-frame-bright underline-offset-4 hover:underline"
+                onClick={(event) => {
+                  // The plate dismisses on click; the button runs its roll and then lets it go.
+                  event.stopPropagation();
+                  action.onClick();
+                }}
+              >
+                {action.label}
+              </button>
+            ))}
+          </span>
         )}
       </div>
     </div>
@@ -223,10 +228,10 @@ export function useRolls() {
    * Damage of an attack or effect: one roll per component, totalled, with each component's type
    * kept in the breakdown ("7 дробящий + 3 электричество"). A critical hit rolls every die twice.
    */
-  const damage = (label: string, components: DamageComponents, { critical = false } = {}) => {
+  const damage = (label: string, components: DamageComponents, { critical = false, minDie }: { critical?: boolean; minDie?: number } = {}) => {
     const parts = components
       .filter((c) => c.damage.trim())
-      .map((c) => ({ ...c, roll: rollFormula(c.damage, Math.random, { critical }) }))
+      .map((c) => ({ ...c, roll: rollFormula(c.damage, Math.random, { critical, minDie }) }))
       .filter((c) => c.roll.rolls.length > 0 || c.roll.bonus !== 0);
     if (parts.length === 0) return null;
     const total = parts.reduce((sum, p) => sum + p.roll.total, 0);
@@ -252,7 +257,13 @@ export function useRolls() {
    * An attack as the table plays it: the hit first, the damage when the player says it landed. The
    * hit's toast carries the damage roll; a natural 20 doubles its dice, a natural 1 misses outright.
    */
-  const attack = (label: string, modifier: number, components: DamageComponents) => {
+  const attack = (
+    label: string,
+    modifier: number,
+    components: DamageComponents,
+    // Great Weapon Fighting's floor on the dice; a versatile weapon's damage held in both hands.
+    { minDie, twoHanded }: { minDie?: number; twoHanded?: DamageComponents } = {},
+  ) => {
     const { plan, dice, kept: die } = throwD20({ kind: 'attack' });
     const total = die + modifier - plan.penalty;
     // A natural 1 always misses; the hero's crit range (a Champion's 19) always hits hard.
@@ -270,15 +281,28 @@ export function useRolls() {
           tone={tone}
           dice={thrown}
           kept={die}
-          action={
+          actions={
             hasDamage && tone !== 'fumble'
-              ? {
-                  label: tone === 'crit' ? 'Крит. урон' : 'Урон',
-                  onClick: () => {
-                    toast.dismiss(t.id);
-                    damage(label, components, { critical: tone === 'crit' });
+              ? [
+                  {
+                    label: tone === 'crit' ? 'Крит. урон' : 'Урон',
+                    onClick: () => {
+                      toast.dismiss(t.id);
+                      damage(label, components, { critical: tone === 'crit', minDie });
+                    },
                   },
-                }
+                  ...(twoHanded
+                    ? [
+                        {
+                          label: 'Двумя руками',
+                          onClick: () => {
+                            toast.dismiss(t.id);
+                            damage(`${label} (двумя руками)`, twoHanded, { critical: tone === 'crit', minDie });
+                          },
+                        },
+                      ]
+                    : []),
+                ]
               : undefined
           }
         />

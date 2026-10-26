@@ -86,6 +86,8 @@ export interface FormulaRoll {
 export interface RollOptions {
   /** A critical hit: every die of the formula is rolled twice as many times; flat bonuses are not doubled. */
   critical?: boolean;
+  /** A die that lands lower counts as this (Great Weapon Fighting: 1 and 2 count as 3). */
+  minDie?: number;
 }
 
 export function rollFormula(formula: string, random: RandomSource = Math.random, options: RollOptions = {}): FormulaRoll {
@@ -94,7 +96,7 @@ export function rollFormula(formula: string, random: RandomSource = Math.random,
     Array.from({ length: options.critical ? group.count * 2 : group.count }, () => ({
       sides: group.sides,
       // A subtracted group ("1d20 - 1d4") contributes negative values.
-      value: group.sign * rollDie(group.sides, random),
+      value: group.sign * Math.max(group.sign > 0 ? Math.min(options.minDie ?? 1, group.sides) : 1, rollDie(group.sides, random)),
       type: group.type,
     })),
   );

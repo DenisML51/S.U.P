@@ -98,6 +98,8 @@ export type Effect =
   | { type: 'halfProficiency' }
   /** An attack the hero always has, without a weapon (a Monk's Unarmed Strike, Psychic Blades). */
   | { type: 'attack'; attack: GrantedAttackDef }
+  /** A fighting style that changes weapon damage: Dueling +2, Great Weapon Fighting 1–2 → 3, Two-Weapon Fighting. */
+  | { type: 'weaponStyle'; style: 'dueling' | 'greatWeapon' | 'twoWeapon' }
   /** Attacks made with one Attack action (Extra Attack: 2; a Fighter's 3 and 4). */
   | { type: 'extraAttack'; attacks: number }
   /** Weapon attacks are critical hits from this natural roll up (Champion: 19, then 18). */

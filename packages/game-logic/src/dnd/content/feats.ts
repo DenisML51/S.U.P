@@ -988,6 +988,7 @@ const FIGHTING_STYLES: FeatDef[] = [
     prerequisite: STYLE,
     description: 'Пока вы держите рукопашное оружие в одной руке и не держите другого оружия, вы получаете +2 к урону этим оружием.',
     iconName: 'broadsword',
+    effects: [{ type: 'weaponStyle', style: 'dueling' }],
   },
   {
     id: 'great-weapon-fighting',
@@ -996,6 +997,7 @@ const FIGHTING_STYLES: FeatDef[] = [
     prerequisite: STYLE,
     description: 'Бросая урон атаки рукопашным оружием со свойством «Двуручное» или «Универсальное», которое вы держите двумя руками, считайте выпавшие на костях урона 1 и 2 как 3.',
     iconName: 'battle-axe',
+    effects: [{ type: 'weaponStyle', style: 'greatWeapon' }],
   },
   {
     id: 'interception',
@@ -1030,6 +1032,7 @@ const FIGHTING_STYLES: FeatDef[] = [
     prerequisite: STYLE,
     description: 'В дополнительную атаку от свойства «Лёгкое» вы добавляете модификатор характеристики к урону, если ещё не добавили его.',
     iconName: 'crossed-swords',
+    effects: [{ type: 'weaponStyle', style: 'twoWeapon' }],
   },
   {
     id: 'unarmed-fighting',
