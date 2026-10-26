@@ -91,9 +91,10 @@ export const ActionsSection: React.FC<{ character: Character }> = ({ character }
                       <MetaLine
                         parts={[
                           entry.actionType === 'passive' ? 'без действия' : ACTION_TYPES[entry.actionType].short,
-                          entry.resourceId && (
+                          // A conversion (Font of Magic) has no price of its own; a chosen cost shows its range.
+                          entry.resourceId && !entry.convert && (
                             <>
-                              <MetaValue>{entry.resourceCost ?? 1}</MetaValue>{' '}
+                              <MetaValue>{entry.resourceCostMax ? `${entry.resourceCost ?? 1}–${entry.resourceCostMax}` : (entry.resourceCost ?? 1)}</MetaValue>{' '}
                               {resourceName(character, entry.resourceId) ?? 'ресурс'}
                             </>
                           ),

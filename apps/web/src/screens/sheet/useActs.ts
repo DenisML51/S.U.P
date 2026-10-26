@@ -1,12 +1,29 @@
 import type { Ability, Attack, Spell } from '@itd/schema';
-import { ammunitionChoices, castableSlots, isActiveFeature, resolveAmmunition, spellAttackBonusFor, type DamageSource } from '@itd/game-logic';
+import {
+  ammunitionChoices,
+  castableSlots,
+  isActiveFeature,
+  resolveAmmunition,
+  slotConversions,
+  spellAttackBonusFor,
+  type DamageSource,
+} from '@itd/game-logic';
 import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { damageParts, spellDamageParts } from './parts/damage';
+import { damageParts, describeDamage, spellDamageParts } from './parts/damage';
 import { useConcentrationPrompt, useEndFeature } from './Concentration';
 import { useSlotPrompt } from './SlotPrompt';
 import { useAmmoPrompt } from './AmmoPrompt';
+import { useAmountPrompt } from './AmountPrompt';
 import { useRolls, type DamageComponents } from './useRolls';
+
+/** What `amount` units of an ability of a chosen cost give: "1" a unit is the amount, "1d8" so many dice. */
+function perPoint(entry: Ability, amount: number): { damage: string; type: string }[] {
+  const each = entry.damagePerPoint ?? '';
+  const dice = /^(\d*)d(\d+)$/.exec(each);
+  const damage = dice ? `${amount * Number(dice[1] || 1)}d${dice[2]}` : /^\d+$/.test(each) ? String(amount * Number(each)) : '';
+  return damage ? [{ damage, type: entry.damageType ?? '' }] : [];
+}
 
 /**
  * What the hero does with an entry of the sheet: attack, use an ability, cast a spell. The same
@@ -21,6 +38,7 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
   const character = useCharacterStore((s) => s.character);
   const askSlot = useSlotPrompt((s) => s.ask);
   const askAmmo = useAmmoPrompt((s) => s.ask);
+  const askAmount = useAmountPrompt((s) => s.ask);
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const askReplace = useConcentrationPrompt((s) => s.askReplace);
   const endFeature = useEndFeature();
@@ -80,12 +98,51 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     else run();
   };
 
-  const use = (entry: Ability) => {
-    const parts = damageParts(entry);
+  /**
+   * An ability: one of a chosen cost (Lay on Hands) asks how much first, a conversion (Font of
+   * Magic) which slot; what it deals follows the amount.
+   */
+  const apply = (entry: Ability, choice: { amount?: number; level?: number } = {}) => {
+    const pool = character?.resources.find((r) => r.id === entry.resourceId);
+    if (entry.convert && choice.level === undefined && character && entry.resourceId) {
+      const toPoints = entry.convert === 'slotToPoints';
+      askAmount({
+        kind: 'options',
+        title: entry.name,
+        options: slotConversions(character, entry.resourceId, entry.convert).map((o) => ({
+          key: String(o.level),
+          label: `Ячейка ${o.level} круга`,
+          detail: toPoints ? `+${o.amount} очк.` : `−${o.amount} очк.`,
+          blocked: o.blocked,
+          onPick: () => apply(entry, { level: o.level }),
+        })),
+      });
+      return;
+    }
+    const least = entry.resourceCost ?? 1;
+    if (entry.resourceCostMax && entry.resourceCostMax > least && choice.amount === undefined && pool) {
+      const most = Math.min(entry.resourceCostMax, pool.current);
+      if (most < least) {
+        toast.error(`Недостаточно ресурса «${pool.name}»: нужно ${least}, есть ${pool.current}`);
+        return;
+      }
+      askAmount({
+        kind: 'amount',
+        title: entry.name,
+        unit: pool.name,
+        min: least,
+        max: most,
+        preview: entry.damagePerPoint ? (n) => describeDamage(perPoint(entry, n)) : undefined,
+        onPick: (amount) => apply(entry, { amount }),
+      });
+      return;
+    }
+    const parts = choice.amount !== undefined && entry.damagePerPoint ? perPoint(entry, choice.amount) : damageParts(entry);
     const hitBonus = entry.saveAttribute ? undefined : entry.hitBonus;
     const rolls = hitBonus !== undefined || parts.length > 0;
     if (entry.resourceId || entry.concentration || inCombat) {
-      if (!performAction({ kind: 'ability', id: entry.id, trackActionEconomy: inCombat }, { quiet: rolls })?.ok) return;
+      const request = { kind: 'ability' as const, id: entry.id, trackActionEconomy: inCombat, resourceAmount: choice.amount, conversionLevel: choice.level };
+      if (!performAction(request, { quiet: rolls })?.ok) return;
     } else {
       logHistory(`Способность: ${entry.name}`);
     }
@@ -126,7 +183,7 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
   const activate = (entry: Ability) =>
     entry.stance && character && isActiveFeature(character, entry.id)
       ? endFeature(entry.id, entry.name)
-      : onTurn(entry, () => concentrating(entry, () => use(entry)));
+      : onTurn(entry, () => concentrating(entry, () => apply(entry)));
   const cast = (spell: Spell) => onTurn(spell, () => concentrating(spell, () => castFrom(spell)));
 
   return {

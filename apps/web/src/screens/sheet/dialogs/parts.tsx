@@ -209,7 +209,7 @@ export const DamageEditor: React.FC<{
 };
 
 /** "2 Магия": what using an entry costs, or nothing when it is free. */
-export const costLabel = (character: Character, resourceId?: string, cost?: number): React.ReactNode => {
+export const costLabel = (character: Character, resourceId?: string, cost?: number | string): React.ReactNode => {
   if (!resourceId) return null;
   const resource = character.resources.find((r) => r.id === resourceId);
   return (

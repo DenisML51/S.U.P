@@ -1,7 +1,7 @@
 import type { Ability, ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
 import { isActiveFeature, spellBlocker, startConcentration, startFeature } from './concentration';
 import { changeItemQuantity, isWeaponStack, itemQuantity } from './inventory';
-import { changeResource } from './resources';
+import { SLOT_CREATION_COST, changeResource, convertSlot } from './resources';
 
 export type ActionSlot = keyof Pick<ActionCounters, 'action' | 'bonus' | 'reaction'>;
 
@@ -86,6 +86,10 @@ export interface PerformActionRequest {
   slotLevel?: number;
   /** Cast a ritual spell as a ritual: no slot, 10 minutes longer, so never in a fight's turn. */
   asRitual?: boolean;
+  /** How much of its pool an ability of a chosen cost spends (Lay on Hands), within its bounds. */
+  resourceAmount?: number;
+  /** The slot level a conversion turns into points or makes (Font of Magic). */
+  conversionLevel?: number;
 }
 
 export type PerformActionFailure =
@@ -214,9 +218,15 @@ export function performAction(character: Character, request: PerformActionReques
       ? next.resources.find((r) => r.spellSlotLevel === request.slotLevel)?.id
       : undefined;
   // A ritual takes no slot.
-  const resourceId = ritual ? undefined : (chosenSlot ?? ('resourceId' in source ? source.resourceId : undefined));
+  const ability = request.kind === 'ability' ? (source as Ability) : undefined;
+  // A conversion (Font of Magic) moves a slot and points together, below.
+  const resourceId = ritual || ability?.convert ? undefined : (chosenSlot ?? ('resourceId' in source ? source.resourceId : undefined));
   if (resourceId) {
-    const amount = ('resourceCost' in source ? source.resourceCost : undefined) ?? 1;
+    const base = ('resourceCost' in source ? source.resourceCost : undefined) ?? 1;
+    // An ability of a chosen cost (Lay on Hands) spends what the player asked, within its bounds.
+    const amount = ability?.resourceCostMax
+      ? Math.min(ability.resourceCostMax, Math.max(base, Math.trunc(request.resourceAmount ?? base)))
+      : base;
     const resource = next.resources.find((r) => r.id === resourceId);
     if (!resource) return fail('not_enough_resource', 'Ресурс для действия не найден');
     if (resource.current < amount) {
@@ -224,6 +234,16 @@ export function performAction(character: Character, request: PerformActionReques
     }
     next = changeResource(next, resourceId, -amount)!.character;
     costs.resource = { id: resource.id, name: resource.name, amount };
+  }
+
+  let conversion = '';
+  if (ability?.convert && ability.resourceId) {
+    const converted = convertSlot(next, ability.resourceId, ability.convert, request.conversionLevel ?? 0);
+    if (!converted) return fail('not_enough_resource', `«${source.name}»: так сейчас нельзя`);
+    next = converted;
+    const level = request.conversionLevel;
+    const points = ability.convert === 'slotToPoints' ? level : SLOT_CREATION_COST[(level ?? 1) - 1];
+    conversion = ability.convert === 'slotToPoints' ? `ячейка ${level} круга → очки +${points}` : `очки −${points} → ячейка ${level} круга`;
   }
 
   if (request.kind === 'attack' && (source as Attack).usesAmmunition) {
@@ -260,6 +280,7 @@ export function performAction(character: Character, request: PerformActionReques
   if (stance) next = startFeature(next, stance);
 
   const paid = [
+    conversion,
     costs.resource && `${costs.resource.name} −${costs.resource.amount}`,
     costs.ammunition && `${costs.ammunition.name} −${costs.ammunition.amount}`,
   ].filter(Boolean);

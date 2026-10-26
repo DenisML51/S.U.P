@@ -443,6 +443,9 @@ export const PALADIN: ClassDef = {
           'У вас есть запас целительной силы: 5 × уровень паладина хитов, восполняется после продолжительного отдыха. Бонусным действием, касаясь существа, вы восстанавливаете ему хиты из запаса или тратите 5 единиц, чтобы снять состояние «Отравлен».',
         action: 'bonus',
         resource: { id: 'paladin.lay-on-hands', name: 'Наложение рук', max: (ctx) => 5 * ctx.classLevel, recharge: 'long', iconName: 'healing' },
+        // As many points of the pool as the player chooses, a hit point each.
+        usesResource: { id: 'paladin.lay-on-hands', max: (ctx) => 5 * ctx.classLevel, perPoint: '1' },
+        damageType: 'Лечение',
         iconName: 'healing',
         color: '#d4a94e',
       },
