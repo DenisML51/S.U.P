@@ -6,6 +6,7 @@ import {
   clampSanity,
   experienceProgress,
   grantTempHP,
+  damageAfterDefences,
   isDead,
   maxSanityOf,
   rescaleLimbs,
@@ -24,6 +25,8 @@ import { useConcentrationPrompt } from './Concentration';
 
 const COIN_NAME: Record<Coin, string> = { gold: 'зм', silver: 'см', copper: 'мм' };
 
+const DEFENCE_WORD = { resistance: 'сопротивление', vulnerability: 'уязвимость', immunity: 'иммунитет' } as const;
+
 /**
  * What changes minute to minute at the table: health, sanity, experience, coins. Every change is
  * written to the hero's log; the same calls serve the quick controls and the dialogs.
@@ -33,11 +36,14 @@ export function useVitals() {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const max = totalMaxHP(character);
 
-  const damage = (value: number, { critical = false } = {}) => {
-    const preview = applyDamage(character, value, { critical });
+  const damage = (value: number, { critical = false, type }: { critical?: boolean; type?: string } = {}) => {
+    const preview = applyDamage(character, value, { critical, type });
+    const taken = damageAfterDefences(character, value, type);
     // Pieces joined by " — ", each said on its own in the other language.
     const parts = [
       `Получен урон: ${value}`,
+      ...(type ? [type.toLowerCase()] : []),
+      ...(taken.defence ? [`${DEFENCE_WORD[taken.defence]}: ${taken.amount}`] : []),
       ...(preview.absorbed ? [`поглощено временными: ${preview.absorbed}`] : []),
       `${preview.character.currentHP}/${max}`,
     ];
@@ -45,12 +51,12 @@ export function useVitals() {
     else if (character.currentHP <= 0 && preview.character.deathSaves)
       parts.push(`провалов спасбросков: ${preview.character.deathSaves.failures}`);
     else if (preview.character.currentHP <= 0 && character.currentHP > 0) parts.push('без сознания');
-    updateCharacter((doc) => applyDamage(doc, value, { critical }).character, {
+    updateCharacter((doc) => applyDamage(doc, value, { critical, type }).character, {
       log: { message: parts.join(' — '), type: 'health' },
     });
     if (isDead(preview.character)) toast.error(`${character.name} погибает`);
-    // Concentration that survives the hit still has to survive a Constitution save.
-    if (preview.character.concentratingOn) useConcentrationPrompt.getState().askSave(value);
+    // Concentration that survives the hit still has to survive a Constitution save, of the damage taken.
+    if (preview.character.concentratingOn && taken.amount > 0) useConcentrationPrompt.getState().askSave(taken.amount);
   };
 
   const heal = (value: number) => {

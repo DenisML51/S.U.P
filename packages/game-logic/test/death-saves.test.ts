@@ -102,3 +102,26 @@ describe('limbs follow the hit points', () => {
     expect(head.currentHP).toBe(13);
   });
 });
+
+describe('damage types and defences', () => {
+  const resistant = () =>
+    makeCharacter({
+      currentHP: 30,
+      maxHP: 30,
+      resistances: [
+        { id: 'r1', type: 'Огонь', level: 'resistance' },
+        { id: 'r2', type: 'Яд', level: 'immunity' },
+        { id: 'r3', type: 'Холод', level: 'vulnerability' },
+        { id: 'r4', type: 'Физический', level: 'resistance' },
+      ],
+    });
+
+  it('halves, doubles or ignores damage by its type', () => {
+    expect(applyDamage(resistant(), 9, { type: 'Огонь' }).character.currentHP).toBe(26);
+    expect(applyDamage(resistant(), 9, { type: 'яд' }).character.currentHP).toBe(30);
+    expect(applyDamage(resistant(), 9, { type: 'Холод' }).character.currentHP).toBe(12);
+    expect(applyDamage(resistant(), 9, { type: 'Рубящий' }).character.currentHP).toBe(26);
+    expect(applyDamage(resistant(), 9, { type: 'Звук' }).character.currentHP).toBe(21);
+    expect(applyDamage(resistant(), 9).character.currentHP).toBe(21);
+  });
+});

@@ -136,6 +136,37 @@ const addFailures = (character: Character, count: number): Character => {
 export interface DamageOptions {
   /** A critical hit on a hero at 0 hit points counts as two failed death saves. */
   critical?: boolean;
+  /** The damage type ("Огонь"): the hero's resistances, vulnerabilities and immunities apply to it. */
+  type?: string;
+}
+
+/** Piercing, slashing and bludgeoning: what a resistance to "Физический" covers. */
+const PHYSICAL = ['колющий', 'рубящий', 'дробящий'];
+
+export type Defence = 'resistance' | 'vulnerability' | 'immunity';
+
+/**
+ * Damage of a type after the hero's defences: immunity takes it all, resistance halves it (rounded
+ * down), vulnerability doubles it; resistance and vulnerability to one type cancel out (2024).
+ */
+export function damageAfterDefences(
+  character: Pick<Character, 'resistances'>,
+  amount: number,
+  type: string | undefined,
+): { amount: number; defence?: Defence } {
+  const kind = type?.trim().toLowerCase();
+  if (!kind) return { amount };
+  const covers = (rule: string) => {
+    const r = rule.trim().toLowerCase();
+    return r === kind || (r === 'физический' && PHYSICAL.includes(kind));
+  };
+  const levels = new Set(character.resistances.filter((r) => covers(r.type)).map((r) => r.level));
+  if (levels.has('immunity')) return { amount: 0, defence: 'immunity' };
+  const resists = levels.has('resistance');
+  const vulnerable = levels.has('vulnerability');
+  if (resists && !vulnerable) return { amount: Math.floor(amount / 2), defence: 'resistance' };
+  if (vulnerable && !resists) return { amount: amount * 2, defence: 'vulnerability' };
+  return { amount };
 }
 
 /**
@@ -144,7 +175,7 @@ export interface DamageOptions {
  * kills outright, and any damage taken at 0 is a failed death save (two on a critical hit).
  */
 export function applyDamage(character: Character, damage: number, options: DamageOptions = {}): HealthChange {
-  const amount = Math.max(0, Math.trunc(damage));
+  const amount = damageAfterDefences(character, Math.max(0, Math.trunc(damage)), options.type).amount;
   const absorbed = Math.min(character.tempHP, amount);
   const lost = Math.min(Math.max(0, character.currentHP), amount - absorbed);
   const overflow = amount - absorbed - lost;
