@@ -585,13 +585,9 @@ const RollModeIcons: React.FC = () => {
             aria-pressed={on}
             aria-label={title}
             onClick={() => choose(on ? null : value)}
-            className="grid h-9 w-9 place-items-center border transition-colors"
-            style={{
-              borderRadius: 'var(--radius)',
-              color: on ? 'rgb(var(--c-bg))' : `rgb(var(--c-${tone}))`,
-              backgroundColor: on ? `rgb(var(--c-${tone}))` : 'transparent',
-              borderColor: `rgb(var(--c-${tone}) / ${on ? 1 : 0.45})`,
-            }}
+            // The setting's own chip, in the tone of the choice; lit while it waits for the roll.
+            className="ui-hud-chip ui-hud-chip--toggle"
+            style={{ '--chip-tone': `var(--c-${tone})` } as React.CSSProperties}
             {...bind({ key: `mode:${value}`, title, lines: [line, on ? 'Нажмите, чтобы отменить' : 'Действует на один бросок'] })}
           >
             <Icon width={18} height={18} />

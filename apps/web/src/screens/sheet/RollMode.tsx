@@ -35,31 +35,29 @@ const OPTIONS: { value: Chosen; label: string; hint: string; tone: string }[] = 
 export const RollModeToggle: React.FC<{ className?: string }> = ({ className }) => {
   const chosen = useRollMode((s) => s.chosen);
   const choose = useRollMode((s) => s.choose);
+  // The setting's own segmented control: a pick shows in its tone, a second click takes it back.
   return (
-    <div role="group" aria-label="Следующий бросок к20" className={cx('flex items-center gap-1.5', className)}>
+    <div className={cx('flex items-center gap-2', className)}>
       <span className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-ink-faint">к20</span>
-      {OPTIONS.map((option) => {
-        const on = chosen === option.value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={on}
-            title={option.hint}
-            onClick={() => choose(on ? null : option.value)}
-            className={cx(
-              'h-7 min-w-0 flex-1 border px-2 text-xs transition-colors',
-              on ? 'text-bg' : 'border-line text-ink-muted hover:border-frame/60 hover:text-ink',
-            )}
-            style={{
-              borderRadius: 'var(--radius)',
-              ...(on ? { backgroundColor: `rgb(var(--c-${option.tone}))`, borderColor: `rgb(var(--c-${option.tone}))` } : {}),
-            }}
-          >
-            {option.label}
-          </button>
-        );
-      })}
+      <div role="radiogroup" aria-label="Следующий бросок к20" className="ui-segmented ui-segmented--compact !h-8 min-w-0 flex-1">
+        {OPTIONS.map((option) => {
+          const on = chosen === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              title={option.hint}
+              onClick={() => choose(on ? null : option.value)}
+              className="ui-segmented__option min-w-0 truncate"
+              style={{ '--segment-tone': `var(--c-${option.tone})` } as React.CSSProperties}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };

@@ -817,6 +817,14 @@ html:has([role='dialog'][aria-modal='true']) .ui-toasts { bottom: 1.5rem !import
 
 .ui-hud-chip:hover { border-color: rgb(var(--c-frame-bright)); transform: translateY(-1px); }
 
+.ui-hud-chip--toggle { color: rgb(var(--chip-tone)); border-color: rgb(var(--chip-tone) / 0.45); }
+.ui-hud-chip--toggle[aria-pressed='true'] {
+  color: rgb(var(--c-ink));
+  background: rgb(var(--chip-tone) / 0.28);
+  border-color: rgb(var(--chip-tone));
+  box-shadow: 0 0 12px rgb(var(--chip-tone) / 0.4), inset 0 0 0 1px rgb(var(--chip-tone) / 0.35);
+}
+
 .ui-hud-chip--condition { color: rgb(var(--c-warning)); border-color: rgb(var(--c-warning) / 0.5); background: rgb(var(--c-warning) / 0.1); }
 
 .ui-hud-chip--resistance { color: rgb(var(--c-armor)); }
