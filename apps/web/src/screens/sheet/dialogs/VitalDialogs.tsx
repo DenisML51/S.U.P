@@ -7,6 +7,7 @@ import { NumberField, Segmented } from '../../../ui/forms';
 import { Button, Field, Meter, cx, type MeterTone } from '../../../ui/primitives';
 import { useVitals } from '../useVitals';
 import { useSheetDialogs } from './context';
+import { DeathSaves } from '../parts/DeathSaves';
 import { locale } from '../../../i18n';
 
 interface VitalProps {
@@ -124,22 +125,24 @@ export const HealthDialog: React.FC<VitalProps> = ({ open, onClose }) => {
         max={max}
         extra={character.tempHP}
         tone="hp"
-        note={
-          down ? (
-            <span className="text-danger">Без сознания</span>
-          ) : character.tempHP > 0 ? (
-            'Временные хиты принимают урон первыми'
-          ) : null
-        }
+        note={character.tempHP > 0 ? 'Временные хиты принимают урон первыми' : null}
       />
+      <DeathSaves character={character} className="mx-auto mt-4 max-w-sm" />
       <div className="mt-6">
         <AmountBar
           actions={[
-            { label: 'Урон', variant: 'danger', onApply: vitals.damage },
+            { label: 'Урон', variant: 'danger', onApply: (n) => vitals.damage(n) },
             { label: 'Лечение', onApply: vitals.heal },
-            { label: 'Временные', onApply: vitals.addTemp },
+            ...(down
+              ? [{ label: 'Крит. урон', variant: 'danger' as const, onApply: (n: number) => vitals.damage(n, { critical: true }) }]
+              : [{ label: 'Временные', onApply: vitals.addTemp }]),
           ]}
         />
+        {down && (
+          <p className="mt-2 text-xs text-ink-faint">
+            Урон при 0 хитов — провал спасброска, критический — два; урон не меньше максимума хитов убивает.
+          </p>
+        )}
       </div>
       <div className="mt-6 grid grid-cols-3 gap-4">
         <Field label="Максимум">

@@ -9,9 +9,12 @@ import {
   experienceProgress,
   formatModifier,
   initiativeModifier,
+  isDead,
+  isStable,
   isStackable,
   itemQuantity,
   maxSanityOf,
+  rollsDeathSaves,
   setActionLimit,
   setSpentActions,
   spentActionsOf,
@@ -287,6 +290,31 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
         </button>
       )}
       {character.tempHP > 0 && <span className="ui-hud-portrait__temp">+{character.tempHP}</span>}
+      {down && rollsDeathSaves(character) && (
+        <button
+          type="button"
+          onClick={() => dialogs.open({ kind: 'health' })}
+          className="ui-hud-chip absolute inset-x-2 bottom-2 !flex !h-7 !w-auto items-center justify-center gap-2 text-xs tabular-nums"
+          style={{ color: 'rgb(var(--c-danger))', borderColor: 'rgb(var(--c-danger) / 0.6)' }}
+          {...bind({
+            key: 'death-saves',
+            title: isDead(character) ? 'Погиб' : isStable(character) ? 'Стабилен' : 'Спасброски от смерти',
+            lines: [
+              `Успехов ${character.deathSaves?.successes ?? 0} из 3 · провалов ${character.deathSaves?.failures ?? 0} из 3`,
+              'Нажмите: бросок и отметки',
+            ],
+          })}
+        >
+          {isDead(character) ? (
+            'Погиб'
+          ) : (
+            <>
+              <span style={{ color: 'rgb(var(--c-success))' }}>{'●'.repeat(character.deathSaves?.successes ?? 0).padEnd(3, '○')}</span>
+              <span>{'●'.repeat(character.deathSaves?.failures ?? 0).padEnd(3, '○')}</span>
+            </>
+          )}
+        </button>
+      )}
       {view}
     </div>
   );

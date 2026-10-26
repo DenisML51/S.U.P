@@ -1,4 +1,4 @@
-import type { Character, Limb } from '@itd/schema';
+import type { Character, DeathSaves, Limb } from '@itd/schema';
 import type { InjuryLevel, LimbType } from '../content/combat';
 import { abilityModifier } from './abilities';
 import { keepConcentration } from './concentration';
@@ -54,7 +54,7 @@ export interface HealthValues {
 }
 
 export const setHealth = (character: Character, health: HealthValues): Character =>
-  keepConcentration({ ...character, ...health });
+  settleHealth({ ...character, ...health });
 
 /** Limb hit points stay between the lost mark (−10) and the limb's maximum. */
 export const clampLimbHP = (limb: Limb): Limb => {
@@ -81,22 +81,107 @@ export interface HealthChange {
   absorbed: number;
 }
 
-/** Damage eats temporary hit points first, then hit points, which stop at zero; at zero concentration ends. */
-export function applyDamage(character: Character, damage: number): HealthChange {
+/** Investigators of Call of Cthulhu are dying by their own rules; every other hero rolls death saves. */
+export const rollsDeathSaves = (character: Pick<Character, 'build'>): boolean => character.build?.ruleset !== 'coc7';
+
+const NO_SAVES: DeathSaves = { successes: 0, failures: 0 };
+
+/** Three failed death saves: the hero is dead. */
+export const isDead = (character: Pick<Character, 'currentHP' | 'deathSaves'>): boolean =>
+  character.currentHP <= 0 && (character.deathSaves?.failures ?? 0) >= 3;
+
+/** Three successful death saves: the hero stays unconscious at 0 hit points but stops rolling. */
+export const isStable = (character: Pick<Character, 'currentHP' | 'deathSaves'>): boolean =>
+  character.currentHP <= 0 && !isDead(character) && (character.deathSaves?.successes ?? 0) >= 3;
+
+const withCondition = (character: Character, id: string, on: boolean): Character => {
+  const has = character.conditions.includes(id);
+  if (has === on) return character;
+  return { ...character, conditions: on ? [...character.conditions, id] : character.conditions.filter((c) => c !== id) };
+};
+
+/** Back above 0 hit points: the death saves are gone, and so is the unconsciousness of the fall. */
+const wakeUp = (character: Character): Character => {
+  const { deathSaves: _gone, ...rest } = character;
+  return withCondition(rest, 'unconscious', false);
+};
+
+/** Falling to 0 hit points: unconscious, with a clean count of death saves. */
+const fall = (character: Character): Character =>
+  withCondition({ ...character, deathSaves: { ...NO_SAVES } }, 'unconscious', true);
+
+const addFailures = (character: Character, count: number): Character => {
+  const saves = character.deathSaves ?? NO_SAVES;
+  return { ...character, deathSaves: { ...saves, failures: Math.min(3, saves.failures + count) } };
+};
+
+export interface DamageOptions {
+  /** A critical hit on a hero at 0 hit points counts as two failed death saves. */
+  critical?: boolean;
+}
+
+/**
+ * Damage eats temporary hit points first, then hit points, which stop at zero; at zero concentration
+ * ends. A hero who rolls death saves falls unconscious at 0; damage left over that reaches the maximum
+ * kills outright, and any damage taken at 0 is a failed death save (two on a critical hit).
+ */
+export function applyDamage(character: Character, damage: number, options: DamageOptions = {}): HealthChange {
   const amount = Math.max(0, Math.trunc(damage));
   const absorbed = Math.min(character.tempHP, amount);
-  const lost = Math.min(character.currentHP, amount - absorbed);
-  return {
-    character: keepConcentration({ ...character, tempHP: character.tempHP - absorbed, currentHP: character.currentHP - lost }),
-    amount: lost,
-    absorbed,
-  };
+  const lost = Math.min(Math.max(0, character.currentHP), amount - absorbed);
+  const overflow = amount - absorbed - lost;
+  let next: Character = { ...character, tempHP: character.tempHP - absorbed, currentHP: character.currentHP - lost };
+  if (rollsDeathSaves(character) && next.currentHP <= 0 && amount - absorbed > 0) {
+    const wasDown = character.currentHP <= 0;
+    if (!wasDown) next = fall(next);
+    if (overflow >= totalMaxHP(character)) next = addFailures(next, 3);
+    else if (wasDown) next = addFailures(next, options.critical ? 2 : 1);
+  }
+  return { character: keepConcentration(next), amount: lost, absorbed };
 }
 
 /** Healing restores hit points up to the maximum, bonus included; it never adds temporary ones. */
 export function applyHealing(character: Character, healing: number): HealthChange {
   const amount = Math.max(0, Math.min(Math.trunc(healing), totalMaxHP(character) - character.currentHP));
-  return { character: { ...character, currentHP: character.currentHP + amount }, amount, absorbed: 0 };
+  const next = { ...character, currentHP: character.currentHP + amount };
+  return { character: amount > 0 && character.currentHP <= 0 ? wakeUp(next) : next, amount, absorbed: 0 };
+}
+
+export type DeathSaveOutcome = 'success' | 'failure' | 'stable' | 'dead' | 'revived';
+
+/**
+ * One death saving throw on the d20 rolled: 10 or more succeeds, a 1 fails twice, a 20 brings the
+ * hero back with 1 hit point. A stable or dead hero does not roll.
+ */
+export function rollDeathSave(character: Character, die: number): { character: Character; outcome: DeathSaveOutcome } {
+  if (character.currentHP > 0 || isDead(character) || isStable(character)) return { character, outcome: 'failure' };
+  if (die >= 20) return { character: wakeUp({ ...character, currentHP: 1 }), outcome: 'revived' };
+  const saves = character.deathSaves ?? NO_SAVES;
+  if (die >= 10) {
+    const successes = Math.min(3, saves.successes + 1);
+    return { character: { ...character, deathSaves: { ...saves, successes } }, outcome: successes >= 3 ? 'stable' : 'success' };
+  }
+  const next = addFailures(character, die <= 1 ? 2 : 1);
+  return { character: next, outcome: isDead(next) ? 'dead' : 'failure' };
+}
+
+/** Sets the marks by hand (the table rolled, or a power changed them). */
+export const setDeathSaves = (character: Character, saves: DeathSaves): Character => ({
+  ...character,
+  deathSaves: {
+    successes: Math.max(0, Math.min(3, Math.trunc(saves.successes))),
+    failures: Math.max(0, Math.min(3, Math.trunc(saves.failures))),
+  },
+});
+
+/**
+ * Hit points set by hand: above 0 the hero is up and the saves go; dropping to 0 starts them.
+ * Concentration that can no longer be kept ends.
+ */
+export function settleHealth(character: Character): Character {
+  if (!rollsDeathSaves(character)) return keepConcentration(character);
+  if (character.currentHP > 0) return keepConcentration(character.deathSaves ? wakeUp(character) : character);
+  return keepConcentration(character.deathSaves ? character : fall(character));
 }
 
 /** Temporary hit points do not stack: the larger of the old and the new amount stays. */

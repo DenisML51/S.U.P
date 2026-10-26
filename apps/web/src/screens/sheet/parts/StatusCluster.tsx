@@ -7,6 +7,7 @@ import { LevelReady, useSettingArt } from '../../../ui/ornaments';
 import { Button, IconButton, Meter, Panel, cx, type MeterTone } from '../../../ui/primitives';
 import { IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../../ui/icons';
 import { ConcentrationBadge } from '../Concentration';
+import { DeathSaves } from './DeathSaves';
 import { useSheetDialogs } from '../dialogs/context';
 import { useVitals } from '../useVitals';
 import { locale } from '../../../i18n';
@@ -213,6 +214,7 @@ export const StatusCluster: React.FC<{ character: Character; className?: string 
           />
         </div>
         <ConcentrationBadge character={character} />
+        <DeathSaves character={character} />
         <QuickHealth />
       </Panel>
       <ExperienceLine character={character} onClick={() => dialogs.open({ kind: 'experience' })} />
