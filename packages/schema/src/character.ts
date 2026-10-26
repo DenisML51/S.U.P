@@ -165,6 +165,8 @@ export const InventoryItemSchema = passthroughObject({
   damageType: optionalShortText,
   damageComponents: optionalList(DamageComponentSchema),
   ammunitionType: optionalShortText,
+  /** A weapon that can be thrown (dagger, javelin, dart): a throw spends one from its stack. */
+  thrown: optionalFlag,
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset weapon, armour or gear the item was made from (D&D 2024 tables). */
@@ -183,6 +185,10 @@ export const AttackSchema = passthroughObject({
   weaponId: optionalNestedId,
   usesAmmunition: optionalFlag,
   ammunitionCost: optionalNumber,
+  /** The stack of ammunition the player chose for it, when several would fit. */
+  ammunitionItemId: optionalNestedId,
+  /** A throw of the weapon itself: spends one from the weapon's stack, if it is counted. */
+  thrown: optionalFlag,
   attribute: optionalShortText,
   /** Call of Cthulhu: the skill it is rolled with (`firearms:handgun`). */
   skill: optionalShortText,

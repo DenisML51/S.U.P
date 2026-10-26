@@ -1,6 +1,6 @@
 import type { Ability, ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
 import { startConcentration } from './concentration';
-import { changeItemQuantity, itemQuantity } from './inventory';
+import { changeItemQuantity, isWeaponStack, itemQuantity } from './inventory';
 import { changeResource } from './resources';
 
 export type ActionSlot = keyof Pick<ActionCounters, 'action' | 'bonus' | 'reaction'>;
@@ -110,21 +110,36 @@ const ACTION_SLOT_NAMES: Record<ActionSlot, string> = {
 };
 
 /**
- * Ammunition a ranged attack draws from: the stack named after the weapon's ammunition type, or the
- * only stack the character carries. `null` when the choice is ambiguous or there is nothing to use.
+ * One stack of several of the same thing (two quivers of arrows from two kits): the first that still
+ * has some. `null` when they differ (arrows and +1 arrows): the player says which.
+ */
+function sameKind(stacks: InventoryItem[]): InventoryItem | null {
+  if (stacks.length === 0) return null;
+  const name = stacks[0]!.name.trim().toLowerCase();
+  if (stacks.some((s) => s.name.trim().toLowerCase() !== name)) return null;
+  return stacks.find((s) => itemQuantity(s) > 0) ?? stacks[0]!;
+}
+
+/**
+ * Ammunition a ranged attack draws from: the stack the player chose for it, else the stacks named
+ * after the weapon's ammunition type, else every stack carried — when they are all the same thing.
+ * `null` when the choice is the player's to make or there is nothing to use.
  */
 export function resolveAmmunition(character: Character, attack: Attack): InventoryItem | null {
   const stacks = character.inventory.filter((item) => item.type === 'ammunition');
+  const chosen = attack.ammunitionItemId ? stacks.find((s) => s.id === attack.ammunitionItemId) : undefined;
+  if (chosen) return chosen;
   const weapon = attack.weaponId ? character.inventory.find((item) => item.id === attack.weaponId) : undefined;
   const wanted = weapon?.ammunitionType?.trim().toLowerCase();
-
-  if (wanted) {
-    const matching = stacks.filter((s) => s.name.toLowerCase().includes(wanted) || s.itemClass?.toLowerCase() === wanted);
-    if (matching.length === 1) return matching[0]!;
-    if (matching.length > 1) return null;
-  }
-  return stacks.length === 1 ? stacks[0]! : null;
+  const matching = wanted
+    ? stacks.filter((s) => s.name.toLowerCase().includes(wanted) || s.itemClass?.toLowerCase() === wanted)
+    : [];
+  return sameKind(matching.length > 0 ? matching : stacks);
 }
+
+/** Stacks of ammunition the player may choose from for a ranged attack. */
+export const ammunitionChoices = (character: Pick<Character, 'inventory'>): InventoryItem[] =>
+  character.inventory.filter((item) => item.type === 'ammunition');
 
 /**
  * Uses an attack, ability or spell and pays for it: the resource it costs, the ammunition it fires
@@ -195,12 +210,25 @@ export function performAction(character: Character, request: PerformActionReques
     const ammunition = request.ammunitionItemId
       ? next.inventory.find((item) => item.id === request.ammunitionItemId && item.type === 'ammunition')
       : resolveAmmunition(next, attack);
-    if (!ammunition) return fail('ammunition_unresolved', 'Выберите боеприпасы для атаки');
+    if (!ammunition)
+      return ammunitionChoices(next).length > 0
+        ? fail('ammunition_unresolved', 'Выберите, чем стрелять')
+        : fail('not_enough_ammunition', 'Нет боеприпасов');
     if (itemQuantity(ammunition) < amount) {
       return fail('not_enough_ammunition', `Недостаточно боеприпасов «${ammunition.name}»`);
     }
     next = changeItemQuantity(next, ammunition.id, -amount);
     costs.ammunition = { id: ammunition.id, name: ammunition.name, amount };
+  }
+
+  // A throw spends one from a counted stack of the weapon (javelins, darts); a lone dagger is picked up.
+  if (request.kind === 'attack' && (source as Attack).thrown) {
+    const weapon = next.inventory.find((item) => item.id === (source as Attack).weaponId);
+    if (weapon && isWeaponStack(weapon)) {
+      if (itemQuantity(weapon) < 1) return fail('not_enough_ammunition', `Не осталось: ${weapon.name}`);
+      next = changeItemQuantity(next, weapon.id, -1);
+      costs.ammunition = { id: weapon.id, name: weapon.name, amount: 1 };
+    }
   }
 
   // A spell or ability that needs concentration starts it, ending any other.
