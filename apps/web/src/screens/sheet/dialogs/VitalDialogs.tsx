@@ -7,6 +7,7 @@ import { NumberField, Segmented } from '../../../ui/forms';
 import { Button, Field, Meter, cx, type MeterTone } from '../../../ui/primitives';
 import { useVitals } from '../useVitals';
 import { useSheetDialogs } from './context';
+import { locale } from '../../../i18n';
 
 interface VitalProps {
   open: boolean;
@@ -240,7 +241,7 @@ export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
   const vitals = useVitals();
   const dialogs = useSheetDialogs();
   const progress = experienceProgress(character.level, character.experience);
-  const format = (n: number) => n.toLocaleString('ru-RU');
+  const format = (n: number) => n.toLocaleString(locale);
   return (
     <Dialog
       open={open}
@@ -253,7 +254,7 @@ export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
             variant="primary"
             onClick={() => (character.build ? dialogs.open({ kind: 'levelUp' }) : vitals.setLevel(character.level + 1))}
           >
-            Повысить до {character.level + 1} уровня
+            {`Повысить до ${character.level + 1} уровня`}
           </Button>
         ) : (
           <Done onClose={onClose} />

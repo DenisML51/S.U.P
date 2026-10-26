@@ -44,6 +44,7 @@ import { useCocSelection } from './details';
 import { CharacteristicsGrid, DerivedStrip, ModsNote, RollModsBar, SkillList } from './parts';
 import { ItemDialog, PickerDialog, type PickOption } from './picker';
 import { addCondition, isSanitySpec, parseCashInput, setAssets } from './sheetRules';
+import { locale, tIn } from '../../i18n';
 
 /** "Add" under a list: a quiet button that opens the dialog to pick from. */
 const AddButton: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
@@ -615,7 +616,7 @@ const MagicPanel: React.FC = () => {
         aside={
           <span className="flex items-center gap-2">
             ПМ <b className="tabular-nums">{coc.magicPoints}</b> / {maxMP}
-            <Button size="row" variant="ghost" onClick={() => update(changeMagic(-1))} aria-label="Магия: −1">
+            <Button size="row" variant="ghost" onClick={() => update(changeMagic(-1))} aria-label={`${tIn('ui', 'Магия')}: −1`}>
               −1
             </Button>
             <Button
@@ -623,7 +624,7 @@ const MagicPanel: React.FC = () => {
               variant="ghost"
               onClick={() => update(changeMagic(1))}
               title="Магия восстанавливается по 1 ПМ в час"
-              aria-label="Магия: +1"
+              aria-label={`${tIn('ui', 'Магия')}: +1`}
             >
               +1
             </Button>
@@ -757,7 +758,7 @@ export const GearSection: React.FC = () => {
             {credit} · {wealth.label}
           </span>
           <span className="text-ink-muted">Расходы в день</span>
-          <span className="text-right">${wealth.spendingLevel.toLocaleString('ru-RU')}</span>
+          <span className="text-right">${wealth.spendingLevel.toLocaleString(locale)}</span>
           <label className="text-ink-muted" htmlFor="coc-cash">
             Наличные, $
           </label>

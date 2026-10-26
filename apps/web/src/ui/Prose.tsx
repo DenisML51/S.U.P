@@ -1,6 +1,9 @@
+/** @jsxImportSource react */
+// The markdown is translated whole, before it is split into runs of text (see src/i18n).
 import React from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { t } from '../i18n';
 import { cx } from './primitives';
 
 /* Everything inherits the surrounding ink, so the same text reads on parchment and on a plate. */
@@ -31,7 +34,7 @@ const COMPONENTS: Components = {
 export const Prose: React.FC<{ children: string; className?: string }> = ({ children, className }) => (
   <div className={cx('text-sm leading-relaxed', className)}>
     <ReactMarkdown remarkPlugins={[remarkGfm]} components={COMPONENTS}>
-      {children}
+      {t(children)}
     </ReactMarkdown>
   </div>
 );

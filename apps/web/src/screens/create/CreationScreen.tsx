@@ -43,6 +43,7 @@ import {
 import { useCocCreation } from './coc/useCocCreation';
 import { useCreation } from './useCreation';
 import { useDraftState } from './useDraftState';
+import { t } from '../../i18n';
 
 type Path = 'dnd' | 'coc' | 'custom';
 
@@ -78,7 +79,7 @@ function revealIssue(issue: string) {
   const title = issue.replace(/^\d+:\s*/, '');
   const panel = document.querySelector('[data-creation-panel]');
   const field = [...(panel?.querySelectorAll('h3, h4, h5, label, .ui-label') ?? [])].find((el) =>
-    el.textContent?.trim().startsWith(title),
+    el.textContent?.trim().startsWith(t(title)),
   );
   const target = field?.closest('section') ?? field;
   if (!target) return;

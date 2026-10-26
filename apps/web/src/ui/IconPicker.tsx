@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { GameIcon, ICON_COLORS, ICON_GROUPS, resolveIcon, tileStyle, type IconKind } from './GameIcon';
 import { cx } from './primitives';
+import { t } from '../i18n';
 
 /**
  * An entry's name with its icon beside it, as the combat bar shows it. A click on the icon opens
@@ -21,7 +22,7 @@ export const IconNameField: React.FC<{
   const needle = query.trim().toLowerCase();
   const groups = ICON_GROUPS.map((group) => ({
     ...group,
-    icons: needle ? group.icons.filter((icon) => icon.label.toLowerCase().includes(needle)) : group.icons,
+    icons: needle ? group.icons.filter((icon) => t(icon.label).toLowerCase().includes(needle)) : group.icons,
   })).filter((group) => group.icons.length > 0);
 
   return (

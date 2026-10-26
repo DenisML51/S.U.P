@@ -34,8 +34,9 @@ import { PickList } from '../../progression/ChoiceField';
 import { EmblemGrid, IdentityStep as SharedIdentityStep, Picked, ScoreCard } from '../kit';
 import { choiceList, manualOutOfRange } from './creationRules';
 import { choiceOptions, type CocCreation } from './useCocCreation';
+import { compareText, locale, t, tIn } from '../../../i18n';
 
-const CHAR_SHORT = Object.fromEntries(CHARACTERISTICS.map((c) => [c.id, c.short])) as Record<
+const CHAR_SHORT = Object.fromEntries(CHARACTERISTICS.map((c) => [c.id, tIn('coc', c.short)])) as Record<
   CharacteristicId,
   string
 >;
@@ -309,7 +310,7 @@ export const ArchetypeStep: React.FC<{ creation: CocCreation }> = ({ creation })
                       aria-pressed={mine}
                       onClick={() => creation.rollCore(id)}
                     >
-                      {mine ? `${CHARACTERISTICS.find((c) => c.id === id)?.name} · перебросить` : `Бросить ${CHARACTERISTICS.find((c) => c.id === id)?.name}`}
+                      {mine ? `${tIn('coc', CHARACTERISTICS.find((c) => c.id === id)?.name ?? '')} · перебросить` : `Бросить ${tIn('coc', CHARACTERISTICS.find((c) => c.id === id)?.name ?? '')}`}
                     </button>
                   );
                 })}
@@ -515,7 +516,7 @@ export const AgeStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
             <div className="grid grid-cols-3 gap-2">
               {lossIds.map((id) => (
                 <div key={id} className="ui-option flex-row items-center justify-between px-4 py-2.5">
-                  <span className="text-sm">{CHARACTERISTICS.find((c) => c.id === id)?.name}</span>
+                  <span className="text-sm">{tIn('coc', CHARACTERISTICS.find((c) => c.id === id)?.name ?? '')}</span>
                   <NumberField
                     label={CHAR_SHORT[id]}
                     value={creation.ageLoss[id] ?? 0}
@@ -605,7 +606,7 @@ export const OccupationStep: React.FC<{ creation: CocCreation }> = ({ creation }
   const [query, setQuery] = useState('');
   const info = creation.occupationInfo;
   const shown = OCCUPATIONS.filter(
-    (o) => (!o.era || o.era === creation.era) && o.name.toLowerCase().includes(query.trim().toLowerCase()),
+    (o) => (!o.era || o.era === creation.era) && t(o.name).toLowerCase().includes(query.trim().toLowerCase()),
   );
   const fixed = info?.skills.flatMap((choice) => ('skill' in choice ? [choice.skill] : [])) ?? [];
   // Coming back to the step, the picked occupation is in view, not somewhere below the fold.
@@ -766,8 +767,8 @@ export const SkillsStep: React.FC<{ creation: CocCreation }> = ({ creation }) =>
   const needle = filter.trim().toLowerCase();
   const rows = ids
     .map((id) => ({ id, name: skillName(id), own: own.has(id), arch: inArchetype(id) }))
-    .filter((r) => !needle || r.name.toLowerCase().includes(needle))
-    .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    .filter((r) => !needle || t(r.name).toLowerCase().includes(needle))
+    .sort((a, b) => compareText(a.name, b.name));
   // The occupation's skills first, then the archetype's, then the rest: where each pool's points go.
   const groups = [
     { title: 'Навыки профессии', rows: rows.filter((r) => r.own) },
@@ -802,7 +803,7 @@ export const SkillsStep: React.FC<{ creation: CocCreation }> = ({ creation }) =>
         {range ? (
           <p className="text-sm text-ink-muted">
             Средства <span className="ui-numeric text-ink">{creation.creditRating}</span> из {range[0]}–{range[1]} ·{' '}
-            {wealth.label}, наличные ${wealth.cash.toLocaleString('ru-RU')}
+            {wealth.label}, наличные ${wealth.cash.toLocaleString(locale)}
           </p>
         ) : (
           <span />
@@ -1044,7 +1045,7 @@ export const CocSummary: React.FC<{ creation: CocCreation }> = ({ creation }) =>
         <div className="grid grid-cols-4 gap-y-2 text-center">
           {CHARACTERISTICS.map((c) => (
             <div key={c.id}>
-              <div className="text-[10px] tracking-[0.08em] text-ink-faint">{c.short}</div>
+              <div className="text-[10px] tracking-[0.08em] text-ink-faint">{tIn('coc', c.short)}</div>
               <div className="ui-display ui-numeric text-lg leading-tight text-ink">
                 {creation.characteristics[c.id] || '—'}
               </div>
@@ -1054,7 +1055,7 @@ export const CocSummary: React.FC<{ creation: CocCreation }> = ({ creation }) =>
 
         <div className="flex justify-center gap-2.5">
           <Badge icon={<IconHealth width={13} height={13} />} value={d.maxHP || '—'} label="Хиты" />
-          <Badge icon={<IconSpells width={13} height={13} />} value={d.maxMP || '—'} label="Магия" />
+          <Badge icon={<IconSpells width={13} height={13} />} value={d.maxMP || '—'} label={tIn('ui', 'Магия')} />
           <Badge icon={<IconSanity width={13} height={13} />} value={d.startingSanity || '—'} label="Рассудок" />
           <Badge icon={<IconSparkle width={13} height={13} />} value={creation.luck || '—'} label="Удача" />
         </div>

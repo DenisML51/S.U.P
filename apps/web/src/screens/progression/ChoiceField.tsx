@@ -8,6 +8,7 @@ import { Prose } from '../../ui/Prose';
 import { Section } from '../../ui/Section';
 import { Button, IconButton, cx } from '../../ui/primitives';
 import { IconClose, IconMinus, IconPlus } from '../../ui/icons';
+import { t } from '../../i18n';
 
 /** Choices whose options are many or long to read open in a picker; the page shows the picks. */
 const PICKER_SOURCES = new Set(['feats', 'spells', 'maneuvers', 'weapons', 'tools', 'catalog', 'forget']);
@@ -265,7 +266,7 @@ const OptionPicker: React.FC<{
   const [focus, setFocus] = useState<string | null>(picks[0] ?? null);
   const groups = [...new Set(options.map((o) => o.group).filter((g): g is string => !!g))];
   const needle = query.trim().toLowerCase();
-  const shown = options.filter((o) => (!group || o.group === group) && (!needle || o.name.toLowerCase().includes(needle)));
+  const shown = options.filter((o) => (!group || o.group === group) && (!needle || t(o.name).toLowerCase().includes(needle)));
   const focused = options.find((o) => o.id === focus) ?? shown[0];
   const full = picks.length >= count;
 

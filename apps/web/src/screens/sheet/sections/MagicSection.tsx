@@ -26,6 +26,7 @@ import { ConcentrationMark } from '../Concentration';
 import { useActs } from '../useActs';
 import { useSheetDialogs } from '../dialogs/context';
 import { describeDamage, spellDamageParts } from '../parts/damage';
+import { t } from '../../../i18n';
 
 type LevelFilter = 'all' | number;
 
@@ -284,7 +285,7 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
     (spell) =>
       (level === 'all' || spell.level === level) &&
       (!preparedOnly || spell.prepared) &&
-      (!query.trim() || spell.name.toLowerCase().includes(query.trim().toLowerCase())),
+      (!query.trim() || t(spell.name).toLowerCase().includes(query.trim().toLowerCase())),
   );
   const groups = levels
     .map((lvl) => ({ level: lvl, spells: visible.filter((s) => s.level === lvl) }))

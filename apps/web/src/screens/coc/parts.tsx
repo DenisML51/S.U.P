@@ -28,6 +28,7 @@ import {
 import { InfoButton } from './details';
 import { useCountRollShown, useRollVerdict } from './verdict';
 import { NO_MODS, describeMods, isPlainMods, parseNumberInput, type RollMods } from './sheetRules';
+import { compareText, t, tIn } from '../../i18n';
 
 export { modsToRoll, type RollMods } from './sheetRules';
 
@@ -148,7 +149,7 @@ export const CharacteristicsGrid: React.FC = () => {
               <InfoButton kind="characteristic" id={ch.id} label={ch.name} />
             </span>
             <span className="coc-char__label">
-              {ch.short} · {ch.name}
+              {tIn('coc', ch.short)} · {tIn('coc', ch.name)}
             </span>
             <span className="coc-char__value">{value}</span>
             <span className="coc-char__parts">
@@ -218,8 +219,8 @@ export const SkillList: React.FC<{ filter?: string; wide?: boolean }> = ({ filte
     const needle = filter.trim().toLowerCase();
     return [...(character.coc?.skills ?? [])]
       .map((s) => ({ ...s, label: displaySkillName(s) }))
-      .filter((s) => !needle || s.label.toLowerCase().includes(needle))
-      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+      .filter((s) => !needle || t(s.label).toLowerCase().includes(needle))
+      .sort((a, b) => compareText(a.label, b.label));
   }, [character.coc?.skills, filter]);
 
   return (

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog } from '../../ui/Dialog';
 import { Button, Input, Panel, TextArea } from '../../ui/primitives';
 import { NumberField } from '../../ui/forms';
+import { t } from '../../i18n';
 
 export interface PickOption {
   id: string;
@@ -31,7 +32,7 @@ export const PickerDialog: React.FC<{
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return options.filter(
-      (o) => !needle || `${o.name} ${o.group ?? ''} ${o.hint ?? ''}`.toLowerCase().includes(needle),
+      (o) => !needle || `${t(o.name)} ${t(o.group ?? '')} ${t(o.hint ?? '')}`.toLowerCase().includes(needle),
     );
   }, [options, query]);
   const groups = useMemo(() => [...new Set(shown.map((o) => o.group ?? ''))], [shown]);
