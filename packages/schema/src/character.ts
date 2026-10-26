@@ -189,6 +189,10 @@ export const AttackSchema = passthroughObject({
   ammunitionItemId: optionalNestedId,
   /** A throw of the weapon itself: spends one from the weapon's stack, if it is counted. */
   thrown: optionalFlag,
+  /** Dice of its damage count as at least this (Great Weapon Fighting: 3). */
+  minDie: optionalNumber,
+  /** Its damage held in both hands (a versatile weapon: "1d10 + 3"). */
+  damageTwoHanded: optionalShortText,
   attribute: optionalShortText,
   /** Call of Cthulhu: the skill it is rolled with (`firearms:handgun`). */
   skill: optionalShortText,

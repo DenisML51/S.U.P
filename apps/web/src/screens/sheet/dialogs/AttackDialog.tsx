@@ -205,6 +205,8 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
                 : `${entry.ammunitionCost ?? 1} за атаку`,
             ] as const),
           entry.thrown && weapon?.quantity !== undefined && (['Осталось', `${itemQuantity(weapon)}`] as const),
+          !!entry.damageTwoHanded && (['Двумя руками', entry.damageTwoHanded] as const),
+          !!entry.minDie && (['Большое оружие', `на костях урона меньше ${entry.minDie} — ${entry.minDie}`] as const),
           weapon && (['Оружие', weapon.name] as const),
         ]}
       />

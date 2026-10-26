@@ -107,6 +107,7 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
         attack.actionType === 'action' && attacksPerActionOf(character) > 1 && ['Атак за действие', `${attacksPerActionOf(character)}`],
         ammunition && ['Боеприпасы', `${ammunition.name}: ${itemQuantity(ammunition)}`],
         thrownStack && ['Осталось', `${itemQuantity(thrownStack)}`],
+        !!attack.damageTwoHanded && ['Двумя руками', attack.damageTwoHanded],
       ),
       actionType: attack.actionType,
       count: ammunition ? itemQuantity(ammunition) : thrownStack ? itemQuantity(thrownStack) : undefined,

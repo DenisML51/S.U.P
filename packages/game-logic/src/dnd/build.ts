@@ -896,14 +896,36 @@ const isThrown = (weapon: WeaponDef) => hasProperty(weapon, 'Метательн�
  * equipped before throws existed get it here).
  */
 function withThrows(attacks: Attack[], inventory: InventoryItem[]): Attack[] {
-  return attacks.flatMap((attack) => {
+  // Two Light melee weapons in hand: each gives an extra attack with the other hand (a Bonus Action).
+  const light = equippedTableWeapons(inventory).filter(({ weapon }) => weapon.kind === 'melee' && hasProperty(weapon, 'Лёгкое'));
+  const offHand = light.length >= 2 ? new Set(light.map(({ item }) => item.id)) : new Set<string>();
+  const kept = attacks.filter((a) => !a.id.endsWith(OFF_HAND) || offHand.has(a.weaponId ?? ''));
+  return kept.flatMap((attack) => {
     const item = inventory.find((i) => i.id === attack.weaponId);
     const weapon = item && DND.weapons.find((w) => w.id === item.ref);
-    if (!item || !weapon || weapon.kind !== 'melee' || !isThrown(weapon) || attack.id !== weaponAttackId(item.id)) return [attack];
-    if (attacks.some((a) => a.id === weaponThrowId(item.id))) return [attack];
-    return [attack, weaponAttack({ ...item, thrown: true }, undefined, { throw: true })];
+    if (!item || !weapon || attack.id !== weaponAttackId(item.id)) return [attack];
+    const extra: Attack[] = [];
+    if (weapon.kind === 'melee' && isThrown(weapon) && !kept.some((a) => a.id === weaponThrowId(item.id)))
+      extra.push(weaponAttack({ ...item, thrown: true }, undefined, { throw: true }));
+    if (offHand.has(item.id) && !kept.some((a) => a.id === attack.id + OFF_HAND))
+      extra.push({ ...weaponAttack(item), id: attack.id + OFF_HAND, name: `${item.name}: второй рукой`, actionType: 'bonus' });
+    return [attack, ...extra];
   });
 }
+
+/** Suffix of an extra attack with the other hand (two Light weapons). */
+const OFF_HAND = '_offhand';
+
+/** Equipped weapons of the tables, with their table entries. */
+const equippedTableWeapons = (inventory: InventoryItem[]) =>
+  inventory.flatMap((item) => {
+    const weapon = item.equipped && item.type === 'weapon' ? DND.weapons.find((w) => w.id === item.ref) : undefined;
+    return weapon ? [{ item, weapon }] : [];
+  });
+
+/** The die a versatile weapon deals in both hands: "Универсальное (1d10)" → "1d10". */
+const versatileDie = (weapon: WeaponDef) =>
+  /Универсальное \(([^)]+)\)/.exec(weapon.properties.find((p) => p.startsWith('Универсальное')) ?? '')?.[1];
 
 /**
  * Attack and damage bonus of a preset weapon: Strength, Dexterity for ranged weapons, the better of
@@ -940,12 +962,26 @@ function weaponAttackFor(
     .reduce((sum, e) => sum + e.amount, 0);
   // A dart flies itself, as does a thrown dagger; a bow shoots arrows.
   const spendsItself = attack.id.endsWith('_throw') || (weapon.kind === 'ranged' && isThrown(weapon));
+  // Fighting styles. Dueling: a melee weapon in one hand and no other weapon. Great Weapon Fighting: a
+  // two-handed or versatile one. The other hand's attack adds no ability unless Two-Weapon Fighting
+  // (or the ability is negative).
+  const styles = new Set(effects.flatMap((e) => (e.type === 'weaponStyle' ? [e.style] : [])));
+  const offHand = attack.id.endsWith(OFF_HAND);
+  const melee = equippedTableWeapons(inventory).filter(({ weapon: w }) => w.kind === 'melee');
+  const dueling =
+    styles.has('dueling') && weapon.kind === 'melee' && !hasProperty(weapon, 'Двуручное') && melee.length <= 1 && !spendsItself;
+  const damageModifier = offHand && !styles.has('twoWeapon') ? Math.min(0, modifier) : modifier + (dueling ? 2 : 0);
+  const heavy = weapon.kind === 'melee' && (hasProperty(weapon, 'Двуручное') || hasProperty(weapon, 'Универсальное'));
+  const twoHanded = !offHand && !spendsItself ? versatileDie(weapon) : undefined;
   return {
     ...attack,
     usesAmmunition: weapon.kind === 'ranged' && !spendsItself,
     thrown: spendsItself || undefined,
     hitBonus: (weaponProficient(weapon, effects) ? proficiency : 0) + modifier + bonus,
-    damage: signed(dice, modifier),
+    damage: signed(dice, damageModifier),
+    // Dueling's +2 is for one hand: held in two, the versatile die goes without it.
+    damageTwoHanded: twoHanded ? signed(twoHanded, modifier) : undefined,
+    minDie: styles.has('greatWeapon') && heavy && !spendsItself ? 3 : undefined,
     attribute,
   };
 }
