@@ -1,5 +1,5 @@
 import React from 'react';
-import { createEntityId, isActiveFeature, isUsable, removeById, upsertById } from '@itd/game-logic';
+import { createEntityId, isActiveFeature, isUsable, removeById, rulesOf, upsertById } from '@itd/game-logic';
 import type { Ability, ActionType, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
@@ -9,6 +9,7 @@ import { Prose } from '../../../ui/Prose';
 import { DamageBlock } from '../../../ui/DamageBlock';
 import { damageParts, hitLabel } from '../parts/damage';
 import { useActs } from '../useActs';
+import { useSheetDialogs } from './context';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
 import {
   CardRule,
@@ -41,6 +42,7 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const acts = useActs();
+  const dialogs = useSheetDialogs();
   const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(
     character.abilities,
     id,
@@ -147,6 +149,8 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
   const parts = damageParts(entry);
   const cost = costLabel(character, entry.resourceId, entry.resourceCost);
   const passive = !isUsable(entry);
+  // Picks the sheet changes any time (the known forms of Wild Shape).
+  const choices = character.build && entry.grant ? (rulesOf(character.build).sheetChoices?.(character.build, entry.grant) ?? []) : [];
 
   return (
     <EntryView
@@ -164,10 +168,16 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
       }
       onEdit={startEditing}
       primary={
-        !passive && (
+        !passive ? (
           <Button variant="primary" onClick={() => acts.activate(entry)} data-autofocus>
             {isActiveFeature(character, entry.id) ? 'Прекратить' : 'Использовать'}
           </Button>
+        ) : (
+          choices[0] && (
+            <Button variant="primary" onClick={() => dialogs.open({ kind: 'choices', grant: entry.grant! })}>
+              {`${choices[0].label}: ${choices[0].picked} из ${choices[0].count}`}
+            </Button>
+          )
         )
       }
     >

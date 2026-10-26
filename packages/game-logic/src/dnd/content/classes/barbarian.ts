@@ -341,6 +341,7 @@ export const BARBARIAN: ClassDef = {
         },
         stance: {
           endsConcentration: true,
+          noSpells: true,
           effects: [
             { type: 'resistance', damageType: 'Дробящий' },
             { type: 'resistance', damageType: 'Колющий' },

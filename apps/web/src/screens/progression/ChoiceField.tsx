@@ -11,7 +11,7 @@ import { IconClose, IconMinus, IconPlus } from '../../ui/icons';
 import { t } from '../../i18n';
 
 /** Choices whose options are many or long to read open in a picker; the page shows the picks. */
-const PICKER_SOURCES = new Set(['feats', 'spells', 'maneuvers', 'weapons', 'tools', 'catalog', 'forget']);
+const PICKER_SOURCES = new Set(['feats', 'spells', 'maneuvers', 'weapons', 'tools', 'catalog', 'forget', 'beasts']);
 /** Inline options (lineages, ancestries) move to the picker past this many. */
 const INLINE_OPTIONS = 6;
 
@@ -20,6 +20,7 @@ const ICON_KIND: Record<string, IconKind> = {
   feats: 'ability',
   maneuvers: 'ability',
   catalog: 'ability',
+  beasts: 'ability',
   spells: 'spell',
   weapons: 'attack',
   tools: 'item',

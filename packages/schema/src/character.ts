@@ -230,8 +230,14 @@ export const AbilitySchema = passthroughObject({
   concentration: optionalFlag,
   /** Using it turns it on until it is ended (Rage, Bladesong); its effects count meanwhile. */
   stance: optionalFlag,
-  /** Turning it on ends concentration, and none can be kept while it is on (Rage). */
+  /** Turning it on ends concentration (Rage). */
   stanceEndsConcentration: optionalFlag,
+  /** No spells are cast while it is on (Rage, Wild Shape). */
+  stanceNoSpells: optionalFlag,
+  /** Only one ability of a group is on at a time (the forms of Wild Shape). */
+  stanceGroup: optionalShortText,
+  /** Temporary hit points it gives when it starts (Wild Shape). */
+  stanceTempHP: optionalNumber,
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
@@ -515,6 +521,8 @@ export const CharacterSchema = passthroughObject({
       unarmored: optionalShortText,
       /** The Unarmored Defense is lost while holding a shield (Monk). */
       unarmoredNoShield: optionalFlag,
+      /** In a beast's shape (Wild Shape) the armour class is the form's, whatever is worn. */
+      form: optionalNumber,
     }).optional(),
   ),
   initiativeBonus: optionalNumber,

@@ -23,6 +23,7 @@ import { EXTRA_SPELLS } from './spells/extra';
 import { FIVE_SPELLS } from './spells/five';
 import { HIGH_SPELLS } from './spells/high';
 import { LOW_SPELLS } from './spells/low';
+import { BEASTS } from './beasts';
 import { SIX_SPELLS } from './spells/six';
 import { SPELL_LISTS } from './spells/lists';
 import { WIZARD_SPELLS } from './spells/wizard';
@@ -61,6 +62,7 @@ export const DND = {
   armor: ARMOR,
   gear: GEAR,
   masteries: MASTERIES,
+  beasts: BEASTS,
 };
 
 export type DndContent = typeof DND;

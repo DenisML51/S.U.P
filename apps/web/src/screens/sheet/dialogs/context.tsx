@@ -11,7 +11,9 @@ export type EntryKind = 'attack' | 'ability' | 'spell' | 'item' | 'trait' | 'res
 export type SheetDialog =
   | { kind: EntryKind; id?: string; edit?: boolean }
   | { kind: 'health' | 'sanity' | 'experience' | 'currency' | 'armor' | 'body' | 'profile' | 'dice' | 'levelUp' | 'rest' }
-  | { kind: 'attribute' | 'limb'; id: string };
+  | { kind: 'attribute' | 'limb'; id: string }
+  /** Picks of a feature changed on the sheet (the known forms of Wild Shape), by the feature's grant. */
+  | { kind: 'choices'; grant: string };
 
 /** An entry whose card is shown beside its list. */
 export interface SelectedEntry {

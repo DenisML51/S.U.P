@@ -39,6 +39,11 @@ export interface RuleSystem {
   /** Where a granted entry comes from, for people ("Паладин, 2 уровень"). */
   describeGrant(build: Build, grant: string | undefined): string | undefined;
   /**
+   * Choices of a feature that the sheet changes directly, any time (the known forms of Wild Shape),
+   * by the feature's `grant` key: what the button to change them says.
+   */
+  sheetChoices?(build: Build, grant: string): { key: string; label: string; count: number; picked: number }[];
+  /**
    * The system's spells for the hero to write onto the sheet themselves (a Wizard copying a spell
    * into the book, a scroll learned): the list, and a sheet entry of one of them.
    */

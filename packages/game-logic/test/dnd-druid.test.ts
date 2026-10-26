@@ -87,7 +87,8 @@ describe('druid', () => {
     expect(resource(at(2), 'druid.wild-shape')).toMatchObject({ max: 2, recovery: 'short', recoveryAmount: 1 });
     expect(resource(at(6), 'druid.wild-shape')?.max).toBe(3);
     expect(resource(at(17), 'druid.wild-shape')?.max).toBe(4);
-    expect(ability(at(2), 'Дикий облик')?.actionType).toBe('bonus');
+    // The uses are spent by the known forms; Wild Shape itself only holds them.
+    expect(ability(at(2), 'Дикий облик')?.actionType).toBe('passive');
     expect(ability(at(2), 'Дикий спутник')?.resourceId).toBe('druid.wild-shape');
     expect(resource(at(5), 'druid.wild-resurgence')?.max).toBe(1);
     expect(resource(at(20), 'druid.nature-magician')?.max).toBe(1);

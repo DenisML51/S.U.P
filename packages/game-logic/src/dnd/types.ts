@@ -123,6 +123,13 @@ export type Effect =
   | { type: 'damageBonus'; amount: Amount; ability?: AttributeId }
   /** Added to the spell save DC (Innate Sorcery). */
   | { type: 'spellSaveDC'; amount: number }
+  /** In the shape of a beast (Wild Shape): its physical scores, armour class, speeds, senses and attacks. */
+  | { type: 'form'; beast: string }
+  /**
+   * What a druid's forms gain (Circle Forms): armour class at least `armorClass`, temporary hit
+   * points multiplied by `tempHPMultiplier`, beasts up to challenge `maxCR`.
+   */
+  | { type: 'wildShape'; armorClass?: Amount; tempHPMultiplier?: number; maxCR?: Amount }
   /** A bonus to attack rolls with weapons of a kind (Archery: +2 with ranged weapons). */
   | { type: 'attackBonus'; kind: 'melee' | 'ranged'; amount: number }
   /**
@@ -206,7 +213,45 @@ export interface FeatureDef {
 
 export interface StanceDef {
   effects: Effect[] | ((ctx: BuildContext) => Effect[]);
+  /** Starting it ends concentration (a raging barbarian). */
   endsConcentration?: boolean;
+  /** No spells are cast while it is on (Rage; Wild Shape before level 18). */
+  noSpells?: boolean | ((ctx: BuildContext) => boolean);
+  /** Only one feature of a group is on at a time: a new form of Wild Shape replaces the old. */
+  group?: string;
+  /** Temporary hit points it gives when it starts (Wild Shape: the druid level). */
+  tempHP?: Amount;
+}
+
+/** One attack of a beast's stat block, with its own numbers. */
+export interface BeastAttackDef {
+  name: string;
+  hit: number;
+  /** Empty for an attack that only does what its note says (a web). */
+  damage: string;
+  damageType: string;
+  note?: string;
+}
+
+/** A beast of Wild Shape: what of its stat block replaces the druid's. */
+export interface BeastFormDef {
+  id: string;
+  name: string;
+  /** Challenge rating: 0, 1/8, 1/4, 1/2, 1, 2… */
+  cr: number;
+  size: string;
+  ac: number;
+  speed: number;
+  climb?: number;
+  swim?: number;
+  fly?: number;
+  darkvision?: number;
+  str: number;
+  dex: number;
+  con: number;
+  attacks: BeastAttackDef[];
+  traits?: string;
+  iconName?: string;
 }
 
 /** An inline option of a choice (an elf lineage, a dragon ancestry, a Channel Divinity option). */
@@ -250,6 +295,8 @@ export type OptionSource =
   | { from: 'weapons'; filter: WeaponFilter }
   | { from: 'maneuvers' }
   | { from: 'catalog'; catalog: CatalogId }
+  /** Beasts of Wild Shape up to the challenge the druid's level allows (flying ones from level 8). */
+  | { from: 'beasts' }
   /** Picks made earlier in a pool, one of which is given up for a new one (a spell replaced on a level-up). */
   | { from: 'forget'; pool: string }
   | { from: 'tools'; list?: string[] }
@@ -281,6 +328,8 @@ export interface ChoiceDef {
   spellResource?: string;
   /** The player may leave it without a pick (giving up a spell on a level-up). */
   optional?: boolean;
+  /** Picks can be changed on the sheet as well, any time (Wild Shape forms, swapped after a rest). */
+  onSheet?: boolean;
 }
 
 // ------------------------------------------------------------------------------------------------
