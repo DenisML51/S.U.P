@@ -6,7 +6,7 @@ import { GameIcon, tileStyle } from '../../../ui/GameIcon';
 import { LevelReady, useSettingArt } from '../../../ui/ornaments';
 import { Button, IconButton, Meter, Panel, cx, type MeterTone } from '../../../ui/primitives';
 import { IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../../ui/icons';
-import { ConcentrationBadge } from '../Concentration';
+import { ActiveFeaturesBadge, ConcentrationBadge } from '../Concentration';
 import { DeathSaves } from './DeathSaves';
 import { useSheetDialogs } from '../dialogs/context';
 import { useVitals } from '../useVitals';
@@ -219,6 +219,7 @@ export const StatusCluster: React.FC<{ character: Character; className?: string 
           />
         </div>
         <ConcentrationBadge character={character} />
+        <ActiveFeaturesBadge character={character} />
         <DeathSaves character={character} />
         <QuickHealth />
       </Panel>

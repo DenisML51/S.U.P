@@ -211,6 +211,7 @@ const DRAGONBORN: SpeciesDef = {
         recharge: 'long',
         iconName: 'feather',
       },
+      stance: { effects: [{ type: 'movement', mode: 'fly' }] },
       iconName: 'feather',
     },
   ],
@@ -517,6 +518,7 @@ const GOLIATH: SpeciesDef = {
         'С 5-го уровня. Бонусным действием становитесь Большим на 10 минут (если хватает места): преимущество на проверки Силы, скорость +10 фт. Раз в долгий отдых.',
       action: 'bonus',
       resource: { id: 'goliath.large-form', name: 'Большая форма', max: 1, recharge: 'long', iconName: 'mailed-fist' },
+      stance: { effects: [{ type: 'advantage', on: ['check:strength'] }, { type: 'speed', amount: 10 }] },
       iconName: 'mailed-fist',
     },
     {

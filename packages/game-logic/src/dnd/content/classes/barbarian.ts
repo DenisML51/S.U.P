@@ -339,6 +339,16 @@ export const BARBARIAN: ClassDef = {
           iconName: 'angry-eyes',
           color: '#c0392b',
         },
+        stance: {
+          endsConcentration: true,
+          effects: [
+            { type: 'resistance', damageType: 'Дробящий' },
+            { type: 'resistance', damageType: 'Колющий' },
+            { type: 'resistance', damageType: 'Рубящий' },
+            { type: 'damageBonus', ability: 'strength', amount: rageDamage },
+            { type: 'advantage', on: ['check:strength', 'save:strength'] },
+          ],
+        },
         iconName: 'angry-eyes',
         color: '#c0392b',
       },

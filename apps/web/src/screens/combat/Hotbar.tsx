@@ -82,14 +82,14 @@ const SlotHint: React.FC<{ slot: Slot; onUse?: () => void; onOpen?: () => void }
     {onUse && onOpen ? (
       <div className="mt-3 flex gap-2 border-t border-line/60 pt-3">
         <Button variant="primary" size="sm" className="flex-1" onClick={onUse}>
-          Использовать
+          {slot.active ? 'Прекратить' : 'Использовать'}
         </Button>
         <Button variant="secondary" size="sm" onClick={onOpen}>
           Карточка
         </Button>
       </div>
     ) : (
-      <p className="mt-3 text-[11px] text-ink-faint">ЛКМ — использовать · ПКМ — карточка</p>
+      <p className="mt-3 text-[11px] text-ink-faint">{slot.active ? 'ЛКМ — прекратить · ПКМ — карточка' : 'ЛКМ — использовать · ПКМ — карточка'}</p>
     )}
   </>
 );
@@ -113,7 +113,7 @@ const SlotButton: React.FC<{
     {...longPress(onOpen)}
     aria-label={slot.name}
     aria-pressed={picked}
-    className={cx('ui-hud-slot ui-hud-slot--tile', slot.blocked && 'ui-hud-slot--blocked')}
+    className={cx('ui-hud-slot ui-hud-slot--tile', slot.blocked && !slot.active && 'ui-hud-slot--blocked', slot.active && 'ui-hud-slot--on')}
     style={tileStyle(slot.color)}
     data-kind={slot.kind}
     {...hint}

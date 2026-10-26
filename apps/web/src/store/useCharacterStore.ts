@@ -196,6 +196,18 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
   };
 
   /**
+   * A feature turned on or off (Rage, Bladesong) changes the numbers its effects give: a preset hero
+   * is rebuilt the moment the set of what is on changes, whatever edit changed it (using the ability,
+   * falling unconscious, a long rest).
+   */
+  const withActiveFeatures = (before: Character, after: Character): Character => {
+    const was = before.activeFeatures ?? [];
+    const now = after.activeFeatures ?? [];
+    const same = was.length === now.length && was.every((id) => now.includes(id));
+    return same || !after.build ? after : rulesOf(after.build).rebuild(after, after.build);
+  };
+
+  /**
    * A preset hero picks up improvements of the preset content (damage that grows, saves) the moment
    * it is opened; the rebuild keeps uses, damage taken and preparation.
    */
@@ -317,7 +329,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       const now = Date.now();
       const patch = typeof updater === 'function' ? null : changedFields(current, updater);
       const change = (doc: Character): Character => {
-        const next = patch ? { ...doc, ...patch } : (updater as (previous: Character) => Character)(doc);
+        const next = withActiveFeatures(doc, patch ? { ...doc, ...patch } : (updater as (previous: Character) => Character)(doc));
         return log ? appendHistory(next, log, now, logId) : next;
       };
 

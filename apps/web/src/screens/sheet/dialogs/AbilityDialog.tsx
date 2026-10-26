@@ -1,5 +1,5 @@
 import React from 'react';
-import { createEntityId, isUsable, removeById, upsertById } from '@itd/game-logic';
+import { createEntityId, isActiveFeature, isUsable, removeById, upsertById } from '@itd/game-logic';
 import type { Ability, ActionType, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
@@ -166,7 +166,7 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
       primary={
         !passive && (
           <Button variant="primary" onClick={() => acts.activate(entry)} data-autofocus>
-            Использовать
+            {isActiveFeature(character, entry.id) ? 'Прекратить' : 'Использовать'}
           </Button>
         )
       }

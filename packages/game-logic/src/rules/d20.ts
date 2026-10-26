@@ -9,6 +9,8 @@ export interface D20Test {
   attribute?: string;
   /** The skill of a check (`athletics`). */
   skill?: string;
+  /** An attack made with a spell rather than a weapon. */
+  spell?: boolean;
 }
 
 export interface D20Plan {
@@ -56,6 +58,8 @@ const featureKeys = (test: D20Test): string[] => {
       return ['initiative', 'check:dexterity'];
     case 'deathSave':
       return ['deathSave'];
+    case 'attack':
+      return [test.spell ? 'attack:spell' : 'attack:weapon'];
     case 'save':
       return test.attribute ? [`save:${test.attribute}`] : [];
     case 'check':

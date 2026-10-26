@@ -759,6 +759,12 @@
 
 .ui-hud-slot--blocked { filter: grayscale(0.9); opacity: 0.42; }
 
+/* An ability that is on (Rage): ringed until it ends. An outline, so no setting's tile hides it. */
+[data-setting] .ui-hud-slot.ui-hud-slot--on {
+  outline: 2px solid rgb(var(--c-accent));
+  outline-offset: 2px;
+}
+
 .ui-hud-slot__level,
 .ui-hud-slot__count {
   position: absolute;

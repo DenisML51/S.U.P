@@ -1,9 +1,9 @@
 import type { Ability, Attack, Spell } from '@itd/schema';
-import { ammunitionChoices, castableSlots, resolveAmmunition, spellAttackBonusFor } from '@itd/game-logic';
+import { ammunitionChoices, castableSlots, isActiveFeature, resolveAmmunition, spellAttackBonusFor } from '@itd/game-logic';
 import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { damageParts, spellDamageParts } from './parts/damage';
-import { useConcentrationPrompt } from './Concentration';
+import { useConcentrationPrompt, useEndFeature } from './Concentration';
 import { useSlotPrompt } from './SlotPrompt';
 import { useAmmoPrompt } from './AmmoPrompt';
 import { useRolls, type DamageComponents } from './useRolls';
@@ -23,6 +23,7 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
   const askAmmo = useAmmoPrompt((s) => s.ask);
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const askReplace = useConcentrationPrompt((s) => s.askReplace);
+  const endFeature = useEndFeature();
   const roll = useRolls();
   const turnLock = useCharacterStore((s) => s.turnLock);
   /** Out of the hero's turn in a party's fight only reactions are taken, wherever they are asked from. */
@@ -39,7 +40,7 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     label: string,
     hitBonus: number | undefined,
     parts: DamageComponents,
-    weapon: { minDie?: number; twoHanded?: DamageComponents } = {},
+    weapon: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean } = {},
   ) => {
     if (hitBonus !== undefined) roll.attack(label, hitBonus, parts, weapon);
     else roll.damage(label, parts, { minDie: weapon.minDie });
@@ -93,7 +94,7 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     const rolls = hitBonus !== undefined || parts.length > 0;
     if (!performAction({ kind: 'spell', id: spell.id, trackActionEconomy: inCombat, slotLevel }, { quiet: rolls })?.ok) return;
     const upcast = slotLevel !== undefined && slotLevel > spell.level ? ` (${slotLevel} круг)` : '';
-    if (rolls) strike(`${spell.name}${upcast}`, hitBonus, parts);
+    if (rolls) strike(`${spell.name}${upcast}`, hitBonus, parts, { spell: true });
   };
 
   const castFrom = (spell: Spell) => {
@@ -113,10 +114,14 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     const hitBonus = spell.attackRoll ? spellAttackBonusFor(character, spell) : undefined;
     const rolls = hitBonus !== undefined || parts.length > 0;
     if (!performAction({ kind: 'spell', id: spell.id, asRitual: true }, { quiet: rolls })?.ok) return;
-    if (rolls) strike(`${spell.name} (ритуал)`, hitBonus, parts);
+    if (rolls) strike(`${spell.name} (ритуал)`, hitBonus, parts, { spell: true });
   };
 
-  const activate = (entry: Ability) => onTurn(entry, () => concentrating(entry, () => use(entry)));
+  // An ability that is on (Rage) is ended by the same button, without an action.
+  const activate = (entry: Ability) =>
+    entry.stance && character && isActiveFeature(character, entry.id)
+      ? endFeature(entry.id, entry.name)
+      : onTurn(entry, () => concentrating(entry, () => use(entry)));
   const cast = (spell: Spell) => onTurn(spell, () => concentrating(spell, () => castFrom(spell)));
 
   return {

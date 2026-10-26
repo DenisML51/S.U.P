@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatModifier, isUsable } from '@itd/game-logic';
+import { formatModifier, isActiveFeature, isUsable } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { Ledger, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
@@ -106,7 +106,7 @@ export const ActionsSection: React.FC<{ character: Character }> = ({ character }
                     onOpen={() => dialogs.openEntry('ability', entry.id)}
                     action={
                       <Button size="row" variant="secondary" onClick={() => activate(entry)}>
-                        Использовать
+                        {isActiveFeature(character, entry.id) ? 'Прекратить' : 'Использовать'}
                       </Button>
                     }
                   />

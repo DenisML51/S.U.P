@@ -1,6 +1,7 @@
 import {
   attacksPerActionOf,
   formatModifier,
+  isActiveFeature,
   isStackable,
   isWeaponStack,
   itemQuantity,
@@ -46,6 +47,8 @@ export interface Slot {
   count?: number;
   /** Why it cannot be used now, if it cannot. */
   blocked: string | null;
+  /** An ability that is on (Rage): using the slot ends it. */
+  active?: boolean;
   description: string;
   effect?: string;
 }
@@ -125,20 +128,18 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
       name: ability.name,
       iconName: ability.iconName,
       color: ability.color,
-      subtitle: 'Умение',
+      subtitle: isActiveFeature(character, ability.id) ? 'Умение · действует' : 'Умение',
+      active: isActiveFeature(character, ability.id) || undefined,
       facts: facts(
         costFact(character, ability.resourceId, ability.resourceCost),
         damageFact(ability),
         ['Попадание', hitLabel(character, ability) ?? ''],
       ),
       actionType: ability.actionType,
-      blocked: blockedBy(
-        character,
-        inCombat,
-        ability.actionType,
-        ability.resourceId,
-        ability.resourceCost ?? 1,
-      ),
+      // Ending what is on costs nothing.
+      blocked: isActiveFeature(character, ability.id)
+        ? null
+        : blockedBy(character, inCombat, ability.actionType, ability.resourceId, ability.resourceCost ?? 1),
       description: ability.description,
       effect: ability.effect,
     }));
