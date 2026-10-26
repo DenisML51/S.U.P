@@ -168,4 +168,9 @@ describe('toCharacterPreview', () => {
       resistances: [],
     });
   });
+
+  it('shows the whole maximum of hit points, the bonus included', () => {
+    const character = makeCharacter({ currentHP: 76, maxHP: 68, maxHPBonus: 8 });
+    expect(toCharacterPreview(character).maxHP).toBe(76);
+  });
 });
