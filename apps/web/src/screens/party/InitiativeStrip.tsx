@@ -72,6 +72,8 @@ const Token: React.FC<{
           waiting && 'ui-initiative__token--waiting',
           combatant.hostile && 'ui-initiative__token--hostile',
           combatant.kind === 'npc' && !combatant.hostile && 'ui-initiative__token--ally',
+          // An NPC at 0 hit points is out: its turns are passed over.
+          combatant.kind === 'npc' && vitals && vitals.currentHP <= 0 && 'opacity-35 grayscale',
         )}
       >
         <span className="ui-initiative__portrait relative block overflow-hidden" style={{ width: side, height: side }}>

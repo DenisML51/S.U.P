@@ -14,6 +14,10 @@ export interface CocRound extends RoundState {
   fightKey: string | null;
   /** Dived for cover after acting this round: the next round's action is lost. */
   forfeitNext?: boolean;
+  /** Pulp «Крепкий орешек»: hit points already shrugged off this round (up to 5). */
+  shrugged?: number;
+  /** Pulp «Стремительная атака»: the extra melee attack of this round is taken. */
+  rapidAttack?: boolean;
 }
 
 export const idleRound = (): CocRound => ({
@@ -43,8 +47,22 @@ export function enterRound(current: CocRound, round: number): CocRound {
     ...newRound(round, current.aimedWith),
     actionUsed: !!current.forfeitNext,
     forfeitNext: false,
+    shrugged: 0,
+    rapidAttack: false,
   };
 }
+
+/** Hurt: an aim is lost (7th edition: the aiming shooter must not move or be hurt). */
+export const afterHurt = (current: CocRound): CocRound =>
+  current.aimedWith ? { ...current, aimedWith: undefined } : current;
+
+/** What Pulp «Крепкий орешек» still shrugs off this round: up to 5 hit points of a blow. */
+export const TOUGH_GUY_POINTS = 5;
+export const shrugOff = (current: CocRound, amount: number): number =>
+  Math.max(0, Math.min(amount, TOUGH_GUY_POINTS - (current.shrugged ?? 0)));
+
+/** The Luck a Pulp talent of the fight costs each time («Тяжёлая рука», «Крепкий орешек», «Стремительная атака»). */
+export const TALENT_LUCK = 10;
 
 /**
  * The round kept with the tab against the table's fight: a different fight (or none) starts clean,
@@ -113,8 +131,10 @@ export function withBigTarget(mods: RollModifiers, big: boolean): RollModifiers 
  * Diving for cover (7th edition): the target of a firearm attack makes a Dodge roll instead of an
  * opposed defence; on a success the shooter rolls with a penalty die. Successful or not, the diver
  * forfeits their next attack: this round's, when they have yet to act, else the next round's.
+ * A Pulp hero with «Проворный» keeps it. Moving to cover also spoils an aim.
  */
-export function diveForCover(current: CocRound): CocRound {
+export function diveForCover(current: CocRound, nimble = false): CocRound {
+  if (nimble) return { ...current, aimedWith: undefined };
   return current.actionUsed
     ? { ...current, forfeitNext: true }
     : { ...current, actionUsed: true, aimedWith: undefined };

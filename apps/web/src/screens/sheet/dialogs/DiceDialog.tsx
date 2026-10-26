@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { formatDice, parseDiceFormula, rollD20, rollDie, type D20Mode } from '@itd/game-logic';
+import { formatDice, parseDiceFormula, rollD20, rollDie, rollPercentile, type D20Mode } from '@itd/game-logic';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { Dialog } from '../../../ui/Dialog';
 import { Segmented } from '../../../ui/forms';
@@ -13,8 +13,10 @@ const DICE = [4, 6, 8, 10, 12, 20, 100];
 interface DieResult {
   sides: number;
   value: number;
-  /** Thrown but not counted (the other die of advantage). */
+  /** Thrown but not counted (the other die of advantage, a tens die not kept). */
   dropped?: boolean;
+  /** What the die shows when it is not its own number (a d100's tens die: "00", "70"). */
+  label?: string;
 }
 
 interface Result {
@@ -79,12 +81,12 @@ const Throw: React.FC<{ result: Result }> = ({ result }) => {
           <RollingDie
             key={index}
             sides={die.sides}
-            value={die.value}
+            value={die.label ?? die.value}
             delay={index * STAGGER_MS}
             size={size}
             phase={index * 1.3 + die.sides * 0.1}
             dropped={die.dropped}
-            tone={die.value === die.sides ? 'success' : die.value === 1 ? 'danger' : undefined}
+            tone={die.label ? undefined : die.value === die.sides ? 'success' : die.value === 1 ? 'danger' : undefined}
             onLanded={index === dice.length - 1 ? () => setRevealed(true) : undefined}
           />
         ))}
@@ -110,17 +112,24 @@ const counts = (formula: string) => {
   return { byDie, bonus: parsed.bonus };
 };
 
+/** A single d100 of Call of Cthulhu: plain, or with a bonus or a penalty die (an extra tens die). */
+type D100Mode = 'normal' | 'bonus' | 'penalty';
+
 /**
  * The dice tray: dice clicked into a pool (or a formula typed), a single d20 with advantage or
- * disadvantage, and the throw shown die by die. Every throw goes to the hero's log.
+ * disadvantage — or, for an investigator, a single d100 with a bonus or a penalty die — and the
+ * throw shown die by die. Every throw goes to the hero's log.
  */
 export const DiceDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const logHistory = useCharacterStore((s) => s.logHistory);
-  const [formula, setFormula] = useState('1d20');
+  const percentile = useCharacterStore((s) => s.character?.build?.ruleset === 'coc7');
+  const [formula, setFormula] = useState(percentile ? '1d100' : '1d20');
   const [mode, setMode] = useState<D20Mode>('normal');
+  const [d100Mode, setD100Mode] = useState<D100Mode>('normal');
   const [results, setResults] = useState<Result[]>([]);
   const { byDie, bonus } = counts(formula);
   const singleD20 = Object.keys(byDie).length === 1 && byDie[20] === 1;
+  const singleD100 = Object.keys(byDie).length === 1 && byDie[100] === 1 && bonus === 0;
   const empty = Object.keys(byDie).length === 0 && bonus === 0;
 
   const change = (sides: number, delta: number) => {
@@ -130,6 +139,22 @@ export const DiceDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
 
   const roll = () => {
     if (empty) return;
+    if (singleD100 && d100Mode !== 'normal') {
+      // The tens dice (one kept, the others greyed) and the units die, as the sheet's telegram shows them.
+      const d100 = rollPercentile(d100Mode === 'bonus' ? 1 : 0, d100Mode === 'penalty' ? 1 : 0);
+      const kept = d100.total === 100 ? 0 : d100.total - d100.units;
+      const keptIndex = d100.tens.indexOf(kept);
+      const dice: DieResult[] = [
+        ...d100.tens.map((t, index) => ({ sides: 10, value: t, label: t === 0 ? '00' : String(t), dropped: index !== keptIndex })),
+        { sides: 10, value: d100.units, label: String(d100.units) },
+      ];
+      const label = `1d100 (${d100Mode === 'bonus' ? 'бонусная кость' : 'штрафная кость'})`;
+      setResults((previous) =>
+        [{ id: Date.now(), formula: label, total: d100.total, dice, bonus: 0 }, ...previous].slice(0, 6),
+      );
+      logHistory(`Бросок ${label}: ${d100.total} (десятки ${d100.tens.join(', ')}; единицы ${d100.units})`);
+      return;
+    }
     const dice: DieResult[] = [];
     for (const [sides, count] of Object.entries(byDie).map(([s, c]) => [Number(s), c] as const)) {
       if (sides === 20 && singleD20 && mode !== 'normal') {
@@ -204,6 +229,19 @@ export const DiceDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
             { value: 'normal', label: 'обычный' },
             { value: 'advantage', label: 'преимущество', tone: 'success' },
             { value: 'disadvantage', label: 'помеха', tone: 'danger' },
+          ]}
+        />
+      )}
+      {singleD100 && (
+        <Segmented
+          className="mt-3"
+          label="Режим броска"
+          value={d100Mode}
+          onChange={setD100Mode}
+          options={[
+            { value: 'normal', label: 'обычный' },
+            { value: 'bonus', label: 'бонусная кость', tone: 'success' },
+            { value: 'penalty', label: 'штрафная кость', tone: 'danger' },
           ]}
         />
       )}

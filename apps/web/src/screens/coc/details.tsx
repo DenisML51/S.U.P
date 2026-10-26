@@ -53,6 +53,8 @@ interface Selection {
   open: (kind: CocEntryKind, id: string) => void;
   close: () => void;
   isOpen: (kind: CocEntryKind, id: string) => boolean;
+  /** A spell was cast from its card (the combat screen spends the round's action). */
+  onCast?: () => void;
 }
 
 const SelectionContext = createContext<Selection | null>(null);
@@ -63,7 +65,10 @@ export const useCocSelection = (): Selection => {
   return value;
 };
 
-export const CocSelectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CocSelectionProvider: React.FC<{ children: React.ReactNode; onCast?: () => void }> = ({
+  children,
+  onCast,
+}) => {
   const [selected, setSelected] = useState<CocEntry | null>(null);
   const open = useCallback((kind: CocEntryKind, id: string) => setSelected({ kind, id }), []);
   const close = useCallback(() => setSelected(null), []);
@@ -73,8 +78,15 @@ export const CocSelectionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       open,
       close,
       isOpen: (kind: CocEntryKind, id: string) => selected?.kind === kind && selected.id === id,
+      // A screen that acts on a casting (the fight) is done with the card once the spell is cast.
+      onCast: onCast
+        ? () => {
+            onCast();
+            setSelected(null);
+          }
+        : undefined,
     }),
-    [selected, open, close],
+    [selected, open, close, onCast],
   );
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;
 };
@@ -141,7 +153,7 @@ const TraitName: React.FC<{ value: string; onSave: (name: string) => void }> = (
 function useCard(entry: CocEntry): CardContent | null {
   const { character, update, rollModded, present, last, rollDamage, onTurn, isJammed, clearJam, sanityLost } =
     useCoc();
-  const { close } = useCocSelection();
+  const { close, onCast } = useCocSelection();
   const coc = character.coc!;
   const [mp, setMp] = useState<number | null>(null);
   const [casting, setCasting] = useState(false);
@@ -424,6 +436,7 @@ function useCard(entry: CocEntry): CardContent | null {
           );
         if (outcome) sanityLost(`«${spell.name}»`, outcome);
         setFirstCast(false);
+        onCast?.();
       };
 
       return {
@@ -728,6 +741,12 @@ const CardBody: React.FC<{ entry: CocEntry; asDialog: boolean }> = ({ entry, asD
       {body}
     </DetailsPane>
   );
+};
+
+/** The chosen entry's card as a dialog, for a screen without a column for it (the fight). */
+export const CocEntryDialog: React.FC = () => {
+  const { selected } = useCocSelection();
+  return selected ? <CardBody key={`${selected.kind}-${selected.id}`} entry={selected} asDialog /> : null;
 };
 
 /**

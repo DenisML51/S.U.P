@@ -22,6 +22,7 @@ export * from './rules/progression';
 export * from './rules/rest';
 export * from './rules/resources';
 export * from './rules/sanity';
+export { damageBonusOfBuild } from './coc/meta';
 export * from './rules/scaling';
 export * from './rules/sheet';
 export * from './rules/spells';
