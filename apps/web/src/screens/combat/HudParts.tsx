@@ -26,6 +26,7 @@ import { CharacterArt } from '../../ui/CharacterArt';
 import { NumberField } from '../../ui/forms';
 import { CONDITION_ICONS, CatalogIcon, GameIcon } from '../../ui/GameIcon';
 import { Panel, cx } from '../../ui/primitives';
+import { LevelReady } from '../../ui/ornaments';
 import { IconAmmunition, IconCoins } from '../../ui/icons';
 import { useEndConcentration } from '../sheet/Concentration';
 import { useSheetDialogs } from '../sheet/dialogs/context';
@@ -562,12 +563,16 @@ export const ExperienceBar: React.FC<{ character: Character }> = ({ character })
       className="group flex w-full items-center gap-3"
       title="Опыт и уровень"
     >
-      <span className="ui-hud-xp flex-1">
-        <motion.span
-          className="ui-hud-xp__fill"
-          animate={{ width: `${Math.min(progress.progress, 100)}%` }}
-          transition={{ duration: 0.6 }}
-        />
+      {/* The bar with room around it for the setting's level-up marvel, as on the sheet. */}
+      <span className="relative block flex-1">
+        <span className="ui-hud-xp">
+          <motion.span
+            className="ui-hud-xp__fill"
+            animate={{ width: `${Math.min(progress.progress, 100)}%` }}
+            transition={{ duration: 0.6 }}
+          />
+        </span>
+        {progress.canLevelUp && <LevelReady />}
       </span>
       <span className="flex items-baseline gap-2 text-xs text-ink-muted">
         <span className="ui-display ui-numeric text-base text-frame-bright">{character.level}</span>
