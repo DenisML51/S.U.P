@@ -59,6 +59,9 @@ npm run dev                   # API на :4000 и Vite на :3000 с hot reload
 # создать аккаунт (работает и при REGISTRATION_ENABLED=false)
 npm run cli -- create-user --email player@example.com --name "Игрок" --password "…"
 
+# задать новый пароль игроку, который забыл свой (его сессии завершатся); сменить его игрок может в настройках
+npm run cli -- reset-password --email player@example.com --password "…"
+
 # импортировать листы персонажей (JSON-файлы или папка; в том числе из десктопной версии)
 npm run cli -- import-characters --email player@example.com ./data/legacy
 
