@@ -5,6 +5,7 @@ import {
   createEntityId,
   isShield,
   isStackable,
+  isWeaponStack,
   itemQuantity,
   removeItem,
   saveItem,
@@ -97,7 +98,14 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
       const saved: InventoryItem = {
         ...draft,
         name: draft.name.trim(),
-        quantity: isStackable(draft) ? Math.max(0, draft.quantity ?? 1) : undefined,
+        // A thrown weapon may be a counted stack (eight javelins); other weapons are one each.
+        quantity: isStackable(draft)
+          ? Math.max(0, draft.quantity ?? 1)
+          : weapon && draft.thrown && draft.quantity !== undefined
+            ? Math.max(0, draft.quantity)
+            : undefined,
+        thrown: weapon ? draft.thrown || undefined : undefined,
+        ammunitionType: weapon && draft.weaponClass === 'ranged' && !draft.thrown ? draft.ammunitionType?.trim() || undefined : undefined,
         damageComponents: weapon ? parts : undefined,
         damage: weapon ? parts[0]?.damage : undefined,
         damageType: weapon ? parts[0]?.type : undefined,
@@ -258,6 +266,39 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
                 ]}
               />
             </FormSection>
+            <div className="flex flex-wrap items-end gap-5">
+              <Switch
+                className="pb-2"
+                checked={!!draft.thrown}
+                onChange={(thrown) => set({ thrown })}
+                label="Метательное"
+              />
+              {draft.thrown && (
+                <Field label="Сколько штук" hint="Если их несколько: каждый бросок тратит одно">
+                  {({ id }) => (
+                    <NumberField
+                      id={id}
+                      min={0}
+                      value={draft.quantity ?? 1}
+                      onChange={(quantity) => set({ quantity })}
+                      className="w-32"
+                    />
+                  )}
+                </Field>
+              )}
+              {draft.weaponClass === 'ranged' && !draft.thrown && (
+                <Field label="Боеприпасы" className="min-w-0 flex-1">
+                  {(props) => (
+                    <Input
+                      {...props}
+                      value={draft.ammunitionType ?? ''}
+                      placeholder="Стрелы, болты…"
+                      onChange={(e) => set({ ammunitionType: e.target.value || undefined })}
+                    />
+                  )}
+                </Field>
+              )}
+            </div>
             <DamageEditor
               required
               value={draft.damageComponents ?? []}
@@ -281,7 +322,7 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
   }
 
   if (!entry) return null;
-  const stackable = isStackable(entry);
+  const stackable = isStackable(entry) || isWeaponStack(entry);
   const quantity = itemQuantity(entry);
   const parts = entry.type === 'weapon' ? damageParts(entry) : [];
   const toggleEquip = () => inventory.toggleEquip(entry);
@@ -335,6 +376,8 @@ export const ItemDialog: React.FC<{ open: boolean; id?: string; edit?: boolean; 
         facts={[
           entry.type === 'weapon' &&
             (['Дальность', entry.weaponClass === 'ranged' ? 'дальний бой' : 'ближний бой'] as const),
+          entry.thrown && (['Метательное', isWeaponStack(entry) ? 'бросок тратит одно' : 'да'] as const),
+          !!entry.ammunitionType && (['Боеприпасы', entry.ammunitionType] as const),
           entry.weight > 0 &&
             ([
               'Вес',

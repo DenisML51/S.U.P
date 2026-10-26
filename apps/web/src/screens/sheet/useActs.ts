@@ -1,10 +1,11 @@
 import type { Ability, Attack, Spell } from '@itd/schema';
-import { castableSlots, spellAttackBonusFor } from '@itd/game-logic';
+import { ammunitionChoices, castableSlots, resolveAmmunition, spellAttackBonusFor } from '@itd/game-logic';
 import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { damageParts, spellDamageParts } from './parts/damage';
 import { useConcentrationPrompt } from './Concentration';
 import { useSlotPrompt } from './SlotPrompt';
+import { useAmmoPrompt } from './AmmoPrompt';
 import { useRolls, type DamageComponents } from './useRolls';
 
 /**
@@ -19,6 +20,8 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
   const logHistory = useCharacterStore((s) => s.logHistory);
   const character = useCharacterStore((s) => s.character);
   const askSlot = useSlotPrompt((s) => s.ask);
+  const askAmmo = useAmmoPrompt((s) => s.ask);
+  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const askReplace = useConcentrationPrompt((s) => s.askReplace);
   const roll = useRolls();
   const turnLock = useCharacterStore((s) => s.turnLock);
@@ -37,9 +40,21 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     else roll.damage(label, parts);
   };
 
-  const attack = (entry: Attack) => {
+  const attack = (entry: Attack, ammunitionItemId?: string) => {
+    // Different stacks would do (arrows and +1 arrows): the player says which, once for this attack.
+    if (entry.usesAmmunition && !ammunitionItemId && character && !resolveAmmunition(character, entry) && ammunitionChoices(character).length > 1) {
+      askAmmo(entry, (itemId) => {
+        updateCharacter((doc) => ({
+          ...doc,
+          attacks: doc.attacks.map((a) => (a.id === entry.id ? { ...a, ammunitionItemId: itemId } : a)),
+        }));
+        attack(entry, itemId);
+      });
+      return;
+    }
     // The roll tells what happened; spending the action or the arrow shows no message of its own.
-    if ((entry.usesAmmunition || inCombat) && !performAction({ kind: 'attack', id: entry.id, trackActionEconomy: inCombat }, { quiet: true })?.ok) return;
+    const pays = entry.usesAmmunition || entry.thrown || inCombat;
+    if (pays && !performAction({ kind: 'attack', id: entry.id, trackActionEconomy: inCombat, ammunitionItemId }, { quiet: true })?.ok) return;
     strike(entry.name, entry.hitBonus, damageParts(entry));
   };
 

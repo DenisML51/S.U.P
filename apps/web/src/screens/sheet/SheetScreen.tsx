@@ -17,6 +17,7 @@ import { useTurnLock } from '../party/useTurnLock';
 import { SheetDialogHost } from './dialogs/SheetDialogHost';
 import { ConcentrationPrompt } from './Concentration';
 import { SlotPrompt } from './SlotPrompt';
+import { AmmoPrompt } from './AmmoPrompt';
 import { HeroColumn } from './HeroColumn';
 import { HeroExits, useHeroExits } from './HeroExits';
 import { SHEET_SECTIONS, SheetRail, type SheetSection } from './SheetRail';
@@ -61,6 +62,7 @@ export const SheetScreen: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSe
         {desktop ? <WideLayout {...layout} /> : <NarrowLayout {...layout} />}
         <SheetDialogHost />
         <SlotPrompt />
+        <AmmoPrompt />
         <ConcentrationPrompt />
       </SettingScope>
     </SheetDialogsProvider>

@@ -45,6 +45,7 @@ export function kitItems(kit: KitOption): InventoryItem[] {
           damage: weapon.damage,
           damageType: weapon.damageType,
           ammunitionType: weapon.ammunition,
+          thrown: weapon.properties.some((p) => p.startsWith('Метательное')) || undefined,
           iconName: DND_ICONS.weapons[weapon.id],
           description: [weapon.properties.join(', '), mastery && `Мастерство: ${mastery.name}`].filter(Boolean).join('\n\n'),
         },

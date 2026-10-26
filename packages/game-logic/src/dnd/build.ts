@@ -2,6 +2,7 @@ import type { Ability, Attack, Build, Character, DndBuild, CharacterDraft, Inven
 import { ATTRIBUTES_LIST, SKILLS_LIST } from '../content/attributes';
 import { spellColor } from '../content/combat';
 import { abilityModifier } from '../rules/abilities';
+import { weaponAttack, weaponAttackId, weaponThrowId } from '../rules/inventory';
 import { averageHitPoints } from '../rules/rest';
 import { DND } from './content';
 import { DND_ICONS } from './content/icons';
@@ -837,7 +838,9 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
       : character.spellcastingDifficultyValue,
     attacks: [
       ...grantedAttacks(collected, character.attacks, scores, proficiency, ctx),
-      ...character.attacks.filter((a) => !a.grant).map((attack) => weaponAttackFor(attack, character.inventory, scores, proficiency, effects)),
+      ...withThrows(character.attacks.filter((a) => !a.grant), character.inventory).map((attack) =>
+        weaponAttackFor(attack, character.inventory, scores, proficiency, effects),
+      ),
     ],
     build,
   };
@@ -884,6 +887,23 @@ export function weaponProficient(weapon: WeaponDef, effects: Effect[]): boolean 
   return false;
 }
 
+/** Weapons of the tables that can be thrown (a dagger, a javelin, a dart). */
+const isThrown = (weapon: WeaponDef) => hasProperty(weapon, 'Метательное');
+
+/**
+ * A melee weapon of the tables that can be thrown gets its throw beside its own attack (sheets
+ * equipped before throws existed get it here).
+ */
+function withThrows(attacks: Attack[], inventory: InventoryItem[]): Attack[] {
+  return attacks.flatMap((attack) => {
+    const item = inventory.find((i) => i.id === attack.weaponId);
+    const weapon = item && DND.weapons.find((w) => w.id === item.ref);
+    if (!item || !weapon || weapon.kind !== 'melee' || !isThrown(weapon) || attack.id !== weaponAttackId(item.id)) return [attack];
+    if (attacks.some((a) => a.id === weaponThrowId(item.id))) return [attack];
+    return [attack, weaponAttack({ ...item, thrown: true }, undefined, { throw: true })];
+  });
+}
+
 /**
  * Attack and damage bonus of a preset weapon: Strength, Dexterity for ranged weapons, the better of
  * the two for finesse ones, or an ability a feature allows (Martial Arts, Pact of the Blade); the
@@ -917,8 +937,12 @@ function weaponAttackFor(
   const bonus = effects
     .filter((e): e is Extract<Effect, { type: 'attackBonus' }> => e.type === 'attackBonus' && e.kind === weapon.kind)
     .reduce((sum, e) => sum + e.amount, 0);
+  // A dart flies itself, as does a thrown dagger; a bow shoots arrows.
+  const spendsItself = attack.id.endsWith('_throw') || (weapon.kind === 'ranged' && isThrown(weapon));
   return {
     ...attack,
+    usesAmmunition: weapon.kind === 'ranged' && !spendsItself,
+    thrown: spendsItself || undefined,
     hitBonus: (weaponProficient(weapon, effects) ? proficiency : 0) + modifier + bonus,
     damage: signed(dice, modifier),
     attribute,

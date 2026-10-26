@@ -2,6 +2,7 @@ import {
   attacksPerActionOf,
   formatModifier,
   isStackable,
+  isWeaponStack,
   itemQuantity,
   remainingActions,
   resolveAmmunition,
@@ -89,6 +90,9 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
     if (!blocked && ammunition && itemQuantity(ammunition) < (attack.ammunitionCost ?? 1))
       blocked = `Кончились: ${ammunition.name}`;
     const weapon = attack.weaponId ? character.inventory.find((i) => i.id === attack.weaponId) : undefined;
+    // A throw from a counted stack (javelins, darts) counts down the weapon itself.
+    const thrownStack = attack.thrown && weapon && isWeaponStack(weapon) ? weapon : undefined;
+    if (!blocked && thrownStack && itemQuantity(thrownStack) < 1) blocked = `Кончились: ${thrownStack.name}`;
     return {
       key: `attack:${attack.id}`,
       kind: 'attack',
@@ -102,9 +106,10 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
         damageFact(attack),
         attack.actionType === 'action' && attacksPerActionOf(character) > 1 && ['Атак за действие', `${attacksPerActionOf(character)}`],
         ammunition && ['Боеприпасы', `${ammunition.name}: ${itemQuantity(ammunition)}`],
+        thrownStack && ['Осталось', `${itemQuantity(thrownStack)}`],
       ),
       actionType: attack.actionType,
-      count: ammunition ? itemQuantity(ammunition) : undefined,
+      count: ammunition ? itemQuantity(ammunition) : thrownStack ? itemQuantity(thrownStack) : undefined,
       blocked,
       description: attack.description ?? '',
     };

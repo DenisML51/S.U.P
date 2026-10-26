@@ -92,3 +92,18 @@ describe('the translator with lists', () => {
     expect(t('+2 Ловкость')).toBe('+2 Dexterity');
   });
 });
+
+describe('templates of one line', () => {
+  const t = translator({
+    Мастерство: 'Proficiency',
+    Быстрое: 'Nick',
+    Лёгкое: 'Light',
+    // In the order the build gives them: the more a template fixes, the sooner it is tried.
+    'Мастерство: {0}': 'Mastery: {0}',
+    '{0}: {1}': '{0}: {1}',
+  });
+
+  it('fill their values within a line, so a label keeps its own words', () => {
+    expect(t('Лёгкое\n\nМастерство: Быстрое')).toBe('Light\n\nMastery: Nick');
+  });
+});

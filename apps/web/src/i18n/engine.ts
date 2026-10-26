@@ -28,10 +28,13 @@ const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function compile([ru, en]: [string, string]): Template {
   const pieces = ru.split(/\{(\d+)\}/);
+  // A template of one line fills its values within a line: "{0}: {1}" never takes in the lines
+  // before "Мастерство: Быстрое", which would part the label from its value.
+  const value = ru.includes('\n') ? '[\\s\\S]+?' : '[^\\n]+?';
   let source = '^';
   let anchor = '';
   pieces.forEach((piece, index) => {
-    if (index % 2 === 1) source += `(?<p${piece}>[\\s\\S]+?)`;
+    if (index % 2 === 1) source += `(?<p${piece}>${value})`;
     else {
       source += escape(piece);
       if (piece.length > anchor.length) anchor = piece;
