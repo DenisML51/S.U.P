@@ -12,6 +12,9 @@ import type { CharacterImages, Setting, Skill } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useClearDraft, useDraftState } from './useDraftState';
 
+/** How the six scores are made: 27 points, 4d6 with the lowest dropped, or typed in as agreed. */
+export type ScoreMethod = 'pointBuy' | 'roll' | 'manual';
+
 /**
  * A hero of one's own in the making (race, class and the rest typed by the player): every choice
  * of the creation screen and the rules that judge them. The choices are kept as a draft until the
@@ -26,6 +29,9 @@ export function useCreation(setting: Setting, onCreated: () => void) {
   const [characterClass, setCharacterClass] = useDraftState('custom.class', '');
   const [subclass, setSubclass] = useDraftState('custom.subclass', '');
   const [attributes, setAttributes] = useDraftState<Record<string, number>>('custom.attributes', startingAttributes);
+  const [method, setMethodState] = useDraftState<ScoreMethod>('custom.method', 'pointBuy');
+  /** The scores came from a throw (in roll mode the step waits for one). */
+  const [rolled, setRolled] = useDraftState('custom.rolled', false);
   const [skills, setSkills] = useDraftState<Skill[]>('custom.skills', startingSkills);
   const [savingThrows, setSavingThrows] = useDraftState<string[]>('custom.saves', []);
   const [images, setImages] = useDraftState<CharacterImages>('custom.images', {});
@@ -35,7 +41,12 @@ export function useCreation(setting: Setting, onCreated: () => void) {
 
   const valid = {
     origin: race.trim() !== '' && characterClass.trim() !== '',
-    attributes: points === 0,
+    attributes:
+      method === 'pointBuy'
+        ? points === 0
+        : method === 'roll'
+          ? rolled
+          : Object.values(attributes).every((v) => v >= 3 && v <= 20),
     identity: name.trim() !== '',
   };
 
@@ -81,6 +92,20 @@ export function useCreation(setting: Setting, onCreated: () => void) {
     setSubclass,
     attributes,
     points,
+    method,
+    setMethod: (next: ScoreMethod) => {
+      setMethodState(next);
+      setRolled(false);
+      if (next === 'pointBuy') setAttributes(startingAttributes());
+    },
+    rolled,
+    /** Sets the scores of a throw (in the order of the attribute list). */
+    setRolledScores: (values: Record<string, number>) => {
+      setAttributes(values);
+      setRolled(true);
+    },
+    /** Sets one score outright: typed in, or swapped with another after a throw. */
+    setScores: setAttributes,
     canRaise: (id: string) => canIncrement(attributes, id),
     canLower: (id: string) => canDecrement(attributes, id),
     raise: (id: string) =>

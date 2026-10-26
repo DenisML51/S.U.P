@@ -17,7 +17,6 @@ import {
   findFeat,
   kitItems,
   preparedSpellsChoice,
-  rollAbilityScores,
   type KitOption,
 } from '@itd/game-logic/dnd';
 import type { DndBuild } from '@itd/schema';
@@ -27,10 +26,9 @@ import { NumberField, Segmented } from '../../../ui/forms';
 import { Facts, Section } from '../../../ui/Section';
 import { Button, IconButton, cx } from '../../../ui/primitives';
 import { IconCoins, IconDice, IconMinus, IconPlus } from '../../../ui/icons';
-import { LandedValue, RollingDice, useLanded } from '../../../ui/RollingDie';
 import { ChoiceField } from '../../progression/ChoiceField';
 import { CLASS_SOURCES, LevelPlanView, planIssues } from '../../progression/LevelPlanView';
-import { EmblemGrid, Picked, ScoreCard } from '../kit';
+import { EmblemGrid, Picked, ScoreCard, ThrownScore, throwAbilityScores } from '../kit';
 import type { DndCreation } from './useDndCreation';
 
 const skillName = (id: string) => SKILLS_LIST.find((s) => s.id === id)?.name ?? id;
@@ -248,37 +246,6 @@ export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => 
 // Ability scores
 // ------------------------------------------------------------------------------------------------
 
-/**
- * A score with the 4d6 that made it: the dice tumble under it (the lowest one dropped) and the score
- * comes in once they are down. Without a throw on this visit the score simply stands.
- */
-const ThrownScore: React.FC<{
-  dice?: number[];
-  throwKey: number | null;
-  delay: number;
-  children: React.ReactNode;
-}> = ({ dice, throwKey, delay, children }) => {
-  const [landed, markLanded] = useLanded(dice ? throwKey : null);
-  const lowest = dice ? dice.indexOf(Math.min(...dice)) : -1;
-  return (
-    <>
-      <LandedValue landed={landed} className="flex flex-col items-center">
-        {children}
-      </LandedValue>
-      {dice && throwKey !== null && (
-        <RollingDice
-          key={throwKey}
-          className="mt-3 justify-center"
-          size="1.55rem"
-          delay={delay}
-          stagger={70}
-          dice={dice.map((value, i) => ({ sides: 6, value, dropped: i === lowest }))}
-          onLanded={markLanded}
-        />
-      )}
-    </>
-  );
-};
 
 export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation }) => {
   const { build, setBuild, rolls, setRolls } = creation;
@@ -298,17 +265,8 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
   /** The four d6 behind each score of the latest throw, to show it tumbling; gone once scores move. */
   const [thrown, setThrown] = useState<{ serial: number; dice: number[][] } | null>(null);
   const roll = () => {
-    // The scores are 4d6 each, thrown in order: the random draws behind them give back every die.
-    const draws: number[] = [];
-    const values = rollAbilityScores(() => {
-      const r = Math.random();
-      draws.push(r);
-      return r;
-    });
-    setThrown({
-      serial: Date.now(),
-      dice: values.map((_, i) => draws.slice(i * 4, i * 4 + 4).map((r) => Math.floor(r * 6) + 1)),
-    });
+    const { values, dice } = throwAbilityScores();
+    setThrown({ serial: Date.now(), dice });
     setRolls(values);
     setScores(Object.fromEntries(ATTRIBUTES_LIST.map((a, i) => [a.id, values[i]!])));
   };

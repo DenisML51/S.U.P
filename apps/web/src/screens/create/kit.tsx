@@ -1,6 +1,8 @@
 import React from 'react';
 import { GameIcon } from '../../ui/GameIcon';
+import { rollAbilityScores } from '@itd/game-logic/dnd';
 import { Panel, cx } from '../../ui/primitives';
+import { LandedValue, RollingDice, useLanded } from '../../ui/RollingDie';
 
 /**
  * A grid of emblems to pick one from, as the class grid of a game's character creator. Every step
@@ -83,3 +85,83 @@ export const Picked: React.FC<{
   ) : (
     <p className="mt-10 text-center text-sm text-ink-faint">{empty}</p>
   );
+
+/**
+ * A line to tick, as the sheet's skill list has it: the setting's proficiency mark on the left, the
+ * name, a figure on the right. The whole line toggles it.
+ */
+export const MarkRow: React.FC<{
+  label: string;
+  checked: boolean;
+  onToggle: () => void;
+  value?: React.ReactNode;
+  className?: string;
+}> = ({ label, checked, onToggle, value, className }) => (
+  <button
+    type="button"
+    role="checkbox"
+    aria-checked={checked}
+    onClick={onToggle}
+    className={cx('group flex w-full items-center gap-2.5 py-1 text-left', className)}
+  >
+    <span className="grid h-5 w-5 shrink-0 place-items-center">
+      <span
+        className={cx(
+          'ui-prof-mark block h-2.5 w-2.5 rotate-45 border transition-colors',
+          checked ? 'border-frame-bright bg-frame-bright' : 'border-ink-faint group-hover:border-ink-muted',
+        )}
+      />
+    </span>
+    <span className={cx('min-w-0 flex-1 truncate text-sm transition-colors', checked ? 'text-ink' : 'text-ink-muted group-hover:text-ink')}>
+      {label}
+    </span>
+    {value !== undefined && <span className={cx('ui-numeric text-sm', checked ? 'text-ink' : 'text-ink-faint')}>{value}</span>}
+  </button>
+);
+
+/**
+ * Six scores of 4d6, the lowest die dropped, with every die that made them: the scores for the
+ * sheet, the dice for the throw on screen.
+ */
+export function throwAbilityScores(): { values: number[]; dice: number[][] } {
+  // The scores are 4d6 each, thrown in order: the random draws behind them give back every die.
+  const draws: number[] = [];
+  const values = rollAbilityScores(() => {
+    const r = Math.random();
+    draws.push(r);
+    return r;
+  });
+  return { values, dice: values.map((_, i) => draws.slice(i * 4, i * 4 + 4).map((r) => Math.floor(r * 6) + 1)) };
+}
+
+/**
+ * A score with the 4d6 that made it: the dice tumble under it (the lowest one dropped) and the score
+ * comes in once they are down. Without a throw on this visit the score simply stands.
+ */
+export const ThrownScore: React.FC<{
+  dice?: number[];
+  throwKey: number | null;
+  delay: number;
+  children: React.ReactNode;
+}> = ({ dice, throwKey, delay, children }) => {
+  const [landed, markLanded] = useLanded(dice ? throwKey : null);
+  const lowest = dice ? dice.indexOf(Math.min(...dice)) : -1;
+  return (
+    <>
+      <LandedValue landed={landed} className="flex flex-col items-center">
+        {children}
+      </LandedValue>
+      {dice && throwKey !== null && (
+        <RollingDice
+          key={throwKey}
+          className="mt-3 justify-center"
+          size="1.55rem"
+          delay={delay}
+          stagger={70}
+          dice={dice.map((value, i) => ({ sides: 6, value, dropped: i === lowest }))}
+          onLanded={markLanded}
+        />
+      )}
+    </>
+  );
+};
