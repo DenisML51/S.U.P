@@ -104,6 +104,8 @@ function singleFlight() {
 const LIST_KEY = '\u0000list';
 
 let detach: (() => void) | null = null;
+/** The account's sync: a hero sits down at a table only once the server has it. */
+let sync: Workspace['sync'] | null = null;
 /** How many screens watch each party. */
 const watchers = new Map<string, number>();
 
@@ -229,7 +231,11 @@ export const usePartyStore = create<PartyState>((set, get) => {
       }
     },
     removeMember: (id, userId) => change(id, () => api.parties.removeMember(id, userId)),
-    addHero: (id, characterId) => change(id, () => api.parties.addHero(id, characterId)),
+    addHero: async (id, characterId) => {
+      // A hero made a moment ago may still be on this device only (it is uploaded a moment later).
+      await sync?.sync();
+      return change(id, () => api.parties.addHero(id, characterId));
+    },
     removeHero: (id, heroId) => change(id, () => api.parties.removeHero(id, heroId)),
     setHeroHidden: (id, heroId, hidden) => change(id, () => api.parties.setHeroHidden(id, heroId, hidden)),
     createNpc: (id, input) => change(id, () => api.parties.createNpc(id, input)),
@@ -250,6 +256,7 @@ export const usePartyStore = create<PartyState>((set, get) => {
       detach = null;
       watchers.clear();
       set({ list: null, parties: {}, gone: {}, failed: {}, closed: {} });
+      sync = workspace?.sync ?? null;
       if (!workspace) return;
 
       detach = workspace.onPartyEvent((event) => {

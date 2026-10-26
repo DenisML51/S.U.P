@@ -526,7 +526,8 @@ export const CreationScreen: React.FC<{
               <h2 className="ui-display ui-title border-b border-line/60 px-6 py-4 text-center text-[1.5rem] leading-tight text-frame-bright">
                 {step.question}
               </h2>
-              <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5" data-creation-panel>
+              {/* Keyed by the step: each step opens at its top, not where the last one was scrolled. */}
+              <div key={step.id} className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 py-5" data-creation-panel>
                 {content}
               </div>
             </Panel>

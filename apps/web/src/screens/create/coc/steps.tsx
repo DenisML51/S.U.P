@@ -374,14 +374,17 @@ export const AgeStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex items-end justify-center gap-6">
-        <NumberField
-          label="Возраст"
-          value={creation.age}
-          min={15}
-          max={89}
-          onChange={creation.setAge}
-          className="w-28"
-        />
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Возраст</span>
+          <NumberField
+            label="Возраст"
+            value={creation.age}
+            min={15}
+            max={89}
+            onChange={creation.setAge}
+            className="w-28"
+          />
+        </div>
         <Facts
           facts={[
             ['Проверки ОБР', rules.eduChecks ? `${rules.eduChecks} (d100 выше ОБР — +1d10)` : 'нет'],
@@ -406,15 +409,17 @@ export const AgeStep: React.FC<{ creation: CocCreation }> = ({ creation }) => {
           </span>
           <div className="flex flex-wrap gap-4">
             {lossIds.map((id) => (
-              <NumberField
-                key={id}
-                label={CHAR_SHORT[id]}
-                value={creation.ageLoss[id] ?? 0}
-                min={0}
-                max={budget}
-                onChange={(v) => creation.setAgeLoss({ ...creation.ageLoss, [id]: v })}
-                className="w-24"
-              />
+              <div key={id} className="flex flex-col gap-1">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">{CHAR_SHORT[id]}</span>
+                <NumberField
+                  label={CHAR_SHORT[id]}
+                  value={creation.ageLoss[id] ?? 0}
+                  min={0}
+                  max={budget}
+                  onChange={(v) => creation.setAgeLoss({ ...creation.ageLoss, [id]: v })}
+                  className="w-24"
+                />
+              </div>
             ))}
           </div>
         </Panel>
@@ -886,6 +891,8 @@ export const CocSummary: React.FC<{ creation: CocCreation }> = ({ creation }) =>
     .sort((a, b) => b.value - a.value)
     .slice(0, 10);
   const d = creation.derived;
+  // Before the characteristics are set, what they decide is not known yet (not the table's lowest row).
+  const rolled = CHARACTERISTICS.some((c) => creation.characteristics[c.id] > 0);
   return (
     <Panel ornate className="ui-scroll flex min-h-0 flex-col gap-4 overflow-y-auto px-5 py-5">
       <div>
@@ -913,9 +920,9 @@ export const CocSummary: React.FC<{ creation: CocCreation }> = ({ creation }) =>
             ['Магия', d.maxMP || '—'],
             ['Рассудок', d.startingSanity || '—'],
             ['Удача', creation.luck || '—'],
-            ['Бонус урона', d.damageBonus],
-            ['Комплекция', d.build],
-            ['Движение', d.move],
+            ['Бонус урона', rolled ? d.damageBonus : '—'],
+            ['Комплекция', rolled ? d.build : '—'],
+            ['Движение', rolled ? d.move : '—'],
             ['Средства', creation.creditRating],
           ] as [string, React.ReactNode][]
         ).map(([label, value]) => (

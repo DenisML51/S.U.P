@@ -505,26 +505,29 @@ export function developSkills(
   return { character: applyDevelopment(rolls)(character), rolls };
 }
 
-/** How far luck recovers: a Pulp hero's up to the luck rolled at creation, anyone else's up to 99. */
-export function luckCap(character: Pick<Character, 'build' | 'coc'>): number {
-  const pulp = character.build?.ruleset === 'coc7' && character.build.variant === 'pulp';
-  const starting = character.coc?.startingLuck;
-  return pulp && starting !== undefined ? Math.max(0, Math.min(99, starting)) : 99;
-}
+/** Luck never recovers past 99; a Pulp hero may pass the luck rolled at creation. */
+export const LUCK_CAP = 99;
+
+const isPulp = (character: Pick<Character, 'build'>): boolean =>
+  character.build?.ruleset === 'coc7' && character.build.variant === 'pulp';
 
 /**
- * Luck recovery (an optional rule of the development phase): a d100 over the current Luck gains
- * 1d10, never past `luckCap`. `die` is the d10 as thrown, when the roll passed.
+ * Luck recovery. Classic (an optional rule of the development phase): a d100 over the current Luck
+ * gains 1d10, otherwise nothing. Pulp (at the start of every session): over the current Luck gains
+ * 2d10+10, otherwise 1d10+5. Never past 99. `dice` are the d10s as thrown.
  */
 export function rollLuckRecovery(
   character: Pick<Character, 'build' | 'coc'>,
   random: RandomSource = Math.random,
-): { roll: number; gain: number; die?: number } {
+): { roll: number; gain: number; dice: number[] } {
   const luck = character.coc?.luck ?? 0;
   const roll = rollDie(100, random);
-  if (roll <= luck) return { roll, gain: 0 };
-  const die = rollDie(10, random);
-  return { roll, gain: Math.max(0, Math.min(die, luckCap(character) - luck)), die };
+  const passed = roll > luck;
+  const pulp = isPulp(character);
+  if (!passed && !pulp) return { roll, gain: 0, dice: [] };
+  const dice = Array.from({ length: pulp && passed ? 2 : 1 }, () => rollDie(10, random));
+  const flat = pulp ? (passed ? 10 : 5) : 0;
+  return { roll, gain: Math.max(0, Math.min(sum(dice) + flat, LUCK_CAP - luck)), dice };
 }
 
 export interface WeeklyRecovery {
