@@ -8,8 +8,8 @@ import { useTableRollStore, type ShownRoll } from '../../store/useTableRollStore
 import { RollingDie } from '../../ui/RollingDie';
 import { cx } from '../../ui/primitives';
 
-/** Between the landings of two dice of one throw, in ms. */
-const STAGGER_MS = 120;
+/** Between the landings of two dice of one throw, in ms (the table's logs wait for them too). */
+export const TABLE_DIE_STAGGER_MS = 120;
 
 /** The edge of a die: as large as the place allows, smaller as the handful grows. */
 const dieSize = (count: number, place: 'portrait' | 'screen') =>
@@ -48,7 +48,7 @@ const Dice: React.FC<{ dice: TableDie[]; place: 'portrait' | 'screen' }> = ({ di
           value={die.label ?? die.value}
           dropped={die.dropped}
           size={size}
-          delay={index * STAGGER_MS}
+          delay={index * TABLE_DIE_STAGGER_MS}
           phase={index * 1.3 + die.sides * 0.1}
           tone={
             die.label

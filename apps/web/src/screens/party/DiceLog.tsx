@@ -2,7 +2,8 @@ import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import type { PartyDto, TableDie, TableRollDto } from '@itd/schema';
 import { useTableRollStore } from '../../store/useTableRollStore';
-import { DieGlyph } from '../../ui/RollingDie';
+import { DieGlyph, useHeldUntilLanded } from '../../ui/RollingDie';
+import { TABLE_DIE_STAGGER_MS } from './TableDice';
 import { cx } from '../../ui/primitives';
 import { locale } from '../../i18n';
 
@@ -53,6 +54,8 @@ export const DiceLog: React.FC<{ party: PartyDto; userId: string | undefined }> 
 const Entry: React.FC<{ roll: TableRollDto; mine: boolean }> = ({ roll, mine }) => {
   const master = roll.kind === 'master';
   const who = master ? (mine ? 'Вы' : roll.authorName) : (roll.heroName ?? roll.authorName);
+  // Who throws is told at once; what came of it once the dice on the table are down.
+  const told = useHeldUntilLanded(roll.createdAt, roll.dice.length, TABLE_DIE_STAGGER_MS);
   return (
     <motion.li
       initial={{ opacity: 0, y: 6 }}
@@ -76,12 +79,18 @@ const Entry: React.FC<{ roll: TableRollDto; mine: boolean }> = ({ roll, mine }) 
         )}
         <span className="ml-auto shrink-0 text-ink-faint">{time.format(new Date(roll.createdAt))}</span>
       </div>
-      {roll.label && <p className="mt-0.5 break-words text-sm leading-snug text-ink-muted">{roll.label}</p>}
-      <div className="mt-1.5 flex flex-wrap gap-1.5">
-        {roll.dice.map((die, index) => (
-          <LogDie key={index} die={die} />
-        ))}
-      </div>
+      {!told ? (
+        <p className="mt-0.5 text-sm leading-snug text-ink-faint">бросает…</p>
+      ) : (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          {roll.label && <p className="mt-0.5 break-words text-sm leading-snug text-ink-muted">{roll.label}</p>}
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {roll.dice.map((die, index) => (
+              <LogDie key={index} die={die} />
+            ))}
+          </div>
+        </motion.div>
+      )}
     </motion.li>
   );
 };

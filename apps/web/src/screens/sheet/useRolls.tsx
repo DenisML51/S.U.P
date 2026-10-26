@@ -66,10 +66,12 @@ export const RollToast: React.FC<{
   return (
     <div
       className="ui-roll-toast flex min-w-[240px] max-w-[22rem] flex-col gap-2"
-      data-tone={tone}
+      // A critical or a natural 1 is told only once the dice are down: the plate keeps its plain
+      // look while they tumble.
+      data-tone={landed ? tone : undefined}
       data-landed={landed || undefined}
       // A setting may stamp a natural 20 or 1 across the plate (the Lovecraft telegram does).
-      data-stamp={tone === 'crit' ? 'Критический' : tone === 'fumble' ? 'Провал' : undefined}
+      data-stamp={!landed ? undefined : tone === 'crit' ? 'Критический' : tone === 'fumble' ? 'Провал' : undefined}
     >
       <div className="flex items-center gap-4">
         {shown.length > 0 && (
@@ -116,8 +118,9 @@ export const RollToast: React.FC<{
             {detail}
           </motion.span>
         </span>
-        {actions.length > 0 && (
-          <span className="flex shrink-0 flex-col items-end gap-1">
+        {/* What follows the roll ("Крит. урон") says how it went: it comes in with the result. */}
+        {actions.length > 0 && landed && (
+          <motion.span className="flex shrink-0 flex-col items-end gap-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
             {actions.map((action) => (
               <button
                 key={action.label}
@@ -132,7 +135,7 @@ export const RollToast: React.FC<{
                 {action.label}
               </button>
             ))}
-          </span>
+          </motion.span>
         )}
       </div>
     </div>

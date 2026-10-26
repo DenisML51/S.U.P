@@ -450,7 +450,8 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
   return (
     <div
       className="coc-roll"
-      data-level={check.level}
+      // How the roll went (the colour of the total, the stamp) is told once the dice are down.
+      data-level={landed ? check.level : undefined}
       data-landed={landed || undefined}
       // A setting may stamp the level across the plate (the Lovecraft telegram does).
       data-stamp={record.luckSpent ? SUCCESS_LABELS.regular : SUCCESS_LABELS[check.level]}
@@ -525,10 +526,10 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
           ))}
         </div>
       )}
-      {record.jammed && (
+      {landed && record.jammed && (
         <div className="mt-2 text-sm text-danger">Осечка: оружие заклинило, нужен раунд на починку.</div>
       )}
-      {check.level === 'fumble' && record.kind !== 'sanity' && (
+      {landed && check.level === 'fumble' && record.kind !== 'sanity' && (
         <div className="mt-2 text-sm text-danger">
           Провал: худший исход, Хранитель решает, чем он обернётся.
         </div>
@@ -536,7 +537,7 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
       {record.sanity && landed && (
         <FollowUpThrow key={`san-${record.serial}`} dice={record.sanity.dice} total={record.sanity.loss} />
       )}
-      {record.sanity && (
+      {landed && record.sanity && (
         <div className="mt-2 text-sm opacity-80">
           Потеряно <b>{record.sanity.loss}</b> рассудка.
           {record.sanity.needsIntRoll && <span> Потеря 5 и больше — бросок ИНТ.</span>}
@@ -547,8 +548,8 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
           )}
         </div>
       )}
-      {record.note && <div className="mt-2 text-sm opacity-80">{record.note}</div>}
-      {record.kind === 'int' && (
+      {landed && record.note && <div className="mt-2 text-sm opacity-80">{record.note}</div>}
+      {landed && record.kind === 'int' && (
         <div className="mt-2 text-sm opacity-80">
           {check.success
             ? 'Сыщик осознал увиденное — временное безумие.'
@@ -563,21 +564,22 @@ export const RollResult: React.FC<{ record: RollRecord }> = ({ record }) => {
           note={`Урон (${record.damage.formula})`}
         />
       )}
+      {/* What may follow (a push, Luck, damage) says how the roll went: it waits for the dice too. */}
       <div className="coc-roll__actions">
-        {canPush(record) && (
+        {landed && canPush(record) && (
           <ToastButton onClick={push} title="Повторить бросок; провал повтора обернётся бедой">
             Повторить с риском
           </ToastButton>
         )}
-        {canBuyWithLuck(record, luck) && (
+        {landed && canBuyWithLuck(record, luck) && (
           <ToastButton onClick={buyWithLuck}>Удача: −{check.total - target(record)}</ToastButton>
         )}
-        {canRollDamage(record, verdict) && (
+        {landed && canRollDamage(record, verdict) && (
           <ToastButton strong onClick={rollDamage}>
             Урон
           </ToastButton>
         )}
-        {record.sanity?.needsIntRoll && followUps.int && (
+        {landed && record.sanity?.needsIntRoll && followUps.int && (
           <ToastButton
             strong
             onClick={rollInt}
