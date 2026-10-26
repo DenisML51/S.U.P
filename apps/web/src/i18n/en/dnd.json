@@ -1868,7 +1868,7 @@
   "Корона чаропламени": "Crown of Spellfire",
   "Короткий лук": "Shortbow",
   "Короткий меч": "Shortsword",
-  "Короткий отдых: потратьте кости, чтобы восстановить хиты (бросок + модификатор Телосложения). Долгий отдых возвращает половину.": "Short Rest: spend dice to regain Hit Points (roll + Constitution modifier). A Long Rest restores half of them.",
+  "Короткий отдых: потратьте кости, чтобы восстановить хиты (бросок + модификатор Телосложения). Долгий отдых возвращает все.": "Short Rest: spend dice to regain HP (the roll + your Constitution modifier). A Long Rest gives them all back.",
   "Космическое знамение": "Cosmic Omen",
   "Коснитесь согласного существа и выберите навык. Пока заклинание действует, существо добавляет **1к4** ко всем проверкам характеристик с этим навыком.": "You touch a willing creature and choose a skill. Until the spell ends, the creature adds **1d4** to any ability check using that skill.",
   "Коснитесь согласного существа и выберите тип урона (кроме психического и силового). Пока заклинание действует, урон этого типа по существу уменьшается на **1к4**, но не чаще раза в ход.": "You touch a willing creature and choose a damage type (other than Psychic or Force). Until the spell ends, damage of that type dealt to the creature is reduced by **1d4**, no more than once per turn.",

@@ -1,10 +1,19 @@
-import type { Character, Resource } from '@itd/schema';
+import type { Character, Limb, Resource } from '@itd/schema';
 import { attributeModifier } from './abilities';
 import { resetTurn } from './actions';
 import { endConcentration } from './concentration';
 import { rollDie, type RandomSource } from './dice';
 import { exhaustionLevel, setExhaustion } from './d20';
-import { settleHealth, totalMaxHP } from './health';
+import { LIMB_LOST_HP, settleHealth, totalMaxHP } from './health';
+
+/** A night's sleep mends a limb by half its maximum; a lost limb stays lost. */
+const mendLimb = (limb: Limb): Limb => {
+  if (limb.currentHP >= limb.maxHP || limb.currentHP <= LIMB_LOST_HP) return limb;
+  return { ...limb, currentHP: Math.min(limb.maxHP, limb.currentHP + Math.max(1, Math.ceil(limb.maxHP / 2))) };
+};
+
+/** Limbs still hurt, for the line of what a rest changed. */
+const hurtLimbs = (limbs: Limb[]) => limbs.filter((limb) => limb.currentHP < limb.maxHP).length;
 
 /** Hit points of a hit die taken as its average instead of a roll: d10 → 6. */
 export const averageHitPoints = (hitDie: number): number => hitDie / 2 + 1;
@@ -129,8 +138,8 @@ export function shortRest(character: Character, options: ShortRestOptions = {}):
 
 /**
  * A long rest: full hit points, no temporary ones, every short- and long-rest resource (spell slots
- * among them) restored, half of the hit dice back (at least one), one level of exhaustion gone, this
- * turn's actions reset and concentration over.
+ * among them) restored, every hit die back (D&D 2024), one level of exhaustion gone, limbs mended by
+ * half their maximum (a lost one stays lost), this turn's actions reset and concentration over.
  * Sanity does not come back with sleep.
  */
 export function longRest(character: Character): RestResult {
@@ -140,9 +149,14 @@ export function longRest(character: Character): RestResult {
 
   const pool = hitDiceOf(character);
   if (pool && pool.current < pool.max) {
-    const current = Math.min(pool.max, pool.current + Math.max(1, Math.floor(pool.max / 2)));
+    const current = pool.max;
     next = { ...next, resources: replaceResource(next.resources, { ...pool, current }) };
     changes.unshift({ id: pool.id, label: pool.name, before: pool.current, after: current, max: pool.max });
+  }
+  const mended = next.limbs.map(mendLimb);
+  if (mended.some((limb, i) => limb !== next.limbs[i])) {
+    next = { ...next, limbs: mended };
+    changes.push({ id: 'limbs', label: 'Раны конечностей', before: hurtLimbs(character.limbs), after: hurtLimbs(mended) });
   }
   const exhaustion = exhaustionLevel(character);
   if (exhaustion > 0) {
