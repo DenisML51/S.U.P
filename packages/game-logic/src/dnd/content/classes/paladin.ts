@@ -498,6 +498,7 @@ export const PALADIN: ClassDef = {
         description: 'Совершая действие «Атака» в свой ход, вы атакуете дважды вместо одного раза.',
         action: 'passive',
         iconName: 'crossed-swords',
+        effects: [{ type: 'extraAttack', attacks: 2 }],
       },
       {
         id: 'paladin.faithful-steed',

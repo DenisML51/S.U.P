@@ -320,6 +320,8 @@ export const ActionCountersSchema =passthroughObject({
   action: numeric(int.min(0).default(0)),
   bonus: numeric(int.min(0).default(0)),
   reaction: numeric(int.min(0).default(0)),
+  /** Spent turns only: attacks made with the Attack action taken last, for Extra Attack. */
+  strikes: numeric(int.min(0).optional()),
 });
 
 const numberMap = (maxKeyLength: number) =>
@@ -493,6 +495,8 @@ export const CharacterSchema = passthroughObject({
   initiativeBonus: optionalNumber,
   /** Half the proficiency bonus on checks without proficiency, initiative included (Jack of All Trades). */
   halfProficiency: optionalFlag,
+  /** Attacks one Attack action makes (Extra Attack); absent means one. */
+  attacksPerAction: numeric(int.min(1).max(8).optional()),
   /** The lowest natural d20 of a weapon attack that is a critical hit (19 for a Champion); absent means 20. */
   critRange: numeric(int.min(2).max(20).optional()),
   /**

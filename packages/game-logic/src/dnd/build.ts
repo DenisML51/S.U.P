@@ -585,6 +585,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   }));
   const halfProficiency = ofType('halfProficiency').length > 0 || undefined;
   const critRange = Math.min(20, ...ofType('critRange').map((e) => e.min));
+  const attacksPerAction = Math.max(1, ...ofType('extraAttack').map((e) => e.attacks));
   const advantageOn = [...new Set(ofType('advantage').flatMap((e) => e.on))];
   const unarmored = ofType('unarmoredDefense')[0];
 
@@ -815,6 +816,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     initiativeBonus: initiative || undefined,
     halfProficiency,
     critRange: critRange < 20 ? critRange : undefined,
+    attacksPerAction: attacksPerAction > 1 ? attacksPerAction : undefined,
     advantageOn: advantageOn.length > 0 ? advantageOn : undefined,
     armorClassBonus: {
       always: ofType('armorClass').filter((e) => !e.armored).reduce((sum, e) => sum + e.amount, 0),

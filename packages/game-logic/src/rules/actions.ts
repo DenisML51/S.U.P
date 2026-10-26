@@ -18,14 +18,20 @@ export const spentActionsOf = (character: Pick<Character, 'spentActions'>): Acti
 export const remainingActions = (character: Character, slot: ActionSlot): number =>
   Math.max(0, actionLimitsOf(character)[slot] - spentActionsOf(character)[slot]);
 
-/** Marks how many actions of a kind are spent this turn, within 0..limit. */
-export const setSpentActions = (character: Character, slot: ActionSlot, spent: number): Character => ({
-  ...character,
-  spentActions: {
-    ...spentActionsOf(character),
-    [slot]: Math.min(actionLimitsOf(character)[slot], Math.max(0, Math.trunc(spent))),
-  },
-});
+/**
+ * Marks how many actions of a kind are spent this turn, within 0..limit. Another action spent or one
+ * given back ends the attacks of the Attack action before it.
+ */
+export function setSpentActions(character: Character, slot: ActionSlot, spent: number): Character {
+  const { strikes: _ended, ...counters } = spentActionsOf(character);
+  return {
+    ...character,
+    spentActions: {
+      ...(slot === 'action' ? counters : spentActionsOf(character)),
+      [slot]: Math.min(actionLimitsOf(character)[slot], Math.max(0, Math.trunc(spent))),
+    },
+  };
+}
 
 /** Changes how many actions of a kind the character gets per turn (at least one). */
 export function setActionLimit(character: Character, slot: ActionSlot, limit: number): Character {
@@ -41,6 +47,20 @@ export function setActionLimit(character: Character, slot: ActionSlot, limit: nu
  */
 export const isUsable = (ability: Pick<Ability, 'actionType' | 'resourceId'>): boolean =>
   ability.actionType !== 'passive' || !!ability.resourceId;
+
+/** Attacks one Attack action makes (Extra Attack). */
+export const attacksPerActionOf = (character: Pick<Character, 'attacksPerAction'>): number => character.attacksPerAction ?? 1;
+
+/**
+ * Attacks left of the Attack action already taken this turn: with Extra Attack the second (and
+ * third…) attack is part of the same action and costs none of its own.
+ */
+export function strikesLeft(character: Character): number {
+  const strikes = spentActionsOf(character).strikes ?? 0;
+  return strikes > 0 ? Math.max(0, attacksPerActionOf(character) - strikes) : 0;
+}
+
+const strikeOf = (strike: number, of: number) => `атака ${strike} из ${of}`;
 
 /** A new turn: every action is available again. */
 export const resetTurn = (character: Character): Character => ({ ...character, spentActions: { ...NO_SPENT_ACTIONS } });
@@ -131,12 +151,25 @@ export function performAction(character: Character, request: PerformActionReques
   let next = character;
   const costs: PerformActionCosts = {};
 
+  // An attack of the Attack action: with Extra Attack the next ones belong to the action already taken.
+  const strike = request.kind === 'attack' && slot === 'action' && attacksPerActionOf(next) > 1;
+  let strikeNote = '';
   if (request.trackActionEconomy && !free) {
-    if (remainingActions(next, slot as ActionSlot) === 0) {
-      return fail('no_action_left', `Не осталось действий: ${ACTION_SLOT_NAMES[slot]}`);
+    if (strike && strikesLeft(next) > 0) {
+      const strikes = (spentActionsOf(next).strikes ?? 0) + 1;
+      next = { ...next, spentActions: { ...spentActionsOf(next), strikes } };
+      strikeNote = ` · ${strikeOf(strikes, attacksPerActionOf(next))}`;
+    } else {
+      if (remainingActions(next, slot as ActionSlot) === 0) {
+        return fail('no_action_left', `Не осталось действий: ${ACTION_SLOT_NAMES[slot]}`);
+      }
+      next = setSpentActions(next, slot as ActionSlot, spentActionsOf(next)[slot as ActionSlot] + 1);
+      if (strike) {
+        next = { ...next, spentActions: { ...spentActionsOf(next), strikes: 1 } };
+        strikeNote = ` · ${strikeOf(1, attacksPerActionOf(next))}`;
+      }
+      costs.slot = slot as ActionSlot;
     }
-    next = setSpentActions(next, slot as ActionSlot, spentActionsOf(next)[slot as ActionSlot] + 1);
-    costs.slot = slot as ActionSlot;
   }
 
   // A spell cast with a chosen slot spends that slot instead of the one of its own level.
@@ -179,7 +212,7 @@ export function performAction(character: Character, request: PerformActionReques
     costs.ammunition && `${costs.ammunition.name} −${costs.ammunition.amount}`,
   ].filter(Boolean);
   const verb = request.kind === 'attack' ? 'Атака' : request.kind === 'spell' ? 'Заклинание' : 'Способность';
-  const message = `${verb}: ${source.name}${paid.length ? ` (${paid.join(', ')})` : ''}${concentrates ? ' · концентрация' : ''}`;
+  const message = `${verb}: ${source.name}${paid.length ? ` (${paid.join(', ')})` : ''}${strikeNote}${concentrates ? ' · концентрация' : ''}`;
 
   return { ok: true, character: next, costs, message };
 }

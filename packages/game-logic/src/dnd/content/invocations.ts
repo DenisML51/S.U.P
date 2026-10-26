@@ -146,6 +146,7 @@ export const INVOCATIONS: CatalogEntryDef[] = [
     action: 'passive',
     iconName: 'crossed-swords',
     prerequisite: { level: 5, entry: 'pact-of-the-blade' },
+    effects: [{ type: 'extraAttack', attacks: 2 }],
   },
   {
     id: 'eldritch-smite',
@@ -180,6 +181,7 @@ export const INVOCATIONS: CatalogEntryDef[] = [
     action: 'passive',
     iconName: 'sword-spin',
     prerequisite: { level: 12, entry: 'thirsting-blade' },
+    effects: [{ type: 'extraAttack', attacks: 3 }],
   },
 
   // Pact of the Chain and Pact of the Tome.
