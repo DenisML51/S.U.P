@@ -23,6 +23,7 @@ export const AuthForm: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [forgot, setForgot] = useState(false);
 
   const isRegister = mode === 'register' && registrationEnabled;
 
@@ -118,6 +119,18 @@ export const AuthForm: React.FC = () => {
           {submitting ? 'Минуту…' : isRegister ? 'Создать аккаунт' : 'Войти'}
         </Button>
       </form>
+
+      {!isRegister && (
+        <div className="mt-4 text-center text-xs text-ink-faint">
+          {forgot ? (
+            <p>Напишите мастеру или администратору сервера: он задаст новый пароль, а вы смените его в настройках.</p>
+          ) : (
+            <button type="button" className="underline-offset-4 hover:text-ink-muted hover:underline" onClick={() => setForgot(true)}>
+              Забыли пароль?
+            </button>
+          )}
+        </div>
+      )}
 
       {!registrationEnabled && (
         <>

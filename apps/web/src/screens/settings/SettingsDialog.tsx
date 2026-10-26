@@ -8,6 +8,7 @@ import { ConfirmDialog, Dialog } from '../../ui/Dialog';
 import { Segmented, Switch } from '../../ui/forms';
 import { Button, cx } from '../../ui/primitives';
 import { IconExit, IconSync } from '../../ui/icons';
+import { AccountEditors } from './AccountSection';
 import type { Theme } from '../../ui/theme/settings';
 import { language, locale, setLanguage, type Language } from '../../i18n';
 
@@ -85,6 +86,7 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
               Выйти
             </Button>
           </div>
+          <AccountEditors />
         </section>
 
         <section className="mt-6">

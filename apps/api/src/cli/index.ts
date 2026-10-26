@@ -20,6 +20,10 @@ const USAGE = `Использование:
       Создаёт аккаунт (работает и при закрытой регистрации).
       Пароль можно передать через переменную окружения ITD_PASSWORD.
 
+  reset-password --email <email> [--password <пароль>]
+      Задаёт аккаунту новый пароль (если игрок забыл свой); все его сессии завершаются.
+      Пароль можно передать через переменную окружения ITD_PASSWORD.
+
   import-characters --email <email> [--overwrite] <файл.json|папка>...
       Импортирует листы персонажей (в том числе из старой десктопной версии) в аккаунт.
       Файл может содержать одного персонажа или массив персонажей.
@@ -37,6 +41,15 @@ async function createUser(database: DatabaseConnection, args: string[]) {
   const { auth } = createServices(loadConfig(), database);
   const user = await auth.createUser({ email, password, displayName });
   console.log(`Создан пользователь ${user.email} (${user.id})`);
+}
+
+async function resetPassword(database: DatabaseConnection, args: string[]) {
+  const { values } = parseArgs({ args, options: { email: { type: 'string' }, password: { type: 'string' } } });
+  const email = EmailSchema.parse(values.email);
+  const password = PasswordSchema.parse(values.password ?? process.env.ITD_PASSWORD);
+  const { auth } = createServices(loadConfig(), database);
+  const user = await auth.resetPassword(email, password);
+  console.log(`Пароль пользователя ${user.email} изменён; его сессии завершены`);
 }
 
 async function collectJsonFiles(target: string): Promise<string[]> {
@@ -93,6 +106,7 @@ async function importCharacters(database: DatabaseConnection, args: string[]) {
 
 const COMMANDS: Record<string, (database: DatabaseConnection, args: string[]) => Promise<void>> = {
   'create-user': createUser,
+  'reset-password': resetPassword,
   'import-characters': importCharacters,
 };
 
