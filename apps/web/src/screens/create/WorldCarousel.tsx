@@ -48,7 +48,7 @@ export const WorldCarousel: React.FC<{
 
   useEffect(() => onFocus(focused), [focused, onFocus]);
   useEffect(() => {
-    for (const face of WORLD_FACES) for (const weight of [400, 700]) void document.fonts.load(`${weight} 1em "${face}"`, FACE_SAMPLE).catch(() => undefined);
+    for (const face of WORLD_FACES) for (const weight of [400, 700, 900]) void document.fonts.load(`${weight} 1em "${face}"`, FACE_SAMPLE).catch(() => undefined);
   }, []);
 
   const step = useCallback((delta: number) => setIndex((i) => (i + delta + COUNT) % COUNT), []);

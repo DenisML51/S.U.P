@@ -343,7 +343,7 @@ const HeroCard: React.FC<{ hero: CharacterPreview; focused: boolean; onClick: ()
           {focused && (
             <div className="text-[11px] uppercase tracking-[0.22em] text-frame-bright/80">{SETTING_INFO[setting].label}</div>
           )}
-          <div className={cx('ui-display leading-[1.05] text-ink', nameSize(hero.name))}>{hero.name}</div>
+          <div className={cx('ui-display ui-hero-name leading-[1.05] text-ink', nameSize(hero.name))}>{hero.name}</div>
           {focused && (
             <div className="text-sm text-ink-muted">{[origin.race, origin.calling].filter(Boolean).join(' · ')}</div>
           )}
