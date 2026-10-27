@@ -1147,11 +1147,13 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 /* Once down, the drawing steps back so the number reads first. */
 .ui-rolling-die--landed .ui-die-glyph { opacity: 0.55; }
 
-.ui-rolling-die--success { color: rgb(var(--c-success)); }
+/* A natural 20 or 1 tints the die and its number once it is down. Written to outrank a setting's
+   own colour for dice (the toned classes only ever come with the landed one). */
+.ui-rolling-die.ui-rolling-die--landed.ui-rolling-die--success { color: rgb(var(--c-success)); }
 
-.ui-rolling-die--danger { color: rgb(var(--c-danger)); }
+.ui-rolling-die.ui-rolling-die--landed.ui-rolling-die--danger { color: rgb(var(--c-danger)); }
 
-.ui-rolling-die:is(.ui-rolling-die--success, .ui-rolling-die--danger).ui-rolling-die--landed .ui-die-glyph { color: currentColor; }
+.ui-rolling-die:is(.ui-rolling-die--success, .ui-rolling-die--danger).ui-rolling-die--landed .ui-die-glyph { color: currentColor; opacity: 0.8; }
 
 .ui-rolling-die--dropped { opacity: 0.4; }
 
