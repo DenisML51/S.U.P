@@ -78,7 +78,7 @@ export const HeroColumn: React.FC<{
             <IconEdit width={16} height={16} className="absolute right-4 top-4 text-ink opacity-0 transition-opacity group-hover:opacity-70" />
           )}
           <span className="absolute inset-x-5 bottom-3">
-            <span className="ui-display block text-[1.7rem] leading-tight text-ink" role="heading" aria-level={1}>
+            <span className="ui-display ui-hero-name block text-[1.7rem] leading-tight text-ink" role="heading" aria-level={1}>
               {character.name}
             </span>
             <span className="block truncate text-sm text-ink-muted">{[origin.race, origin.calling].filter(Boolean).join(' · ')}</span>

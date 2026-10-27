@@ -270,7 +270,7 @@ const HeroTitle: React.FC<{ hero: CharacterPreview }> = ({ hero }) => {
   return (
     <SettingScope setting={setting}>
       <div className="text-[11px] uppercase tracking-[0.24em] text-frame-bright/80">{SETTING_INFO[setting].label}</div>
-      <div className="ui-display ui-hub-name mt-2 leading-[1.02] text-ink">{hero.name}</div>
+      <div className="ui-display ui-hub-name ui-hero-name mt-2 leading-[1.02] text-ink">{hero.name}</div>
       <div className="mt-2 text-ink-muted">{heroOrigin(hero)}</div>
       <HeroVitals hero={hero} className="mt-4" />
     </SettingScope>

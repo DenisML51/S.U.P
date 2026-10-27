@@ -189,7 +189,7 @@ const NarrowLayout: React.FC<LayoutProps> = ({ character, section, onSection, on
             />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="ui-display block truncate text-lg leading-tight text-ink" role="heading" aria-level={1}>
+            <span className="ui-display ui-hero-name block truncate text-lg leading-tight text-ink" role="heading" aria-level={1}>
               {character.name}
             </span>
             <span className="flex gap-3 overflow-hidden whitespace-nowrap text-xs tabular-nums text-ink-muted">
