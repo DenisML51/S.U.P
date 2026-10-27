@@ -438,31 +438,6 @@
   border-radius: 50%;
 }
 
-/* High fantasy — gilded parchment: cards are vellum tablets with gold edges, numbers in Garamond. */
-[data-setting='high-fantasy'] .coc-char {
-  background: radial-gradient(120% 90% at 50% 0%, rgb(var(--c-paper) / 0.95), rgb(var(--c-paper) / 0.8));
-  color: rgb(var(--c-paper-ink));
-  border: 1px solid rgb(var(--c-frame));
-  box-shadow:
-    inset 0 0 0 2px rgb(var(--c-paper)),
-    inset 0 0 0 3px rgb(var(--c-frame) / 0.55),
-    0 6px 16px -10px rgb(0 0 0 / 0.8);
-}
-[data-setting='high-fantasy'] .coc-char__label,
-[data-setting='high-fantasy'] .coc-char__part,
-[data-setting='high-fantasy'] .coc-char__part small {
-  color: rgb(var(--c-paper-muted));
-}
-[data-setting='high-fantasy'] .coc-char__value {
-  color: rgb(var(--c-paper-ink));
-}
-[data-setting='high-fantasy'] .coc-pip {
-  transform: rotate(45deg);
-  width: 0.6rem;
-  height: 0.6rem;
-  margin: 1px;
-}
-
 /* Sci-fi — a data readout: flat matte cells, a lit left edge, values in Tektur. */
 [data-setting='sci-fi'] .coc-char {
   background: rgb(var(--c-surface-2) / 0.75);
@@ -832,9 +807,6 @@
 /* Each world's madness has its own colour. */
 [data-setting='lovecraft'] .coc-veil {
   --veil: var(--c-eldritch);
-}
-[data-setting='high-fantasy'] .coc-veil {
-  --veil: 150 96 220;
 }
 [data-setting='elden-ring'] .coc-veil {
   --veil: 236 196 60;

@@ -9,17 +9,16 @@ import type { Theme } from './theme/settings';
 /**
  * A new level, played in the middle of the screen: the setting's emblem drawn in and lit along its
  * edge, the old number giving way to the new one, the words of the moment said the setting's way —
- * written by hand, unrolled on a ribbon, rung out on a black band, typed on a readout — then
+ * written by hand, rung out on a black band, typed on a readout — then
  * "2 » 3" and what the level brought, row by row. A click (or a few seconds) lets it go.
  */
 
-type Emblem = 'diamond' | 'ring' | 'none' | 'hex' | 'sigil';
+type Emblem = 'ring' | 'none' | 'hex' | 'sigil';
 /** How the words of the moment are said. */
-type Words = 'script' | 'ribbon' | 'banner' | 'typed' | 'plain';
+type Words = 'script' | 'banner' | 'typed' | 'plain';
 
 const VARIANT: Record<Theme, { emblem: Emblem; words: Words; text: string }> = {
-  'high-fantasy': { emblem: 'diamond', words: 'ribbon', text: 'Новый уровень' },
-  service: { emblem: 'diamond', words: 'ribbon', text: 'Новый уровень' },
+  service: { emblem: 'ring', words: 'script', text: 'Новый уровень' },
   fable: { emblem: 'ring', words: 'script', text: 'Новый уровень' },
   'elden-ring': { emblem: 'none', words: 'banner', text: 'Уровень повышен' },
   'sci-fi': { emblem: 'hex', words: 'typed', text: 'Уровень повышен' },
@@ -47,11 +46,6 @@ const arc = (r: number, from: number, to: number) => {
 
 /** Each emblem on a 300 × 300 grid round its centre: the outline, an inner line, its fine work. */
 const EMBLEM: Record<Exclude<Emblem, 'none'>, { outline: string; inner?: string; detail?: React.ReactNode }> = {
-  diamond: {
-    outline: 'M0 -128 L128 0 L0 128 L-128 0 Z',
-    inner: 'M0 -112 L112 0 L0 112 L-112 0 Z',
-    detail: <circle r="142" className="ui-level-burst__dots" />,
-  },
   ring: {
     outline: 'M0 -118 A118 118 0 1 1 -0.1 -118 Z',
     inner: 'M0 -104 A104 104 0 1 1 -0.1 -104 Z',
@@ -289,23 +283,6 @@ const Said: React.FC<{ words: Words; text: string; at: (beat: number) => number;
           Синхронизация завершена · 100%
         </motion.span>
       </div>
-    );
-  if (words === 'ribbon')
-    return (
-      <motion.div
-        className="ui-level-burst__ribbon"
-        initial={still ? false : { clipPath: 'inset(0 50% 0 50%)' }}
-        animate={{ clipPath: 'inset(0 0% 0 0%)' }}
-        transition={{ duration: 0.8, delay: at(BEAT.words), ease: [0.22, 1, 0.36, 1] }}
-      >
-        <svg viewBox="0 0 340 64" preserveAspectRatio="none" aria-hidden>
-          {/* The ribbon's tails folded behind its ends, then its face, a hairline along each edge. */}
-          <path d="M0 18 L44 18 L44 58 L0 58 L14 38 Z M340 18 L296 18 L296 58 L340 58 L326 38 Z" className="ui-level-burst__ribbon-tail" />
-          <path d="M30 8 Q170 -2 310 8 L310 50 Q170 40 30 50 Z" className="ui-level-burst__ribbon-face" />
-          <path d="M36 13 Q170 4 304 13 M36 45 Q170 36 304 45" className="ui-level-burst__hair" />
-        </svg>
-        <span className="ui-display">{text}</span>
-      </motion.div>
     );
   if (words === 'script')
     return null;

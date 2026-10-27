@@ -1,0 +1,95 @@
+/* High fantasy's rules that lived in shared stylesheets, kept as they were when the setting was removed. */
+
+/* ---- from apps/web/src/screens/coc/coc.css */
+/* High fantasy — gilded parchment: cards are vellum tablets with gold edges, numbers in Garamond. */
+[data-setting='high-fantasy'] .coc-char {
+  background: radial-gradient(120% 90% at 50% 0%, rgb(var(--c-paper) / 0.95), rgb(var(--c-paper) / 0.8));
+  color: rgb(var(--c-paper-ink));
+  border: 1px solid rgb(var(--c-frame));
+  box-shadow:
+    inset 0 0 0 2px rgb(var(--c-paper)),
+    inset 0 0 0 3px rgb(var(--c-frame) / 0.55),
+    0 6px 16px -10px rgb(0 0 0 / 0.8);
+}
+[data-setting='high-fantasy'] .coc-char__label,
+[data-setting='high-fantasy'] .coc-char__part,
+[data-setting='high-fantasy'] .coc-char__part small {
+  color: rgb(var(--c-paper-muted));
+}
+[data-setting='high-fantasy'] .coc-char__value {
+  color: rgb(var(--c-paper-ink));
+}
+[data-setting='high-fantasy'] .coc-pip {
+  transform: rotate(45deg);
+  width: 0.6rem;
+  height: 0.6rem;
+  margin: 1px;
+}
+
+[data-setting='high-fantasy'] .coc-veil {
+  --veil: 150 96 220;
+}
+
+/* ---- from apps/web/src/ui/theme/base.css */
+/* High fantasy and Fable: four-pointed stars of gold. */
+:is([data-setting='high-fantasy'], [data-setting='fable']) .ui-level-ready__motes > i {
+  border-radius: 0;
+  background: rgb(255 240 200);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  box-shadow: none;
+  filter: drop-shadow(0 0 3px rgb(var(--c-frame-bright)));
+  width: 7px !important;
+  height: 7px !important;
+}
+
+/* ---- from apps/web/src/ui/theme/en.css */
+:is(html[lang='en'][data-setting='high-fantasy'], html[lang='en'] [data-setting='high-fantasy']) {
+  .ui-toast::before { content: '✦ The herald proclaims ✦'; }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Triumph'; }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Disgrace'; }
+}
+
+/* ---- from apps/web/src/ui/theme/moments.css */
+/* High fantasy: the atlas of the sky — its astrolabe turning round the plate, a field of stars,
+   constellations lit star by star. */
+.ui-check-aura--sky {
+  background: radial-gradient(closest-side, rgb(var(--c-surface-2) / 0.5), rgb(var(--c-bg-deep) / 0.55) 60%, transparent);
+  -webkit-mask: radial-gradient(closest-side, #000 62%, transparent);
+  mask: radial-gradient(closest-side, #000 62%, transparent);
+}
+.ui-check-aura__stars { position: absolute; inset: 0; opacity: 0.75; }
+.ui-check-aura__astrolabe {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 82%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  color: rgb(var(--c-frame));
+  opacity: 0.3;
+  animation: ui-check-turn 140s linear infinite;
+}
+.ui-check-aura__constellations { position: absolute; inset: 6% 10%; width: 80%; height: 88%; overflow: visible; }
+.ui-check-aura__lines { fill: none; stroke: rgb(var(--c-frame-bright) / 0.35); stroke-width: 0.7; stroke-dasharray: 400; stroke-dashoffset: 400; animation: ui-check-constellation 2.4s 0.4s ease-out forwards; }
+@keyframes ui-check-constellation { to { stroke-dashoffset: 0; } }
+.ui-check-aura__star { fill: rgb(255 246 214); filter: drop-shadow(0 0 3px rgb(var(--c-frame-bright))); animation: ui-check-twinkle 3.2s ease-in-out infinite; }
+@keyframes ui-check-twinkle { 50% { opacity: 0.35; } }
+
+/* ---- from apps/web/src/ui/theme/moments.css (level burst) */
+/* High fantasy: the words unrolled on a ribbon. */
+.ui-level-burst__ribbon { position: relative; display: grid; place-items: center; width: 27rem; height: 4.2rem; margin-top: -0.4rem; }
+.ui-level-burst__ribbon > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.7)); }
+.ui-level-burst__ribbon-tail { fill: rgb(var(--c-frame) / 0.55); }
+.ui-level-burst__ribbon-face { fill: rgb(var(--c-surface-2)); stroke: rgb(var(--c-frame-bright) / 0.7); stroke-width: 1; }
+.ui-level-burst__ribbon > span {
+  position: relative;
+  margin-top: -0.35rem;
+  font-size: 1.3rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--c-frame-bright));
+  text-shadow: 0 0 12px rgb(var(--c-frame-bright) / 0.45);
+}
+
+.ui-level-burst--diamond .ui-level-burst__glint-box { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.ui-check__knot { fill: rgb(var(--c-frame) / 0.18); stroke: rgb(var(--c-frame) / 0.75); stroke-width: 1; }

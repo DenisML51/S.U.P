@@ -4,7 +4,6 @@ import type { TableCheck, TableDie } from '@itd/schema';
 import { GameIcon } from './GameIcon';
 import { DieGlyph, RollingDie } from './RollingDie';
 import { OUTCOME_LABEL, checkOutcome, outcomeSucceeded } from './checkOutcome';
-import { Astrolabe, STARS } from './art/highFantasy';
 import { useSettingArt } from './ornaments';
 import { cx } from './primitives';
 import { useSetting } from './theme/SettingScope';
@@ -14,26 +13,22 @@ import type { Theme } from './theme/settings';
  * A throw laid out as a game lays out a check: what is checked over a framed plate, the number to
  * reach at the plate's head, the dice tumbling in its middle and the outcome under them, the
  * modifier on cards below and the total under a rule. Each setting has its own plate — Fable's gilt
- * arch, the Lands Between's bare veil, a starship's readout — lit softly along
+ * pane, the Lands Between's bare veil, a starship's readout — lit softly along
  * its edges, and its own weather behind it.
  */
 
-type Plate = 'arch' | 'fable' | 'veil' | 'hud' | 'deco';
+type Plate = 'fable' | 'veil' | 'hud' | 'deco';
 
 const PLATE: Record<Theme, Plate> = {
   fable: 'fable',
-  'high-fantasy': 'arch',
-  service: 'arch',
+  service: 'fable',
   'elden-ring': 'veil',
   'sci-fi': 'hud',
   lovecraft: 'deco',
 };
 
-const ARCH = 'M38 122 C38 52 104 22 180 22 C256 22 322 52 322 122 L322 346 C322 410 256 438 180 438 C104 438 38 410 38 346 Z';
-
 /** The plate's outline on a 360 × 460 grid. */
 const OUTLINE: Record<Plate, string> = {
-  arch: ARCH,
   fable: 'M58 24 L302 24 Q336 24 336 58 L336 402 Q336 436 302 436 L58 436 Q24 436 24 402 L24 58 Q24 24 58 24 Z',
   veil: 'M0 18 L360 18 L360 442 L0 442 Z',
   hud: 'M64 30 L296 30 L324 58 L324 404 L296 432 L64 432 L36 404 L36 58 Z',
@@ -62,29 +57,6 @@ const Corners: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 /** A four-pointed sparkle, Fable's mark. */
 const spark = (x: number, y: number, r: number) =>
   `M${x} ${y - r} Q${x + r * 0.16} ${y - r * 0.16} ${x + r} ${y} Q${x + r * 0.16} ${y + r * 0.16} ${x} ${y + r} Q${x - r * 0.16} ${y + r * 0.16} ${x - r} ${y} Q${x - r * 0.16} ${y - r * 0.16} ${x} ${y - r} Z`;
-
-/** High fantasy: hooks curling out of the corners, a band of knots across. */
-const ArchOrnaments: React.FC = () => (
-  <>
-    <Corners>
-      <path d="M38 140 C18 140 4 126 4 106 C4 90 16 82 26 88 C34 93 32 104 24 105" className="ui-check__hair" />
-      <path d="M50 84 C34 70 36 48 54 38" className="ui-check__hair" />
-      <circle cx="24" cy="105" r="2.6" className="ui-check__dot" />
-    </Corners>
-    <path d={`M30 ${BAND_Y - 6} L330 ${BAND_Y - 6} M30 ${BAND_Y + 6} L330 ${BAND_Y + 6}`} className="ui-check__hair" />
-    <path
-      d={Array.from({ length: 25 }, (_, i) => {
-        const x = 42.5 + i * 11;
-        return `M${x} ${BAND_Y} L${x + 5.5} ${BAND_Y - 4} L${x + 11} ${BAND_Y} L${x + 5.5} ${BAND_Y + 4} Z`;
-      }).join(' ')}
-      className="ui-check__knot"
-    />
-    {[28, 332].map((x) => (
-      <circle key={x} cx={x} cy={BAND_Y} r="6" className="ui-check__stud" />
-    ))}
-    <path d="M180 10 L186 18 L180 26 L174 18 Z" className="ui-check__stud" />
-  </>
-);
 
 /**
  * Fable: a pane of the storybook's sea-green glass with no frame round it — a gilt hairline over and
@@ -227,7 +199,7 @@ const Frame: React.FC<{ plate: Plate }> = ({ plate }) => {
       </defs>
       {plate !== 'veil' && <EdgeLight id={id} d={d} />}
       {plate !== 'veil' && plate !== 'fable' && <motion.path d={d} className="ui-check__line" {...draw} />}
-      {(plate === 'arch' || plate === 'deco' || plate === 'hud') && (
+      {(plate === 'deco' || plate === 'hud') && (
         <path d={d} className="ui-check__inner" transform="translate(180 230) scale(0.95 0.965) translate(-180 -230)" />
       )}
       <motion.g
@@ -236,7 +208,6 @@ const Frame: React.FC<{ plate: Plate }> = ({ plate }) => {
         transition={{ duration: 0.7, delay: still ? 0 : 0.45 }}
         style={plate === 'fable' ? ({ '--gilt-fade': `url(#${id}-fade)` } as React.CSSProperties) : undefined}
       >
-        {plate === 'arch' && <ArchOrnaments />}
         {plate === 'fable' && <FableOrnaments />}
         {plate === 'veil' && <VeilOrnaments id={id} />}
         {plate === 'hud' && <HudOrnaments />}
@@ -287,47 +258,12 @@ const Motes: React.FC<{ list: ReturnType<typeof motes> }> = ({ list }) => (
   </>
 );
 
-/** A four-pointed star of the atlas. */
-const starPoint = (x: number, y: number, r: number) =>
-  `M${x} ${y - r} L${x + r * 0.28} ${y - r * 0.28} L${x + r} ${y} L${x + r * 0.28} ${y + r * 0.28} L${x} ${y + r} L${x - r * 0.28} ${y + r * 0.28} L${x - r} ${y} L${x - r * 0.28} ${y - r * 0.28} Z`;
-
-/** Constellations round the plate, in the margins where the plate leaves the sky. */
-const CONSTELLATIONS: { stars: [number, number][] }[] = [
-  { stars: [[34, 96], [58, 70], [86, 82], [104, 52]] },
-  { stars: [[300, 60], [326, 92], [356, 84], [372, 118], [348, 140]] },
-  { stars: [[30, 330], [52, 360], [40, 398], [72, 420]] },
-  { stars: [[318, 380], [350, 362], [372, 396], [342, 430]] },
-  { stars: [[150, 488], [184, 500], [222, 486], [250, 504]] },
-];
-
 /** The setting's weather behind a moment (a check's plate, a new level): half-seen, so the table shows through. */
 export const SettingAura: React.FC<{ setting: Theme }> = ({ setting }) => {
   switch (setting) {
     case 'lovecraft':
       // The table of Lovecraft keeps a check bare: nothing behind the plate.
       return null;
-    case 'high-fantasy':
-    case 'service':
-      // The atlas of the sky the setting's screens are drawn on: its astrolabe turning slowly round
-      // the plate, a field of stars, constellations lit star by star.
-      return (
-        <span className="ui-check-aura ui-check-aura--sky" aria-hidden>
-          <span className="ui-check-aura__stars" style={{ background: STARS }} />
-          <span className="ui-check-aura__astrolabe">
-            <Astrolabe />
-          </span>
-          <svg viewBox="0 0 400 520" preserveAspectRatio="xMidYMid meet" className="ui-check-aura__constellations">
-            {CONSTELLATIONS.map((c, i) => (
-              <g key={i}>
-                <path d={`M${c.stars.map(([x, y]) => `${x} ${y}`).join(' L')}`} className="ui-check-aura__lines" style={{ animationDelay: `${i * 0.6}s` }} />
-                {c.stars.map(([x, y], j) => (
-                  <path key={j} d={starPoint(x, y, j === 0 ? 4.2 : 2.8)} className="ui-check-aura__star" style={{ animationDelay: `${-(i * 1.3 + j * 0.7)}s` }} />
-                ))}
-              </g>
-            ))}
-          </svg>
-        </span>
-      );
     case 'elden-ring':
       // Grace: a golden haze, motes of it rising slowly.
       return (
@@ -339,7 +275,7 @@ export const SettingAura: React.FC<{ setting: Theme }> = ({ setting }) => {
       // A projection's glow over a faint grid of points, its scanlines.
       return <span className="ui-check-aura ui-check-aura--holo" aria-hidden />;
     default:
-      // Fable's fairy dust drifting in a shaft of light.
+      // Fable's fairy dust drifting in a shaft of light (the service wears Fable's).
       return (
         <span className="ui-check-aura ui-check-aura--dust" aria-hidden>
           <span className="ui-check-aura__shaft" />

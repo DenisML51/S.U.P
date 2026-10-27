@@ -1,9 +1,6 @@
 import '@fontsource/golos-text/400.css';
 import '@fontsource/golos-text/500.css';
 import '@fontsource/golos-text/600.css';
-import '@fontsource/cormorant-sc/500.css';
-import '@fontsource/cormorant-sc/600.css';
-import '@fontsource/cormorant-garamond/600.css';
 import '@fontsource/tektur/400.css';
 import '@fontsource/tektur/500.css';
 import '@fontsource/tektur/600.css';
@@ -34,11 +31,10 @@ export interface SettingInfo {
  * ornaments in `ui/art`; this list is what the UI offers.
  */
 export const SETTING_INFO: Record<Setting, SettingInfo> = {
-  'high-fantasy': { id: 'high-fantasy', label: 'High Fantasy' },
   'sci-fi': { id: 'sci-fi', label: 'Sci-Fi' },
   lovecraft: { id: 'lovecraft', label: 'Lovecraft' },
   'elden-ring': { id: 'elden-ring', label: 'Elden Ring' },
-  fable: { id: 'fable', label: 'Fable' },
+  fable: { id: 'fable', label: 'Fantasy' },
 };
 
 export const SETTING_LIST = Object.values(SETTING_INFO);

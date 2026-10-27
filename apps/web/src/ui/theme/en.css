@@ -4,12 +4,6 @@
  * the page's language.
  */
 
-:is(html[lang='en'][data-setting='high-fantasy'], html[lang='en'] [data-setting='high-fantasy']) {
-  .ui-toast::before { content: '✦ The herald proclaims ✦'; }
-  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Triumph'; }
-  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Disgrace'; }
-}
-
 :is(html[lang='en'][data-setting='elden-ring'], html[lang='en'] [data-setting='elden-ring']) {
   .ui-toast::before { content: 'Message'; }
   .ui-toast--success::before { content: 'Acquired'; }

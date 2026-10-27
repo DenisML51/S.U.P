@@ -72,6 +72,7 @@ describe('CharacterSchema', () => {
     expect(CharacterSchema.parse({ ...minimal, setting: 'grimdark' }).setting).toBe('elden-ring');
     expect(CharacterSchema.parse({ ...minimal, setting: 'dark-fantasy' }).setting).toBe('elden-ring');
     expect(CharacterSchema.parse({ ...minimal, setting: 'cyberpunk' }).setting).toBe('sci-fi');
+    expect(CharacterSchema.parse({ ...minimal, setting: 'high-fantasy' }).setting).toBe('fable');
   });
 
   it('reads a resource saved before rest rules as restored by a long rest', () => {
