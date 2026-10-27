@@ -672,6 +672,11 @@
 
 /* Portraits in the hero select strip take the radius of the theme they are shown in. */
 .ui-strip-thumb { border-radius: var(--radius); }
+/* Upright, the portraits are strung on a hairline rail that fades out at both ends; it stays put
+   while the column scrolls. */
+.ui-strip-rail {
+  background: linear-gradient(transparent, rgb(var(--c-frame) / 0.5) 12%, rgb(var(--c-frame) / 0.5) 88%, transparent) 50% 0 / 1px 100% no-repeat;
+}
 
 /* ------------------------------------------------------------------ Profile */
 .ui-image-slot {
