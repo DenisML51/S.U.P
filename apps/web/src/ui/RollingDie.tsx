@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { cx } from './primitives';
 import { WireDie, type DieShape } from './WireDie';
@@ -165,23 +165,39 @@ export const RollingDice: React.FC<{
 
 /**
  * A value held back until its dice are down, then popped in. Before that it keeps its place, so
- * nothing around it moves.
+ * nothing around it moves. A new throw hides it in the very render that brings the new value: an
+ * animation would only start on the next frame, and the new value would be seen for a moment
+ * before its dice even start to tumble.
  */
 export const LandedValue: React.FC<{ landed: boolean; className?: string; children: React.ReactNode }> = ({
   landed,
   className,
   children,
-}) => (
-  <motion.span
-    className={cx('inline-block', className)}
-    initial={false}
-    animate={landed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }}
-    transition={{ type: 'spring', stiffness: 460, damping: 18 }}
-    aria-hidden={!landed}
-  >
-    {children}
-  </motion.span>
-);
+}) => {
+  // It pops in only after having been hidden; a value shown from the start just stands there.
+  const wasHidden = useRef(!landed);
+  const popIn = wasHidden.current;
+  useLayoutEffect(() => {
+    wasHidden.current = !landed;
+  });
+  if (!landed) {
+    return (
+      <span className={cx('invisible inline-block', className)} aria-hidden>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <motion.span
+      className={cx('inline-block', className)}
+      initial={popIn ? { opacity: 0, scale: 0.6 } : false}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 460, damping: 18 }}
+    >
+      {children}
+    </motion.span>
+  );
+};
 
 /** How long a throw of `count` dice takes to land, `stagger` ms between two landings. */
 export const landingMs = (count: number, stagger = 110): number => TUMBLE_MS + Math.max(0, count - 1) * stagger;
