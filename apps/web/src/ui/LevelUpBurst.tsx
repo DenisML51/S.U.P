@@ -13,7 +13,7 @@ import type { Theme } from './theme/settings';
  * "2 » 3" and what the level brought, row by row. A click (or a few seconds) lets it go.
  */
 
-type Emblem = 'diamond' | 'ring' | 'none' | 'seal' | 'hex' | 'slab' | 'sigil';
+type Emblem = 'diamond' | 'ring' | 'none' | 'hex' | 'sigil';
 /** How the words of the moment are said. */
 type Words = 'script' | 'ribbon' | 'banner' | 'typed' | 'plain';
 
@@ -22,9 +22,7 @@ const VARIANT: Record<Theme, { emblem: Emblem; words: Words; text: string }> = {
   service: { emblem: 'diamond', words: 'ribbon', text: 'Новый уровень' },
   fable: { emblem: 'ring', words: 'script', text: 'Новый уровень' },
   'elden-ring': { emblem: 'none', words: 'banner', text: 'Уровень повышен' },
-  'dark-fantasy': { emblem: 'seal', words: 'plain', text: 'Восхождение' },
   'sci-fi': { emblem: 'hex', words: 'typed', text: 'Уровень повышен' },
-  cyberpunk: { emblem: 'slab', words: 'plain', text: 'Апгрейд' },
   lovecraft: { emblem: 'sigil', words: 'plain', text: 'Знание растёт' },
 };
 
@@ -37,13 +35,6 @@ const points = (n: number, r: number, turn = -90) =>
     const a = ((turn + (360 / n) * i) * Math.PI) / 180;
     return `${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`;
   });
-
-/** A star of `n` points between two radii. */
-const star = (n: number, outer: number, inner: number) => {
-  const tips = points(n, outer);
-  const notches = points(n, inner, -90 + 180 / n);
-  return `M${tips.map((tip, i) => `${tip} L${notches[i]}`).join(' L')} Z`;
-};
 
 /** An arc of a circle from one angle to another, in degrees from the top. */
 const arc = (r: number, from: number, to: number) => {
@@ -75,7 +66,6 @@ const EMBLEM: Record<Exclude<Emblem, 'none'>, { outline: string; inner?: string;
       </>
     ),
   },
-  seal: { outline: star(16, 134, 114), inner: 'M0 -100 A100 100 0 1 1 -0.1 -100 Z' },
   hex: {
     outline: `M${points(6, 124).join(' L')} Z`,
     inner: `M${points(6, 110).join(' L')} Z`,
@@ -95,11 +85,6 @@ const EMBLEM: Record<Exclude<Emblem, 'none'>, { outline: string; inner?: string;
         ))}
       </>
     ),
-  },
-  slab: {
-    outline: 'M-100 -122 L136 -122 L104 122 L-132 122 Z',
-    inner: 'M-88 -108 L118 -108 L90 108 L-116 108 Z',
-    detail: <path d="M96 -122 L136 -122 L130 -78 Z" className="ui-level-burst__stud" />,
   },
   sigil: {
     outline: 'M0 -126 A126 126 0 1 1 -0.1 -126 Z',

@@ -20,7 +20,7 @@ const count = (codes: number[], code: number) => codes.filter((c) => c === code)
 
 async function openTable(app: App) {
   const master = await registerUser(app, 'Мастер');
-  const created = await call(app, master, 'POST', '/parties', { name: 'Гонка', setting: 'dark-fantasy' });
+  const created = await call(app, master, 'POST', '/parties', { name: 'Гонка', setting: 'elden-ring' });
   const partyId = created.json<{ id: string }>().id;
   await call(app, master, 'POST', `/parties/${partyId}/session`);
   const party = (await call(app, master, 'GET', `/parties/${partyId}`)).json<PartyDto>();

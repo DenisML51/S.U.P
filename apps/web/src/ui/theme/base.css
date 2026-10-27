@@ -345,8 +345,7 @@
 /* ------------------------------------------------------------------ Interactive surfaces */
 /*
  * Hover and the active state differ by setting, not only by colour: gilt corners unfold in high
- * fantasy, a scan line runs along the edge in sci-fi, darkness
- * creeps from the edges in dark fantasy. `.ui-fx` is the effect layer the Panel renders.
+ * fantasy, a scan line runs along the edge in sci-fi. `.ui-fx` is the effect layer the Panel renders.
  */
 .ui-interactive {
   cursor: pointer;
@@ -667,7 +666,6 @@
 
 .ui-resource-count > span { font-size: 2.6rem; line-height: 1; }
 
-/* Grimdark: figures stamped between bronze brackets. */
 .ui-segmented--compact .ui-segmented__option { padding: 0 0.55rem; font-size: 0.8rem; }
 
 /* Portraits in the hero select strip take the radius of the theme they are shown in. */
@@ -2012,23 +2010,14 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 }
 /* Sci-fi: bits of data, square and quick. */
 [data-setting='sci-fi'] .ui-level-ready__motes > i { border-radius: 0; background: rgb(var(--c-frame-bright)); box-shadow: 0 0 5px rgb(var(--c-frame-bright)); animation-timing-function: steps(6); }
-/* Cyberpunk: pixels in its two neons, jittering up. */
-[data-setting='cyberpunk'] .ui-level-ready__motes > i { border-radius: 0; animation-timing-function: steps(5); }
-[data-setting='cyberpunk'] .ui-level-ready__motes > i:nth-child(odd) { background: rgb(var(--c-neon)); box-shadow: 0 0 6px rgb(var(--c-neon)); }
-[data-setting='cyberpunk'] .ui-level-ready__motes > i:nth-child(even) { background: rgb(var(--c-accent)); box-shadow: 0 0 6px rgb(var(--c-accent)); }
-/* The grimdark: embers off the blood. */
-[data-setting='dark-fantasy'] .ui-level-ready__motes > i { background: rgb(255 150 70); box-shadow: 0 0 6px 2px rgb(255 80 20 / 0.8); }
 /* Elden Ring: motes of grace. */
 [data-setting='elden-ring'] .ui-level-ready__motes > i { background: rgb(255 226 160); box-shadow: 0 0 8px 2px rgb(255 200 110 / 0.7); }
 /* Lovecraft: pale spores, swaying as they drift. */
 [data-setting='lovecraft'] .ui-level-ready__motes > i { background: rgb(var(--c-eldritch)); box-shadow: 0 0 8px 2px rgb(var(--c-eldritch) / 0.6); animation-timing-function: ease-in-out; }
 /* The spark at the bar's end in each setting's own shape. */
 [data-setting='sci-fi'] .ui-level-ready__spark { width: 10px; height: 10px; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); background: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright))); animation-timing-function: steps(4); }
-[data-setting='cyberpunk'] .ui-level-ready__spark { width: 8px; height: 8px; clip-path: none; background: rgb(var(--c-neon)); filter: drop-shadow(0 0 5px rgb(var(--c-neon))); animation: ui-ready-blink 0.9s steps(2) infinite; }
-[data-setting='dark-fantasy'] .ui-level-ready__spark { width: 9px; height: 9px; clip-path: none; border-radius: 50%; background: radial-gradient(circle, rgb(255 220 150), rgb(255 90 20)); filter: drop-shadow(0 0 6px rgb(255 80 20)); }
 [data-setting='lovecraft'] .ui-level-ready__spark { width: 9px; height: 9px; clip-path: none; border-radius: 50%; background: radial-gradient(circle, rgb(220 255 220), rgb(var(--c-eldritch))); filter: drop-shadow(0 0 6px rgb(var(--c-eldritch))); }
 [data-setting='elden-ring'] .ui-level-ready__spark { display: none; }
-@keyframes ui-ready-blink { 50% { opacity: 0.15; } }
 .ui-xp[data-ready] { animation: ui-ready-plaque 2.4s ease-in-out infinite; }
 @keyframes ui-ready-plaque {
   50% { box-shadow: var(--shadow-panel), 0 0 18px -4px rgb(var(--c-xp) / 0.55); }

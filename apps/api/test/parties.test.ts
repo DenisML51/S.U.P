@@ -48,7 +48,7 @@ async function table(app: App) {
   const player = await registerUser(app, 'Игрок');
   const created = await call(app, master, 'POST', '/parties', {
     name: 'Тени Ульдуара',
-    setting: 'dark-fantasy',
+    setting: 'elden-ring',
   });
   expect(created.statusCode).toBe(201);
   const partyId = created.json<{ id: string }>().id;

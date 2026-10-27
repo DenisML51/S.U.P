@@ -169,13 +169,6 @@
     linear-gradient(180deg, rgb(var(--c-surface) / 0.62), rgb(var(--c-bg-deep) / 0.8));
 }
 
-/* The grimdark's title opens with a red initial, as its pages do. */
-.ui-check--tome .ui-check__title::first-letter { color: rgb(var(--c-accent)); }
-.ui-check--tome .ui-check__glass {
-  background:
-    radial-gradient(70% 40% at 50% 100%, rgb(150 40 20 / 0.18), transparent 70%),
-    linear-gradient(180deg, rgb(var(--c-surface) / 0.8), rgb(var(--c-bg-deep) / 0.9));
-}
 
 .ui-check__target {
   position: absolute;
@@ -292,8 +285,6 @@
 }
 .ui-check--veil .ui-check__card,
 .ui-check--hud .ui-check__card,
-.ui-check--cut .ui-check__card,
-.ui-check--tome .ui-check__card,
 .ui-check--deco .ui-check__card { border-radius: var(--radius, 4px); }
 .ui-check__card-value { font-size: 1.25rem; color: rgb(var(--c-ink)); }
 .ui-check__card-icon { color: rgb(var(--c-frame-bright)); filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.6)) drop-shadow(0 0 6px rgb(var(--c-frame-bright) / 0.3)); }
@@ -405,16 +396,6 @@
   100% { opacity: 0; transform: translate(6px, -90px); }
 }
 
-/* The grimdark: smoke curling round the edges, embers rising through it, a fire's light below. */
-.ui-check-aura--embers { background: radial-gradient(60% 45% at 50% 80%, rgb(140 30 10 / 0.22), transparent), radial-gradient(closest-side, rgb(var(--c-bg-deep) / 0.55), transparent); }
-.ui-check-aura__smoke { opacity: 0.75; }
-.ui-check-aura--embers .ui-check-aura__mote { background: rgb(255 150 70); box-shadow: 0 0 6px 2px rgb(255 80 20 / 0.7); animation-name: ui-check-ember; }
-@keyframes ui-check-ember {
-  0% { opacity: 0; transform: translate(0, 30px) scale(1); }
-  15% { opacity: 1; }
-  100% { opacity: 0; transform: translate(14px, -110px) scale(0.3); }
-}
-
 /* Sci-fi: a projection's glow over a grid of points. */
 .ui-check-aura--holo {
   background:
@@ -422,42 +403,6 @@
     radial-gradient(closest-side, rgb(var(--c-frame-bright) / 0.12), rgb(var(--c-bg-deep) / 0.55) 60%, transparent);
   -webkit-mask: radial-gradient(closest-side, #000 40%, transparent);
   mask: radial-gradient(closest-side, #000 40%, transparent);
-}
-
-/* Cyberpunk: neon bleeding at the edges, torn by glitch bands. */
-.ui-check-aura--neon {
-  background:
-    radial-gradient(40% 50% at 30% 45%, rgb(255 40 140 / 0.18), transparent),
-    radial-gradient(40% 50% at 70% 60%, rgb(0 230 255 / 0.16), transparent),
-    radial-gradient(closest-side, rgb(var(--c-bg-deep) / 0.65), transparent);
-}
-.ui-check-aura__bands {
-  position: absolute;
-  inset: 8% 14%;
-  background: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.04) 0 1px, transparent 1px 4px);
-  -webkit-mask: radial-gradient(closest-side, #000 60%, transparent);
-  mask: radial-gradient(closest-side, #000 60%, transparent);
-}
-.ui-check-aura__bands::before,
-.ui-check-aura__bands::after {
-  content: '';
-  position: absolute;
-  left: -6%;
-  right: -6%;
-  height: 6px;
-  background: rgb(255 40 140 / 0.35);
-  box-shadow: 0 0 12px rgb(255 40 140 / 0.6);
-  animation: ui-check-glitch 3.2s steps(1) infinite;
-}
-.ui-check-aura__bands::after { background: rgb(0 230 255 / 0.3); box-shadow: 0 0 12px rgb(0 230 255 / 0.6); animation-delay: -1.7s; animation-duration: 2.6s; }
-@keyframes ui-check-glitch {
-  0% { top: 18%; transform: translateX(0); opacity: 0.8; }
-  8% { top: 62%; transform: translateX(-12px); opacity: 0.4; }
-  12% { opacity: 0; }
-  40% { top: 34%; transform: translateX(10px); opacity: 0.7; }
-  44% { opacity: 0; }
-  70% { top: 80%; transform: translateX(-6px); opacity: 0.6; }
-  74% { opacity: 0; }
 }
 
 @keyframes ui-check-turn { to { transform: rotate(1turn); } }
@@ -668,18 +613,6 @@
 .ui-level-burst--none .ui-level-burst__number { margin-top: 0; }
 .ui-level-burst--none .ui-level-burst__digits { font-size: 8.5rem; }
 .ui-level-burst--none .ui-level-burst__digits--new { filter: drop-shadow(0 0 26px rgb(255 210 130 / 0.6)); }
-
-/* Cyberpunk: the new number split into its neon channels for a moment. */
-.ui-level-burst--slab .ui-level-burst__digits--new { animation: ui-level-split 0.9s 0.95s steps(2) both; }
-@keyframes ui-level-split {
-  0% { text-shadow: -6px 0 rgb(255 40 140), 6px 0 rgb(0 230 255); transform: translateX(4px); }
-  50% { text-shadow: 4px 0 rgb(255 40 140), -4px 0 rgb(0 230 255); transform: translateX(-3px); }
-  100% { text-shadow: none; transform: none; }
-}
-.ui-level-burst--slab .ui-level-burst__line { stroke: rgb(255 40 140); filter: drop-shadow(0 0 8px rgb(255 40 140 / 0.7)); }
-
-/* The grimdark seal glows the colour of embers. */
-.ui-level-burst--seal .ui-level-burst__line { filter: drop-shadow(0 0 10px rgb(220 60 30 / 0.6)); }
 
 @media (max-width: 639.98px) {
   .ui-level-burst { zoom: 0.8; }
