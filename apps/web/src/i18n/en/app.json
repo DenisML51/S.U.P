@@ -1957,11 +1957,11 @@
   "Нажмите на кубики · помеха": "Click the dice · disadvantage",
   "Нажмите на кубик": "Click the die to roll",
   "Итог {0}": "Total {0}",
-  "Кости брошены…": "The dice are cast…",
   "Общий бонус": "Total bonus",
   "Уровень повышен": "Level up",
   "Восхождение": "Ascension",
   "Апгрейд": "Upgrade",
   "Знание растёт": "Knowledge grows",
-  "Критический провал": "Critical failure"
+  "Критический провал": "Critical failure",
+  "Синхронизация завершена · 100%": "Synchronisation complete · 100%"
 }

@@ -144,7 +144,7 @@ const RING_STARS = Array.from({ length: 12 }, (_, i) => {
  * An astrolabe, 760 units across, centred on the origin: graduated rings, the tilted ecliptic,
  * the rete's pointers. Shown large and half off-screen, it is the atlas the sheet is written in.
  */
-const Astrolabe: React.FC = () => (
+export const Astrolabe: React.FC = () => (
   <svg viewBox="-380 -380 760 760" fill="none" stroke="currentColor" aria-hidden className="h-full w-full">
     <circle r="372" strokeWidth="1" />
     <circle r="360" strokeWidth="0.6" />
@@ -165,7 +165,7 @@ const Astrolabe: React.FC = () => (
 );
 
 /** A faint field of stars, as on an atlas of the sky. Three scattered layers, so it never tiles. */
-const STARS =
+export const STARS =
   'radial-gradient(circle at 20% 30%, rgb(var(--c-frame-bright) / 0.7) 0 1px, transparent 1.5px) 0 0 / 173px 197px,' +
   'radial-gradient(circle at 70% 60%, rgb(var(--c-ink) / 0.45) 0 0.8px, transparent 1.3px) 0 0 / 89px 113px,' +
   'radial-gradient(circle at 40% 80%, rgb(var(--c-frame-bright) / 0.5) 0 1.4px, transparent 2px) 0 0 / 311px 277px';

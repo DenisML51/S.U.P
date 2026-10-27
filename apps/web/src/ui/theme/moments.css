@@ -21,7 +21,7 @@
   font-size: 2.1rem;
   line-height: 1.05;
   color: rgb(var(--c-ink));
-  text-shadow: 0 2px 14px rgb(0 0 0 / 0.85);
+  text-shadow: 0 2px 14px rgb(0 0 0 / 0.85), 0 0 26px rgb(var(--c-frame-bright) / 0.18);
 }
 .ui-check__subtitle { font-size: 1.05rem; color: rgb(var(--c-frame-bright)); text-shadow: 0 1px 8px rgb(0 0 0 / 0.9); }
 
@@ -30,22 +30,79 @@
 .ui-check__glass {
   position: absolute;
   inset: 0;
+  overflow: hidden;
   background:
-    radial-gradient(60% 45% at 50% 62%, rgb(var(--c-frame-bright) / 0.1), transparent 70%),
-    linear-gradient(180deg, rgb(var(--c-surface) / 0.72), rgb(var(--c-bg-deep) / 0.82));
+    radial-gradient(60% 45% at 50% 62%, rgb(var(--c-frame-bright) / 0.09), transparent 70%),
+    linear-gradient(180deg, rgb(var(--c-surface) / 0.7), rgb(var(--c-bg-deep) / 0.82));
   -webkit-backdrop-filter: blur(10px) saturate(1.1);
   backdrop-filter: blur(10px) saturate(1.1);
 }
-.ui-check__frame { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.ui-check__plate { fill: none; }
-.ui-check__line { fill: none; stroke: rgb(var(--c-frame)); stroke-width: 2; filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.25)); }
-.ui-check__inner { fill: none; stroke: rgb(var(--c-frame) / 0.4); stroke-width: 1; }
-.ui-check__hair { fill: none; stroke: rgb(var(--c-frame) / 0.85); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ui-check__frame { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; color: rgb(var(--c-frame)); }
+.ui-check__line { fill: none; stroke: rgb(var(--c-frame)); stroke-width: 1.6; }
+/* The light along the edge: a halo round the line, a glow gathering inside it. */
+.ui-check__halo { fill: none; stroke: rgb(var(--c-frame-bright) / 0.55); stroke-width: 4; }
+.ui-check__rim { fill: none; stroke: rgb(var(--c-frame-bright) / 0.2); stroke-width: 34; }
+.ui-check__inner { fill: none; stroke: rgb(var(--c-frame) / 0.35); stroke-width: 0.8; }
+.ui-check__inner-line { fill: none; stroke: rgb(var(--c-frame) / 0.5); stroke-width: 0.8; }
+.ui-check__hair { fill: none; stroke: rgb(var(--c-frame) / 0.85); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.ui-check__hair--thin { stroke-width: 0.9; stroke: rgb(var(--c-frame-bright) / 0.55); }
 .ui-check__knot { fill: rgb(var(--c-frame) / 0.18); stroke: rgb(var(--c-frame) / 0.75); stroke-width: 1; }
 .ui-check__dot,
 .ui-check__stud { fill: rgb(var(--c-frame-bright)); }
 .ui-check__leaf { fill: rgb(var(--c-frame) / 0.85); }
 .ui-check__rays { stroke: rgb(var(--c-frame) / 0.3); stroke-width: 1; }
+.ui-check__art { color: rgb(var(--c-frame-bright)); overflow: visible; }
+/* Fable's gilt: the lines poured with the gold gradient, the sparkles bright. */
+.ui-check__gilt-hair { fill: none; stroke: var(--gilt, rgb(var(--c-frame-bright))); stroke-width: 1.3; stroke-linecap: round; }
+.ui-check__gilt-fill { fill: var(--gilt, rgb(var(--c-frame-bright))); opacity: 0.85; }
+.ui-check__spark { fill: rgb(255 246 214); filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.9)); }
+.ui-check--fable .ui-check__line { stroke-width: 1.8; }
+.ui-check--fable .ui-check__leaf { fill: var(--gilt, rgb(var(--c-frame))); opacity: 0.8; }
+
+/* The Lands Between: no outline, the glass fading out at the sides into the dark. */
+.ui-check--veil .ui-check__glass {
+  background: linear-gradient(180deg, rgb(8 7 5 / 0.82), rgb(14 12 9 / 0.78) 50%, rgb(8 7 5 / 0.82));
+  -webkit-mask: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  mask: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+}
+.ui-check__veil-line { color: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 3px rgb(var(--c-frame-bright) / 0.6)); }
+
+/* A starship's readout: the lit segments of the rule, the arc of the reticle turning, a scan line
+   running down the glass. */
+.ui-check__segment { fill: rgb(var(--c-frame) / 0.35); }
+.ui-check__segment--on { fill: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 3px rgb(var(--c-frame-bright))); }
+.ui-check__reticle-arc {
+  fill: none;
+  stroke: rgb(var(--c-frame-bright) / 0.7);
+  stroke-width: 1.5;
+  stroke-dasharray: 34 120 18 120;
+  animation: ui-check-turn 9s linear infinite;
+}
+.ui-check--hud .ui-check__glass::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 70px;
+  top: -70px;
+  background: linear-gradient(180deg, transparent, rgb(var(--c-frame-bright) / 0.1) 80%, rgb(var(--c-frame-bright) / 0.45) 99%, transparent);
+  animation: ui-check-scan 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes ui-check-scan { to { transform: translateY(600px); } }
+.ui-check--hud .ui-check__glass {
+  background:
+    repeating-linear-gradient(180deg, rgb(var(--c-frame-bright) / 0.035) 0 1px, transparent 1px 3px),
+    radial-gradient(60% 45% at 50% 62%, rgb(var(--c-frame-bright) / 0.12), transparent 70%),
+    linear-gradient(180deg, rgb(var(--c-surface) / 0.62), rgb(var(--c-bg-deep) / 0.8));
+}
+
+/* The grimdark's title opens with a red initial, as its pages do. */
+.ui-check--tome .ui-check__title::first-letter { color: rgb(var(--c-accent)); }
+.ui-check--tome .ui-check__glass {
+  background:
+    radial-gradient(70% 40% at 50% 100%, rgb(150 40 20 / 0.18), transparent 70%),
+    linear-gradient(180deg, rgb(var(--c-surface) / 0.8), rgb(var(--c-bg-deep) / 0.9));
+}
 
 .ui-check__target {
   position: absolute;
@@ -60,7 +117,7 @@
   gap: 0.1rem;
 }
 .ui-check__target-label { font-size: 0.82rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(var(--c-ink-muted)); }
-.ui-check__target-value { font-size: 3.4rem; line-height: 1; color: rgb(var(--c-ink)); text-shadow: 0 2px 12px rgb(0 0 0 / 0.6); }
+.ui-check__target-value { font-size: 3.4rem; line-height: 1; color: rgb(var(--c-ink)); text-shadow: 0 2px 12px rgb(0 0 0 / 0.6), 0 0 22px rgb(var(--c-frame-bright) / 0.25); }
 
 .ui-check__dice {
   position: absolute;
@@ -82,14 +139,15 @@
   z-index: -1;
   border-radius: 50%;
   background: radial-gradient(closest-side, rgb(var(--c-frame-bright) / 0.16), transparent);
-  transition: background 500ms;
+  transition: background 600ms;
 }
 .ui-check[data-outcome='success'] .ui-check__dice::before,
 .ui-check[data-outcome='hard'] .ui-check__dice::before,
 .ui-check[data-outcome='extreme'] .ui-check__dice::before,
-.ui-check[data-outcome='critical'] .ui-check__dice::before { background: radial-gradient(closest-side, rgb(var(--c-success) / 0.32), transparent); }
+.ui-check[data-outcome='critical'] .ui-check__dice::before { background: radial-gradient(closest-side, rgb(var(--c-success) / 0.3), transparent); }
 .ui-check[data-outcome='failure'] .ui-check__dice::before,
-.ui-check[data-outcome='fumble'] .ui-check__dice::before { background: radial-gradient(closest-side, rgb(var(--c-danger) / 0.32), transparent); }
+.ui-check[data-outcome='fumble'] .ui-check__dice::before { background: radial-gradient(closest-side, rgb(var(--c-danger) / 0.3), transparent); }
+.ui-check--veil .ui-check__dice::before { background: radial-gradient(closest-side, rgb(255 214 140 / 0.22), transparent); }
 
 /* Waiting for the player: the die is a button that breathes. */
 .ui-check__die-button { display: flex; gap: 1rem; cursor: pointer; border-radius: 50%; transition: transform 200ms, filter 200ms; animation: ui-check-breathe 2.4s ease-in-out infinite; }
@@ -103,19 +161,45 @@
   50% { filter: drop-shadow(0 0 16px rgb(var(--c-frame-bright) / 0.5)); }
 }
 
-.ui-check__pill-row { position: absolute; left: 0; right: 0; top: 376px; display: flex; justify-content: center; }
-.ui-check__pill {
-  min-width: 14rem;
-  padding: 0.4rem 1.4rem;
-  border: 1px solid rgb(var(--c-frame) / 0.8);
-  border-radius: var(--radius-sm, 6px);
-  background: rgb(var(--c-bg-deep) / 0.7);
-  font-size: 1.05rem;
+/* The verdict: only words, lit. */
+.ui-check__verdict-row { position: absolute; left: 0; right: 0; top: 372px; display: flex; justify-content: center; }
+.ui-check__verdict {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
   color: rgb(var(--c-ink));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 6px 18px -8px rgb(0 0 0 / 0.8);
+  text-shadow: 0 2px 10px rgb(0 0 0 / 0.9);
 }
-.ui-check__pill--success { border-color: rgb(var(--c-success)); color: rgb(var(--c-success)); box-shadow: 0 0 18px -4px rgb(var(--c-success) / 0.6); }
-.ui-check__pill--failure { border-color: rgb(var(--c-danger)); color: rgb(var(--c-danger)); box-shadow: 0 0 18px -4px rgb(var(--c-danger) / 0.6); }
+.ui-check__verdict--prompt {
+  font-family: inherit;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: rgb(var(--c-ink-muted));
+  animation: ui-check-prompt 2.4s ease-in-out infinite;
+}
+@keyframes ui-check-prompt { 50% { color: rgb(var(--c-ink)); } }
+.ui-check__verdict--success { color: rgb(var(--c-success)); text-shadow: 0 0 18px rgb(var(--c-success) / 0.6), 0 2px 10px rgb(0 0 0 / 0.9); }
+.ui-check__verdict--failure { color: rgb(var(--c-danger)); text-shadow: 0 0 18px rgb(var(--c-danger) / 0.6), 0 2px 10px rgb(0 0 0 / 0.9); }
+.ui-check__verdict-echo { display: none; }
+/* The Lands Between ring their verdict out: a larger, softer copy swelling from it and fading. */
+.ui-check--veil .ui-check__verdict:not(.ui-check__verdict--prompt) { font-size: 2rem; letter-spacing: 0.14em; text-transform: uppercase; }
+.ui-check--veil .ui-check__verdict--success { color: rgb(236 214 150); text-shadow: 0 0 16px rgb(236 200 120 / 0.55), 0 2px 10px rgb(0 0 0 / 0.9); }
+.ui-check--veil .ui-check__verdict--failure { color: rgb(196 64 52); text-shadow: 0 0 16px rgb(160 30 20 / 0.6), 0 2px 10px rgb(0 0 0 / 0.9); }
+.ui-check--veil .ui-check__verdict-echo {
+  display: block;
+  position: absolute;
+  inset: 0;
+  white-space: nowrap;
+  filter: blur(3px);
+  opacity: 0;
+  animation: ui-check-echo 2.2s 0.15s ease-out both;
+}
+@keyframes ui-check-echo {
+  0% { opacity: 0.85; transform: scale(1); letter-spacing: 0.14em; }
+  100% { opacity: 0; transform: scale(1.18); letter-spacing: 0.24em; }
+}
 
 /* The bonus, card by card. */
 .ui-check__cards { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; max-width: 24rem; }
@@ -126,13 +210,18 @@
   gap: 0.3rem;
   width: 6.6rem;
   padding: 0.5rem 0.4rem 0.6rem;
-  border: 1px solid rgb(var(--c-frame) / 0.6);
+  border: 1px solid rgb(var(--c-frame) / 0.5);
   border-radius: 10px 10px 4px 4px;
   background: linear-gradient(180deg, rgb(var(--c-surface-2) / 0.85), rgb(var(--c-bg-deep) / 0.85));
-  box-shadow: inset 0 1px 0 rgb(var(--c-frame-bright) / 0.15), 0 8px 20px -10px rgb(0 0 0 / 0.9);
+  box-shadow: inset 0 1px 0 rgb(var(--c-frame-bright) / 0.15), inset 0 0 18px rgb(var(--c-frame-bright) / 0.07), 0 0 14px -6px rgb(var(--c-frame-bright) / 0.4), 0 8px 20px -10px rgb(0 0 0 / 0.9);
 }
+.ui-check--veil .ui-check__card,
+.ui-check--hud .ui-check__card,
+.ui-check--cut .ui-check__card,
+.ui-check--tome .ui-check__card,
+.ui-check--deco .ui-check__card { border-radius: var(--radius, 4px); }
 .ui-check__card-value { font-size: 1.25rem; color: rgb(var(--c-ink)); }
-.ui-check__card-icon { color: rgb(var(--c-frame-bright)); filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.6)); }
+.ui-check__card-icon { color: rgb(var(--c-frame-bright)); filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.6)) drop-shadow(0 0 6px rgb(var(--c-frame-bright) / 0.3)); }
 .ui-check__card-label { font-size: 0.78rem; line-height: 1.15; color: rgb(var(--c-ink-muted)); }
 
 .ui-check__total {
@@ -149,7 +238,7 @@
     linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.7), transparent) bottom / 100% 1px no-repeat,
     radial-gradient(50% 100% at 50% 50%, rgb(var(--c-bg-deep) / 0.7), transparent);
 }
-.ui-check__total-value { font-size: 1.5rem; color: rgb(var(--c-frame-bright)); }
+.ui-check__total-value { font-size: 1.5rem; color: rgb(var(--c-frame-bright)); text-shadow: 0 0 12px rgb(var(--c-frame-bright) / 0.4); }
 
 /* The outcome stamped in the dice tray. */
 .ui-check-stamp { display: inline-block; font-size: 1.1rem; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -173,45 +262,89 @@
 }
 .ui-check-aura > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 
-/* High fantasy: a ring of runes turning in a warm glow. */
-.ui-check-aura--runes {
-  background: radial-gradient(closest-side, rgb(var(--c-frame-bright) / 0.16), rgb(var(--c-bg-deep) / 0.55) 55%, transparent);
+/* High fantasy: the atlas of the sky — its astrolabe turning round the plate, a field of stars,
+   constellations lit star by star. */
+.ui-check-aura--sky {
+  background: radial-gradient(closest-side, rgb(var(--c-surface-2) / 0.5), rgb(var(--c-bg-deep) / 0.55) 60%, transparent);
+  -webkit-mask: radial-gradient(closest-side, #000 62%, transparent);
+  mask: radial-gradient(closest-side, #000 62%, transparent);
 }
+.ui-check-aura__stars { position: absolute; inset: 0; opacity: 0.75; }
+.ui-check-aura__astrolabe {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 82%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  color: rgb(var(--c-frame));
+  opacity: 0.3;
+  animation: ui-check-turn 140s linear infinite;
+}
+.ui-check-aura__constellations { position: absolute; inset: 6% 10%; width: 80%; height: 88%; overflow: visible; }
+.ui-check-aura__lines { fill: none; stroke: rgb(var(--c-frame-bright) / 0.35); stroke-width: 0.7; stroke-dasharray: 400; stroke-dashoffset: 400; animation: ui-check-constellation 2.4s 0.4s ease-out forwards; }
+@keyframes ui-check-constellation { to { stroke-dashoffset: 0; } }
+.ui-check-aura__star { fill: rgb(255 246 214); filter: drop-shadow(0 0 3px rgb(var(--c-frame-bright))); animation: ui-check-twinkle 3.2s ease-in-out infinite; }
+@keyframes ui-check-twinkle { 50% { opacity: 0.35; } }
 .ui-check-aura__ring { animation: ui-check-turn 80s linear infinite; }
-.ui-check-aura--runes > svg { inset: 8% 4%; width: 92%; height: 84%; }
-.ui-check-aura__line { fill: none; stroke: rgb(var(--c-frame) / 0.35); stroke-width: 0.5; vector-effect: non-scaling-stroke; }
+.ui-check-aura__line { fill: none; stroke: rgb(var(--c-frame) / 0.3); stroke-width: 0.5; vector-effect: non-scaling-stroke; }
 .ui-check-aura__line--dash { stroke-dasharray: 2 4; }
-.ui-check-aura__rune { fill: rgb(var(--c-frame-bright) / 0.45); }
 
-/* Elden Ring: rays of grace turning slowly behind the plate. */
+/* Motes adrift: each its own size, softness and beat. */
+.ui-check-aura__mote { position: absolute; border-radius: 50%; animation: ui-check-drift ease-in-out infinite; }
+@keyframes ui-check-drift {
+  0%, 100% { opacity: 0; transform: translate(0, 10px); }
+  30% { opacity: 0.9; }
+  60% { opacity: 0.5; transform: translate(8px, -14px); }
+  85% { opacity: 0; transform: translate(-4px, -26px); }
+}
+
+/* Fable: fairy dust drifting in a shaft of light falling from above. */
+.ui-check-aura--dust { background: radial-gradient(closest-side, rgb(var(--c-frame-bright) / 0.08), rgb(var(--c-bg-deep) / 0.5) 60%, transparent); }
+.ui-check-aura--dust .ui-check-aura__mote { background: rgb(255 240 200); box-shadow: 0 0 6px 1px rgb(255 214 130 / 0.75); }
+.ui-check-aura__shaft {
+  position: absolute;
+  left: 30%;
+  top: -6%;
+  width: 40%;
+  height: 80%;
+  background: linear-gradient(180deg, rgb(255 236 180 / 0.16), transparent 85%);
+  transform: skewX(-12deg);
+  filter: blur(18px);
+  animation: ui-check-shaft 9s ease-in-out infinite;
+}
+@keyframes ui-check-shaft { 50% { opacity: 0.55; transform: skewX(-9deg) translateX(10px); } }
+
+/* Elden Ring: the golden haze of grace, its motes rising. */
 .ui-check-aura--grace {
   background:
-    radial-gradient(closest-side, rgb(255 222 150 / 0.2), transparent 70%),
-    radial-gradient(closest-side, rgb(var(--c-bg-deep) / 0.6), transparent);
+    radial-gradient(34% 26% at 50% 54%, rgb(255 214 140 / 0.16), transparent),
+    radial-gradient(closest-side, rgb(4 3 2 / 0.6), transparent);
 }
-.ui-check-aura--grace::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-conic-gradient(from 0deg, rgb(255 220 140 / 0.14) 0deg 2deg, transparent 2deg 11deg);
-  -webkit-mask: radial-gradient(closest-side, transparent 22%, #000 40%, transparent 78%);
-  mask: radial-gradient(closest-side, transparent 22%, #000 40%, transparent 78%);
-  animation: ui-check-turn 120s linear infinite;
+.ui-check-aura--grace .ui-check-aura__mote { background: rgb(255 226 160); box-shadow: 0 0 8px 2px rgb(255 200 110 / 0.6); animation-name: ui-check-rise; }
+@keyframes ui-check-rise {
+  0% { opacity: 0; transform: translate(0, 30px); }
+  25% { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(6px, -90px); }
 }
 
-/* Sci-fi: scanner rings counter-rotating, a sweep going round. */
-.ui-check-aura--scan { background: radial-gradient(closest-side, rgb(var(--c-bg-deep) / 0.65), transparent); }
-.ui-check-aura--scan > svg { inset: 10% 6%; width: 88%; height: 80%; }
-.ui-check-aura--scan .ui-check-aura__line { stroke: rgb(var(--c-frame-bright) / 0.4); }
-.ui-check-aura__line--arc { stroke-dasharray: 60 30 8 30; stroke-width: 1.5; animation: ui-check-turn 18s linear infinite reverse; transform-origin: center; }
-.ui-check-aura__sweep {
-  position: absolute;
-  inset: 12% 10%;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, rgb(var(--c-frame-bright) / 0.22), transparent 18%);
-  -webkit-mask: radial-gradient(closest-side, transparent 40%, #000 42%, #000 98%, transparent);
-  mask: radial-gradient(closest-side, transparent 40%, #000 42%, #000 98%, transparent);
-  animation: ui-check-turn 4s linear infinite;
+/* The grimdark: smoke curling round the edges, embers rising through it, a fire's light below. */
+.ui-check-aura--embers { background: radial-gradient(60% 45% at 50% 80%, rgb(140 30 10 / 0.22), transparent), radial-gradient(closest-side, rgb(var(--c-bg-deep) / 0.55), transparent); }
+.ui-check-aura__smoke { opacity: 0.75; }
+.ui-check-aura--embers .ui-check-aura__mote { background: rgb(255 150 70); box-shadow: 0 0 6px 2px rgb(255 80 20 / 0.7); animation-name: ui-check-ember; }
+@keyframes ui-check-ember {
+  0% { opacity: 0; transform: translate(0, 30px) scale(1); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(14px, -110px) scale(0.3); }
+}
+
+/* Sci-fi: a projection's glow over a grid of points. */
+.ui-check-aura--holo {
+  background:
+    radial-gradient(circle, rgb(var(--c-frame-bright) / 0.28) 0.8px, transparent 1.3px) 0 0 / 18px 18px,
+    radial-gradient(closest-side, rgb(var(--c-frame-bright) / 0.12), rgb(var(--c-bg-deep) / 0.55) 60%, transparent);
+  -webkit-mask: radial-gradient(closest-side, #000 40%, transparent);
+  mask: radial-gradient(closest-side, #000 40%, transparent);
 }
 
 /* Cyberpunk: neon bleeding at the edges, torn by glitch bands. */
@@ -250,52 +383,10 @@
   74% { opacity: 0; }
 }
 
-/* Fable's fairy dust and the grimdark's embers: motes adrift in a haze. */
-.ui-check-aura--dust { background: radial-gradient(closest-side, rgb(var(--c-frame-bright) / 0.1), rgb(var(--c-bg-deep) / 0.55) 55%, transparent); }
-.ui-check-aura--embers { background: radial-gradient(closest-side, rgb(120 20 10 / 0.25), rgb(var(--c-bg-deep) / 0.65) 55%, transparent); }
-.ui-check-aura__mote {
-  position: absolute;
-  border-radius: 50%;
-  animation-name: ui-check-mote;
-  animation-iteration-count: infinite;
-  animation-timing-function: ease-in-out;
-}
-.ui-check-aura--dust .ui-check-aura__mote { background: rgb(255 238 190); box-shadow: 0 0 6px 1px rgb(255 214 130 / 0.8); }
-.ui-check-aura--embers .ui-check-aura__mote { background: rgb(255 140 60); box-shadow: 0 0 6px 1px rgb(255 90 20 / 0.8); animation-name: ui-check-ember; }
-@keyframes ui-check-mote {
-  0%, 100% { opacity: 0; transform: translate(0, 6px) scale(0.6); }
-  40% { opacity: 0.9; transform: translate(4px, -6px) scale(1); }
-  70% { opacity: 0.3; transform: translate(-3px, -14px) scale(0.8); }
-}
-@keyframes ui-check-ember {
-  0% { opacity: 0; transform: translate(0, 20px) scale(1); }
-  20% { opacity: 1; }
-  100% { opacity: 0; transform: translate(10px, -60px) scale(0.4); }
-}
-
-/* Lovecraft: the madness cloud boiling round the edges, its tendrils reaching for the dice. */
-.ui-check-aura--madness { width: 165%; height: 128%; }
-.ui-check-aura__fog { fill: rgb(var(--c-eldritch, 106 148 106) / 0.16); }
-.ui-check-aura__fog--deep { fill: rgb(30 14 40 / 0.5); }
-.ui-check-aura__tendril { fill: none; stroke: rgb(120 70 140 / 0.45); stroke-width: 4; stroke-linecap: round; }
-.ui-check-aura--madness > svg { animation: ui-check-breathe-cloud 7s ease-in-out infinite; }
-@keyframes ui-check-breathe-cloud {
-  0%, 100% { transform: scale(1); opacity: 0.85; }
-  50% { transform: scale(1.04) rotate(1.5deg); opacity: 1; }
-}
-.ui-check-aura--madness::after {
-  content: '';
-  position: absolute;
-  inset: 12%;
-  z-index: -1;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(var(--c-bg-deep) / 0.7), transparent);
-}
-
 @keyframes ui-check-turn { to { transform: rotate(1turn); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .ui-check-aura *, .ui-check-aura::before, .ui-check__die-button { animation: none !important; }
+  .ui-check-aura *, .ui-check-aura::before, .ui-check__die-button, .ui-check__glass::after, .ui-check__reticle-arc { animation: none !important; }
 }
 
 /* ------------------------------------------------------------------ A new level */
@@ -322,22 +413,48 @@
 .ui-level-burst__emblem { position: relative; width: 300px; height: 300px; display: grid; place-items: center; }
 .ui-level-burst__emblem > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .ui-level-burst__fill { fill: rgb(var(--c-bg-deep) / 0.72); }
-.ui-level-burst__line { fill: none; stroke: rgb(var(--c-frame-bright)); stroke-width: 2.5; filter: drop-shadow(0 0 8px rgb(var(--c-frame-bright) / 0.55)); }
+.ui-level-burst__line { fill: none; stroke: rgb(var(--c-frame-bright)); stroke-width: 2; }
+/* The light along the emblem's edge: a halo outside, a glow gathering inside. */
+.ui-level-burst__halo { fill: none; stroke: rgb(var(--c-frame-bright) / 0.6); stroke-width: 5; }
+.ui-level-burst__rim { fill: none; stroke: rgb(var(--c-frame-bright) / 0.28); stroke-width: 34; }
 .ui-level-burst__inner { fill: rgb(var(--c-frame-bright) / 0.05); stroke: rgb(var(--c-frame) / 0.5); stroke-width: 1; }
 .ui-level-burst__dots { fill: none; stroke: rgb(var(--c-frame-bright) / 0.7); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 0.1 7; }
 .ui-level-burst__hair { fill: none; stroke: rgb(var(--c-frame-bright) / 0.8); stroke-width: 1.5; stroke-linecap: round; }
 .ui-level-burst__faint { fill: none; stroke: rgb(var(--c-frame) / 0.35); stroke-width: 1; }
 .ui-level-burst__stud { fill: rgb(var(--c-frame-bright)); }
-.ui-level-burst__progress {
+.ui-level-burst__segment {
   fill: none;
-  stroke: rgb(var(--c-frame-bright));
-  stroke-width: 3;
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  transform: rotate(-90deg);
-  animation: ui-level-fill 1.1s 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  stroke: rgb(var(--c-frame) / 0.25);
+  stroke-width: 4;
+  animation: ui-level-segment 0.25s ease-out forwards;
 }
-@keyframes ui-level-fill { to { stroke-dashoffset: 0; } }
+@keyframes ui-level-segment { to { stroke: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright))); } }
+/* Sci-fi: a scan line running down the hexagon. */
+.ui-level-burst__scan { position: absolute; inset: 9% 13%; overflow: hidden; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); pointer-events: none; }
+.ui-level-burst__scan::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -40px;
+  height: 40px;
+  background: linear-gradient(180deg, transparent, rgb(var(--c-frame-bright) / 0.4));
+  animation: ui-check-scan 2.6s 0.3s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+/* Lovecraft: the eye over the sigil. */
+.ui-level-burst__eye { fill: rgb(var(--c-bg-deep)); stroke: rgb(var(--c-eldritch, 106 148 106)); stroke-width: 1.4; filter: drop-shadow(0 0 6px rgb(var(--c-eldritch, 106 148 106) / 0.7)); }
+/* Lovecraft: tentacles out of the sigil's circle — black flesh rimmed with a sick light, glowing
+   suckers, a wide halo of it round them and the whole sigil sunk in an eldritch glow. */
+.ui-level-burst__eldritch { fill: rgb(var(--c-eldritch, 106 148 106) / 0.18); filter: blur(28px); }
+.ui-level-burst__tentacles--aura { filter: blur(9px); }
+.ui-level-burst__tentacles--aura path { fill: rgb(var(--c-eldritch, 106 148 106) / 0.55); stroke: rgb(140 220 150 / 0.5); stroke-width: 6; }
+.ui-level-burst__tentacles--glow { filter: blur(2px); }
+.ui-level-burst__tentacles--glow path { fill: none; stroke: rgb(150 235 160 / 0.85); stroke-width: 2.4; }
+.ui-level-burst__tentacles--flesh path { fill: rgb(6 12 9); stroke: rgb(120 200 130 / 0.6); stroke-width: 0.6; }
+.ui-level-burst__sucker { fill: rgb(20 40 26); stroke: rgb(170 240 170 / 0.8); stroke-width: 0.6; filter: drop-shadow(0 0 2px rgb(140 230 150)); }
+.ui-level-burst__pupil { fill: rgb(var(--c-eldritch, 106 148 106)); }
+.ui-level-burst__glint-dot { fill: rgb(230 255 230); }
+
 
 /* The light sweeping across, kept inside the emblem. */
 .ui-level-burst__glint-box { position: absolute; inset: 8%; overflow: hidden; clip-path: circle(46% at 50% 50%); pointer-events: none; }
@@ -388,6 +505,7 @@
   pointer-events: none;
 }
 .ui-level-burst__words {
+  position: relative;
   font-size: 1.9rem;
   text-transform: uppercase;
   white-space: nowrap;
@@ -428,18 +546,51 @@
 .ui-level-burst__gain::before { left: -5px; }
 .ui-level-burst__gain::after { right: -5px; }
 
+/* High fantasy: the words unrolled on a ribbon. */
+.ui-level-burst__ribbon { position: relative; display: grid; place-items: center; width: 27rem; height: 4.2rem; margin-top: -0.4rem; }
+.ui-level-burst__ribbon > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.7)); }
+.ui-level-burst__ribbon-tail { fill: rgb(var(--c-frame) / 0.55); }
+.ui-level-burst__ribbon-face { fill: rgb(var(--c-surface-2)); stroke: rgb(var(--c-frame-bright) / 0.7); stroke-width: 1; }
+.ui-level-burst__ribbon > span {
+  position: relative;
+  margin-top: -0.35rem;
+  font-size: 1.3rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--c-frame-bright));
+  text-shadow: 0 0 12px rgb(var(--c-frame-bright) / 0.45);
+}
+
+/* Sci-fi: the words typed out on a readout, a cursor blinking after them. */
+.ui-level-burst__words--typed { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; letter-spacing: 0.16em; white-space: pre; }
+.ui-level-burst__caret { display: inline-block; width: 0.5em; height: 0.9em; margin-left: 0.15em; background: rgb(var(--c-frame-bright)); animation: ui-level-caret 0.9s steps(1) infinite; }
+@keyframes ui-level-caret { 50% { opacity: 0; } }
+.ui-level-burst__readout { flex-basis: 100%; margin-top: 0.35rem; font-family: var(--font-body); font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgb(var(--c-ink-muted)); text-shadow: none; }
+
 /* Elden Ring: the words on a black band across the screen, as a great deed is announced. */
 .ui-level-burst__band {
   position: absolute;
   left: 50%;
-  top: calc(300px + 0.9rem - 1.6rem);
+  top: calc(230px + 0.9rem - 1.5rem);
   z-index: -1;
   width: 100vw;
   height: 5.2rem;
-  transform: translateX(-50%);
   background: linear-gradient(180deg, transparent, rgb(0 0 0 / 0.78) 25%, rgb(0 0 0 / 0.78) 75%, transparent);
 }
-.ui-level-burst--band .ui-level-burst__words { color: rgb(236 214 150); font-size: 2.2rem; }
+.ui-level-burst__words--banner { color: rgb(236 214 150); font-size: 2.3rem; }
+.ui-level-burst__echo {
+  position: absolute;
+  inset: 0;
+  white-space: nowrap;
+  filter: blur(4px);
+  opacity: 0;
+  animation: ui-check-echo 2.6s 1.2s ease-out both;
+}
+/* With no emblem, the number itself is the gold. */
+.ui-level-burst--none .ui-level-burst__emblem { height: 230px; }
+.ui-level-burst--none .ui-level-burst__number { margin-top: 0; }
+.ui-level-burst--none .ui-level-burst__digits { font-size: 8.5rem; }
+.ui-level-burst--none .ui-level-burst__digits--new { filter: drop-shadow(0 0 26px rgb(255 210 130 / 0.6)); }
 
 /* Cyberpunk: the new number split into its neon channels for a moment. */
 .ui-level-burst--slab .ui-level-burst__digits--new { animation: ui-level-split 0.9s 0.95s steps(2) both; }

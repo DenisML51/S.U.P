@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useMomentStore, type LevelUpMoment } from '../store/useMomentStore';
 import { SettingAura } from './CheckPanel';
@@ -7,27 +7,30 @@ import { SettingScope } from './theme/SettingScope';
 import type { Theme } from './theme/settings';
 
 /**
- * A new level, played in the middle of the screen: the setting's emblem drawn in, the old number
- * giving way to the new one in a burst of sparks, the words of the moment written or struck across
- * it, then "2 » 3" and what the level brought, row by row. A click (or a few seconds) lets it go.
+ * A new level, played in the middle of the screen: the setting's emblem drawn in and lit along its
+ * edge, the old number giving way to the new one, the words of the moment said the setting's way —
+ * written by hand, unrolled on a ribbon, rung out on a black band, typed on a readout — then
+ * "2 » 3" and what the level brought, row by row. A click (or a few seconds) lets it go.
  */
 
-type Emblem = 'diamond' | 'ring' | 'band' | 'seal' | 'hex' | 'slab' | 'sigil';
+type Emblem = 'diamond' | 'ring' | 'none' | 'seal' | 'hex' | 'slab' | 'sigil';
+/** How the words of the moment are said. */
+type Words = 'script' | 'ribbon' | 'banner' | 'typed' | 'plain';
 
-const VARIANT: Record<Theme, { emblem: Emblem; words: string; script?: boolean }> = {
-  'high-fantasy': { emblem: 'diamond', words: 'Новый уровень', script: true },
-  service: { emblem: 'diamond', words: 'Новый уровень', script: true },
-  fable: { emblem: 'ring', words: 'Новый уровень', script: true },
-  'elden-ring': { emblem: 'band', words: 'Уровень повышен' },
-  'dark-fantasy': { emblem: 'seal', words: 'Восхождение' },
-  'sci-fi': { emblem: 'hex', words: 'Уровень повышен' },
-  cyberpunk: { emblem: 'slab', words: 'Апгрейд' },
-  lovecraft: { emblem: 'sigil', words: 'Знание растёт' },
+const VARIANT: Record<Theme, { emblem: Emblem; words: Words; text: string }> = {
+  'high-fantasy': { emblem: 'diamond', words: 'ribbon', text: 'Новый уровень' },
+  service: { emblem: 'diamond', words: 'ribbon', text: 'Новый уровень' },
+  fable: { emblem: 'ring', words: 'script', text: 'Новый уровень' },
+  'elden-ring': { emblem: 'none', words: 'banner', text: 'Уровень повышен' },
+  'dark-fantasy': { emblem: 'seal', words: 'plain', text: 'Восхождение' },
+  'sci-fi': { emblem: 'hex', words: 'typed', text: 'Уровень повышен' },
+  cyberpunk: { emblem: 'slab', words: 'plain', text: 'Апгрейд' },
+  lovecraft: { emblem: 'sigil', words: 'plain', text: 'Знание растёт' },
 };
 
 /** The beats of the moment, in seconds from its start. */
-const BEAT = { draw: 0.1, swap: 0.85, words: 1.05, step: 1.5, gains: 1.75 };
-const SHOWN_MS = 6200;
+const BEAT = { draw: 0.1, swap: 0.85, words: 1.05, step: 1.6, gains: 1.85 };
+const SHOWN_MS = 6400;
 
 const points = (n: number, r: number, turn = -90) =>
   Array.from({ length: n }, (_, i) => {
@@ -42,8 +45,17 @@ const star = (n: number, outer: number, inner: number) => {
   return `M${tips.map((tip, i) => `${tip} L${notches[i]}`).join(' L')} Z`;
 };
 
-/** Each emblem on a 300 × 300 grid around its centre: the outline drawn in, then its fine work. */
-const EMBLEM: Record<Emblem, { outline: string; inner?: string; detail?: React.ReactNode }> = {
+/** An arc of a circle from one angle to another, in degrees from the top. */
+const arc = (r: number, from: number, to: number) => {
+  const at = (deg: number) => {
+    const a = ((deg - 90) * Math.PI) / 180;
+    return `${(Math.cos(a) * r).toFixed(2)} ${(Math.sin(a) * r).toFixed(2)}`;
+  };
+  return `M${at(from)} A${r} ${r} 0 0 1 ${at(to)}`;
+};
+
+/** Each emblem on a 300 × 300 grid round its centre: the outline, an inner line, its fine work. */
+const EMBLEM: Record<Exclude<Emblem, 'none'>, { outline: string; inner?: string; detail?: React.ReactNode }> = {
   diamond: {
     outline: 'M0 -128 L128 0 L0 128 L-128 0 Z',
     inner: 'M0 -112 L112 0 L0 112 L-112 0 Z',
@@ -58,29 +70,31 @@ const EMBLEM: Record<Emblem, { outline: string; inner?: string; detail?: React.R
         {[0, 90, 180, 270].map((turn) => (
           <path key={turn} d="M0 -132 L4 -122 L0 -112 L-4 -122 Z" transform={`rotate(${turn})`} className="ui-level-burst__stud" />
         ))}
-        {/* Vines curling from the foot of the ring. */}
         <path d="M-20 116 C-60 140 -100 120 -108 86 C-112 70 -98 62 -90 72" className="ui-level-burst__hair" />
         <path d="M20 116 C60 140 100 120 108 86 C112 70 98 62 90 72" className="ui-level-burst__hair" />
       </>
     ),
   },
-  band: {
-    outline: 'M0 -104 A104 104 0 1 1 -0.1 -104 Z',
+  seal: { outline: star(16, 134, 114), inner: 'M0 -100 A100 100 0 1 1 -0.1 -100 Z' },
+  hex: {
+    outline: `M${points(6, 124).join(' L')} Z`,
+    inner: `M${points(6, 110).join(' L')} Z`,
     detail: (
       <>
-        <path d="M0 -128 L0 -112 M-8 -120 L8 -120" className="ui-level-burst__hair" />
-        <path d="M0 112 L6 120 L0 128 L-6 120 Z" className="ui-level-burst__stud" />
+        {/* A ring of segments lighting one after another, as a readout fills. */}
+        {Array.from({ length: 36 }, (_, i) => (
+          <path
+            key={i}
+            d={arc(142, i * 10 + 1.5, i * 10 + 8.5)}
+            className="ui-level-burst__segment"
+            style={{ animationDelay: `${0.25 + i * 0.022}s` }}
+          />
+        ))}
+        {[30, 90, 150, 210, 270, 330].map((turn) => (
+          <path key={turn} d="M0 -124 L0 -134" transform={`rotate(${turn})`} className="ui-level-burst__hair" />
+        ))}
       </>
     ),
-  },
-  seal: {
-    outline: star(16, 134, 114),
-    inner: 'M0 -100 A100 100 0 1 1 -0.1 -100 Z',
-  },
-  hex: {
-    outline: `M${points(6, 128).join(' L')} Z`,
-    inner: `M${points(6, 114).join(' L')} Z`,
-    detail: <circle r="142" className="ui-level-burst__progress" pathLength={100} />,
   },
   slab: {
     outline: 'M-100 -122 L136 -122 L104 122 L-132 122 Z',
@@ -89,14 +103,7 @@ const EMBLEM: Record<Emblem, { outline: string; inner?: string; detail?: React.R
   },
   sigil: {
     outline: 'M0 -126 A126 126 0 1 1 -0.1 -126 Z',
-    detail: (
-      <>
-        <path d={`M${[0, 2, 4, 1, 3].map((i) => points(5, 116)[i]).join(' L')} Z`} className="ui-level-burst__faint" />
-        {/* The eye over it all, at the circle's head. */}
-        <path d="M-22 -138 Q0 -152 22 -138 Q0 -124 -22 -138 Z" className="ui-level-burst__hair" />
-        <circle cx="0" cy="-138" r="4.5" className="ui-level-burst__stud" />
-      </>
-    ),
+    detail: <path d={`M${[0, 2, 4, 1, 3].map((i) => points(5, 116)[i]).join(' L')} Z`} className="ui-level-burst__faint" />,
   },
 };
 
@@ -107,10 +114,232 @@ const SPARKS = Array.from({ length: 26 }, (_, i) => {
   return { x: Math.cos(a) * d, y: Math.sin(a) * d, size: 2 + (i % 4), delay: (i % 5) * 0.03 };
 });
 
+/**
+ * A tentacle along +x from its root at the origin: its spine swings in a wave and coils at the tip,
+ * the limb tapers from a thick root, and suckers run along its underside.
+ */
+const tentacle = (length: number, width: number, sway: number, curl: number) => {
+  const steps = 48;
+  const spine: { x: number; y: number; a: number; t: number }[] = [];
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    const a = sway * Math.sin(t * Math.PI * 1.5) + curl * t ** 3 * Math.PI * 2.1;
+    spine.push({ x, y, a, t });
+    x += (Math.cos(a) * length) / steps;
+    y += (Math.sin(a) * length) / steps;
+  }
+  const w = (t: number) => width * (1 - t) ** 0.85 + 0.5;
+  const side = (k: number) => spine.map((p) => `${(p.x - Math.sin(p.a) * w(p.t) * k).toFixed(1)} ${(p.y + Math.cos(p.a) * w(p.t) * k).toFixed(1)}`);
+  const d = `M${side(1).join(' L')} L${side(-1).reverse().join(' L')} Z`;
+  // Suckers on the side the tip coils towards.
+  const under = curl > 0 ? 1 : -1;
+  const suckers = spine
+    .filter((p, i) => i % 3 === 0 && p.t > 0.1 && p.t < 0.78)
+    .map((p) => ({
+      x: p.x - Math.sin(p.a) * w(p.t) * 0.5 * under,
+      y: p.y + Math.cos(p.a) * w(p.t) * 0.5 * under,
+      r: Math.max(0.9, w(p.t) * 0.3),
+    }));
+  return { d, suckers };
+};
+
+/** One side's limbs, top to bottom: where each roots on the circle and its build. */
+const LIMBS = [
+  { turn: 52, length: 150, width: 12, sway: 0.34, curl: 0.62 },
+  { turn: 82, length: 172, width: 13, sway: 0.3, curl: 0.58 },
+  { turn: 112, length: 164, width: 13, sway: 0.32, curl: 0.6 },
+  { turn: 142, length: 140, width: 11, sway: 0.36, curl: 0.66 },
+];
+
+/**
+ * The tentacles crawling out of the sigil's circle, four on each side — the left a mirror of the
+ * right, evenly spaced, clear of the eye above and the words below — each coiling away from them.
+ */
+const SIGIL_TENTACLES = [1, -1].flatMap((side) =>
+  LIMBS.map((limb, i) => {
+    const turn = side > 0 ? limb.turn : 360 - limb.turn;
+    const a = ((turn - 90) * Math.PI) / 180;
+    return {
+      x: Math.cos(a) * 125,
+      y: Math.sin(a) * 125,
+      turn: turn - 90,
+      limb: tentacle(limb.length, limb.width, -side * limb.sway, -side * limb.curl),
+      delay: i * 0.08,
+      sway: 4,
+    };
+  }),
+);
+
+/** Tentacles growing out of the circle as the number changes, then swaying, lit by a sick glow. */
+const Tentacles: React.FC<{ delay: number; still: boolean }> = ({ delay, still }) => (
+  <>
+    <circle r="190" className="ui-level-burst__eldritch" />
+    {(['aura', 'glow', 'flesh'] as const).map((layer) => (
+      <g key={layer} className={`ui-level-burst__tentacles ui-level-burst__tentacles--${layer}`}>
+        {SIGIL_TENTACLES.map((t, i) => (
+          <g key={i} transform={`translate(${t.x.toFixed(1)} ${t.y.toFixed(1)}) rotate(${t.turn})`}>
+            <g transform={still ? undefined : 'scale(0)'}>
+              {!still && (
+                <>
+                  <animateTransform
+                    attributeName="transform"
+                    type="scale"
+                    from="0"
+                    to="1"
+                    begin={`${(delay + t.delay).toFixed(2)}s`}
+                    dur="1.3s"
+                    fill="freeze"
+                    calcMode="spline"
+                    keyTimes="0;1"
+                    keySplines="0.2 0.8 0.3 1"
+                  />
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    values={`0;${t.sway};${-t.sway};0`}
+                    begin={`${(delay + t.delay + 1.3).toFixed(2)}s`}
+                    dur={`${5 + (i % 4) * 0.6}s`}
+                    repeatCount="indefinite"
+                    additive="sum"
+                  />
+                </>
+              )}
+              <path d={t.limb.d} />
+              {layer === 'flesh' &&
+                t.limb.suckers.map((s, j) => <circle key={j} cx={s.x.toFixed(1)} cy={s.y.toFixed(1)} r={s.r.toFixed(1)} className="ui-level-burst__sucker" />)}
+            </g>
+          </g>
+        ))}
+      </g>
+    ))}
+  </>
+);
+
+/** The eye over Lovecraft's sigil, opening as the number changes. */
+const Eye: React.FC<{ delay: number }> = ({ delay }) => (
+  <g transform="translate(0 -150)">
+    <motion.g initial={{ scaleY: 0.05 }} animate={{ scaleY: 1 }} transition={{ duration: 0.9, delay, ease: [0.65, 0, 0.35, 1] }}>
+      <path d="M-30 0 Q0 -22 30 0 Q0 22 -30 0 Z" className="ui-level-burst__eye" />
+      <circle r="7.5" className="ui-level-burst__pupil" />
+      <circle r="2.6" className="ui-level-burst__glint-dot" />
+    </motion.g>
+    <path d="M-36 0 Q0 -30 36 0 M-36 0 Q0 30 36 0" className="ui-level-burst__hair" />
+  </g>
+);
+
+const EmblemArt: React.FC<{ kind: Exclude<Emblem, 'none'>; at: (beat: number) => number; still: boolean }> = ({ kind, at, still }) => {
+  const id = useId().replace(/:/g, '');
+  const emblem = EMBLEM[kind];
+  return (
+    <svg viewBox="-150 -150 300 300" aria-hidden>
+      <defs>
+        <filter id={`${id}-halo`} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="6" />
+        </filter>
+        <filter id={`${id}-rim`} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="14" />
+        </filter>
+        <clipPath id={`${id}-inside`}>
+          <path d={emblem.outline} />
+        </clipPath>
+      </defs>
+      {kind === 'sigil' && <Tentacles delay={at(BEAT.swap - 0.1)} still={still} />}
+      <path d={emblem.outline} className="ui-level-burst__fill" />
+      {/* The light gathering inside the edge, and its halo outside. */}
+      <motion.g initial={still ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: at(0.5) }}>
+        <g clipPath={`url(#${id}-inside)`}>
+          <path d={emblem.outline} className="ui-level-burst__rim" filter={`url(#${id}-rim)`} />
+        </g>
+        <path d={emblem.outline} className="ui-level-burst__halo" filter={`url(#${id}-halo)`} />
+      </motion.g>
+      <motion.path
+        d={emblem.outline}
+        className="ui-level-burst__line"
+        initial={still ? false : { pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.8, delay: at(BEAT.draw), ease: [0.4, 0, 0.2, 1] }}
+      />
+      {emblem.inner && (
+        <motion.path
+          d={emblem.inner}
+          className="ui-level-burst__inner"
+          initial={still ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: at(0.5) }}
+        />
+      )}
+      <motion.g initial={still ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: at(0.55) }}>
+        {emblem.detail}
+      </motion.g>
+      {kind === 'sigil' && <Eye delay={at(BEAT.swap)} />}
+    </svg>
+  );
+};
+
+/** The words of the moment, said the setting's way. */
+const Said: React.FC<{ words: Words; text: string; at: (beat: number) => number; still: boolean }> = ({ words, text, at, still }) => {
+  if (words === 'typed')
+    return (
+      <div className="ui-level-burst__words ui-level-burst__words--typed ui-display" aria-label={text}>
+        {[...text].map((char, i) => (
+          <motion.span
+            key={i}
+            aria-hidden
+            initial={still ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.01, delay: at(BEAT.words + i * 0.045) }}
+          >
+            {char}
+          </motion.span>
+        ))}
+        <span className="ui-level-burst__caret" aria-hidden />
+        <motion.span
+          className="ui-level-burst__readout"
+          initial={still ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: at(BEAT.words + text.length * 0.045 + 0.2) }}
+        >
+          Синхронизация завершена · 100%
+        </motion.span>
+      </div>
+    );
+  if (words === 'ribbon')
+    return (
+      <motion.div
+        className="ui-level-burst__ribbon"
+        initial={still ? false : { clipPath: 'inset(0 50% 0 50%)' }}
+        animate={{ clipPath: 'inset(0 0% 0 0%)' }}
+        transition={{ duration: 0.8, delay: at(BEAT.words), ease: [0.22, 1, 0.36, 1] }}
+      >
+        <svg viewBox="0 0 340 64" preserveAspectRatio="none" aria-hidden>
+          {/* The ribbon's tails folded behind its ends, then its face, a hairline along each edge. */}
+          <path d="M0 18 L44 18 L44 58 L0 58 L14 38 Z M340 18 L296 18 L296 58 L340 58 L326 38 Z" className="ui-level-burst__ribbon-tail" />
+          <path d="M30 8 Q170 -2 310 8 L310 50 Q170 40 30 50 Z" className="ui-level-burst__ribbon-face" />
+          <path d="M36 13 Q170 4 304 13 M36 45 Q170 36 304 45" className="ui-level-burst__hair" />
+        </svg>
+        <span className="ui-display">{text}</span>
+      </motion.div>
+    );
+  if (words === 'script')
+    return null;
+  return (
+    <motion.div
+      className={cx('ui-level-burst__words ui-display', words === 'banner' && 'ui-level-burst__words--banner')}
+      initial={still ? false : { opacity: 0, letterSpacing: '0.7em', filter: 'blur(8px)' }}
+      animate={{ opacity: 1, letterSpacing: words === 'banner' ? '0.2em' : '0.24em', filter: 'blur(0px)' }}
+      transition={{ duration: words === 'banner' ? 1.4 : 0.9, delay: at(BEAT.words), ease: [0.22, 1, 0.36, 1] }}
+    >
+      {text}
+      {words === 'banner' && !still && <span className="ui-level-burst__echo" aria-hidden>{text}</span>}
+    </motion.div>
+  );
+};
+
 const Burst: React.FC<{ moment: LevelUpMoment; onDone: () => void }> = ({ moment, onDone }) => {
   const still = !!useReducedMotion();
   const variant = VARIANT[moment.setting];
-  const emblem = EMBLEM[variant.emblem];
   const at = (beat: number) => (still ? 0 : beat);
 
   useEffect(() => {
@@ -121,42 +350,22 @@ const Burst: React.FC<{ moment: LevelUpMoment; onDone: () => void }> = ({ moment
   return (
     <SettingScope setting={moment.setting} className={cx('ui-level-burst', `ui-level-burst--${variant.emblem}`)}>
       <SettingAura setting={moment.setting} />
-      {variant.emblem === 'band' && (
+      {variant.words === 'banner' && (
         <motion.span
           className="ui-level-burst__band"
-          initial={{ scaleY: 0, opacity: 0 }}
-          animate={{ scaleY: 1, opacity: 1 }}
-          transition={{ duration: 0.6, delay: at(BEAT.words - 0.2), ease: [0.22, 1, 0.36, 1] }}
+          // Centred by its own motion: the scale it opens with would replace a CSS shift.
+          initial={{ x: '-50%', scaleY: 0, opacity: 0 }}
+          animate={{ x: '-50%', scaleY: 1, opacity: 1 }}
+          transition={{ duration: 0.7, delay: at(BEAT.words - 0.25), ease: [0.22, 1, 0.36, 1] }}
           aria-hidden
         />
       )}
 
       <div className="ui-level-burst__emblem">
-        <svg viewBox="-150 -150 300 300" aria-hidden>
-          <path d={emblem.outline} className="ui-level-burst__fill" />
-          <motion.path
-            d={emblem.outline}
-            className="ui-level-burst__line"
-            initial={still ? false : { pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 0.8, delay: at(BEAT.draw), ease: [0.4, 0, 0.2, 1] }}
-          />
-          {emblem.inner && (
-            <motion.path
-              d={emblem.inner}
-              className="ui-level-burst__inner"
-              initial={still ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: at(0.5) }}
-            />
-          )}
-          <motion.g initial={still ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: at(0.55) }}>
-            {emblem.detail}
-          </motion.g>
-        </svg>
+        {variant.emblem !== 'none' && <EmblemArt kind={variant.emblem} at={at} still={still} />}
 
         {/* A glint running across the emblem as the number changes. */}
-        {!still && (
+        {!still && variant.emblem !== 'none' && (
           <span className="ui-level-burst__glint-box" aria-hidden>
             <motion.span
               className="ui-level-burst__glint"
@@ -166,6 +375,7 @@ const Burst: React.FC<{ moment: LevelUpMoment; onDone: () => void }> = ({ moment
             />
           </span>
         )}
+        {variant.emblem === 'hex' && !still && <span className="ui-level-burst__scan" aria-hidden />}
 
         <div className="ui-level-burst__number">
           <span className="ui-level-burst__lv">Ур.</span>
@@ -203,28 +413,19 @@ const Burst: React.FC<{ moment: LevelUpMoment; onDone: () => void }> = ({ moment
             />
           ))}
 
-        {variant.script && (
+        {variant.words === 'script' && (
           <motion.span
             className="ui-level-burst__script"
             initial={still ? false : { clipPath: 'inset(-20% 100% -20% 0)' }}
             animate={{ clipPath: 'inset(-20% 0% -20% 0)' }}
             transition={{ duration: 1.1, delay: at(BEAT.words), ease: [0.45, 0, 0.25, 1] }}
           >
-            {variant.words}
+            {variant.text}
           </motion.span>
         )}
       </div>
 
-      {!variant.script && (
-        <motion.div
-          className="ui-level-burst__words ui-display"
-          initial={still ? false : { opacity: 0, letterSpacing: '0.7em', filter: 'blur(8px)' }}
-          animate={{ opacity: 1, letterSpacing: '0.24em', filter: 'blur(0px)' }}
-          transition={{ duration: 0.9, delay: at(BEAT.words), ease: [0.22, 1, 0.36, 1] }}
-        >
-          {variant.words}
-        </motion.div>
-      )}
+      <Said words={variant.words} text={variant.text} at={at} still={still} />
 
       <motion.div
         className="ui-level-burst__step"

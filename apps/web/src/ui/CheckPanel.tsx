@@ -4,6 +4,8 @@ import type { TableCheck, TableDie } from '@itd/schema';
 import { GameIcon } from './GameIcon';
 import { DieGlyph, RollingDie } from './RollingDie';
 import { OUTCOME_LABEL, checkOutcome, outcomeSucceeded } from './checkOutcome';
+import { Astrolabe, STARS } from './art/highFantasy';
+import { useSettingArt } from './ornaments';
 import { cx } from './primitives';
 import { useSetting } from './theme/SettingScope';
 import type { Theme } from './theme/settings';
@@ -11,33 +13,41 @@ import type { Theme } from './theme/settings';
 /**
  * A throw laid out as a game lays out a check: what is checked over a framed plate, the number to
  * reach at the plate's head, the dice tumbling in its middle and the outcome under them, the
- * modifier on a card below and the total under a rule. Each setting frames the plate in its own
- * shape and lays its own weather behind it (fairy dust, a rune ring, a madness cloud).
+ * modifier on cards below and the total under a rule. Each setting has its own plate — Fable's gilt
+ * arch, the grimdark's tome, the Lands Between's bare veil, a starship's readout — lit softly along
+ * its edges, and its own weather behind it.
  */
 
-type Shape = 'arch' | 'gothic' | 'cut' | 'deco';
+type Plate = 'arch' | 'fable' | 'tome' | 'veil' | 'hud' | 'cut' | 'deco';
 
-const SHAPE: Record<Theme, Shape> = {
-  fable: 'arch',
+const PLATE: Record<Theme, Plate> = {
+  fable: 'fable',
   'high-fantasy': 'arch',
   service: 'arch',
-  'elden-ring': 'gothic',
-  'dark-fantasy': 'gothic',
-  'sci-fi': 'cut',
+  'elden-ring': 'veil',
+  'dark-fantasy': 'tome',
+  'sci-fi': 'hud',
   cyberpunk: 'cut',
   lovecraft: 'deco',
 };
 
+const ARCH = 'M38 122 C38 52 104 22 180 22 C256 22 322 52 322 122 L322 346 C322 410 256 438 180 438 C104 438 38 410 38 346 Z';
+
 /** The plate's outline on a 360 × 460 grid. */
-const OUTLINE: Record<Shape, string> = {
-  arch: 'M38 122 C38 52 104 22 180 22 C256 22 322 52 322 122 L322 346 C322 410 256 438 180 438 C104 438 38 410 38 346 Z',
-  gothic: 'M62 150 C62 98 112 52 180 22 C248 52 298 98 298 150 L298 398 L274 430 L86 430 L62 398 Z',
+const OUTLINE: Record<Plate, string> = {
+  arch: ARCH,
+  fable: ARCH,
+  tome: 'M40 34 L320 34 L320 432 L40 432 Z',
+  veil: 'M0 18 L360 18 L360 442 L0 442 Z',
+  hud: 'M64 30 L296 30 L324 58 L324 404 L296 432 L64 432 L36 404 L36 58 Z',
   cut: 'M74 24 L286 24 L316 54 L316 404 L286 434 L74 434 L44 404 L44 54 Z',
   deco: 'M48 96 L48 432 L312 432 L312 96 L290 96 L290 70 L262 70 L262 46 L226 46 L226 24 L134 24 L134 46 L98 46 L98 70 L70 70 L70 96 Z',
 };
 
-/** Where the rule between the target and the dice runs, as a fraction of the plate's height. */
+/** Where the rule between the target and the dice runs. */
 const BAND_Y = 172;
+/** The middle of the dice. */
+const DICE_Y = 278;
 
 const mirrorX = 'matrix(-1 0 0 1 360 0)';
 const mirrorY = 'matrix(1 0 0 -1 0 460)';
@@ -53,238 +63,369 @@ const Corners: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </>
 );
 
-/** The ornaments of each shape, drawn in the frame's colour. */
-const Ornaments: React.FC<{ shape: Shape; setting: Theme }> = ({ shape, setting }) => {
-  if (shape === 'arch')
-    return (
-      <>
-        {/* A hook sweeping out of each corner and curling back, as a storybook's page frame. */}
-        <Corners>
-          <path d="M38 140 C18 140 4 126 4 106 C4 90 16 82 26 88 C34 93 32 104 24 105" className="ui-check__hair" />
-          <path d="M50 84 C34 70 36 48 54 38" className="ui-check__hair" />
-          <path d="M38 160 C26 168 22 180 26 192" className="ui-check__hair" />
-          <circle cx="24" cy="105" r="2.6" className="ui-check__dot" />
-        </Corners>
-        {setting === 'fable' && (
-          // Fable's vines: a tendril winding down each side, a leaf on it.
-          <>
-            {[undefined, mirrorX].map((transform, i) => (
-              <g key={i} transform={transform}>
-                <path d="M34 200 C16 218 16 248 32 262 C44 272 42 290 28 296" className="ui-check__hair" />
-                <path d="M20 240 C10 234 8 224 14 218 C20 224 22 232 20 240 Z" className="ui-check__leaf" />
-                <path d="M30 276 C40 274 46 266 44 258 C38 262 32 268 30 276 Z" className="ui-check__leaf" />
-                <path d="M32 304 C18 320 20 340 36 348" className="ui-check__hair" />
-              </g>
-            ))}
-          </>
-        )}
-        {/* The rule: a band of knots between two hairlines, with a stud where it meets each side. */}
-        <path d={`M30 ${BAND_Y - 6} L330 ${BAND_Y - 6} M30 ${BAND_Y + 6} L330 ${BAND_Y + 6}`} className="ui-check__hair" />
-        <path
-          d={Array.from({ length: 25 }, (_, i) => {
-            const x = 42.5 + i * 11;
-            return `M${x} ${BAND_Y} L${x + 5.5} ${BAND_Y - 4} L${x + 11} ${BAND_Y} L${x + 5.5} ${BAND_Y + 4} Z`;
-          }).join(' ')}
-          className="ui-check__knot"
-        />
-        {[28, 332].map((x) => (
-          <circle key={x} cx={x} cy={BAND_Y} r="6" className="ui-check__stud" />
-        ))}
-        <path d="M180 10 L186 18 L180 26 L174 18 Z" className="ui-check__stud" />
-      </>
-    );
-  if (shape === 'gothic')
-    return (
-      <>
-        {/* A thin spire over the apex and a bead at each foot: the gilt line work of the Lands Between,
-            or the grimdark's bracketed iron. */}
-        <path d="M180 22 L180 4 M172 12 L188 12" className="ui-check__hair" />
-        <circle cx="180" cy="22" r="3.4" className="ui-check__stud" />
-        <Corners>
-          <path d="M62 196 L44 214 L44 250" className="ui-check__hair" />
-          <circle cx="44" cy="252" r="2.6" className="ui-check__dot" />
-        </Corners>
-        {setting === 'dark-fantasy' && (
-          <Corners>
-            <path d="M62 150 L40 128 L62 140 Z" className="ui-check__stud" />
-          </Corners>
-        )}
-        <path d={`M62 ${BAND_Y} L160 ${BAND_Y} M200 ${BAND_Y} L298 ${BAND_Y}`} className="ui-check__hair" />
-        <path d={`M180 ${BAND_Y - 9} L189 ${BAND_Y} L180 ${BAND_Y + 9} L171 ${BAND_Y} Z`} className="ui-check__stud" />
-      </>
-    );
-  if (shape === 'cut')
-    return (
-      <>
-        {/* Readout ticks down the sides and brackets in the cut corners. */}
-        {[44, 316].map((x) => (
-          <path
-            key={x}
-            d={Array.from({ length: 9 }, (_, i) => `M${x} ${210 + i * 18} L${x + (x < 180 ? -8 : 8)} ${210 + i * 18}`).join(' ')}
-            className="ui-check__hair"
-          />
-        ))}
-        <Corners>
-          <path d="M60 14 L30 14 L30 44" className="ui-check__hair" />
-        </Corners>
-        <path d={`M44 ${BAND_Y} L150 ${BAND_Y} M210 ${BAND_Y} L316 ${BAND_Y}`} className="ui-check__hair" />
-        <path d={`M156 ${BAND_Y - 4} L204 ${BAND_Y - 4} L204 ${BAND_Y + 4} L156 ${BAND_Y + 4} Z`} className="ui-check__stud" />
-        {setting === 'cyberpunk' && (
-          // A hazard hatch in the top right cut.
-          <path
-            d={Array.from({ length: 5 }, (_, i) => `M${250 + i * 9} 24 L${262 + i * 9} 24 L${254 + i * 9} 34 L${242 + i * 9} 34 Z`).join(' ')}
-            className="ui-check__stud"
-          />
-        )}
-      </>
-    );
+/** A four-pointed sparkle, Fable's mark. */
+const spark = (x: number, y: number, r: number) =>
+  `M${x} ${y - r} Q${x + r * 0.16} ${y - r * 0.16} ${x + r} ${y} Q${x + r * 0.16} ${y + r * 0.16} ${x} ${y + r} Q${x - r * 0.16} ${y + r * 0.16} ${x - r} ${y} Q${x - r * 0.16} ${y - r * 0.16} ${x} ${y - r} Z`;
+
+/** High fantasy: hooks curling out of the corners, a band of knots across. */
+const ArchOrnaments: React.FC = () => (
+  <>
+    <Corners>
+      <path d="M38 140 C18 140 4 126 4 106 C4 90 16 82 26 88 C34 93 32 104 24 105" className="ui-check__hair" />
+      <path d="M50 84 C34 70 36 48 54 38" className="ui-check__hair" />
+      <circle cx="24" cy="105" r="2.6" className="ui-check__dot" />
+    </Corners>
+    <path d={`M30 ${BAND_Y - 6} L330 ${BAND_Y - 6} M30 ${BAND_Y + 6} L330 ${BAND_Y + 6}`} className="ui-check__hair" />
+    <path
+      d={Array.from({ length: 25 }, (_, i) => {
+        const x = 42.5 + i * 11;
+        return `M${x} ${BAND_Y} L${x + 5.5} ${BAND_Y - 4} L${x + 11} ${BAND_Y} L${x + 5.5} ${BAND_Y + 4} Z`;
+      }).join(' ')}
+      className="ui-check__knot"
+    />
+    {[28, 332].map((x) => (
+      <circle key={x} cx={x} cy={BAND_Y} r="6" className="ui-check__stud" />
+    ))}
+    <path d="M180 10 L186 18 L180 26 L174 18 Z" className="ui-check__stud" />
+  </>
+);
+
+/**
+ * Fable: the storybook's gilt — a scroll curling at each corner with a leaf on it, a vine of
+ * hairlines tapering from a sparkle across the middle, a sparkle at the crown.
+ */
+const FableOrnaments: React.FC = () => (
+  <>
+    <Corners>
+      <path d="M44 104 C26 104 14 92 16 78 C18 66 30 62 37 69 C43 75 39 84 32 83" className="ui-check__gilt-hair" />
+      <path d="M44 104 C30 112 26 128 34 142" className="ui-check__gilt-hair" />
+      <path d="M24 122 C14 118 10 108 14 100 C22 104 26 112 24 122 Z" className="ui-check__leaf" />
+    </Corners>
+    {/* The vine: two hairlines swelling from the sides into the sparkle, a pair of leaves on each. */}
+    <path d={`M40 ${BAND_Y} Q110 ${BAND_Y - 5} 164 ${BAND_Y} Q110 ${BAND_Y + 5} 40 ${BAND_Y} Z`} className="ui-check__gilt-fill" />
+    <path d={`M320 ${BAND_Y} Q250 ${BAND_Y - 5} 196 ${BAND_Y} Q250 ${BAND_Y + 5} 320 ${BAND_Y} Z`} className="ui-check__gilt-fill" />
+    {[96, 128, 232, 264].map((x, i) => (
+      <path
+        key={x}
+        d={`M${x} ${BAND_Y} C${x + (i < 2 ? 4 : -4)} ${BAND_Y - 10} ${x + (i < 2 ? 14 : -14)} ${BAND_Y - 12} ${x + (i < 2 ? 18 : -18)} ${BAND_Y - 10} C${x + (i < 2 ? 12 : -12)} ${BAND_Y - 4} ${x + (i < 2 ? 6 : -6)} ${BAND_Y - 1} ${x} ${BAND_Y} Z`}
+        className="ui-check__leaf"
+      />
+    ))}
+    <path d={spark(180, BAND_Y, 13)} className="ui-check__spark" />
+    <path d={spark(180, 22, 9)} className="ui-check__spark" />
+    <path d={spark(180, 438, 7)} className="ui-check__spark" />
+  </>
+);
+
+/** The grimdark's tome: the setting's own gothic corners and arched crest, a cross on the rule. */
+const TomeOrnaments: React.FC = () => {
+  const art = useSettingArt();
   return (
     <>
-      {/* Art deco: a sunburst fanning out over the stepped crown, and triple rules. */}
-      {/* The sunburst rises from the rule behind the number, faint. */}
-      <path
-        d={Array.from({ length: 11 }, (_, i) => {
-          const a = Math.PI * (0.12 + (i * 0.76) / 10);
-          return `M${180 - Math.cos(a) * 30} ${BAND_Y - 10 - Math.sin(a) * 30} L${180 - Math.cos(a) * 112} ${BAND_Y - 10 - Math.sin(a) * 112}`;
-        }).join(' ')}
-        className="ui-check__hair ui-check__rays"
-      />
-      <path d={`M48 ${BAND_Y - 6} L312 ${BAND_Y - 6} M48 ${BAND_Y} L312 ${BAND_Y} M48 ${BAND_Y + 6} L312 ${BAND_Y + 6}`} className="ui-check__hair" />
-      <Corners>
-        <path d="M48 432 L30 450 M48 412 L20 440" className="ui-check__hair" />
-      </Corners>
+      <path d="M50 44 L310 44 L310 422 L50 422 Z" className="ui-check__inner-line" />
+      {art.corner && (
+        <Corners>
+          <svg x="30" y="24" width="46" height="46" viewBox={art.corner.viewBox} className="ui-check__art">
+            {art.corner.art}
+          </svg>
+        </Corners>
+      )}
+      {art.crest && (
+        <svg x="70" y="-6" width="220" height="44" viewBox={art.crest.viewBox} className="ui-check__art">
+          {art.crest.art}
+        </svg>
+      )}
+      <path d={`M58 ${BAND_Y} L150 ${BAND_Y} M210 ${BAND_Y} L302 ${BAND_Y}`} className="ui-check__hair" />
+      <g transform={`translate(151 ${BAND_Y - 7})`} className="ui-check__art">
+        {art.ruleMark}
+      </g>
     </>
   );
 };
 
+/** The Lands Between: no frame at all — gilt hairlines fading out at both ends, a lozenge on each. */
+const VeilOrnaments: React.FC<{ id: string }> = ({ id }) => (
+  <>
+    <defs>
+      <linearGradient id={`${id}-fade`} x1="0" x2="1">
+        <stop offset="0" stopColor="currentColor" stopOpacity="0" />
+        <stop offset="0.5" stopColor="currentColor" stopOpacity="1" />
+        <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+      </linearGradient>
+    </defs>
+    {[18, 24, BAND_Y, 436, 442].map((y) => (
+      <rect key={y} x="10" y={y - 0.5} width="340" height={y === 24 || y === 436 ? 0.6 : 1.2} fill={`url(#${id}-fade)`} className="ui-check__veil-line" />
+    ))}
+    {[21, BAND_Y, 439].map((y) => (
+      <path key={y} d={`M180 ${y - 6} L185 ${y} L180 ${y + 6} L175 ${y} Z`} className="ui-check__stud" />
+    ))}
+  </>
+);
+
+/** A starship's readout: brackets standing off the corners, tick ladders, a reticle round the dice. */
+const HudOrnaments: React.FC = () => (
+  <>
+    <Corners>
+      <path d="M22 70 L22 16 L76 16" className="ui-check__hair" />
+      <path d="M22 16 L30 16 L22 24 Z" className="ui-check__stud" />
+    </Corners>
+    {[36, 324].map((x) => (
+      <path
+        key={x}
+        d={Array.from({ length: 13 }, (_, i) => `M${x} ${206 + i * 12} L${x + (x < 180 ? -(i % 4 ? 5 : 10) : i % 4 ? 5 : 10)} ${206 + i * 12}`).join(' ')}
+        className="ui-check__hair ui-check__hair--thin"
+      />
+    ))}
+    <path d={`M36 ${BAND_Y} L148 ${BAND_Y} M212 ${BAND_Y} L324 ${BAND_Y}`} className="ui-check__hair ui-check__hair--thin" />
+    {[156, 166, 176, 186, 196].map((x, i) => (
+      <rect key={x} x={x} y={BAND_Y - 2.5} width="7" height="5" className={cx('ui-check__segment', i < 3 && 'ui-check__segment--on')} />
+    ))}
+    {/* The reticle: a ring with four ticks, an arc turning round it. */}
+    <circle cx="180" cy={DICE_Y} r="76" className="ui-check__hair ui-check__hair--thin" />
+    {[0, 90, 180, 270].map((turn) => (
+      <path key={turn} d={`M180 ${DICE_Y - 84} L180 ${DICE_Y - 70}`} transform={`rotate(${turn} 180 ${DICE_Y})`} className="ui-check__hair" />
+    ))}
+    <circle cx="180" cy={DICE_Y} r="86" className="ui-check__reticle-arc" style={{ transformOrigin: `180px ${DICE_Y}px` }} />
+    <path d="M128 30 L140 18 L220 18 L232 30" className="ui-check__hair" />
+  </>
+);
+
+const CutOrnaments: React.FC = () => (
+  <>
+    {[44, 316].map((x) => (
+      <path
+        key={x}
+        d={Array.from({ length: 9 }, (_, i) => `M${x} ${210 + i * 18} L${x + (x < 180 ? -8 : 8)} ${210 + i * 18}`).join(' ')}
+        className="ui-check__hair"
+      />
+    ))}
+    <Corners>
+      <path d="M60 14 L30 14 L30 44" className="ui-check__hair" />
+    </Corners>
+    <path d={`M44 ${BAND_Y} L150 ${BAND_Y} M210 ${BAND_Y} L316 ${BAND_Y}`} className="ui-check__hair" />
+    <path d={`M156 ${BAND_Y - 4} L204 ${BAND_Y - 4} L204 ${BAND_Y + 4} L156 ${BAND_Y + 4} Z`} className="ui-check__stud" />
+    <path
+      d={Array.from({ length: 5 }, (_, i) => `M${250 + i * 9} 24 L${262 + i * 9} 24 L${254 + i * 9} 34 L${242 + i * 9} 34 Z`).join(' ')}
+      className="ui-check__stud"
+    />
+  </>
+);
+
+const DecoOrnaments: React.FC = () => (
+  <>
+    <path
+      d={Array.from({ length: 11 }, (_, i) => {
+        const a = Math.PI * (0.12 + (i * 0.76) / 10);
+        return `M${180 - Math.cos(a) * 30} ${BAND_Y - 10 - Math.sin(a) * 30} L${180 - Math.cos(a) * 112} ${BAND_Y - 10 - Math.sin(a) * 112}`;
+      }).join(' ')}
+      className="ui-check__hair ui-check__rays"
+    />
+    <path d={`M48 ${BAND_Y - 6} L312 ${BAND_Y - 6} M48 ${BAND_Y} L312 ${BAND_Y} M48 ${BAND_Y + 6} L312 ${BAND_Y + 6}`} className="ui-check__hair" />
+    <Corners>
+      <path d="M48 432 L30 450 M48 412 L20 440" className="ui-check__hair" />
+    </Corners>
+  </>
+);
+
+/**
+ * The light along the plate's edge: a soft halo round the line and a glow gathering inside it, so
+ * the plate reads as lit glass rather than a drawn outline.
+ */
+const EdgeLight: React.FC<{ id: string; d: string }> = ({ id, d }) => (
+  <>
+    <defs>
+      <filter id={`${id}-halo`} x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="5" />
+      </filter>
+      <filter id={`${id}-rim`} x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="16" />
+      </filter>
+      <clipPath id={`${id}-inside`}>
+        <path d={d} />
+      </clipPath>
+    </defs>
+    <g clipPath={`url(#${id}-inside)`}>
+      <path d={d} className="ui-check__rim" filter={`url(#${id}-rim)`} />
+    </g>
+    <path d={d} className="ui-check__halo" filter={`url(#${id}-halo)`} />
+  </>
+);
+
 /** The plate itself, drawn in as it appears. */
-const Frame: React.FC<{ shape: Shape; setting: Theme }> = ({ shape, setting }) => {
+const Frame: React.FC<{ plate: Plate }> = ({ plate }) => {
+  const id = useId().replace(/:/g, '');
   const still = !!useReducedMotion();
+  const d = OUTLINE[plate];
   const draw = still
     ? {}
-    : { initial: { pathLength: 0, opacity: 0 }, animate: { pathLength: 1, opacity: 1 }, transition: { duration: 0.9, ease: [0.4, 0, 0.2, 1] as const } };
+    : { initial: { pathLength: 0, opacity: 0 }, animate: { pathLength: 1, opacity: 1 }, transition: { duration: 1, ease: [0.4, 0, 0.2, 1] as const } };
   return (
     <svg viewBox="0 0 360 460" className="ui-check__frame" aria-hidden>
-      <path d={OUTLINE[shape]} className="ui-check__plate" />
-      <motion.path d={OUTLINE[shape]} className="ui-check__line" {...draw} />
-      <path d={OUTLINE[shape]} className="ui-check__inner" transform="translate(180 230) scale(0.95 0.965) translate(-180 -230)" />
+      <defs>
+        <linearGradient id={`${id}-gilt`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="rgb(255 241 200)" />
+          <stop offset="0.35" stopColor="rgb(var(--c-frame-bright))" />
+          <stop offset="0.7" stopColor="rgb(var(--c-frame))" />
+          <stop offset="1" stopColor="rgb(var(--c-frame-bright))" />
+        </linearGradient>
+      </defs>
+      {plate !== 'veil' && <EdgeLight id={id} d={d} />}
+      {plate !== 'veil' && (
+        <motion.path d={d} className="ui-check__line" style={plate === 'fable' ? { stroke: `url(#${id}-gilt)` } : undefined} {...draw} />
+      )}
+      {(plate === 'arch' || plate === 'fable' || plate === 'cut' || plate === 'deco' || plate === 'hud') && (
+        <path d={d} className="ui-check__inner" transform="translate(180 230) scale(0.95 0.965) translate(-180 -230)" />
+      )}
       <motion.g
         initial={still ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: still ? 0 : 0.45 }}
+        transition={{ duration: 0.7, delay: still ? 0 : 0.45 }}
+        style={plate === 'fable' ? ({ '--gilt': `url(#${id}-gilt)` } as React.CSSProperties) : undefined}
       >
-        <Ornaments shape={shape} setting={setting} />
+        {plate === 'arch' && <ArchOrnaments />}
+        {plate === 'fable' && <FableOrnaments />}
+        {plate === 'tome' && <TomeOrnaments />}
+        {plate === 'veil' && <VeilOrnaments id={id} />}
+        {plate === 'hud' && <HudOrnaments />}
+        {plate === 'cut' && <CutOrnaments />}
+        {plate === 'deco' && <DecoOrnaments />}
       </motion.g>
     </svg>
   );
 };
 
-/** Motes for the weathers that drift: their place, size and the beat they keep. */
-const MOTES = Array.from({ length: 22 }, (_, i) => ({
-  x: (i * 37 + 11) % 100,
-  y: (i * 61 + 23) % 100,
-  size: 2 + ((i * 7) % 4),
-  delay: (i * 0.37) % 3.2,
-  duration: 3.2 + ((i * 13) % 5) * 0.5,
-}));
+/** A repeatable pseudo-random sequence, so the weather is the same on every render. */
+const random = (seed: number) => () => {
+  seed = (seed * 16807) % 2147483647;
+  return seed / 2147483647;
+};
+
+/** Motes adrift: their place, size, softness and the beat they keep. */
+const motes = (count: number, seed: number) => {
+  const next = random(seed);
+  return Array.from({ length: count }, () => ({
+    x: next() * 100,
+    y: next() * 100,
+    size: 1.5 + next() * 4.5,
+    blur: next() < 0.35 ? 1 + next() * 2.5 : 0,
+    delay: -next() * 8,
+    duration: 6 + next() * 7,
+  }));
+};
+const DUST = motes(34, 7);
+const RISING = motes(26, 31);
+
+const Motes: React.FC<{ list: ReturnType<typeof motes> }> = ({ list }) => (
+  <>
+    {list.map((mote, i) => (
+      <span
+        key={i}
+        className="ui-check-aura__mote"
+        style={{
+          left: `${mote.x}%`,
+          top: `${mote.y}%`,
+          width: mote.size,
+          height: mote.size,
+          filter: mote.blur ? `blur(${mote.blur}px)` : undefined,
+          animationDelay: `${mote.delay}s`,
+          animationDuration: `${mote.duration}s`,
+        }}
+      />
+    ))}
+  </>
+);
+
+/** A four-pointed star of the atlas. */
+const starPoint = (x: number, y: number, r: number) =>
+  `M${x} ${y - r} L${x + r * 0.28} ${y - r * 0.28} L${x + r} ${y} L${x + r * 0.28} ${y + r * 0.28} L${x} ${y + r} L${x - r * 0.28} ${y + r * 0.28} L${x - r} ${y} L${x - r * 0.28} ${y - r * 0.28} Z`;
+
+/** Constellations round the plate, in the margins where the plate leaves the sky. */
+const CONSTELLATIONS: { stars: [number, number][] }[] = [
+  { stars: [[34, 96], [58, 70], [86, 82], [104, 52]] },
+  { stars: [[300, 60], [326, 92], [356, 84], [372, 118], [348, 140]] },
+  { stars: [[30, 330], [52, 360], [40, 398], [72, 420]] },
+  { stars: [[318, 380], [350, 362], [372, 396], [342, 430]] },
+  { stars: [[150, 488], [184, 500], [222, 486], [250, 504]] },
+];
 
 /** The setting's weather behind a moment (a check's plate, a new level): half-seen, so the table shows through. */
 export const SettingAura: React.FC<{ setting: Theme }> = ({ setting }) => {
   const id = useId().replace(/:/g, '');
   switch (setting) {
     case 'lovecraft':
-      // The madness cloud: fog boiling round the plate's edges, tendrils of it reaching in, the
-      // middle left clear for the dice.
-      return (
-        <span className="ui-check-aura ui-check-aura--madness" aria-hidden>
-          <svg viewBox="0 0 400 520" preserveAspectRatio="none">
-            <defs>
-              <filter id={`${id}-boil`} x="-20%" y="-20%" width="140%" height="140%">
-                <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="3" seed="7">
-                  <animate attributeName="baseFrequency" dur="14s" values="0.012 0.018;0.017 0.012;0.012 0.018" repeatCount="indefinite" />
-                </feTurbulence>
-                <feDisplacementMap in="SourceGraphic" scale="46" />
-                <feGaussianBlur stdDeviation="3" />
-              </filter>
-              <radialGradient id={`${id}-clear`} cx="50%" cy="52%" r="50%">
-                <stop offset="0.5" stopColor="#000" />
-                <stop offset="0.85" stopColor="#fff" />
-                <stop offset="1" stopColor="#000" />
-              </radialGradient>
-              <mask id={`${id}-edges`}>
-                <rect width="400" height="520" fill={`url(#${id}-clear)`} />
-              </mask>
-            </defs>
-            <g mask={`url(#${id}-edges)`} filter={`url(#${id}-boil)`}>
-              <ellipse cx="200" cy="260" rx="186" ry="246" className="ui-check-aura__fog" />
-              <ellipse cx="200" cy="260" rx="150" ry="205" className="ui-check-aura__fog ui-check-aura__fog--deep" />
-              {Array.from({ length: 9 }, (_, i) => {
-                const a = (i / 9) * Math.PI * 2 + 0.3;
-                const x = 200 + Math.cos(a) * 210;
-                const y = 260 + Math.sin(a) * 270;
-                const cx = 200 + Math.cos(a + 0.5) * 120;
-                const cy = 260 + Math.sin(a + 0.5) * 150;
-                return <path key={i} d={`M${x} ${y} Q${cx} ${cy} ${200 + Math.cos(a) * 95} ${260 + Math.sin(a) * 120}`} className="ui-check-aura__tendril" />;
-              })}
-            </g>
-          </svg>
-        </span>
-      );
+      // The table of Lovecraft keeps a check bare: nothing behind the plate.
+      return null;
     case 'high-fantasy':
     case 'service':
-      // A ring of runes turning slowly in a warm glow.
+      // The atlas of the sky the setting's screens are drawn on: its astrolabe turning slowly round
+      // the plate, a field of stars, constellations lit star by star.
       return (
-        <span className="ui-check-aura ui-check-aura--runes" aria-hidden>
-          <svg viewBox="-100 -100 200 200" className="ui-check-aura__ring">
-            <circle r="92" className="ui-check-aura__line" />
-            <circle r="84" className="ui-check-aura__line ui-check-aura__line--dash" />
-            <circle r="58" className="ui-check-aura__line" />
-            {Array.from({ length: 24 }, (_, i) => (
-              <path key={i} d="M0 -87 L1.5 -84.5 L0 -82 L-1.5 -84.5 Z" transform={`rotate(${i * 15})`} className="ui-check-aura__rune" />
+        <span className="ui-check-aura ui-check-aura--sky" aria-hidden>
+          <span className="ui-check-aura__stars" style={{ background: STARS }} />
+          <span className="ui-check-aura__astrolabe">
+            <Astrolabe />
+          </span>
+          <svg viewBox="0 0 400 520" preserveAspectRatio="xMidYMid meet" className="ui-check-aura__constellations">
+            {CONSTELLATIONS.map((c, i) => (
+              <g key={i}>
+                <path d={`M${c.stars.map(([x, y]) => `${x} ${y}`).join(' L')}`} className="ui-check-aura__lines" style={{ animationDelay: `${i * 0.6}s` }} />
+                {c.stars.map(([x, y], j) => (
+                  <path key={j} d={starPoint(x, y, j === 0 ? 4.2 : 2.8)} className="ui-check-aura__star" style={{ animationDelay: `${-(i * 1.3 + j * 0.7)}s` }} />
+                ))}
+              </g>
             ))}
           </svg>
         </span>
       );
     case 'elden-ring':
-      // Grace: rays of gold turning behind the plate.
-      return <span className="ui-check-aura ui-check-aura--grace" aria-hidden />;
-    case 'sci-fi':
-      // Scanner rings counter-rotating, a sweep going round.
+      // Grace: a golden haze, motes of it rising slowly.
       return (
-        <span className="ui-check-aura ui-check-aura--scan" aria-hidden>
-          <svg viewBox="-100 -100 200 200" className="ui-check-aura__ring">
-            <circle r="94" className="ui-check-aura__line ui-check-aura__line--dash" />
-            <circle r="78" className="ui-check-aura__line ui-check-aura__line--arc" />
-            <circle r="62" className="ui-check-aura__line ui-check-aura__line--dash" />
-          </svg>
-          <span className="ui-check-aura__sweep" />
+        <span className="ui-check-aura ui-check-aura--grace" aria-hidden>
+          <Motes list={RISING} />
         </span>
       );
+    case 'sci-fi':
+      // A projection's glow over a faint grid of points, its scanlines.
+      return <span className="ui-check-aura ui-check-aura--holo" aria-hidden />;
     case 'cyberpunk':
-      // Neon bleeding at the edges, torn by glitch bands.
       return (
         <span className="ui-check-aura ui-check-aura--neon" aria-hidden>
           <span className="ui-check-aura__bands" />
         </span>
       );
-    default:
-      // Fable's fairy dust and the grimdark's embers: motes adrift in a haze.
+    case 'dark-fantasy':
+      // Smoke curling from below, embers rising through it, a fire's red light under it all.
       return (
-        <span className={cx('ui-check-aura', setting === 'fable' ? 'ui-check-aura--dust' : 'ui-check-aura--embers')} aria-hidden>
-          {MOTES.map((mote, i) => (
-            <span
-              key={i}
-              className="ui-check-aura__mote"
-              style={{
-                left: `${mote.x}%`,
-                top: `${mote.y}%`,
-                width: mote.size,
-                height: mote.size,
-                animationDelay: `${mote.delay}s`,
-                animationDuration: `${mote.duration}s`,
-              }}
-            />
-          ))}
+        <span className="ui-check-aura ui-check-aura--embers" aria-hidden>
+          <svg viewBox="0 0 400 520" preserveAspectRatio="none">
+            <defs>
+              <filter id={`${id}-smoke`} x="-20%" y="-20%" width="140%" height="140%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.011 0.02" numOctaves="4" seed="21">
+                  <animate attributeName="baseFrequency" dur="16s" values="0.011 0.02;0.015 0.016;0.011 0.02" repeatCount="indefinite" />
+                </feTurbulence>
+                <feColorMatrix values="0 0 0 0 0.08  0 0 0 0 0.05  0 0 0 0 0.04  0 0 0 1.4 -0.45" />
+                <feGaussianBlur stdDeviation="2" />
+              </filter>
+              <radialGradient id={`${id}-clear`} cx="50%" cy="48%" r="50%">
+                <stop offset="0.3" stopColor="#000" />
+                <stop offset="0.62" stopColor="#fff" />
+                <stop offset="0.98" stopColor="#000" />
+              </radialGradient>
+              <mask id={`${id}-edges`}>
+                <rect width="400" height="520" fill={`url(#${id}-clear)`} />
+              </mask>
+            </defs>
+            <rect width="400" height="520" filter={`url(#${id}-smoke)`} mask={`url(#${id}-edges)`} className="ui-check-aura__smoke" />
+          </svg>
+          <Motes list={RISING} />
+        </span>
+      );
+    default:
+      // Fable's fairy dust drifting in a shaft of light.
+      return (
+        <span className="ui-check-aura ui-check-aura--dust" aria-hidden>
+          <span className="ui-check-aura__shaft" />
+          <Motes list={DUST} />
         </span>
       );
   }
@@ -321,7 +462,7 @@ export const CheckPanel: React.FC<{
   className?: string;
 }> = ({ title, subtitle, dice, check, parts, onRoll, pair, className }) => {
   const setting = useSetting();
-  const shape = SHAPE[setting];
+  const plate = PLATE[setting];
   const [landed, setLanded] = useState(false);
   const waiting = !!onRoll && dice.length === 0;
   const outcome = check && !waiting ? checkOutcome(check) : null;
@@ -332,7 +473,7 @@ export const CheckPanel: React.FC<{
   const cards: CheckPart[] = parts ?? (bonus !== 0 ? [{ label: 'Модификатор', value: bonus, icon: 'rolling-dices' }] : []);
 
   return (
-    <div className={cx('ui-check', `ui-check--${shape}`, className)} data-landed={landed || undefined} data-outcome={landed ? outcome ?? undefined : undefined}>
+    <div className={cx('ui-check', `ui-check--${plate}`, className)} data-landed={landed || undefined} data-outcome={landed ? outcome ?? undefined : undefined}>
       <SettingAura setting={setting} />
       <motion.div
         className="ui-check__head"
@@ -350,8 +491,8 @@ export const CheckPanel: React.FC<{
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
-        <span className="ui-check__glass" style={{ clipPath: `path('${OUTLINE[shape]}')` }} aria-hidden />
-        <Frame shape={shape} setting={setting} />
+        <span className="ui-check__glass" style={{ clipPath: `path('${OUTLINE[plate]}')` }} aria-hidden />
+        <Frame plate={plate} />
         <div className="ui-check__target">
           {check?.target !== undefined ? (
             <>
@@ -386,13 +527,18 @@ export const CheckPanel: React.FC<{
             />
           ))}
         </div>
-        <div className="ui-check__pill-row">
+        {/* The verdict, written on the plate with no box round it; the Lands Between let its light ring out. */}
+        <div className="ui-check__verdict-row">
           <motion.span
             key={landed ? 'landed' : 'rolling'}
-            className={cx('ui-check__pill', landed && outcome && (outcomeSucceeded(outcome) ? 'ui-check__pill--success' : 'ui-check__pill--failure'))}
-            initial={landed ? { opacity: 0, scale: 1.25, filter: 'blur(4px)' } : { opacity: 0 }}
+            className={cx(
+              'ui-check__verdict',
+              waiting && 'ui-check__verdict--prompt',
+              landed && outcome && (outcomeSucceeded(outcome) ? 'ui-check__verdict--success' : 'ui-check__verdict--failure'),
+            )}
+            initial={landed ? { opacity: 0, scale: 1.18, filter: 'blur(6px)' } : { opacity: 0 }}
             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            transition={landed ? { type: 'spring', stiffness: 320, damping: 18 } : { duration: 0.3, delay: 0.4 }}
+            transition={landed ? { duration: 0.7, ease: [0.22, 1, 0.36, 1] } : { duration: 0.3, delay: 0.4 }}
           >
             {waiting
               ? pair === 'advantage'
@@ -404,7 +550,9 @@ export const CheckPanel: React.FC<{
                 ? outcome
                   ? OUTCOME_LABEL[outcome]
                   : `Итог ${total}`
-                : 'Кости брошены…'}
+                : // While the dice are in the air, nothing: the plate waits for them.
+                  ''}
+            {landed && outcome && <span className="ui-check__verdict-echo">{OUTCOME_LABEL[outcome]}</span>}
           </motion.span>
         </div>
       </motion.div>

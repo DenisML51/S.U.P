@@ -124,7 +124,9 @@ def letters(b: Builder, case: str):
     arm = 170
     out['Ъ'] = ([(b.rect(0, top - hair, arm + stem, top), I), (p, (1, 0, 0, -1, arm, top))], w(p) + arm)
     out['Ы'] = ([(p, flip(p)), (i, at(w(p) - 30))], w(p) - 30 + wi)
-    out['П'] = ([(l, flip(l)), (i, at(w(l) - wi + 10))], w(l) + 10)
+    # П: two stems under a bar as heavy as the hyphen, as wide as H.
+    span = w(plain('h')) - 40
+    out['П'] = ([(i, at(0)), (i, at(span - wi)), (b.rect(60, top - hair, span - 60, top), I)], span)
     # Ж is K and its mirror sharing one stem.
     k = plain('k')
     out['Ж'] = ([(k, at(w(k) - 2 * 30 - stem - 0)), (k, (-1, 0, 0, 1, w(k), 0))], 2 * w(k) - 2 * 30 - stem)
