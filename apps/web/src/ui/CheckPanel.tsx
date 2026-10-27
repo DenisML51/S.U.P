@@ -36,7 +36,7 @@ const ARCH = 'M38 122 C38 52 104 22 180 22 C256 22 322 52 322 122 L322 346 C322 
 /** The plate's outline on a 360 × 460 grid. */
 const OUTLINE: Record<Plate, string> = {
   arch: ARCH,
-  fable: ARCH,
+  fable: 'M58 24 L302 24 Q336 24 336 58 L336 402 Q336 436 302 436 L58 436 Q24 436 24 402 L24 58 Q24 24 58 24 Z',
   tome: 'M40 34 L320 34 L320 432 L40 432 Z',
   veil: 'M0 18 L360 18 L360 442 L0 442 Z',
   hud: 'M64 30 L296 30 L324 58 L324 404 L296 432 L64 432 L36 404 L36 58 Z',
@@ -91,31 +91,39 @@ const ArchOrnaments: React.FC = () => (
 );
 
 /**
- * Fable: the storybook's gilt — a scroll curling at each corner with a leaf on it, a vine of
- * hairlines tapering from a sparkle across the middle, a sparkle at the crown.
+ * Fable: a pane of the storybook's sea-green glass with no frame round it — a gilt hairline over and
+ * under it that fades out at its ends, the setting's own medallion crest on top and sparkle corners,
+ * its sparkle rule under the difficulty.
  */
-const FableOrnaments: React.FC = () => (
-  <>
-    <Corners>
-      <path d="M44 104 C26 104 14 92 16 78 C18 66 30 62 37 69 C43 75 39 84 32 83" className="ui-check__gilt-hair" />
-      <path d="M44 104 C30 112 26 128 34 142" className="ui-check__gilt-hair" />
-      <path d="M24 122 C14 118 10 108 14 100 C22 104 26 112 24 122 Z" className="ui-check__leaf" />
-    </Corners>
-    {/* The vine: two hairlines swelling from the sides into the sparkle, a pair of leaves on each. */}
-    <path d={`M40 ${BAND_Y} Q110 ${BAND_Y - 5} 164 ${BAND_Y} Q110 ${BAND_Y + 5} 40 ${BAND_Y} Z`} className="ui-check__gilt-fill" />
-    <path d={`M320 ${BAND_Y} Q250 ${BAND_Y - 5} 196 ${BAND_Y} Q250 ${BAND_Y + 5} 320 ${BAND_Y} Z`} className="ui-check__gilt-fill" />
-    {[96, 128, 232, 264].map((x, i) => (
-      <path
-        key={x}
-        d={`M${x} ${BAND_Y} C${x + (i < 2 ? 4 : -4)} ${BAND_Y - 10} ${x + (i < 2 ? 14 : -14)} ${BAND_Y - 12} ${x + (i < 2 ? 18 : -18)} ${BAND_Y - 10} C${x + (i < 2 ? 12 : -12)} ${BAND_Y - 4} ${x + (i < 2 ? 6 : -6)} ${BAND_Y - 1} ${x} ${BAND_Y} Z`}
-        className="ui-check__leaf"
-      />
-    ))}
-    <path d={spark(180, BAND_Y, 13)} className="ui-check__spark" />
-    <path d={spark(180, 22, 9)} className="ui-check__spark" />
-    <path d={spark(180, 438, 7)} className="ui-check__spark" />
-  </>
-);
+const FableOrnaments: React.FC = () => {
+  const art = useSettingArt();
+  return (
+    <>
+      {[24, 436].map((y) => (
+        <g key={y}>
+          <rect x="30" y={y - 0.6} width="300" height="1.2" className="ui-check__gilt-fade" />
+          {y === 436 && <path d={spark(180, y, 7)} className="ui-check__spark" />}
+        </g>
+      ))}
+      {art.crest && (
+        <svg x="96" y="9" width="168" height="34" viewBox={art.crest.viewBox} className="ui-check__art">
+          {art.crest.art}
+        </svg>
+      )}
+      {art.corner && (
+        <Corners>
+          <svg x="29" y="29" width="40" height="40" viewBox={art.corner.viewBox} className="ui-check__art">
+            {art.corner.art}
+          </svg>
+        </Corners>
+      )}
+      <rect x="70" y={BAND_Y + 6.4} width="220" height="0.8" className="ui-check__gilt-fade ui-check__gilt-fade--faint" />
+      <g transform={`translate(151 ${BAND_Y - 7})`} className="ui-check__art">
+        {art.ruleMark}
+      </g>
+    </>
+  );
+};
 
 /** The grimdark's tome: the setting's own gothic corners and arched crest, a cross on the rule. */
 const TomeOrnaments: React.FC = () => {
@@ -262,25 +270,22 @@ const Frame: React.FC<{ plate: Plate }> = ({ plate }) => {
   return (
     <svg viewBox="0 0 360 460" className="ui-check__frame" aria-hidden>
       <defs>
-        <linearGradient id={`${id}-gilt`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="rgb(255 241 200)" />
-          <stop offset="0.35" stopColor="rgb(var(--c-frame-bright))" />
-          <stop offset="0.7" stopColor="rgb(var(--c-frame))" />
-          <stop offset="1" stopColor="rgb(var(--c-frame-bright))" />
+        <linearGradient id={`${id}-fade`} x1="0" x2="1">
+          <stop offset="0" stopColor="rgb(var(--c-frame-bright))" stopOpacity="0" />
+          <stop offset="0.5" stopColor="rgb(255 241 200)" />
+          <stop offset="1" stopColor="rgb(var(--c-frame-bright))" stopOpacity="0" />
         </linearGradient>
       </defs>
       {plate !== 'veil' && <EdgeLight id={id} d={d} />}
-      {plate !== 'veil' && (
-        <motion.path d={d} className="ui-check__line" style={plate === 'fable' ? { stroke: `url(#${id}-gilt)` } : undefined} {...draw} />
-      )}
-      {(plate === 'arch' || plate === 'fable' || plate === 'cut' || plate === 'deco' || plate === 'hud') && (
+      {plate !== 'veil' && plate !== 'fable' && <motion.path d={d} className="ui-check__line" {...draw} />}
+      {(plate === 'arch' || plate === 'cut' || plate === 'deco' || plate === 'hud') && (
         <path d={d} className="ui-check__inner" transform="translate(180 230) scale(0.95 0.965) translate(-180 -230)" />
       )}
       <motion.g
         initial={still ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, delay: still ? 0 : 0.45 }}
-        style={plate === 'fable' ? ({ '--gilt': `url(#${id}-gilt)` } as React.CSSProperties) : undefined}
+        style={plate === 'fable' ? ({ '--gilt-fade': `url(#${id}-fade)` } as React.CSSProperties) : undefined}
       >
         {plate === 'arch' && <ArchOrnaments />}
         {plate === 'fable' && <FableOrnaments />}
@@ -470,6 +475,8 @@ export const CheckPanel: React.FC<{
   const counted = dice.filter((die) => !die.dropped).reduce((sum, die) => sum + die.value, 0);
   const total = check?.total ?? counted;
   const bonus = check?.bonus ?? 0;
+  // A throw against a target takes its outcome's colour, on the dice and the total.
+  const tone = outcome ? (outcomeSucceeded(outcome) ? 'success' : 'danger') : undefined;
   const cards: CheckPart[] = parts ?? (bonus !== 0 ? [{ label: 'Модификатор', value: bonus, icon: 'rolling-dices' }] : []);
 
   return (
@@ -522,7 +529,7 @@ export const CheckPanel: React.FC<{
               size={size}
               delay={index * STAGGER_MS}
               phase={index * 1.3 + die.sides * 0.1}
-              tone={die.label ? undefined : die.value === die.sides && die.sides > 2 ? 'success' : die.value === 1 ? 'danger' : undefined}
+              tone={die.label ? undefined : die.value === die.sides && die.sides > 2 ? 'success' : die.value === 1 ? 'danger' : tone}
               onLanded={index === dice.length - 1 ? () => setLanded(true) : undefined}
             />
           ))}
@@ -583,7 +590,7 @@ export const CheckPanel: React.FC<{
       >
         <span>{waiting ? 'Общий бонус' : 'Итог'}</span>
         <motion.span
-          className="ui-check__total-value ui-numeric"
+          className={cx('ui-check__total-value ui-numeric', landed && tone && `ui-check__total-value--${tone}`)}
           initial={false}
           animate={landed || waiting ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }}
           transition={{ type: 'spring', stiffness: 420, damping: 18 }}

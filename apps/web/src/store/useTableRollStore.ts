@@ -17,11 +17,6 @@ export interface ShownRoll {
 export interface CentreRoll extends ShownRoll {
   kind: TableRollDto['kind'];
   authorId: string;
-  /** What was thrown, as the log names it ("2d6 + 3: 11"), when it came without a check. */
-  label: string;
-  check: TableCheck | null;
-  /** The hero who threw, for a throw answering the master's call. */
-  heroName: string | null;
 }
 
 /**
@@ -49,21 +44,14 @@ export const useTableRollStore = create<TableRollState>((set, get) => {
     const heroId = roll.kind === 'hero' ? roll.heroId : null;
     if (heroId)
       set({ heroes: { ...get().heroes, [partyId]: { ...get().heroes[partyId], [heroId]: shown } } });
-    // The middle of the screen: the master's own throw, and a hero's throw answering the master's
-    // call (the master sees how it went).
-    const centred = roll.kind === 'master' || !!roll.check?.callId;
+    // The middle of the screen is the master's own throw's; a hero's throw, even one the master
+    // called for, lands on its portrait.
+    const centred = roll.kind === 'master';
     if (centred)
       set({
         centre: {
           ...get().centre,
-          [partyId]: {
-            ...shown,
-            kind: roll.kind,
-            authorId: roll.authorId,
-            label: roll.label,
-            check: roll.check ?? null,
-            heroName: roll.heroName,
-          },
+          [partyId]: { ...shown, kind: roll.kind, authorId: roll.authorId },
         },
       });
     // Each place lets its throw go a few seconds after it came, unless a newer one took its place.
