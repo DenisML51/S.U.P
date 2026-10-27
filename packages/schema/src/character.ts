@@ -191,6 +191,8 @@ export const AttackSchema = passthroughObject({
   ammunitionItemId: optionalNestedId,
   /** A throw of the weapon itself: spends one from the weapon's stack, if it is counted. */
   thrown: optionalFlag,
+  /** Made at range (a bow, a thrown dagger): no smite rides on it. */
+  ranged: optionalFlag,
   /** Dice of its damage count as at least this (Great Weapon Fighting: 3). */
   minDie: optionalNumber,
   /** Its damage held in both hands (a versatile weapon: "1d10 + 3"). */
@@ -274,6 +276,8 @@ export const AbilitySchema = passthroughObject({
   stanceUntilShortRest: optionalFlag,
   /** The user gains temporary hit points of this share of the damage it deals (Rite of Siphoning: all of it). */
   tempHPFromDamage: optionalNumber,
+  /** Dealt with a hit, not on its own (a smite): cast after a hit of a melee weapon or an unarmed strike, or of any weapon. */
+  onHit: text(z.enum(['melee', 'weapon']).optional()),
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
@@ -342,6 +346,8 @@ export const SpellSchema = passthroughObject({
   upcastDamage: optionalShortText,
   /** Dice from a slot level on, when they grow in steps (Shadow Blade: 3d8 from 3rd, 4d8 from 5th). */
   slotDamage: text(z.record(z.string().max(2), shortString).optional()),
+  /** Dealt with a hit, not on its own (a smite): cast after a hit of a melee weapon or an unarmed strike, or of any weapon. */
+  onHit: text(z.enum(['melee', 'weapon']).optional()),
   /** A cantrip whose dice count grows with character level (5, 11, 17). */
   cantripScaling: optionalFlag,
   /** The spellcasting modifier is added to the damage or healing. */

@@ -208,6 +208,7 @@ export const SUPPLEMENT_SPELLS: SpellDef[] = [
     school: 'Воплощение',
     castingTime: '1 бонусное действие',
     action: 'bonus',
+    onHit: 'weapon',
     range: 'На себя',
     components: 'В',
     duration: 'до 1 минуты',

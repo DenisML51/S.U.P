@@ -2,11 +2,15 @@ import type { Ability, Attack, Spell } from '@itd/schema';
 import {
   ammunitionChoices,
   castableSlots,
+  formatModifier,
   isActiveFeature,
+  onHitAttacks,
+  performAction as tryAction,
   resolveAmmunition,
   slotConversions,
   spellAttackBonusFor,
   type DamageSource,
+  type PerformActionRequest,
 } from '@itd/game-logic';
 import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
@@ -15,7 +19,7 @@ import { useConcentrationPrompt, useEndFeature } from './Concentration';
 import { useSlotPrompt } from './SlotPrompt';
 import { useAmmoPrompt } from './AmmoPrompt';
 import { useAmountPrompt } from './AmountPrompt';
-import { useRolls, type DamageComponents, type RollFollowUp } from './useRolls';
+import { useRolls, type DamageComponents, type HitRider, type RollFollowUp } from './useRolls';
 import { useVitals } from './useVitals';
 
 /** What `amount` units of an ability of a chosen cost give: "1" a unit is the amount, "1d8" so many dice. */
@@ -60,7 +64,7 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     label: string,
     hitBonus: number | undefined,
     parts: DamageComponents,
-    weapon: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean; source?: DamageSource } = {},
+    weapon: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean; source?: DamageSource; rider?: HitRider } = {},
     entry?: Pick<Ability, 'tempHPFromDamage'>,
   ) => {
     const follow = followUp(parts, entry);
@@ -84,7 +88,8 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     ];
   };
 
-  const attack = (entry: Attack, ammunitionItemId?: string) => {
+  /** An attack, with a smite riding on it (`ride`): named after both, the smite paid with the damage of a hit. */
+  const attack = (entry: Attack, ammunitionItemId?: string, ride?: { name: string; rider: HitRider }) => {
     // Different stacks would do (arrows and +1 arrows): the player says which, once for this attack.
     if (entry.usesAmmunition && !ammunitionItemId && character && !resolveAmmunition(character, entry) && ammunitionChoices(character).length > 1) {
       askAmmo(entry, (itemId) => {
@@ -92,7 +97,7 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
           ...doc,
           attacks: doc.attacks.map((a) => (a.id === entry.id ? { ...a, ammunitionItemId: itemId } : a)),
         }));
-        attack(entry, itemId);
+        attack(entry, itemId, ride);
       });
       return;
     }
@@ -108,7 +113,44 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
       kind: entry.weaponId ? 'weapon' : entry.id.includes('unarmed-strike') ? 'unarmed' : 'other',
       attack: true,
     };
-    strike(entry.name, entry.hitBonus, damageParts(entry), { minDie: entry.minDie, twoHanded, source });
+    const name = ride ? `${entry.name} + ${ride.name}` : entry.name;
+    strike(name, entry.hitBonus, damageParts(entry), { minDie: entry.minDie, twoHanded, source, rider: ride?.rider });
+  };
+
+  /**
+   * A smite: cast right after a hit, so it is not cast on its own. The player picks the attack it
+   * rides on; the hit is rolled, and only a hit's damage pays for the smite and rolls its dice with
+   * the weapon's — a critical hit doubling both. A miss leaves the slot unspent.
+   */
+  const smite = (name: string, onHit: 'melee' | 'weapon', parts: DamageComponents, request: PerformActionRequest) => {
+    if (!character) return;
+    // What would refuse it (no slot, no bonus action left) is said before the attack, not after.
+    const check = tryAction(character, request);
+    if (!check.ok) {
+      toast.error(check.message);
+      return;
+    }
+    const attacks = onHitAttacks(character, onHit);
+    if (attacks.length === 0) {
+      toast.error(onHit === 'melee' ? 'Нет рукопашной атаки, с которой её сотворить' : 'Нет атаки оружием, с которой её сотворить');
+      return;
+    }
+    // Its dice are the hit's companions, not the weapon's own (Savage Attacker leaves them be).
+    const rider: HitRider = {
+      parts: parts.map((p) => ({ ...p, extra: true })),
+      pay: () => !!performAction(request, { quiet: true })?.ok,
+    };
+    askAmount({
+      kind: 'options',
+      title: name,
+      options: attacks.map((a) => ({
+        key: a.id,
+        label: a.name,
+        detail: `${formatModifier(a.hitBonus)} · ${describeDamage([...damageParts(a), ...parts])}`,
+        blocked: null,
+        onPick: () => attack(a, undefined, { name, rider }),
+      })),
+    });
   };
 
   /** An entry that needs concentration asks first when it would end another one. */
@@ -161,6 +203,10 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
       });
       return;
     }
+    if (entry.onHit) {
+      smite(entry.name, entry.onHit, damageParts(entry), { kind: 'ability', id: entry.id, trackActionEconomy: inCombat });
+      return;
+    }
     const least = entry.resourceCost ?? 1;
     if (entry.resourceCostMax && entry.resourceCostMax > least && choice.amount === undefined && pool) {
       const most = Math.min(entry.resourceCostMax, pool.current);
@@ -201,7 +247,11 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     } else {
       logHistory(`Способность: ${entry.name}`);
     }
-    if (rolls) strike(entry.name, hitBonus, parts, {}, entry);
+    // A die of no damage type that nothing hits or saves against is no damage: a Bardic Inspiration,
+    // the Rite Die a Rite of Blindness takes off an attack. It is rolled as it is.
+    const plainDie = hitBonus === undefined && !entry.saveAttribute && parts.length > 0 && parts.every((p) => !p.type);
+    if (plainDie) roll.formula(entry.name, parts.map((p) => p.damage).join('+'));
+    else if (rolls) strike(entry.name, hitBonus, parts, {}, entry);
   };
 
   const castWith = (spell: Spell, slotLevel?: number) => {
@@ -209,8 +259,13 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     const parts = spellDamageParts(character, spell, slotLevel ?? spell.level);
     const hitBonus = spell.attackRoll ? spellAttackBonusFor(character, spell) : undefined;
     const rolls = hitBonus !== undefined || parts.length > 0;
-    if (!performAction({ kind: 'spell', id: spell.id, trackActionEconomy: inCombat, slotLevel }, { quiet: rolls })?.ok) return;
     const upcast = slotLevel !== undefined && slotLevel > spell.level ? ` (${slotLevel} круг)` : '';
+    const request = { kind: 'spell' as const, id: spell.id, trackActionEconomy: inCombat, slotLevel };
+    if (spell.onHit) {
+      smite(`${spell.name}${upcast}`, spell.onHit, parts, request);
+      return;
+    }
+    if (!performAction(request, { quiet: rolls })?.ok) return;
     if (rolls) strike(`${spell.name}${upcast}`, hitBonus, parts, { spell: true, source: { kind: 'spell', attack: hitBonus !== undefined } });
   };
 

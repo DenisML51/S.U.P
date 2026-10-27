@@ -158,6 +158,7 @@ export const INVOCATIONS: CatalogEntryDef[] = [
     description:
       'Раз в ход, попав оружием договора, вы можете потратить ячейку Магии договора: цель получает 1к8 силового урона плюс 1к8 за каждый круг ячейки и, если она Огромная или меньше, может быть сбита с ног.',
     action: 'passive',
+    onHit: 'weapon',
     iconName: 'spiky-explosion',
     usesResource: { id: PACT_POOL },
     damage: (ctx) => `${1 + (PACT_SLOTS[Math.min(20, Math.max(1, ctx.classLevel)) - 1]?.level ?? 1)}d8`,

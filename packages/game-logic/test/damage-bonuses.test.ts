@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createCharacterDocument, type Character, type DndBuild } from '@itd/schema';
-import { spellDamageAt } from '../src';
+import { onHitAttacks, spellDamageAt } from '../src';
 import { applyBuild, createDndHero, levelPlan, setPicks } from '../src/dnd';
 
 const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
@@ -64,5 +64,26 @@ describe('features that add to damage', () => {
     const others = fighter.attacks.filter((a) => a.weaponId && a.name !== 'Двуручный меч');
     expect(greatsword?.damage).toBe('2d6+6');
     for (const attack of others) expect(attack.damage).not.toContain('+6');
+  });
+});
+
+describe('smites', () => {
+  it('ride on a melee hit: the spell says so, and only melee attacks carry it', () => {
+    const b = build({ class: 'paladin', backgroundBonuses: { strength: 2, charisma: 1 }, level: 2 });
+    const paladin = applyBuild(hero(b), b).character;
+    expect(spell(paladin, 'divine-smite').onHit).toBe('melee');
+    expect(onHitAttacks(paladin, 'melee').map((a) => a.name)).toEqual(['Длинный меч']);
+    const attack = (id: string, patch: Partial<Character['attacks'][number]> = {}) => ({ ...paladin.attacks[0]!, id, name: id, ...patch });
+    const armed = {
+      attacks: [
+        attack('sword'),
+        attack('bow', { ranged: true, usesAmmunition: true }),
+        attack('dagger-throw', { ranged: true, thrown: true }),
+        attack('fist', { weaponId: undefined }),
+      ],
+    };
+    // A smite rides on a melee weapon or an unarmed strike; Eldritch and Branding Smite on any weapon.
+    expect(onHitAttacks(armed, 'melee').map((a) => a.id)).toEqual(['sword', 'fist']);
+    expect(onHitAttacks(armed, 'weapon').map((a) => a.id)).toEqual(['sword', 'bow', 'dagger-throw']);
   });
 });

@@ -251,6 +251,14 @@
   background: repeating-linear-gradient(135deg, rgb(var(--meter-extra-color)) 0 3px, rgb(var(--meter-extra-color) / 0.55) 3px 6px);
 }
 
+/* The maximum lost until a rest: a struck-out end of the gauge, no longer there to fill. */
+.ui-meter__lost {
+  position: absolute;
+  inset: 0 0 0 auto;
+  background: repeating-linear-gradient(135deg, rgb(var(--c-danger) / 0.5) 0 2px, transparent 2px 5px);
+  box-shadow: inset 1px 0 0 rgb(var(--c-danger) / 0.7);
+}
+
 /* Notches every 10% read as a gauge rather than a progress bar. */
 .ui-meter--ticks::after {
   content: '';
@@ -961,6 +969,16 @@ html:has([role='dialog'][aria-modal='true']) .ui-toasts { bottom: 1.5rem !import
 
 .ui-vbar__extra {
   background: repeating-linear-gradient(135deg, rgb(var(--c-temp-hp) / 0.85) 0 4px, rgb(var(--c-temp-hp) / 0.55) 4px 8px);
+}
+
+/* The maximum lost until a rest, struck out at the top of the bar. */
+.ui-vbar__lost {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  background: repeating-linear-gradient(135deg, rgb(var(--c-danger) / 0.5) 0 2px, transparent 2px 6px);
+  box-shadow: inset 0 -1px 0 rgb(var(--c-danger) / 0.7);
 }
 
 .ui-vbar__label {
@@ -1796,6 +1814,8 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-vital__value { grid-area: value; line-height: 1; white-space: nowrap; }
 .ui-vital__current { font-size: 1.2rem; color: rgb(var(--c-ink)); }
 .ui-vital__max { margin-left: 0.15rem; font-size: 0.8rem; color: rgb(var(--c-ink-faint)); }
+/* How much of the maximum is lost until a rest, beside it. */
+.ui-vital__lost { margin-left: 0.3rem; font-size: 0.75rem; color: rgb(var(--c-danger)); }
 .ui-vital__extra { grid-area: extra; align-self: center; margin-left: 0.45rem; font-size: 0.8rem; line-height: 1; color: rgb(var(--c-temp-hp)); }
 .ui-vital__gauge { grid-area: gauge; position: relative; display: block; }
 .ui-vital:hover .ui-vital__label { color: rgb(var(--c-ink-muted)); }

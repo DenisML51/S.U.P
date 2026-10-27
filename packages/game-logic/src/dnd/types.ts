@@ -231,6 +231,8 @@ export interface FeatureDef {
   saveDC?: Amount;
   /** The user gains temporary hit points of this share of the damage it deals (Rite of Siphoning: 1). */
   tempHPFromDamage?: number;
+  /** Dealt with a hit of a melee weapon or unarmed strike, or of any weapon (Eldritch Smite), not on its own. */
+  onHit?: 'melee' | 'weapon';
   /** Hit points every use costs (Crimson Rite: a hemocraft die; a Vital Sacrifice off the maximum too). */
   hpCost?: HitPointCostDef;
   /** With its pool empty it may still be used, for these hit points instead of a use (a Blood Rite). */
@@ -426,6 +428,8 @@ export interface SpellDef {
   upcastDamage?: string;
   /** Dice from a slot level on, when they grow in steps rather than by slot (Shadow Blade: `{ 3: '3d8', 5: '4d8' }`). */
   slotDamage?: Partial<Record<number, string>>;
+  /** A smite: cast right after a hit of a melee weapon or unarmed strike, its dice dealt with the hit's. */
+  onHit?: 'melee' | 'weapon';
   /** A cantrip whose dice count grows at character levels 5, 11 and 17 (×2, ×3, ×4). */
   cantripScaling?: boolean;
   /** The caster's spellcasting modifier is added to the damage or healing (Cure Wounds). */

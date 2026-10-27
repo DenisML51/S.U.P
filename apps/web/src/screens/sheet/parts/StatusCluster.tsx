@@ -24,18 +24,27 @@ const StatusBar: React.FC<{
   value: number;
   max: number;
   extra?: number;
+  /** Part of the maximum lost until a rest (a Vital Sacrifice). */
+  lost?: number;
   tone: MeterTone;
   onClick: () => void;
-}> = ({ icon, label, value, max, extra = 0, tone, onClick }) => (
-  <button type="button" onClick={onClick} title={label} className="ui-vital" data-tone={tone}>
+}> = ({ icon, label, value, max, extra = 0, lost = 0, tone, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={lost > 0 ? `${label} · максимум снижен на ${lost} до продолжительного отдыха` : label}
+    className="ui-vital"
+    data-tone={tone}
+  >
     <span className="ui-vital__icon">{icon}</span>
     <span className="ui-vital__label">{label}</span>
     <span className="ui-vital__value ui-numeric">
       <span className="ui-vital__current">{value}</span>
       <span className="ui-vital__max">/{max}</span>
+      {lost > 0 && <span className="ui-vital__lost">−{lost}</span>}
     </span>
     <span className="ui-vital__gauge">
-      <Meter value={value} max={max} extra={extra} tone={tone} height={8} ticks label={label} />
+      <Meter value={value} max={max} extra={extra} lost={lost} tone={tone} height={8} ticks label={label} />
     </span>
     {extra > 0 && <span className="ui-vital__extra ui-numeric">+{extra}</span>}
   </button>
@@ -206,6 +215,7 @@ export const StatusCluster: React.FC<{ character: Character; className?: string 
             value={character.currentHP}
             max={totalMaxHP(character)}
             extra={character.tempHP}
+            lost={character.maxHPReduction}
             tone="hp"
             onClick={() => dialogs.open({ kind: 'health' })}
           />
