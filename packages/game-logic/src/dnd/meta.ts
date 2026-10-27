@@ -15,4 +15,6 @@ export const DND_CLASS_META: readonly { id: string; name: string; mentalStrength
   { id: 'sorcerer', name: 'Чародей', mentalStrength: 45 },
   { id: 'warlock', name: 'Колдун', mentalStrength: 40 },
   { id: 'wizard', name: 'Волшебник', mentalStrength: 50 },
+  { id: 'blood-hunter', name: 'Охотник на крови', mentalStrength: 60 },
+  { id: 'alt-blood-hunter', name: 'Альтернативный охотник на крови', mentalStrength: 60 },
 ];

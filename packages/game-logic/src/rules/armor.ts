@@ -43,6 +43,9 @@ const ABILITY_LABELS: Record<string, string> = {
   charisma: 'ХАР',
 };
 
+/** Heavy armour adds none of the wearer's Dexterity; that is how a sheet's armour tells it apart. */
+export const wearsHeavyArmor = (character: Pick<Character, 'inventory'>): boolean => equippedArmor(character.inventory)?.dexModifier === false;
+
 const hasShield = (character: ArmorSource): boolean => character.inventory.some((item) => item.equipped && isShield(item));
 
 /**
@@ -56,7 +59,7 @@ const unarmoredParts = (character: ArmorSource): ArmorClassPart[] => {
     { label: 'основа', value: BASE_ARMOR_CLASS },
     { label: 'ЛВК', value: attributeModifier(character, 'dexterity') },
     ...(unarmored ? [{ label: ABILITY_LABELS[unarmored] ?? unarmored, value: attributeModifier(character, unarmored) }] : []),
-    { label: 'особенности', value: bonus?.always ?? 0 },
+    { label: 'особенности', value: (bonus?.always ?? 0) + (bonus?.noHeavyArmor ?? 0) },
   ];
 };
 
@@ -82,7 +85,7 @@ function gearParts(character: ArmorSource): ArmorClassPart[] {
     { label: 'броня', value: armor.baseAC ?? BASE_ARMOR_CLASS },
     { label: 'ЛВК', value: appliedDexterity },
     shieldPart,
-    { label: 'особенности', value: (bonus?.always ?? 0) + (bonus?.armored ?? 0) },
+    { label: 'особенности', value: (bonus?.always ?? 0) + (bonus?.armored ?? 0) + (armor.dexModifier === false ? 0 : (bonus?.noHeavyArmor ?? 0)) },
   ];
 }
 

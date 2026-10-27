@@ -79,7 +79,11 @@ export function spellDamageAt(character: Character, spell: Spell, slotLevel = sp
   if (!spell.damage) return undefined;
   const times = spell.level === 0 && spell.cantripScaling ? cantripTier(character.level) : 1;
   const above = Math.max(0, slotLevel - spell.level);
-  let formula = combineDice(spell.damage, times, spell.upcastDamage, above);
+  // Dice set by steps of slot levels: those of the highest step the slot reaches.
+  const step = Object.entries(spell.slotDamage ?? {})
+    .filter(([level]) => Number(level) <= slotLevel)
+    .sort(([a], [b]) => Number(b) - Number(a))[0]?.[1];
+  let formula = step ?? combineDice(spell.damage, times, spell.upcastDamage, above);
   if (spell.addModifier) {
     const modifier = modifierFor(character, spell);
     if (modifier !== 0) formula = combineDice(formula, 1, String(modifier));

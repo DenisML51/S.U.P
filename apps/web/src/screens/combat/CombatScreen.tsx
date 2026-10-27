@@ -111,7 +111,7 @@ const CombatHud: React.FC<{ character: Character; onOpenSettings: () => void }> 
   const desktop = useAtLeast('desktop');
 
   const start = () => {
-    const initiative = roll.check('Инициатива', initiativeModifier(character), { animated: true, test: { kind: 'initiative' } });
+    const initiative = roll.check('Инициатива', initiativeModifier(character), { test: { kind: 'initiative' } });
     updateCharacter((doc) => resetTurn(doc), { log: { message: 'Бой начался', type: 'other' } });
     setCombat({ inCombat: true, round: 1, initiative });
   };

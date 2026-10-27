@@ -85,6 +85,10 @@ export function endFeature(character: Character, id: string): Character {
 export const endAllFeatures = (character: Character): Character =>
   (character.activeFeatures ?? []).reduce(endFeature, character);
 
+/** Turns off the abilities that are on and match (those lasting until a short rest, on one). */
+export const endFeatures = (character: Character, which: (ability: Ability) => boolean): Character =>
+  activeFeaturesOf(character).filter(which).reduce((next, ability) => endFeature(next, ability.id), character);
+
 /** Abilities of this group are shapes the hero takes (Wild Shape): the beast's attacks stand in for theirs. */
 export const FORM_GROUP = 'wild-shape';
 

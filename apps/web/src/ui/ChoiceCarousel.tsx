@@ -27,6 +27,7 @@ export function ChoiceCarousel<T extends string>({
   disabledLabel,
   height = 'min(46vh, 460px)',
   label,
+  reach,
 }: {
   items: CarouselItem<T>[];
   chosen: T | null;
@@ -40,6 +41,8 @@ export function ChoiceCarousel<T extends string>({
   height?: string;
   /** Accessible name of the arrows' subject ("правила"). */
   label: string;
+  /** Cards further than this from the one in front are not drawn (a long fan: the classes). */
+  reach?: number;
 }) {
   const count = items.length;
   // Scaled down on a phone by the stage around it (`--stage-fit`), so the words below still fit.
@@ -89,7 +92,7 @@ export function ChoiceCarousel<T extends string>({
             <motion.div
               key={item.id}
               className="absolute left-1/2 top-0"
-              style={{ height: fitted, aspectRatio: '0.66', zIndex: 10 - distance }}
+              style={{ height: fitted, aspectRatio: '0.66', zIndex: 10 - distance, visibility: reach !== undefined && distance > reach ? 'hidden' : undefined }}
               initial={false}
               animate={{
                 x: `calc(-50% + ${Math.sign(offset) * (distance === 0 ? 0 : 92 + (distance - 1) * 50)}%)`,
@@ -104,7 +107,7 @@ export function ChoiceCarousel<T extends string>({
               onPointerLeave={() => setHovered((h) => (h === i ? null : h))}
               onClick={() => (isFocused ? !item.disabled && onChoose(item.id) : setIndex(i))}
             >
-              {item.render({ focused: isFocused, hovered: hovered === i })}
+              {reach === undefined || distance <= reach ? item.render({ focused: isFocused, hovered: hovered === i }) : null}
             </motion.div>
           );
         })}

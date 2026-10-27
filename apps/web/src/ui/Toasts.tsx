@@ -4,6 +4,16 @@ import { resolveValue, toast, useToaster, type Toast } from 'react-hot-toast';
 import { cx } from './primitives';
 import { IconCheck, IconWarning } from './icons';
 
+/** Ids of the plates of dice: they wait to be read. */
+const DICE = 'dice:';
+let diceSerial = 0;
+
+/**
+ * Options of a plate of dice (a roll): it has no timer and stays until it is clicked or another
+ * message comes up after it (the next roll, the result of an action).
+ */
+export const diceToast = (id?: string): { id: string; duration: number } => ({ id: `${DICE}${id ?? ++diceSerial}`, duration: Infinity });
+
 /** At most this many messages at once: a burst of rolls should not wall off the screen. */
 const VISIBLE = 4;
 
@@ -82,6 +92,11 @@ export const Toasts: React.FC = () => {
   const { room, lift } = useRoom(probe);
   const { count, scale, low } = fit(room, lift);
   const visible = toasts.filter((t) => t.visible).slice(0, count);
+  // A new message (the newest comes first) sends the plates of dice before it away.
+  const newest = toasts.find((t) => t.visible)?.id;
+  useEffect(() => {
+    for (const t of toasts) if (t.visible && t.id !== newest && t.id.startsWith(DICE)) toast.dismiss(t.id);
+  }, [newest, toasts]);
 
   return (
     <>

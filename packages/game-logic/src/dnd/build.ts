@@ -1,4 +1,4 @@
-import type { Ability, Attack, Build, Character, DndBuild, CharacterDraft, InventoryItem, Resistance, Resource, Spell, Trait } from '@itd/schema';
+import type { Ability, Attack, Build, Character, DamageComponent, DndBuild, HitPointCost, CharacterDraft, InventoryItem, Resistance, Resource, Spell, Trait } from '@itd/schema';
 import { ATTRIBUTES_LIST, SKILLS_LIST } from '../content/attributes';
 import { spellColor } from '../content/combat';
 import { abilityModifier } from '../rules/abilities';
@@ -8,7 +8,7 @@ import { averageHitPoints } from '../rules/rest';
 import { DND } from './content';
 import { beastFormFeature, beastSummary, challengeLabel } from './content/beasts';
 import { DND_ICONS } from './content/icons';
-import { proficiencyForLevel, resolveAmount } from './helpers';
+import { proficiencyForLevel, resolveAmount, resolveDice } from './helpers';
 import type {
   AttributeId,
   BeastFormDef,
@@ -21,6 +21,7 @@ import type {
   FeatDef,
   FeatureDef,
   GrantedAttackDef,
+  HitPointCostDef,
   OptionDef,
   ResourceDef,
   SkillId,
@@ -62,16 +63,37 @@ export const findCatalogEntry = (catalog: CatalogId, id: string | undefined): Ca
 
 /** The content entry of a pick by its id, whatever it is (an invocation, a maneuver, a feat). */
 const pickEntry = (id: string): FeatureDef | undefined =>
-  DND.catalogs.invocations.find((e) => e.id === id) ??
-  DND.catalogs.metamagic.find((e) => e.id === id) ??
-  DND.maneuvers.find((m) => m.id === id) ??
-  findFeat(id);
+  Object.values(DND.catalogs).flat().find((e) => e.id === id) ?? DND.maneuvers.find((m) => m.id === id) ?? findFeat(id);
 
-const CATALOG_NAMES: Record<CatalogId, string> = { invocations: 'Воззвание', metamagic: 'Метамагия' };
+const CATALOG_NAMES: Record<CatalogId, string> = {
+  invocations: 'Воззвание',
+  metamagic: 'Метамагия',
+  bloodCurses: 'Кровавое проклятие',
+  crimsonRites: 'Багровый обряд',
+  mutagens: 'Мутаген',
+  bloodRites: 'Кровавый обряд',
+  latentMutagens: 'Мутаген',
+  bloodHunterStyles: 'Боевой стиль',
+};
 
 const ATTRIBUTE_IDS = ATTRIBUTES_LIST.map((a) => a.id);
 const attributeName = (id: string) => ATTRIBUTES_LIST.find((a) => a.id === id)?.name ?? id;
 const skillName = (id: string) => SKILLS_LIST.find((s) => s.id === id)?.name ?? id;
+
+/** Path of the pick of a class's key ability (a blood hunter's hemocraft) in `build.choices`. */
+const keyAbilityKey = (classDef: ClassDef) => `class:${classDef.id}.key-ability/ability`;
+
+/** The class's key ability the hero chose, or the class's first one (Intelligence for hemocraft). */
+export function keyAbilityOf(build: Pick<DndBuild, 'class' | 'choices'>): AttributeId | undefined {
+  const classDef = findClass(build.class);
+  if (!classDef?.keyAbility) return undefined;
+  const picked = build.choices[keyAbilityKey(classDef)]?.[0] as AttributeId | undefined;
+  return picked && classDef.keyAbility.options.includes(picked) ? picked : classDef.keyAbility.options[0];
+}
+
+/** The ability a casting casts with: its own, or the class's key ability the hero chose. */
+export const castingAbilityOf = (casting: SpellcastingDef, build: Pick<DndBuild, 'class' | 'choices'>): AttributeId =>
+  casting.ability === 'key' ? (keyAbilityOf(build) ?? 'intelligence') : casting.ability;
 
 /** Spell slots of the class or its subclass at a class level; empty for non-casters. */
 export function spellcastingOf(build: Pick<DndBuild, 'class' | 'subclass'>): SpellcastingDef | undefined {
@@ -149,13 +171,19 @@ function forgottenPicks(build: DndBuild): { pool: string; id: string; level: num
 }
 
 /** A context good enough to evaluate effects before ability increases are known. */
-const contextFor = (level: number, scores: Record<string, number>): BuildContext => ({
+const contextFor = (level: number, scores: Record<string, number>, build: Pick<DndBuild, 'class' | 'subclass' | 'choices'>): BuildContext => ({
   level,
   classLevel: level,
   proficiencyBonus: proficiencyForLevel(level),
   score: (attribute) => scores[attribute] ?? 10,
   modifier: (attribute) => abilityModifier(scores[attribute] ?? 10),
+  subclass: build.subclass,
+  keyAbility: keyAbilityOf(build),
 });
+
+/** A feature's hit point cost written for the hero's numbers. */
+const costFor = (cost: HitPointCostDef | undefined, ctx: BuildContext): HitPointCost | undefined =>
+  typeof cost === 'function' ? cost(ctx) : cost;
 
 const resolveEffects = (effects: FeatureDef['effects'], ctx: BuildContext): Effect[] =>
   (typeof effects === 'function' ? effects(ctx) : effects) ?? [];
@@ -174,12 +202,12 @@ const synthetic = (id: string, name: string, description: string, extra: Partial
  * levels, and everything picked through choices (feats, maneuvers, inline options).
  */
 export function collect(build: DndBuild, level = build.level, scores?: Record<string, number>): Collected {
-  const ctx = contextFor(level, scores ?? baseScores(build));
+  const ctx = contextFor(level, scores ?? baseScores(build), build);
   const out: Collected = { features: [], choices: [], effects: [], masteries: [], spellAbilities: [], poolPicks: [] };
   const forgotten = forgottenPicks(build).filter((f) => f.level <= level);
 
   const visitFeature = (feature: FeatureDef, ownerKey: string, gainedAt: number, source: SourceKind) => {
-    if (feature.minLevel && level < feature.minLevel) return;
+    if ((feature.minLevel && level < feature.minLevel) || (feature.maxLevel && level > feature.maxLevel)) return;
     const granted: GrantedFeature = { key: `${ownerKey}:${feature.id}`, feature, level: Math.max(gainedAt, feature.minLevel ?? 0), source };
     out.features.push(granted);
     for (const effect of resolveEffects(feature.effects, ctx)) out.effects.push({ effect, owner: granted });
@@ -238,7 +266,7 @@ export function collect(build: DndBuild, level = build.level, scores?: Record<st
         break;
       case 'beasts': {
         const beast = findBeast(pick);
-        if (beast) visitFeature(beastFormFeature(beast), choiceKey, owner.level, 'option');
+        for (const form of beast ? (options.features?.(beast) ?? [beastFormFeature(beast)]) : []) visitFeature(form, choiceKey, owner.level, 'option');
         break;
       }
       case 'weapons': {
@@ -312,6 +340,17 @@ export function collect(build: DndBuild, level = build.level, scores?: Record<st
     out.features.push(owner);
     for (const attribute of classDef.saves) out.effects.push({ effect: { type: 'save', attribute }, owner });
     for (const effect of classDef.proficiencies) out.effects.push({ effect, owner });
+    if (classDef.keyAbility) {
+      const { label, description, options, notes } = classDef.keyAbility;
+      visitFeature(
+        synthetic(`${classDef.id}.key-ability`, label, description, {
+          choices: [{ id: 'ability', label, count: 1, options: { from: 'options', options: options.map((id) => ({ id, name: attributeName(id), description: notes?.[id] ?? '' })) } }],
+        }),
+        'class',
+        1,
+        'class',
+      );
+    }
     visitFeature(
       synthetic(`${classDef.id}.skills`, 'Навыки класса', `Владение ${classDef.skillChoices.count} навыками из списка класса.`, {
         choices: [{ id: 'skills', label: `Навыки (${classDef.skillChoices.count})`, count: classDef.skillChoices.count, options: { from: 'skills', list: classDef.skillChoices.list } }],
@@ -342,7 +381,8 @@ export function collect(build: DndBuild, level = build.level, scores?: Record<st
    * spells written into the spellbook of a `spellbook` one (six at level 1, then two a level).
    */
   function visitCasting(casting: SpellcastingDef, classLevel: number, owner: string) {
-    const at = (l: number) => contextFor(l, scores ?? baseScores(build));
+    const ability = castingAbilityOf(casting, build);
+    const at = (l: number) => contextFor(l, scores ?? baseScores(build), build);
     const cantrips = (l: number) => (l < 1 ? 0 : resolveAmount(casting.cantrips ?? 0, at(l)));
     const prepared = (l: number) => (l < 1 ? 0 : resolveAmount(casting.prepared, at(l)));
     const newCantrips = cantrips(classLevel) - cantrips(classLevel - 1);
@@ -357,7 +397,7 @@ export function collect(build: DndBuild, level = build.level, scores?: Record<st
     const lists = [casting.list, ...(casting.extraLists && classLevel >= casting.extraLists.from ? casting.extraLists.lists : [])];
     const choices: ChoiceDef[] = [];
     if (newCantrips > 0) {
-      choices.push({ id: 'cantrips', label: `Заговоры (${newCantrips})`, count: newCantrips, pool: 'known-cantrips', spellAbility: casting.ability, options: { from: 'spells', lists: [casting.list], maxLevel: 0 } });
+      choices.push({ id: 'cantrips', label: `Заговоры (${newCantrips})`, count: newCantrips, pool: 'known-cantrips', spellAbility: ability, options: { from: 'spells', lists: [casting.list], maxLevel: 0 } });
     }
     if (newSpells > 0 && casting.mode === 'spellbook') {
       choices.push({
@@ -370,7 +410,7 @@ export function collect(build: DndBuild, level = build.level, scores?: Record<st
         options: { from: 'spells', lists: [casting.list], minLevel: 1, maxLevel },
       });
     } else if (newSpells > 0) {
-      choices.push({ id: 'spells', label: `Заклинания (${newSpells})`, count: newSpells, pool: 'known-spells', spellAbility: casting.ability, options: { from: 'spells', lists, minLevel: 1, maxLevel } });
+      choices.push({ id: 'spells', label: `Заклинания (${newSpells})`, count: newSpells, pool: 'known-spells', spellAbility: ability, options: { from: 'spells', lists, minLevel: 1, maxLevel } });
     }
     visitFeature(
       synthetic(`spells-${classLevel}`, owner, 'Вы изучаете новые заклинания.', { choices }),
@@ -450,7 +490,7 @@ export function buildMaxHP(build: DndBuild, collected: Collected, scores: Record
   const classDef = findClass(build.class);
   if (!classDef) return 1;
   const constitution = abilityModifier(scores.constitution ?? 10);
-  const ctx = contextFor(level, scores);
+  const ctx = contextFor(level, scores, build);
   let total = Math.max(1, classDef.hitDie + constitution);
   for (let l = 2; l <= level; l += 1) {
     const gained = build.hitPoints.find((entry) => entry.level === l)?.value ?? averageHitPoints(classDef.hitDie);
@@ -552,6 +592,7 @@ function spellEntry(def: SpellDef, previous: Spell | undefined, patch: Partial<S
     damage: def.damage,
     damageType: def.damageType,
     upcastDamage: def.upcastDamage,
+    slotDamage: def.slotDamage as Record<string, string> | undefined,
     cantripScaling: def.cantripScaling,
     addModifier: def.addModifier,
     attackRoll: def.attackRoll,
@@ -596,7 +637,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   const missing: string[] = [];
   const scores = buildScores(build, level);
   const collected = collect(build, level, scores);
-  const ctx = contextFor(level, scores);
+  const ctx = contextFor(level, scores, build);
   const classDef = findClass(build.class);
   const subclass = findSubclass(classDef, build.subclass);
   const species = findSpecies(build.species);
@@ -611,6 +652,15 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   }
   const effects = collected.effects.map((e) => e.effect);
   const ofType = <T extends Effect['type']>(type: T) => effects.filter((e): e is Extract<Effect, { type: T }> => e.type === type);
+  // A feature that is on may raise scores too (a Mutagen of Potency: Strength +3, up to 23).
+  for (const granted of collected.features) {
+    if (!granted.feature.stance || !active.has(grantedId(granted))) continue;
+    for (const effect of resolveEffects(granted.feature.stance.effects, ctx)) {
+      if (effect.type !== 'attribute') continue;
+      const current = scores[effect.attribute] ?? 10;
+      if (current < (effect.max ?? 20)) scores[effect.attribute] = Math.min(effect.max ?? 20, current + effect.amount);
+    }
+  }
 
   // Abilities, saves, skills.
   const savingThrowProficiencies = [...new Set([...character.savingThrowProficiencies, ...ofType('save').map((e) => e.attribute)])];
@@ -630,6 +680,11 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   const critRange = Math.min(20, ...ofType('critRange').map((e) => e.min));
   const attacksPerAction = Math.max(1, ...ofType('extraAttack').map((e) => e.attacks));
   const advantageOn = [...new Set(ofType('advantage').flatMap((e) => e.on))];
+  const disadvantageOn = [...new Set(ofType('disadvantage').flatMap((e) => e.on))];
+  const saveBonuses: Record<string, number> = {};
+  for (const effect of ofType('saveBonus')) {
+    for (const attribute of effect.attributes) saveBonuses[attribute] = (saveBonuses[attribute] ?? 0) + resolveAmount(effect.amount, ctx);
+  }
   const unarmored = ofType('unarmoredDefense')[0];
 
   // Hit points: keep the damage already taken.
@@ -762,7 +817,14 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
         convert: feature.convert,
         effect: '',
         // Numbers that grow with level are written for the current one.
-        damage: typeof feature.damage === 'function' ? feature.damage(ctx) : feature.damage,
+        damage: resolveDice(feature.damage, ctx),
+        hpCost: costFor(feature.hpCost, ctx),
+        hpCostWhenSpent: costFor(feature.hpCostWhenSpent, ctx),
+        amplify: feature.amplify && {
+          description: feature.amplify.description,
+          hpCost: costFor(feature.amplify.hpCost, ctx),
+          damage: resolveDice(feature.amplify.damage, ctx),
+        },
         damageType: feature.damageType,
         saveAttribute: feature.saveAttribute,
         saveDC: feature.saveDC !== undefined ? resolveAmount(feature.saveDC, ctx) : undefined,
@@ -773,6 +835,8 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
         stanceNoSpells: (typeof feature.stance?.noSpells === 'function' ? feature.stance.noSpells(ctx) : feature.stance?.noSpells) || undefined,
         stanceGroup: feature.stance?.group,
         stanceTempHP: feature.stance?.tempHP !== undefined ? formTempHP(feature, ctx, effects) : undefined,
+        stanceUntilShortRest: feature.stance?.untilShortRest || undefined,
+        tempHPFromDamage: feature.tempHPFromDamage,
         iconName: previous?.iconName ?? feature.iconName,
         color: previous?.color ?? feature.color,
         grant: granted.key,
@@ -811,7 +875,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   // Spells: the class list for a preparing caster, then every spell granted by a feature.
   const previousSpells = new Map(character.spells.map((s) => [s.id, s]));
   const spells = new Map<string, Spell>();
-  const castingAbility = casting?.ability ?? 'charisma';
+  const castingAbility = casting ? castingAbilityOf(casting, build) : 'charisma';
   // A warlock casts every spell with a pact slot.
   const slotPatch = (def: SpellDef): Partial<Spell> => (pact && def.level > 0 ? { resourceId: PACT_SLOTS_ID } : {});
   if (casting?.mode === 'prepared') {
@@ -910,9 +974,13 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     critRange: critRange < 20 ? critRange : undefined,
     attacksPerAction: attacksPerAction > 1 ? attacksPerAction : undefined,
     advantageOn: advantageOn.length > 0 ? advantageOn : undefined,
+    disadvantageOn: disadvantageOn.length > 0 ? disadvantageOn : undefined,
+    saveBonuses: Object.keys(saveBonuses).length > 0 ? saveBonuses : undefined,
+    rollDice: ofType('rollDice').length > 0 ? ofType('rollDice').map((e) => ({ on: e.on, dice: resolveDice(e.dice, ctx)! })) : undefined,
     armorClassBonus: {
-      always: ofType('armorClass').filter((e) => !e.armored).reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0),
+      always: ofType('armorClass').filter((e) => !e.armored && !e.noHeavyArmor).reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0),
       armored: ofType('armorClass').filter((e) => e.armored).reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0),
+      noHeavyArmor: ofType('armorClass').filter((e) => e.noHeavyArmor).reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0) || undefined,
       manual: character.armorClassBonus?.manual,
       unarmored: unarmored?.attribute,
       unarmoredNoShield: unarmored?.noShield || undefined,
@@ -930,7 +998,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     maxPreparedSpells,
     spellcastingDifficultyName: casting ? 'СЛ заклинаний' : character.spellcastingDifficultyName,
     spellcastingDifficultyValue: casting
-      ? 8 + proficiency + abilityModifier(scores[casting.ability] ?? 10) + ofType('spellSaveDC').reduce((sum, e) => sum + e.amount, 0)
+      ? 8 + proficiency + abilityModifier(scores[castingAbility] ?? 10) + ofType('spellSaveDC').reduce((sum, e) => sum + e.amount, 0)
       : character.spellcastingDifficultyValue,
     attacks: [
       ...(form ? beastAttacks(form, character.attacks) : []),
@@ -1107,7 +1175,7 @@ function weaponAttackFor(
   const dice = effects
     .filter((e): e is Extract<Effect, { type: 'weaponDie' }> => e.type === 'weaponDie' && matchesFilter(weapon, e.weapons))
     .reduce((best, e) => (average(e.die) > average(best) ? e.die : best), weapon.damage);
-  const bonus = effects
+  const hitBonus = effects
     .filter((e): e is Extract<Effect, { type: 'attackBonus' }> => e.type === 'attackBonus' && e.kind === weapon.kind)
     .reduce((sum, e) => sum + e.amount, 0);
   // A dart flies itself, as does a thrown dagger; a bow shoots arrows.
@@ -1120,16 +1188,24 @@ function weaponAttackFor(
   const melee = equippedTableWeapons(inventory).filter(({ weapon: w }) => w.kind === 'melee');
   const dueling =
     styles.has('dueling') && weapon.kind === 'melee' && !hasProperty(weapon, 'Двуручное') && melee.length <= 1 && !spendsItself;
-  const extra = ctx ? damageBonusFor(attribute, effects, ctx, hasProperty(weapon, 'Тяжёлое')) : 0;
+  const bonus = ctx
+    ? damageBonusFor(attribute, effects, ctx, { heavy: hasProperty(weapon, 'Тяжёлое'), melee: weapon.kind === 'melee' && !spendsItself, weapon: true })
+    : { flat: 0, dice: [] };
+  const extra = bonus.flat;
   const damageModifier = (offHand && !styles.has('twoWeapon') ? Math.min(0, modifier) : modifier + (dueling ? 2 : 0)) + extra;
+  const damage = signed(dice, damageModifier);
   const heavy = weapon.kind === 'melee' && (hasProperty(weapon, 'Двуручное') || hasProperty(weapon, 'Универсальное'));
   const twoHanded = !offHand && !spendsItself ? versatileDie(weapon) : undefined;
   return {
     ...attack,
     usesAmmunition: weapon.kind === 'ranged' && !spendsItself,
     thrown: spendsItself || undefined,
-    hitBonus: (weaponProficient(weapon, effects) ? proficiency : 0) + modifier + bonus,
-    damage: signed(dice, damageModifier),
+    hitBonus: (weaponProficient(weapon, effects) ? proficiency : 0) + modifier + hitBonus,
+    damage,
+    // Made from the item every time, so the dice of a feature that has ended do not stay behind.
+    damageComponents:
+      withBonusDice(item.damageComponents?.length ? item.damageComponents : [{ damage, type: attack.damageType }], bonus.dice) ??
+      item.damageComponents,
     // Dueling's +2 is for one hand: held in two, the versatile die goes without it.
     damageTwoHanded: twoHanded ? signed(twoHanded, modifier + extra) : undefined,
     minDie: styles.has('greatWeapon') && heavy && !spendsItself ? 3 : undefined,
@@ -1137,14 +1213,30 @@ function weaponAttackFor(
   };
 }
 
-/** Damage the features add to an attack made with an ability (Rage: +2 with Strength; Great Weapon Master with a Heavy one). */
-const damageBonusFor = (attribute: string, effects: Effect[], ctx: BuildContext, heavy = false): number =>
-  effects
-    .filter(
-      (e): e is Extract<Effect, { type: 'damageBonus' }> =>
-        e.type === 'damageBonus' && (!e.ability || e.ability === attribute) && (!e.heavy || heavy),
-    )
-    .reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0);
+/**
+ * Damage the features add to an attack made with an ability (Rage: +2 with Strength; Great Weapon
+ * Master with a Heavy one): a flat bonus to its own damage, and dice of their own type dealt beside
+ * it (Crimson Rite).
+ */
+function damageBonusFor(
+  attribute: string,
+  effects: Effect[],
+  ctx: BuildContext,
+  { heavy = false, melee = false, weapon = false }: { heavy?: boolean; melee?: boolean; weapon?: boolean } = {},
+): { flat: number; dice: DamageComponent[] } {
+  const fitting = effects.filter(
+    (e): e is Extract<Effect, { type: 'damageBonus' }> =>
+      e.type === 'damageBonus' && (!e.ability || e.ability === attribute) && (!e.heavy || heavy) && (!e.melee || melee) && (!e.weapon || weapon),
+  );
+  return {
+    flat: fitting.reduce((sum, e) => sum + ('amount' in e ? resolveAmount(e.amount, ctx) : 0), 0),
+    dice: fitting.flatMap((e) => ('dice' in e ? [{ damage: resolveDice(e.dice, ctx)!, type: e.damageType, extra: true }] : [])),
+  };
+}
+
+/** An attack's damage with the dice the features deal beside it, as components; none without such dice. */
+const withBonusDice = (base: DamageComponent[], dice: DamageComponent[]): DamageComponent[] | undefined =>
+  dice.length > 0 ? [...base, ...dice] : undefined;
 
 /** Attacks the features give (Unarmed Strike with the Martial Arts die): rebuilt, keeping the player's icon. */
 function grantedAttacks(
@@ -1162,15 +1254,18 @@ function grantedAttacks(
     if (out.some((a) => a.id === id)) continue;
     const attribute = def.abilities.reduce((best, a) => (abilityModifier(scores[a] ?? 10) > abilityModifier(scores[best] ?? 10) ? a : best), def.abilities[0]!);
     const modifier = abilityModifier(scores[attribute] ?? 10);
-    const dice = typeof def.damage === 'function' ? def.damage(ctx) : def.damage;
+    const dice = resolveDice(def.damage, ctx)!;
     const before = previous.find((a) => a.id === id);
+    const bonus = damageBonusFor(attribute, collected.effects.map((e) => e.effect), ctx, { melee: !def.ranged });
+    const damage = signed(dice, modifier + bonus.flat);
     out.push({
       id,
       name: def.name,
       description: def.description,
-      damage: signed(dice, modifier + damageBonusFor(attribute, collected.effects.map((e) => e.effect), ctx)),
+      damage,
       damageType: def.damageType,
-      hitBonus: proficiency + modifier,
+      damageComponents: withBonusDice([{ damage, type: def.damageType }], bonus.dice),
+      hitBonus: proficiency + modifier + (def.hitBonus !== undefined ? resolveAmount(def.hitBonus, ctx) : 0),
       actionType: def.actionType ?? 'action',
       attribute,
       iconName: before?.iconName ?? def.iconName,
@@ -1300,13 +1395,17 @@ const FEAT_CATEGORY_NAMES: Record<string, string> = {
 const poolPicks = (collected: Collected, open: OpenChoice): Set<string> =>
   new Set(collected.choices.filter((c) => c.key !== open.key && c.choice.pool && c.choice.pool === open.choice.pool).flatMap((c) => c.picked));
 
+/** At least `min` in one of the scores, or in each of them when `all`. */
+const meetsScores = (need: { list: AttributeId[]; min: number; all?: boolean }, scores: Record<string, number>): boolean =>
+  need.all ? need.list.every((a) => (scores[a] ?? 10) >= need.min) : need.list.some((a) => (scores[a] ?? 10) >= need.min);
+
 function featBlocker(feat: FeatDef, build: DndBuild, collected: Collected, scores: Record<string, number>, level: number, open: OpenChoice): string | undefined {
   const taken = collected.features.some((f) => f.feature.id === feat.id && !f.key.startsWith(open.key));
   if (taken && !feat.repeatable) return 'Уже есть';
   const pre = feat.prerequisite;
   if (!pre) return undefined;
   if (pre.level && level < pre.level) return `С ${pre.level}-го уровня`;
-  if (pre.attributes && !pre.attributes.list.some((a) => (scores[a] ?? 10) >= pre.attributes!.min)) {
+  if (pre.attributes && !meetsScores(pre.attributes, scores)) {
     return `${pre.attributes.list.map(attributeName).join(' или ')} ${pre.attributes.min}+`;
   }
   if (pre.proficiency) {
@@ -1324,7 +1423,7 @@ export function choiceOptions(build: DndBuild, level: number, open: OpenChoice):
   const target = { ...build, level };
   const scores = buildScores(target, level);
   const collected = collect(target, level, scores);
-  const ctx = contextFor(level, scores);
+  const ctx = contextFor(level, scores, target);
   const taken = poolPicks(collected, open);
   const source = open.choice.options;
   const proficientSkills = new Set(
@@ -1397,12 +1496,24 @@ export function choiceOptions(build: DndBuild, level: number, open: OpenChoice):
                 ? `Нужно заклинание «${findSpell(pre.spell)?.name ?? pre.spell}»`
                 : pre?.entry && !owned.has(pre.entry)
                   ? `Нужно «${findCatalogEntry(source.catalog, pre.entry)?.name ?? pre.entry}»`
-                  : undefined;
+                  : pre?.attributes && !meetsScores(pre.attributes, scores)
+                    ? `${pre.attributes.list.map(attributeName).join(pre.attributes.all ? ' и ' : ' или ')} ${pre.attributes.min}+`
+                    : pre?.skill && !proficientSkills.has(pre.skill)
+                      ? `Нужно владение: ${skillName(pre.skill)}`
+                      : undefined;
         return {
           id: entry.id,
           name: entry.name,
           description: entry.description,
-          meta: [pre?.level && `${pre.level}+ уровень`, pre?.text].filter(Boolean).join(' · ') || ACTION_NAMES[entry.action ?? 'passive'],
+          meta:
+            [
+              pre?.level && `${pre.level}+ уровень`,
+              pre?.attributes && `${pre.attributes.list.map(attributeName).join(pre.attributes.all ? ' и ' : ' или ')} ${pre.attributes.min}+`,
+              pre?.skill && skillName(pre.skill),
+              pre?.text,
+            ]
+              .filter(Boolean)
+              .join(' · ') || ACTION_NAMES[entry.action ?? 'passive'],
           group: pre?.level ? `С ${pre.level}-го уровня` : 'Без требований',
           iconName: entry.iconName,
           repeatable: entry.repeatable || undefined,
@@ -1489,11 +1600,13 @@ export function choiceOptions(build: DndBuild, level: number, open: OpenChoice):
     }
     case 'beasts': {
       // Challenge 1/4 from level 2, 1/2 from 4, 1 from 8 (flying beasts too); Circle Forms go higher.
+      // A choice of its own challenge (a Pale Moon curse) takes any beast up to it.
       const base = level >= 8 ? 1 : level >= 4 ? 1 / 2 : 1 / 4;
       const boosted = collected.effects.flatMap(({ effect }) =>
         effect.type === 'wildShape' && effect.maxCR !== undefined ? [resolveAmount(effect.maxCR, ctx)] : [],
       );
-      const maxCR = Math.max(base, ...boosted);
+      const fixed = source.maxCR !== undefined;
+      const maxCR = fixed ? source.maxCR! : Math.max(base, ...boosted);
       return [...DND.beasts]
         .sort((a, b) => a.cr - b.cr || a.name.localeCompare(b.name, 'ru'))
         .map((beast) => ({
@@ -1507,7 +1620,7 @@ export function choiceOptions(build: DndBuild, level: number, open: OpenChoice):
             ? undefined
             : beast.cr > maxCR
               ? `Опасность выше ${challengeLabel(maxCR)}`
-              : beast.fly && level < 8
+              : beast.fly && level < 8 && !fixed
                 ? 'Летающие звери — с 8-го уровня'
                 : taken.has(beast.id)
                   ? 'Уже известен'
@@ -1530,14 +1643,29 @@ export function choiceOptions(build: DndBuild, level: number, open: OpenChoice):
         id: o.id,
         name: o.name,
         description: o.description,
-        disabled: taken.has(o.id) && !ownPicks.has(o.id) ? 'Уже есть' : undefined,
+        iconName: o.iconName,
+        disabled: ownPicks.has(o.id)
+          ? undefined
+          : taken.has(o.id)
+            ? 'Уже есть'
+            : o.minLevel && level < o.minLevel
+              ? `С ${o.minLevel}-го уровня`
+              : undefined,
       }));
   }
 }
 
-/** Choices whose picks the sheet changes directly, any time (the known forms of Wild Shape). */
-export function sheetChoices(build: DndBuild): OpenChoice[] {
-  return collect(build, build.level, buildScores(build)).choices.filter((c) => c.choice.onSheet);
+/**
+ * Choices whose picks the sheet changes directly, any time (the known forms of Wild Shape) — all of
+ * them, or those of one granted feature: the one holding the choice, or one its pick brought (the
+ * offering of the picked type changes the type).
+ */
+export function sheetChoices(build: DndBuild, grant?: string): OpenChoice[] {
+  return collect(build, build.level, buildScores(build)).choices.filter(
+    (c) =>
+      c.choice.onSheet &&
+      (grant === undefined || c.owner.key === grant || grant.startsWith(`${c.key}=`) || grant.startsWith(`${c.key}:`)),
+  );
 }
 
 /** Choices of a plan still waiting for picks (a choice with fewer options than its count is done when all are taken). */
@@ -1557,9 +1685,9 @@ export function setPicks(build: DndBuild, key: string, picks: string[]): DndBuil
 
 /** A feature's numbers as they stand on a level (damage that grows, a save DC), for previews. */
 export function featureNumbers(build: DndBuild, level: number, feature: FeatureDef): { damage?: string; saveDC?: number } {
-  const ctx = contextFor(level, buildScores({ ...build, level }, level));
+  const ctx = contextFor(level, buildScores({ ...build, level }, level), build);
   return {
-    damage: typeof feature.damage === 'function' ? feature.damage(ctx) : feature.damage,
+    damage: resolveDice(feature.damage, ctx),
     saveDC: feature.saveDC !== undefined ? resolveAmount(feature.saveDC, ctx) : undefined,
   };
 }

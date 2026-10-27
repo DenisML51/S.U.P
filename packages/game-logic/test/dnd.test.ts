@@ -295,6 +295,9 @@ describe('damage that grows', () => {
     expect(cure.upcastDamage).toBe('2d8');
     // Charisma 10 → +0, so only dice: 2d8 at 1st, +2d8 for each slot above.
     expect(spellDamageAt(hero, cure, 3)).toBe('6d8');
+    // Dice in steps of slot levels (Shadow Blade): the highest step the slot reaches.
+    const blade = { ...cure, level: 2, damage: '2d8', upcastDamage: undefined, slotDamage: { 3: '3d8', 5: '4d8', 7: '5d8' } };
+    expect([2, 3, 4, 5, 9].map((slot) => spellDamageAt(hero, blade, slot))).toEqual(['2d8', '3d8', '3d8', '4d8', '5d8']);
   });
 
   it('writes feature damage for the current level', () => {

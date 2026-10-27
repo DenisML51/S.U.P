@@ -1,5 +1,7 @@
 import type { ArmorDef, GearDef } from '../types';
+import { ALT_BLOOD_HUNTER_ICONS } from './classes/alt-blood-hunter';
 import { BARBARIAN_ICONS } from './classes/barbarian';
+import { BLOOD_HUNTER_ICONS } from './classes/blood-hunter';
 import { BARD_ICONS } from './classes/bard';
 import { CLERIC_ICONS } from './classes/cleric';
 import { DRUID_ICONS } from './classes/druid';
@@ -58,6 +60,8 @@ export const DND_ICONS: Record<'species' | 'backgrounds' | 'classes' | 'subclass
     sorcerer: SORCERER_ICONS.class,
     warlock: WARLOCK_ICONS.class,
     wizard: WIZARD_ICONS.class,
+    'blood-hunter': BLOOD_HUNTER_ICONS.class,
+    'alt-blood-hunter': ALT_BLOOD_HUNTER_ICONS.class,
   },
   subclasses: {
     'battle-master': 'sword-brandish',
@@ -72,6 +76,8 @@ export const DND_ICONS: Record<'species' | 'backgrounds' | 'classes' | 'subclass
     'oath-of-vengeance': 'sword-in-stone',
     'oath-of-the-noble-genies': 'whirlwind',
     ...BARBARIAN_ICONS.subclasses,
+    ...BLOOD_HUNTER_ICONS.subclasses,
+    ...ALT_BLOOD_HUNTER_ICONS.subclasses,
     ...BARD_ICONS.subclasses,
     ...CLERIC_ICONS.subclasses,
     ...DRUID_ICONS.subclasses,

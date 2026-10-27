@@ -20,6 +20,7 @@ import type { IconKind } from '../../ui/GameIcon';
 import { Segmented } from '../../ui/forms';
 import { Section } from '../../ui/Section';
 import { RollToast } from '../sheet/useRolls';
+import { diceToast } from '../../ui/Toasts';
 import { ChoiceField } from './ChoiceField';
 import { EntryCardButton, EntryDetails, type EntryInfo } from './EntryDetails';
 
@@ -88,7 +89,7 @@ const HitPointsField: React.FC<{
     const value = rollDie(hitDie);
     set('roll', value);
     const label = `Хиты, уровень ${level}`;
-    toast(<RollToast label={label} total={value} detail={`к${hitDie}: ${value}`} dice={[{ sides: hitDie, value }]} />, { duration: 5000 });
+    toast(<RollToast label={label} total={value} detail={`к${hitDie}: ${value}`} dice={[{ sides: hitDie, value }]} />, diceToast());
     onRolled?.(value);
   };
   return (

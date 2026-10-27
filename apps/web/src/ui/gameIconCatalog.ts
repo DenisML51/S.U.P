@@ -366,6 +366,33 @@ import GiWolverineClaws from '~icons/game-icons/wolverine-claws';
 import GiSpiralBloom from '~icons/game-icons/spiral-bloom';
 import GiGrowth from '~icons/game-icons/growth';
 import GiGroundSprout from '~icons/game-icons/ground-sprout';
+import GiDroplets from '~icons/game-icons/droplets';
+import GiHeartDrop from '~icons/game-icons/heart-drop';
+import GiBleedingHeart from '~icons/game-icons/bleeding-heart';
+import GiBleedingEye from '~icons/game-icons/bleeding-eye';
+import GiScarWound from '~icons/game-icons/scar-wound';
+import GiDrippingSword from '~icons/game-icons/dripping-sword';
+import GiSacrificialDagger from '~icons/game-icons/sacrificial-dagger';
+import GiChaliceDrops from '~icons/game-icons/chalice-drops';
+import GiHolyGrail from '~icons/game-icons/holy-grail';
+import GiVial from '~icons/game-icons/vial';
+import GiSoul from '~icons/game-icons/soul';
+import GiSoulVessel from '~icons/game-icons/soul-vessel';
+import GiFangedSkull from '~icons/game-icons/fanged-skull';
+import GiBestialFangs from '~icons/game-icons/bestial-fangs';
+import GiVampireDracula from '~icons/game-icons/vampire-dracula';
+import GiVampireCape from '~icons/game-icons/vampire-cape';
+import GiWerewolf from '~icons/game-icons/werewolf';
+import GiDirewolf from '~icons/game-icons/direwolf';
+import GiWitchFace from '~icons/game-icons/witch-face';
+import GiCultist from '~icons/game-icons/cultist';
+import GiFloatingGhost from '~icons/game-icons/floating-ghost';
+import GiSaltShaker from '~icons/game-icons/salt-shaker';
+import GiIronMask from '~icons/game-icons/iron-mask';
+import GiSlime from '~icons/game-icons/slime';
+import GiPouringChalice from '~icons/game-icons/pouring-chalice';
+import GiBloodySword from '~icons/game-icons/bloody-sword';
+import GiScarabBeetle from '~icons/game-icons/scarab-beetle';
 
 export const ICONS = {
   broadsword: GiBroadsword,
@@ -734,6 +761,33 @@ export const ICONS = {
   'spiral-bloom': GiSpiralBloom,
   growth: GiGrowth,
   'ground-sprout': GiGroundSprout,
+  droplets: GiDroplets,
+  'heart-drop': GiHeartDrop,
+  'bleeding-heart': GiBleedingHeart,
+  'bleeding-eye': GiBleedingEye,
+  'scar-wound': GiScarWound,
+  'dripping-sword': GiDrippingSword,
+  'sacrificial-dagger': GiSacrificialDagger,
+  'chalice-drops': GiChaliceDrops,
+  'holy-grail': GiHolyGrail,
+  vial: GiVial,
+  soul: GiSoul,
+  'soul-vessel': GiSoulVessel,
+  'fanged-skull': GiFangedSkull,
+  'bestial-fangs': GiBestialFangs,
+  'vampire-dracula': GiVampireDracula,
+  'vampire-cape': GiVampireCape,
+  werewolf: GiWerewolf,
+  direwolf: GiDirewolf,
+  'witch-face': GiWitchFace,
+  cultist: GiCultist,
+  'floating-ghost': GiFloatingGhost,
+  'salt-shaker': GiSaltShaker,
+  'iron-mask': GiIronMask,
+  slime: GiSlime,
+  'pouring-chalice': GiPouringChalice,
+  'bloody-sword': GiBloodySword,
+  'scarab-beetle': GiScarabBeetle,
 } as const;
 
 export type GameIconId = keyof typeof ICONS;
@@ -1110,6 +1164,38 @@ export const ICON_GROUPS: { label: string; icons: { id: GameIconId; label: strin
       { id: 'spiral-bloom', label: 'Цветение' },
       { id: 'growth', label: 'Буйный рост' },
       { id: 'ground-sprout', label: 'Всходы' },
+    ],
+  },
+  {
+    label: 'Кровь и проклятия',
+    icons: [
+      { id: 'droplets', label: 'Капли крови' },
+      { id: 'heart-drop', label: 'Капля из сердца' },
+      { id: 'bleeding-heart', label: 'Кровоточащее сердце' },
+      { id: 'bleeding-eye', label: 'Кровавое око' },
+      { id: 'scar-wound', label: 'Шрам' },
+      { id: 'dripping-sword', label: 'Окровавленный меч' },
+      { id: 'sacrificial-dagger', label: 'Жертвенный кинжал' },
+      { id: 'chalice-drops', label: 'Кровавая чаша' },
+      { id: 'holy-grail', label: 'Грааль' },
+      { id: 'vial', label: 'Склянка' },
+      { id: 'soul', label: 'Душа' },
+      { id: 'soul-vessel', label: 'Сосуд души' },
+      { id: 'fanged-skull', label: 'Клыкастый череп' },
+      { id: 'bestial-fangs', label: 'Звериные клыки' },
+      { id: 'vampire-dracula', label: 'Вампир' },
+      { id: 'vampire-cape', label: 'Плащ вампира' },
+      { id: 'werewolf', label: 'Оборотень' },
+      { id: 'direwolf', label: 'Лютоволк' },
+      { id: 'witch-face', label: 'Ведьма' },
+      { id: 'cultist', label: 'Культист' },
+      { id: 'floating-ghost', label: 'Призрак' },
+      { id: 'salt-shaker', label: 'Соль' },
+      { id: 'iron-mask', label: 'Железная маска' },
+      { id: 'slime', label: 'Слизь' },
+      { id: 'pouring-chalice', label: 'Льющаяся чаша' },
+      { id: 'bloody-sword', label: 'Меч в крови' },
+      { id: 'scarab-beetle', label: 'Скарабей' },
     ],
   },
 ];

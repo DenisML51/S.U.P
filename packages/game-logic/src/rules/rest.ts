@@ -1,7 +1,7 @@
 import type { Character, Limb, Resource } from '@itd/schema';
 import { attributeModifier } from './abilities';
 import { resetTurn } from './actions';
-import { endAllFeatures, endConcentration } from './concentration';
+import { endAllFeatures, endConcentration, endFeatures } from './concentration';
 import { rollDie, type RandomSource } from './dice';
 import { exhaustionLevel, setExhaustion } from './d20';
 import { LIMB_LOST_HP, settleHealth, totalMaxHP } from './health';
@@ -103,7 +103,8 @@ const replaceResource = (resources: Resource[], next: Resource): Resource[] =>
 export function shortRest(character: Character, options: ShortRestOptions = {}): RestResult {
   const { method = 'roll', random = Math.random } = options;
   const { resources, changes } = restoreResources(character, 'short');
-  let next: Character = { ...character, resources };
+  // Features that last until any rest (Crimson Rite, a Mutagen) end with this one.
+  let next: Character = endFeatures({ ...character, resources }, (ability) => !!ability.stanceUntilShortRest);
 
   const pool = hitDiceOf(character);
   const spent = pool ? Math.max(0, Math.min(Math.trunc(options.hitDice ?? 0), pool.current)) : 0;
@@ -144,8 +145,11 @@ export function shortRest(character: Character, options: ShortRestOptions = {}):
  */
 export function longRest(character: Character): RestResult {
   const { resources, changes } = restoreResources(character, 'long');
-  const maxHP = totalMaxHP(character);
-  let next: Character = endAllFeatures(endConcentration(resetTurn({ ...character, resources, currentHP: maxHP, tempHP: 0 })));
+  // What was taken off the maximum until a long rest (a Vital Sacrifice) comes back first.
+  const { maxHPReduction: lowered, ...whole } = character;
+  const maxHP = totalMaxHP(whole);
+  let next: Character = endAllFeatures(endConcentration(resetTurn({ ...whole, resources, currentHP: maxHP, tempHP: 0 })));
+  if (lowered) changes.push({ id: 'maxHP', label: 'Максимум хитов', before: totalMaxHP(character), after: maxHP });
 
   const pool = hitDiceOf(character);
   if (pool && pool.current < pool.max) {

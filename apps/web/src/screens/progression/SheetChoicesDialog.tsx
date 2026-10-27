@@ -16,7 +16,7 @@ export const SheetChoicesDialog: React.FC<{ open: boolean; grant: string; onClos
   const [draft, setDraft] = useState<DndBuild | undefined>(() => dndBuildOf(character));
   if (!draft) return null;
 
-  const choices = sheetChoices(draft).filter((open) => open.owner.key === grant);
+  const choices = sheetChoices(draft, grant);
   const owner = choices[0]?.owner.feature.name ?? 'Выбор';
   const save = () => {
     updateCharacter((doc) => applyBuild(doc, draft).character, { log: { message: `Изменён выбор: ${owner}`, type: 'other' } });

@@ -1,12 +1,9 @@
 import type { Character } from '@itd/schema';
-import { equippedArmor, isShield } from './armor';
+import { equippedArmor, isShield, wearsHeavyArmor } from './armor';
 import { exhaustionLevel } from './d20';
 
 type Mover = Pick<Character, 'speed' | 'exhaustion' | 'conditions' | 'inventory'> &
   Partial<Pick<Character, 'speedBonus' | 'movement' | 'darkvision'>>;
-
-/** Heavy armour adds none of the wearer's Dexterity; that is how a sheet's armour tells it apart. */
-const wearsHeavyArmor = (character: Pick<Character, 'inventory'>): boolean => equippedArmor(character.inventory)?.dexModifier === false;
 
 const wearsArmorOrShield = (character: Pick<Character, 'inventory'>): boolean =>
   !!equippedArmor(character.inventory) || character.inventory.some((item) => item.equipped && isShield(item));

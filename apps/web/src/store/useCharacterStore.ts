@@ -412,14 +412,26 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       if (!current) return null;
       // A reaction answers someone else's turn: it is the one thing a hero may do out of their own.
       if (!isReaction(current, request) && refuseOffTurn()) return null;
-      const result = performGameAction(current, request);
+      // What it rolls (the hit points a Crimson Rite costs) is rolled once: the edit of the stored
+      // document replays the dice the message was made with.
+      const rolled: number[] = [];
+      const record = () => {
+        const value = Math.random();
+        rolled.push(value);
+        return value;
+      };
+      const replay = () => {
+        let next = 0;
+        return () => rolled[next++] ?? Math.random();
+      };
+      const result = performGameAction(current, { ...request, random: request.random ?? record });
       if (!result.ok) {
         toast.error(result.message);
         return result;
       }
       get().updateCharacter(
         (doc) => {
-          const applied = performGameAction(doc, request);
+          const applied = performGameAction(doc, { ...request, random: request.random ?? replay() });
           return applied.ok ? applied.character : doc;
         },
         { log: { message: result.message, type: 'other' }, quiet: options?.quiet },
