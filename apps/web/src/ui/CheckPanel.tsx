@@ -14,20 +14,18 @@ import type { Theme } from './theme/settings';
  * A throw laid out as a game lays out a check: what is checked over a framed plate, the number to
  * reach at the plate's head, the dice tumbling in its middle and the outcome under them, the
  * modifier on cards below and the total under a rule. Each setting has its own plate — Fable's gilt
- * arch, the grimdark's tome, the Lands Between's bare veil, a starship's readout — lit softly along
+ * arch, the Lands Between's bare veil, a starship's readout — lit softly along
  * its edges, and its own weather behind it.
  */
 
-type Plate = 'arch' | 'fable' | 'tome' | 'veil' | 'hud' | 'cut' | 'deco';
+type Plate = 'arch' | 'fable' | 'veil' | 'hud' | 'deco';
 
 const PLATE: Record<Theme, Plate> = {
   fable: 'fable',
   'high-fantasy': 'arch',
   service: 'arch',
   'elden-ring': 'veil',
-  'dark-fantasy': 'tome',
   'sci-fi': 'hud',
-  cyberpunk: 'cut',
   lovecraft: 'deco',
 };
 
@@ -37,10 +35,8 @@ const ARCH = 'M38 122 C38 52 104 22 180 22 C256 22 322 52 322 122 L322 346 C322 
 const OUTLINE: Record<Plate, string> = {
   arch: ARCH,
   fable: 'M58 24 L302 24 Q336 24 336 58 L336 402 Q336 436 302 436 L58 436 Q24 436 24 402 L24 58 Q24 24 58 24 Z',
-  tome: 'M40 34 L320 34 L320 432 L40 432 Z',
   veil: 'M0 18 L360 18 L360 442 L0 442 Z',
   hud: 'M64 30 L296 30 L324 58 L324 404 L296 432 L64 432 L36 404 L36 58 Z',
-  cut: 'M74 24 L286 24 L316 54 L316 404 L286 434 L74 434 L44 404 L44 54 Z',
   deco: 'M48 96 L48 432 L312 432 L312 96 L290 96 L290 70 L262 70 L262 46 L226 46 L226 24 L134 24 L134 46 L98 46 L98 70 L70 70 L70 96 Z',
 };
 
@@ -125,32 +121,6 @@ const FableOrnaments: React.FC = () => {
   );
 };
 
-/** The grimdark's tome: the setting's own gothic corners and arched crest, a cross on the rule. */
-const TomeOrnaments: React.FC = () => {
-  const art = useSettingArt();
-  return (
-    <>
-      <path d="M50 44 L310 44 L310 422 L50 422 Z" className="ui-check__inner-line" />
-      {art.corner && (
-        <Corners>
-          <svg x="30" y="24" width="46" height="46" viewBox={art.corner.viewBox} className="ui-check__art">
-            {art.corner.art}
-          </svg>
-        </Corners>
-      )}
-      {art.crest && (
-        <svg x="70" y="-6" width="220" height="44" viewBox={art.crest.viewBox} className="ui-check__art">
-          {art.crest.art}
-        </svg>
-      )}
-      <path d={`M58 ${BAND_Y} L150 ${BAND_Y} M210 ${BAND_Y} L302 ${BAND_Y}`} className="ui-check__hair" />
-      <g transform={`translate(151 ${BAND_Y - 7})`} className="ui-check__art">
-        {art.ruleMark}
-      </g>
-    </>
-  );
-};
-
 /** The Lands Between: no frame at all — gilt hairlines fading out at both ends, a lozenge on each. */
 const VeilOrnaments: React.FC<{ id: string }> = ({ id }) => (
   <>
@@ -195,27 +165,6 @@ const HudOrnaments: React.FC = () => (
     ))}
     <circle cx="180" cy={DICE_Y} r="86" className="ui-check__reticle-arc" style={{ transformOrigin: `180px ${DICE_Y}px` }} />
     <path d="M128 30 L140 18 L220 18 L232 30" className="ui-check__hair" />
-  </>
-);
-
-const CutOrnaments: React.FC = () => (
-  <>
-    {[44, 316].map((x) => (
-      <path
-        key={x}
-        d={Array.from({ length: 9 }, (_, i) => `M${x} ${210 + i * 18} L${x + (x < 180 ? -8 : 8)} ${210 + i * 18}`).join(' ')}
-        className="ui-check__hair"
-      />
-    ))}
-    <Corners>
-      <path d="M60 14 L30 14 L30 44" className="ui-check__hair" />
-    </Corners>
-    <path d={`M44 ${BAND_Y} L150 ${BAND_Y} M210 ${BAND_Y} L316 ${BAND_Y}`} className="ui-check__hair" />
-    <path d={`M156 ${BAND_Y - 4} L204 ${BAND_Y - 4} L204 ${BAND_Y + 4} L156 ${BAND_Y + 4} Z`} className="ui-check__stud" />
-    <path
-      d={Array.from({ length: 5 }, (_, i) => `M${250 + i * 9} 24 L${262 + i * 9} 24 L${254 + i * 9} 34 L${242 + i * 9} 34 Z`).join(' ')}
-      className="ui-check__stud"
-    />
   </>
 );
 
@@ -278,7 +227,7 @@ const Frame: React.FC<{ plate: Plate }> = ({ plate }) => {
       </defs>
       {plate !== 'veil' && <EdgeLight id={id} d={d} />}
       {plate !== 'veil' && plate !== 'fable' && <motion.path d={d} className="ui-check__line" {...draw} />}
-      {(plate === 'arch' || plate === 'cut' || plate === 'deco' || plate === 'hud') && (
+      {(plate === 'arch' || plate === 'deco' || plate === 'hud') && (
         <path d={d} className="ui-check__inner" transform="translate(180 230) scale(0.95 0.965) translate(-180 -230)" />
       )}
       <motion.g
@@ -289,10 +238,8 @@ const Frame: React.FC<{ plate: Plate }> = ({ plate }) => {
       >
         {plate === 'arch' && <ArchOrnaments />}
         {plate === 'fable' && <FableOrnaments />}
-        {plate === 'tome' && <TomeOrnaments />}
         {plate === 'veil' && <VeilOrnaments id={id} />}
         {plate === 'hud' && <HudOrnaments />}
-        {plate === 'cut' && <CutOrnaments />}
         {plate === 'deco' && <DecoOrnaments />}
       </motion.g>
     </svg>
@@ -355,7 +302,6 @@ const CONSTELLATIONS: { stars: [number, number][] }[] = [
 
 /** The setting's weather behind a moment (a check's plate, a new level): half-seen, so the table shows through. */
 export const SettingAura: React.FC<{ setting: Theme }> = ({ setting }) => {
-  const id = useId().replace(/:/g, '');
   switch (setting) {
     case 'lovecraft':
       // The table of Lovecraft keeps a check bare: nothing behind the plate.
@@ -392,39 +338,6 @@ export const SettingAura: React.FC<{ setting: Theme }> = ({ setting }) => {
     case 'sci-fi':
       // A projection's glow over a faint grid of points, its scanlines.
       return <span className="ui-check-aura ui-check-aura--holo" aria-hidden />;
-    case 'cyberpunk':
-      return (
-        <span className="ui-check-aura ui-check-aura--neon" aria-hidden>
-          <span className="ui-check-aura__bands" />
-        </span>
-      );
-    case 'dark-fantasy':
-      // Smoke curling from below, embers rising through it, a fire's red light under it all.
-      return (
-        <span className="ui-check-aura ui-check-aura--embers" aria-hidden>
-          <svg viewBox="0 0 400 520" preserveAspectRatio="none">
-            <defs>
-              <filter id={`${id}-smoke`} x="-20%" y="-20%" width="140%" height="140%">
-                <feTurbulence type="fractalNoise" baseFrequency="0.011 0.02" numOctaves="4" seed="21">
-                  <animate attributeName="baseFrequency" dur="16s" values="0.011 0.02;0.015 0.016;0.011 0.02" repeatCount="indefinite" />
-                </feTurbulence>
-                <feColorMatrix values="0 0 0 0 0.08  0 0 0 0 0.05  0 0 0 0 0.04  0 0 0 1.4 -0.45" />
-                <feGaussianBlur stdDeviation="2" />
-              </filter>
-              <radialGradient id={`${id}-clear`} cx="50%" cy="48%" r="50%">
-                <stop offset="0.3" stopColor="#000" />
-                <stop offset="0.62" stopColor="#fff" />
-                <stop offset="0.98" stopColor="#000" />
-              </radialGradient>
-              <mask id={`${id}-edges`}>
-                <rect width="400" height="520" fill={`url(#${id}-clear)`} />
-              </mask>
-            </defs>
-            <rect width="400" height="520" filter={`url(#${id}-smoke)`} mask={`url(#${id}-edges)`} className="ui-check-aura__smoke" />
-          </svg>
-          <Motes list={RISING} />
-        </span>
-      );
     default:
       // Fable's fairy dust drifting in a shaft of light.
       return (

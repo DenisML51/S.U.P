@@ -22,7 +22,7 @@ const SHADES = [0, 0.55, 0.72, 0.82];
  */
 /** A Cyrillic letter and a Latin one: each face is loaded for both alphabets. */
 const FACE_SAMPLE = `${String.fromCharCode(0x416)}W`;
-const WORLD_FACES = ['Oswald', 'Old Standard TT', 'Cinzel', 'Forum', 'Alegreya', 'Alegreya SC', 'Albion Capitals', 'Cormorant SC', 'Cormorant Garamond', 'Poiret One', 'Tektur'];
+const WORLD_FACES = ['Cinzel', 'Forum', 'Alegreya', 'Alegreya SC', 'Albion Capitals', 'Cormorant SC', 'Cormorant Garamond', 'Poiret One', 'Tektur'];
 
 const centreOf = (element: Element | null | undefined): Origin => {
   const rect = element?.getBoundingClientRect();

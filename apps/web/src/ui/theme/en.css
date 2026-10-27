@@ -10,14 +10,6 @@
   .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Disgrace'; }
 }
 
-:is(html[lang='en'][data-setting='dark-fantasy'], html[lang='en'] [data-setting='dark-fantasy']) {
-  .ui-toast::before { content: 'A note'; }
-  .ui-toast--success::before { content: 'A good omen'; }
-  .ui-toast--error::before { content: 'An ill omen'; }
-  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Grace of the gods'; }
-  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Cursed'; }
-}
-
 :is(html[lang='en'][data-setting='elden-ring'], html[lang='en'] [data-setting='elden-ring']) {
   .ui-toast::before { content: 'Message'; }
   .ui-toast--success::before { content: 'Acquired'; }
@@ -33,15 +25,6 @@
   .ui-toast--error::after { content: 'Failure'; }
   .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Target down'; }
   .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Critical failure'; }
-}
-
-:is(html[lang='en'][data-setting='cyberpunk'], html[lang='en'] [data-setting='cyberpunk']) {
-  .ui-toast::before { content: '▌Incoming // neurolink'; }
-  .ui-toast:is(.ui-toast--error, .ui-toast--success)::before { content: '▌Neurolink'; }
-  .ui-toast--success::after { content: 'Accepted'; }
-  .ui-toast--error::after { content: 'Access denied'; }
-  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Lethal'; }
-  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'System crash'; }
 }
 
 :is(html[lang='en'][data-setting='lovecraft'], html[lang='en'] [data-setting='lovecraft']) {

@@ -7,11 +7,6 @@ import '@fontsource/cormorant-garamond/600.css';
 import '@fontsource/tektur/400.css';
 import '@fontsource/tektur/500.css';
 import '@fontsource/tektur/600.css';
-import '@fontsource/old-standard-tt/400.css';
-import '@fontsource/old-standard-tt/700.css';
-import '@fontsource/oswald/400.css';
-import '@fontsource/oswald/500.css';
-import '@fontsource/oswald/600.css';
 import '@fontsource/poiret-one/400.css';
 import '@fontsource/pt-mono/400.css';
 import '@fontsource/cinzel/400.css';
@@ -41,8 +36,6 @@ export interface SettingInfo {
 export const SETTING_INFO: Record<Setting, SettingInfo> = {
   'high-fantasy': { id: 'high-fantasy', label: 'High Fantasy' },
   'sci-fi': { id: 'sci-fi', label: 'Sci-Fi' },
-  'dark-fantasy': { id: 'dark-fantasy', label: 'Dark Fantasy' },
-  cyberpunk: { id: 'cyberpunk', label: 'Cyberpunk' },
   lovecraft: { id: 'lovecraft', label: 'Lovecraft' },
   'elden-ring': { id: 'elden-ring', label: 'Elden Ring' },
   fable: { id: 'fable', label: 'Fable' },

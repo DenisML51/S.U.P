@@ -83,11 +83,15 @@ export const ItemTypeSchema = z.enum(['armor', 'weapon', 'ammunition', 'item']);
 export const WeaponClassSchema = z.enum(['melee', 'ranged']);
 export const ResistanceLevelSchema = z.enum(['resistance', 'vulnerability', 'immunity', 'none']);
 /** The universe a character comes from; drives the visual theme of the sheet. */
-export const SETTINGS = ['high-fantasy', 'sci-fi', 'dark-fantasy', 'cyberpunk', 'lovecraft', 'elden-ring', 'fable'] as const;
+export const SETTINGS = ['high-fantasy', 'sci-fi', 'lovecraft', 'elden-ring', 'fable'] as const;
 export const SettingSchema = z.enum(SETTINGS);
 export const DEFAULT_SETTING: z.infer<typeof SettingSchema> = 'high-fantasy';
-/** Settings that were merged into another one; documents saved with them read as their successor. */
-const RETIRED_SETTINGS: Record<string, z.infer<typeof SettingSchema>> = { grimdark: 'dark-fantasy' };
+/** Settings that were removed; documents saved with them read as the closest one left. */
+const RETIRED_SETTINGS: Record<string, z.infer<typeof SettingSchema>> = {
+  grimdark: 'elden-ring',
+  'dark-fantasy': 'elden-ring',
+  cyberpunk: 'sci-fi',
+};
 
 /** When a resource comes back: on a short rest (and a long one), only on a long rest, or by hand. */
 export const RecoverySchema = z.enum(['short', 'long', 'manual']);

@@ -61,7 +61,6 @@ describe('CharacterSchema', () => {
 
   it('accepts known settings and rejects unknown ones', () => {
     expect(CharacterSchema.parse({ ...minimal, setting: 'sci-fi' }).setting).toBe('sci-fi');
-    expect(CharacterSchema.parse({ ...minimal, setting: 'cyberpunk' }).setting).toBe('cyberpunk');
     expect(CharacterSchema.parse({ ...minimal, setting: 'lovecraft' }).setting).toBe('lovecraft');
     expect(CharacterSchema.parse({ ...minimal, setting: 'elden-ring' }).setting).toBe('elden-ring');
     expect(CharacterSchema.parse({ ...minimal, setting: 'fable' }).setting).toBe('fable');
@@ -69,8 +68,10 @@ describe('CharacterSchema', () => {
     expect(CharacterSchema.safeParse({ ...minimal, setting: 'steampunk' }).success).toBe(false);
   });
 
-  it('reads the retired grimdark setting as dark fantasy', () => {
-    expect(CharacterSchema.parse({ ...minimal, setting: 'grimdark' }).setting).toBe('dark-fantasy');
+  it('reads retired settings as the closest one left', () => {
+    expect(CharacterSchema.parse({ ...minimal, setting: 'grimdark' }).setting).toBe('elden-ring');
+    expect(CharacterSchema.parse({ ...minimal, setting: 'dark-fantasy' }).setting).toBe('elden-ring');
+    expect(CharacterSchema.parse({ ...minimal, setting: 'cyberpunk' }).setting).toBe('sci-fi');
   });
 
   it('reads a resource saved before rest rules as restored by a long rest', () => {
