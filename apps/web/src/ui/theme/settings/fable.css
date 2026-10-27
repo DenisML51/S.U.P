@@ -1,3 +1,16 @@
+@font-face {
+  font-family: 'Albion Capitals';
+  font-weight: 700;
+  font-display: swap;
+  src: url('../../../assets/fonts/albion-capitals-700.woff') format('woff');
+}
+@font-face {
+  font-family: 'Albion Capitals';
+  font-weight: 900;
+  font-display: swap;
+  src: url('../../../assets/fonts/albion-capitals-900.woff') format('woff');
+}
+
 /* ================================================================== Fable
  * "The storybook HUD": Albion as Fable draws it. Nothing is framed in metal: panels are tinted glass
  * of a deep sea-green through which the light behind shows, lit along the top by a gilt hairline
@@ -11,9 +24,9 @@
 
 [data-setting='fable'] {
   /* The setting's own display face; the service's type may stand in for --font-display, never for it. */
-  /* The title face is the game's logo: flared roman capitals with a curled F (Cinzel Decorative); it
-     has no Cyrillic, so Russian is cut in the matching unicase roman (Cormorant Unicase). */
-  --setting-display: 'Cinzel Decorative', 'Cormorant Unicase', Georgia, serif;
+  /* The title face is the game's logo: flared roman capitals with a curled F — Cinzel Decorative,
+     given a Cyrillic of its own (scripts/albion-capitals.py). */
+  --setting-display: 'Albion Capitals', 'Alegreya', Georgia, serif;
   --font-display: var(--setting-display);
   /* The storybook serif everything else is written in. */
   --font-serif: 'Alegreya', Georgia, serif;
@@ -1035,7 +1048,6 @@
   & > .ui-world .ui-world__veil { background: radial-gradient(70% 60% at 50% 42%, rgb(var(--c-bg-deep) / 0.35), rgb(var(--c-bg-deep) / 0.75)); }
   /* The logo itself: the face's capitals are its swash forms — the curled F, the A and L with tails. */
   & > .ui-world .ui-world__name {
-    font-family: 'Cinzel Decorative', var(--setting-display);
     font-weight: 900;
     font-size: 3rem;
     font-size-adjust: none;
