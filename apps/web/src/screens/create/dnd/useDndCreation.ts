@@ -88,6 +88,11 @@ export function useDndCreation(setting: Setting, onCreated: () => void) {
       setBuild((b) => (b.class === classId ? b : { ...withoutPicks(b, 'class', 'subclass', 'casting'), class: classId, subclass: undefined }));
       setClassKitId(undefined);
     },
+    /** No class again: what was picked for one goes with it. */
+    clearClass: () => {
+      setBuild((b) => ({ ...withoutPicks(b, 'class', 'subclass', 'casting'), class: '', subclass: undefined }));
+      setClassKitId(undefined);
+    },
     /** Lowering the start level forgets the hit points and the subclass of the levels above it. */
     setLevel: (level: number) =>
       setBuild((b) => {

@@ -14,12 +14,14 @@ export interface CarouselItem<T extends string> {
 /**
  * A few cards fanned round the one in front, as the worlds are on the creation's first step: the
  * cards turn and fall back with depth, the one in front stays awake. A card is chosen by clicking
- * it in front or with the button under it; arrows and the keyboard turn the fan.
+ * it in front or with the button under it; arrows and the keyboard turn the fan. Given `onClear`,
+ * the chosen one can be let go again from under it.
  */
 export function ChoiceCarousel<T extends string>({
   items,
   chosen,
   onChoose,
+  onClear,
   onFocus,
   preferred,
   chooseLabel,
@@ -32,6 +34,8 @@ export function ChoiceCarousel<T extends string>({
   items: CarouselItem<T>[];
   chosen: T | null;
   onChoose: (id: T) => void;
+  /** Lets the choice go: nothing is chosen again. */
+  onClear?: () => void;
   onFocus?: (id: T) => void;
   /** The card in front at first when nothing is chosen yet (the rules that go with the world). */
   preferred?: T;
@@ -134,9 +138,16 @@ export function ChoiceCarousel<T extends string>({
       </div>
       <div className="mt-6 flex h-11 items-center">
         {chosen === focused.id ? (
-          <span className="flex items-center gap-2 text-frame-bright">
-            <IconCheck width={16} height={16} />
-            {chosenLabel}
+          <span className="flex items-center gap-4">
+            <span className="flex items-center gap-2 text-frame-bright">
+              <IconCheck width={16} height={16} />
+              {chosenLabel}
+            </span>
+            {onClear && (
+              <Button variant="ghost" size="sm" onClick={onClear}>
+                Снять выбор
+              </Button>
+            )}
           </span>
         ) : focused.disabled ? (
           <span className="text-sm text-ink-faint">{disabledLabel}</span>

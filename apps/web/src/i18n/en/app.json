@@ -1919,5 +1919,6 @@
   "{0} · максимум снижен на {1} до продолжительного отдыха": "{0} · maximum lowered by {1} until a long rest",
   "Нет рукопашной атаки, с которой её сотворить": "No melee attack to cast it with",
   "Нет атаки оружием, с которой её сотворить": "No weapon attack to cast it with",
-  "Вперёд": "Forward"
+  "Вперёд": "Forward",
+  "Снять выбор": "Clear choice"
 }
