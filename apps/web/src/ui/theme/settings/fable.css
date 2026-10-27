@@ -3,27 +3,31 @@
  * of a deep sea-green through which the light behind shows, lit along the top by a gilt hairline
  * that fades out at its ends; plates are round, a count sits in a diamond, and the mark of
  * everything is the four-pointed sparkle of the quest tracker and the fairy's dust. A serif with a
- * storybook hand (Alegreya) and its small capitals for headings; the chosen thing is ivory; records
- * are heaps of parchment. Wine-red, the card a villager tells the hero what they think of them on, is
+ * storybook hand (Alegreya) and its small capitals for labels, titles in the logo's flared capitals;
+ * the chosen thing is ivory; records are heaps of parchment. Wine-red, the card a villager tells the hero what they think of them on, is
  * kept for what must stand out (danger, a refusal, the bookmark); a word of praise or shame is written
  * in a flowing hand.
  */
 
 [data-setting='fable'] {
   /* The setting's own display face; the service's type may stand in for --font-display, never for it. */
-  --setting-display: 'Alegreya', Georgia, serif;
+  /* The title face is the game's logo: flared roman capitals with a curled F (Cinzel Decorative); it
+     has no Cyrillic, so Russian is cut in the matching unicase roman (Cormorant Unicase). */
+  --setting-display: 'Cinzel Decorative', 'Cormorant Unicase', Georgia, serif;
   --font-display: var(--setting-display);
-  --font-numeric: 'Alegreya', Georgia, serif;
+  /* The storybook serif everything else is written in. */
+  --font-serif: 'Alegreya', Georgia, serif;
+  --font-numeric: var(--font-serif);
   /* Headings of a tracker and labels: the face's small capitals. */
   --font-caps: 'Alegreya SC', Georgia, serif;
   /* A word of praise or shame, written in a flowing hand. */
   --font-script: 'Marck Script', 'Segoe Script', cursive;
   --display-tracking: 0.01em;
-  --display-weight: 500;
+  --display-weight: 700;
   /* The light a world card is lit by: the sun behind the castle. */
   --world-light: rgb(240 214 150 / 0.3);
   /* The whole world speaks in the storybook serif, figures standing on the line. */
-  font-family: 'Alegreya', Georgia, serif;
+  font-family: var(--font-serif);
   font-variant-numeric: lining-nums;
 
   --c-bg: 10 24 27;
@@ -196,6 +200,9 @@
   .ui-interactive[data-active='true'] { border-color: rgb(var(--c-frame-bright) / 0.55); }
 
   /* ---------------------------------------------------------------- Type and rules */
+  /* The logo's face sets its lower case as small capitals, which equalising the x-height shrinks
+     below the Cyrillic; capitals of one height keep English and Russian titles one size. */
+  .ui-display { font-size-adjust: cap-height 0.7; }
   .ui-section-title { color: rgb(var(--c-ink)); font-size: 1.6rem; letter-spacing: 0.01em; text-shadow: 0 1px 10px rgb(0 0 0 / 0.55), 0 0 18px rgb(var(--c-frame-bright) / 0.18); }
   .ui-rule::before,
   .ui-rule::after { background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.7), transparent); }
@@ -347,13 +354,13 @@
     clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
   }
   .ui-ledger__head { padding-top: 1.05rem; border-bottom: 1px solid rgb(var(--c-paper-muted) / 0.4); }
-  .ui-ledger__head h2 { font-family: var(--font-caps); font-size: 1.3rem; font-weight: 700; letter-spacing: 0.04em; color: rgb(var(--c-wine)); }
+  .ui-ledger__head h2 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; letter-spacing: 0.02em; font-size-adjust: cap-height 0.7; color: rgb(var(--c-wine)); }
   .ui-ledger__head > svg { color: rgb(var(--c-wine)); }
   .ui-ledger__row { position: relative; border-bottom: 1px solid rgb(var(--c-paper-muted) / 0.28); transition: background-color 200ms; }
   .ui-ledger__row:last-child { border-bottom: 0; }
   .ui-ledger__row:hover { background-color: rgb(var(--c-paper-ink) / 0.05); }
   .ui-ledger__row:hover .ui-ledger__title { text-decoration: none; color: rgb(var(--c-wine)); }
-  .ui-ledger__title { font-family: var(--font-display); font-size: 1.08rem; font-weight: 500; color: rgb(var(--c-paper-ink)); }
+  .ui-ledger__title { font-family: var(--font-serif); font-size: 1.08rem; font-weight: 500; color: rgb(var(--c-paper-ink)); }
   .ui-ledger__meta { color: rgb(var(--c-paper-muted)); }
   .ui-ledger__bullet { color: rgb(150 112 50 / 0.75); opacity: 1; }
   .ui-ledger__row[data-active] .ui-ledger__bullet { color: rgb(160 116 40); }
@@ -551,7 +558,7 @@
   [aria-checked='true'] > .ui-switch { background: rgb(var(--c-frame) / 0.35); border-color: rgb(var(--c-frame-bright)); box-shadow: 0 0 10px -2px rgb(var(--c-frame-bright) / 0.6); }
   [aria-checked='true'] > .ui-switch::after { background: var(--ivory); box-shadow: 0 0 6px rgb(255 240 200 / 0.8); }
   .ui-popover {
-    font-family: var(--setting-display);
+    font-family: var(--font-serif);
     color: rgb(var(--c-ink-muted));
     background: linear-gradient(180deg, rgb(24 52 56), rgb(var(--c-surface)));
     border-color: rgb(var(--c-frame) / 0.45);
@@ -576,7 +583,7 @@
      flowing hand, as the game writes what Albion thinks of the hero. */
   .ui-toast {
     /* Messages are drawn outside the screen's scope, under <body>: they take the serif themselves. */
-    font-family: var(--setting-display);
+    font-family: var(--font-serif);
     font-variant-numeric: lining-nums;
     flex-direction: column;
     align-items: stretch;
@@ -684,7 +691,7 @@
   .ui-dialog__rule { display: flex; color: rgb(var(--c-frame-bright)); }
   .ui-dialog__foot { border-top: 1px solid transparent; border-image: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.45), transparent) 1; }
   :is(.ui-dialog, .ui-details) .ui-keyfacts dt { font-family: var(--font-caps); font-size: 0.8rem; letter-spacing: 0.05em; text-transform: none; opacity: 0.85; }
-  .ui-keyfacts dd { font-family: var(--font-display); }
+  .ui-keyfacts dd { font-family: var(--font-serif); }
 
   .ui-chip { font-family: var(--font-caps); font-size: 0.85rem; letter-spacing: 0.03em; border-radius: 999px; padding-inline: 0.8rem; }
   /* A chip that is only a picture stays a true circle, its picture in the middle. */

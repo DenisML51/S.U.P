@@ -26,6 +26,8 @@ import '@fontsource/alegreya-sc/400.css';
 import '@fontsource/alegreya-sc/500.css';
 import '@fontsource/alegreya-sc/700.css';
 import '@fontsource/marck-script/400.css';
+import '@fontsource/cinzel-decorative/700.css';
+import '@fontsource/cormorant-unicase/700.css';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 
 export interface SettingInfo {
