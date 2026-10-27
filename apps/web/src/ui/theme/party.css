@@ -150,6 +150,22 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   --card-h: max(8.5rem, min(var(--card-tall), calc((var(--deck-share) - var(--stack-peek)) / 0.75)));
   --card-w: calc(var(--card-h) * 0.75);
 }
+/* A room about half a wide screen: four stacks in a row would leave the cards small and the height
+   empty, so they stand two by two, the cards a little larger. */
+@container (max-width: 1000px) {
+  .ui-decks {
+    --per-row: 2;
+    --card-tall: clamp(11rem, 30vh, 15.5rem);
+  }
+  .ui-decks-room--wrap > .ui-decks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 1.75rem 2rem;
+  }
+  /* The left column stands a little in from the edge, off the cover's corner. */
+  .ui-decks-room--wrap > .ui-decks > :nth-child(odd) { margin-left: 1.5rem; }
+}
 /* Too narrow for every stack in one row even with small cards: two to a row, a little lower, so
    both rows mostly fit the screen. */
 @container (max-width: 680px) {
