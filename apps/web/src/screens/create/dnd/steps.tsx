@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   ATTRIBUTES_LIST,
   SKILLS_LIST,
@@ -187,54 +188,68 @@ export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => 
         .map(([level, features]) => [Number(level), features.filter((f) => !f.hidden).map((f) => f.name)] as const)
         .filter(([, names]) => names.length > 0)
     : [];
+  const chosen = !!classDef;
+  // Until a class is chosen the cards stand in the middle of the panel; the choice lifts them to its
+  // top, and what the class is comes in under them.
   return (
-    <>
-      <ClassCarousel value={build.class} onChange={creation.setClass} />
-      <Picked
-        title={classDef?.name}
-        text={classDef?.description}
-        empty="Выберите класс — то, чему герой посвятил жизнь."
-        facts={
-          classDef && (
-            <Facts
-              facts={[
-                ['Кость хитов', `к${classDef.hitDie}`],
-                ['Основные', classDef.primary.map(attributeName).join(', ')],
-                ['Спасброски', classDef.saves.map(attributeName).join(', ')],
-                ['Подкласс', `с ${classDef.subclassLevel}-го уровня`],
-                ...(classDef.source ? [['Источник', `Хоумбрю · ${classDef.source}`] as [string, string]] : []),
-              ]}
-            />
-          )
-        }
+    <div className="flex min-h-full flex-col">
+      {!chosen && <div className="flex-1" aria-hidden />}
+      <motion.div layout="position" transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
+        <ClassCarousel value={build.class} onChange={creation.setClass} onClear={creation.clearClass} />
+      </motion.div>
+      <motion.div
+        key={chosen ? 'chosen' : 'empty'}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: chosen ? 0.2 : 0 }}
       >
-        {classDef && (
-          <>
-            {/* Only to read: the subclass is picked on the level that brings it, on «Развитие». */}
-            <Section title="Подклассы" hint={`Подкласс выбирается на ${classDef.subclassLevel}-м уровне, на шаге «Развитие».`}>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-x-6 gap-y-2.5">
-                {classDef.subclasses.map((subclass) => (
-                  <li key={subclass.id} className="flex items-center gap-2.5 text-sm text-ink-muted" title={subclass.description}>
-                    <GameIcon name={DND_ICONS.subclasses[subclass.id]} kind="ability" size={22} className="ui-origin__icon shrink-0" />
-                    {subclass.name}
-                  </li>
-                ))}
-              </ul>
-            </Section>
-            <Section title="Развитие по уровням">
-              <ol className="divide-y divide-line/40 border-y border-line/40 text-[13px]">
-                {levels.map(([level, names]) => (
-                  <li key={level} className="grid grid-cols-[3rem_1fr] items-baseline py-1.5">
-                    <span className="ui-numeric text-center text-ink-faint">{level}</span>
-                    <span className="text-ink-muted">{names.join(', ')}</span>
-                  </li>
-                ))}
-              </ol>
-            </Section>
-          </>
-        )}
-      </Picked>
-    </>
+        <Picked
+          title={classDef?.name}
+          text={classDef?.description}
+          empty="Выберите класс — то, чему герой посвятил жизнь."
+          facts={
+            classDef && (
+              <Facts
+                facts={[
+                  ['Кость хитов', `к${classDef.hitDie}`],
+                  ['Основные', classDef.primary.map(attributeName).join(', ')],
+                  ['Спасброски', classDef.saves.map(attributeName).join(', ')],
+                  ['Подкласс', `с ${classDef.subclassLevel}-го уровня`],
+                  ...(classDef.source ? [['Источник', `Хоумбрю · ${classDef.source}`] as [string, string]] : []),
+                ]}
+              />
+            )
+          }
+        >
+          {classDef && (
+            <>
+              {/* Only to read: the subclass is picked on the level that brings it, on «Развитие». */}
+              <Section title="Подклассы" hint={`Подкласс выбирается на ${classDef.subclassLevel}-м уровне, на шаге «Развитие».`}>
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-x-6 gap-y-2.5">
+                  {classDef.subclasses.map((subclass) => (
+                    <li key={subclass.id} className="flex items-center gap-2.5 text-sm text-ink-muted" title={subclass.description}>
+                      <GameIcon name={DND_ICONS.subclasses[subclass.id]} kind="ability" size={22} className="ui-origin__icon shrink-0" />
+                      {subclass.name}
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+              <Section title="Развитие по уровням">
+                <ol className="divide-y divide-line/40 border-y border-line/40 text-[13px]">
+                  {levels.map(([level, names]) => (
+                    <li key={level} className="grid grid-cols-[3rem_1fr] items-baseline py-1.5">
+                      <span className="ui-numeric text-center text-ink-faint">{level}</span>
+                      <span className="text-ink-muted">{names.join(', ')}</span>
+                    </li>
+                  ))}
+                </ol>
+              </Section>
+            </>
+          )}
+        </Picked>
+      </motion.div>
+      {!chosen && <div className="flex-1" aria-hidden />}
+    </div>
   );
 };
 

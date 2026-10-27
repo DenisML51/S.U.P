@@ -84,9 +84,10 @@ const ClassCard: React.FC<{ classDef: ClassDef; focused: boolean; hovered: boole
 };
 
 /** The classes fanned round the one in front, as the rules are; only the near ones are drawn. */
-export const ClassCarousel: React.FC<{ value?: string; onChange: (id: string) => void }> = ({
+export const ClassCarousel: React.FC<{ value?: string; onChange: (id: string) => void; onClear: () => void }> = ({
   value,
   onChange,
+  onClear,
 }) => (
   // The fan is wider than the step's panel: the cards at its sides are cut at the panel's edge.
   <div className="overflow-x-clip">
@@ -96,6 +97,7 @@ export const ClassCarousel: React.FC<{ value?: string; onChange: (id: string) =>
       reach={2}
       chosen={value || null}
       onChoose={onChange}
+      onClear={onClear}
       chooseLabel="Выбрать класс"
       chosenLabel="Класс выбран"
       items={DND.classes.map((classDef) => ({
