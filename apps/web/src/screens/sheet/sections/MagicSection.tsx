@@ -19,7 +19,7 @@ import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { Ledger, LedgerBullet, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
 import { Select } from '../../../ui/forms';
-import { Button, IconButton, Input, Panel, Tabs } from '../../../ui/primitives';
+import { Button, IconButton, Input, Tabs } from '../../../ui/primitives';
 import { IconMinus, IconPlus } from '../../../ui/icons';
 import { SectionNotes } from '../parts/EditableText';
 import { SectionAside, SectionList } from '../SectionAside';
@@ -31,28 +31,6 @@ import { describeDamage, spellDamageParts } from '../parts/damage';
 import { t } from '../../../i18n';
 
 type LevelFilter = 'all' | number;
-
-/**
- * Below this width the book would be squeezed by the column beside it: what it is cast with goes
- * under it instead. Above it the book gives up a little of its page width and the column stays.
- */
-const NARROW = 960;
-
-/** Whether the element is narrower than `width`, kept up as it resizes. */
-function useNarrow<T extends HTMLElement>(width: number) {
-  const ref = useRef<T>(null);
-  const [narrow, setNarrow] = useState(false);
-  useLayoutEffect(() => {
-    const box = ref.current;
-    if (!box) return;
-    const measure = () => setNarrow(box.clientWidth < width);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(box);
-    return () => observer.disconnect();
-  }, [width]);
-  return { ref, narrow };
-}
 
 /**
  * The circles as tabs while they all fit in a row, a dropdown once they don't. The tabs stay laid
@@ -161,7 +139,7 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
   );
 };
 
-/** Spellcasting difficulty: its name and value, edited in place. */
+/** Spellcasting difficulty in the book's header: its name and value, edited in place. */
 const DifficultyEditor: React.FC<{
   name: string;
   value: number;
@@ -174,20 +152,22 @@ const DifficultyEditor: React.FC<{
     return (
       <button
         type="button"
-        onClick={() => setEditing(true)}
-        className="group block w-full text-left"
+        onClick={() => {
+          setDraftName(name);
+          setDraftValue(String(value));
+          setEditing(true);
+        }}
+        className="group flex items-baseline gap-1.5 whitespace-nowrap"
         title="Изменить"
       >
-        <span className="ui-display ui-numeric text-4xl leading-none text-ink group-hover:text-frame-bright">
-          {value}
-        </span>
-        <span className="mt-1 block text-xs text-ink-faint">{name}</span>
+        <span>{name}</span>
+        <span className="ui-display ui-numeric text-2xl leading-none text-paper-ink group-hover:opacity-70">{value}</span>
       </button>
     );
   }
   return (
     <form
-      className="space-y-2"
+      className="flex items-center gap-1.5"
       onSubmit={(event) => {
         event.preventDefault();
         const parsed = Number(draftValue);
@@ -195,39 +175,25 @@ const DifficultyEditor: React.FC<{
         setEditing(false);
       }}
     >
-      <Input value={draftName} onChange={(e) => setDraftName(e.target.value)} aria-label="Название" />
-      <div className="flex gap-2">
-        <Input
-          value={draftValue}
-          onChange={(e) => setDraftValue(e.target.value)}
-          inputMode="numeric"
-          aria-label="Значение"
-        />
-        <Button type="submit" size="sm" variant="primary">
-          Готово
-        </Button>
-      </div>
+      <Input value={draftName} onChange={(e) => setDraftName(e.target.value)} aria-label="Название" className="!h-8 !w-32 text-sm" />
+      <Input
+        value={draftValue}
+        onChange={(e) => setDraftValue(e.target.value)}
+        inputMode="numeric"
+        aria-label="Значение"
+        className="!h-8 !w-12 text-center text-sm"
+      />
+      <Button type="submit" size="sm" variant="primary">
+        Готово
+      </Button>
     </form>
   );
 };
 
-/** What the book is cast with: the difficulty, the studied schools, notes. `below` lays it out under the book. */
-const CastingInfo: React.FC<{ character: Character; below?: boolean }> = ({ character, below }) => {
-  const saveText = useSheetText();
+/** The schools a homebrew caster studies; preset heroes prepare by their class rules. */
+const StudiedSchools: React.FC<{ character: Character }> = ({ character }) => {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
-  const difficulty = (
-    <Panel className="px-5 py-4">
-      <DifficultyEditor
-        name={character.spellcastingDifficultyName ?? 'СЛ заклинаний'}
-        value={character.spellcastingDifficultyValue ?? 10}
-        onSave={(spellcastingDifficultyName, spellcastingDifficultyValue) =>
-          updateCharacter((doc) => ({ ...doc, spellcastingDifficultyName, spellcastingDifficultyValue }))
-        }
-      />
-    </Panel>
-  );
-  // Studied schools are a homebrew limit; preset heroes prepare by their class rules.
-  const schools = !character.build && (
+  return (
     <section className="min-w-0">
       <div className="ui-label">Изучаемые школы</div>
       <div className="flex flex-wrap gap-1.5">
@@ -248,25 +214,6 @@ const CastingInfo: React.FC<{ character: Character; below?: boolean }> = ({ char
       )}
     </section>
   );
-  const notes = <SectionNotes value={character.spellsNotes} onSave={saveText('spellsNotes')} />;
-  if (below) {
-    return (
-      <div className="mt-4 flex shrink-0 flex-col gap-4">
-        <div className="flex items-start gap-5">
-          <div className="w-44 shrink-0">{difficulty}</div>
-          {schools}
-        </div>
-        {notes}
-      </div>
-    );
-  }
-  return (
-    <>
-      {difficulty}
-      {schools}
-      {notes}
-    </>
-  );
 };
 
 /** Spells: the whole spellbook, preparation for the day and casting, in one place. */
@@ -281,7 +228,7 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   const [catalogOpen, setCatalogOpen] = useState(false);
   // A hero of a rules system adds from its book of spells; a spell of one's own is made by hand.
   const hasCatalog = !!character.build && !!rulesOf(character.build).spellCatalog;
-  const { ref, narrow } = useNarrow<HTMLDivElement>(NARROW);
+  const saveText = useSheetText();
 
   const levels = useMemo(
     () => [...new Set(character.spells.map((s) => s.level))].sort((a, b) => a - b),
@@ -308,7 +255,7 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   };
 
   return (
-    <div ref={ref} className="flex h-full gap-8 max-lg:flex-col">
+    <div className="flex h-full gap-8">
       <SectionList>
         <LevelPicker levels={levels} value={level} onChange={setLevel} />
 
@@ -316,6 +263,13 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
           title="Книга заклинаний"
           aside={
             <>
+              <DifficultyEditor
+                name={character.spellcastingDifficultyName ?? 'СЛ заклинаний'}
+                value={character.spellcastingDifficultyValue ?? 10}
+                onSave={(spellcastingDifficultyName, spellcastingDifficultyValue) =>
+                  updateCharacter((doc) => ({ ...doc, spellcastingDifficultyName, spellcastingDifficultyValue }))
+                }
+              />
               {/* Only the prepared: the mark a prepared spell carries in the book. */}
               <button
                 type="button"
@@ -423,11 +377,10 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
             }}
           />
         )}
-        {narrow && <CastingInfo character={character} below />}
+        {!character.build && <StudiedSchools character={character} />}
+        <SectionNotes value={character.spellsNotes} onSave={saveText('spellsNotes')} className="mt-8" />
       </SectionList>
-
-      {/* What the book is cast with sits beside it, or under it when the room is narrow. */}
-      <SectionAside width={narrow ? 0 : 270}>{!narrow && <CastingInfo character={character} />}</SectionAside>
+      <SectionAside fit />
     </div>
   );
 };
