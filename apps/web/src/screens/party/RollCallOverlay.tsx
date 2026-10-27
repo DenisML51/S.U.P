@@ -163,7 +163,7 @@ export const RollCallOverlay: React.FC = () => {
       {call && (
         <motion.div
           key={`${call.id}:${call.heroId}`}
-          className="fixed inset-0 z-[75] grid place-items-center overflow-y-auto bg-black/40 py-6"
+          className="fixed inset-0 z-[75] grid place-items-center overflow-y-auto bg-[rgb(var(--c-bg-deep)/0.72)] py-6 backdrop-blur-[3px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, transition: { duration: 0.25 } }}
           exit={{ opacity: 0, transition: { duration: 0.4 } }}
