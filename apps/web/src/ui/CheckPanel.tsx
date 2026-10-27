@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { TableCheck, TableDie } from '@itd/schema';
 import { GameIcon } from './GameIcon';
@@ -468,7 +468,13 @@ export const CheckPanel: React.FC<{
 }> = ({ title, subtitle, dice, check, parts, onRoll, pair, className }) => {
   const setting = useSetting();
   const plate = PLATE[setting];
-  const [landed, setLanded] = useState(false);
+  /**
+   * The throw's beats: the dice in the air; down, showing what they rolled; the kept die swelling
+   * and settling as its number becomes the total with every bonus; then, only then, the verdict.
+   */
+  const [phase, setPhase] = useState<'air' | 'natural' | 'pulse' | 'verdict'>('air');
+  const [swapped, setSwapped] = useState(false);
+  const landed = phase === 'verdict';
   const waiting = !!onRoll && dice.length === 0;
   const outcome = check && !waiting ? checkOutcome(check) : null;
   const size = dieSize(waiting ? (pair ? 2 : 1) : dice.length);
@@ -477,6 +483,25 @@ export const CheckPanel: React.FC<{
   const bonus = check?.bonus ?? 0;
   // A throw against a target takes its outcome's colour, on the dice and the total.
   const tone = outcome ? (outcomeSucceeded(outcome) ? 'success' : 'danger') : undefined;
+  // The die that takes the total: the one that counts, when it alone counts and a bonus changes it.
+  const kept = dice.filter((die) => !die.dropped);
+  const swapIndex = kept.length === 1 && bonus !== 0 && check ? dice.indexOf(kept[0]!) : -1;
+
+  useEffect(() => {
+    if (phase === 'natural') {
+      const timer = window.setTimeout(() => setPhase(swapIndex >= 0 ? 'pulse' : 'verdict'), 650);
+      return () => window.clearTimeout(timer);
+    }
+    if (phase === 'pulse') {
+      const swap = window.setTimeout(() => setSwapped(true), 300);
+      const done = window.setTimeout(() => setPhase('verdict'), 800);
+      return () => {
+        window.clearTimeout(swap);
+        window.clearTimeout(done);
+      };
+    }
+  }, [phase, swapIndex]);
+
   const cards: CheckPart[] = parts ?? (bonus !== 0 ? [{ label: 'Модификатор', value: bonus, icon: 'rolling-dices' }] : []);
 
   return (
@@ -521,17 +546,34 @@ export const CheckPanel: React.FC<{
             </button>
           )}
           {dice.map((die, index) => (
-            <RollingDie
+            <motion.span
               key={index}
-              sides={die.sides}
-              value={die.label ?? die.value}
-              dropped={die.dropped}
-              size={size}
-              delay={index * STAGGER_MS}
-              phase={index * 1.3 + die.sides * 0.1}
-              tone={die.label ? undefined : die.value === die.sides && die.sides > 2 ? 'success' : die.value === 1 ? 'danger' : tone}
-              onLanded={index === dice.length - 1 ? () => setLanded(true) : undefined}
-            />
+              className="inline-flex"
+              initial={false}
+              animate={index === swapIndex && phase === 'pulse' ? { scale: [1, 1.22, 1] } : { scale: 1 }}
+              transition={{ duration: 0.65, times: [0, 0.45, 1], ease: 'easeInOut' }}
+            >
+              <RollingDie
+                sides={die.sides}
+                value={index === swapIndex && swapped ? total : (die.label ?? die.value)}
+                dropped={die.dropped}
+                size={size}
+                delay={index * STAGGER_MS}
+                phase={index * 1.3 + die.sides * 0.1}
+                tone={
+                  die.label
+                    ? undefined
+                    : die.value === die.sides && die.sides > 2
+                      ? 'success'
+                      : die.value === 1
+                        ? 'danger'
+                        : landed
+                          ? tone
+                          : undefined
+                }
+                onLanded={index === dice.length - 1 ? () => setPhase('natural') : undefined}
+              />
+            </motion.span>
           ))}
         </div>
         {/* The verdict, written on the plate with no box round it; the Lands Between let its light ring out. */}
