@@ -924,7 +924,8 @@ const CheckSample: React.FC = () => {
           Ждать клика
         </Button>
       </div>
-      <div className="flex flex-wrap items-start justify-center gap-12 py-10">
+      {/* One under the other: each plate's weather spreads wide, as it does alone on the screen. */}
+      <div className="flex flex-col items-center gap-48 py-24">
         <CheckPanel
           key={`thrown-${run}-${hit}`}
           title="Магия"
