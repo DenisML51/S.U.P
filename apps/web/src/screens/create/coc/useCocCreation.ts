@@ -113,6 +113,7 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
   const [creating, setCreating] = useState(false);
   const [throws, setThrows] = useState<CocThrows>({});
   const throwSerial = useRef(0);
+  // Recorded before the throw's values are set: a value never shows as landed before its dice.
   const thrown = <K extends keyof CocThrows>(kind: K, dice: NonNullable<CocThrows[K]>['dice']) => {
     throwSerial.current += 1;
     const next = { serial: throwSerial.current, dice };
@@ -385,10 +386,10 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     core,
     rollCore: (id: CharacteristicId) => {
       const { value, die } = rollCoreCharacteristicDetailed();
+      thrown('core', die);
       setCore({ id, value });
       if (id === 'edu' || core?.id === 'edu') resetEduGains();
       counted('core');
-      thrown('core', die);
     },
     method,
     setMethod: (m: CharacteristicMethod) => {
@@ -400,10 +401,10 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     setBase: setBaseAndChecks,
     rollAll: () => {
       const { values, dice } = rollCharacteristicsDetailed();
+      thrown('characteristics', dice);
       setBase(values);
       resetEduGains();
       counted('characteristics');
-      thrown('characteristics', dice);
     },
     rolled,
     throws,
@@ -411,10 +412,10 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
     luckRolls,
     rollLuck: () => {
       const { value, dice } = rollLuckDetailed(variant);
+      thrown('luck', dice);
       setLuckRolls((r) => (rules.youth && r.length === 1 ? [...r, value] : [value]));
       // A youth's second throw is the rule, not a re-roll.
       counted('luck', rules.youth && luckRolls.length === 1);
-      thrown('luck', dice);
     },
     age,
     setAge: (a: number) => {
@@ -438,9 +439,9 @@ export function useCocCreation(setting: Setting, onCreated: () => void) {
         checks.push(check);
         edu += check.gain;
       }
+      thrown('edu', checks);
       setEduGains(checks.map((c) => c.gain));
       counted('edu');
-      thrown('edu', checks);
     },
     characteristics,
     derived: derivedOf(characteristics, variant, age),
