@@ -855,13 +855,10 @@
   .fb-firefly--gold { background: radial-gradient(circle, rgb(255 250 226), rgb(246 212 136 / 0.8) 35%, transparent 70%); box-shadow: 0 0 8px 2px rgb(246 212 136 / 0.45); }
 
   /* ---------------------------------------------------------------- Atmosphere (backdrop) */
-  /* The deep sea-green of the wood, lighter where the sun comes in from above. Seen through over
-     the screen's own colour, so the hero's art blurred behind it on hero select still shows. */
-  .fb-glade {
-    background:
-      radial-gradient(70% 55% at 50% 0%, rgb(38 74 74 / 0.75), transparent 75%),
-      radial-gradient(120% 90% at 50% 30%, rgb(var(--c-surface) / 0.55), transparent 45%, rgb(var(--c-bg-deep) / 0.7) 85%);
-  }
+  /* The deep sea-green of the wood is the screen's own; over it a lighter green where the sun comes
+     in from above. Nothing here is painted over the whole screen, so on hero select the hero's art
+     blurred behind shows through. */
+  .fb-glade { background: radial-gradient(90% 70% at 50% 0%, rgb(38 74 74 / 0.55), transparent 70%); }
   /* The sun itself, a warm glow over the top edge. */
   .fb-sun { background: radial-gradient(45% 32% at 50% -4%, rgb(250 230 170 / 0.32), rgb(240 214 150 / 0.08) 55%, transparent 80%); }
   /* Its rays fanning down through the canopy, soft-edged (each ray its own soft fall-off, no blur),
@@ -920,7 +917,7 @@
     animation: fb-mist 40s ease-in-out infinite alternate;
   }
   /* The edges of the screen dim, as round a picture in a storybook. */
-  .fb-veil { background: radial-gradient(ellipse 90% 85% at 50% 40%, transparent 45%, rgb(var(--c-bg-deep) / 0.7)); }
+  .fb-veil { box-shadow: inset 0 0 220px 70px rgb(var(--c-bg-deep) / 0.88); }
   .fb-screen-corner { color: rgb(var(--c-frame-bright)); opacity: 0.75; filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.5)); }
 }
 

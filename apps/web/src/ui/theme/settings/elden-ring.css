@@ -670,15 +670,14 @@
   .er-readout__level { font-family: var(--setting-display); font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgb(var(--c-ink-muted)); }
 
   /* ---------------------------------------------------------------- Atmosphere (backdrop) */
-  /* Near black, barely warm: the dark of the Lands Between at night. High at the right, just off
-     the screen, the light the shafts fall from — a bloom of clean gold at the corner. */
+  /* The dark of the Lands Between is the screen's own; over it, high at the right, just off the
+     screen, the light the shafts fall from — a bloom of clean gold at the corner. Nothing here is
+     painted over the whole screen, so on hero select the hero's art blurred behind shows through. */
   .er-depth {
     background:
       radial-gradient(34% 42% at 94% -6%, rgb(255 214 140 / 0.2), rgb(255 190 100 / 0.06) 42%, transparent 72%),
       radial-gradient(70% 70% at 84% 6%, rgb(var(--c-grace) / 0.05), transparent 70%),
-      /* Seen through, not painted over: the screen's own dark is under it, and on hero select the
-         hero's art blurred into it shows as it does in every setting. */
-      linear-gradient(180deg, rgb(4 3 2 / 0.45), transparent 40%, transparent 62%, rgb(4 3 2 / 0.45));
+      radial-gradient(90% 70% at 50% 0%, rgb(var(--c-surface-2) / 0.45), transparent 70%);
   }
   /* Shafts of light falling from that corner, as through the crown of a great tree: each a bright
      core in a wide soft fall-off (the gradient is its own blur), fading as they reach down; two sets
@@ -756,12 +755,8 @@
   /* The roots of the Erdtree, outlined in the gilt of the frame. They grow only along the foot of a
      world card: on the screen the gilt corners stand there. */
   .er-roots { display: none; color: rgb(214 176 104); pointer-events: none; }
-  /* Darkness gathering at the edges, so the content always reads over it. */
-  .er-vignette {
-    background:
-      linear-gradient(0deg, rgb(4 4 3 / 0.5), transparent 24%),
-      radial-gradient(ellipse 88% 82% at 50% 45%, transparent 52%, rgb(3 3 2 / 0.85));
-  }
+  /* Darkness gathering at the very edges only, as on every setting's screen. */
+  .er-vignette { box-shadow: inset 0 0 220px 70px rgb(3 3 2 / 0.88); }
   /* Motes of gold rising through the dark at three depths: a soft dot of light each, its glow in
      its own picture (no shadow, no blur), one animation on fixed keyframes, rising and drifting its
      own way. */
