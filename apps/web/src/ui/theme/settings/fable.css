@@ -855,11 +855,12 @@
   .fb-firefly--gold { background: radial-gradient(circle, rgb(255 250 226), rgb(246 212 136 / 0.8) 35%, transparent 70%); box-shadow: 0 0 8px 2px rgb(246 212 136 / 0.45); }
 
   /* ---------------------------------------------------------------- Atmosphere (backdrop) */
-  /* The deep sea-green of the wood, lighter where the sun comes in from above. */
+  /* The deep sea-green of the wood, lighter where the sun comes in from above. Seen through over
+     the screen's own colour, so the hero's art blurred behind it on hero select still shows. */
   .fb-glade {
     background:
-      radial-gradient(70% 55% at 50% 0%, rgb(38 74 74), transparent 75%),
-      radial-gradient(120% 90% at 50% 30%, rgb(var(--c-surface)), rgb(var(--c-bg-deep)) 85%);
+      radial-gradient(70% 55% at 50% 0%, rgb(38 74 74 / 0.75), transparent 75%),
+      radial-gradient(120% 90% at 50% 30%, rgb(var(--c-surface) / 0.55), transparent 45%, rgb(var(--c-bg-deep) / 0.7) 85%);
   }
   /* The sun itself, a warm glow over the top edge. */
   .fb-sun { background: radial-gradient(45% 32% at 50% -4%, rgb(250 230 170 / 0.32), rgb(240 214 150 / 0.08) 55%, transparent 80%); }
