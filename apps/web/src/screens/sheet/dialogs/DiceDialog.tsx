@@ -80,6 +80,18 @@ const thrownSize = (count: number) =>
 
 const signedBonus = (bonus: number) => (bonus > 0 ? `+ ${bonus}` : `− ${-bonus}`);
 
+const TOTAL_TONE = { success: 'text-success', danger: 'text-danger', none: 'text-frame-bright' } as const;
+
+/** The colour a throw takes when it had a target: its outcome's; otherwise none. */
+const outcomeTone = (check: TableCheck): 'success' | 'danger' | undefined => {
+  const outcome = checkOutcome(check);
+  return outcome ? (outcomeSucceeded(outcome) ? 'success' : 'danger') : undefined;
+};
+
+/** A die's own tint: a natural top or bottom face, else the throw's outcome. */
+const dieTone = (die: DieResult, check: TableCheck) =>
+  die.label ? undefined : die.value === die.sides ? 'success' : die.value === 1 ? 'danger' : outcomeTone(check);
+
 /** A check's outcome, stamped once the dice are down; nothing for a throw without a target. */
 const Outcome: React.FC<{ check: TableCheck; shown: boolean; small?: boolean }> = ({ check, shown, small }) => {
   const outcome = checkOutcome(check);
@@ -129,14 +141,14 @@ const Throw: React.FC<{ result: Result }> = ({ result }) => {
             size={size}
             phase={index * 1.3 + die.sides * 0.1}
             dropped={die.dropped}
-            tone={die.label ? undefined : die.value === die.sides ? 'success' : die.value === 1 ? 'danger' : undefined}
+            tone={dieTone(die, cast.check)}
             onLanded={index === dice.length - 1 ? () => setRevealed(true) : undefined}
           />
         ))}
         {result.bonus !== 0 && <span className="text-lg text-ink-muted">{signedBonus(result.bonus)}</span>}
       </div>
       <motion.span
-        className="ui-display ui-numeric text-6xl leading-none text-frame-bright"
+        className={cx('ui-display ui-numeric text-6xl leading-none', TOTAL_TONE[outcomeTone(cast.check) ?? 'none'])}
         initial={false}
         animate={revealed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }}
         transition={{ type: 'spring', stiffness: 420, damping: 18 }}
@@ -171,14 +183,14 @@ const SeparateThrows: React.FC<{ result: Result }> = ({ result }) => {
                     size="2.5rem"
                     phase={index * 1.3 + die.sides * 0.1 + row}
                     dropped={die.dropped}
-                    tone={die.label ? undefined : die.value === die.sides ? 'success' : die.value === 1 ? 'danger' : undefined}
+                    tone={dieTone(die, cast.check)}
                     onLanded={index === dice.length - 1 ? () => setRevealed((n) => Math.max(n, row + 1)) : undefined}
                   />
                 ))}
                 {result.bonus !== 0 && <span className="text-sm text-ink-muted">{signedBonus(result.bonus)}</span>}
               </span>
               <motion.span
-                className="ui-display ui-numeric w-14 shrink-0 text-right text-3xl leading-none text-frame-bright"
+                className={cx('ui-display ui-numeric w-14 shrink-0 text-right text-3xl leading-none', TOTAL_TONE[outcomeTone(cast.check) ?? 'none'])}
                 initial={false}
                 animate={revealed > row ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }}
                 transition={{ type: 'spring', stiffness: 420, damping: 18 }}
