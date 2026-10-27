@@ -4,7 +4,7 @@ import type { CharacterPreview, PartyListItemDto } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
 import { fullArtSrc } from '../../ui/CharacterArt';
-import { IconClose, IconCombat, IconCreate, IconImport, IconTable } from '../../ui/icons';
+import { IconClose, IconCombat, IconCreate, IconExit, IconImport, IconTable } from '../../ui/icons';
 import { Drawer } from '../../ui/Drawer';
 import { useAtLeast } from '../../ui/useBreakpoint';
 import { Button, IconButton, cx } from '../../ui/primitives';
@@ -24,6 +24,7 @@ import {
   usePartyEntry,
 } from './homeParts';
 import { rememberLastHero } from './lastHero';
+import { TakeHeroDialog } from './TakeHeroDialog';
 import { usePartyStore } from '../../store/usePartyStore';
 import { takeInviteCode } from '../../useBrowserHistory';
 import { useHasSoloDraft } from '../create/useDraftState';
@@ -328,12 +329,15 @@ const TableList: React.FC<{ parties: PartyListItemDto[]; onOpen: (party: PartyLi
   onOpen,
 }) => {
   const { ref, more } = useScrollEdges(parties.length);
+  /** The table whose heroes the player is taking back; read from the list, so it follows the change. */
+  const [takingId, setTakingId] = useState<string | null>(null);
+  const taking = parties.find((party) => party.id === takingId && party.myHeroes.length > 0) ?? null;
   return (
     <div ref={ref} data-more={more} className="ui-table-list ui-scroll -mx-3 mt-4 min-h-0 flex-1 overflow-y-auto">
       {parties.map((party, index) => (
         <motion.div key={party.id} {...enterOnly({ y: 12 }, 0.3 + index * 0.05)}>
-          <SettingScope setting={party.setting}>
-            <button type="button" onClick={() => onOpen(party)} className="ui-table-row">
+          <SettingScope setting={party.setting} className="flex items-center">
+            <button type="button" onClick={() => onOpen(party)} className="ui-table-row min-w-0 flex-1">
               <PartyPicture party={party} className="ui-table-row__picture relative" />
               <span className="min-w-0 flex-1">
                 <span className="block text-[10px] uppercase tracking-[0.22em] text-frame-bright/80">
@@ -352,9 +356,16 @@ const TableList: React.FC<{ parties: PartyListItemDto[]; onOpen: (party: PartyLi
                 →
               </span>
             </button>
+            {/* Between sessions the table is closed: the player takes a hero back from here. */}
+            {party.role === 'player' && !party.inSession && party.myHeroes.length > 0 && (
+              <IconButton label="Забрать героя" className="shrink-0" onClick={() => setTakingId(party.id)}>
+                <IconExit width={18} height={18} />
+              </IconButton>
+            )}
           </SettingScope>
         </motion.div>
       ))}
+      <TakeHeroDialog party={taking} onClose={() => setTakingId(null)} />
     </div>
   );
 };

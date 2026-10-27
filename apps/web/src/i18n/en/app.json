@@ -1963,5 +1963,9 @@
   "Апгрейд": "Upgrade",
   "Знание растёт": "Knowledge grows",
   "Критический провал": "Critical failure",
-  "Синхронизация завершена · 100%": "Synchronisation complete · 100%"
+  "Синхронизация завершена · 100%": "Synchronisation complete · 100%",
+  "{0} покидает «{1}»": "{0} leaves “{1}”",
+  "Партия «{0}»": "Party “{0}”",
+  "Герой покинет партию. Вернуть его можно на следующей сессии, снова приведя к столу.": "The hero will leave the party. You can bring them back to the table at the next session.",
+  "Забрать": "Take back"
 }
