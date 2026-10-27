@@ -1011,32 +1011,64 @@
 }
 
 /* ------------------------------------------------------------------ Level ready */
-/* The fairy flies along the bar leaving a trail, and its dust lights up behind it in sparkles. */
+/* Two thin gilt threads grow along the bar and braid round it; tendrils curl off them into spirals,
+   a leaf opening at each root and a sparkle at each heart; a glint runs along the threads. */
 [data-setting='fable'] {
   .ui-xp[data-ready] { animation: fb-plaque 2.4s ease-in-out infinite; }
   .ui-level-ready > .fb-ready { overflow: visible; }
-  .fb-dust { opacity: 0; transform-box: fill-box; transform-origin: center; animation: fb-dust 2.4s ease-in-out infinite; filter: drop-shadow(0 0 3px rgb(var(--c-frame-bright))); }
-  .fb-fairy { animation: fb-fly 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite; filter: drop-shadow(0 0 4px rgb(255 236 180)); }
+  .fb-thread {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    filter: drop-shadow(0 0 1.5px rgb(255 214 130 / 0.8));
+    animation: fb-grow 1.8s ease-out forwards;
+  }
+  .fb-thread-glint {
+    stroke: rgb(255 250 230);
+    stroke-dasharray: 4 96;
+    stroke-dashoffset: 100;
+    opacity: 0;
+    filter: drop-shadow(0 0 3px rgb(255 226 160));
+    animation: fb-glint 3s linear infinite;
+  }
+  .fb-tendril__curl { stroke-dasharray: 100; stroke-dashoffset: 100; animation: fb-grow 0.9s ease-out forwards; }
+  .fb-tendril__leaf {
+    transform-box: fill-box;
+    transform-origin: 100% 50%;
+    transform: scale(0);
+    animation: fb-leaf 0.5s ease-out forwards;
+  }
+  .fb-tendril__spark {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(0);
+    filter: drop-shadow(0 0 2.5px rgb(255 226 160));
+    animation: fb-bloom 0.5s ease-out forwards, fb-twinkle 2.6s ease-in-out infinite;
+  }
 }
 @keyframes fb-plaque {
   50% { box-shadow: 0 0 22px -6px rgb(var(--c-xp) / 0.7), var(--shadow-panel); }
 }
-@keyframes fb-dust {
-  0%, 100% { opacity: 0; transform: scale(0.2) rotate(0deg); }
-  30% { opacity: 1; transform: scale(1) rotate(45deg); }
-  60% { opacity: 0; transform: scale(0.4) rotate(90deg); }
+@keyframes fb-grow { to { stroke-dashoffset: 0; } }
+@keyframes fb-glint {
+  0% { stroke-dashoffset: 100; opacity: 0; }
+  10%, 80% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
 }
-@keyframes fb-fly {
-  0% { transform: translate(-20px, 0); opacity: 0; }
-  10% { opacity: 1; }
-  30% { transform: translate(80px, -6px); }
-  60% { transform: translate(180px, 5px); }
-  90% { opacity: 1; }
-  100% { transform: translate(292px, 0); opacity: 0; }
+@keyframes fb-leaf {
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+@keyframes fb-bloom {
+  60% { transform: scale(1.6) rotate(45deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes fb-twinkle {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.6); opacity: 0.5; }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-setting='fable'] :is(.ui-xp[data-ready], .fb-dust, .fb-fairy) { animation: none; }
-  [data-setting='fable'] .fb-dust { opacity: 0.8; }
+  [data-setting='fable'] :is(.fb-thread, .fb-tendril__curl, .fb-tendril__leaf, .fb-tendril__spark) { animation-duration: 1ms; animation-iteration-count: 1; }
+  [data-setting='fable'] :is(.ui-xp[data-ready], .fb-thread-glint) { animation: none; }
 }
 
 /* ------------------------------------------------------------------ World card */

@@ -312,41 +312,73 @@ const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => {
 const READY_W = 272;
 const READY_H = 36;
 
-/** The fairy's dust left on the bar: sparkles along it, each lighting up in its turn. */
-const DUST = (() => {
-  const next = random(77);
-  return Array.from({ length: 14 }, (_, i) => ({
-    x: 14 + (i / 13) * (READY_W - 28) + (next() - 0.5) * 10,
-    y: READY_H / 2 + (next() - 0.5) * 20,
-    r: 2.2 + next() * 2.6,
-    delay: i * 0.16 + next() * 0.3,
-  }));
-})();
+/** A spiral of `turns` turns from (x, y), growing outwards to `r`, starting at angle `a0`. */
+const spiral = (x: number, y: number, r: number, turns: number, a0: number, dir: 1 | -1) =>
+  Array.from({ length: 36 }, (_, i) => {
+    const t = i / 35;
+    const a = a0 + dir * t * turns * Math.PI * 2;
+    const rr = r * (1 - t * 0.85);
+    return `${i ? 'L' : 'M'}${f(x + Math.cos(a) * rr)} ${f(y + Math.sin(a) * rr)}`;
+  }).join('');
+
+/** Two gilt threads braided round the bar: a sine each, half a wave apart, calm at the bar's ends. */
+const readyStemY = (x: number, phase: number) =>
+  READY_H / 2 + Math.sin(x / 13 + phase) * 5.5 * Math.min(1, x / 36, (READY_W - x) / 36);
+const READY_STEM = (phase: number) =>
+  Array.from({ length: 69 }, (_, i) => {
+    const x = 4 + i * 3.9;
+    return `${i ? 'L' : 'M'}${f(x)} ${f(readyStemY(x, phase))}`;
+  }).join('');
 
 /**
- * The level is ready: a fairy flies along the bar, a little light with a trail, and the dust it
- * leaves lights up behind it in sparkles, one after another.
+ * Tendrils curling off the threads at their crests, out from the bar: a short reach, then a spiral;
+ * a leaf where each leaves its thread, a sparkle at its heart. Each grows as the thread passes it.
+ */
+const READY_TENDRILS = Array.from({ length: 6 }, (_, i) => {
+  // The crests of the waves, taken by the two threads in turn.
+  const phase = i % 2 ? Math.PI : 0;
+  const x = 13 * (Math.PI / 2 + (i + 1) * Math.PI);
+  const dir = Math.sin(x / 13 + phase) < 0 ? -1 : 1;
+  const y = readyStemY(x, phase);
+  const side = i % 3 === 0 ? -1 : 1;
+  const cx = x + side * 7;
+  const cy = y + dir * 8;
+  return {
+    x,
+    curl: `M${f(x)} ${f(y)}Q${f(x + side * 2)} ${f(y + dir * 6)} ${f(cx)} ${f(cy)}${spiral(cx, cy - dir * 3.4, 3.4, 1.15, dir > 0 ? Math.PI / 2 : -Math.PI / 2, side as 1 | -1).replace('M', 'L')}`,
+    leaf: leafPath(x, y, x - side * 7, y + dir * 4, 1.8),
+    spark: sparkle(cx, cy - dir * 3.4, 2.3, 0.15),
+    delay: 0.2 + (x / READY_W) * 1.6,
+  };
+}).filter((t) => t.x > 12 && t.x < READY_W - 12);
+
+/**
+ * The level is ready: two thin gilt threads grow along the bar and braid round it, tendrils curl off
+ * them into spirals with a leaf at the root and a sparkle at the heart, and a glint of the fairy's
+ * light runs along the threads.
  */
 const LevelReady: React.FC = () => (
   <svg viewBox={`0 0 ${READY_W} ${READY_H}`} preserveAspectRatio="none" fill="none" aria-hidden className="fb-ready">
     <defs>
-      <radialGradient id="fb-fairy" cx="0.5" cy="0.5" r="0.5">
-        <stop offset="0" stopColor="rgb(255 250 230)" />
-        <stop offset="0.35" stopColor="rgb(246 214 140)" stopOpacity="0.85" />
-        <stop offset="1" stopColor="rgb(246 214 140)" stopOpacity="0" />
-      </radialGradient>
-      <linearGradient id="fb-trail" x1="0" x2="1" y1="0" y2="0">
-        <stop offset="0" stopColor="rgb(246 214 140)" stopOpacity="0" />
-        <stop offset="1" stopColor="rgb(246 214 140)" stopOpacity="0.8" />
+      <linearGradient id="fb-ready-gilt" x1="0" x2="1">
+        <stop offset="0" stopColor="rgb(var(--c-frame))" />
+        <stop offset="0.5" stopColor="rgb(255 236 180)" />
+        <stop offset="1" stopColor="rgb(var(--c-frame))" />
       </linearGradient>
     </defs>
-    {DUST.map(({ x, y, r, delay }, i) => (
-      <path key={i} className="fb-dust" d={sparkle(x, y, r, 0.16)} fill="rgb(var(--c-frame-bright))" style={{ animationDelay: `${delay.toFixed(2)}s` }} />
+    {[0, Math.PI].map((phase) => (
+      <g key={phase}>
+        <path className="fb-thread" d={READY_STEM(phase)} pathLength={100} stroke="url(#fb-ready-gilt)" strokeWidth="0.7" />
+        <path className="fb-thread-glint" d={READY_STEM(phase)} pathLength={100} strokeWidth="1.4" style={{ animationDelay: `${1.8 + phase * 0.25}s` }} />
+      </g>
     ))}
-    <g className="fb-fairy">
-      <rect x="-60" y={READY_H / 2 - 1} width="56" height="2" rx="1" fill="url(#fb-trail)" />
-      <circle cx="0" cy={READY_H / 2} r="9" fill="url(#fb-fairy)" />
-    </g>
+    {READY_TENDRILS.map((t) => (
+      <g key={t.x}>
+        <path className="fb-tendril__curl" d={t.curl} pathLength={100} stroke="rgb(var(--c-frame-bright))" strokeWidth="0.6" strokeLinecap="round" style={{ animationDelay: `${t.delay.toFixed(2)}s` }} />
+        <path className="fb-tendril__leaf" d={t.leaf} fill="rgb(var(--c-frame-bright))" style={{ animationDelay: `${(t.delay + 0.3).toFixed(2)}s` }} />
+        <path className="fb-tendril__spark" d={t.spark} fill="rgb(255 246 214)" style={{ animationDelay: `${(t.delay + 0.6).toFixed(2)}s, ${(t.delay + 1.2).toFixed(2)}s` }} />
+      </g>
+    ))}
   </svg>
 );
 
@@ -482,15 +514,6 @@ const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => {
 };
 
 /* ------------------------------------------------------------------ Hero select */
-
-/** A spiral of `turns` turns from (x, y), growing outwards to `r`, starting at angle `a0`. */
-const spiral = (x: number, y: number, r: number, turns: number, a0: number, dir: 1 | -1) =>
-  Array.from({ length: 36 }, (_, i) => {
-    const t = i / 35;
-    const a = a0 + dir * t * turns * Math.PI * 2;
-    const rr = r * (1 - t * 0.85);
-    return `${i ? 'L' : 'M'}${f(x + Math.cos(a) * rr)} ${f(y + Math.sin(a) * rr)}`;
-  }).join('');
 
 /** The vine's stem, 60×400, rising from the foot and swaying from side to side. */
 const VINE_AT = (t: number) => ({ x: 30 + 13 * Math.sin(t * Math.PI * 2.6), y: 400 - t * 392 });
