@@ -60,7 +60,7 @@ export const JournalSection: React.FC<{ character: Character }> = ({ character }
   const groups = byDay(entries);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="mx-auto flex w-full max-w-[780px] flex-col gap-3">
       <nav className="flex flex-wrap gap-x-4 gap-y-1.5" aria-label="Тип записей">
         {FILTERS.map((option) => (
           <button

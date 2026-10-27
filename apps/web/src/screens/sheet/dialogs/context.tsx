@@ -32,6 +32,11 @@ interface SheetDialogs {
   /** Whether this entry's card is the one beside its list. */
   isSelected: (kind: EntryKind, id: string) => boolean;
   clearSelection: () => void;
+  /**
+   * A section that measures its own room says whether the card fits beside its list (null: it
+   * does not say, and the screen's width decides).
+   */
+  setPaneRoom: (room: boolean | null) => void;
 }
 
 /** Below this width the section has no room for a list and a card side by side. */
@@ -54,7 +59,9 @@ const Context = createContext<SheetDialogs | null>(null);
 export const SheetDialogsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [dialog, setDialog] = useState<SheetDialog | null>(null);
   const [selected, setSelected] = useState<SelectedEntry | null>(null);
-  const wide = useWideSheet();
+  const wideScreen = useWideSheet();
+  const [paneRoom, setPaneRoom] = useState<boolean | null>(null);
+  const wide = paneRoom ?? wideScreen;
   const close = useCallback(() => setDialog(null), []);
   const clearSelection = useCallback(() => setSelected(null), []);
   const openEntry = useCallback(
@@ -71,6 +78,7 @@ export const SheetDialogsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       openEntry,
       isSelected: (kind: EntryKind, id: string) => shown?.kind === kind && shown.id === id,
       clearSelection,
+      setPaneRoom,
     };
   }, [dialog, close, selected, wide, openEntry, clearSelection]);
   return <Context.Provider value={value}>{children}</Context.Provider>;

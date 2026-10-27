@@ -3,7 +3,7 @@ import { CONDITIONS, activeFormOf, armorClassOf, exhaustionLevel, formatModifier
 import type { Character } from '@itd/schema';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { describeOrigin } from '../../ui/characterLabels';
-import { IconClose, IconCondition, IconEdit } from '../../ui/icons';
+import { IconClose, IconCoins, IconCondition, IconEdit } from '../../ui/icons';
 import { IconButton, cx } from '../../ui/primitives';
 import { GameIcon } from '../../ui/GameIcon';
 import { SyncStatus } from '../../ui/SyncStatus';
@@ -33,9 +33,33 @@ const StatCell: React.FC<{ label: string; value: React.ReactNode; onClick?: () =
   );
 };
 
+const COINS = [
+  ['gold', 'золото', 'text-xp'],
+  ['silver', 'серебро', 'text-armor'],
+  ['copper', 'медь', 'text-warning'],
+] as const;
+
+/** The purse at the column's foot, in view from every section: a click opens it to spend or change. */
+const Purse: React.FC<{ character: Character; onOpen: () => void }> = ({ character, onOpen }) => (
+  <button
+    type="button"
+    onClick={onOpen}
+    title="Кошелёк: пополнить, потратить, разменять"
+    className="group flex w-full shrink-0 items-center gap-4 border-t border-line/70 px-4 py-2.5 text-left transition-colors hover:bg-surface-2/60"
+  >
+    <IconCoins width={18} height={18} className="shrink-0 text-ink-faint group-hover:text-frame-bright" />
+    {COINS.map(([key, label, tone]) => (
+      <span key={key} className="flex items-baseline gap-1.5">
+        <span className={cx('ui-display ui-numeric text-lg leading-none', tone)}>{character.currency[key]}</span>
+        <span className="text-[11px] text-ink-faint">{label}</span>
+      </span>
+    ))}
+  </button>
+);
+
 /**
  * Left column of the sheet, visible in every section: who the hero is and what changes from minute
- * to minute at the table — health, sanity, the core numbers, resources, conditions.
+ * to minute at the table — health, sanity, the core numbers, resources, conditions, the purse.
  */
 export const HeroColumn: React.FC<{
   character: Character;
@@ -137,6 +161,7 @@ export const HeroColumn: React.FC<{
           </button>
         )}
       </div>
+      <Purse character={character} onOpen={() => dialogs.open({ kind: 'currency' })} />
       {/* Pinned under the scroll: whether the sheet's edits are reaching the server, visible while playing. */}
       <div className="shrink-0 border-t border-line/70 px-4 py-2">
         <SyncStatus />
