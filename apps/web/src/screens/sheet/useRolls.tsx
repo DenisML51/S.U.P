@@ -174,6 +174,15 @@ export type DamageComponents = { damage: string; type?: string; extra?: boolean 
 export type RollFollowUp = (total: number) => { label: string; onClick: () => void }[];
 
 /**
+ * Damage dealt with the hit and paid only on a hit (a smite): its dice join the weapon's in one roll,
+ * a critical hit doubling them too. `pay` spends what it costs; refused, the weapon's damage goes alone.
+ */
+export interface HitRider {
+  parts: DamageComponents;
+  pay: () => boolean;
+}
+
+/**
  * Instant rolls from the sheet: the result shows as a toast and goes into the character's log.
  * One click from "I check Perception" to the number. A roll is not an edit of the sheet: it is
  * logged without a step to undo and without a message of its own beside the result.
@@ -233,7 +242,7 @@ export function useRolls() {
       <RollToast
         label={label}
         total={roll.total}
-        detail={`${expression}: ${describeDice(roll)}`}
+        detail={`${expression.replace(/d/gi, DIE)}: ${describeDice(roll)}`}
         dice={roll.rolls}
       />,
       diceToast(),
@@ -318,6 +327,7 @@ export function useRolls() {
   /**
    * An attack as the table plays it: the hit first, the damage when the player says it landed. The
    * hit's toast carries the damage roll; a natural 20 doubles its dice, a natural 1 misses outright.
+   * A smite riding on it (`rider`) is paid and rolled with that damage.
    */
   const attack = (
     label: string,
@@ -332,9 +342,19 @@ export function useRolls() {
       source,
       tracked,
       follow,
-    }: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean; source?: DamageSource; tracked?: boolean; follow?: RollFollowUp } = {},
+      rider,
+    }: {
+      minDie?: number;
+      twoHanded?: DamageComponents;
+      spell?: boolean;
+      source?: DamageSource;
+      tracked?: boolean;
+      follow?: RollFollowUp;
+      rider?: HitRider;
+    } = {},
   ) => {
     const { plan, dice, kept: die } = throwD20({ kind: 'attack', spell });
+    const withRider = (base: DamageComponents) => (rider && rider.pay() ? [...base, ...rider.parts] : base);
     const total = die + modifier - plan.penalty;
     // A natural 1 always misses; the hero's crit range (a Champion's 19) always hits hard.
     const tone: Tone | undefined = die === 1 ? 'fumble' : character && isCriticalRoll(character, die) ? 'crit' : undefined;
@@ -358,7 +378,7 @@ export function useRolls() {
                     label: tone === 'crit' ? 'Крит. урон' : 'Урон',
                     onClick: () => {
                       toast.dismiss(t.id);
-                      damage(label, components, { critical: tone === 'crit', minDie, source, tracked, follow });
+                      damage(label, withRider(components), { critical: tone === 'crit', minDie, source, tracked, follow });
                     },
                   },
                   ...(twoHanded
@@ -367,7 +387,7 @@ export function useRolls() {
                           label: 'Двумя руками',
                           onClick: () => {
                             toast.dismiss(t.id);
-                            damage(`${label} (двумя руками)`, twoHanded, { critical: tone === 'crit', minDie, source, tracked, follow });
+                            damage(`${label} (двумя руками)`, withRider(twoHanded), { critical: tone === 'crit', minDie, source, tracked, follow });
                           },
                         },
                       ]

@@ -86,11 +86,13 @@ const VitalBar: React.FC<{
   value: number;
   max: number;
   extra?: number;
+  /** Part of the maximum lost until a rest (a Vital Sacrifice), struck out at the top. */
+  lost?: number;
   tone: 'hp' | 'sanity';
   onClick: () => void;
   hint: TipBinding;
-}> = ({ label, value, max, extra = 0, tone, onClick, hint }) => {
-  const share = (n: number) => `${Math.max(0, Math.min(100, (n / Math.max(max, 1)) * 100))}%`;
+}> = ({ label, value, max, extra = 0, lost = 0, tone, onClick, hint }) => {
+  const share = (n: number) => `${Math.max(0, Math.min(100, (n / Math.max(max + lost, 1)) * 100))}%`;
   const low = value <= 0 || value / Math.max(max, 1) < 0.25;
   return (
     <button
@@ -115,11 +117,13 @@ const VitalBar: React.FC<{
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
           />
         )}
+        {lost > 0 && <span className="ui-vbar__lost" style={{ height: share(lost) }} />}
       </span>
       <span className="ui-vbar__label">{label}</span>
       <span className="ui-vbar__value">
         {value}
         {extra > 0 && <span className="mb-0.5 text-[0.7rem] text-temp-hp">+{extra}</span>}
+        {lost > 0 && <span className="mb-0.5 text-[0.7rem] text-danger">−{lost}</span>}
       </span>
     </button>
   );
@@ -154,6 +158,7 @@ export const VitalBars: React.FC<{ character: Character; between?: React.ReactNo
         value={character.currentHP}
         max={maxHP}
         extra={character.tempHP}
+        lost={character.maxHPReduction}
         tone="hp"
         onClick={() => dialogs.open({ kind: 'health' })}
         hint={bind({
@@ -161,6 +166,7 @@ export const VitalBars: React.FC<{ character: Character; between?: React.ReactNo
           title: 'Здоровье',
           lines: [
             `${character.currentHP} / ${maxHP}${character.tempHP > 0 ? ` · временные ${character.tempHP}` : ''}`,
+            ...(character.maxHPReduction ? [`Максимум снижен на ${character.maxHPReduction} до продолжительного отдыха`] : []),
             'Нажмите: урон и лечение',
           ],
         })}

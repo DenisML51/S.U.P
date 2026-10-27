@@ -14,7 +14,7 @@ export const damageParts = (entry: { damage?: string; damageType?: string; damag
       : []
   ).filter(deals);
 
-export const describeDamage = (parts: DamageComponent[]) =>
+export const describeDamage = (parts: { damage: string; type?: string }[]) =>
   parts.map((p) => `${p.damage}${p.type ? ` ${p.type.toLowerCase()}` : ''}`).join(' + ');
 
 /**

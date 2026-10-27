@@ -182,12 +182,14 @@ export const Meter: React.FC<{
   /** Extra amount drawn after the value, hatched (temporary hit points). */
   extra?: number;
   extraTone?: MeterTone;
+  /** Part of the maximum lost until a rest (a Vital Sacrifice), drawn hatched at the end. */
+  lost?: number;
   height?: number;
   ticks?: boolean;
   label?: string;
   className?: string;
-}> = ({ value, max, tone, extra = 0, extraTone = 'temp-hp', height = 8, ticks = false, label, className }) => {
-  const total = Math.max(max, value + extra, 1);
+}> = ({ value, max, tone, extra = 0, extraTone = 'temp-hp', lost = 0, height = 8, ticks = false, label, className }) => {
+  const total = Math.max(max + lost, value + extra, 1);
   const percent = (part: number) => `${Math.min(100, Math.max(0, (part / total) * 100))}%`;
   return (
     <div
@@ -207,6 +209,7 @@ export const Meter: React.FC<{
     >
       {extra > 0 && <div className="ui-meter__extra" style={{ width: percent(value + extra) }} />}
       <div className="ui-meter__fill" style={{ width: percent(value) }} />
+      {lost > 0 && <div className="ui-meter__lost" style={{ width: percent(lost) }} />}
     </div>
   );
 };

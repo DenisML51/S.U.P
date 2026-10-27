@@ -54,3 +54,10 @@ export function spendTurnRules(character: Character, rules: DamageRule[]): Chara
   if (used.length === 0) return character;
   return { ...character, turnUses: [...new Set([...(character.turnUses ?? []), ...used])] };
 }
+
+/**
+ * The hero's attacks a damage dealt with a hit can ride on: a smite on a melee weapon or an unarmed
+ * strike (`melee`: nothing made at range), Eldritch Smite on a weapon (`weapon`).
+ */
+export const onHitAttacks = (character: Pick<Character, 'attacks'>, onHit: 'melee' | 'weapon'): Character['attacks'] =>
+  character.attacks.filter((a) => (onHit === 'weapon' ? !!a.weaponId : !(a.ranged || a.usesAmmunition || a.thrown)));
