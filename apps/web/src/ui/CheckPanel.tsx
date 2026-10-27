@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { TableCheck, TableDie } from '@itd/schema';
 import { GameIcon } from './GameIcon';
@@ -464,8 +464,12 @@ export const CheckPanel: React.FC<{
   onRoll?: () => void;
   /** Two dice for a call with advantage or disadvantage. */
   pair?: 'advantage' | 'disadvantage';
+  /** Over the dice when there is no target to show ("Бросок" by default). */
+  headline?: string;
+  /** Called once the throw has played out: the total shown and the verdict, if any, given. */
+  onSettled?: () => void;
   className?: string;
-}> = ({ title, subtitle, dice, check, parts, onRoll, pair, className }) => {
+}> = ({ title, subtitle, dice, check, parts, onRoll, pair, headline = 'Бросок', onSettled, className }) => {
   const setting = useSetting();
   const plate = PLATE[setting];
   /**
@@ -502,6 +506,12 @@ export const CheckPanel: React.FC<{
     }
   }, [phase, swapIndex]);
 
+  const settled = useRef(onSettled);
+  settled.current = onSettled;
+  useEffect(() => {
+    if (phase === 'verdict') settled.current?.();
+  }, [phase]);
+
   const cards: CheckPart[] = parts ?? (bonus !== 0 ? [{ label: 'Модификатор', value: bonus, icon: 'rolling-dices' }] : []);
 
   return (
@@ -532,7 +542,7 @@ export const CheckPanel: React.FC<{
               <span className="ui-check__target-value ui-display ui-numeric">{check.target}</span>
             </>
           ) : (
-            <span className="ui-check__target-label">Бросок</span>
+            <span className="ui-check__target-label">{headline}</span>
           )}
         </div>
         <div className="ui-check__dice">

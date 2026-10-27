@@ -18,6 +18,7 @@ import { RollToast } from '../screens/sheet/useRolls';
 import { DieGlyph } from '../ui/RollingDie';
 import { CheckPanel } from '../ui/CheckPanel';
 import { LevelUpBurst } from '../ui/LevelUpBurst';
+import { InitiativePlate } from '../screens/party/InitiativeDialog';
 import type { LevelUpMoment } from '../store/useMomentStore';
 import {
   IconArmor,
@@ -874,6 +875,10 @@ const ComponentsSample: React.FC<{ setting: Setting }> = ({ setting }) => {
         <CheckSample />
       </Board>
 
+      <Board title="Инициатива">
+        <InitiativeSample setting={setting} />
+      </Board>
+
       <Board title="Новый уровень: момент" className="col-span-3">
         <LevelUpSample key={setting} setting={setting} />
       </Board>
@@ -950,6 +955,42 @@ const CheckSample: React.FC = () => {
           onRoll={waiting ? () => setWaiting(false) : undefined}
         />
       </div>
+    </div>
+  );
+};
+
+/** A combatant's initiative as the plate a player throws it on; nothing is sent. */
+const InitiativeSample: React.FC<{ setting: Setting }> = ({ setting }) => {
+  const [open, setOpen] = useState(false);
+  const [rolled, setRolled] = useState<{ die: number; total: number } | null>(null);
+  const [manual, setManual] = useState(13);
+  const close = () => {
+    setOpen(false);
+    setRolled(null);
+  };
+  return (
+    <div>
+      <Button size="sm" onClick={() => setOpen(true)}>
+        Открыть
+      </Button>
+      <InitiativePlate
+        open={open}
+        setting={setting}
+        name="Ивейн Дюфорт"
+        bonus={3}
+        rolled={rolled}
+        busy={false}
+        manual={manual}
+        onManual={setManual}
+        onRoll={() => {
+          const die = 1 + Math.floor(Math.random() * 20);
+          setRolled({ die, total: die + 3 });
+        }}
+        onSettled={() => window.setTimeout(close, 1100)}
+        onWrite={close}
+        onRemove={close}
+        onClose={close}
+      />
     </div>
   );
 };
