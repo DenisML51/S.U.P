@@ -396,9 +396,19 @@
   .ui-ledger__row--dim { opacity: 1; }
   .ui-ledger__row--dim .ui-ledger__title { color: rgb(var(--c-paper-ink) / 0.6); }
   .ui-ledger__row--dim .ui-ledger__meta { color: rgb(var(--c-paper-muted) / 0.8); }
-  .ui-ledger__row[data-selected] {
-    background: linear-gradient(90deg, rgb(214 168 72 / 0.3), rgb(214 168 72 / 0.08) 70%, transparent);
-    box-shadow: inset 3px 0 0 rgb(var(--c-wine));
+  /* The chosen entry is ringed in the wine ink, as a reader circles a line on the page: a loose
+     loop of a pen, its end running past its start, drawn in from the left. */
+  .ui-ledger__row[data-selected],
+  .ui-ledger__row[data-selected]:hover { background: transparent; }
+  .ui-ledger__row[data-selected]::after {
+    content: '';
+    position: absolute;
+    inset: 1px -12px;
+    pointer-events: none;
+    background: rgb(var(--c-wine) / 0.85);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 60' preserveAspectRatio='none' fill='none' stroke='%23000' stroke-linecap='round'%3E%3Cpath vector-effect='non-scaling-stroke' stroke-width='1.6' d='M22 7C120 1 288 2 386 8C397 10 399 46 388 52C282 59 112 58 13 53C2 50 2 14 16 8C40 2 62 3 84 5'/%3E%3Cpath vector-effect='non-scaling-stroke' stroke-width='0.7' stroke-opacity='0.55' d='M30 9C140 4 300 5 383 11C394 14 395 44 384 50C280 56 120 55 17 50C6 47 7 16 22 10'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 60' preserveAspectRatio='none' fill='none' stroke='%23000' stroke-linecap='round'%3E%3Cpath vector-effect='non-scaling-stroke' stroke-width='1.6' d='M22 7C120 1 288 2 386 8C397 10 399 46 388 52C282 59 112 58 13 53C2 50 2 14 16 8C40 2 62 3 84 5'/%3E%3Cpath vector-effect='non-scaling-stroke' stroke-width='0.7' stroke-opacity='0.55' d='M30 9C140 4 300 5 383 11C394 14 395 44 384 50C280 56 120 55 17 50C6 47 7 16 22 10'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+    animation: fb-ring 420ms ease-out both;
   }
   .ui-ledger__row[data-selected] .ui-ledger__title { color: rgb(var(--c-wine)); }
   .ui-ledger__row[data-selected] .ui-ledger__bullet { color: rgb(var(--c-wine)); }
@@ -1286,3 +1296,11 @@
 }
 [data-setting='fable'] .ui-rulebook-plate .ui-rulebook::before { right: calc(100% + 6px); left: auto; }
 [data-setting='fable'] .ui-rulebook-plate .ui-rulebook::after { left: calc(100% + 6px); transform: scaleX(-1); }
+
+@keyframes fb-ring {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='fable'] .ui-ledger__row[data-selected]::after { animation: none; }
+}
