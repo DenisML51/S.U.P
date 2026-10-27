@@ -217,6 +217,23 @@ export const HealthDialog: React.FC<VitalProps> = ({ open, onClose }) => {
           )}
         </Field>
       </div>
+      {!!character.maxHPReduction && (
+        // A Vital Sacrifice took it off until a long rest; a feature may win it back sooner (Essence Drain).
+        <div className="mt-4 flex items-end gap-4">
+          <Field label="Максимум снижен до отдыха" className="w-56">
+            {({ id }) => (
+              <NumberField
+                id={id}
+                min={0}
+                value={character.maxHPReduction ?? 0}
+                onChange={(v) => vitals.setHealthField('maxHPReduction', v)}
+                className="w-full"
+              />
+            )}
+          </Field>
+          <p className="pb-2.5 text-xs text-ink-muted">Жизненные жертвы; продолжительный отдых вернёт максимум.</p>
+        </div>
+      )}
     </Dialog>
   );
 };

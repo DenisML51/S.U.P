@@ -1,5 +1,7 @@
 import type { Ability, ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
 import { isActiveFeature, spellBlocker, startConcentration, startFeature } from './concentration';
+import type { RandomSource } from './dice';
+import { payHitPoints } from './health';
 import { changeItemQuantity, isWeaponStack, itemQuantity } from './inventory';
 import { SLOT_CREATION_COST, changeResource, convertSlot } from './resources';
 
@@ -42,11 +44,11 @@ export function setActionLimit(character: Character, slot: ActionSlot, limit: nu
 
 /**
  * Whether an ability can be used from the sheet: anything that takes an action, and a passive one
- * that spends uses (Sacred Weapon spends Channel Divinity as part of the Attack action) — that one
- * costs no action of its own.
+ * that spends uses (Sacred Weapon spends Channel Divinity as part of the Attack action), hit points or
+ * is turned on and off (a Mutagen of an Alchemist's Mutate) — that one costs no action of its own.
  */
-export const isUsable = (ability: Pick<Ability, 'actionType' | 'resourceId'>): boolean =>
-  ability.actionType !== 'passive' || !!ability.resourceId;
+export const isUsable = (ability: Pick<Ability, 'actionType' | 'resourceId'> & Partial<Pick<Ability, 'stance' | 'hpCost'>>): boolean =>
+  ability.actionType !== 'passive' || !!ability.resourceId || !!ability.stance || !!ability.hpCost;
 
 /** Attacks one Attack action makes (Extra Attack). */
 export const attacksPerActionOf = (character: Pick<Character, 'attacksPerAction'>): number => character.attacksPerAction ?? 1;
@@ -90,6 +92,10 @@ export interface PerformActionRequest {
   resourceAmount?: number;
   /** The slot level a conversion turns into points or makes (Font of Magic). */
   conversionLevel?: number;
+  /** Use an ability that can be strengthened in its stronger way (an amplified Blood Curse). */
+  amplify?: boolean;
+  /** Dice for the hit points an ability costs (Crimson Rite); Math.random unless given. */
+  random?: RandomSource;
 }
 
 export type PerformActionFailure =
@@ -108,6 +114,10 @@ export interface PerformActionCosts {
   slot?: ActionSlot;
   resource?: { id: string; name: string; amount: number };
   ammunition?: { id: string; name: string; amount: number };
+  /** Hit points the ability cost, as rolled. */
+  hitPoints?: number;
+  /** Of them, what came off the maximum until a long rest (a Vital Sacrifice). */
+  maxHitPoints?: number;
 }
 
 export type PerformActionResult =
@@ -221,6 +231,7 @@ export function performAction(character: Character, request: PerformActionReques
   const ability = request.kind === 'ability' ? (source as Ability) : undefined;
   // A conversion (Font of Magic) moves a slot and points together, below.
   const resourceId = ritual || ability?.convert ? undefined : (chosenSlot ?? ('resourceId' in source ? source.resourceId : undefined));
+  let overdrawn = false;
   if (resourceId) {
     const base = ('resourceCost' in source ? source.resourceCost : undefined) ?? 1;
     // An ability of a chosen cost (Lay on Hands) spends what the player asked, within its bounds.
@@ -229,11 +240,14 @@ export function performAction(character: Character, request: PerformActionReques
       : base;
     const resource = next.resources.find((r) => r.id === resourceId);
     if (!resource) return fail('not_enough_resource', 'Ресурс для действия не найден');
-    if (resource.current < amount) {
+    // With the pool empty, an ability that allows it is paid in hit points instead (a Blood Rite).
+    if (resource.current < amount && ability?.hpCostWhenSpent) overdrawn = true;
+    else if (resource.current < amount) {
       return fail('not_enough_resource', `Недостаточно ресурса «${resource.name}»: нужно ${amount}, есть ${resource.current}`);
+    } else {
+      next = changeResource(next, resourceId, -amount)!.character;
+      costs.resource = { id: resource.id, name: resource.name, amount };
     }
-    next = changeResource(next, resourceId, -amount)!.character;
-    costs.resource = { id: resource.id, name: resource.name, amount };
   }
 
   let conversion = '';
@@ -278,14 +292,26 @@ export function performAction(character: Character, request: PerformActionReques
   if (concentrates) next = startConcentration(next, { kind: request.kind as 'spell' | 'ability', id: source.id, name: source.name });
   // An ability that is on until ended (Rage) turns on.
   if (stance) next = startFeature(next, stance);
+  // Hit points it costs come last: falling to 0 by them ends what has just started.
+  // Each cost is rolled on its own: an empowered rite with no free use left is two sacrifices.
+  const amplified = !!request.amplify && !!ability?.amplify;
+  const hitPointCosts = [ability?.hpCost, overdrawn ? ability?.hpCostWhenSpent : undefined, amplified ? ability?.amplify?.hpCost : undefined];
+  for (const cost of hitPointCosts) {
+    if (!cost) continue;
+    const payment = payHitPoints(next, cost, request.random);
+    next = payment.character;
+    costs.hitPoints = (costs.hitPoints ?? 0) + payment.paid;
+    if (cost.lowersMax) costs.maxHitPoints = (costs.maxHitPoints ?? 0) + payment.paid;
+  }
 
   const paid = [
     conversion,
     costs.resource && `${costs.resource.name} −${costs.resource.amount}`,
     costs.ammunition && `${costs.ammunition.name} −${costs.ammunition.amount}`,
+    costs.hitPoints !== undefined && `хиты −${costs.hitPoints}${costs.maxHitPoints ? ' (и максимум)' : ''}`,
   ].filter(Boolean);
   const verb = request.kind === 'attack' ? 'Атака' : ritual ? 'Ритуал' : request.kind === 'spell' ? 'Заклинание' : 'Способность';
-  const message = `${verb}: ${source.name}${paid.length ? ` (${paid.join(', ')})` : ''}${strikeNote}${concentrates ? ' · концентрация' : ''}${stance ? ' · действует' : ''}`;
+  const message = `${verb}: ${source.name}${amplified ? ' (усилено)' : ''}${paid.length ? ` (${paid.join(', ')})` : ''}${strikeNote}${concentrates ? ' · концентрация' : ''}${stance ? ' · действует' : ''}`;
 
   return { ok: true, character: next, costs, message };
 }

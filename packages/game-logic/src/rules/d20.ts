@@ -22,6 +22,8 @@ export interface D20Plan {
   penalty: number;
   /** The condition that fails a Strength or Dexterity save outright (paralysed, stunned…). */
   autoFail?: string;
+  /** Dice features add to the roll (a Rite Die to a Strength save). */
+  dice?: string[];
 }
 
 /** What a condition does to d20 tests (D&D 2024); only what holds without a judgement of the table. */
@@ -75,7 +77,7 @@ const featureKeys = (test: D20Test): string[] => {
  * exhaustion's penalty to every d20 test.
  */
 export function planD20(
-  character: Pick<Character, 'conditions' | 'advantageOn' | 'exhaustion'>,
+  character: Pick<Character, 'conditions' | 'advantageOn' | 'exhaustion'> & Partial<Pick<Character, 'disadvantageOn' | 'rollDice'>>,
   test: D20Test,
   chosen?: Exclude<D20Mode, 'normal'>,
 ): D20Plan {
@@ -90,6 +92,8 @@ export function planD20(
   }
   const keys = featureKeys(test);
   if (character.advantageOn?.some((key) => keys.includes(key))) advantage.push('особенность');
+  if (character.disadvantageOn?.some((key) => keys.includes(key))) disadvantage.push('особенность');
+  const dice = (character.rollDice ?? []).filter((bonus) => bonus.on.some((key) => keys.includes(key))).map((bonus) => bonus.dice);
   if (chosen === 'advantage') advantage.push('по выбору');
   if (chosen === 'disadvantage') disadvantage.push('по выбору');
   const mode: D20Mode =
@@ -108,6 +112,7 @@ export function planD20(
     disadvantage,
     penalty: 2 * exhaustionLevel(character as Pick<Character, 'exhaustion' | 'conditions'>),
     ...(autoFail ? { autoFail: conditionName(autoFail) } : {}),
+    ...(dice.length > 0 ? { dice } : {}),
   };
 }
 

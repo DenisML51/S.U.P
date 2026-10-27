@@ -19,6 +19,8 @@ import { useCharacterStore } from '../../store/useCharacterStore';
 import { announceRoll } from '../../store/useTableRollStore';
 import { RollingDie } from '../../ui/RollingDie';
 import { useRollMode } from './RollMode';
+import { diceToast } from '../../ui/Toasts';
+import { DIE } from '../../i18n';
 
 type Tone = 'crit' | 'fumble';
 
@@ -166,10 +168,10 @@ function describeD20(plan: D20Plan, dice: number[], kept: number, modifier: numb
   return pieces.join(' · ');
 }
 
-/** How long a hit stays on screen waiting for its damage to be rolled. */
-const HIT_TOAST_MS = 15000;
+export type DamageComponents = { damage: string; type?: string; extra?: boolean }[];
 
-export type DamageComponents = { damage: string; type?: string }[];
+/** What the hero may do with a rolled total on its plate: heal themselves with it, take it as temporary hit points. */
+export type RollFollowUp = (total: number) => { label: string; onClick: () => void }[];
 
 /**
  * Instant rolls from the sheet: the result shows as a toast and goes into the character's log.
@@ -199,23 +201,22 @@ export function useRolls() {
 
   /**
    * A d20 check or save with a modifier; `test` says what for, so the rules on advantage apply.
-   * `animated` (initiative at the start of a fight) keeps the plate a moment longer, so the landed
-   * die is seen after the tumble; `unlogged` leaves the log to the caller. Returns the total and
-   * the die that counted.
+   * `unlogged` leaves the log to the caller. Returns the total and the die that counted. Its plate
+   * stays until it is clicked or another message comes.
    */
   const roll20 = (
     label: string,
     modifier: number,
-    { animated = false, unlogged = false, test = { kind: 'check' } }: { animated?: boolean; unlogged?: boolean; test?: D20Test } = {},
+    { unlogged = false, test = { kind: 'check' } }: { unlogged?: boolean; test?: D20Test } = {},
   ) => {
     const { plan, dice, kept } = throwD20(test);
-    const total = kept + modifier - plan.penalty;
-    const detail = describeD20(plan, dice, kept, modifier);
-    const thrown = dice.map((value) => ({ sides: 20, value }));
+    // Dice a feature adds to this kind of roll (a Rite Die to a Strength save).
+    const extra = (plan.dice ?? []).map((formula) => ({ formula, roll: rollFormula(formula) }));
+    const total = kept + modifier - plan.penalty + extra.reduce((sum, e) => sum + e.roll.total, 0);
+    const detail = [describeD20(plan, dice, kept, modifier), ...extra.map((e) => `${e.formula.replace(/d/gi, DIE)}: +${e.roll.total}`)].join(' · ');
+    const thrown = [...dice.map((value) => ({ sides: 20, value })), ...extra.flatMap((e) => e.roll.rolls)];
     show(thrown, `${label}: ${total}`);
-    toast(<RollToast label={label} total={total} detail={detail} dice={thrown} kept={kept} />, {
-      duration: animated ? 6000 : 5000,
-    });
+    toast(<RollToast label={label} total={total} detail={detail} dice={thrown} kept={kept} />, diceToast());
     if (!unlogged) logHistory(`${label}: ${total} (${detail})`);
     return { total, die: kept };
   };
@@ -235,7 +236,7 @@ export function useRolls() {
         detail={`${expression}: ${describeDice(roll)}`}
         dice={roll.rolls}
       />,
-      { duration: 5000 },
+      diceToast(),
     );
     logHistory(`${label}: ${roll.total} (${expression}: ${describeDice(roll)})`);
     return roll.total;
@@ -250,14 +251,22 @@ export function useRolls() {
   const damage = (
     label: string,
     components: DamageComponents,
-    { critical = false, minDie, source, tracked }: { critical?: boolean; minDie?: number; source?: DamageSource; tracked?: boolean } = {},
+    {
+      critical = false,
+      minDie,
+      source,
+      tracked,
+      follow,
+    }: { critical?: boolean; minDie?: number; source?: DamageSource; tracked?: boolean; follow?: RollFollowUp } = {},
   ) => {
     const hero = useCharacterStore.getState().character;
     const applied = new Map<string, DamageRule>();
     const parts = components
       .filter((c) => c.damage.trim())
       .map((c) => {
-        const rules = hero && source ? damageRulesFor(hero, source, c.type) : [];
+        // Dice a feature deals beside the weapon (Crimson Rite) are not the weapon's own dice.
+        const from = c.extra && source?.kind === 'weapon' ? { ...source, kind: 'other' as const } : source;
+        const rules = hero && from ? damageRulesFor(hero, from, c.type) : [];
         const healing = hero && !source && c.type === 'Лечение' ? damageRulesFor(hero, { kind: 'other' }, c.type) : [];
         for (const rule of [...rules, ...healing]) applied.set(rule.id, rule);
         return { ...c, roll: rollFormula(c.damage, Math.random, rollOptionsOf([...rules, ...healing], { critical, minDie })) };
@@ -278,15 +287,29 @@ export function useRolls() {
     const healing = parts.every((p) => p.type === 'Лечение');
     const title = healing ? `${label}: лечение` : critical ? `${label}: критический урон` : `${label}: урон`;
     show(parts.flatMap((p) => p.roll.rolls), `${title}: ${total}`);
+    const after = follow?.(total) ?? [];
     toast(
-      <RollToast
-        label={title}
-        total={total}
-        detail={detail}
-        tone={critical ? 'crit' : undefined}
-        dice={parts.flatMap((p) => p.roll.rolls)}
-      />,
-      { duration: 6000 },
+      (t) => (
+        <RollToast
+          label={title}
+          total={total}
+          detail={detail}
+          tone={critical ? 'crit' : undefined}
+          dice={parts.flatMap((p) => p.roll.rolls)}
+          actions={
+            after.length > 0
+              ? after.map((action) => ({
+                  label: action.label,
+                  onClick: () => {
+                    toast.dismiss(t.id);
+                    action.onClick();
+                  },
+                }))
+              : undefined
+          }
+        />
+      ),
+      diceToast(),
     );
     logHistory(`${title}: ${total} (${detail})`);
     return total;
@@ -308,7 +331,8 @@ export function useRolls() {
       spell,
       source,
       tracked,
-    }: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean; source?: DamageSource; tracked?: boolean } = {},
+      follow,
+    }: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean; source?: DamageSource; tracked?: boolean; follow?: RollFollowUp } = {},
   ) => {
     const { plan, dice, kept: die } = throwD20({ kind: 'attack', spell });
     const total = die + modifier - plan.penalty;
@@ -334,7 +358,7 @@ export function useRolls() {
                     label: tone === 'crit' ? 'Крит. урон' : 'Урон',
                     onClick: () => {
                       toast.dismiss(t.id);
-                      damage(label, components, { critical: tone === 'crit', minDie, source, tracked });
+                      damage(label, components, { critical: tone === 'crit', minDie, source, tracked, follow });
                     },
                   },
                   ...(twoHanded
@@ -343,7 +367,7 @@ export function useRolls() {
                           label: 'Двумя руками',
                           onClick: () => {
                             toast.dismiss(t.id);
-                            damage(`${label} (двумя руками)`, twoHanded, { critical: tone === 'crit', minDie, source, tracked });
+                            damage(`${label} (двумя руками)`, twoHanded, { critical: tone === 'crit', minDie, source, tracked, follow });
                           },
                         },
                       ]
@@ -353,7 +377,7 @@ export function useRolls() {
           }
         />
       ),
-      { duration: hasDamage && tone !== 'fumble' ? HIT_TOAST_MS : 5000 },
+      diceToast(),
     );
     logHistory(`${label}: попадание ${total} (${detail})`);
     return total;

@@ -25,9 +25,7 @@ export const DND_2024: RuleSystem = {
     ),
   describeGrant: (build, grant) => describeGrant(dnd(build), grant),
   sheetChoices: (build, grant) =>
-    sheetChoices(dnd(build))
-      .filter((open) => open.owner.key === grant)
-      .map((open) => ({ key: open.key, label: open.choice.label, count: open.count, picked: open.picked.length })),
+    sheetChoices(dnd(build), grant).map((open) => ({ key: open.key, label: open.choice.label, count: open.count, picked: open.picked.length })),
   spellCatalog: {
     list: (build) =>
       catalogSpells(dnd(build)).map(({ def, ownList, castable }) => ({

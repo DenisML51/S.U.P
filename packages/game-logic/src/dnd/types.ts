@@ -1,4 +1,4 @@
-import type { ActionType, DamageRule } from '@itd/schema';
+import type { ActionType, DamageRule, HitPointCost } from '@itd/schema';
 import type { AttributeId } from '../content/attributes';
 
 /**
@@ -44,6 +44,10 @@ export interface BuildContext {
   score: (attribute: AttributeId) => number;
   /** Ability modifier after every increase of the build. */
   modifier: (attribute: AttributeId) => number;
+  /** The subclass chosen, once it is (an order that changes a class die). */
+  subclass?: string;
+  /** The class's key ability the hero chose, when the class lets them (a blood hunter's hemocraft). */
+  keyAbility?: AttributeId;
 }
 
 /** A number that may depend on the hero (uses per long rest equal to the Charisma modifier, …). */
@@ -81,9 +85,9 @@ export type Effect =
   | { type: 'hpPerLevel'; amount: number }
   | { type: 'hp'; amount: Amount }
   | { type: 'initiative'; amount: Amount }
-  /** Armour class bonus, only while wearing armour when `armored` (Defense). */
-  | { type: 'armorClass'; amount: Amount; armored?: boolean }
-  | { type: 'resistance'; damageType: string; level?: 'resistance' | 'immunity' }
+  /** Armour class bonus, only while wearing armour when `armored` (Defense), only without heavy armour when `noHeavyArmor`. */
+  | { type: 'armorClass'; amount: Amount; armored?: boolean; noHeavyArmor?: boolean }
+  | { type: 'resistance'; damageType: string; level?: 'resistance' | 'immunity' | 'vulnerability' }
   /**
    * A spell the hero always has. `alwaysPrepared` spells never count against the prepared limit;
    * `ability` overrides the spellcasting ability for it (species and feat spells).
@@ -119,11 +123,22 @@ export type Effect =
    * `check:<ability>`, `attack:spell`, `attack:weapon`.
    */
   | { type: 'advantage'; on: string[] }
+  /** d20 rolls always made with disadvantage (a Mutagen's side effect); keys as `advantage`. */
+  | { type: 'disadvantage'; on: string[] }
+  /** Added to saving throws of the abilities (Dark Augmentation: the hemocraft modifier). */
+  | { type: 'saveBonus'; attributes: AttributeId[]; amount: Amount }
+  /** Dice added to d20 rolls of the keys (`advantage`'s): a Rite Die to Strength saves. */
+  | { type: 'rollDice'; on: string[]; dice: string | ((ctx: BuildContext) => string) }
   /**
    * Damage added to weapon and unarmed attacks made with this ability, any when absent (Rage:
-   * Strength); only with Heavy weapons when `heavy` (Great Weapon Master).
+   * Strength); only with Heavy weapons when `heavy` (Great Weapon Master), only in melee when `melee`
+   * (a Lycan's Feral Might), only with weapons when `weapon` (a Crimson Rite). A flat `amount` adds to
+   * the attack's own damage; `dice` of a `damageType` are dealt beside it (Crimson Rite: 1d4 fire).
    */
-  | { type: 'damageBonus'; amount: Amount; ability?: AttributeId; heavy?: boolean }
+  | ({ type: 'damageBonus'; ability?: AttributeId; heavy?: boolean; melee?: boolean; weapon?: boolean } & (
+      | { amount: Amount }
+      | { dice: string | ((ctx: BuildContext) => string); damageType: string }
+    ))
   /**
    * Damage added to spells that fit: one spell, a class list, its cantrips, a school, a damage type
    * (Agonizing Blast, Potent Spellcasting, Empowered Evocation, Elemental Affinity).
@@ -160,6 +175,10 @@ export interface GrantedAttackDef {
   damageType: string;
   /** The ability added to the attack and damage; the best of several when a list. */
   abilities: AttributeId[];
+  /** Added to the attack roll (a Lycan's Improved Predatory Strikes). */
+  hitBonus?: Amount;
+  /** A melee attack (an unarmed strike) unless `ranged`. */
+  ranged?: boolean;
   actionType?: ActionType;
   iconName?: string;
 }
@@ -210,6 +229,21 @@ export interface FeatureDef {
   /** The saving throw a target makes against it, and its DC. */
   saveAttribute?: AttributeId;
   saveDC?: Amount;
+  /** The user gains temporary hit points of this share of the damage it deals (Rite of Siphoning: 1). */
+  tempHPFromDamage?: number;
+  /** Hit points every use costs (Crimson Rite: a hemocraft die; a Vital Sacrifice off the maximum too). */
+  hpCost?: HitPointCostDef;
+  /** With its pool empty it may still be used, for these hit points instead of a use (a Blood Rite). */
+  hpCostWhenSpent?: HitPointCostDef;
+  /**
+   * It may be strengthened when used (an amplified Blood Curse, an empowered Blood Rite): what that
+   * does, the hit points it costs on top, and the dice it deals instead of `damage`.
+   */
+  amplify?: {
+    description: string;
+    hpCost?: HitPointCostDef;
+    damage?: string | ((ctx: BuildContext) => string);
+  };
   effects?: Effect[] | ((ctx: BuildContext) => Effect[]);
   choices?: ChoiceDef[];
   /** Game-icons id and colour the hotbar shows (see apps/web GameIcon catalogue). */
@@ -219,6 +253,8 @@ export interface FeatureDef {
   hidden?: boolean;
   /** Character level the feature opens at, for species and feats that grow (Draconic Flight at 5). */
   minLevel?: number;
+  /** The last character level it lasts to, when a later one replaces it (a transformation that turns unlimited). */
+  maxLevel?: number;
   /**
    * Using it turns it on until it is ended (Rage, Bladesong, Draconic Flight): these effects count
    * only meanwhile. Starting it ends concentration when `endsConcentration` (a raging barbarian).
@@ -236,7 +272,12 @@ export interface StanceDef {
   group?: string;
   /** Temporary hit points it gives when it starts (Wild Shape: the druid level). */
   tempHP?: Amount;
+  /** It ends with a short rest as well as a long one (Crimson Rite, a Mutagen). */
+  untilShortRest?: boolean;
 }
+
+/** Hit points a feature costs (see `HitPointCost`), written for the hero's numbers when a function. */
+export type HitPointCostDef = HitPointCost | ((ctx: BuildContext) => HitPointCost);
 
 /** One attack of a beast's stat block, with its own numbers. */
 export interface BeastAttackDef {
@@ -277,13 +318,17 @@ export interface OptionDef {
   effects?: Effect[] | ((ctx: BuildContext) => Effect[]);
   /** Features the option brings, each written onto the sheet. */
   features?: FeatureDef[];
+  /** Class level it may be picked from (Crimson Offering's necrotic, psychic and thunder at 11). */
+  minLevel?: number;
+  /** Game-icons id of its card in the picker (a patron's, a damage type's). */
+  iconName?: string;
 }
 
 export type FeatCategory = 'origin' | 'general' | 'fightingStyle' | 'epicBoon';
-export type SpellListId = 'bard' | 'cleric' | 'druid' | 'paladin' | 'ranger' | 'sorcerer' | 'warlock' | 'wizard';
+export type SpellListId = 'bard' | 'cleric' | 'druid' | 'paladin' | 'ranger' | 'sorcerer' | 'warlock' | 'wizard' | 'witchKnight';
 
 /** Lists of picks other than feats and spells (Eldritch Invocations, Metamagic). */
-export type CatalogId = 'invocations' | 'metamagic';
+export type CatalogId = 'invocations' | 'metamagic' | 'bloodCurses' | 'crimsonRites' | 'mutagens' | 'bloodRites' | 'latentMutagens' | 'bloodHunterStyles';
 
 export type OptionSource =
   | { from: 'skills'; list?: SkillId[] }
@@ -310,8 +355,12 @@ export type OptionSource =
   | { from: 'weapons'; filter: WeaponFilter }
   | { from: 'maneuvers' }
   | { from: 'catalog'; catalog: CatalogId }
-  /** Beasts of Wild Shape up to the challenge the druid's level allows (flying ones from level 8). */
-  | { from: 'beasts' }
+  /**
+   * Beasts of Wild Shape up to the challenge the druid's level allows (flying ones from level 8), or
+   * any beast up to `maxCR` (a Pale Moon hunter's curse); `features` make the shape's own features
+   * instead of Wild Shape's.
+   */
+  | { from: 'beasts'; maxCR?: number; features?: (beast: BeastFormDef) => FeatureDef[] }
   /** Picks made earlier in a pool, one of which is given up for a new one (a spell replaced on a level-up). */
   | { from: 'forget'; pool: string }
   | { from: 'tools'; list?: string[] }
@@ -375,6 +424,8 @@ export interface SpellDef {
   damageType?: string;
   /** Dice added per slot level above the spell's level (`1d6`), when the spell grows by slot. */
   upcastDamage?: string;
+  /** Dice from a slot level on, when they grow in steps rather than by slot (Shadow Blade: `{ 3: '3d8', 5: '4d8' }`). */
+  slotDamage?: Partial<Record<number, string>>;
   /** A cantrip whose dice count grows at character levels 5, 11 and 17 (×2, ×3, ×4). */
   cantripScaling?: boolean;
   /** The caster's spellcasting modifier is added to the damage or healing (Cure Wounds). */
@@ -390,7 +441,8 @@ export interface SpellDef {
 
 /** Spell slots by class level: `slots[classLevel - 1][spellLevel - 1]`. */
 export interface SpellcastingDef {
-  ability: AttributeId;
+  /** `key`: the class's key ability the hero chose (a Profane Soul casts with their hemocraft). */
+  ability: AttributeId | 'key';
   list: SpellListId;
   slots: number[][];
   /**
@@ -435,6 +487,8 @@ export interface ClassDef {
   id: string;
   name: string;
   description: string;
+  /** The author of a class outside the Player's Handbook (a homebrew: "Мэтт Мерсер"). */
+  source?: string;
   hitDie: number;
   primary: AttributeId[];
   saves: AttributeId[];
@@ -444,6 +498,11 @@ export interface ClassDef {
   subclassLevel: number;
   subclasses: SubclassDef[];
   spellcasting?: SpellcastingDef;
+  /**
+   * A key ability the hero chooses at level 1 among `options` (hemocraft: Intelligence or Wisdom);
+   * features read it as `ctx.keyAbility`, a casting with `ability: 'key'` casts with it.
+   */
+  keyAbility?: { label: string; description: string; options: AttributeId[]; notes?: Partial<Record<AttributeId, string>> };
   /**
    * Pools of picks one of which may be replaced on every later class level (maneuvers, Eldritch
    * Invocations, Metamagic). Known spells and cantrips of a caster are replaceable without listing.
@@ -502,6 +561,10 @@ export interface CatalogEntryDef extends FeatureDef {
     spell?: string;
     /** Another entry of the catalog the hero must have (Pact of the Blade). */
     entry?: string;
+    /** At least `min` in one of the scores, or in each when `all` (a fighting style's Dexterity 13). */
+    attributes?: { list: AttributeId[]; min: number; all?: boolean };
+    /** A skill the hero must be proficient in (Featherweight Fighting: Acrobatics). */
+    skill?: SkillId;
     text?: string;
   };
   /** May be taken more than once (each time with its own picks). */

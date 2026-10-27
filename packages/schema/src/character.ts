@@ -97,6 +97,8 @@ export const HistoryEntryTypeSchema = z.enum(['health', 'sanity', 'resource', 'i
 export const DamageComponentSchema = passthroughObject({
   damage: shortTextOr(),
   type: shortTextOr(),
+  /** Dealt beside the weapon by a feature (Crimson Rite): not the weapon's own dice for Savage Attacker. */
+  extra: optionalFlag,
 });
 
 export const SkillSchema = passthroughObject({
@@ -211,6 +213,19 @@ export const AttackSchema = passthroughObject({
   grant: optionalShortText,
 });
 
+/**
+ * Hit points a feature costs: `dice` rolled, the lower of two rolls when `rollTwice`, less `minus`
+ * but not below `min`. `lowersMax` takes them off the maximum too until a long rest (a Vital
+ * Sacrifice); otherwise they are lost as damage no defence reduces.
+ */
+export const HitPointCostSchema = passthroughObject({
+  dice: shortText,
+  lowersMax: optionalFlag,
+  rollTwice: optionalFlag,
+  minus: optionalNumber,
+  min: optionalNumber,
+});
+
 export const AbilitySchema = passthroughObject({
   id: nestedId,
   name: shortText,
@@ -244,6 +259,21 @@ export const AbilitySchema = passthroughObject({
   stanceGroup: optionalShortText,
   /** Temporary hit points it gives when it starts (Wild Shape). */
   stanceTempHP: optionalNumber,
+  /** Hit points using it costs, rolled on use (Crimson Rite: a hemocraft die); no defence reduces them. */
+  hpCost: text(HitPointCostSchema.optional()),
+  /** With its pool empty it may still be used, for these hit points instead of a use (a Blood Rite). */
+  hpCostWhenSpent: text(HitPointCostSchema.optional()),
+  /**
+   * It may be strengthened when used (an amplified Blood Curse): what that does, the hit points it
+   * costs on top, and the dice it deals instead of `damage`.
+   */
+  amplify: text(
+    passthroughObject({ description: longTextOr(), hpCost: text(HitPointCostSchema.optional()), damage: optionalShortText }).optional(),
+  ),
+  /** It stays on until a short rest as well as a long one (Crimson Rite, a Mutagen). */
+  stanceUntilShortRest: optionalFlag,
+  /** The user gains temporary hit points of this share of the damage it deals (Rite of Siphoning: all of it). */
+  tempHPFromDamage: optionalNumber,
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
@@ -310,6 +340,8 @@ export const SpellSchema = passthroughObject({
   damageComponents: optionalList(DamageComponentSchema),
   /** Dice added per slot level above the spell's own when cast with a higher slot. */
   upcastDamage: optionalShortText,
+  /** Dice from a slot level on, when they grow in steps (Shadow Blade: 3d8 from 3rd, 4d8 from 5th). */
+  slotDamage: text(z.record(z.string().max(2), shortString).optional()),
   /** A cantrip whose dice count grows with character level (5, 11, 17). */
   cantripScaling: optionalFlag,
   /** The spellcasting modifier is added to the damage or healing. */
@@ -550,6 +582,8 @@ export const CharacterSchema = passthroughObject({
       unarmoredNoShield: optionalFlag,
       /** In a beast's shape (Wild Shape) the armour class is the form's, whatever is worn. */
       form: optionalNumber,
+      /** From features, unless heavy armour is worn (a Lycan's Resilient Hide). */
+      noHeavyArmor: optionalNumber,
     }).optional(),
   ),
   initiativeBonus: optionalNumber,
@@ -566,6 +600,12 @@ export const CharacterSchema = passthroughObject({
    * `skill:<id>`, `save:<ability>`, `check:<ability>`, `attack:spell`, `attack:weapon`.
    */
   advantageOn: optionalList(shortString),
+  /** d20 rolls the hero always makes with disadvantage, from features (a Mutagen's side effect); keys as `advantageOn`. */
+  disadvantageOn: optionalList(shortString),
+  /** Added to saving throws of an ability, from features (Dark Augmentation). */
+  saveBonuses: text(z.record(z.string().max(32), num).optional()),
+  /** Dice added to d20 rolls of the keys (`advantageOn`'s), from features: a Rite Die to Strength saves. */
+  rollDice: optionalList(passthroughObject({ on: list(shortString), dice: shortText })),
   /** Exhaustion level 0–6 (D&D 2024): −2 per level to every d20 test and −5 feet of speed; 6 is death. */
   exhaustion: numeric(int.min(0).max(6).optional()),
 
@@ -579,6 +619,8 @@ export const CharacterSchema = passthroughObject({
   maxHP: numberOr(10),
   tempHP: numberOr(0),
   maxHPBonus: numberOr(0),
+  /** Taken off the maximum hit points until a long rest (a Vital Sacrifice, a wight's drain). */
+  maxHPReduction: optionalNumber,
   limbs: list(LimbSchema),
   resistances: list(ResistanceSchema),
   conditions: list(shortString),
@@ -647,6 +689,7 @@ export type HistoryEntryType = z.infer<typeof HistoryEntryTypeSchema>;
 export type Recovery = z.infer<typeof RecoverySchema>;
 export type Setting = z.infer<typeof SettingSchema>;
 export type DamageComponent = z.infer<typeof DamageComponentSchema>;
+export type HitPointCost = z.infer<typeof HitPointCostSchema>;
 export type Skill = z.infer<typeof SkillSchema>;
 export type Resource = z.infer<typeof ResourceSchema>;
 export type Currency = z.infer<typeof CurrencySchema>;

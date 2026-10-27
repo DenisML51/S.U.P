@@ -71,9 +71,11 @@ export function useVitals() {
 
   const healFully = () => heal(max - character.currentHP);
 
-  const setHealthField = (field: 'maxHP' | 'maxHPBonus' | 'tempHP' | 'currentHP', value: number) =>
+  const setHealthField = (field: 'maxHP' | 'maxHPBonus' | 'maxHPReduction' | 'tempHP' | 'currentHP', value: number) =>
     updateCharacter((doc) => {
       const next = { ...doc, [field]: Math.max(field === 'maxHPBonus' ? -Infinity : 0, value) };
+      // Nothing taken off the maximum any more (a Vital Sacrifice won back): the field goes away.
+      if (field === 'maxHPReduction' && !next.maxHPReduction) delete next.maxHPReduction;
       // A new maximum carries the limbs along (their wounds stay).
       const limbs = field === 'maxHP' || field === 'maxHPBonus' ? rescaleLimbs(next) : next;
       return settleHealth({ ...limbs, currentHP: Math.min(limbs.currentHP, totalMaxHP(limbs)) });

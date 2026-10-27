@@ -1,5 +1,9 @@
-import type { ClassDef, SpellDef, SpellListId } from '../types';
+import type { CatalogEntryDef, CatalogId, ClassDef, SpellDef, SpellListId } from '../types';
 import { BACKGROUNDS } from './backgrounds';
+import { BLOOD_HUNTER_STYLES, BLOOD_RITES, LATENT_MUTAGENS } from './blood-hunter/alternate';
+import { BLOOD_CURSES, CRIMSON_RITES, MUTAGEN_FORMULAS } from './blood-hunter/classic';
+import { ALT_BLOOD_HUNTER } from './classes/alt-blood-hunter';
+import { BLOOD_HUNTER } from './classes/blood-hunter';
 import { BARBARIAN } from './classes/barbarian';
 import { BARD } from './classes/bard';
 import { CLERIC } from './classes/cleric';
@@ -25,6 +29,7 @@ import { HIGH_SPELLS } from './spells/high';
 import { LOW_SPELLS } from './spells/low';
 import { BEASTS } from './beasts';
 import { SIX_SPELLS } from './spells/six';
+import { SUPPLEMENT_SPELLS } from './spells/supplements';
 import { SPELL_LISTS } from './spells/lists';
 import { WIZARD_SPELLS } from './spells/wizard';
 
@@ -47,7 +52,8 @@ function mergeSpells(...groups: SpellDef[][]): SpellDef[] {
   return [...byId.values()];
 }
 
-export const DND_CLASSES: ClassDef[] = [BARBARIAN, BARD, FIGHTER, CLERIC, DRUID, MONK, PALADIN, RANGER, ROGUE, SORCERER, WARLOCK, WIZARD];
+/** The Player's Handbook classes, then the homebrew ones (Blood Hunter of Matthew Mercer and of laserllama). */
+export const DND_CLASSES: ClassDef[] = [BARBARIAN, BARD, FIGHTER, CLERIC, DRUID, MONK, PALADIN, RANGER, ROGUE, SORCERER, WARLOCK, WIZARD, BLOOD_HUNTER, ALT_BLOOD_HUNTER];
 
 /** Everything the D&D 2024 presets offer, in one place for the build engine and the screens. */
 export const DND = {
@@ -55,9 +61,18 @@ export const DND = {
   species: SPECIES,
   backgrounds: BACKGROUNDS,
   feats: FEATS,
-  spells: mergeSpells(WIZARD_SPELLS, DIVINE_SPELLS, EXTRA_SPELLS, LOW_SPELLS, FIVE_SPELLS, SIX_SPELLS, HIGH_SPELLS),
+  spells: mergeSpells(WIZARD_SPELLS, DIVINE_SPELLS, EXTRA_SPELLS, LOW_SPELLS, FIVE_SPELLS, SIX_SPELLS, HIGH_SPELLS, SUPPLEMENT_SPELLS),
   maneuvers: MANEUVERS,
-  catalogs: { invocations: INVOCATIONS, metamagic: METAMAGIC },
+  catalogs: {
+    invocations: INVOCATIONS,
+    metamagic: METAMAGIC,
+    bloodCurses: BLOOD_CURSES,
+    crimsonRites: CRIMSON_RITES,
+    mutagens: MUTAGEN_FORMULAS,
+    bloodRites: BLOOD_RITES,
+    latentMutagens: LATENT_MUTAGENS,
+    bloodHunterStyles: BLOOD_HUNTER_STYLES,
+  } satisfies Record<CatalogId, CatalogEntryDef[]>,
   weapons: WEAPONS,
   armor: ARMOR,
   gear: GEAR,

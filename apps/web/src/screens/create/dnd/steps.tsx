@@ -28,6 +28,7 @@ import { IconCoins, IconDice, IconMinus, IconPlus } from '../../../ui/icons';
 import { ChoiceField } from '../../progression/ChoiceField';
 import { CLASS_SOURCES, LevelPlanView, planIssues } from '../../progression/LevelPlanView';
 import { EmblemGrid, IdentityStep as SharedIdentityStep, Picked, ScoreCard, ThrownScore, throwAbilityScores } from '../kit';
+import { ClassCarousel } from './ClassCarousel';
 import type { DndCreation } from './useDndCreation';
 
 const skillName = (id: string) => SKILLS_LIST.find((s) => s.id === id)?.name ?? id;
@@ -188,12 +189,7 @@ export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => 
     : [];
   return (
     <>
-      <EmblemGrid
-        columns={6}
-        items={DND.classes.map((c) => ({ id: c.id, name: c.name, icon: DND_ICONS.classes[c.id] }))}
-        selected={build.class}
-        onSelect={creation.setClass}
-      />
+      <ClassCarousel value={build.class} onChange={creation.setClass} />
       <Picked
         title={classDef?.name}
         text={classDef?.description}
@@ -206,6 +202,7 @@ export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => 
                 ['Основные', classDef.primary.map(attributeName).join(', ')],
                 ['Спасброски', classDef.saves.map(attributeName).join(', ')],
                 ['Подкласс', `с ${classDef.subclassLevel}-го уровня`],
+                ...(classDef.source ? [['Источник', `Хоумбрю · ${classDef.source}`] as [string, string]] : []),
               ]}
             />
           )

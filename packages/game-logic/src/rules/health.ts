@@ -1,7 +1,8 @@
-import type { Character, DeathSaves, Limb } from '@itd/schema';
+import type { Character, DeathSaves, HitPointCost, Limb } from '@itd/schema';
 import type { InjuryLevel, LimbType } from '../content/combat';
 import { abilityModifier, attributeScore } from './abilities';
 import { keepConcentration } from './concentration';
+import { rollFormula, type RandomSource } from './dice';
 
 export const LIMB_IDS = ['head', 'torso', 'rightArm', 'leftArm', 'rightLeg', 'leftLeg'] as const;
 
@@ -59,8 +60,9 @@ export const getLimbType = (limbId: string): LimbType => {
   return limbId.toLowerCase().includes('arm') ? 'arm' : 'leg';
 };
 
-export const totalMaxHP = (character: Pick<Character, 'maxHP' | 'maxHPBonus'>): number =>
-  character.maxHP + character.maxHPBonus;
+/** Maximum hit points: the sheet's, its bonus, less what is taken off until a long rest (a Vital Sacrifice). */
+export const totalMaxHP = (character: Pick<Character, 'maxHP' | 'maxHPBonus'> & Partial<Pick<Character, 'maxHPReduction'>>): number =>
+  Math.max(0, character.maxHP + character.maxHPBonus - (character.maxHPReduction ?? 0));
 
 export const isDying = (character: Pick<Character, 'currentHP'>): boolean => character.currentHP <= 0;
 
@@ -187,6 +189,21 @@ export function applyDamage(character: Character, damage: number, options: Damag
     else if (wasDown) next = addFailures(next, options.critical ? 2 : 1);
   }
   return { character: keepConcentration(next), amount: lost, absorbed };
+}
+
+/**
+ * Hit points a feature costs (Crimson Rite, a Vital Sacrifice): rolled by the cost's own rules, lost
+ * as damage no resistance lessens. A cost that `lowersMax` also takes them off the maximum until a
+ * long rest; temporary hit points still shield the current ones.
+ */
+export function payHitPoints(character: Character, cost: HitPointCost, random: RandomSource = Math.random): HealthChange & { paid: number } {
+  const roll = () => rollFormula(cost.dice, random).total;
+  const rolled = cost.rollTwice ? Math.min(roll(), roll()) : roll();
+  const paid = Math.max(cost.min ?? 0, rolled - (cost.minus ?? 0), 0);
+  const change = applyDamage(character, paid);
+  if (!cost.lowersMax) return { ...change, paid };
+  const lowered: Character = { ...change.character, maxHPReduction: (character.maxHPReduction ?? 0) + paid };
+  return { ...change, paid, character: { ...lowered, currentHP: Math.min(lowered.currentHP, totalMaxHP(lowered)) } };
 }
 
 /** Healing restores hit points up to the maximum, bonus included; it never adds temporary ones. */

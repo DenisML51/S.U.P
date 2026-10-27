@@ -1980,6 +1980,84 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 }
 .ui-rulebook-card[data-awake] .ui-rulebook-card__dice { transform: translateY(-6px) scale(1.06); }
 
+/* ------------------------------------------------------------------ Class cards (D&D creation) */
+/* A class in the rulebook's frame: the emblem above, the name on the line between, the hit die below. */
+.ui-class-card { justify-content: stretch; gap: 0; padding: 1.5rem 1rem 1.25rem; }
+.ui-class-card__half { position: relative; flex: 1 1 0; display: grid; place-items: center; min-height: 0; }
+.ui-class-card__half--die { align-content: center; gap: 0.6rem; }
+.ui-class-card__emblem {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 9.5rem;
+  height: 9.5rem;
+  color: rgb(var(--c-frame-bright));
+  filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.8));
+  transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-class-card__emblem::before {
+  content: '';
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(var(--c-frame-bright) / 0.16), transparent 70%);
+  opacity: 0.5;
+  transition: opacity 600ms;
+}
+.ui-class-card__halo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.35;
+  animation: ui-class-halo 60s linear infinite;
+  transition: opacity 600ms;
+}
+@keyframes ui-class-halo { to { transform: rotate(360deg); } }
+/* The name stands on the line that halves the card, the homebrew's author under it. */
+.ui-class-card__title {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.55rem 0.5rem;
+  text-align: center;
+}
+.ui-class-card__title::before,
+.ui-class-card__title::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.55), transparent);
+}
+.ui-class-card__title::before { top: 0; }
+.ui-class-card__title::after { bottom: 0; }
+.ui-class-card__name {
+  font-family: var(--setting-display);
+  font-size: 1.55rem;
+  line-height: 1.1;
+  color: rgb(var(--c-ink));
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.8);
+  text-wrap: balance;
+  transition: color 300ms;
+}
+.ui-class-card__name[data-long] { font-size: 1.2rem; }
+.ui-class-card__source { font-size: 0.68rem; letter-spacing: 0.06em; color: rgb(var(--c-ink-faint)); }
+.ui-class-card__die { width: 5.25rem; height: 5.25rem; color: rgb(var(--c-frame-bright) / 0.85); transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1); }
+.ui-class-card__die-label { font-size: 0.78rem; letter-spacing: 0.04em; color: rgb(var(--c-ink-muted)); }
+.ui-class-card__die-label b { font-weight: 400; color: rgb(var(--c-frame-bright)); }
+.ui-class-card[data-awake] .ui-class-card__emblem { transform: translateY(-4px) scale(1.04); }
+.ui-class-card[data-awake] .ui-class-card__die { transform: translateY(-3px) scale(1.06); }
+.ui-class-card:is([data-awake], [aria-pressed='true']) .ui-class-card__halo { opacity: 0.8; animation-duration: 18s; }
+.ui-class-card:is([data-awake], [aria-pressed='true']) .ui-class-card__emblem::before { opacity: 1; }
+.ui-class-card[aria-pressed='true'] .ui-class-card__name { color: rgb(var(--c-frame-bright)); }
+@media (prefers-reduced-motion: reduce) {
+  .ui-class-card__halo { animation: none; }
+}
+
 /* D&D: embers rising off the dragon when the card wakes. */
 .ui-embers { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 600ms; }
 .ui-embers--awake { opacity: 1; }

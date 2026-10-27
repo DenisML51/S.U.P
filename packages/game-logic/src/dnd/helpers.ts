@@ -34,3 +34,7 @@ export const resolveAmount = (amount: Amount, ctx: BuildContext): number =>
 
 /** Proficiency bonus of a character level. */
 export const proficiencyForLevel = (level: number): number => 2 + Math.floor((Math.max(1, level) - 1) / 4);
+
+/** Dice that may grow with the hero (`1d4` → `1d10` hemocraft die), written for the context. */
+export const resolveDice = (dice: string | ((ctx: BuildContext) => string) | undefined, ctx: BuildContext): string | undefined =>
+  typeof dice === 'function' ? dice(ctx) : dice;

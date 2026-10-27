@@ -90,3 +90,21 @@ describe('undo', () => {
     expect(store().undoable).toEqual([]);
   });
 });
+
+describe('performAction', () => {
+  it('rolls the hit points an ability costs once: the sheet loses what the message says', async () => {
+    store().updateCharacter((doc) => ({
+      ...doc,
+      currentHP: 40,
+      maxHP: 40,
+      abilities: [
+        { id: 'rite', name: 'Обряд', description: '', actionType: 'bonus', effect: '', hpCost: { dice: '1d100' } },
+      ],
+    }));
+    const result = store().performAction({ kind: 'ability', id: 'rite' });
+    const paid = result?.ok ? result.costs.hitPoints! : 0;
+    expect(paid).toBeGreaterThan(0);
+    expect(character().currentHP).toBe(Math.max(0, 40 - paid));
+    await stored((doc) => expect(doc.currentHP).toBe(Math.max(0, 40 - paid)));
+  });
+});
