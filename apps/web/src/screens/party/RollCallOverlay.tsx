@@ -14,7 +14,7 @@ import { calledHero, useRollCallStore, type PendingCall } from '../../store/useR
 import { usePartyStore } from '../../store/usePartyStore';
 import { announceRoll } from '../../store/useTableRollStore';
 import { CheckPanel, type CheckPart } from '../../ui/CheckPanel';
-import { Button } from '../../ui/primitives';
+import { Button, cx } from '../../ui/primitives';
 import { SettingScope } from '../../ui/theme/SettingScope';
 
 /** An ability by the picture on its card. */
@@ -141,11 +141,16 @@ const CallPlate: React.FC<{ call: PendingCall }> = ({ call }) => {
         onRoll={thrown ? undefined : roll}
         pair={mode === 'normal' ? undefined : mode}
       />
-      {!thrown && (
-        <Button variant="ghost" size="sm" onClick={() => dismiss(call)}>
-          Не сейчас
-        </Button>
-      )}
+      {/* Hidden once thrown rather than taken away, so the plate does not move. */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cx(thrown && 'invisible')}
+        disabled={!!thrown}
+        onClick={() => dismiss(call)}
+      >
+        Не сейчас
+      </Button>
     </SettingScope>
   );
 };
