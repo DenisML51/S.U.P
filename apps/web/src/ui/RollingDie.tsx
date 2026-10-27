@@ -109,6 +109,8 @@ export const RollingDie: React.FC<{
       <AnimatePresence>
         {landed && (
           <motion.span
+            // A new value (a total replacing the face) pops in afresh.
+            key={String(value)}
             className="ui-rolling-die__value ui-display ui-numeric"
             initial={still ? false : { opacity: 0, scale: 0.3 }}
             animate={{ opacity: 1, scale: 1 }}
