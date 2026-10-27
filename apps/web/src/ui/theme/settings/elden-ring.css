@@ -676,7 +676,9 @@
     background:
       radial-gradient(34% 42% at 94% -6%, rgb(255 214 140 / 0.2), rgb(255 190 100 / 0.06) 42%, transparent 72%),
       radial-gradient(70% 70% at 84% 6%, rgb(var(--c-grace) / 0.05), transparent 70%),
-      linear-gradient(180deg, rgb(7 6 5), rgb(12 10 8) 55%, rgb(7 6 5));
+      /* Seen through, not painted over: the screen's own dark is under it, and on hero select the
+         hero's art blurred into it shows as it does in every setting. */
+      linear-gradient(180deg, rgb(4 3 2 / 0.45), transparent 40%, transparent 62%, rgb(4 3 2 / 0.45));
   }
   /* Shafts of light falling from that corner, as through the crown of a great tree: each a bright
      core in a wide soft fall-off (the gradient is its own blur), fading as they reach down; two sets
