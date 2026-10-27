@@ -20,8 +20,10 @@
  * the chosen thing is ivory; records are heaps of parchment. Wine-red, the card a villager tells the hero what they think of them on, is
  * kept for what must stand out (danger, a refusal, the bookmark); a word of praise or shame is written
  * in a flowing hand.
+ * It is also the app's default look, outside any setting.
  */
 
+:root,
 [data-setting='fable'] {
   /* The setting's own display face; the service's type may stand in for --font-display, never for it. */
   /* The title face is the game's logo: flared roman capitals with a curled F — Cinzel Decorative,
@@ -107,7 +109,9 @@
   --nameplate: linear-gradient(180deg, rgb(38 80 84), rgb(20 50 54) 60%, rgb(14 38 42));
   /* The sparkle, as a mask for anything that has to wear it. */
   --spark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 0Q11.6 8.4 20 10Q11.6 11.6 10 20Q8.4 11.6 0 10Q8.4 8.4 10 0Z'/%3E%3C/svg%3E");
+}
 
+[data-setting='fable'] {
   /* ---------------------------------------------------------------- Panels */
   /* Tinted glass, the glade showing through; a light catching its top edge, a glint in the corner
      where the sun is. */

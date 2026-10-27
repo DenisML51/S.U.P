@@ -113,6 +113,13 @@
       "when": 1793102339514,
       "tag": "0015_retire_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793103321725,
+      "tag": "0016_retire_high_fantasy",
+      "breakpoints": true
     }
   ]
 }

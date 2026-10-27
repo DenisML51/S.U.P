@@ -1026,7 +1026,7 @@ const LevelUpSample: React.FC<{ setting: Setting }> = ({ setting }) => {
 
 /** Showcase page: a setting switcher in the service's own type, then the screen and the parts. */
 export const UiKit = () => {
-  const [setting, setSetting] = useState<Setting>(() => (new URLSearchParams(window.location.search).get('kit') as Setting) || 'high-fantasy');
+  const [setting, setSetting] = useState<Setting>(() => (new URLSearchParams(window.location.search).get('kit') as Setting) || 'fable');
   const [bare, setBare] = useState(false);
   useDocumentSetting(setting);
   const choose = (next: Setting) => {

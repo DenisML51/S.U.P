@@ -1,5 +1,4 @@
 import type { Theme } from '../theme/settings';
-import { HIGH_FANTASY_ART } from './highFantasy';
 import { SCI_FI_ART } from './sciFi';
 import { LOVECRAFT_ART } from './lovecraft';
 import { ELDEN_RING_ART } from './eldenRing';
@@ -9,7 +8,6 @@ import type { SettingArt } from './types';
 
 export const SETTING_ART: Record<Theme, SettingArt> = {
   service: SERVICE_ART,
-  'high-fantasy': HIGH_FANTASY_ART,
   'sci-fi': SCI_FI_ART,
   lovecraft: LOVECRAFT_ART,
   'elden-ring': ELDEN_RING_ART,

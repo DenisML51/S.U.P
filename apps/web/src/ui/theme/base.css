@@ -1998,8 +1998,8 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   20% { opacity: 1; }
   100% { opacity: 0; transform: translate(var(--drift), calc(var(--rise) * -1)) scale(0.4); }
 }
-/* High fantasy and Fable: four-pointed stars of gold. */
-:is([data-setting='high-fantasy'], [data-setting='fable']) .ui-level-ready__motes > i {
+/* Fable: four-pointed stars of gold. */
+[data-setting='fable'] .ui-level-ready__motes > i {
   border-radius: 0;
   background: rgb(255 240 200);
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
