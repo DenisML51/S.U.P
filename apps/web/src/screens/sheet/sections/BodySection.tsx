@@ -156,12 +156,81 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
     });
 
   return (
-    <div className="grid h-full grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-8 max-lg:grid-cols-1">
-      <div className="flex min-h-0 min-w-0 flex-col gap-6">
+    <div className="flex justify-center">
+      {/* One page down the middle: what acts on the hero now first, then the wounds and the
+          protection under it. */}
+      <div className="flex w-full min-w-0 flex-col gap-8" style={{ maxWidth: 780 }}>
+        {/* What acts on the hero now, in full; the rest wait folded behind "Отметить состояние". */}
+        <Ledger
+          title="Состояния"
+          scroll={false}
+          aside={<span>{active.size > 0 ? `действует: ${active.size}` : 'нет'}</span>}
+          addLabel={marking ? 'Свернуть' : 'Отметить состояние'}
+          onAdd={() => setMarking(!marking)}
+        >
+          {current.map((condition) =>
+            condition.id === 'exhaustion' ? (
+              // Exhaustion has levels: the row steps them, down to gone.
+              <LedgerRow
+                key={condition.id}
+                title={`${condition.name}: ${exhaustion}`}
+                meta={`${condition.description} Сейчас: −${2 * exhaustion} к к20, −${5 * exhaustion} фт скорости.`}
+                wrapMeta
+                active
+                action={
+                  <span className="flex items-center gap-1">
+                    <IconButton label="Снять уровень истощения" size={26} onClick={() => changeExhaustion(exhaustion - 1)}>
+                      <IconMinus width={14} height={14} />
+                    </IconButton>
+                    <IconButton
+                      label="Добавить уровень истощения"
+                      size={26}
+                      disabled={exhaustion >= 6}
+                      onClick={() => changeExhaustion(exhaustion + 1)}
+                    >
+                      <IconPlus width={14} height={14} />
+                    </IconButton>
+                  </span>
+                }
+              />
+            ) : (
+              <LedgerRow
+                key={condition.id}
+                title={condition.name}
+                meta={condition.description}
+                wrapMeta
+                active
+                onOpen={() => toggleCondition(condition.id, condition.name)}
+                action={
+                  <IconButton label={`Снять: ${condition.name}`} size={26} onClick={() => toggleCondition(condition.id, condition.name)}>
+                    <IconClose width={14} height={14} />
+                  </IconButton>
+                }
+              />
+            ),
+          )}
+          {current.length === 0 && !marking && <li className="py-4 text-sm opacity-60">Ничто не мешает герою</li>}
+          {marking && (
+            <li className="flex flex-wrap gap-1.5 py-3">
+              {others.map((condition) => (
+                <button
+                  key={condition.id}
+                  type="button"
+                  className="ui-chip flex items-center gap-1.5"
+                  onClick={() => toggleCondition(condition.id, condition.name)}
+                >
+                  <CatalogIcon id={CONDITION_ICONS[condition.id] ?? 'terror'} size={14} />
+                  {condition.name}
+                </button>
+              ))}
+            </li>
+          )}
+        </Ledger>
+
         <section>
           <SectionTitle className="mb-4">Раны</SectionTitle>
           {character.limbs.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-2">
               {ordered(character.limbs).map((limb) => (
                 <LimbPlate
                   key={limb.id}
@@ -209,73 +278,6 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
           )}
         </section>
       </div>
-
-      {/* What acts on the hero now, in full; the rest wait folded behind "Отметить состояние". */}
-      <Ledger
-        className="max-h-full self-start max-lg:order-first max-lg:self-stretch"
-        title="Состояния"
-        aside={<span>{active.size > 0 ? `действует: ${active.size}` : 'нет'}</span>}
-        addLabel={marking ? 'Свернуть' : 'Отметить состояние'}
-        onAdd={() => setMarking(!marking)}
-      >
-        {current.map((condition) =>
-          condition.id === 'exhaustion' ? (
-            // Exhaustion has levels: the row steps them, down to gone.
-            <LedgerRow
-              key={condition.id}
-              title={`${condition.name}: ${exhaustion}`}
-              meta={`${condition.description} Сейчас: −${2 * exhaustion} к к20, −${5 * exhaustion} фт скорости.`}
-              wrapMeta
-              active
-              action={
-                <span className="flex items-center gap-1">
-                  <IconButton label="Снять уровень истощения" size={26} onClick={() => changeExhaustion(exhaustion - 1)}>
-                    <IconMinus width={14} height={14} />
-                  </IconButton>
-                  <IconButton
-                    label="Добавить уровень истощения"
-                    size={26}
-                    disabled={exhaustion >= 6}
-                    onClick={() => changeExhaustion(exhaustion + 1)}
-                  >
-                    <IconPlus width={14} height={14} />
-                  </IconButton>
-                </span>
-              }
-            />
-          ) : (
-            <LedgerRow
-              key={condition.id}
-              title={condition.name}
-              meta={condition.description}
-              wrapMeta
-              active
-              onOpen={() => toggleCondition(condition.id, condition.name)}
-              action={
-                <IconButton label={`Снять: ${condition.name}`} size={26} onClick={() => toggleCondition(condition.id, condition.name)}>
-                  <IconClose width={14} height={14} />
-                </IconButton>
-              }
-            />
-          ),
-        )}
-        {current.length === 0 && !marking && <li className="py-4 text-sm opacity-60">Ничто не мешает герою</li>}
-        {marking && (
-          <li className="flex flex-wrap gap-1.5 py-3">
-            {others.map((condition) => (
-              <button
-                key={condition.id}
-                type="button"
-                className="ui-chip flex items-center gap-1.5"
-                onClick={() => toggleCondition(condition.id, condition.name)}
-              >
-                <CatalogIcon id={CONDITION_ICONS[condition.id] ?? 'terror'} size={14} />
-                {condition.name}
-              </button>
-            ))}
-          </li>
-        )}
-      </Ledger>
     </div>
   );
 };

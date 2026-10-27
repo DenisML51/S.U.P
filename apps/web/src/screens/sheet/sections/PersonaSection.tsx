@@ -90,8 +90,8 @@ const pick = (entry: { id: string; name: string; description?: string; grant?: s
 });
 
 /**
- * Who the hero is as a person: the story so far and how they look on the left, read like a page;
- * their traits and character on the right, short and to the point.
+ * Who the hero is as a person, on one page down the middle: the story so far and how they look,
+ * read like a page, then their features and character, short and to the point.
  */
 export const PersonaSection: React.FC<{ character: Character }> = ({ character }) => {
   const dialogs = useSheetDialogs();
@@ -99,13 +99,11 @@ export const PersonaSection: React.FC<{ character: Character }> = ({ character }
   const groups = useFeatureGroups(character);
 
   return (
-    <div className="flex h-full gap-8 max-lg:flex-col">
-      {/* The pages grow down with their text; only a very long story scrolls the pages as a whole.
-          The scroller keeps a margin round them, so the leaves heaped under each page are not cut.
-          Where the room is narrow (a small screen, or an entry's card open beside), the pages
-          stack: the story first, the features under it. */}
-      <div className="ui-section-list flex min-h-0 min-w-0 flex-1">
-        <div className="ui-persona__columns ui-scroll ui-scroll--bare -m-4 grid min-h-0 min-w-0 flex-1 items-start gap-8 overflow-y-auto p-4">
+    <div className="flex h-full gap-8">
+      {/* The pages grow down with their text and scroll as a whole beside the card. The scroller
+          keeps a margin round them, so the leaves heaped under each page are not cut. */}
+      <div className="ui-scroll ui-scroll--bare -m-4 flex min-h-0 min-w-0 flex-1 justify-center overflow-y-auto p-4">
+        <div className="flex h-max w-full min-w-0 flex-col gap-8" style={{ maxWidth: 780 }}>
           <Panel variant="paper" ornate={false} className="space-y-6 px-7 py-6">
             <EditableText
               title="Предыстория"
@@ -163,7 +161,7 @@ export const PersonaSection: React.FC<{ character: Character }> = ({ character }
           </div>
         </div>
       </div>
-      <SectionAside />
+      <SectionAside fit />
     </div>
   );
 };
