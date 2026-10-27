@@ -1046,73 +1046,129 @@
 }
 
 /* ------------------------------------------------------------------ World flourish */
-/* The sun breaks through: a warm flash at the card, a sparkle opening in it and rays turning out
-   of it, while fairy dust is thrown out across the screen and drifts down. */
-[data-flourish='fable'] { animation: fb-sunlit 1.4s ease-out 1 both; }
+/* A region entered in Albion: its name in golden script. The fairy flies up from the chosen card and
+   writes the name as it passes along the line, dust fading behind it; a flourish draws itself under
+   the name, which lingers and fades. Only the light, the dust and the reveal move. */
 .ui-flourish--fable {
+  /* A soft warmth where the card was chosen, as the fairy leaves it. */
   &::after {
     inset: 0;
-    background: radial-gradient(circle at var(--fx-x) var(--fx-y), rgb(255 244 210 / 0.55), rgb(240 214 150 / 0.18) 30%, transparent 60%);
-    animation: fb-flash 1.3s ease-out forwards;
+    background: radial-gradient(circle at var(--fx-x) var(--fx-y), rgb(255 240 200 / 0.3), rgb(240 214 150 / 0.08) 18%, transparent 36%);
+    animation: fb-leave 1s ease-out forwards;
   }
-  & > i { display: none; }
-  .fb-burst {
-    position: absolute;
-    width: 110vmin;
-    height: 110vmin;
-    transform: translate(-50%, -50%);
-    overflow: visible;
-  }
-  .fb-burst__rays { transform-origin: 0 0; opacity: 0; animation: fb-burst-rays 1.4s ease-out forwards; }
-  .fb-burst__glow { transform-origin: 0 0; opacity: 0; animation: fb-burst-glow 1.3s ease-out forwards; }
-  .fb-burst__star { transform-origin: 0 0; opacity: 0; filter: drop-shadow(0 0 12px rgb(255 236 180)); animation: fb-burst-star 1s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
-  .ui-flourish__p {
-    display: block;
-    width: calc(6px + var(--size) * 12px);
-    height: calc(6px + var(--size) * 12px);
-    margin: calc(-3px - var(--size) * 6px) 0 0 calc(-3px - var(--size) * 6px);
-    background: rgb(255 236 186);
-    -webkit-mask: var(--fb-spark-mask) center / contain no-repeat;
-    mask: var(--fb-spark-mask) center / contain no-repeat;
-    filter: drop-shadow(0 0 4px rgb(255 226 150));
-    opacity: 0;
-    animation: fb-dust-fly 1.5s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
-    animation-delay: calc(var(--delay) * 0.25s);
-  }
-  .ui-flourish__p:nth-child(3n) { background: rgb(160 240 228); filter: drop-shadow(0 0 4px rgb(132 230 216)); }
+  & > i,
+  .ui-flourish__p { display: none; }
 }
-:root {
-  --fb-spark-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 0Q11.6 8.4 20 10Q11.6 11.6 10 20Q8.4 11.6 0 10Q8.4 8.4 10 0Z'/%3E%3C/svg%3E");
+/* A dusk behind the name, so it reads over anything. */
+.fb-writ-haze {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 42vh;
+  background: radial-gradient(40% 44% at 50% 42%, rgb(var(--c-bg-deep) / 0.92), rgb(var(--c-bg-deep) / 0.6) 55%, transparent 80%);
+  opacity: 0;
+  animation: fb-writ-stay 2.6s ease-in-out forwards;
 }
-@keyframes fb-sunlit {
-  0% { filter: none; }
-  25% { filter: brightness(1.18) saturate(1.1); }
-  100% { filter: none; }
+.fb-writ {
+  position: absolute;
+  left: 50%;
+  top: 9vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  animation: fb-writ-stay 2.6s ease-in-out forwards;
 }
-@keyframes fb-flash {
+/* The name in gilt script, revealed from the left as the fairy's light passes along it. */
+.fb-writ__word {
+  padding: 0 0.15em;
+  font-family: var(--font-script);
+  font-size: clamp(4rem, 8vw, 7.5rem);
+  line-height: 1.15;
+  white-space: nowrap;
+  color: transparent;
+  background: linear-gradient(180deg, rgb(255 248 222) 12%, rgb(240 210 140) 48%, rgb(190 146 72) 82%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 2px 0 rgb(48 30 10)) drop-shadow(0 6px 18px rgb(0 0 0 / 0.75));
+  clip-path: inset(-25% 100% -25% -5%);
+  animation: fb-writ-reveal linear forwards;
+}
+/* The script's capital stands apart from the letter after it; drawn in, as a hand would join them. */
+.fb-writ__word::first-letter { letter-spacing: -0.14em; }
+/* The flourish under the name, drawn in one stroke from its middle out, a sparkle set on it. */
+.fb-writ__swash {
+  width: 115%;
+  height: 1.8rem;
+  margin-top: -0.6rem;
+  overflow: visible;
+}
+.fb-writ__swash path:first-child {
+  stroke: rgb(236 204 136);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 4px rgb(246 214 140 / 0.6));
+  animation: fb-writ-draw 0.55s ease-out forwards;
+}
+.fb-writ__spark {
+  fill: rgb(255 248 226);
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: fb-writ-spark 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+/* The fairy: a little light with its glow. */
+.fb-writ-fairy {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 248) 0, rgb(255 250 228) 10%, rgb(255 228 164 / 0.8) 22%, rgb(255 210 130 / 0.28) 45%, transparent 70%);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+/* Dust it leaves behind: each grain lights up as the fairy passes, then drifts down and fades. */
+.fb-writ-dust {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 246 214), rgb(255 222 150 / 0.55) 40%, transparent 70%);
+  opacity: 0;
+  animation: fb-writ-dust 1.2s ease-out forwards;
+}
+.fb-writ-dust:nth-child(3n) { background: radial-gradient(circle, rgb(226 255 248), rgb(132 230 216 / 0.55) 40%, transparent 70%); }
+@keyframes fb-leave {
   0% { opacity: 0; }
-  20% { opacity: 1; }
+  15% { opacity: 1; }
   100% { opacity: 0; }
 }
-@keyframes fb-burst-rays {
-  0% { opacity: 0; transform: scale(0.4) rotate(0deg); }
-  25% { opacity: 0.8; }
-  100% { opacity: 0; transform: scale(1.5) rotate(25deg); }
+@keyframes fb-writ-stay {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
 }
-@keyframes fb-burst-glow {
-  0% { opacity: 0; transform: scale(0.3); }
-  25% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.6); }
-}
-@keyframes fb-burst-star {
+@keyframes fb-writ-reveal { to { clip-path: inset(-25% -5% -25% -5%); } }
+@keyframes fb-writ-draw { to { stroke-dashoffset: 0; } }
+@keyframes fb-writ-spark {
   0% { opacity: 0; transform: scale(0) rotate(-45deg); }
-  35% { opacity: 1; transform: scale(1) rotate(0deg); }
-  100% { opacity: 0; transform: scale(0.6) rotate(20deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
 }
-@keyframes fb-dust-fly {
-  0% { opacity: 0; transform: translate(0, 0) scale(0.4); }
-  15% { opacity: 1; }
-  100% { opacity: 0; transform: translate(calc(var(--dx) * 46vw), calc((var(--dy) - 0.35) * 70vh)) scale(1) rotate(180deg); }
+@keyframes fb-writ-dust {
+  0% { opacity: 0; transform: scale(0.4); }
+  12% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: translateY(18px) scale(0.5); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fb-writ-fairy,
+  .fb-writ-dust { display: none; }
+  .fb-writ__word { clip-path: none; animation: none; }
 }
 
 /* The rulebook on a hero's card: a sea-green nameplate with a gilt rim, as over a villager. */

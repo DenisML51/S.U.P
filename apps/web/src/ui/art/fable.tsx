@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import GiFairy from '~icons/game-icons/fairy';
 import type { SettingArt } from './types';
 
@@ -389,28 +389,97 @@ const WorldSigil: React.FC = () => (
   </svg>
 );
 
+/** The fairy's flight up from the chosen card to where the name begins, and its writing of it (ms). */
+const FLY_MS = 560;
+const WRITE_MS = 900;
+/** The whole of the flourish, the name lingering a moment before it fades. */
+const FLOURISH_MS = 2600;
+
+/** A point on a cubic curve from `a` to `d`. */
+const along = (a: Point, b: Point, c: Point, d: Point, t: number): Point => {
+  const u = 1 - t;
+  return {
+    x: u ** 3 * a.x + 3 * u * u * t * b.x + 3 * u * t * t * c.x + t ** 3 * d.x,
+    y: u ** 3 * a.y + 3 * u * u * t * b.y + 3 * u * t * t * c.y + t ** 3 * d.y,
+  };
+};
+type Point = { x: number; y: number };
+
 /**
- * The world is chosen: a burst of warm light at the card with long rays turning out of it, and a
- * ring of fairy dust thrown out across the screen.
+ * The world is chosen as a region is entered in Albion: its name comes up in golden script. Here the
+ * fairy writes it — a little light flies up from the chosen card in a wide curve, and passing along
+ * the line it leaves the name written behind it in gilt, a trail of dust fading after it; a flourish
+ * draws itself under the name, which lingers and fades.
  */
-const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => (
-  <svg className="fb-burst" style={{ left: x, top: y }} viewBox="-200 -200 400 400" aria-hidden>
-    <defs>
-      <radialGradient id="fb-burst-glow" cx="0.5" cy="0.5" r="0.5">
-        <stop offset="0" stopColor="rgb(255 250 230)" stopOpacity="0.9" />
-        <stop offset="0.4" stopColor="rgb(250 226 160)" stopOpacity="0.35" />
-        <stop offset="1" stopColor="rgb(250 226 160)" stopOpacity="0" />
-      </radialGradient>
-    </defs>
-    <circle className="fb-burst__glow" r="60" fill="url(#fb-burst-glow)" />
-    <g className="fb-burst__rays" fill="rgb(255 238 190)">
-      {SIGIL_RAYS.map((d, i) => (
-        <path key={i} d={d} transform="scale(1.3)" opacity={i % 2 ? 0.22 : 0.45} />
-      ))}
-    </g>
-    <path className="fb-burst__star" d={sparkle(0, 0, 30, 0.1)} fill="rgb(255 250 232)" />
-  </svg>
-);
+const Flourish: React.FC<{ x: number; y: number }> = ({ x, y }) => {
+  const word = useRef<HTMLSpanElement>(null);
+  const fairy = useRef<HTMLSpanElement>(null);
+  const dust = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const box = word.current?.getBoundingClientRect();
+    const light = fairy.current;
+    const trail = dust.current;
+    if (!box || !light || !trail) return;
+    // The fairy writes like a quill's tip, at the middle of the letters.
+    const line = box.top + box.height * 0.56;
+    const start = { x, y };
+    const begin = { x: box.left + box.width * 0.03, y: line };
+    const end = { x: box.right - box.width * 0.03, y: line };
+    // Out to the side and up in a wide curve, coming down onto the line where the name begins.
+    const curve = Array.from({ length: 16 }, (_, i) =>
+      along(start, { x: start.x - 280, y: start.y - 60 }, { x: begin.x - 240, y: begin.y + 180 }, begin, i / 15),
+    );
+    const total = FLY_MS + WRITE_MS;
+    const flight = light.animate(
+      [
+        ...curve.map((p, i) => ({ transform: `translate(${p.x}px, ${p.y}px)`, offset: ((i / 15) * FLY_MS) / total })),
+        { transform: `translate(${end.x}px, ${end.y}px)`, offset: 1 },
+      ],
+      { duration: total, easing: 'linear', fill: 'forwards' },
+    );
+    const glow = light.animate([{ opacity: 0 }, { opacity: 1, offset: 0.06 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }], {
+      duration: total + 260,
+      fill: 'forwards',
+    });
+    // Dust left where the fairy passed, each grain lighting up as it goes by and drifting down.
+    const grains: [Point, number][] = [
+      ...curve.map((p, i) => [p, (i / 15) * FLY_MS] as [Point, number]),
+      ...Array.from({ length: 18 }, (_, i) => {
+        const t = (i + 1) / 18;
+        return [{ x: begin.x + (end.x - begin.x) * t, y: line + (Math.random() - 0.5) * 14 }, FLY_MS + WRITE_MS * t] as [Point, number];
+      }),
+    ];
+    for (const [p, at] of grains) {
+      const grain = document.createElement('i');
+      grain.className = 'fb-writ-dust';
+      grain.style.left = `${p.x + (Math.random() - 0.5) * 10}px`;
+      grain.style.top = `${p.y + (Math.random() - 0.5) * 10}px`;
+      grain.style.animationDelay = `${Math.round(at)}ms`;
+      trail.append(grain);
+    }
+    return () => {
+      flight.cancel();
+      glow.cancel();
+      trail.replaceChildren();
+    };
+  }, [x, y]);
+  return (
+    <>
+      <div className="fb-writ-haze" />
+      <div className="fb-writ">
+        <span ref={word} className="fb-writ__word" style={{ animationDelay: `${FLY_MS}ms`, animationDuration: `${WRITE_MS}ms` }}>
+          Альбион
+        </span>
+        <svg className="fb-writ__swash" viewBox="0 0 400 40" preserveAspectRatio="none" fill="none" aria-hidden>
+          <path pathLength={1} d="M10 22C80 30 150 30 200 18C250 6 330 8 390 22" style={{ animationDelay: `${FLY_MS + WRITE_MS - 120}ms` }} />
+          <path className="fb-writ__spark" d={sparkle(200, 18, 9, 0.14)} style={{ animationDelay: `${FLY_MS + WRITE_MS + 180}ms` }} />
+        </svg>
+      </div>
+      <div ref={dust} />
+      <span ref={fairy} className="fb-writ-fairy" />
+    </>
+  );
+};
 
 /* ------------------------------------------------------------------ Hero select */
 
@@ -574,4 +643,5 @@ export const FABLE_ART: SettingArt = {
   HeroReadout,
   StatusLevel,
   Flourish,
+  flourishMs: FLOURISH_MS,
 };
