@@ -13,6 +13,8 @@ import { toast } from 'react-hot-toast';
 import { Toasts } from './ui/Toasts';
 import { ScrollCues } from './ui/ScrollCues';
 import { TableRollOverlay } from './screens/party/TableDice';
+import { RollCallOverlay } from './screens/party/RollCallOverlay';
+import { LevelUpBurst } from './ui/LevelUpBurst';
 import { preloadSystem, systemHeroScreen } from './systems';
 import { useBrowserHistory } from './useBrowserHistory';
 import { useNamesAsWritten } from './i18n/useNames';
@@ -180,6 +182,8 @@ const App: React.FC = () => {
         <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       </Suspense>
       <TableRollOverlay />
+      <RollCallOverlay />
+      <LevelUpBurst />
       <Toasts />
       <ScrollCues />
     </MotionConfig>

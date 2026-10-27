@@ -16,6 +16,9 @@ import { LevelReady, SettingEmblem, useSettingArt } from '../ui/ornaments';
 import { WorldCard } from '../screens/create/WorldCard';
 import { RollToast } from '../screens/sheet/useRolls';
 import { DieGlyph } from '../ui/RollingDie';
+import { CheckPanel } from '../ui/CheckPanel';
+import { LevelUpBurst } from '../ui/LevelUpBurst';
+import type { LevelUpMoment } from '../store/useMomentStore';
 import {
   IconArmor,
   IconAttacks,
@@ -867,6 +870,14 @@ const ComponentsSample: React.FC<{ setting: Setting }> = ({ setting }) => {
         <DiceSample />
       </Board>
 
+      <Board title="Проверка у стола" className="col-span-3">
+        <CheckSample />
+      </Board>
+
+      <Board title="Новый уровень: момент" className="col-span-3">
+        <LevelUpSample key={setting} setting={setting} />
+      </Board>
+
       <Board title="Карточка героя" className="row-span-2">
         <HeroCardSample />
       </Board>
@@ -887,6 +898,86 @@ const ComponentsSample: React.FC<{ setting: Setting }> = ({ setting }) => {
           </button>
         </div>
       </Board>
+    </div>
+  );
+};
+
+/**
+ * A check at the table, as the middle of the screen shows it: thrown against a difficulty (played
+ * again on demand, to watch it frame by frame), and waiting for the player's click on a call.
+ */
+const CheckSample: React.FC = () => {
+  const [run, setRun] = useState(0);
+  const [waiting, setWaiting] = useState(true);
+  const [hit, setHit] = useState(true);
+  const value = hit ? 14 : 6;
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={() => setRun((n) => n + 1)}>
+          Ещё раз
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setHit((h) => !h)}>
+          {hit ? 'Показать провал' : 'Показать успех'}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setWaiting(true)}>
+          Ждать клика
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-start justify-center gap-12 py-10">
+        <CheckPanel
+          key={`thrown-${run}-${hit}`}
+          title="Магия"
+          subtitle="Проверка Интеллекта · 1d20 + 5"
+          dice={[{ sides: 20, value }]}
+          check={{ title: 'Магия', formula: '1d20 + 5', bonus: 5, total: value + 5, target: 15 }}
+          parts={[
+            { label: 'Интеллект', value: 3, icon: 'brain' },
+            { label: 'Владение навыком', value: 2, icon: 'laurel-crown' },
+          ]}
+        />
+        <CheckPanel
+          key={`call-${run}`}
+          title="Спасбросок Телосложения"
+          subtitle="Мастер просит бросок · Эдгар Хайт"
+          dice={waiting ? [] : [{ sides: 20, value: 17 }]}
+          check={{ title: 'Спасбросок Телосложения', formula: '1d20 + 6', bonus: 6, total: 23, target: 18 }}
+          parts={[
+            { label: 'Телосложение', value: 3, icon: 'heart-plus' },
+            { label: 'Владение спасброском', value: 3, icon: 'laurel-crown' },
+          ]}
+          onRoll={waiting ? () => setWaiting(false) : undefined}
+        />
+      </div>
+    </div>
+  );
+};
+
+/** A new level as it plays over the sheet, played again on demand. */
+const LevelUpSample: React.FC<{ setting: Setting }> = ({ setting }) => {
+  const [moment, setMoment] = useState<LevelUpMoment | null>(null);
+  const play = () =>
+    setMoment({
+      key: Date.now(),
+      from: 2,
+      to: 3,
+      setting,
+      gains: [
+        { label: 'Максимум здоровья', value: '+7' },
+        { label: 'Бонус мастерства', value: '+1' },
+        { label: 'Новые умения', value: '+2' },
+      ],
+    });
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <Button size="sm" onClick={play}>
+          Сыграть
+        </Button>
+      </div>
+      <div className="relative h-[760px] overflow-hidden">
+        <LevelUpBurst moment={moment} onDone={() => setMoment(null)} inline />
+      </div>
     </div>
   );
 };

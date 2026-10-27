@@ -891,6 +891,38 @@ describe('dice at the table', () => {
     socket.terminate();
   });
 
+  it("calls on a player's hero for a throw, and keeps the check the answer comes with", async () => {
+    const app = await ctx.app();
+    const { master, player, partyId, playerHero } = await table(app);
+    const socket = await app.injectWS('/api/ws');
+    const received: WsServerMessage[] = [];
+    socket.on('message', (raw) => received.push(JSON.parse(raw.toString()) as WsServerMessage));
+    socket.send(JSON.stringify({ type: 'auth', token: player.accessToken }));
+    await expect.poll(() => received.some((m) => m.type === 'ready')).toBe(true);
+
+    const hunter = (await view(app, master, partyId)).heroes.find((hero) => hero.name === 'Охотник')!;
+    const ask = (user: User, body: object) => call(app, user, 'POST', `/parties/${partyId}/roll-calls`, body);
+    // Only the master calls.
+    expect((await ask(player, { heroIds: [hunter.id], kind: 'plain' })).statusCode).toBe(403);
+    const asked = await ask(master, { heroIds: [hunter.id], kind: 'save', key: 'constitution', target: 15 });
+    expect(asked.statusCode, asked.body).toBe(204);
+    await expect.poll(() => received.find((m) => m.type === 'party.rollCall')).toBeTruthy();
+    const message = received.find((m) => m.type === 'party.rollCall');
+    if (message?.type !== 'party.rollCall') throw new Error('no call');
+    expect(message.call).toMatchObject({ heroId: hunter.id, characterId: playerHero.id, kind: 'save', key: 'constitution', target: 15, mode: 'normal' });
+
+    const check = { title: 'Спасбросок Телосложения', formula: '1d20 + 2', bonus: 2, total: 16, target: 15, callId: message.call.id };
+    const answered = await call(app, player, 'POST', `/parties/${partyId}/rolls`, {
+      characterId: playerHero.id,
+      dice: [{ sides: 20, value: 14 }],
+      check,
+    });
+    expect(answered.statusCode, answered.body).toBe(204);
+    const log = (await call(app, master, 'GET', `/parties/${partyId}/rolls`)).json<TableRollsDto>().items;
+    expect(log.at(-1)!.check).toEqual(check);
+    socket.terminate();
+  });
+
   it('shows nothing while the table is closed', async () => {
     const app = await ctx.app();
     const { master, player, partyId, playerHero } = await table(app);

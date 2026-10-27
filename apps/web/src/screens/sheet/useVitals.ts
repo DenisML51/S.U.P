@@ -21,6 +21,8 @@ import {
 } from '@itd/game-logic';
 import type { Character, DeathSaves } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { levelGains, useMomentStore } from '../../store/useMomentStore';
+import { settingOf } from '../../ui/theme/settings';
 import { useConcentrationPrompt } from './Concentration';
 
 const COIN_NAME: Record<Coin, string> = { gold: 'зм', silver: 'см', copper: 'мм' };
@@ -127,7 +129,13 @@ export function useVitals() {
     if (level === character.level) return;
     updateCharacter((doc) => setExperience(doc, doc.experience, level), { log: { message: level > character.level ? `Уровень повышен до ${level}` : `Уровень изменён: ${level}`, type: 'exp' },
     });
-    if (level > character.level) toast.success(`Новый уровень: ${level}`);
+    if (level > character.level)
+      useMomentStore.getState().celebrate({
+        from: character.level,
+        to: level,
+        setting: settingOf(character),
+        gains: levelGains(character, setExperience(character, character.experience, level)),
+      });
   };
 
   const canLevelUp = experienceProgress(character.level, character.experience).canLevelUp;

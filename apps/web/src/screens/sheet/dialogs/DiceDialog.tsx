@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { longPress } from '../../../ui/longPress';
 import { AnimatePresence, motion } from 'framer-motion';
 import { formatDice, parseDiceFormula, rollD20, rollDie, rollPercentile, type D20Mode } from '@itd/game-logic';
-import type { TableDie } from '@itd/schema';
+import type { TableCheck, TableDie } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { announceRoll } from '../../../store/useTableRollStore';
 import { Dialog } from '../../../ui/Dialog';
@@ -10,6 +10,7 @@ import { Segmented } from '../../../ui/forms';
 import { Button, Input, cx } from '../../../ui/primitives';
 import { IconDice } from '../../../ui/icons';
 import { DieGlyph, RollingDie } from '../../../ui/RollingDie';
+import { OUTCOME_LABEL, checkOutcome, outcomeSucceeded } from '../../../ui/checkOutcome';
 
 const DICE = [4, 6, 8, 10, 12, 20, 100];
 
@@ -28,6 +29,8 @@ interface Cast {
   dice: DieResult[];
   /** Whom it was for, when one press threw for several. */
   target?: string;
+  /** What it was checked against, when the tray had a target. */
+  check: TableCheck;
 }
 
 interface Result {
@@ -77,6 +80,28 @@ const thrownSize = (count: number) =>
 
 const signedBonus = (bonus: number) => (bonus > 0 ? `+ ${bonus}` : `− ${-bonus}`);
 
+/** A check's outcome, stamped once the dice are down; nothing for a throw without a target. */
+const Outcome: React.FC<{ check: TableCheck; shown: boolean; small?: boolean }> = ({ check, shown, small }) => {
+  const outcome = checkOutcome(check);
+  if (!outcome) return null;
+  return (
+    <motion.span
+      className={cx(
+        'ui-check-stamp',
+        small && 'ui-check-stamp--small',
+        outcomeSucceeded(outcome) ? 'text-success' : 'text-danger',
+      )}
+      data-outcome={outcome}
+      initial={false}
+      animate={shown ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.3 }}
+      transition={{ type: 'spring', stiffness: 380, damping: 20, delay: shown ? 0.12 : 0 }}
+      aria-hidden={!shown}
+    >
+      {OUTCOME_LABEL[outcome]}
+    </motion.span>
+  );
+};
+
 /**
  * The latest throw: its dice tumble large, land one after another with their numbers, and the total
  * shows once the last one is down. The result is already known; this only reveals it.
@@ -89,7 +114,11 @@ const Throw: React.FC<{ result: Result }> = ({ result }) => {
   const size = thrownSize(dice.length);
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="text-sm text-ink-muted">{result.formula}</div>
+      <div className="text-sm text-ink-muted">
+        {cast.check.title ? `${cast.check.title} · ` : ''}
+        {result.formula}
+        {cast.check.target !== undefined && ` · ${cast.check.under ? 'навык' : 'сложность'} ${cast.check.target}`}
+      </div>
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
         {dice.map((die, index) => (
           <RollingDie
@@ -115,6 +144,7 @@ const Throw: React.FC<{ result: Result }> = ({ result }) => {
       >
         {cast.total}
       </motion.span>
+      <Outcome check={cast.check} shown={revealed} />
     </div>
   );
 };
@@ -156,6 +186,9 @@ const SeparateThrows: React.FC<{ result: Result }> = ({ result }) => {
               >
                 {cast.total}
               </motion.span>
+              <span className="w-36 shrink-0 text-right">
+                <Outcome check={cast.check} shown={revealed > row} small />
+              </span>
             </li>
           );
         })}
@@ -188,8 +221,8 @@ export const DiceDialog: React.FC<{
   title?: string;
   /** Starts on 1d100 (a Call of Cthulhu table) rather than 1d20. */
   percentile?: boolean;
-  /** A throw: its dice, what it was ("2d6 + 3: 11") and whom it was for, for the table. */
-  onThrown?: (dice: TableDie[], label: string, target?: DiceTarget) => void;
+  /** A throw: its dice, what it was ("2d6 + 3: 11"), whom it was for and its check, for the table. */
+  onThrown?: (dice: TableDie[], label: string, target: DiceTarget | undefined, check: TableCheck) => void;
   /** Throw separately for each of these (two or more); otherwise once. */
   targets?: DiceTarget[];
   children?: React.ReactNode;
@@ -198,16 +231,22 @@ export const DiceDialog: React.FC<{
   const characterId = useCharacterStore((s) => s.character?.id);
   const heroPercentile = useCharacterStore((s) => s.character?.build?.ruleset === 'coc7');
   const percentile = percentileTable ?? heroPercentile;
-  const thrown = (dice: TableDie[], label: string, target?: DiceTarget) =>
-    onThrown ? onThrown(dice, label, target) : announceRoll(characterId, dice, label);
+  const thrown = (dice: TableDie[], label: string, target: DiceTarget | undefined, check: TableCheck) =>
+    onThrown ? onThrown(dice, label, target, check) : announceRoll(characterId, dice, label, check);
   const [formula, setFormula] = useState(percentile ? '1d100' : '1d20');
   const [mode, setMode] = useState<D20Mode>('normal');
   const [d100Mode, setD100Mode] = useState<D100Mode>('normal');
   const [results, setResults] = useState<Result[]>([]);
+  /** What is checked and the number to reach: optional, for the outcome and the table's panel. */
+  const [checkTitle, setCheckTitle] = useState('');
+  const [targetText, setTargetText] = useState('');
   const { byDie, bonus } = counts(formula);
   const singleD20 = Object.keys(byDie).length === 1 && byDie[20] === 1;
   const singleD100 = Object.keys(byDie).length === 1 && byDie[100] === 1 && bonus === 0;
   const empty = Object.keys(byDie).length === 0 && bonus === 0;
+  const target = /^\d+$/.test(targetText.trim()) ? Math.min(100, Math.max(1, Number(targetText))) : undefined;
+  // A single d100 is rolled under a skill; anything else meets or beats a difficulty.
+  const under = singleD100;
 
   const change = (sides: number, delta: number) => {
     const next = { ...byDie, [sides]: Math.max(0, (byDie[sides] ?? 0) + delta) };
@@ -259,14 +298,24 @@ export const DiceDialog: React.FC<{
     if (empty) return;
     const each = targets && targets.length > 1 ? targets : [undefined];
     let label = formula;
-    const casts = each.map((target): Cast => {
+    const percentileThrow = singleD100 && d100Mode !== 'normal';
+    const title = checkTitle.trim().slice(0, 60);
+    const casts = each.map((who): Cast => {
       const handful = cast();
       label = handful.label;
-      thrown(handful.dice, `${handful.label}: ${handful.total}`, target);
-      logHistory(`Бросок ${handful.label}${target ? ` (${target.name})` : ''}: ${handful.total} (${handful.detail})`);
-      return { total: handful.total, dice: handful.dice, target: target?.name };
+      const check: TableCheck = {
+        title,
+        formula: handful.label.slice(0, 40),
+        bonus: percentileThrow ? 0 : bonus,
+        total: handful.total,
+        ...(target !== undefined ? { target, ...(under ? { under: true } : {}) } : {}),
+      };
+      const outcome = checkOutcome(check);
+      const said = `${title ? `${title}, ` : ''}${handful.label}: ${handful.total}${outcome ? ` — ${OUTCOME_LABEL[outcome].toLowerCase()}` : ''}`;
+      thrown(handful.dice, said, who, check);
+      logHistory(`Бросок ${title ? `«${title}» ` : ''}${handful.label}${who ? ` (${who.name})` : ''}: ${handful.total} (${handful.detail})${outcome ? ` — ${OUTCOME_LABEL[outcome].toLowerCase()}` : ''}`);
+      return { total: handful.total, dice: handful.dice, target: who?.name, check };
     });
-    const percentileThrow = singleD100 && d100Mode !== 'normal';
     setResults((previous) =>
       [{ id: Date.now(), formula: label, bonus: percentileThrow ? 0 : bonus, casts }, ...previous].slice(0, 6),
     );
@@ -311,6 +360,24 @@ export const DiceDialog: React.FC<{
           Бросить
         </Button>
       </form>
+
+      <div className="mt-3 flex gap-2">
+        <Input
+          value={checkTitle}
+          onChange={(e) => setCheckTitle(e.target.value)}
+          aria-label="Что проверяем"
+          placeholder="Что проверяем — необязательно"
+          maxLength={60}
+        />
+        <Input
+          value={targetText}
+          onChange={(e) => setTargetText(e.target.value.replace(/\D/g, '').slice(0, 3))}
+          aria-label={under ? 'Значение навыка' : 'Сложность'}
+          placeholder={under ? 'Навык' : 'Сложность'}
+          inputMode="numeric"
+          className="w-32 shrink-0 text-center"
+        />
+      </div>
 
       {singleD20 && (
         <Segmented

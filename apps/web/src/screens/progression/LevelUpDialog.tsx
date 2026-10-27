@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { toast } from 'react-hot-toast';
 import { applyBuild, dndBuildOf, findClass } from '@itd/game-logic/dnd';
 import type { DndBuild, Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { levelGains, useMomentStore } from '../../store/useMomentStore';
+import { settingOf } from '../../ui/theme/settings';
 import { announceRoll } from '../../store/useTableRollStore';
 import { Dialog } from '../../ui/Dialog';
 import { Button } from '../../ui/primitives';
@@ -40,10 +41,11 @@ export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = (
     );
   };
   const confirm = () => {
+    const next = applyBuild(character, draft).character;
     updateCharacter((doc) => applyBuild(doc, draft).character, {
       log: { message: `Уровень повышен до ${level}`, type: 'exp' },
     });
-    toast.success(`Новый уровень: ${level}`);
+    useMomentStore.getState().celebrate({ from: character.level, to: level, setting: settingOf(character), gains: levelGains(character, next) });
     onClose();
   };
 

@@ -15,6 +15,7 @@ import {
   SendMessageRequestSchema,
   StartCombatRequestSchema,
   TableRollRequestSchema,
+  TableRollCallRequestSchema,
   UpdateNpcRequestSchema,
   UpdatePartyHeroRequestSchema,
   UpdatePartyRequestSchema,
@@ -202,6 +203,18 @@ export const partyRoutes: FastifyPluginAsyncZod<PartyRoutesOptions> = async (
     },
     async (request, reply) => {
       await rolls.announce(request.userId, request.params.id, request.body);
+      return reply.status(204).send();
+    },
+  );
+
+  app.post(
+    '/parties/:id/roll-calls',
+    {
+      schema: { params: PartyParamsSchema, body: TableRollCallRequestSchema },
+      config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+    },
+    async (request, reply) => {
+      await rolls.call(request.userId, request.params.id, request.body);
       return reply.status(204).send();
     },
   );

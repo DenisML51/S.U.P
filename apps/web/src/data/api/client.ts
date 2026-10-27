@@ -15,6 +15,7 @@ import type {
   PartyDto,
   PartyListItemDto,
   PartyMessageDto,
+  TableRollCallRequest,
   TableRollRequest,
   TableRollsDto,
   PartyMessagesDto,
@@ -213,6 +214,8 @@ export const api = {
     list: (id: string) => apiClient.request<TableRollsDto>(`/parties/${encode(id)}/rolls`),
     send: (id: string, body: TableRollRequest) =>
       apiClient.request<void>(`/parties/${encode(id)}/rolls`, { method: 'POST', body }),
+    call: (id: string, body: TableRollCallRequest) =>
+      apiClient.request<void>(`/parties/${encode(id)}/roll-calls`, { method: 'POST', body }),
   },
   invites: {
     preview: (code: string) => apiClient.request<InvitePreviewDto>(`/invites/${encode(code)}`),

@@ -53,6 +53,8 @@ import { StartCombatDialog } from './StartCombatDialog';
 import { TableDecks } from './PartyDecks';
 import { Companions, MyHero } from './PlayerSeat';
 import { MasterDiceDialog } from './MasterDiceDialog';
+import { RollCallDialog } from './RollCallDialog';
+import { GameIcon } from '../../ui/GameIcon';
 import { DiceLog } from './DiceLog';
 import { useTableCombat } from './useTableCombat';
 import { SyncStatus } from '../../ui/SyncStatus';
@@ -117,6 +119,7 @@ type Overlay =
   | { kind: 'combat' }
   | { kind: 'npc'; npc?: PartyNpcDto; disposition?: NpcDisposition }
   | { kind: 'dice' }
+  | { kind: 'call-roll' }
   | { kind: 'remove-hero'; hero: PartyHeroDto }
   | { kind: 'kick'; userId: string; name: string }
   | { kind: 'new-code' }
@@ -237,6 +240,11 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
             {isMaster && party.sessionStartedAt && (
               <IconButton label="Бросить кубики столу" onClick={() => setOverlay({ kind: 'dice' })}>
                 <IconDice width={20} height={20} />
+              </IconButton>
+            )}
+            {isMaster && party.sessionStartedAt && party.rules !== 'coc7' && (
+              <IconButton label="Попросить бросок" onClick={() => setOverlay({ kind: 'call-roll' })}>
+                <GameIcon name="rolling-dices" kind="ability" size={20} />
               </IconButton>
             )}
             {isMaster ? (
@@ -413,6 +421,7 @@ const Table: React.FC<{ party: PartyDto; onOpenSettings: () => void; onHome: () 
         onCreate={createHero}
       />
       {overlay?.kind === 'dice' && <MasterDiceDialog open party={party} onClose={close} />}
+      {overlay?.kind === 'call-roll' && <RollCallDialog open party={party} onClose={close} />}
       {overlay?.kind === 'combat' && <StartCombatDialog open party={party} onClose={close} />}
       {overlay?.kind === 'npc' && (
         <NpcDialog open partyId={party.id} setting={party.setting} npc={overlay.npc} disposition={overlay.disposition} coc={isCocFight(party) || !!overlay.npc?.coc} onClose={close} />
