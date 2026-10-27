@@ -202,6 +202,21 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
                 }}
               />
             </div>
+            {/* Or no rulebook of its own: heroes of any rules sit down (fits every hero already seated). */}
+            <div className="flex flex-col items-center gap-1.5 pb-8 max-sm:pb-4">
+              <Button
+                variant={rulesChosen && draft.rules === null ? 'primary' : 'secondary'}
+                aria-pressed={rulesChosen && draft.rules === null}
+                onClick={() => {
+                  patch({ rules: null });
+                  setRulesChosen(true);
+                  setStep('table');
+                }}
+              >
+                Позволить все рулбуки
+              </Button>
+              <span className="text-xs text-ink-faint">За стол сядут герои, созданные по любым правилам</span>
+            </div>
           </motion.main>
         ) : (
           <motion.main
