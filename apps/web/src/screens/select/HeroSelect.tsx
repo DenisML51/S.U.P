@@ -167,12 +167,12 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
           {/* Moving along the row and the hero's own actions belong to the hero: they wear its world,
               which outranks the service theme (the service's type stays, as everywhere on this screen). */}
           <SettingScope setting={world} className="ui-service ui-morph contents">
-            <IconButton label="Предыдущий герой" className="absolute left-16 max-lg:left-4 max-sm:hidden" size={44} onClick={() => step(-1)} disabled={focusIndex === 0}>
+            <IconButton label="Предыдущий герой" className="absolute left-24 z-20 max-lg:left-20 max-sm:hidden" size={44} onClick={() => step(-1)} disabled={focusIndex === 0}>
               <IconPrev width={26} height={26} />
             </IconButton>
             <IconButton
               label="Следующий герой"
-              className="absolute right-16 max-lg:right-4 max-sm:hidden"
+              className="absolute right-24 z-20 max-lg:right-20 max-sm:hidden"
               size={44}
               onClick={() => step(1)}
               disabled={focusIndex === slots.length - 1}
@@ -181,6 +181,22 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
             </IconButton>
           </SettingScope>
         </motion.main>
+
+        {/* Every hero at a glance, in a column down the right edge; on a phone the strip stays under
+            the card, where there is room for it. */}
+        <SettingScope
+          setting={world}
+          className="ui-service ui-morph absolute right-8 top-1/2 z-20 flex -translate-y-1/2 max-lg:right-4 max-sm:hidden"
+        >
+          <motion.div
+            className="flex"
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0, transition: { duration: 0.4, delay: 0.2 } }}
+            exit={{ opacity: 0, x: 12, transition: { duration: 0.25 } }}
+          >
+            <Strip slots={slots} index={focusIndex} onFocus={setIndex} vertical />
+          </motion.div>
+        </SettingScope>
 
         <motion.footer
           className="flex items-center justify-between gap-6 px-24 pb-14 max-lg:px-8 max-lg:pb-8 max-sm:flex-wrap max-sm:gap-x-2 max-sm:gap-y-3 max-sm:px-4 max-sm:pb-4"
@@ -208,7 +224,7 @@ export const HeroSelect: React.FC<HeroSelectProps> = ({ onCreate, onHome, onOpen
                 {resumable ? 'Продолжить создание' : 'Создать героя'}
               </Button>
             )}
-            <Strip slots={slots} index={focusIndex} onFocus={setIndex} />
+            <Strip slots={slots} index={focusIndex} onFocus={setIndex} className="sm:hidden" />
           </SettingScope>
 
           <div className="flex w-64 justify-end max-lg:w-40 max-sm:order-3 max-sm:w-auto">
@@ -376,12 +392,26 @@ const NewHeroCard: React.FC<{ focused: boolean; onClick: () => void }> = ({ focu
   );
 };
 
-/** Portrait strip: every hero at a glance, and a quick way to jump far along the row. */
-const Strip: React.FC<{ slots: Slot[]; index: number; onFocus: (index: number) => void }> = ({ slots, index, onFocus }) => (
+/**
+ * Portrait strip: every hero at a glance, and a quick way to jump far along the row. Standing upright
+ * it is strung on a rail, as a game lists its characters down the side of the screen.
+ */
+const Strip: React.FC<{ slots: Slot[]; index: number; onFocus: (index: number) => void; vertical?: boolean; className?: string }> = ({
+  slots,
+  index,
+  onFocus,
+  vertical,
+  className,
+}) => (
   <div
-    className="ui-scroll ui-scroll--bare flex max-w-full items-center gap-2 overflow-x-auto px-1.5 py-1.5 [justify-content:safe_center]"
+    className={cx(
+      'ui-scroll ui-scroll--bare flex items-center gap-2 px-1.5 py-1.5 [justify-content:safe_center]',
+      vertical ? 'ui-strip-rail max-h-[min(60vh,560px)] flex-col gap-3.5 overflow-y-auto py-4' : 'max-w-full overflow-x-auto',
+      className,
+    )}
     role="tablist"
     aria-label="Герои"
+    aria-orientation={vertical ? 'vertical' : 'horizontal'}
   >
     {slots.map((slot, i) => (
       <button
@@ -392,7 +422,7 @@ const Strip: React.FC<{ slots: Slot[]; index: number; onFocus: (index: number) =
         onClick={() => onFocus(i)}
         className={cx(
           'ui-strip-thumb h-11 w-11 shrink-0 overflow-hidden border transition-all',
-          i === index ? 'scale-110 border-frame-bright' : 'border-line opacity-60 hover:opacity-100',
+          i === index ? 'scale-110 border-frame-bright' : 'border-line brightness-[0.6] saturate-[0.7] hover:brightness-100 hover:saturate-100',
         )}
       >
         {slot.kind === 'hero' ? (
