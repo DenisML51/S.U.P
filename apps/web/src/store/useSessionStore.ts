@@ -12,6 +12,7 @@ import { createWorkspace, type Workspace } from '../data/workspace';
 import { useCharacterStore } from './useCharacterStore';
 import { useChatStore } from './useChatStore';
 import { useTableRollStore } from './useTableRollStore';
+import { useRollCallStore } from './useRollCallStore';
 import { usePartyStore } from './usePartyStore';
 
 export type SessionStatus = 'booting' | 'anonymous' | 'authenticated';
@@ -65,6 +66,7 @@ export const useSessionStore = create<SessionState>((set, get) => {
     usePartyStore.getState().attach(current);
     useChatStore.getState().attach(current);
     useTableRollStore.getState().attach(current);
+    useRollCallStore.getState().attach(current);
     current.start(online);
   };
 
@@ -89,6 +91,7 @@ export const useSessionStore = create<SessionState>((set, get) => {
     usePartyStore.getState().attach(null);
     useChatStore.getState().attach(null);
     useTableRollStore.getState().attach(null);
+    useRollCallStore.getState().attach(null);
     void useCharacterStore.getState().attachWorkspace(null);
   };
 

@@ -1,4 +1,4 @@
-import { TABLE_ROLLS_KEPT, TABLE_ROLL_SHOWN_MS, type TableDie, type TableRollDto } from '@itd/schema';
+import { TABLE_ROLLS_KEPT, TABLE_ROLL_SHOWN_MS, type TableCheck, type TableDie, type TableRollDto } from '@itd/schema';
 import { toast } from 'react-hot-toast';
 import { create } from 'zustand';
 import { api } from '../data/api/client';
@@ -9,12 +9,19 @@ import { usePartyStore } from './usePartyStore';
 export interface ShownRoll {
   id: string;
   dice: TableDie[];
+  /** What the throw was checked against, when it said. */
+  check?: TableCheck | null;
 }
 
 /** The table's latest throw of anyone, for the middle of the screen. */
 export interface CentreRoll extends ShownRoll {
   kind: TableRollDto['kind'];
   authorId: string;
+  /** What was thrown, as the log names it ("2d6 + 3: 11"), when it came without a check. */
+  label: string;
+  check: TableCheck | null;
+  /** The hero who threw, for a throw answering the master's call. */
+  heroName: string | null;
 }
 
 /**
@@ -38,12 +45,27 @@ const timers = new Map<string, number>();
 
 export const useTableRollStore = create<TableRollState>((set, get) => {
   const show = (partyId: string, roll: TableRollDto) => {
-    const shown: ShownRoll = { id: roll.id, dice: roll.dice };
+    const shown: ShownRoll = { id: roll.id, dice: roll.dice, check: roll.check ?? null };
     const heroId = roll.kind === 'hero' ? roll.heroId : null;
     if (heroId)
       set({ heroes: { ...get().heroes, [partyId]: { ...get().heroes[partyId], [heroId]: shown } } });
-    if (roll.kind === 'master')
-      set({ centre: { ...get().centre, [partyId]: { ...shown, kind: roll.kind, authorId: roll.authorId } } });
+    // The middle of the screen: the master's own throw, and a hero's throw answering the master's
+    // call (the master sees how it went).
+    const centred = roll.kind === 'master' || !!roll.check?.callId;
+    if (centred)
+      set({
+        centre: {
+          ...get().centre,
+          [partyId]: {
+            ...shown,
+            kind: roll.kind,
+            authorId: roll.authorId,
+            label: roll.label,
+            check: roll.check ?? null,
+            heroName: roll.heroName,
+          },
+        },
+      });
     // Each place lets its throw go a few seconds after it came, unless a newer one took its place.
     const later = (slot: string, clear: () => void) => {
       window.clearTimeout(timers.get(slot));
@@ -60,7 +82,7 @@ export const useTableRollStore = create<TableRollState>((set, get) => {
         const { [heroId]: gone, ...rest } = get().heroes[partyId] ?? {};
         if (gone?.id === roll.id) set({ heroes: { ...get().heroes, [partyId]: rest } });
       });
-    if (roll.kind === 'master')
+    if (centred)
       later(`${partyId}:centre`, () => {
         if (get().centre[partyId]?.id !== roll.id) return;
         const { [partyId]: _, ...rest } = get().centre;
@@ -111,14 +133,14 @@ export const useTableRollStore = create<TableRollState>((set, get) => {
  * in the dice log with `label`); elsewhere it stays the player's own. The throw has already happened
  * and stands; if the table did not get it (no connection), the player is told, so they can say it aloud.
  */
-export function announceRoll(characterId: string | undefined, dice: TableDie[], label = ''): void {
+export function announceRoll(characterId: string | undefined, dice: TableDie[], label = '', check?: TableCheck): void {
   if (!characterId || tableDice(dice).length === 0) return;
   const tables = (usePartyStore.getState().list ?? []).filter(
     (party) => party.inSession && party.myCharacterIds.includes(characterId),
   );
   for (const party of tables)
     void api.rolls
-      .send(party.id, { characterId, dice: tableDice(dice), label: label.slice(0, 120) })
+      .send(party.id, { characterId, dice: tableDice(dice), label: label.slice(0, 120), ...(check ? { check } : {}) })
       .catch(() => toast.error('Бросок не дошёл до стола — назовите результат мастеру', { id: 'roll-lost' }));
 }
 
@@ -128,12 +150,14 @@ export async function announceMasterRoll(
   dice: TableDie[],
   label: string,
   heroIds?: string[],
+  check?: TableCheck,
 ): Promise<void> {
   await api.rolls.send(partyId, {
     characterId: null,
     dice: tableDice(dice),
     label: label.slice(0, 120),
     ...(heroIds ? { heroIds } : {}),
+    ...(check ? { check } : {}),
   });
 }
 

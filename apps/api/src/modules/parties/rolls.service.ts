@@ -1,4 +1,13 @@
-import { TABLE_ROLLS_KEPT, type TableDie, type TableRollDto, type TableRollsDto } from '@itd/schema';
+import { randomUUID } from 'node:crypto';
+import {
+  TABLE_ROLLS_KEPT,
+  type TableCheck,
+  type TableDie,
+  type TableRollCallDto,
+  type TableRollCallRequest,
+  type TableRollDto,
+  type TableRollsDto,
+} from '@itd/schema';
 import { and, asc, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { Database } from '../../db/client';
 import { characters, parties, partyHeroes, partyMembers, partyRolls, users } from '../../db/schema';
@@ -23,7 +32,7 @@ export class RollsService {
   async announce(
     userId: string,
     partyId: string,
-    input: { characterId: string | null; dice: TableDie[]; heroIds?: string[]; label?: string },
+    input: { characterId: string | null; dice: TableDie[]; heroIds?: string[]; label?: string; check?: TableCheck },
   ): Promise<void> {
     const members = await this.membersOf(partyId);
     const seat = members.find((member) => member.userId === userId);
@@ -80,6 +89,7 @@ export class RollsService {
           audience,
           dice: input.dice,
           label: input.label ?? '',
+          check: input.check ?? null,
         })
         .returning();
       // The log keeps its latest throws only.
@@ -101,6 +111,56 @@ export class RollsService {
       partyId,
       roll: dto,
     });
+  }
+
+  /**
+   * The master calls on some heroes for a throw: each hero's player is asked on their screens. The
+   * call is not kept; the throw that answers it comes back as the hero's own.
+   */
+  async call(userId: string, partyId: string, input: TableRollCallRequest): Promise<void> {
+    const members = await this.membersOf(partyId);
+    const seat = members.find((member) => member.userId === userId);
+    if (!seat) throw partyNotFound();
+    if (seat.role !== 'master') throw masterOnly();
+    const [party] = await this.db
+      .select({ sessionStartedAt: parties.sessionStartedAt })
+      .from(parties)
+      .where(eq(parties.id, partyId));
+    if (!party?.sessionStartedAt) throw sessionClosed('Сессия не идёт — бросок некого просить');
+    const heroes = await this.db
+      .select({
+        id: partyHeroes.id,
+        userId: partyHeroes.userId,
+        characterId: partyHeroes.characterId,
+        name: characters.name,
+      })
+      .from(partyHeroes)
+      .innerJoin(
+        characters,
+        and(eq(characters.userId, partyHeroes.userId), eq(characters.id, partyHeroes.characterId)),
+      )
+      .where(and(eq(partyHeroes.partyId, partyId), inArray(partyHeroes.id, input.heroIds)));
+    if (heroes.length !== new Set(input.heroIds).size) throw validationError('Нет такого героя за столом');
+
+    const names = await this.namesOf([userId]);
+    const id = randomUUID();
+    const createdAt = new Date().toISOString();
+    for (const hero of heroes) {
+      const call: TableRollCallDto = {
+        id,
+        heroId: hero.id,
+        characterId: hero.characterId,
+        heroName: hero.name,
+        kind: input.kind,
+        key: input.key ?? null,
+        title: input.title ?? '',
+        target: input.target ?? null,
+        mode: input.mode ?? 'normal',
+        masterName: names.get(userId) ?? '',
+        createdAt,
+      };
+      this.notifier.publish([hero.userId], { type: 'party.rollCall', partyId, call });
+    }
   }
 
   /** The dice log as the viewer may read it, oldest first. */
@@ -174,6 +234,7 @@ const toDto = (row: RollRow, names: Map<string, string>): TableRollDto => ({
   authorName: row.authorName,
   dice: row.dice,
   label: row.label,
+  check: row.check ?? null,
   // The master is in every audience; the others are who the throw was for.
   audienceNames: row.audience
     ? row.audience.filter((id) => id !== row.authorId).map((id) => names.get(id) ?? '—')

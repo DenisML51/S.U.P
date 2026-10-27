@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import type { CharacterSummary, NpcCocStats, NpcDndAttack, TableDie } from '@itd/schema';
+import type { CharacterSummary, NpcCocStats, NpcDndAttack, TableCheck, TableDie } from '@itd/schema';
 import {
   type AnyPgColumn,
   bigint,
@@ -322,6 +322,7 @@ export const partyRolls = pgTable(
     audience: uuid('audience').array(),
     dice: jsonb('dice').$type<TableDie[]>().notNull(),
     label: text('label').notNull().default(''),
+    check: jsonb('check').$type<TableCheck>(),
     createdAt: createdAt(),
   },
   (t) => [index('party_rolls_party_created_idx').on(t.partyId, t.createdAt, t.id)],

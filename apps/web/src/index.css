@@ -1,6 +1,7 @@
 @import './ui/theme/tokens.css';
 @import './ui/theme/base.css';
 @import './ui/theme/party.css';
+@import './ui/theme/moments.css';
 @import './ui/theme/settings/high-fantasy.css';
 @import './ui/theme/settings/sci-fi.css';
 @import './ui/theme/settings/dark-fantasy.css';

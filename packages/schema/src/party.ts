@@ -489,6 +489,60 @@ export type TableDie = z.infer<typeof TableDieSchema>;
 export const TABLE_ROLL_DICE = 20;
 
 /**
+ * What a throw was, for the table's centre panel: its name, its formula and total, and the number
+ * it had to reach — a difficulty to meet or beat, or (`under`, a percentile skill) a value to roll
+ * at or under.
+ */
+export const TableCheckSchema = z.object({
+  /** What was checked ("Скрытность"); empty: the throw goes by its formula. */
+  title: z.string().trim().max(60).default(''),
+  formula: z.string().trim().max(40),
+  bonus: z.number().int().min(-999).max(999),
+  total: z.number().int().min(-999).max(9999),
+  target: z.number().int().min(1).max(100).optional(),
+  under: z.boolean().optional(),
+  /** The master's call this throw answers (`TableRollCallDto.id`). */
+  callId: z.uuid().optional(),
+});
+export type TableCheck = z.infer<typeof TableCheckSchema>;
+
+/** What the master calls for: a skill, an ability check, a saving throw, or a bare d20. */
+export const RollCallKindSchema = z.enum(['skill', 'ability', 'save', 'plain']);
+export type RollCallKind = z.infer<typeof RollCallKindSchema>;
+
+/**
+ * The master calls on some heroes for a d20: each of their players gets a plate with their own
+ * bonuses and throws it themselves; the throw comes back to the table as theirs.
+ */
+export const TableRollCallRequestSchema = z.object({
+  heroIds: z.array(z.uuid()).min(1).max(32),
+  kind: RollCallKindSchema,
+  /** A skill id (`skill`) or an attribute id (`ability`, `save`). */
+  key: z.string().trim().max(40).optional(),
+  /** What it is called at the table; empty: the skill's or ability's name. */
+  title: z.string().trim().max(60).default(''),
+  /** The difficulty, when the master tells it. */
+  target: z.number().int().min(1).max(40).optional(),
+  mode: z.enum(['normal', 'advantage', 'disadvantage']).default('normal'),
+});
+export type TableRollCallRequest = z.input<typeof TableRollCallRequestSchema>;
+
+export interface TableRollCallDto {
+  id: string;
+  /** The party hero called on, and the player's own character behind it. */
+  heroId: string;
+  characterId: string;
+  heroName: string;
+  kind: RollCallKind;
+  key: string | null;
+  title: string;
+  target: number | null;
+  mode: 'normal' | 'advantage' | 'disadvantage';
+  masterName: string;
+  createdAt: string;
+}
+
+/**
  * A throw shown at the table, never stored. A hero's (`characterId`, by its owner or the master)
  * lands on its portrait for everyone; the master's own (`characterId` null) lands over the screens
  * of the whole table, or only of the owners of `heroIds`.
@@ -501,6 +555,7 @@ export const TableRollRequestSchema = z
     heroIds: z.array(z.uuid()).min(1).max(32).optional(),
     /** What was thrown, for the table's dice log ("Внимание: 21 — трудный успех"); the dice on screen go without it. */
     label: z.string().trim().max(120).default(''),
+    check: TableCheckSchema.optional(),
   })
   .refine((roll) => !(roll.characterId && roll.heroIds), { message: 'Бросок героя виден всем', path: ['heroIds'] });
 export type TableRollRequest = z.input<typeof TableRollRequestSchema>;
@@ -518,6 +573,8 @@ export interface TableRollDto {
   authorName: string;
   dice: TableDie[];
   label: string;
+  /** What the throw was, when the thrower said: for the centre panel. */
+  check: TableCheck | null;
   /** The master's throw meant for some players only: their names. `null`: for everyone. */
   audienceNames: string[] | null;
   createdAt: string;
