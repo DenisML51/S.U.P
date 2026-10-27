@@ -1930,6 +1930,112 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   z-index: 1;
 }
 .ui-level-ready > svg { width: 100%; height: 100%; overflow: visible; }
+/* Under the setting's marvel: a glow breathing along the bar and a light running down its length. */
+.ui-level-ready__glow {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: calc(50% - 6px);
+  height: 12px;
+  border-radius: 999px;
+  background: rgb(var(--c-xp) / 0.5);
+  filter: blur(9px);
+  animation: ui-ready-breathe 2.4s ease-in-out infinite;
+}
+@keyframes ui-ready-breathe {
+  0%, 100% { opacity: 0.35; transform: scaleY(0.8); }
+  50% { opacity: 1; transform: scaleY(1.5); }
+}
+.ui-level-ready__sheen {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: calc(50% - 3px);
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+.ui-level-ready__sheen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  left: -30%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.75), transparent);
+  mix-blend-mode: screen;
+  animation: ui-ready-sheen 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes ui-ready-sheen { 0% { left: -30%; } 70%, 100% { left: 100%; } }
+/* A spark beating at the bar's full end. */
+.ui-level-ready__spark {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  translate: 0 -50%;
+  background: rgb(255 250 235);
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  filter: drop-shadow(0 0 4px rgb(var(--c-xp)));
+  animation: ui-ready-spark 1.6s ease-in-out infinite;
+}
+@keyframes ui-ready-spark {
+  0%, 100% { transform: scale(0.55) rotate(0deg); opacity: 0.6; }
+  50% { transform: scale(1.15) rotate(45deg); opacity: 1; }
+}
+/* Motes rising off the bar; each setting gives them its own look. */
+.ui-level-ready__motes { position: absolute; left: 6px; right: 6px; top: 50%; height: 0; }
+.ui-level-ready__motes > i {
+  position: absolute;
+  top: 0;
+  border-radius: 50%;
+  background: rgb(var(--c-xp));
+  box-shadow: 0 0 6px 1px rgb(var(--c-xp) / 0.8);
+  opacity: 0;
+  animation: ui-ready-mote ease-out infinite;
+}
+@keyframes ui-ready-mote {
+  0% { opacity: 0; transform: translate(0, 0) scale(1); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--drift), calc(var(--rise) * -1)) scale(0.4); }
+}
+/* High fantasy and Fable: four-pointed stars of gold. */
+:is([data-setting='high-fantasy'], [data-setting='fable']) .ui-level-ready__motes > i {
+  border-radius: 0;
+  background: rgb(255 240 200);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  box-shadow: none;
+  filter: drop-shadow(0 0 3px rgb(var(--c-frame-bright)));
+  width: 7px !important;
+  height: 7px !important;
+}
+/* Sci-fi: bits of data, square and quick. */
+[data-setting='sci-fi'] .ui-level-ready__motes > i { border-radius: 0; background: rgb(var(--c-frame-bright)); box-shadow: 0 0 5px rgb(var(--c-frame-bright)); animation-timing-function: steps(6); }
+/* Cyberpunk: pixels in its two neons, jittering up. */
+[data-setting='cyberpunk'] .ui-level-ready__motes > i { border-radius: 0; animation-timing-function: steps(5); }
+[data-setting='cyberpunk'] .ui-level-ready__motes > i:nth-child(odd) { background: rgb(var(--c-neon)); box-shadow: 0 0 6px rgb(var(--c-neon)); }
+[data-setting='cyberpunk'] .ui-level-ready__motes > i:nth-child(even) { background: rgb(var(--c-accent)); box-shadow: 0 0 6px rgb(var(--c-accent)); }
+/* The grimdark: embers off the blood. */
+[data-setting='dark-fantasy'] .ui-level-ready__motes > i { background: rgb(255 150 70); box-shadow: 0 0 6px 2px rgb(255 80 20 / 0.8); }
+/* Elden Ring: motes of grace. */
+[data-setting='elden-ring'] .ui-level-ready__motes > i { background: rgb(255 226 160); box-shadow: 0 0 8px 2px rgb(255 200 110 / 0.7); }
+/* Lovecraft: pale spores, swaying as they drift. */
+[data-setting='lovecraft'] .ui-level-ready__motes > i { background: rgb(var(--c-eldritch)); box-shadow: 0 0 8px 2px rgb(var(--c-eldritch) / 0.6); animation-timing-function: ease-in-out; }
+/* The spark at the bar's end in each setting's own shape. */
+[data-setting='sci-fi'] .ui-level-ready__spark { width: 10px; height: 10px; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); background: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright))); animation-timing-function: steps(4); }
+[data-setting='cyberpunk'] .ui-level-ready__spark { width: 8px; height: 8px; clip-path: none; background: rgb(var(--c-neon)); filter: drop-shadow(0 0 5px rgb(var(--c-neon))); animation: ui-ready-blink 0.9s steps(2) infinite; }
+[data-setting='dark-fantasy'] .ui-level-ready__spark { width: 9px; height: 9px; clip-path: none; border-radius: 50%; background: radial-gradient(circle, rgb(255 220 150), rgb(255 90 20)); filter: drop-shadow(0 0 6px rgb(255 80 20)); }
+[data-setting='lovecraft'] .ui-level-ready__spark { width: 9px; height: 9px; clip-path: none; border-radius: 50%; background: radial-gradient(circle, rgb(220 255 220), rgb(var(--c-eldritch))); filter: drop-shadow(0 0 6px rgb(var(--c-eldritch))); }
+[data-setting='elden-ring'] .ui-level-ready__spark { display: none; }
+@keyframes ui-ready-blink { 50% { opacity: 0.15; } }
+.ui-xp[data-ready] { animation: ui-ready-plaque 2.4s ease-in-out infinite; }
+@keyframes ui-ready-plaque {
+  50% { box-shadow: var(--shadow-panel), 0 0 18px -4px rgb(var(--c-xp) / 0.55); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-level-ready *, .ui-level-ready *::after, .ui-xp[data-ready] { animation: none !important; }
+}
 
 /* ------------------------------------------------------------------ World cards (hero creation) */
 /* A world to begin in, as a window into it: its atmosphere behind, its emblem and name over it. */

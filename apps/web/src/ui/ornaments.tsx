@@ -51,11 +51,47 @@ export const SettingEmblem: React.FC<{ size?: number; className?: string }> = ({
 };
 
 /** The setting's marvel over the experience bar when a new level can be taken. */
+/** Motes rising off the bar while a level waits: where each starts along it, its drift and beat. */
+const READY_MOTES = Array.from({ length: 18 }, (_, i) => ({
+  left: `${(4 + ((i * 53) % 92)).toFixed(0)}%`,
+  drift: `${(((i * 37) % 21) - 10).toFixed(0)}px`,
+  rise: `${(18 + ((i * 29) % 22)).toFixed(0)}px`,
+  delay: `${(-(i * 0.47) % 3.4).toFixed(2)}s`,
+  duration: `${(2.2 + ((i * 17) % 13) / 10).toFixed(2)}s`,
+  size: `${(2 + (i % 3)).toFixed(0)}px`,
+}));
+
+/**
+ * A level waits to be taken: the setting's own marvel over the experience bar, laid over a glow
+ * that breathes along the bar, a light running down its length, a spark beating at its end and
+ * motes rising off it — stars, fairy dust, data, embers, grace, spores, each setting its own.
+ */
 export const LevelReady: React.FC = () => {
   const { LevelReady: Effect } = useSettingArt();
   return (
     <span className="ui-level-ready">
+      <span className="ui-level-ready__glow" aria-hidden />
+      <span className="ui-level-ready__sheen" aria-hidden />
       <Effect />
+      <span className="ui-level-ready__motes" aria-hidden>
+        {READY_MOTES.map((mote, i) => (
+          <i
+            key={i}
+            style={
+              {
+                left: mote.left,
+                width: mote.size,
+                height: mote.size,
+                animationDelay: mote.delay,
+                animationDuration: mote.duration,
+                '--drift': mote.drift,
+                '--rise': mote.rise,
+              } as React.CSSProperties
+            }
+          />
+        ))}
+      </span>
+      <span className="ui-level-ready__spark" aria-hidden />
     </span>
   );
 };
