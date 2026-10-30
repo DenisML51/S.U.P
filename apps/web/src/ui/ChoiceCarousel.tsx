@@ -9,6 +9,8 @@ export interface CarouselItem<T extends string> {
   render: (state: { focused: boolean; hovered: boolean }) => React.ReactNode;
   /** Shown dimmed and cannot be chosen (rules a table does not play by). */
   disabled?: boolean;
+  /** Why it cannot be chosen, said under it in place of disabledLabel (a requirement the hero does not meet). */
+  disabledReason?: string;
 }
 
 /**
@@ -150,7 +152,7 @@ export function ChoiceCarousel<T extends string>({
             )}
           </span>
         ) : focused.disabled ? (
-          <span className="text-sm text-ink-faint">{disabledLabel}</span>
+          <span className="max-w-md text-center text-sm text-ink-faint">{focused.disabledReason ?? disabledLabel}</span>
         ) : (
           <Button variant="primary" onClick={() => onChoose(focused.id)}>
             {chooseLabel}
