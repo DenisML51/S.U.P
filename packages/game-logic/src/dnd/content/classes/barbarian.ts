@@ -1,6 +1,6 @@
 import { byClassLevel } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
-import { abilityScoreImprovement, epicBoon, subclassHeading, weaponMasteryChoice } from './shared';
+import { abilityScoreImprovement, epicBoon, subclassHeading, weaponMasteryChoice, multiclassProficiencies } from './shared';
 
 /** Варвар of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -318,6 +318,10 @@ export const BARBARIAN: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
+  multiclass: {
+    requires: [['strength']],
+    proficiencies: multiclassProficiencies('shields', 'martialWeapons'),
+  },
   subclassLevel: 3,
   subclasses: [berserker, wildHeart, worldTree, zealot],
   startingEquipment: BARBARIAN_KITS,

@@ -11,7 +11,7 @@ import {
   vitalSacrifice,
 } from '../blood-hunter/alternate';
 import { CLERIC } from './cleric';
-import { abilityScoreImprovement, byTable } from './shared';
+import { abilityScoreImprovement, byTable, multiclassProficiencies } from './shared';
 
 /**
  * Alternate Blood Hunter by laserllama, v2.2.0 (Альтернативный охотник на крови): a homebrew for 5e
@@ -569,7 +569,7 @@ const witchKnights: SubclassDef = {
   spellcasting: {
     ability: 'constitution',
     list: 'witchKnight',
-    slots: [],
+    progression: 'pact',
     pact: [
       { count: 0, level: 1 }, { count: 0, level: 1 }, { count: 1, level: 1 }, { count: 2, level: 1 }, { count: 2, level: 1 },
       { count: 2, level: 1 }, { count: 2, level: 2 }, { count: 2, level: 2 }, { count: 2, level: 2 }, { count: 2, level: 2 },
@@ -651,6 +651,10 @@ export const ALT_BLOOD_HUNTER: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
     { type: 'proficiency', category: 'tool', value: 'Инструменты алхимика' },
   ],
+  multiclass: {
+    requires: [['strength', 'constitution'], ['dexterity', 'constitution']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields', 'simpleWeapons', 'martialWeapons', 'alchemistsSupplies'),
+  },
   subclassLevel: 3,
   subclasses: [alchemists, heretics, paleMoon, saltAndIron, undyingThirst, witchKnights],
   replaceable: [

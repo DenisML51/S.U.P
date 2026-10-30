@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import { WEAPONS } from '../equipment';
 import type { ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
-import { FULL_CASTER_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
+import { abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
 
 /** Волшебник of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -678,13 +678,17 @@ export const WIZARD: ClassDef = {
   saves: ['intelligence', 'wisdom'],
   skillChoices: { count: 2, list: ['arcana', 'history', 'insight', 'investigation', 'medicine', 'nature', 'religion'] },
   proficiencies: [{ type: 'proficiency', category: 'weapon', value: 'Простое оружие' }],
+  multiclass: {
+    requires: [['intelligence']],
+    proficiencies: [],
+  },
   subclassLevel: 3,
   subclasses: [abjurer, diviner, evoker, illusionist, bladesinger, necromancer, enchanter, transmuter, conjurer],
   startingEquipment: WIZARD_KITS,
   spellcasting: {
     ability: 'intelligence',
     list: 'wizard',
-    slots: FULL_CASTER_SLOTS,
+    progression: 'full',
     mode: 'spellbook',
     prepared: byTable([4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 18, 19, 21, 22, 23, 24, 25]),
     cantrips: byClassLevel({ 1: 3, 4: 4, 10: 5 }),

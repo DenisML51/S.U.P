@@ -2,10 +2,10 @@ import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ChoiceDef, ClassDef, FeatureDef, OptionDef, SubclassDef } from '../../types';
 import { ARTISAN_TOOL_NAMES, FIGHTER_KITS } from '../equipment';
 import {
-  THIRD_CASTER_SLOTS,
   abilityScoreImprovement,
   epicBoon,
   weaponMasteryChoice,
+  multiclassProficiencies,
 } from './shared';
 
 /** Fighter of the 2024 Player's Handbook (Воин). Descriptions are our own summaries of the rules. */
@@ -182,7 +182,7 @@ const eldritchKnight: SubclassDef = {
   spellcasting: {
     ability: 'intelligence',
     list: 'wizard',
-    slots: THIRD_CASTER_SLOTS,
+    progression: 'third',
     mode: 'known',
     prepared: byClassLevel({ 3: 3, 4: 4, 7: 5, 8: 6, 10: 7, 11: 8, 13: 9, 14: 10, 16: 11, 19: 12, 20: 13 }),
     cantrips: byClassLevel({ 3: 2, 10: 3 }),
@@ -659,6 +659,10 @@ export const FIGHTER: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
+  multiclass: {
+    requires: [['strength'], ['dexterity']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields', 'martialWeapons'),
+  },
   subclassLevel: 3,
   subclasses: [battleMaster, champion, eldritchKnight, psiWarrior, banneret, arcaneArcher],
   replaceable: [

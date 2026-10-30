@@ -1,6 +1,6 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
-import { PACT_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
+import { PACT_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading, multiclassProficiencies } from './shared';
 
 /** Колдун of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -546,6 +546,10 @@ export const WARLOCK: ClassDef = {
     { type: 'proficiency', category: 'armor', value: 'Лёгкие доспехи' },
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
   ],
+  multiclass: {
+    requires: [['charisma']],
+    proficiencies: multiclassProficiencies('lightArmor'),
+  },
   subclassLevel: 3,
   subclasses: [archfey, celestial, fiend, greatOldOne, undead, vestige],
   startingEquipment: WARLOCK_KITS,
@@ -556,7 +560,7 @@ export const WARLOCK: ClassDef = {
   spellcasting: {
     ability: 'charisma',
     list: 'warlock',
-    slots: [],
+    progression: 'pact',
     pact: PACT_SLOTS,
     mode: 'known',
     cantrips: byClassLevel({ 1: 2, 4: 3, 10: 4 }),

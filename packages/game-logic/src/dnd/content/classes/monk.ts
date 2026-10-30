@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
 import { ARTISAN_TOOL_NAMES, MUSICAL_INSTRUMENT_NAMES } from '../equipment';
-import { THIRD_CASTER_SLOTS, abilityScoreImprovement, epicBoon, subclassHeading } from './shared';
+import { abilityScoreImprovement, epicBoon, subclassHeading } from './shared';
 
 /** Монах of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -298,7 +298,7 @@ const mysticArts: SubclassDef = {
   spellcasting: {
     ability: 'wisdom',
     list: 'sorcerer',
-    slots: THIRD_CASTER_SLOTS,
+    progression: 'third',
     mode: 'known',
     prepared: byClassLevel({ 3: 3, 4: 4, 7: 5, 8: 6, 10: 7, 11: 8, 13: 9, 14: 10, 16: 11, 19: 12, 20: 13 }),
     cantrips: byClassLevel({ 3: 2, 10: 3 }),
@@ -378,20 +378,26 @@ export const MONK: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие (лёгкое)' },
   ],
+  starting: [
+    {
+      id: 'monk.tool-proficiency',
+      name: 'Владение инструментами',
+      description: 'Вы владеете одним видом инструментов ремесленника или одним музыкальным инструментом.',
+      hidden: true,
+      choices: [
+        { id: 'tool', label: 'Инструменты', count: 1, options: { from: 'tools', list: [...ARTISAN_TOOL_NAMES, ...MUSICAL_INSTRUMENT_NAMES] } },
+      ],
+    },
+  ],
+  multiclass: {
+    requires: [['dexterity', 'wisdom']],
+    proficiencies: [],
+  },
   subclassLevel: 3,
   subclasses: [mercy, shadow, elements, openHand, mysticArts],
   startingEquipment: MONK_KITS,
   levels: {
     1: [
-      {
-        id: 'monk.tool-proficiency',
-        name: 'Владение инструментами',
-        description: 'Вы владеете одним видом инструментов ремесленника или одним музыкальным инструментом.',
-        hidden: true,
-        choices: [
-          { id: 'tool', label: 'Инструменты', count: 1, options: { from: 'tools', list: [...ARTISAN_TOOL_NAMES, ...MUSICAL_INSTRUMENT_NAMES] } },
-        ],
-      },
       {
         id: 'monk.martial-arts',
         name: 'Боевые искусства',
