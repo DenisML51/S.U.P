@@ -43,7 +43,7 @@ describe('short rest', () => {
   });
 
   it('heals by spent hit dice: each roll plus Constitution', () => {
-    const { character, changes, message } = shortRest(hero(), { hitDice: 2, rolls: [6, 10] });
+    const { character, changes, message } = shortRest(hero(), { hitDice: { hd: 2 }, rolls: { hd: [6, 10] } });
     // Rolls 6 and 10, +1 each.
     expect(character.currentHP).toBe(4 + 7 + 11);
     expect(current(character).hd).toBe(1);
@@ -54,13 +54,13 @@ describe('short rest', () => {
   });
 
   it('rolls the dice not given', () => {
-    expect(shortRest(hero(), { hitDice: 2, random: sequence(0.5, 0.95) }).character.currentHP).toBe(
+    expect(shortRest(hero(), { hitDice: { hd: 2 }, random: sequence(0.5, 0.95) }).character.currentHP).toBe(
       4 + 7 + 11,
     );
   });
 
   it('takes the average when asked, and never more dice than are left', () => {
-    const { character } = shortRest(hero(), { hitDice: 9, method: 'average' });
+    const { character } = shortRest(hero(), { hitDice: { hd: 9 }, method: 'average' });
     expect(current(character).hd).toBe(0);
     expect(character.currentHP).toBe(4 + 3 * (6 + 1));
   });
@@ -72,7 +72,18 @@ describe('short rest', () => {
       maxHP: 2,
       resources: [hitDice],
     });
-    expect(shortRest(weak, { hitDice: 1, random: () => 0 }).character.currentHP).toBe(2);
+    expect(shortRest(weak, { hitDice: { hd: 1 }, random: () => 0 }).character.currentHP).toBe(2);
+  });
+
+  it('spends the dice of each pool apart, each with its own die', () => {
+    const d6 = pool('hd6', { name: 'Кости хитов (к6)', hitDie: 6, current: 2, max: 2 });
+    const mixed = makeCharacter({ currentHP: 4, maxHP: 40, resources: [hitDice, d6] });
+    const { character, message } = shortRest(mixed, { hitDice: { hd: 1, hd6: 2 }, rolls: { hd: [9], hd6: [3, 5] } });
+    // 9 + 1, 3 + 1, 5 + 1.
+    expect(character.currentHP).toBe(4 + 10 + 4 + 6);
+    expect(current(character)).toEqual({ hd: 2, hd6: 0 });
+    expect(message).toBe('Короткий отдых: Хиты 4 → 24, Кости хитов 3 → 2, Кости хитов (к6) 2 → 0 (к10: 9; к6: 3, 5)');
+    expect(current(longRest(character).character)).toEqual({ hd: 5, hd6: 2 });
   });
 
   it('logs what changed', () => {
