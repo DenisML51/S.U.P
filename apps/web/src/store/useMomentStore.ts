@@ -13,19 +13,32 @@ export interface LevelUpMoment {
   to: number;
   setting: Setting;
   gains: LevelGain[];
+  /**
+   * A prelude to a level-up window: instead of letting go, the moment settles as a small emblem at
+   * the top of the screen and calls this as it does, to open the window under it.
+   */
+  onDock?: () => void;
 }
 
 /** The big moments played in the middle of the screen: for now, a new level. */
 interface MomentState {
   levelUp: LevelUpMoment | null;
+  /** A prelude's emblem has come to rest on the level-up window's edge. */
+  landed: boolean;
   celebrate(moment: Omit<LevelUpMoment, 'key'>): void;
   clear(): void;
+  land(): void;
+  /** Lets a prelude's settled emblem go along with its window; a plain moment stays. */
+  release(): void;
 }
 
 export const useMomentStore = create<MomentState>((set) => ({
   levelUp: null,
-  celebrate: (moment) => set({ levelUp: { ...moment, key: Date.now() } }),
-  clear: () => set({ levelUp: null }),
+  landed: false,
+  celebrate: (moment) => set({ levelUp: { ...moment, key: Date.now() }, landed: false }),
+  clear: () => set({ levelUp: null, landed: false }),
+  land: () => set({ landed: true }),
+  release: () => set((s) => (s.levelUp?.onDock ? { levelUp: null, landed: false } : s)),
 }));
 
 type Sheet = Pick<Character, 'maxHP' | 'maxHPBonus' | 'proficiencyBonus' | 'abilities' | 'spells' | 'resources'>;

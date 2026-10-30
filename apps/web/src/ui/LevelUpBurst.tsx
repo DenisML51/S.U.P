@@ -1,4 +1,4 @@
-import React, { useEffect, useId } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useMomentStore, type LevelUpMoment } from '../store/useMomentStore';
 import { SettingAura } from './CheckPanel';
@@ -28,6 +28,13 @@ const VARIANT: Record<Theme, { emblem: Emblem; words: Words; text: string }> = {
 /** The beats of the moment, in seconds from its start. */
 const BEAT = { draw: 0.1, swap: 0.85, words: 1.05, step: 1.6, gains: 1.85 };
 const SHOWN_MS = 6400;
+/** A prelude settles once its number and words are in. */
+const DOCK_MS = 2600;
+/**
+ * The settled emblem: the height it shrinks to and where its centre stands — on the top edge of the
+ * level-up window, which keeps its top there and a round opening (`hole`, its radius) under it.
+ */
+export const LEVEL_DOCK = { size: 112, y: 76, hole: 55 };
 
 const points = (n: number, r: number, turn = -90) =>
   Array.from({ length: n }, (_, i) => {
@@ -225,7 +232,14 @@ const EmblemArt: React.FC<{ kind: Exclude<Emblem, 'none'>; at: (beat: number) =>
         </clipPath>
       </defs>
       {kind === 'sigil' && <Tentacles delay={at(BEAT.swap - 0.1)} still={still} />}
-      <path d={emblem.outline} className="ui-level-burst__fill" />
+      {/* No dark disc before the edge is drawn: the ground comes in with the light. */}
+      <motion.path
+        d={emblem.outline}
+        className="ui-level-burst__fill"
+        initial={still ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: at(0.5) }}
+      />
       {/* The light gathering inside the edge, and its halo outside. */}
       <motion.g initial={still ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: at(0.5) }}>
         <g clipPath={`url(#${id}-inside)`}>
@@ -233,6 +247,20 @@ const EmblemArt: React.FC<{ kind: Exclude<Emblem, 'none'>; at: (beat: number) =>
         </g>
         <path d={emblem.outline} className="ui-level-burst__halo" filter={`url(#${id}-halo)`} />
       </motion.g>
+      {/* The edge glows as it is drawn, the glow settling as the halo takes over. */}
+      {!still && (
+        <motion.path
+          d={emblem.outline}
+          className="ui-level-burst__trace"
+          filter={`url(#${id}-halo)`}
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: [0, 1, 1, 0] }}
+          transition={{
+            pathLength: { duration: 0.8, delay: BEAT.draw, ease: [0.4, 0, 0.2, 1] },
+            opacity: { duration: 1.6, delay: BEAT.draw, times: [0, 0.1, 0.5, 1] },
+          }}
+        />
+      )}
       <motion.path
         d={emblem.outline}
         className="ui-level-burst__line"
@@ -305,9 +333,9 @@ const Burst: React.FC<{ moment: LevelUpMoment; onDone: () => void }> = ({ moment
   const at = (beat: number) => (still ? 0 : beat);
 
   useEffect(() => {
-    const timer = window.setTimeout(onDone, SHOWN_MS);
+    const timer = window.setTimeout(onDone, moment.onDock ? (still ? 1200 : DOCK_MS) : SHOWN_MS);
     return () => window.clearTimeout(timer);
-  }, [onDone]);
+  }, [onDone, moment.onDock, still]);
 
   return (
     <SettingScope setting={moment.setting} className={cx('ui-level-burst', `ui-level-burst--${variant.emblem}`)}>
@@ -426,7 +454,11 @@ const Burst: React.FC<{ moment: LevelUpMoment; onDone: () => void }> = ({ moment
   );
 };
 
-/** The moment itself, over everything; a click lets it go early. */
+/**
+ * The moment itself, over everything (open windows included); a click lets it go early. A prelude
+ * to the level-up window settles instead: the rest fades, the emblem shrinks to the top of the
+ * screen and stays there over the window, which opens as it moves.
+ */
 export const LevelUpBurst: React.FC<{ moment?: LevelUpMoment | null; onDone?: () => void; inline?: boolean }> = ({
   moment: given,
   onDone,
@@ -436,20 +468,48 @@ export const LevelUpBurst: React.FC<{ moment?: LevelUpMoment | null; onDone?: ()
   const clear = useMomentStore((s) => s.clear);
   const moment = given === undefined ? stored : given;
   const done = onDone ?? clear;
+  const body = useRef<HTMLDivElement>(null);
+  const [docked, setDocked] = useState<{ key: number; y: number; scale: number } | null>(null);
+  const isDocked = !!moment && docked?.key === moment.key;
+
+  // Shrinks round the body's top so that the emblem, wherever it stands in it, lands centred on the
+  // window's edge.
+  const dock = useCallback(() => {
+    if (!moment?.onDock || docked?.key === moment.key) return;
+    const outer = body.current?.getBoundingClientRect();
+    const emblem = body.current?.querySelector('.ui-level-burst__emblem')?.getBoundingClientRect();
+    if (outer && emblem) {
+      const scale = LEVEL_DOCK.size / emblem.height;
+      const y = LEVEL_DOCK.y - LEVEL_DOCK.size / 2 - (emblem.top - outer.top) * scale - outer.top;
+      setDocked({ key: moment.key, y, scale });
+    }
+    moment.onDock();
+  }, [moment, docked]);
+  const letGo = moment?.onDock ? dock : done;
+
   return (
     <AnimatePresence>
       {moment && (
         <motion.div
           key={moment.key}
-          className={cx('ui-level-burst-layer', inline ? 'absolute' : 'fixed')}
+          className={cx('ui-level-burst-layer', inline ? 'absolute' : 'fixed', isDocked && 'ui-level-burst-layer--docked')}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, transition: { duration: 0.3 } }}
-          exit={{ opacity: 0, scale: 1.04, transition: { duration: 0.5 } }}
-          onClick={done}
+          exit={{ opacity: 0, scale: isDocked ? 1 : 1.04, transition: { duration: isDocked ? 0.25 : 0.5 } }}
+          onClick={isDocked ? undefined : letGo}
           role="status"
           aria-label={`Новый уровень: ${moment.to}`}
         >
-          <Burst moment={moment} onDone={done} />
+          <motion.div
+            ref={body}
+            style={{ transformOrigin: '50% 0' }}
+            initial={false}
+            animate={isDocked ? { y: docked.y, scale: docked.scale } : { y: 0, scale: 1 }}
+            transition={{ duration: 0.7, ease: [0.65, 0, 0.25, 1] }}
+            onAnimationComplete={() => isDocked && useMomentStore.getState().land()}
+          >
+            <Burst moment={moment} onDone={letGo} />
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

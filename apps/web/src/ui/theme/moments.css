@@ -389,12 +389,23 @@
 /* ------------------------------------------------------------------ A new level */
 .ui-level-burst-layer {
   inset: 0;
-  z-index: 80;
+  /* Over open windows (z 200): the level that ends the experience window plays above the sheet. */
+  z-index: 250;
   display: grid;
   place-items: center;
   overflow: hidden;
   cursor: pointer;
   background: radial-gradient(closest-side, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0.6));
+}
+/* Settled over the level-up window: no veil, no catching clicks, only the emblem left. */
+.ui-level-burst-layer--docked {
+  pointer-events: none;
+  background: none;
+}
+/* Over the parts' own animated opacity, written inline. */
+.ui-level-burst-layer--docked .ui-level-burst > :not(.ui-level-burst__emblem) {
+  opacity: 0 !important;
+  transition: opacity 0.35s;
 }
 .ui-level-burst {
   position: relative;
@@ -409,7 +420,8 @@
 .ui-level-burst > .ui-check-aura { width: 150%; height: 115%; }
 .ui-level-burst__emblem { position: relative; width: 300px; height: 300px; display: grid; place-items: center; }
 .ui-level-burst__emblem > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.ui-level-burst__fill { fill: rgb(var(--c-bg-deep) / 0.72); }
+.ui-level-burst__fill { fill: rgb(var(--c-bg-deep) / 0.5); }
+.ui-level-burst__trace { fill: none; stroke: rgb(var(--c-frame-bright) / 0.85); stroke-width: 7; stroke-linecap: round; }
 .ui-level-burst__line { fill: none; stroke: rgb(var(--c-frame-bright)); stroke-width: 2; }
 /* The light along the emblem's edge: a halo outside, a glow gathering inside. */
 .ui-level-burst__halo { fill: none; stroke: rgb(var(--c-frame-bright) / 0.6); stroke-width: 5; }

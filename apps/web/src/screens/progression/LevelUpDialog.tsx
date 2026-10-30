@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { applyBuild, dndBuildOf, findClass } from '@itd/game-logic/dnd';
 import type { DndBuild, Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { levelGains, useMomentStore } from '../../store/useMomentStore';
-import { settingOf } from '../../ui/theme/settings';
+import { useMomentStore } from '../../store/useMomentStore';
 import { announceRoll } from '../../store/useTableRollStore';
 import { Dialog } from '../../ui/Dialog';
+import { LEVEL_DOCK } from '../../ui/LevelUpBurst';
 import { Button } from '../../ui/primitives';
 import { LevelPlanView, planIssues } from './LevelPlanView';
 
@@ -16,11 +16,23 @@ import { LevelPlanView, planIssues } from './LevelPlanView';
 export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
+  const landed = useMomentStore((s) => s.landed);
   const level = character.level + 1;
   const [draft, setDraft] = useState<DndBuild | undefined>(() => {
     const build = dndBuildOf(character);
     return build ? { ...build, level } : undefined;
   });
+  // The new level's emblem, settled over the window as it opened, leaves with it — closed or gone
+  // with the sheet. Going is put off a tick, so a remount (strict mode's included) keeps it.
+  const releasing = useRef(0);
+  useEffect(() => {
+    const release = () => useMomentStore.getState().release();
+    if (!open) return release();
+    window.clearTimeout(releasing.current);
+    return () => {
+      releasing.current = window.setTimeout(release, 0);
+    };
+  }, [open]);
   if (!draft) return null;
 
   const issues = planIssues(draft, level);
@@ -41,11 +53,9 @@ export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = (
     );
   };
   const confirm = () => {
-    const next = applyBuild(character, draft).character;
     updateCharacter((doc) => applyBuild(doc, draft).character, {
       log: { message: `Уровень повышен до ${level}`, type: 'exp' },
     });
-    useMomentStore.getState().celebrate({ from: character.level, to: level, setting: settingOf(character), gains: levelGains(character, next) });
     onClose();
   };
 
@@ -54,8 +64,9 @@ export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = (
       open={open}
       onClose={onClose}
       width="xl"
-      eyebrow={`${findClass(draft.class)?.name ?? character.class} · уровень ${level}`}
-      title="Новый уровень"
+      // The new level's emblem stands on the window's edge and says it: the heading names the class.
+      hole={{ y: LEVEL_DOCK.y, r: LEVEL_DOCK.hole, cut: landed }}
+      title={findClass(draft.class)?.name ?? character.class}
       footerStart={
         issues.length > 0 ? <span className="text-sm text-ink-faint">Осталось выбрать: {issues.join(', ')}</span> : null
       }
