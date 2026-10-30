@@ -1,78 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  DND,
-  DND_ICONS,
-  addLevel,
-  applyBuild,
-  buildClasses,
-  dndBuildOf,
-  findClass,
-  heroLevel,
-  hitDieAt,
-  multiclassBlocker,
-  multiclassRequirement,
-} from '@itd/game-logic/dnd';
+import { addLevel, applyBuild, dndBuildOf, findClass, heroLevel, hitDieAt } from '@itd/game-logic/dnd';
 import type { DndBuild, Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useMomentStore } from '../../store/useMomentStore';
 import { announceRoll } from '../../store/useTableRollStore';
 import { Dialog } from '../../ui/Dialog';
-import { GameIcon } from '../../ui/GameIcon';
 import { LEVEL_DOCK } from '../../ui/LevelUpBurst';
 import { Button } from '../../ui/primitives';
-import { Section } from '../../ui/Section';
-import { IconPlus } from '../../ui/icons';
-import { ClassCarousel } from '../create/dnd/ClassCarousel';
+import { ClassPick } from './ClassPick';
 import { LevelPlanView, planIssues } from './LevelPlanView';
-
-/**
- * Which class takes the new level: one of the hero's (each with the level it goes to), or a class new
- * to them (multiclassing), picked from the classes fanned out, the ones out of reach dimmed with the
- * requirement they miss.
- */
-const ClassPick: React.FC<{ build: DndBuild; onPick: (classId: string) => void }> = ({ build, onPick }) => {
-  const [adding, setAdding] = useState(false);
-  const classes = buildClasses(build);
-  const others = DND.classes.filter((classDef) => !build.classes.some((c) => c.class === classDef.id));
-  return (
-    <>
-      <Section title="Какой класс повысить">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2">
-          {classes.map((entry) => (
-            <button key={entry.def.id} type="button" className="ui-option flex-row items-center gap-3 px-4 py-3" onClick={() => onPick(entry.def.id)}>
-              <GameIcon name={DND_ICONS.classes[entry.def.id]} kind="ability" size={34} className="shrink-0" />
-              <span className="flex min-w-0 flex-col items-start">
-                <span className="ui-display text-[1.02rem] leading-tight">{entry.def.name}</span>
-                <span className="ui-option__meta">{`${entry.levels.length} → ${entry.levels.length + 1} уровень`}</span>
-              </span>
-            </button>
-          ))}
-          {others.length > 0 && (
-            <button type="button" className="ui-option flex-row items-center gap-3 px-4 py-3" aria-pressed={adding} onClick={() => setAdding(true)}>
-              <span className="grid h-[34px] w-[34px] shrink-0 place-items-center">
-                <IconPlus width={20} height={20} />
-              </span>
-              <span className="flex min-w-0 flex-col items-start">
-                <span className="ui-display text-[1.02rem] leading-tight">Новый класс</span>
-                <span className="ui-option__meta">мультикласс</span>
-              </span>
-            </button>
-          )}
-        </div>
-      </Section>
-      {adding && (
-        <Section
-          title="Новый класс"
-          hint={`Нужно 13 в основных характеристиках нового класса и каждого из ваших (${classes
-            .map((entry) => `${entry.def.name}: ${multiclassRequirement(entry.def)}`)
-            .join('; ')})`}
-        >
-          <ClassCarousel classes={others} blockerOf={(id) => multiclassBlocker(build, id)} onChange={onPick} />
-        </Section>
-      )}
-    </>
-  );
-};
 
 /**
  * Level-up of a hero built from presets: the class that takes the level, then what the level brings
