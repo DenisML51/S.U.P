@@ -509,6 +509,8 @@ export const DndBuildSchema = passthroughObject({
       level: numeric(int.min(2).max(20)),
       method: z.enum(['average', 'roll']),
       value: numeric(int.min(1).max(20)),
+      /** The class the die was thrown for; a level taken in another class does not count it. */
+      class: optionalShortText,
     }),
   ),
 });

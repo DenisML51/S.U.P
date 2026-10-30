@@ -628,7 +628,9 @@ export function buildMaxHP(build: DndBuild, collected: Collected, scores: Record
   const ctx = contextFor(level, scores, build);
   let total = Math.max(1, firstDie + constitution);
   for (let l = 2; l <= level; l += 1) {
-    const gained = build.hitPoints.find((entry) => entry.level === l)?.value ?? averageHitPoints(hitDieAt(build, l) ?? firstDie);
+    const taken = classAtLevel(build, l)?.entry.def.id;
+    const kept = build.hitPoints.find((entry) => entry.level === l && (!entry.class || entry.class === taken));
+    const gained = kept?.value ?? averageHitPoints(hitDieAt(build, l) ?? firstDie);
     total += Math.max(1, gained + constitution);
   }
   for (const { effect } of collected.effects) {
