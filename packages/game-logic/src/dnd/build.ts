@@ -4,7 +4,7 @@ import { spellColor } from '../content/combat';
 import { abilityModifier } from '../rules/abilities';
 import { rescaleLimbs } from '../rules/health';
 import { weaponAttack, weaponAttackId, weaponThrowId } from '../rules/inventory';
-import { averageHitPoints } from '../rules/rest';
+import { averageHitPoints, hitDiceId } from '../rules/rest';
 import { DND } from './content';
 import { beastFormFeature, beastSummary, challengeLabel } from './content/beasts';
 import { MULTICLASS_MIN_SCORE, SLOT_TABLES } from './content/classes/shared';
@@ -708,9 +708,6 @@ function spellEntry(def: SpellDef, previous: Spell | undefined, patch: Partial<S
   };
 }
 
-/** Id of the hit dice pool a preset hero gets from its class. */
-export const HIT_DICE_ID = 'hit-dice';
-
 /**
  * When a pool comes back, in the sheet's terms. A pool that returns on either rest is a short-rest
  * one; a long-rest pool that also gives some back on a short rest returns that much on it.
@@ -832,16 +829,18 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
       color: previous?.color ?? resource.color,
     });
   };
-  const startingClass = classes[0]?.def;
-  if (startingClass) {
+  // Hit dice: a pool per die size, each class's levels in the pool of its die (a fighter's and a paladin's d10s are one).
+  const hitDice = new Map<number, number>();
+  for (const entry of classes) hitDice.set(entry.def.hitDie, (hitDice.get(entry.def.hitDie) ?? 0) + classLevelAt(entry, level));
+  for (const [hitDie, count] of hitDice) {
     pushResource({
-      id: HIT_DICE_ID,
-      name: `Кости хитов (к${startingClass.hitDie})`,
+      id: hitDiceId(hitDie),
+      name: `Кости хитов (к${hitDie})`,
       iconName: 'rolling-dices',
       current: 0,
-      max: level,
+      max: count,
       description: 'Короткий отдых: потратьте кости, чтобы восстановить хиты (бросок + модификатор Телосложения). Долгий отдых возвращает все.',
-      hitDie: startingClass.hitDie,
+      hitDie,
       recovery: 'long',
       grant: 'build',
     });
