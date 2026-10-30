@@ -37,7 +37,7 @@ describe('cleric', () => {
     expect(proficiencies).toContain('Средние доспехи');
     expect(proficiencies).toContain('Щиты');
     expect(proficiencies).not.toContain('Тяжёлые доспехи');
-    expect(c.maxPreparedSpells.total).toBe(4);
+    expect(c.casters?.[0]?.prepared).toBe(4);
     expect(resource(c, 'slot-1')?.max).toBe(2);
     expect(c.spellcastingDifficultyValue).toBe(8 + 2 + 3);
     expect(c.spells.some((s) => s.id === 'spell-bless')).toBe(true);
@@ -112,11 +112,11 @@ describe('cleric', () => {
   it('has full-caster slots and the prepared count of the table', () => {
     const c5 = apply(build({ level: 5 }));
     expect(resource(c5, 'slot-3')?.max).toBe(2);
-    expect(c5.maxPreparedSpells.total).toBe(9);
+    expect(c5.casters?.[0]?.prepared).toBe(9);
     const c20 = apply(build({ level: 20 }));
     expect(resource(c20, 'slot-9')?.max).toBe(1);
     expect(resource(c20, 'slot-7')?.max).toBe(2);
-    expect(c20.maxPreparedSpells.total).toBe(22);
+    expect(c20.casters?.[0]?.prepared).toBe(22);
   });
 
   it('builds every domain at level 20 with nothing missing but spells still being written', () => {

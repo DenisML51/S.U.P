@@ -140,7 +140,7 @@ describe('build engine', () => {
     expect(character.resources.some((r) => r.id === 'slot-3')).toBe(false);
     expect(character.resources.find((r) => r.id === 'paladin.lay-on-hands')?.max).toBe(25);
     expect(character.resources.find((r) => r.id === 'paladin.channel-divinity')?.max).toBe(2);
-    expect(character.maxPreparedSpells.total).toBe(6);
+    expect(character.casters?.[0]?.prepared).toBe(6);
     const smite = character.spells.find((s) => s.id === 'spell-divine-smite');
     expect(smite?.alwaysPrepared && smite.prepared).toBe(true);
     expect(character.spells.find((s) => s.id === 'spell-aid')?.alwaysPrepared).toBe(true);

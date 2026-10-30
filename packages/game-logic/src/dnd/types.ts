@@ -462,6 +462,12 @@ export interface SpellcastingDef {
    */
   pact?: { count: number; level: number }[];
   /**
+   * Beside another class's Pact Magic, the pact slots are counted together on that class's table,
+   * this casting's class levels as a third of them, rounded down (a Profane Soul with a warlock);
+   * all of them when absent.
+   */
+  pactShare?: 'third';
+  /**
    * `prepared`: every spell of the list the hero can cast is on the sheet and they prepare
    * `prepared(level)` of them (paladin, cleric, druid, ranger). `known`: the hero picks spells in
    * the level-up window and they are always prepared (bard, sorcerer, warlock, Eldritch Knight); on

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Character, DndBuild, DndClass } from '@itd/schema';
-import { startingSkills } from '../src';
+import { castableSlots, preparationBlocker, preparedCount, slotPoolFor, spellAttackBonusFor, spellDamageAt, spellSaveDCFor, startingSkills } from '../src';
 import { ATTRIBUTES_LIST } from '../src/content/attributes';
 import {
   DND,
@@ -207,5 +207,94 @@ describe('taking and giving back levels', () => {
     b = setSubclass(b, 'fighter', 'champion');
     expect(b.classes[0]?.subclass).toBe('champion');
     expect(b.choices).not.toHaveProperty('casting:fighter.spells-3/spells');
+  });
+});
+
+describe('spellcasting of several classes', () => {
+  const levels = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+  const slots = (classes: DndClass[]) =>
+    apply(hero(classes))
+      .resources.filter((r) => r.id.startsWith('slot-'))
+      .map((r) => r.max);
+
+  it('adds the casters’ levels up on the full caster table: all, half rounded up, a third rounded down', () => {
+    // Wizard 3 + cleric 2 = caster level 5.
+    expect(slots([{ class: 'wizard', levels: levels(1, 3) }, { class: 'cleric', levels: [4, 5] }])).toEqual([4, 3, 2]);
+    // Paladin 3 (half: 2) + sorcerer 2 = 4.
+    expect(slots([{ class: 'paladin', levels: levels(1, 3) }, { class: 'sorcerer', levels: [4, 5] }])).toEqual([4, 3]);
+    // The book's example: ranger 4 (2) + sorcerer 3 = 5.
+    expect(slots([{ class: 'ranger', levels: levels(1, 4) }, { class: 'sorcerer', levels: levels(5, 7) }])).toEqual([4, 3, 2]);
+    // An Eldritch Knight 7 (a third: 2) + wizard 1 = 3.
+    const knight = hero([{ class: 'fighter', subclass: 'eldritch-knight', levels: levels(1, 7) }, { class: 'wizard', levels: [8] }]);
+    expect(apply(knight).resources.filter((r) => r.id.startsWith('slot-')).map((r) => r.max)).toEqual([4, 2]);
+  });
+
+  it('keeps the table of a lone casting class, whatever else the hero has', () => {
+    expect(slots([{ class: 'paladin', levels: levels(1, 3) }])).toEqual([3]);
+    // A fighter without a casting subclass casts nothing: the wizard's own table stands.
+    expect(slots([{ class: 'fighter', levels: levels(1, 3) }, { class: 'wizard', levels: [4] }])).toEqual([2]);
+  });
+
+  it('keeps Pact Magic apart from spell slots, and adds a Profane Soul’s third to a warlock’s pact', () => {
+    const c = apply(hero([{ class: 'warlock', levels: levels(1, 3) }, { class: 'wizard', levels: [4, 5] }]));
+    expect(c.resources.find((r) => r.id === 'pact-slots')).toMatchObject({ max: 2, spellSlotLevel: 2 });
+    expect(c.resources.filter((r) => r.id.startsWith('slot-')).map((r) => r.max)).toEqual([3]);
+    // Warlock 3 + Profane Soul 6 (a third: 2) = pact level 5 of the warlock's table.
+    const profane = apply(
+      hero([
+        { class: 'warlock', levels: levels(1, 3) },
+        { class: 'blood-hunter', subclass: 'order-of-the-profane-soul', levels: levels(4, 9) },
+      ]),
+    );
+    expect(profane.resources.find((r) => r.id === 'pact-slots')).toMatchObject({ max: 2, spellSlotLevel: 3 });
+  });
+
+  it('lists a class’s spells only up to the level that class could cast alone', () => {
+    // Cleric 1 / wizard 4: slots reach the 3rd level, cleric spells stay of the 1st.
+    const c = apply(hero([{ class: 'cleric', levels: [1] }, { class: 'wizard', levels: levels(2, 5) }]));
+    expect(c.resources.find((r) => r.id === 'slot-3')?.max).toBe(2);
+    expect(c.spells.filter((s) => s.caster === 'cleric').every((s) => s.level <= 1)).toBe(true);
+    expect(c.spells.some((s) => s.caster === 'cleric' && s.level === 1)).toBe(true);
+  });
+
+  it('casts each class’s spells with its own ability, DC and prepared limit', () => {
+    const b = hero([{ class: 'cleric', levels: [1, 2] }, { class: 'wizard', levels: [3] }], {
+      baseAttributes: { ...hero([]).baseAttributes, wisdom: 16, intelligence: 12 },
+    });
+    const c = apply(b);
+    expect(c.casters).toEqual([
+      { id: 'cleric', name: 'Жрец', ability: 'wisdom', saveDC: 8 + 2 + 3, attackBonus: 2 + 3, prepared: 5 },
+      { id: 'wizard', name: 'Волшебник', ability: 'intelligence', saveDC: 8 + 2 + 1, attackBonus: 2 + 1, prepared: 4 },
+    ]);
+    const bless = c.spells.find((s) => s.id === 'spell-bless')!;
+    expect(bless.caster).toBe('cleric');
+    expect(spellSaveDCFor(c, { caster: 'wizard' })).toBe(11);
+    expect(spellAttackBonusFor(c, bless)).toBe(5);
+    // Five cleric spells prepared fill the cleric's limit, not the wizard's.
+    const cleric = c.spells.filter((s) => s.caster === 'cleric' && s.level === 1).slice(0, 6);
+    const full = { ...c, spells: c.spells.map((s) => (cleric.slice(0, 5).includes(s) ? { ...s, prepared: true } : s)) };
+    expect(preparationBlocker(full, cleric[5]!)).toBe('Подготовлено максимум заклинаний класса «Жрец»');
+    expect(preparedCount(full, 1, 'wizard')).toBe(0);
+  });
+
+  it('keeps a spell of two classes’ lists as an entry of each, the first class keeping its plain id', () => {
+    const c = apply(hero([{ class: 'cleric', levels: [1] }, { class: 'druid', levels: [2] }]));
+    expect(c.spells.find((s) => s.id === 'spell-cure-wounds')?.caster).toBe('cleric');
+    expect(c.spells.find((s) => s.id === 'spell-cure-wounds-druid')?.caster).toBe('druid');
+  });
+
+  it('casts with the slot of a chosen level from the spell’s own pool first, then from any pool that has one', () => {
+    const c = apply(hero([{ class: 'warlock', levels: levels(1, 3) }, { class: 'wizard', levels: [4, 5, 6] }]));
+    expect(castableSlots(c, { level: 1 })).toEqual([1, 2]);
+    const hex = { resourceId: 'pact-slots' };
+    expect(slotPoolFor(c, hex, 2)?.id).toBe('pact-slots');
+    const spent = { ...c, resources: c.resources.map((r) => (r.id === 'pact-slots' ? { ...r, current: 0 } : r)) };
+    expect(slotPoolFor(spent, hex, 2)?.id).toBe('slot-2');
+  });
+
+  it('grows cantrips with the hero’s level, not a class’s', () => {
+    const b = setPicks(hero([{ class: 'fighter', levels: levels(1, 4) }, { class: 'wizard', levels: [5] }]), 'casting:wizard.spells-1/cantrips', ['fire-bolt']);
+    const c = apply(b);
+    expect(spellDamageAt(c, c.spells.find((s) => s.id === 'spell-fire-bolt')!)).toBe('2d10');
   });
 });
