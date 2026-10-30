@@ -81,7 +81,7 @@ export type Effect =
   | { type: 'movement'; mode: MovementMode; feet?: number }
   /** Darkvision in feet; `extend` adds the range to darkvision the hero already has, else gives it. */
   | { type: 'darkvision'; range: number; extend?: boolean }
-  /** Extra maximum hit points per character level (Tough, Dwarven Toughness). */
+  /** Extra maximum hit points per level: of the class for a class's feature (Draconic Resilience), of the hero for the rest (Tough, Dwarven Toughness). */
   | { type: 'hpPerLevel'; amount: number }
   | { type: 'hp'; amount: Amount }
   | { type: 'initiative'; amount: Amount }
@@ -253,9 +253,12 @@ export interface FeatureDef {
   color?: string;
   /** Only informational (a heading in the level-up window), never written onto the sheet. */
   hidden?: boolean;
-  /** Character level the feature opens at, for species and feats that grow (Draconic Flight at 5). */
+  /**
+   * Level the feature opens at: the class level for a class's feature (Improved Blessed Strikes at
+   * 14), the character level for a species' or a feat's (Draconic Flight at 5).
+   */
   minLevel?: number;
-  /** The last character level it lasts to, when a later one replaces it (a transformation that turns unlimited). */
+  /** The last level it lasts to, counted the same way, when a later one replaces it (a transformation that turns unlimited). */
   maxLevel?: number;
   /**
    * Using it turns it on until it is ended (Rage, Bladesong, Draconic Flight): these effects count

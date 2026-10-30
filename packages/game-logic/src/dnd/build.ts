@@ -150,10 +150,11 @@ export const maxSpellLevel = (casting: SpellcastingDef | undefined, classLevel: 
 
 /**
  * Id of a spell's entry on the sheet, as a class casts it: a spell two classes cast is an entry of
- * each, the first casting class keeping the plain id (a hero who took one class keeps theirs).
+ * each. The class the hero started in keeps the plain id (a hero who took one class keeps theirs),
+ * the others theirs; neither changes when a class later gains spellcasting (an Eldritch Knight).
  */
 export const classSpellId = (build: Pick<DndBuild, 'classes'>, spell: string, caster: string | undefined): string =>
-  !caster || caster === castersOf(build)[0]?.def.id ? `spell-${spell}` : `spell-${spell}-${caster}`;
+  !caster || caster === build.classes[0]?.class ? `spell-${spell}` : `spell-${spell}-${caster}`;
 
 /** Id of the Pact Magic pool a warlock casts their spells with. */
 export const PACT_SLOTS_ID = 'pact-slots';
@@ -210,6 +211,11 @@ export interface GrantedFeature {
   /** The class it belongs to and the class level it came with; none for the species, the background and what they give. */
   classId?: string;
   classLevel?: number;
+  /**
+   * Its minLevel/maxLevel and its hit points per level count its class's levels (a class's own
+   * feature: a subclass's, an invocation's); a species', a feat's count the hero's.
+   */
+  byClassLevel?: boolean;
   /** What its numbers are computed from: the hero, and the level its class has reached. */
   ctx: BuildContext;
 }
@@ -285,9 +291,9 @@ const writtenFor = (effect: Effect, ctx: BuildContext): Effect =>
   Object.fromEntries(Object.entries(effect).map(([key, value]) => [key, typeof value === 'function' ? value(ctx) : value])) as Effect;
 
 /** Where a feature sits among the hero's classes: the context of its numbers, its class and class level. */
-type Scope = Pick<GrantedFeature, 'ctx' | 'classId' | 'classLevel'>;
+type Scope = Pick<GrantedFeature, 'ctx' | 'classId' | 'classLevel' | 'byClassLevel'>;
 
-const scopeOf = ({ ctx, classId, classLevel }: GrantedFeature): Scope => ({ ctx, classId, classLevel });
+const scopeOf = ({ ctx, classId, classLevel, byClassLevel }: GrantedFeature): Scope => ({ ctx, classId, classLevel, byClassLevel });
 
 /** A feature's hit point cost written for the hero's numbers. */
 const costFor = (cost: HitPointCostDef | undefined, ctx: BuildContext): HitPointCost | undefined =>
@@ -317,9 +323,14 @@ export function collect(build: DndBuild, level = heroLevel(build), scores?: Reco
   const out: Collected = { features: [], choices: [], effects: [], masteries: [], spellAbilities: [], poolPicks: [] };
   const forgotten = forgottenPicks(build).filter((f) => f.level <= level);
 
+  const entries = new Map(buildClasses(build).map((entry) => [entry.def.id, entry]));
   const visitFeature = (feature: FeatureDef, ownerKey: string, gainedAt: number, source: SourceKind, scope: Scope) => {
-    if ((feature.minLevel && level < feature.minLevel) || (feature.maxLevel && level > feature.maxLevel)) return;
-    const granted: GrantedFeature = { key: `${ownerKey}:${feature.id}`, feature, level: Math.max(gainedAt, feature.minLevel ?? 0), source, ...scope };
+    // A class's feature opens and ends by its class's levels, a species' or a feat's by the hero's.
+    const entry = scope.byClassLevel && scope.classId ? entries.get(scope.classId) : undefined;
+    const reached = entry ? scope.ctx.classLevel : level;
+    if ((feature.minLevel && reached < feature.minLevel) || (feature.maxLevel && reached > feature.maxLevel)) return;
+    const opensAt = feature.minLevel ? (entry ? (entry.levels[feature.minLevel - 1] ?? gainedAt) : feature.minLevel) : 0;
+    const granted: GrantedFeature = { key: `${ownerKey}:${feature.id}`, feature, level: Math.max(gainedAt, opensAt), source, ...scope };
     out.features.push(granted);
     for (const effect of resolveEffects(feature.effects, scope.ctx)) out.effects.push({ effect, owner: granted });
     for (const choice of feature.choices ?? []) {
@@ -359,7 +370,8 @@ export function collect(build: DndBuild, level = heroLevel(build), scores?: Reco
         break;
       case 'feats': {
         const feat = findFeat(pick);
-        if (feat) visitFeature(feat, choiceKey, owner.level, 'feat', scope);
+        // A feat counts the hero's levels, wherever it was picked.
+        if (feat) visitFeature(feat, choiceKey, owner.level, 'feat', { ...scope, byClassLevel: false });
         break;
       }
       case 'maneuvers': {
@@ -449,7 +461,7 @@ export function collect(build: DndBuild, level = heroLevel(build), scores?: Reco
     if (reached === 0) continue;
     const { def: classDef, subclass } = entry;
     const ctx = contextFor(level, base, build, entry);
-    const at = (classLevel: number): Scope => ({ ctx, classId: classDef.id, classLevel });
+    const at = (classLevel: number): Scope => ({ ctx, classId: classDef.id, classLevel, byClassLevel: true });
     const takenAt = entry.levels[0]!;
     const owner: GrantedFeature = {
       key: `class:${classDef.id}`,
@@ -549,7 +561,7 @@ export function collect(build: DndBuild, level = heroLevel(build), scores?: Reco
       'casting',
       gainedAt,
       'subclass',
-      { ctx, classId, classLevel },
+      { ctx, classId, classLevel, byClassLevel: true },
     );
   }
 
@@ -590,7 +602,7 @@ export function collect(build: DndBuild, level = heroLevel(build), scores?: Reco
         'swap',
         gainedAt,
         'class',
-        { ctx: contextFor(level, base, build, entry), classId: classDef.id, classLevel },
+        { ctx: contextFor(level, base, build, entry), classId: classDef.id, classLevel, byClassLevel: true },
       );
     }
   }
@@ -640,8 +652,9 @@ export function buildMaxHP(build: DndBuild, collected: Collected, scores: Record
     const gained = kept?.value ?? averageHitPoints(hitDieAt(build, l) ?? firstDie);
     total += Math.max(1, gained + constitution);
   }
-  for (const { effect } of collected.effects) {
-    if (effect.type === 'hpPerLevel') total += effect.amount * level;
+  for (const { effect, owner } of collected.effects) {
+    // Per level of its class for a class's feature (Draconic Resilience), of the hero for the rest (Tough).
+    if (effect.type === 'hpPerLevel') total += effect.amount * (owner.byClassLevel ? owner.ctx.classLevel : level);
     if (effect.type === 'hp') total += resolveAmount(effect.amount, ctx);
   }
   return total;
@@ -1066,7 +1079,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     const maxLevel = maxSpellLevel(caster.casting, caster.classLevel);
     for (const def of DND.spells) {
       if (!def.lists.includes(caster.casting.list) || def.level < 1 || def.level > maxLevel) continue;
-      put(def, caster.def.id, () => ({ grant: 'spellcasting', ...slotOf(def, caster.def.id) }));
+      put(def, caster.def.id, () => ({ grant: `spellcasting:${caster.def.id}`, ...slotOf(def, caster.def.id) }));
     }
   }
   const alwaysPrepared = new Set<string>();
@@ -1479,9 +1492,14 @@ function grantedAttacks(collected: Collected, previous: Attack[], scores: Record
  */
 export function describeGrant(build: DndBuild, grant: string | undefined): string | undefined {
   if (!grant) return undefined;
+  // The slots are of every casting class; a class's list is its own (`spellcasting:<class>`).
   if (grant === 'spellcasting') {
-    const caster = castersOf(build)[0];
-    return caster ? `Заклинания класса «${caster.def.name}»` : undefined;
+    const names = castersOf(build).map((c) => c.def.name);
+    return names.length === 0 ? undefined : names.length === 1 ? `Заклинания класса «${names[0]}»` : `Заклинания классов: ${names.join(', ')}`;
+  }
+  if (grant.startsWith('spellcasting:')) {
+    const caster = findClass(grant.slice('spellcasting:'.length));
+    return caster && `Заклинания класса «${caster.name}»`;
   }
   if (grant === 'build') return 'Класс, вид и предыстория';
 
@@ -1716,6 +1734,20 @@ export function multiclassBlocker(build: DndBuild, classId: string): string | un
   const scores = buildScores(build);
   const unmet = [target, ...classes.map((c) => c.def)].filter((classDef) => !meetsMulticlass(classDef, scores));
   return unmet.length > 0 ? unmet.map((classDef) => `${classDef.name}: ${multiclassRequirement(classDef)}`).join('; ') : undefined;
+}
+
+/**
+ * Classes taken after the first whose requirement the hero did not meet when taking them (a score
+ * lowered after the pick, in the making): the character level each was taken at, and why.
+ */
+export function unmetMulticlass(build: DndBuild): { level: number; reason: string }[] {
+  return buildClasses(build)
+    .filter((entry) => !entry.starting)
+    .flatMap((entry) => {
+      const takenAt = entry.levels[0]!;
+      const reason = multiclassBlocker(setHeroLevel(build, takenAt - 1), entry.def.id);
+      return reason ? [{ level: takenAt, reason }] : [];
+    });
 }
 
 function featBlocker(feat: FeatDef, build: DndBuild, collected: Collected, scores: Record<string, number>, level: number, open: OpenChoice): string | undefined {

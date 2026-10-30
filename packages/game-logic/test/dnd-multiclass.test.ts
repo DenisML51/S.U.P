@@ -20,6 +20,7 @@ import {
   setLevelClass,
   setPicks,
   setSubclass,
+  unmetMulticlass,
 } from '../src/dnd';
 import { makeCharacter } from './helpers';
 
@@ -300,7 +301,7 @@ describe('spellcasting of several classes', () => {
   it('grows cantrips with the hero’s level, not a class’s', () => {
     const b = setPicks(hero([{ class: 'fighter', levels: levels(1, 4) }, { class: 'wizard', levels: [5] }]), 'casting:wizard.spells-1/cantrips', ['fire-bolt']);
     const c = apply(b);
-    expect(spellDamageAt(c, c.spells.find((s) => s.id === 'spell-fire-bolt')!)).toBe('2d10');
+    expect(spellDamageAt(c, c.spells.find((s) => s.name === 'Огненный снаряд')!)).toBe('2d10');
   });
 });
 describe('armour class of several classes', () => {
@@ -377,5 +378,48 @@ describe('a hero made at a higher level', () => {
     const picked = setPicks(setPicks(b, choices[0]!.key, ['cure-wounds']), choices[1]!.key, ['cure-wounds']);
     const created = createDndHero({ name: 'Т', build: picked });
     expect(created.spells.filter((s) => s.prepared && !s.alwaysPrepared).map((s) => s.id).sort()).toEqual(['spell-cure-wounds', 'spell-cure-wounds-druid']);
+  });
+});
+describe('class levels where a class counts its own', () => {
+  it('opens and ends a class’s features by its class level, not the hero’s', () => {
+    // Fighter 15 + Lycan 3, the hero at 18: the Lycan's Hybrid Transformation is the one of class level 3
+    // (until 17, with its uses), not the unlimited one of the 18th.
+    const b = setSubclass(
+      hero([{ class: 'fighter', levels: Array.from({ length: 15 }, (_, i) => i + 1) }, { class: 'blood-hunter', levels: [16, 17, 18] }]),
+      'blood-hunter',
+      'order-of-the-lycan',
+    );
+    const bounded = collect(b).features.filter((f) => f.classId === 'blood-hunter' && (f.feature.minLevel || f.feature.maxLevel));
+    expect(bounded.map((f) => [f.feature.minLevel, f.feature.maxLevel])).toEqual([[undefined, 17]]);
+  });
+
+  it('gives Draconic Resilience a hit point per sorcerer level, not per hero level', () => {
+    const classes: DndClass[] = [{ class: 'fighter', levels: [1, 2, 3, 4, 5] }, { class: 'sorcerer', levels: [6, 7, 8] }];
+    const plain = apply(hero(classes)).maxHP;
+    const draconic = apply(setSubclass(hero(classes), 'sorcerer', 'draconic-sorcery')).maxHP;
+    expect(draconic - plain).toBe(3);
+  });
+
+  it('keeps the plain spell ids for the starting class only, so a class gaining spellcasting later moves none', () => {
+    const before = hero([{ class: 'fighter', levels: [1, 3, 4] }, { class: 'wizard', levels: [2] }]);
+    const picked = setPicks(before, 'casting:wizard.spells-1/spellbook', ['shield']);
+    expect(apply(picked).spells.some((s) => s.id === 'spell-shield-wizard')).toBe(true);
+    const knight = setSubclass(picked, 'fighter', 'eldritch-knight');
+    expect(apply(knight).spells.some((s) => s.id === 'spell-shield-wizard')).toBe(true);
+  });
+
+  it('names a class taken whose requirement the scores no longer meet', () => {
+    const b = hero([{ class: 'fighter', levels: [1] }, { class: 'wizard', levels: [2] }], {
+      baseAttributes: { ...hero([]).baseAttributes, intelligence: 12 },
+    });
+    expect(unmetMulticlass(b)).toEqual([{ level: 2, reason: 'Волшебник: Интеллект 13' }]);
+    expect(unmetMulticlass(hero([{ class: 'fighter', levels: [1] }, { class: 'wizard', levels: [2] }]))).toEqual([]);
+  });
+
+  it('tells the list of each casting class apart from the slots of all of them', () => {
+    const b = hero([{ class: 'wizard', levels: [1] }, { class: 'cleric', levels: [2] }]);
+    expect(apply(b).spells.find((s) => s.id === 'spell-bless-cleric')?.grant).toBe('spellcasting:cleric');
+    expect(describeGrant(b, 'spellcasting:cleric')).toBe('Заклинания класса «Жрец»');
+    expect(describeGrant(b, 'spellcasting')).toBe('Заклинания классов: Волшебник, Жрец');
   });
 });
