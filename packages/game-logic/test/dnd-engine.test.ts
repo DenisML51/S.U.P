@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DndBuild, Character } from '@itd/schema';
+import { CharacterSchema, type DndBuild, type Character } from '@itd/schema';
 import {
   armorClassOf,
   initiativeModifier,
@@ -99,10 +99,24 @@ describe('weapon attacks of a preset hero', () => {
 describe('sheet rules the presets rely on', () => {
   it('derives Unarmored Defense and loses it to a shield when the feature says so', () => {
     const base = makeCharacter({ attributes: { dexterity: 14, wisdom: 16, constitution: 10 } });
-    const monk = { ...base, armorClassBonus: { always: 0, armored: 0, unarmored: 'wisdom', unarmoredNoShield: true } };
+    const monk = { ...base, armorClassBonus: { always: 0, armored: 0, unarmored: [{ attribute: 'wisdom', noShield: true }] } };
     expect(armorClassOf(monk)).toBe(10 + 2 + 3);
     const shield = { id: 's', name: 'Щит', type: 'armor' as const, equipped: true, weight: 6, cost: 10, description: '' };
     expect(armorClassOf({ ...monk, inventory: [shield] })).toBe(10 + 2 + 2);
+  });
+
+  it('counts one way of unarmoured armour class at a time: the best a shield leaves', () => {
+    // A monk-barbarian: Wisdom 16 (+3) without a shield, Constitution 14 (+2) with one.
+    const base = makeCharacter({ attributes: { dexterity: 14, wisdom: 16, constitution: 14 } });
+    const both = { ...base, armorClassBonus: { always: 0, armored: 0, unarmored: [{ attribute: 'constitution' }, { attribute: 'wisdom', noShield: true }] } };
+    expect(armorClassOf(both)).toBe(10 + 2 + 3);
+    const shield = { id: 's', name: 'Щит', type: 'armor' as const, equipped: true, weight: 6, cost: 10, description: '' };
+    expect(armorClassOf({ ...both, inventory: [shield] })).toBe(10 + 2 + 2 + 2);
+  });
+
+  it('reads the one unarmoured ability of a sheet saved before there could be several', () => {
+    const saved = CharacterSchema.parse({ ...makeCharacter(), armorClassBonus: { always: 0, armored: 0, unarmored: 'wisdom', unarmoredNoShield: true } });
+    expect(saved.armorClassBonus).toEqual({ always: 0, armored: 0, unarmored: [{ attribute: 'wisdom', noShield: true }] });
   });
 
   it('adds half proficiency to unproficient checks and initiative, and flat skill bonuses', () => {
