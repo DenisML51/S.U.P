@@ -285,6 +285,7 @@
   "Вы владеете одним музыкальным инструментом на свой выбор.": "You have proficiency with one Musical Instrument of your choice.",
   "Музыкальные инструменты ({0})": "Musical Instruments ({0})",
   "Неизвестный класс": "Unknown class",
+  "Подготовленные заклинания: {0}": "Prepared spells: {0}",
   "Blood Hunter (Мэтт Мерсер)": "Blood Hunter (Matt Mercer)",
   "{0}\n\n**Выбрано:**\n{1}": "{0}\n\n**Chosen:**\n{1}",
   "{0}\n\n**Удар зверя.** Рукопашная атака, бонус равен вашему модификатору атаки заклинаниями, досягаемость 5 футов. Попадание: {1}.": "{0}\n\n**Beast's Strike.** Melee Attack Roll: bonus equals your spell attack modifier, reach 5 feet. Hit: {1}.",

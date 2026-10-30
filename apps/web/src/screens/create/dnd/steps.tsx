@@ -16,8 +16,10 @@ import {
   findBackground,
   findClass,
   findFeat,
+  classAtLevel,
   kitItems,
-  preparedSpellsChoice,
+  preparedSpellsChoices,
+  setHeroLevel,
   type KitOption,
 } from '@itd/game-logic/dnd';
 import type { DndBuild } from '@itd/schema';
@@ -27,6 +29,7 @@ import { Facts, Section } from '../../../ui/Section';
 import { Button, IconButton, cx } from '../../../ui/primitives';
 import { IconCoins, IconDice, IconMinus, IconPlus } from '../../../ui/icons';
 import { ChoiceField } from '../../progression/ChoiceField';
+import { ClassPick } from '../../progression/ClassPick';
 import { CLASS_SOURCES, LevelPlanView, planIssues } from '../../progression/LevelPlanView';
 import { EmblemGrid, IdentityStep as SharedIdentityStep, Picked, ScoreCard, ThrownScore, throwAbilityScores } from '../kit';
 import { ClassCarousel } from './ClassCarousel';
@@ -374,11 +377,13 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
 
 export const ProgressionStep: React.FC<{ creation: DndCreation }> = ({ creation }) => {
   const { build } = creation;
-  /** A level number, or "spells" for the spells a preparing caster starts with. */
-  const [shown, setShown] = useState<number | 'spells'>(1);
-  const prepared = preparedSpellsChoice(build);
-  const spellsShown = shown === 'spells' && !!prepared;
-  const level = spellsShown ? creation.level : Math.min(shown === 'spells' ? 1 : shown, creation.level);
+  /** A level number, or the class whose starting prepared spells are shown. */
+  const [shown, setShown] = useState<number | { spells: string }>(1);
+  const prepared = preparedSpellsChoices(build);
+  const spells = typeof shown === 'object' ? prepared.find((choice) => choice.owner.classId === shown.spells) : undefined;
+  const level = spells ? creation.level : Math.min(typeof shown === 'number' ? shown : 1, creation.level);
+  const several = build.classes.length > 1;
+  const classOf = (l: number) => classAtLevel(build, l)?.entry.def;
   return (
     <div className="grid grid-cols-[11rem_minmax(0,1fr)] gap-6 max-sm:grid-cols-1">
       <div className="flex min-h-0 flex-col">
@@ -388,36 +393,60 @@ export const ProgressionStep: React.FC<{ creation: DndCreation }> = ({ creation 
           {Array.from({ length: creation.level }, (_, i) => i + 1).map((l) => {
             const open = planIssues(build, l, CLASS_SOURCES).length;
             return (
-              <button key={l} type="button" className="ui-option flex-row items-center justify-between py-1.5" aria-pressed={!spellsShown && l === level} onClick={() => setShown(l)}>
-                <span className="text-sm">Уровень {l}</span>
+              <button key={l} type="button" className="ui-option flex-row items-center justify-between py-1.5" aria-pressed={!spells && l === level} onClick={() => setShown(l)}>
+                <span className="flex min-w-0 flex-col items-start">
+                  <span className="text-sm">Уровень {l}</span>
+                  {/* With several classes each level says whose it is. */}
+                  {several && <span className="ui-option__meta truncate">{classOf(l)?.name}</span>}
+                </span>
                 <span className={cx('text-xs', open ? 'text-warning' : 'text-success')}>{open ? `выбрать: ${open}` : '✓'}</span>
               </button>
             );
           })}
-          {prepared && (
-            <button type="button" className="ui-option mt-2 flex-row items-center justify-between py-1.5" aria-pressed={spellsShown} onClick={() => setShown('spells')}>
-              <span className="text-sm">Заклинания</span>
+          {prepared.map((choice) => (
+            <button
+              key={choice.key}
+              type="button"
+              className="ui-option mt-2 flex-row items-center justify-between py-1.5"
+              aria-pressed={spells?.key === choice.key}
+              onClick={() => setShown({ spells: choice.owner.classId! })}
+            >
+              <span className="flex min-w-0 flex-col items-start">
+                <span className="text-sm">Заклинания</span>
+                {prepared.length > 1 && <span className="ui-option__meta truncate">{findClass(choice.owner.classId)?.name}</span>}
+              </span>
               <span className="ui-numeric text-xs text-ink-faint">
-                {prepared.picked.length} / {prepared.count}
+                {choice.picked.length} / {choice.count}
               </span>
             </button>
-          )}
+          ))}
         </div>
       </div>
       <div className="min-w-0 border-l border-line/60 pl-6">
         <h3 className="ui-display ui-title mb-4 text-[1.6rem] leading-tight text-frame-bright">
-          {spellsShown ? 'Заклинания' : `${findClass(creation.classId)?.name} · уровень ${level}`}
+          {spells ? 'Заклинания' : `${classOf(level)?.name} · уровень ${level}`}
         </h3>
-        {spellsShown && prepared ? (
-          <ChoiceField build={build} level={creation.level} open={prepared} onChange={creation.setBuild} />
+        {spells ? (
+          <ChoiceField build={build} level={creation.level} open={spells} onChange={creation.setBuild} />
         ) : (
-          <LevelPlanView build={build} level={level} sources={CLASS_SOURCES} onChange={creation.setBuild} />
+          <>
+            {/* After the first, a level may go to another class (multiclassing). */}
+            {level > 1 && (
+              <ClassPick
+                key={level}
+                build={setHeroLevel(build, level - 1)}
+                selected={classOf(level)?.id}
+                title="Класс уровня"
+                onPick={(id) => creation.setLevelClass(level, id)}
+              />
+            )}
+            <LevelPlanView build={build} level={level} sources={CLASS_SOURCES} onChange={creation.setBuild} />
+          </>
         )}
       </div>
     </div>
   );
 };
-
 // ------------------------------------------------------------------------------------------------
 // Equipment
 // ------------------------------------------------------------------------------------------------
