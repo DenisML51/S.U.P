@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { addLevel, applyBuild, dndBuildOf, findClass, heroLevel, hitDieAt } from '@itd/game-logic/dnd';
+import { addLevel, applyBuild, classAtLevel, dndBuildOf, findClass, heroLevel, hitDieAt } from '@itd/game-logic/dnd';
 import type { DndBuild, Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useMomentStore } from '../../store/useMomentStore';
@@ -20,10 +20,12 @@ export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = (
   const landed = useMomentStore((s) => s.landed);
   const build = dndBuildOf(character);
   const level = build ? heroLevel(build) + 1 : character.level + 1;
-  // A die already thrown for this level names its class: the level goes to that class.
+  // A die already thrown for this level names its class (one thrown before multiclassing, the only
+  // class then): the level goes to that class.
   const [draft, setDraft] = useState<DndBuild | undefined>(() => {
-    const thrown = build?.hitPoints.find((e) => e.level === level && e.method === 'roll' && e.class);
-    return build && thrown?.class ? addLevel(build, thrown.class) : undefined;
+    const thrown = build?.hitPoints.find((e) => e.level === level && e.method === 'roll');
+    const thrownFor = build && thrown && (thrown.class ?? classAtLevel(build, level - 1)?.entry.def.id);
+    return build && thrownFor ? addLevel(build, thrownFor) : undefined;
   });
   // The new level's emblem, settled over the window as it opened, leaves with it — closed or gone
   // with the sheet. Going is put off a tick, so a remount (strict mode's included) keeps it.

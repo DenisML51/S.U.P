@@ -249,7 +249,9 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   // A hero of several casting classes reads the book class by class.
   const casters = character.casters ?? [];
   const several = casters.length > 1;
-  const [caster, setCaster] = useState<string>('all');
+  // The tab of a class the hero no longer has (a level given back) falls back to all of them.
+  const [chosenCaster, setCaster] = useState<string>('all');
+  const caster = casters.some((c) => c.id === chosenCaster) ? chosenCaster : 'all';
   const shownCasters = caster === 'all' ? casters : casters.filter((c) => c.id === caster);
   const [preparedOnly, setPreparedOnly] = useState(false);
   const [query, setQuery] = useState('');

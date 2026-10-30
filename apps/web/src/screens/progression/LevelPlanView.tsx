@@ -13,6 +13,7 @@ import {
   levelPlan,
   setSubclass,
   unfinishedChoices,
+  unmetMulticlass,
   type GrantedFeature,
   type SourceKind,
 } from '@itd/game-logic/dnd';
@@ -45,6 +46,9 @@ export function planIssues(build: DndBuild, level: number, sources?: SourceKind[
     .filter((open) => inSources(sources, open.key, open.owner.source))
     .map((open) => open.choice.label.replace(/\s*\(\d+\)$/, ''));
   if (plan.needsSubclass && (!sources || sources.includes('subclass'))) issues.unshift('Подкласс');
+  // A class taken here whose requirement the scores no longer meet (lowered in the making).
+  const unmet = unmetMulticlass(build).find((u) => u.level === level);
+  if (unmet && (!sources || sources.includes('class'))) issues.unshift(unmet.reason);
   return issues;
 }
 
