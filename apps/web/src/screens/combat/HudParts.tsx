@@ -642,6 +642,7 @@ export const CombatStats: React.FC<{
   onInitiative?: () => void;
 }> = ({ character, initiative, onInitiative }) => {
   const dialogs = useSheetDialogs();
+  const casters = character.casters ?? [];
   const stats: { label: string; value: React.ReactNode; onClick?: () => void; hint: string }[] = [
     {
       label: 'КБ',
@@ -663,8 +664,9 @@ export const CombatStats: React.FC<{
     },
     {
       label: character.spellcastingDifficultyName || 'СЛ',
-      value: character.spellcastingDifficultyValue ?? '—',
-      hint: 'Сложность спасброска от ваших чар',
+      // A hero of several casting classes casts each class's spells with its own DC.
+      value: casters.length > 1 ? casters.map((c) => c.saveDC).join(' / ') : (character.spellcastingDifficultyValue ?? '—'),
+      hint: casters.length > 1 ? casters.map((c) => `${c.name}: ${c.saveDC}`).join(', ') : 'Сложность спасброска от ваших чар',
     },
   ];
   return (
