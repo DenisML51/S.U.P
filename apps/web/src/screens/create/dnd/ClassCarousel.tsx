@@ -83,12 +83,17 @@ const ClassCard: React.FC<{ classDef: ClassDef; focused: boolean; hovered: boole
   );
 };
 
-/** The classes fanned round the one in front, as the rules are; only the near ones are drawn. */
-export const ClassCarousel: React.FC<{ value?: string; onChange: (id: string) => void; onClear: () => void }> = ({
-  value,
-  onChange,
-  onClear,
-}) => (
+/**
+ * The classes fanned round the one in front, as the rules are; only the near ones are drawn. A class
+ * the hero cannot take is dimmed, with the reason under it (a multiclass requirement not met).
+ */
+export const ClassCarousel: React.FC<{
+  value?: string;
+  onChange: (id: string) => void;
+  onClear?: () => void;
+  classes?: ClassDef[];
+  blockerOf?: (id: string) => string | undefined;
+}> = ({ value, onChange, onClear, classes = DND.classes, blockerOf }) => (
   // The fan is wider than the step's panel: the cards at its sides are cut at the panel's edge.
   <div className="overflow-x-clip">
     <ChoiceCarousel
@@ -100,8 +105,10 @@ export const ClassCarousel: React.FC<{ value?: string; onChange: (id: string) =>
       onClear={onClear}
       chooseLabel="Выбрать класс"
       chosenLabel="Класс выбран"
-      items={DND.classes.map((classDef) => ({
+      items={classes.map((classDef) => ({
         id: classDef.id,
+        disabledReason: blockerOf?.(classDef.id),
+        disabled: !!blockerOf?.(classDef.id),
         render: ({ focused, hovered }) => (
           <ClassCard classDef={classDef} focused={focused} hovered={hovered} chosen={value === classDef.id} />
         ),

@@ -1,4 +1,4 @@
-import type { ChoiceDef, FeatureDef, SkillId } from '../../types';
+import type { CasterProgression, ChoiceDef, Effect, FeatureDef, SkillId } from '../../types';
 
 /** Ability Score Improvement levels shared by most classes; the Fighter adds 6 and 14. */
 export const ASI_LEVELS = [4, 8, 12, 16];
@@ -57,6 +57,31 @@ export const FULL_CASTER_SLOTS: number[][] = [
   [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1], [4, 3, 3, 3, 3, 1, 1, 1, 1], [4, 3, 3, 3, 3, 2, 1, 1, 1],
   [4, 3, 3, 3, 3, 2, 2, 1, 1],
 ];
+
+/** Spell slot tables by progression; Pact Magic has its own table on the casting. */
+export const SLOT_TABLES: Record<Exclude<CasterProgression, 'pact'>, number[][]> = {
+  full: FULL_CASTER_SLOTS,
+  half: HALF_CASTER_SLOTS,
+  third: THIRD_CASTER_SLOTS,
+};
+
+/** The score a multiclass requirement asks for. */
+export const MULTICLASS_MIN_SCORE = 13;
+
+const proficiency = (category: 'armor' | 'weapon' | 'tool', value: string): Effect => ({ type: 'proficiency', category, value });
+const MULTICLASS_PROFICIENCIES = {
+  lightArmor: proficiency('armor', 'Лёгкие доспехи'),
+  mediumArmor: proficiency('armor', 'Средние доспехи'),
+  shields: proficiency('armor', 'Щиты'),
+  simpleWeapons: proficiency('weapon', 'Простое оружие'),
+  martialWeapons: proficiency('weapon', 'Воинское оружие'),
+  thievesTools: proficiency('tool', 'Воровские инструменты'),
+  alchemistsSupplies: proficiency('tool', 'Инструменты алхимика'),
+} satisfies Record<string, Effect>;
+
+/** Proficiencies of a class's row in the multiclass tables, by name: `multiclassProficiencies('lightArmor', 'shields')`. */
+export const multiclassProficiencies = (...names: (keyof typeof MULTICLASS_PROFICIENCIES)[]): Effect[] =>
+  names.map((name) => MULTICLASS_PROFICIENCIES[name]);
 
 /** Pact Magic of the Warlock by class level: how many slots, all of one level. */
 export const PACT_SLOTS: { count: number; level: number }[] = [

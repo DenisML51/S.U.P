@@ -331,6 +331,29 @@ export const TraitSchema = passthroughObject({
   grant: optionalShortText,
 });
 
+/**
+ * Sheets saved before several ways of unarmoured armour class kept one: unarmored an ability and
+ * unarmoredNoShield whether a shield ends it. They read as a list of that one.
+ */
+function unarmoredAsList(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+  const { unarmored, unarmoredNoShield, ...rest } = value as Record<string, unknown>;
+  if (typeof unarmored !== 'string') return unarmoredNoShield === undefined ? value : rest;
+  return { ...rest, unarmored: [{ attribute: unarmored, noShield: unarmoredNoShield === true || undefined }] };
+}
+
+/** A class the hero casts spells of, as the sheet shows it. */
+export const SpellcasterSchema = passthroughObject({
+  /** The class id (wizard). */
+  id: nestedId,
+  name: shortText,
+  ability: shortText,
+  saveDC: numeric(int),
+  attackBonus: numeric(int),
+  /** How many of its spells (of 1st level and up) may be prepared; absent for a class that knows its spells. */
+  prepared: optionalNumber,
+});
+
 export const SpellSchema = passthroughObject({
   id: nestedId,
   name: shortText,
@@ -371,6 +394,11 @@ export const SpellSchema = passthroughObject({
   alwaysPrepared: optionalFlag,
   /** Spellcasting ability of a spell granted outside the class list (species, feats). */
   ability: optionalShortText,
+  /**
+   * Id of the class whose spell it is (a hero of several casting classes): it is cast with that
+   * class's ability and DC and counts against that class's prepared spells (see casters).
+   */
+  caster: optionalShortText,
   resourceId: optionalNestedId,
   resourceCost: optionalNumber,
   iconName: optionalShortText,
@@ -427,6 +455,26 @@ const numberMap = (maxKeyLength: number) =>
 export const RULESETS = ['dnd2024', 'coc7'] as const;
 export type RulesetId = (typeof RULESETS)[number];
 
+/** A class of a D&D hero and the character levels the hero took in it. */
+export const DndClassSchema = passthroughObject({
+  class: shortText,
+  subclass: optionalShortText,
+  /**
+   * Character levels taken in this class, ascending: a fighter who took a wizard level third has
+   * the fighter's `[1, 2, 4]` and the wizard's `[3]`. Its class level is how many there are.
+   */
+  levels: text(z.array(numeric(int.min(1).max(20))).min(1).max(20)),
+});
+
+/** Every character level from 1 up belongs to exactly one class, each class's in ascending order. */
+const hasLevelsInOrder = (classes: { levels: number[] }[]): boolean => {
+  const all = classes.flatMap((c) => c.levels).sort((a, b) => a - b);
+  return (
+    all.every((level, i) => level === i + 1) &&
+    classes.every((c) => c.levels.every((level, i) => i === 0 || level > c.levels[i - 1]!))
+  );
+};
+
 /**
  * The preset choices a hero was built from (D&D 2024). The sheet's granted entries (abilities,
  * traits, resources, spells marked with `grant`) are derived from it and rebuilt on every level-up;
@@ -436,8 +484,18 @@ export const DndBuildSchema = passthroughObject({
   ruleset: z.literal('dnd2024'),
   species: shortTextOr(),
   background: shortTextOr(),
-  class: shortTextOr(),
-  subclass: optionalShortText,
+  /**
+   * Classes in the order they were taken; the first is the one the hero started in. Empty while
+   * a hero in the making has no class yet.
+   */
+  classes: text(
+    z
+      .array(DndClassSchema)
+      .max(20)
+      .default([])
+      .refine(hasLevelsInOrder, 'Уровни классов должны идти с 1-го подряд, каждый у одного класса')
+      .refine((classes) => new Set(classes.map((c) => c.class)).size === classes.length, 'Класс указан дважды'),
+  ),
   abilityMethod: text(z.enum(['pointBuy', 'roll', 'manual']).default('manual')),
   /** Scores before any increase. */
   baseAttributes: numberMap(64),
@@ -445,15 +503,16 @@ export const DndBuildSchema = passthroughObject({
   backgroundBonuses: numberMap(64),
   /** Picks by choice path (`class:fighter.fighting-style/style`). */
   choices: text(z.record(z.string().max(500), z.array(shortString).max(50)).default({})),
-  /** Hit points gained on each level after the first. */
+  /** Hit points gained on each character level after the first, with the die of the class that took it. */
   hitPoints: list(
     passthroughObject({
       level: numeric(int.min(2).max(20)),
       method: z.enum(['average', 'roll']),
       value: numeric(int.min(1).max(20)),
+      /** The class the die was thrown for; a level taken in another class does not count it. */
+      class: optionalShortText,
     }),
   ),
-  level: numeric(int.min(1).max(20).default(1)),
 });
 
 /**
@@ -473,7 +532,35 @@ export const CocBuildSchema = passthroughObject({
   age: numeric(int.min(15).max(99).default(25)),
 });
 
-export const BuildSchema = z.discriminatedUnion('ruleset', [DndBuildSchema, CocBuildSchema]);
+/**
+ * A D&D build saved before multiclassing named one `class`, its `subclass` and the `level`. It
+ * reads as that class taking every level, and the picks of its spellcasting move under the
+ * class's name, where they are now kept apart per class (`casting:spells-3/…` →
+ * `casting:wizard.spells-3/…`, `swap:known-spells@4/…` → `swap:bard.known-spells@4/…`).
+ */
+function singleClassBuild(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+  const build = value as Record<string, unknown>;
+  if (build.ruleset !== 'dnd2024' || 'classes' in build) return value;
+  const { class: classId, subclass, level, ...rest } = build;
+  if (typeof classId !== 'string' || classId === '') return { ...rest, classes: [] };
+  const total = Math.min(20, Math.max(1, Math.trunc(Number(level)) || 1));
+  const scoped = (key: string) =>
+    key
+      .replace(/^casting:spells-/, `casting:${classId}.spells-`)
+      .replace(/^swap:known-(spells|cantrips)@/, `swap:${classId}.known-$1@`);
+  const choices =
+    typeof rest.choices === 'object' && rest.choices !== null
+      ? Object.fromEntries(Object.entries(rest.choices).map(([key, picks]) => [scoped(key), picks]))
+      : rest.choices;
+  return {
+    ...rest,
+    choices,
+    classes: [{ class: classId, subclass, levels: Array.from({ length: total }, (_, i) => i + 1) }],
+  };
+}
+
+export const BuildSchema = z.preprocess(singleClassBuild, z.discriminatedUnion('ruleset', [DndBuildSchema, CocBuildSchema]));
 
 /** A percentile skill of an investigator; `id` is the content id (`spot-hidden`, `science:biology`). */
 export const CocSkillSchema = passthroughObject({
@@ -583,19 +670,25 @@ export const CharacterSchema = passthroughObject({
    * and the player's own modifier. `manual` is absent on sheets saved before it existed.
    */
   armorClassBonus: text(
-    passthroughObject({
-      always: numberOr(0),
-      armored: numberOr(0),
-      manual: optionalNumber,
-      /** Unarmored Defense: without armour the AC is 10 + Dexterity + this ability's modifier. */
-      unarmored: optionalShortText,
-      /** The Unarmored Defense is lost while holding a shield (Monk). */
-      unarmoredNoShield: optionalFlag,
-      /** In a beast's shape (Wild Shape) the armour class is the form's, whatever is worn. */
-      form: optionalNumber,
-      /** From features, unless heavy armour is worn (a Lycan's Resilient Hide). */
-      noHeavyArmor: optionalNumber,
-    }).optional(),
+    z.preprocess(
+      unarmoredAsList,
+      passthroughObject({
+        always: numberOr(0),
+        armored: numberOr(0),
+        manual: optionalNumber,
+        /**
+         * Ways to count the armour class without armour: 10 + Dexterity + an ability's modifier
+         * (Unarmored Defense, Draconic Resilience). Only one counts at a time, the hero's best; one
+         * marked 
+oShield is lost while holding a shield (a Monk's).
+         */
+        unarmored: optionalList(passthroughObject({ attribute: shortText, noShield: optionalFlag })),
+        /** In a beast's shape (Wild Shape) the armour class is the form's, whatever is worn. */
+        form: optionalNumber,
+        /** From features, unless heavy armour is worn (a Lycan's Resilient Hide). */
+        noHeavyArmor: optionalNumber,
+      }),
+    ).optional(),
   ),
   initiativeBonus: optionalNumber,
   /** Half the proficiency bonus on checks without proficiency, initiative included (Jack of All Trades). */
@@ -662,6 +755,11 @@ export const CharacterSchema = passthroughObject({
   spells: list(SpellSchema),
   spellcastingDifficultyName: optionalShortText,
   spellcastingDifficultyValue: optionalNumber,
+  /**
+   * The classes the hero casts spells of, each with its own ability, save DC, attack bonus and, for
+   * a class that prepares spells, how many (written from the build; a spell names its in caster).
+   */
+  casters: optionalList(SpellcasterSchema),
   knownSchools: list(shortString),
   /** Maximum prepared spells, keyed by spell level ("0".."9"). */
   maxPreparedSpells: numberMap(8),
@@ -711,6 +809,7 @@ export type Ability = z.infer<typeof AbilitySchema>;
 export type Limb = z.infer<typeof LimbSchema>;
 export type Trait = z.infer<typeof TraitSchema>;
 export type Spell = z.infer<typeof SpellSchema>;
+export type Spellcaster = z.infer<typeof SpellcasterSchema>;
 export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 export type Resistance = z.infer<typeof ResistanceSchema>;
 export type ActionCounters = z.infer<typeof ActionCountersSchema>;
@@ -720,6 +819,7 @@ export type DeathSaves = z.infer<typeof DeathSavesSchema>;
 export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
 export type Build = z.infer<typeof BuildSchema>;
 export type DndBuild = z.infer<typeof DndBuildSchema>;
+export type DndClass = z.infer<typeof DndClassSchema>;
 export type CocBuild = z.infer<typeof CocBuildSchema>;
 export type CocSheet = z.infer<typeof CocSheetSchema>;
 export type CocSkill = z.infer<typeof CocSkillSchema>;

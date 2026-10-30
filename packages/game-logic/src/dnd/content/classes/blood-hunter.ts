@@ -10,7 +10,7 @@ import {
   hemocraftDice,
 } from '../blood-hunter/hemocraft';
 import { FEATS } from '../feats';
-import { abilityScoreImprovement, byTable } from './shared';
+import { abilityScoreImprovement, byTable, multiclassProficiencies } from './shared';
 
 /**
  * Blood Hunter by Matthew Mercer (Охотник на крови): the 2020 class with the D&D Beyond errata of
@@ -388,7 +388,8 @@ const profaneSoul: SubclassDef = {
   spellcasting: {
     ability: 'key',
     list: 'warlock',
-    slots: [],
+    progression: 'pact',
+    pactShare: 'third',
     pact: [
       { count: 0, level: 1 }, { count: 0, level: 1 }, { count: 1, level: 1 }, { count: 1, level: 1 }, { count: 1, level: 1 },
       { count: 2, level: 1 }, { count: 2, level: 2 }, { count: 2, level: 2 }, { count: 2, level: 2 }, { count: 2, level: 2 },
@@ -473,6 +474,10 @@ export const BLOOD_HUNTER: ClassDef = {
     description: 'Характеристика гемокрафта: от неё СЛ ваших особенностей, урон Клейма и магия Осквернённой души. Интеллект — по правилам, Мудрость — вариант с согласия мастера.',
     options: ['intelligence', 'wisdom'],
     notes: { intelligence: 'По правилам класса.', wisdom: 'Вариант правил — с согласия мастера.' },
+  },
+  multiclass: {
+    requires: [['strength', 'intelligence'], ['dexterity', 'intelligence']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields', 'simpleWeapons', 'martialWeapons', 'alchemistsSupplies'),
   },
   subclassLevel: 3,
   subclasses: [ghostslayer, lycan, mutant, profaneSoul],

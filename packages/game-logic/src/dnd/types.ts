@@ -81,7 +81,7 @@ export type Effect =
   | { type: 'movement'; mode: MovementMode; feet?: number }
   /** Darkvision in feet; `extend` adds the range to darkvision the hero already has, else gives it. */
   | { type: 'darkvision'; range: number; extend?: boolean }
-  /** Extra maximum hit points per character level (Tough, Dwarven Toughness). */
+  /** Extra maximum hit points per level: of the class for a class's feature (Draconic Resilience), of the hero for the rest (Tough, Dwarven Toughness). */
   | { type: 'hpPerLevel'; amount: number }
   | { type: 'hp'; amount: Amount }
   | { type: 'initiative'; amount: Amount }
@@ -253,9 +253,12 @@ export interface FeatureDef {
   color?: string;
   /** Only informational (a heading in the level-up window), never written onto the sheet. */
   hidden?: boolean;
-  /** Character level the feature opens at, for species and feats that grow (Draconic Flight at 5). */
+  /**
+   * Level the feature opens at: the class level for a class's feature (Improved Blessed Strikes at
+   * 14), the character level for a species' or a feat's (Draconic Flight at 5).
+   */
   minLevel?: number;
-  /** The last character level it lasts to, when a later one replaces it (a transformation that turns unlimited). */
+  /** The last level it lasts to, counted the same way, when a later one replaces it (a transformation that turns unlimited). */
   maxLevel?: number;
   /**
    * Using it turns it on until it is ended (Rage, Bladesong, Draconic Flight): these effects count
@@ -443,17 +446,30 @@ export interface SpellDef {
   color?: string;
 }
 
-/** Spell slots by class level: `slots[classLevel - 1][spellLevel - 1]`. */
+/**
+ * How a casting's class levels count for spell slots: `full` casters (bard, cleric, druid,
+ * sorcerer, wizard) all of them, `half` (paladin, ranger) half rounded up, `third` (Eldritch
+ * Knight, Arcane Trickster) a third rounded down; `pact` casters (warlock) have Pact Magic instead.
+ * A lone casting reads its own table; several add up to one caster level of the full table.
+ */
+export type CasterProgression = 'full' | 'half' | 'third' | 'pact';
+
 export interface SpellcastingDef {
   /** `key`: the class's key ability the hero chose (a Profane Soul casts with their hemocraft). */
   ability: AttributeId | 'key';
   list: SpellListId;
-  slots: number[][];
+  progression: CasterProgression;
   /**
-   * Pact Magic (Warlock): instead of `slots`, a few slots all of one level that come back on a
-   * short rest, by class level.
+   * Pact Magic (`pact` progression): a few slots all of one level that come back on a short rest,
+   * by class level.
    */
   pact?: { count: number; level: number }[];
+  /**
+   * Beside another class's Pact Magic, the pact slots are counted together on that class's table,
+   * this casting's class levels as a third of them, rounded down (a Profane Soul with a warlock);
+   * all of them when absent.
+   */
+  pactShare?: 'third';
   /**
    * `prepared`: every spell of the list the hero can cast is on the sheet and they prepare
    * `prepared(level)` of them (paladin, cleric, druid, ranger). `known`: the hero picks spells in
@@ -498,6 +514,9 @@ export interface ClassDef {
   saves: AttributeId[];
   skillChoices: { count: number; list: SkillId[] };
   proficiencies: Effect[];
+  /** Features only a hero who starts in the class gains, not one who takes it later (a bard's three instruments). */
+  starting?: FeatureDef[];
+  multiclass: MulticlassDef;
   levels: Record<number, FeatureDef[]>;
   subclassLevel: number;
   subclasses: SubclassDef[];
@@ -513,6 +532,24 @@ export interface ClassDef {
    */
   replaceable?: { pool: string; label: string }[];
   startingEquipment: KitOption[];
+}
+
+/**
+ * Taking the class after another one (PHB 2024, "As a Multiclass Character"): the scores it asks
+ * for, and the part of its starting proficiencies it gives instead of all of them (no saving throws).
+ */
+export interface MulticlassDef {
+  /**
+   * Scores of 13 the hero needs, to take the class and to leave it for another: any one group in
+   * full. `[['strength'], ['dexterity']]` is "Strength or Dexterity 13", `[['dexterity', 'wisdom']]`
+   * "Dexterity and Wisdom 13".
+   */
+  requires: AttributeId[][];
+  proficiencies: Effect[];
+  /** Skill proficiencies picked from the class's own skill list (a bard's is every skill). */
+  skills?: number;
+  /** Features in place of the class's `starting` ones (a bard's one instrument). */
+  features?: FeatureDef[];
 }
 
 export interface SpeciesDef {

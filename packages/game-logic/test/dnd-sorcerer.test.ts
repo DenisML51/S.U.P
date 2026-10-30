@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { armorClassOf, startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, collect, levelPlan, setPicks } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'sage',
@@ -49,21 +49,21 @@ describe('sorcerer', () => {
 
   it('asks for four cantrips and two known spells on level 1, more by the table later', () => {
     const b = build();
-    const plan = levelPlan(b, 1);
+    const plan = levelPlan(atLevel(b, 1), 1);
     const cantrips = plan.choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')!;
     const spells = plan.choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')!;
     expect(cantrips.count).toBe(4);
     expect(spells.count).toBe(2);
-    expect(choiceOptions(b, 1, spells).every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
-    expect(levelPlan(b, 2).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')?.count).toBe(2);
-    expect(levelPlan(b, 4).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
-    expect(levelPlan(b, 4).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')?.count).toBe(1);
-    expect(levelPlan(b, 10).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
-    expect(levelPlan(b, 12).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')).toBeUndefined();
-    expect(levelPlan(b, 20).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')?.count).toBe(1);
-    const fifth = levelPlan(b, 5).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')!;
+    expect(choiceOptions(atLevel(b, 1), 1, spells).every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
+    expect(levelPlan(atLevel(b, 2), 2).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')?.count).toBe(2);
+    expect(levelPlan(atLevel(b, 4), 4).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
+    expect(levelPlan(atLevel(b, 4), 4).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')?.count).toBe(1);
+    expect(levelPlan(atLevel(b, 10), 10).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
+    expect(levelPlan(atLevel(b, 12), 12).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')).toBeUndefined();
+    expect(levelPlan(atLevel(b, 20), 20).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')?.count).toBe(1);
+    const fifth = levelPlan(atLevel(b, 5), 5).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')!;
     expect(fifth.count).toBe(2);
-    expect(choiceOptions(b, 5, fifth).some((o) => o.meta?.startsWith('3 круг'))).toBe(true);
+    expect(choiceOptions(atLevel(b, 5), 5, fifth).some((o) => o.meta?.startsWith('3 круг'))).toBe(true);
   });
 
   it('follows the full caster slots', () => {
@@ -86,24 +86,24 @@ describe('sorcerer', () => {
   it('learns Metamagic on 2, 10 and 17, paid with Sorcery Points, and swaps one per level', () => {
     expect(DND.catalogs.metamagic).toHaveLength(10);
     let b = build({ level: 2 });
-    const first = levelPlan(b, 2).choices.find((c) => c.key === 'class:sorcerer.metamagic/metamagic')!;
+    const first = levelPlan(atLevel(b, 2), 2).choices.find((c) => c.key === 'class:sorcerer.metamagic/metamagic')!;
     expect(first.count).toBe(2);
-    expect(choiceOptions(b, 2, first)).toHaveLength(10);
+    expect(choiceOptions(atLevel(b, 2), 2, first)).toHaveLength(10);
     b = setPicks(b, first.key, ['metamagic.quickened-spell', 'metamagic.subtle-spell']);
     const c = apply(b);
     expect(ability(c, 'Ускоренное заклинание')).toMatchObject({ resourceId: POINTS, resourceCost: 2 });
     expect(ability(c, 'Неуловимое заклинание')).toMatchObject({ resourceId: POINTS, resourceCost: 1 });
 
-    const tenth = levelPlan(b, 10).choices.find((c) => c.key === 'class:sorcerer.metamagic-10/metamagic')!;
+    const tenth = levelPlan(atLevel(b, 10), 10).choices.find((c) => c.key === 'class:sorcerer.metamagic-10/metamagic')!;
     expect(tenth.count).toBe(2);
-    expect(choiceOptions(b, 10, tenth).find((o) => o.id === 'metamagic.quickened-spell')?.disabled).toBeTruthy();
-    expect(levelPlan(b, 17).choices.find((c) => c.key === 'class:sorcerer.metamagic-17/metamagic')?.count).toBe(2);
+    expect(choiceOptions(atLevel(b, 10), 10, tenth).find((o) => o.id === 'metamagic.quickened-spell')?.disabled).toBeTruthy();
+    expect(levelPlan(atLevel(b, 17), 17).choices.find((c) => c.key === 'class:sorcerer.metamagic-17/metamagic')?.count).toBe(2);
 
-    b = { ...b, level: 3 };
-    const forget = levelPlan(b, 3).choices.find((c) => c.key === 'swap:metamagic@3/forget')!;
+    b = atLevel(b, 3);
+    const forget = levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === 'swap:metamagic@3/forget')!;
     expect(forget).toBeDefined();
     b = setPicks(b, forget.key, ['metamagic.subtle-spell']);
-    const learn = levelPlan(b, 3).choices.find((c) => c.key === 'swap:metamagic@3/learn')!;
+    const learn = levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === 'swap:metamagic@3/learn')!;
     expect(learn.count).toBe(1);
     b = setPicks(b, learn.key, ['metamagic.twinned-spell']);
     const swapped = apply(b);
@@ -118,14 +118,14 @@ describe('sorcerer', () => {
     expect(dragon.maxHP - plain.maxHP).toBe(3);
     expect(armorClassOf(dragon)).toBe(10 + 2 + 3);
     expect(dragon.spells.find((s) => s.id === 'spell-chromatic-orb')?.alwaysPrepared).toBe(true);
-    expect(apply({ ...b, level: 10 }).maxHP - apply(build({ level: 10 })).maxHP).toBe(10);
+    expect(apply(atLevel(b, 10)).maxHP - apply(build({ level: 10 })).maxHP).toBe(10);
 
-    b = { ...b, level: 6 };
-    const element = levelPlan(b, 6).choices.find((c) => c.key === 'subclass:draconic.elemental-affinity/element')!;
-    expect(choiceOptions(b, 6, element).map((o) => o.id)).toEqual(['acid', 'cold', 'fire', 'lightning', 'poison']);
+    b = atLevel(b, 6);
+    const element = levelPlan(atLevel(b, 6), 6).choices.find((c) => c.key === 'subclass:draconic.elemental-affinity/element')!;
+    expect(choiceOptions(atLevel(b, 6), 6, element).map((o) => o.id)).toEqual(['acid', 'cold', 'fire', 'lightning', 'poison']);
     b = setPicks(b, element.key, ['fire']);
     expect(apply(b).resistances.some((r) => r.type === 'Огонь')).toBe(true);
-    expect(resource(apply({ ...b, level: 14 }), 'draconic.dragon-wings')?.max).toBe(1);
+    expect(resource(apply(atLevel(b, 14)), 'draconic.dragon-wings')?.max).toBe(1);
   });
 
   it('computes the numbers of the other origins', () => {

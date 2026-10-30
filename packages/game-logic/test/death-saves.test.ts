@@ -84,7 +84,7 @@ describe('death saves and rest', () => {
   it('hit dice spent on a short rest wake a hero at 0', async () => {
     const { shortRest } = await import('../src');
     const down = applyDamage(makeCharacter({ currentHP: 5, maxHP: 20, resources: [{ id: 'hd', name: 'Кости хитов', current: 2, max: 2, hitDie: 10, recovery: 'manual', description: '', iconName: '' }] }), 5).character;
-    const rested = shortRest(down, { hitDice: 1, method: 'average' }).character;
+    const rested = shortRest(down, { hitDice: { hd: 1 }, method: 'average' }).character;
     expect(rested.currentHP).toBeGreaterThan(0);
     expect(rested.deathSaves).toBeUndefined();
     expect(rested.conditions).not.toContain('unconscious');

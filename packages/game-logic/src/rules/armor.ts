@@ -49,12 +49,22 @@ export const wearsHeavyArmor = (character: Pick<Character, 'inventory'>): boolea
 const hasShield = (character: ArmorSource): boolean => character.inventory.some((item) => item.equipped && isShield(item));
 
 /**
- * Unarmoured: 10 + Dexterity, plus features that always apply. Unarmored Defense adds an ability
- * (Constitution, Wisdom) unless it is lost to a shield.
+ * The ability an unarmoured armour class adds now: of the ways the hero has (Unarmored Defense of a
+ * barbarian and of a monk, Draconic Resilience) only one counts at a time, so the best of those a
+ * shield does not end (PHB 2024: one alternative armour class calculation at a time).
  */
+export function unarmoredAbility(character: ArmorSource): string | undefined {
+  const shield = hasShield(character);
+  return (character.armorClassBonus?.unarmored ?? [])
+    .filter((way) => !(way.noShield && shield))
+    .map((way) => way.attribute)
+    .reduce<string | undefined>((best, attribute) => (best === undefined || attributeModifier(character, attribute) > attributeModifier(character, best) ? attribute : best), undefined);
+}
+
+/** Unarmoured: 10 + Dexterity, plus features that always apply and the ability of the way it is counted. */
 const unarmoredParts = (character: ArmorSource): ArmorClassPart[] => {
   const bonus = character.armorClassBonus;
-  const unarmored = bonus?.unarmored && !(bonus.unarmoredNoShield && hasShield(character)) ? bonus.unarmored : undefined;
+  const unarmored = unarmoredAbility(character);
   return [
     { label: 'основа', value: BASE_ARMOR_CLASS },
     { label: 'ЛВК', value: attributeModifier(character, 'dexterity') },

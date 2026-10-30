@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { Character, DndBuild } from '@itd/schema';
 import { movementOf, speedHint, speedOf, startingSkills } from '../src';
 import { applyBuild } from '../src/dnd';
-import { item, makeCharacter } from './helpers';
+import { item, makeCharacter, singleClass, type SingleClassBuild } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',

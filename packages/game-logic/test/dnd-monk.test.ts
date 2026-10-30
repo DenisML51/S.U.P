@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { armorClassOf, speedOf, startingSkills } from '../src';
 import { DND, applyBuild, createDndHero, levelPlan } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -36,7 +36,7 @@ describe('Monk', () => {
     const unarmed = c.attacks.find((a) => a.id === 'g-attack-monk.unarmed-strike')!;
     // Martial Arts d6 with Dexterity 17 (+3), proficiency +2.
     expect(unarmed).toMatchObject({ damage: '1d6+3', damageType: 'Дробящий', hitBonus: 5, attribute: 'dexterity' });
-    expect(levelPlan(build(), 1).choices.some((c) => c.key === 'class:monk.tool-proficiency/tool')).toBe(true);
+    expect(levelPlan(atLevel(build(), 1), 1).choices.some((c) => c.key === 'class:monk.tool-proficiency/tool')).toBe(true);
   });
 
   it('has Unarmored Defense from Wisdom, lost with a shield, and attacks with Dexterity using monk weapons', () => {

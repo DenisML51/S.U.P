@@ -1,6 +1,6 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, OptionDef, SubclassDef } from '../../types';
-import { HALF_CASTER_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading, weaponMasteryChoice } from './shared';
+import { abilityScoreImprovement, byTable, epicBoon, subclassHeading, weaponMasteryChoice, multiclassProficiencies } from './shared';
 
 /** Следопыт of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -632,13 +632,18 @@ export const RANGER: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
+  multiclass: {
+    requires: [['dexterity', 'wisdom']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields', 'martialWeapons'),
+    skills: 1,
+  },
   subclassLevel: 3,
   subclasses: [beastMaster, feyWanderer, gloomStalker, hunter, winterWalker, hollowWarden],
   startingEquipment: RANGER_KITS,
   spellcasting: {
     ability: 'wisdom',
     list: 'ranger',
-    slots: HALF_CASTER_SLOTS,
+    progression: 'half',
     mode: 'prepared',
     prepared: byTable([2, 3, 4, 5, 6, 6, 7, 7, 9, 9, 10, 10, 11, 11, 12, 12, 14, 14, 15, 15]),
   },

@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
 import { SORCERY_POINTS } from '../metamagic';
-import { FULL_CASTER_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
+import { abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
 
 /** Чародей of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -500,13 +500,17 @@ export const SORCERER: ClassDef = {
   saves: ['constitution', 'charisma'],
   skillChoices: { count: 2, list: ['arcana', 'deception', 'insight', 'intimidation', 'persuasion', 'religion'] },
   proficiencies: [{ type: 'proficiency', category: 'weapon', value: 'Простое оружие' }],
+  multiclass: {
+    requires: [['charisma']],
+    proficiencies: [],
+  },
   subclassLevel: 3,
   subclasses: [aberrant, clockwork, draconic, wildMagic, spellfire, shadow],
   startingEquipment: SORCERER_KITS,
   spellcasting: {
     ability: 'charisma',
     list: 'sorcerer',
-    slots: FULL_CASTER_SLOTS,
+    progression: 'full',
     mode: 'known',
     prepared: byTable([2, 4, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22]),
     cantrips: byClassLevel({ 1: 4, 4: 5, 10: 6 }),

@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, collect, levelPlan, weaponProficient } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -40,14 +40,14 @@ describe('rogue', () => {
   });
 
   it('asks for four skills, two expertise, two masteries and a language on level 1', () => {
-    const plan = levelPlan(build(), 1);
+    const plan = levelPlan(atLevel(build(), 1), 1);
     expect(plan.choices.find((c) => c.key === 'class:rogue.skills/skills')?.count).toBe(4);
     expect(plan.choices.find((c) => c.key === 'class:rogue.expertise/expertise')?.count).toBe(2);
     expect(plan.choices.find((c) => c.key === 'class:rogue.weapon-mastery/mastery')?.count).toBe(2);
     const language = plan.choices.find((c) => c.key === 'class:rogue.thieves-cant/language')!;
     expect(language.count).toBe(1);
-    expect(choiceOptions(build(), 1, language).find((o) => o.id === 'Воровской жаргон')?.disabled).toBe('Уже знаете');
-    expect(levelPlan(build(), 6).choices.find((c) => c.choice.id === 'expertise')?.count).toBe(2);
+    expect(choiceOptions(atLevel(build(), 1), 1, language).find((o) => o.id === 'Воровской жаргон')?.disabled).toBe('Уже знаете');
+    expect(levelPlan(atLevel(build(), 6), 6).choices.find((c) => c.choice.id === 'expertise')?.count).toBe(2);
   });
 
   it('is proficient with finesse and light martial weapons only', () => {
@@ -70,12 +70,12 @@ describe('rogue', () => {
     expect(c5.abilities.find((a) => a.name === 'Невероятное уклонение')?.actionType).toBe('reaction');
     expect(c5.abilities.find((a) => a.name === 'Хитрое действие')?.actionType).toBe('bonus');
     expect(c5.abilities.find((a) => a.name === 'Точное прицеливание')?.actionType).toBe('bonus');
-    expect(levelPlan(build(), 10).choices.some((c) => c.key.startsWith('class:rogue.asi-10'))).toBe(true);
+    expect(levelPlan(atLevel(build(), 10), 10).choices.some((c) => c.key.startsWith('class:rogue.asi-10'))).toBe(true);
     const c15 = apply(build({ level: 15 }));
     expect(c15.savingThrowProficiencies).toEqual(expect.arrayContaining(['wisdom', 'charisma']));
     const c20 = apply(build({ level: 20 }));
     expect(c20.resources.find((r) => r.id === 'rogue.stroke-of-luck')).toMatchObject({ max: 1, recovery: 'short' });
-    expect(levelPlan(build(), 19).choices.some((c) => c.key.startsWith('class:rogue.epic-boon'))).toBe(true);
+    expect(levelPlan(atLevel(build(), 19), 19).choices.some((c) => c.key.startsWith('class:rogue.epic-boon'))).toBe(true);
   });
 });
 
@@ -94,18 +94,18 @@ describe('rogue subclasses', () => {
     expect(c.spells.find((s) => s.id === 'spell-mage-hand')?.alwaysPrepared).toBe(true);
     expect(c.resources.find((r) => r.id === 'slot-1')?.max).toBe(2);
     expect(c.spellcastingDifficultyValue).toBe(8 + 2 + 2);
-    const plan = levelPlan(b, 3);
+    const plan = levelPlan(atLevel(b, 3), 3);
     const cantrips = plan.choices.find((ch) => ch.choice.id === 'cantrips')!;
     const spells = plan.choices.find((ch) => ch.choice.id === 'spells')!;
     expect(cantrips.count).toBe(2);
     expect(spells.count).toBe(3);
-    expect(choiceOptions(b, 3, cantrips).find((o) => o.id === 'mage-hand')?.disabled).toBe('Уже известно');
-    expect(choiceOptions(b, 3, spells).every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
-    expect(levelPlan(b, 2).choices.some((ch) => ch.choice.id === 'spells')).toBe(false);
-    expect(levelPlan(b, 10).choices.find((ch) => ch.choice.id === 'cantrips')?.count).toBe(1);
-    const spellsAt = (level: number) => levelPlan(b, level).choices.find((ch) => ch.choice.id === 'spells')?.count ?? 0;
+    expect(choiceOptions(atLevel(b, 3), 3, cantrips).find((o) => o.id === 'mage-hand')?.disabled).toBe('Уже известно');
+    expect(choiceOptions(atLevel(b, 3), 3, spells).every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
+    expect(levelPlan(atLevel(b, 2), 2).choices.some((ch) => ch.choice.id === 'spells')).toBe(false);
+    expect(levelPlan(atLevel(b, 10), 10).choices.find((ch) => ch.choice.id === 'cantrips')?.count).toBe(1);
+    const spellsAt = (level: number) => levelPlan(atLevel(b, level), level).choices.find((ch) => ch.choice.id === 'spells')?.count ?? 0;
     expect([4, 5, 7, 8, 13, 19, 20].map(spellsAt)).toEqual([1, 0, 1, 1, 1, 1, 1]);
-    const c20 = apply({ ...b, level: 20 });
+    const c20 = apply(atLevel(b, 20));
     expect(c20.resources.find((r) => r.id === 'slot-4')?.max).toBe(1);
     expect(c20.abilities.find((a) => a.name === 'Вор заклинаний')).toMatchObject({ actionType: 'reaction', saveAttribute: 'intelligence', saveDC: 8 + 6 + 2 });
   });

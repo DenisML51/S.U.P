@@ -11,7 +11,9 @@ import {
   featureNumbers,
   findClass,
   levelPlan,
+  setSubclass,
   unfinishedChoices,
+  unmetMulticlass,
   type GrantedFeature,
   type SourceKind,
 } from '@itd/game-logic/dnd';
@@ -43,24 +45,24 @@ export function planIssues(build: DndBuild, level: number, sources?: SourceKind[
   const issues = unfinishedChoices(build, plan)
     .filter((open) => inSources(sources, open.key, open.owner.source))
     .map((open) => open.choice.label.replace(/\s*\(\d+\)$/, ''));
-  const classDef = findClass(build.class);
-  if (classDef && level === classDef.subclassLevel && !build.subclass && (!sources || sources.includes('subclass'))) {
-    issues.unshift('Подкласс');
-  }
+  if (plan.needsSubclass && (!sources || sources.includes('subclass'))) issues.unshift('Подкласс');
+  // A class taken here whose requirement the scores no longer meet (lowered in the making).
+  const unmet = unmetMulticlass(build).find((u) => u.level === level);
+  if (unmet && (!sources || sources.includes('class'))) issues.unshift(unmet.reason);
   return issues;
 }
 
 /** A gained feature as the card and details show it. */
-const featureEntry = (build: DndBuild, { key, feature, level }: GrantedFeature): EntryInfo => ({
-  id: key,
-  name: feature.name,
-  iconName: feature.iconName,
-  color: feature.color,
-  description: feature.description,
-  actionType: feature.action,
-  ...featureNumbers(build, level, feature),
-  damageType: feature.damageType,
-  saveAttribute: feature.saveAttribute,
+const featureEntry = (granted: GrantedFeature): EntryInfo => ({
+  id: granted.key,
+  name: granted.feature.name,
+  iconName: granted.feature.iconName,
+  color: granted.feature.color,
+  description: granted.feature.description,
+  actionType: granted.feature.action,
+  ...featureNumbers(granted),
+  damageType: granted.feature.damageType,
+  saveAttribute: granted.feature.saveAttribute,
 });
 
 /** Features used in play look like abilities; passive traits like the sheet's features. */
@@ -73,18 +75,20 @@ const featureKind = ({ feature }: GrantedFeature): IconKind => (feature.action &
 const HitPointsField: React.FC<{
   build: DndBuild;
   level: number;
+  classId?: string;
   hitDie: number;
   onChange: (build: DndBuild) => void;
   onRolled?: (value: number) => void;
-}> = ({ build, level, hitDie, onChange, onRolled }) => {
-  const entry = build.hitPoints.find((e) => e.level === level);
+}> = ({ build, level, classId, hitDie, onChange, onRolled }) => {
+  // A die thrown for another class (the level went elsewhere) does not count here.
+  const entry = build.hitPoints.find((e) => e.level === level && (!e.class || e.class === classId));
   const average = averageHitPoints(hitDie);
   const die = entry?.value ?? average;
   const constitution = abilityModifier(buildScores(build, level).constitution ?? 10);
   const gained = Math.max(1, die + constitution);
   const rolled = entry?.method === 'roll';
   const set = (method: 'average' | 'roll', value: number) =>
-    onChange({ ...build, hitPoints: [...build.hitPoints.filter((e) => e.level !== level), { level, method, value }] });
+    onChange({ ...build, hitPoints: [...build.hitPoints.filter((e) => e.level !== level), { level, method, value, class: classId }] });
   const roll = () => {
     const value = rollDie(hitDie);
     set('roll', value);
@@ -132,43 +136,49 @@ export const LevelPlanView: React.FC<{
 }> = ({ build, level, onChange, sources, className, onHitDieRolled }) => {
   const [open, setOpen] = useState<GrantedFeature | null>(null);
   const plan = levelPlan(build, level);
-  const classDef = findClass(build.class);
+  const classDef = findClass(plan.classId);
+  const subclass = build.classes.find((c) => c.class === plan.classId)?.subclass;
   const features = plan.features.filter((f) => !f.feature.hidden && f.feature.description && inSources(sources, f.key, f.source));
   // Optional replacements of earlier picks come after what the level brings.
   const choices = plan.choices
     .filter((c) => inSources(sources, c.key, c.owner.source))
     .sort((a, b) => Number(a.key.startsWith('swap:')) - Number(b.key.startsWith('swap:')));
-  const subclassDue = !!classDef && level === classDef.subclassLevel && (!sources || sources.includes('subclass'));
+  const subclassDue = !!classDef && plan.classLevel === classDef.subclassLevel && (!sources || sources.includes('subclass'));
   const showHitPoints = level > 1 && (!sources || sources.includes('class'));
+  // A class taken after the first gives only its row of the multiclass table.
+  const joined = classDef && level > 1 && plan.classLevel === 1 && (!sources || sources.includes('class'));
+  const joinedProficiencies = joined
+    ? classDef.multiclass.proficiencies.flatMap((effect) => (effect.type === 'proficiency' ? [effect.value] : []))
+    : [];
 
-  const chooseSubclass = (id: string) => {
-    // Spells picked through the subclass (Eldritch Knight) go with it; a class caster keeps theirs.
-    const subclassCasts = !classDef?.spellcasting;
-    const choices = Object.fromEntries(
-      Object.entries(build.choices).filter(([key]) => !key.startsWith('subclass:') && !(subclassCasts && (key.startsWith('casting:') || key.startsWith('swap:')))),
-    );
-    onChange({ ...build, subclass: id, choices });
-  };
+  // Picks of another subclass go with it, its spells too when it cast them (an Eldritch Knight).
+  const chooseSubclass = (id: string) => classDef && onChange(setSubclass(build, classDef.id, id));
 
   return (
     <div className={className}>
       {subclassDue && classDef && (
-        <Section title="Подкласс" count={{ picked: build.subclass ? 1 : 0, total: 1 }}>
+        <Section title="Подкласс" count={{ picked: subclass ? 1 : 0, total: 1 }}>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2">
-            {classDef.subclasses.map((subclass) => (
+            {classDef.subclasses.map((option) => (
               <button
-                key={subclass.id}
+                key={option.id}
                 type="button"
                 className="ui-option gap-1 px-4 py-3"
-                aria-pressed={build.subclass === subclass.id}
-                onClick={() => chooseSubclass(subclass.id)}
+                aria-pressed={subclass === option.id}
+                onClick={() => chooseSubclass(option.id)}
               >
-                <span className="ui-display text-[1.02rem] leading-tight">{subclass.name}</span>
-                {subclass.source && <span className="ui-option__meta">{subclass.source}</span>}
-                <span className="mt-1 text-[13px] leading-snug text-ink-muted">{subclass.description}</span>
+                <span className="ui-display text-[1.02rem] leading-tight">{option.name}</span>
+                {option.source && <span className="ui-option__meta">{option.source}</span>}
+                <span className="mt-1 text-[13px] leading-snug text-ink-muted">{option.description}</span>
               </button>
             ))}
           </div>
+        </Section>
+      )}
+
+      {joinedProficiencies.length > 0 && (
+        <Section title="Владения" hint="Взяв класс не первым, вы получаете только эти владения из его стартовых, без спасбросков">
+          <p className="text-sm text-ink-muted">{joinedProficiencies.join(', ')}</p>
         </Section>
       )}
 
@@ -178,14 +188,14 @@ export const LevelPlanView: React.FC<{
             {features.map((granted) => (
               <EntryCardButton
                 key={granted.key}
-                entry={featureEntry(build, granted)}
+                entry={featureEntry(granted)}
                 kind={featureKind(granted)}
                 onOpen={() => setOpen(granted)}
               />
             ))}
           </div>
           <EntryDetails
-            open={open && { entry: featureEntry(build, open), kind: featureKind(open) }}
+            open={open && { entry: featureEntry(open), kind: featureKind(open) }}
             source={open ? describeGrant(build, open.key) : undefined}
             onClose={() => setOpen(null)}
           />
@@ -200,6 +210,7 @@ export const LevelPlanView: React.FC<{
         <HitPointsField
           build={build}
           level={level}
+          classId={plan.classId}
           hitDie={plan.hitDie}
           onChange={onChange}
           onRolled={onHitDieRolled && ((value) => onHitDieRolled(level, value))}

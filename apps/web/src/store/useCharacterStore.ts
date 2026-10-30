@@ -16,7 +16,8 @@ import {
   appendHistory,
   changeResource,
   createEntityId,
-  hitDiceOf,
+  hitDicePools,
+  hitDiceToSpend,
   loadRuleSystem,
   longRest,
   performAction as performGameAction,
@@ -395,10 +396,11 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       const current = get().character;
       if (!current) return null;
       // Dice are rolled once here: the edit runs again on the stored copy and must heal the same.
-      const hitDie = hitDiceOf(current)?.hitDie;
       const rolls =
-        kind === 'short' && options.method !== 'average' && hitDie
-          ? Array.from({ length: Math.max(0, options.hitDice ?? 0) }, () => rollDie(hitDie))
+        kind === 'short' && options.method !== 'average'
+          ? Object.fromEntries(
+              hitDicePools(current).map((pool) => [pool.id, Array.from({ length: hitDiceToSpend(pool, options) }, () => rollDie(pool.hitDie!))]),
+            )
           : undefined;
       const apply = (doc: Character): RestResult => (kind === 'short' ? shortRest(doc, { ...options, rolls }) : longRest(doc));
 

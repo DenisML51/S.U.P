@@ -51,6 +51,14 @@ export interface RuleSystem {
     list(build: Build): CatalogSpell[];
     entry(build: Build, id: string): Spell | undefined;
   };
+  /**
+   * Giving back the hero's last level: what it was, for people ("Волшебник, 2 уровень"; none when
+   * there is no level to give back), and the sheet without it, its picks and hit points forgotten.
+   */
+  lastLevel?: {
+    describe(build: Build): string | undefined;
+    giveBack(character: Character, build: Build): Character;
+  };
 }
 
 /**

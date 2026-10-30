@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   SPELL_SCHOOLS,
   UNLIMITED_PREPARED,
+  formatModifier,
   maxPrepared,
   preparationBlocker,
   preparedCount,
@@ -13,7 +14,7 @@ import {
   togglePrepared,
   rulesOf,
 } from '@itd/game-logic';
-import type { Character, Spell } from '@itd/schema';
+import type { Character, Spell, Spellcaster } from '@itd/schema';
 import { SpellCatalogDialog } from '../dialogs/SpellCatalogDialog';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
@@ -97,8 +98,10 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
   const limit = maxPrepared(character, level);
   const unlimited = limit >= UNLIMITED_PREPARED;
   const slots = slotResourceFor(character, level);
-  // A class that prepares N spells of any level (paladin) sets one limit for all circles.
+  // A class that prepares N spells of any level (paladin) sets one limit for all circles; a preset
+  // hero's classes keep theirs in the book's header.
   const classLimit = level > 0 && character.maxPreparedSpells[TOTAL_PREPARED] !== undefined;
+  const byClass = !!character.casters?.length;
   // A preset caster who knows their spells (bard, warlock) never prepares them: no counter.
   const known = !!character.build && character.spells.filter((s) => s.level === level).every((s) => s.alwaysPrepared);
   return (
@@ -109,7 +112,7 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
           <span className="tabular-nums">{limit}</span>
         </span>
       )}
-      {level > 0 && !classLimit && !known && (
+      {level > 0 && !classLimit && !byClass && !known && (
         <span className="flex items-center gap-1" title="Сколько заклинаний этого круга можно подготовить">
           подготовлено <span className="tabular-nums">{preparedCount(character, level)}</span> из
           <IconButton
@@ -138,6 +141,26 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
     </span>
   );
 };
+
+/**
+ * A class the hero casts as, in the book's header: its save DC and spell attack, and for a class that
+ * prepares its spells how many of them are. Of several classes it is the one whose tab is open.
+ */
+const CasterSummary: React.FC<{ character: Character; caster: Spellcaster }> = ({ character, caster }) => (
+  <span className="flex items-baseline gap-1.5 whitespace-nowrap" title={`Заклинания класса «${caster.name}»`}>
+    <span>СЛ</span>
+    <span className="ui-display ui-numeric text-2xl leading-none text-paper-ink">{caster.saveDC}</span>
+    <span className="text-sm">
+      атака <span className="ui-numeric">{formatModifier(caster.attackBonus)}</span>
+    </span>
+    {caster.prepared !== undefined && (
+      <span className="text-sm" title="Сколько заклинаний класса всех кругов можно подготовить; задаётся классом и уровнем">
+        <span aria-hidden>·</span> подготовлено <span className="tabular-nums">{preparedCount(character, 1, caster.id)}</span> из{' '}
+        <span className="tabular-nums">{caster.prepared}</span>
+      </span>
+    )}
+  </span>
+);
 
 /** Spellcasting difficulty in the book's header: its name and value, edited in place. */
 const DifficultyEditor: React.FC<{
@@ -223,6 +246,13 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   const { cast } = acts;
   const dialogs = useSheetDialogs();
   const [level, setLevel] = useState<LevelFilter>('all');
+  // A hero of several casting classes reads the book class by class.
+  const casters = character.casters ?? [];
+  const several = casters.length > 1;
+  // The tab of a class the hero no longer has (a level given back) falls back to all of them.
+  const [chosenCaster, setCaster] = useState<string>('all');
+  const caster = casters.some((c) => c.id === chosenCaster) ? chosenCaster : 'all';
+  const shownCasters = caster === 'all' ? casters : casters.filter((c) => c.id === caster);
   const [preparedOnly, setPreparedOnly] = useState(false);
   const [query, setQuery] = useState('');
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -236,6 +266,7 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   );
   const visible = character.spells.filter(
     (spell) =>
+      (caster === 'all' || spell.caster === caster) &&
       (level === 'all' || spell.level === level) &&
       (!preparedOnly || spell.prepared) &&
       (!query.trim() || t(spell.name).toLowerCase().includes(query.trim().toLowerCase())),
@@ -257,19 +288,47 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   return (
     <div className="flex h-full gap-8">
       <SectionList>
+        {several && (
+          <Tabs
+            label="Класс"
+            value={caster}
+            onChange={setCaster}
+            items={[{ id: 'all', label: 'Все классы' }, ...casters.map((c) => ({ id: c.id, label: c.name }))]}
+            className="mb-2"
+          />
+        )}
         <LevelPicker levels={levels} value={level} onChange={setLevel} />
 
         <Ledger
           title="Книга заклинаний"
           aside={
             <>
-              <DifficultyEditor
-                name={character.spellcastingDifficultyName ?? 'СЛ заклинаний'}
-                value={character.spellcastingDifficultyValue ?? 10}
-                onSave={(spellcastingDifficultyName, spellcastingDifficultyValue) =>
-                  updateCharacter((doc) => ({ ...doc, spellcastingDifficultyName, spellcastingDifficultyValue }))
-                }
-              />
+              {casters.length > 0 ? (
+                // A preset hero's classes cast by their own numbers, written from the build: all of
+                // them by their DCs, one class (or the only one) with its attack and prepared spells.
+                shownCasters.length > 1 ? (
+                  <span className="flex items-baseline gap-1.5 whitespace-nowrap" title="Сложность спасброска от заклинаний каждого класса">
+                    <span>СЛ</span>
+                    {shownCasters.map((c, index) => (
+                      <React.Fragment key={c.id}>
+                        {index > 0 && <span aria-hidden>·</span>}
+                        <span>{c.name}</span>
+                        <span className="ui-display ui-numeric text-2xl leading-none text-paper-ink">{c.saveDC}</span>
+                      </React.Fragment>
+                    ))}
+                  </span>
+                ) : (
+                  shownCasters.map((c) => <CasterSummary key={c.id} character={character} caster={c} />)
+                )
+              ) : (
+                <DifficultyEditor
+                  name={character.spellcastingDifficultyName ?? 'СЛ заклинаний'}
+                  value={character.spellcastingDifficultyValue ?? 10}
+                  onSave={(spellcastingDifficultyName, spellcastingDifficultyValue) =>
+                    updateCharacter((doc) => ({ ...doc, spellcastingDifficultyName, spellcastingDifficultyValue }))
+                  }
+                />
+              )}
               {/* Only the prepared: the mark a prepared spell carries in the book. */}
               <button
                 type="button"
@@ -329,6 +388,7 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
                     meta={
                       <MetaLine
                         parts={[
+                          several && caster === 'all' && casters.find((c) => c.id === spell.caster)?.name,
                           spell.school,
                           spell.castingTime || ACTION_TYPES[spell.actionType].short,
                           spell.range,
