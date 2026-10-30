@@ -7,6 +7,7 @@ import { weaponAttack, weaponAttackId, weaponThrowId } from '../rules/inventory'
 import { averageHitPoints } from '../rules/rest';
 import { DND } from './content';
 import { beastFormFeature, beastSummary, challengeLabel } from './content/beasts';
+import { SLOT_TABLES } from './content/classes/shared';
 import { DND_ICONS } from './content/icons';
 import { proficiencyForLevel, resolveAmount, resolveDice } from './helpers';
 import type {
@@ -102,7 +103,7 @@ export function spellcastingOf(build: Pick<DndBuild, 'class' | 'subclass'>): Spe
 }
 
 const slotsAt = (casting: SpellcastingDef | undefined, classLevel: number): number[] =>
-  casting?.slots[classLevel - 1] ?? [];
+  casting && casting.progression !== 'pact' ? (SLOT_TABLES[casting.progression][classLevel - 1] ?? []) : [];
 
 /** Pact Magic slots of a class level (Warlock), if the casting is a pact. */
 const pactAt = (casting: SpellcastingDef | undefined, classLevel: number): { count: number; level: number } | undefined =>

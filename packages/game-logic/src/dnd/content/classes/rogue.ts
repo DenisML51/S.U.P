@@ -1,6 +1,6 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
-import { THIRD_CASTER_SLOTS, abilityScoreImprovement, epicBoon, subclassHeading, weaponMasteryChoice } from './shared';
+import { abilityScoreImprovement, epicBoon, subclassHeading, weaponMasteryChoice } from './shared';
 
 /** Плут of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -35,7 +35,7 @@ const arcaneTrickster: SubclassDef = {
   spellcasting: {
     ability: 'intelligence',
     list: 'wizard',
-    slots: THIRD_CASTER_SLOTS,
+    progression: 'third',
     mode: 'known',
     prepared: byClassLevel({ 3: 3, 4: 4, 7: 5, 8: 6, 10: 7, 11: 8, 13: 9, 14: 10, 16: 11, 19: 12, 20: 13 }),
     cantrips: byClassLevel({ 3: 2, 10: 3 }),

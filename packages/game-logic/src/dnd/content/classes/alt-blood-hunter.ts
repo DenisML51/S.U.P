@@ -569,7 +569,7 @@ const witchKnights: SubclassDef = {
   spellcasting: {
     ability: 'constitution',
     list: 'witchKnight',
-    slots: [],
+    progression: 'pact',
     pact: [
       { count: 0, level: 1 }, { count: 0, level: 1 }, { count: 1, level: 1 }, { count: 2, level: 1 }, { count: 2, level: 1 },
       { count: 2, level: 1 }, { count: 2, level: 2 }, { count: 2, level: 2 }, { count: 2, level: 2 }, { count: 2, level: 2 },

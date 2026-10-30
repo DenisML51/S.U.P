@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, SubclassDef } from '../../types';
 import { PALADIN_KITS } from '../equipment';
-import { HALF_CASTER_SLOTS, abilityScoreImprovement, epicBoon, weaponMasteryChoice } from './shared';
+import { abilityScoreImprovement, epicBoon, weaponMasteryChoice } from './shared';
 
 /** Paladin of the 2024 Player's Handbook (Паладин). Descriptions are our own summaries of the rules. */
 
@@ -430,7 +430,7 @@ export const PALADIN: ClassDef = {
   spellcasting: {
     ability: 'charisma',
     list: 'paladin',
-    slots: HALF_CASTER_SLOTS,
+    progression: 'half',
     mode: 'prepared',
     prepared: byClassLevel({ 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 7: 7, 9: 9, 11: 10, 13: 11, 15: 12, 17: 14, 19: 15 }),
   },

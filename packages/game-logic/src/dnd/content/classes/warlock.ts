@@ -556,7 +556,7 @@ export const WARLOCK: ClassDef = {
   spellcasting: {
     ability: 'charisma',
     list: 'warlock',
-    slots: [],
+    progression: 'pact',
     pact: PACT_SLOTS,
     mode: 'known',
     cantrips: byClassLevel({ 1: 2, 4: 3, 10: 4 }),

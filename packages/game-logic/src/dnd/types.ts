@@ -443,15 +443,22 @@ export interface SpellDef {
   color?: string;
 }
 
-/** Spell slots by class level: `slots[classLevel - 1][spellLevel - 1]`. */
+/**
+ * How a casting's class levels count for spell slots: `full` casters (bard, cleric, druid,
+ * sorcerer, wizard) all of them, `half` (paladin, ranger) half rounded up, `third` (Eldritch
+ * Knight, Arcane Trickster) a third rounded down; `pact` casters (warlock) have Pact Magic instead.
+ * A lone casting reads its own table; several add up to one caster level of the full table.
+ */
+export type CasterProgression = 'full' | 'half' | 'third' | 'pact';
+
 export interface SpellcastingDef {
   /** `key`: the class's key ability the hero chose (a Profane Soul casts with their hemocraft). */
   ability: AttributeId | 'key';
   list: SpellListId;
-  slots: number[][];
+  progression: CasterProgression;
   /**
-   * Pact Magic (Warlock): instead of `slots`, a few slots all of one level that come back on a
-   * short rest, by class level.
+   * Pact Magic (`pact` progression): a few slots all of one level that come back on a short rest,
+   * by class level.
    */
   pact?: { count: number; level: number }[];
   /**

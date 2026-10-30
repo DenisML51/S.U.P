@@ -2,7 +2,6 @@ import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ChoiceDef, ClassDef, FeatureDef, OptionDef, SubclassDef } from '../../types';
 import { ARTISAN_TOOL_NAMES, FIGHTER_KITS } from '../equipment';
 import {
-  THIRD_CASTER_SLOTS,
   abilityScoreImprovement,
   epicBoon,
   weaponMasteryChoice,
@@ -182,7 +181,7 @@ const eldritchKnight: SubclassDef = {
   spellcasting: {
     ability: 'intelligence',
     list: 'wizard',
-    slots: THIRD_CASTER_SLOTS,
+    progression: 'third',
     mode: 'known',
     prepared: byClassLevel({ 3: 3, 4: 4, 7: 5, 8: 6, 10: 7, 11: 8, 13: 9, 14: 10, 16: 11, 19: 12, 20: 13 }),
     cantrips: byClassLevel({ 3: 2, 10: 3 }),

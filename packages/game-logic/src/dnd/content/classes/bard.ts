@@ -478,7 +478,7 @@ export const BARD: ClassDef = {
   spellcasting: {
     ability: 'charisma',
     list: 'bard',
-    slots: FULL_CASTER_SLOTS,
+    progression: 'full',
     mode: 'known',
     prepared: byTable([4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22]),
     cantrips: byClassLevel({ 1: 2, 4: 3, 10: 4 }),

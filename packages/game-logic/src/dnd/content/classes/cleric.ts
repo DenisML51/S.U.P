@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SkillId, SubclassDef } from '../../types';
 import { ARTISAN_TOOL_NAMES } from '../equipment';
-import { FULL_CASTER_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
+import { abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
 
 /** Жрец of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -615,7 +615,7 @@ export const CLERIC: ClassDef = {
   spellcasting: {
     ability: 'wisdom',
     list: 'cleric',
-    slots: FULL_CASTER_SLOTS,
+    progression: 'full',
     mode: 'prepared',
     prepared: byTable([4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22]),
     cantrips: byClassLevel({ 1: 3, 4: 4, 10: 5 }),

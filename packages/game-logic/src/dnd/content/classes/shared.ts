@@ -1,4 +1,4 @@
-import type { ChoiceDef, FeatureDef, SkillId } from '../../types';
+import type { CasterProgression, ChoiceDef, FeatureDef, SkillId } from '../../types';
 
 /** Ability Score Improvement levels shared by most classes; the Fighter adds 6 and 14. */
 export const ASI_LEVELS = [4, 8, 12, 16];
@@ -57,6 +57,13 @@ export const FULL_CASTER_SLOTS: number[][] = [
   [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1], [4, 3, 3, 3, 3, 1, 1, 1, 1], [4, 3, 3, 3, 3, 2, 1, 1, 1],
   [4, 3, 3, 3, 3, 2, 2, 1, 1],
 ];
+
+/** Spell slot tables by progression; Pact Magic has its own table on the casting. */
+export const SLOT_TABLES: Record<Exclude<CasterProgression, 'pact'>, number[][]> = {
+  full: FULL_CASTER_SLOTS,
+  half: HALF_CASTER_SLOTS,
+  third: THIRD_CASTER_SLOTS,
+};
 
 /** Pact Magic of the Warlock by class level: how many slots, all of one level. */
 export const PACT_SLOTS: { count: number; level: number }[] = [
