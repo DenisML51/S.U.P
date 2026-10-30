@@ -9,8 +9,10 @@ import {
   classAtLevel,
   collect,
   describeGrant,
+  dropLastLevel,
   heroLevel,
   levelPlan,
+  multiclassBlocker,
   setPicks,
   setSubclass,
 } from '../src/dnd';
@@ -155,6 +157,20 @@ describe('a hero of several classes', () => {
 });
 
 describe('taking and giving back levels', () => {
+  it('lets a new class in only with 13 in the scores of the new class and of every class the hero has', () => {
+    const scores = (patch: Record<string, number>) => ({ ...hero([]).baseAttributes, ...patch });
+    const fighter = hero([{ class: 'fighter', levels: [1] }], { baseAttributes: scores({ strength: 15, intelligence: 12 }) });
+    expect(multiclassBlocker(fighter, 'wizard')).toBe('Волшебник: Интеллект 13');
+    expect(multiclassBlocker({ ...fighter, baseAttributes: scores({ strength: 15, intelligence: 13 }) }, 'wizard')).toBeUndefined();
+    // A fighter needs Strength or Dexterity; a monk Dexterity and Wisdom.
+    const weak = hero([{ class: 'fighter', levels: [1] }], { baseAttributes: scores({ strength: 10, dexterity: 13, wisdom: 12 }) });
+    expect(multiclassBlocker(weak, 'monk')).toBe('Монах: Ловкость и Мудрость 13');
+    expect(multiclassBlocker(hero([{ class: 'fighter', levels: [1] }], { baseAttributes: scores({ strength: 10, dexterity: 10 }) }), 'rogue')).toBe(
+      'Плут: Ловкость 13; Воин: Сила или Ловкость 13',
+    );
+    expect(multiclassBlocker(fighter, 'fighter')).toBe('Уже есть');
+  });
+
   it('adds a level to a class, a new class joining the end of the list', () => {
     let b = hero([{ class: 'fighter', levels: [1] }]);
     b = addLevel(addLevel(addLevel(b, 'fighter'), 'wizard'), 'fighter');
@@ -164,6 +180,25 @@ describe('taking and giving back levels', () => {
     ]);
     expect(heroLevel(b)).toBe(4);
     expect(classAtLevel(b, 3)).toMatchObject({ classLevel: 1, entry: { def: { id: 'wizard' } } });
+  });
+
+  it('gives back the last level with its picks, its hit points and, below its level, the subclass', () => {
+    let b = hero([{ class: 'fighter', levels: [1, 2] }, { class: 'wizard', levels: [3] }], {
+      hitPoints: [
+        { level: 2, method: 'average', value: 6 },
+        { level: 3, method: 'roll', value: 5 },
+      ],
+    });
+    b = setPicks(b, 'casting:wizard.spells-1/spellbook', ['shield', 'sleep']);
+    const back = dropLastLevel(b);
+    expect(back.classes).toEqual([{ class: 'fighter', levels: [1, 2] }]);
+    expect(back.choices).not.toHaveProperty('casting:wizard.spells-1/spellbook');
+    expect(back.hitPoints.map((e) => e.level)).toEqual([2]);
+
+    const champion = setSubclass(hero([{ class: 'fighter', levels: [1, 2, 3] }]), 'fighter', 'champion');
+    expect(dropLastLevel(champion).classes).toEqual([{ class: 'fighter', subclass: undefined, levels: [1, 2] }]);
+    // The first level is never given back.
+    expect(dropLastLevel(hero([{ class: 'fighter', levels: [1] }])).classes).toHaveLength(1);
   });
 
   it('forgets the picks of a subclass when another one is chosen, and its spells when it cast them', () => {

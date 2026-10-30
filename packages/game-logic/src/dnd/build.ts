@@ -7,7 +7,7 @@ import { weaponAttack, weaponAttackId, weaponThrowId } from '../rules/inventory'
 import { averageHitPoints } from '../rules/rest';
 import { DND } from './content';
 import { beastFormFeature, beastSummary, challengeLabel } from './content/beasts';
-import { SLOT_TABLES } from './content/classes/shared';
+import { MULTICLASS_MIN_SCORE, SLOT_TABLES } from './content/classes/shared';
 import { DND_ICONS } from './content/icons';
 import { proficiencyForLevel, resolveAmount, resolveDice } from './helpers';
 import type {
@@ -1512,6 +1512,29 @@ export function setSubclass(build: DndBuild, classId: string, subclassId: string
   };
 }
 
+/**
+ * The build without its last character level: the class loses it (and leaves the list with no level
+ * left), its subclass goes when the class drops below the subclass level, and the picks and hit
+ * points of that level are forgotten, so taking the level again starts clean.
+ */
+export function dropLastLevel(build: DndBuild): DndBuild {
+  const level = heroLevel(build);
+  const at = classAtLevel(build, level);
+  if (!at || level <= 1) return build;
+  const keys = collect(build, level).choices.filter((c) => c.level === level).map((c) => c.key);
+  const forgotten = (key: string) => keys.some((k) => key === k || key.startsWith(`${k}=`) || key.startsWith(`${k}:`) || key.startsWith(`${k}#`));
+  const belowSubclass = at.classLevel - 1 < at.entry.def.subclassLevel;
+  const lowered = belowSubclass && at.entry.subclass ? setSubclass(build, at.entry.def.id, undefined) : build;
+  return {
+    ...lowered,
+    classes: lowered.classes
+      .map((c) => (c.class === at.entry.def.id ? { ...c, levels: c.levels.filter((l) => l !== level) } : c))
+      .filter((c) => c.levels.length > 0),
+    choices: Object.fromEntries(Object.entries(lowered.choices).filter(([key]) => !forgotten(key))),
+    hitPoints: lowered.hitPoints.filter((entry) => entry.level !== level),
+  };
+}
+
 export interface OptionView {
   id: string;
   name: string;
@@ -1557,6 +1580,30 @@ const poolPicks = (collected: Collected, open: OpenChoice): Set<string> =>
 /** At least `min` in one of the scores, or in each of them when `all`. */
 const meetsScores = (need: { list: AttributeId[]; min: number; all?: boolean }, scores: Record<string, number>): boolean =>
   need.all ? need.list.every((a) => (scores[a] ?? 10) >= need.min) : need.list.some((a) => (scores[a] ?? 10) >= need.min);
+
+/** A class's multiclass requirement for people: "Сила 13", "Сила или Ловкость 13", "Ловкость и Мудрость 13". */
+export const multiclassRequirement = (classDef: ClassDef): string => {
+  const groups = classDef.multiclass.requires.map((group) => group.map(attributeName).join(' и '));
+  return `${groups.join(' или ')} ${MULTICLASS_MIN_SCORE}`;
+};
+
+const meetsMulticlass = (classDef: ClassDef, scores: Record<string, number>): boolean =>
+  classDef.multiclass.requires.some((group) => group.every((attribute) => (scores[attribute] ?? 10) >= MULTICLASS_MIN_SCORE));
+
+/**
+ * Why the hero cannot take a level in a class they do not have yet, or `undefined` if they can: the
+ * scores now must meet the requirement of the new class and of every class they already have.
+ */
+export function multiclassBlocker(build: DndBuild, classId: string): string | undefined {
+  const target = findClass(classId);
+  if (!target) return 'Неизвестный класс';
+  const classes = buildClasses(build);
+  if (classes.length === 0) return undefined;
+  if (classes.some((c) => c.def.id === classId)) return 'Уже есть';
+  const scores = buildScores(build);
+  const unmet = [target, ...classes.map((c) => c.def)].filter((classDef) => !meetsMulticlass(classDef, scores));
+  return unmet.length > 0 ? unmet.map((classDef) => `${classDef.name}: ${multiclassRequirement(classDef)}`).join('; ') : undefined;
+}
 
 function featBlocker(feat: FeatDef, build: DndBuild, collected: Collected, scores: Record<string, number>, level: number, open: OpenChoice): string | undefined {
   const taken = collected.features.some((f) => f.feature.id === feat.id && !f.key.startsWith(open.key));
