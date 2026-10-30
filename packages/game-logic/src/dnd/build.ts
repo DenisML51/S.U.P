@@ -817,7 +817,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   for (const effect of ofType('saveBonus')) {
     for (const attribute of effect.attributes) saveBonuses[attribute] = (saveBonuses[attribute] ?? 0) + resolveAmount(effect.amount, ctx);
   }
-  const unarmored = ofType('unarmoredDefense')[0];
+  const unarmored = ofType('unarmoredDefense').map((e) => ({ attribute: e.attribute, noShield: e.noShield || undefined }));
 
   // Hit points: keep the damage already taken.
   const maxHP = buildMaxHP(build, collected, scores, level);
@@ -1156,8 +1156,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
       armored: ofType('armorClass').filter((e) => e.armored).reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0),
       noHeavyArmor: ofType('armorClass').filter((e) => e.noHeavyArmor).reduce((sum, e) => sum + resolveAmount(e.amount, ctx), 0) || undefined,
       manual: character.armorClassBonus?.manual,
-      unarmored: unarmored?.attribute,
-      unarmoredNoShield: unarmored?.noShield || undefined,
+      unarmored: unarmored.length > 0 ? unarmored : undefined,
       form: formArmorClass,
     },
     resistances,

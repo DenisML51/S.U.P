@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Character, DndBuild, DndClass } from '@itd/schema';
-import { castableSlots, preparationBlocker, preparedCount, slotPoolFor, spellAttackBonusFor, spellDamageAt, spellSaveDCFor, startingSkills } from '../src';
+import { armorClassOf, castableSlots, preparationBlocker, preparedCount, slotPoolFor, spellAttackBonusFor, spellDamageAt, spellSaveDCFor, startingSkills } from '../src';
 import { ATTRIBUTES_LIST } from '../src/content/attributes';
 import {
   DND,
@@ -296,5 +296,17 @@ describe('spellcasting of several classes', () => {
     const b = setPicks(hero([{ class: 'fighter', levels: levels(1, 4) }, { class: 'wizard', levels: [5] }]), 'casting:wizard.spells-1/cantrips', ['fire-bolt']);
     const c = apply(b);
     expect(spellDamageAt(c, c.spells.find((s) => s.id === 'spell-fire-bolt')!)).toBe('2d10');
+  });
+});
+describe('armour class of several classes', () => {
+  it('writes every way of unarmoured armour class the classes give, the sheet counting the best', () => {
+    const c = apply(
+      hero([{ class: 'barbarian', levels: [1] }, { class: 'monk', levels: [2] }], {
+        baseAttributes: { ...hero([]).baseAttributes, constitution: 12, wisdom: 16 },
+      }),
+    );
+    expect(c.armorClassBonus?.unarmored).toEqual([{ attribute: 'constitution' }, { attribute: 'wisdom', noShield: true }]);
+    // 10 + Dexterity 14 (+2) + Wisdom 16 (+3).
+    expect(armorClassOf(c)).toBe(15);
   });
 });

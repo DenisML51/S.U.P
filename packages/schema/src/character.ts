@@ -331,6 +331,17 @@ export const TraitSchema = passthroughObject({
   grant: optionalShortText,
 });
 
+/**
+ * Sheets saved before several ways of unarmoured armour class kept one: unarmored an ability and
+ * unarmoredNoShield whether a shield ends it. They read as a list of that one.
+ */
+function unarmoredAsList(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+  const { unarmored, unarmoredNoShield, ...rest } = value as Record<string, unknown>;
+  if (typeof unarmored !== 'string') return unarmoredNoShield === undefined ? value : rest;
+  return { ...rest, unarmored: [{ attribute: unarmored, noShield: unarmoredNoShield === true || undefined }] };
+}
+
 /** A class the hero casts spells of, as the sheet shows it. */
 export const SpellcasterSchema = passthroughObject({
   /** The class id (wizard). */
@@ -657,19 +668,25 @@ export const CharacterSchema = passthroughObject({
    * and the player's own modifier. `manual` is absent on sheets saved before it existed.
    */
   armorClassBonus: text(
-    passthroughObject({
-      always: numberOr(0),
-      armored: numberOr(0),
-      manual: optionalNumber,
-      /** Unarmored Defense: without armour the AC is 10 + Dexterity + this ability's modifier. */
-      unarmored: optionalShortText,
-      /** The Unarmored Defense is lost while holding a shield (Monk). */
-      unarmoredNoShield: optionalFlag,
-      /** In a beast's shape (Wild Shape) the armour class is the form's, whatever is worn. */
-      form: optionalNumber,
-      /** From features, unless heavy armour is worn (a Lycan's Resilient Hide). */
-      noHeavyArmor: optionalNumber,
-    }).optional(),
+    z.preprocess(
+      unarmoredAsList,
+      passthroughObject({
+        always: numberOr(0),
+        armored: numberOr(0),
+        manual: optionalNumber,
+        /**
+         * Ways to count the armour class without armour: 10 + Dexterity + an ability's modifier
+         * (Unarmored Defense, Draconic Resilience). Only one counts at a time, the hero's best; one
+         * marked 
+oShield is lost while holding a shield (a Monk's).
+         */
+        unarmored: optionalList(passthroughObject({ attribute: shortText, noShield: optionalFlag })),
+        /** In a beast's shape (Wild Shape) the armour class is the form's, whatever is worn. */
+        form: optionalNumber,
+        /** From features, unless heavy armour is worn (a Lycan's Resilient Hide). */
+        noHeavyArmor: optionalNumber,
+      }),
+    ).optional(),
   ),
   initiativeBonus: optionalNumber,
   /** Half the proficiency bonus on checks without proficiency, initiative included (Jack of All Trades). */
