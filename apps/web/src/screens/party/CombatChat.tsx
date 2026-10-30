@@ -1,15 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { PartyDto } from '@itd/schema';
+import type { PartyDto, TableRollDto } from '@itd/schema';
 import { useChatStore } from '../../store/useChatStore';
 import { useTableRollStore } from '../../store/useTableRollStore';
-import { DieGlyph } from '../../ui/RollingDie';
+import { DieGlyph, useHeldUntilLanded } from '../../ui/RollingDie';
 import { IconClose, IconQuill } from '../../ui/icons';
 import { IconButton, Panel, Tabs, cx } from '../../ui/primitives';
 import { ChatPanel } from './ChatPanel';
 import { DiceLog } from './DiceLog';
+import { TABLE_DIE_STAGGER_MS } from './TableDice';
 
 const PREVIEW = 3;
+
+/** What a throw came to, told once its dice on the table are down. */
+const RollText: React.FC<{ roll: TableRollDto }> = ({ roll }) => {
+  const told = useHeldUntilLanded(roll.createdAt, roll.dice.length, TABLE_DIE_STAGGER_MS);
+  return (
+    <span className="truncate">
+      {told ? roll.label || roll.dice.map((die) => die.label ?? die.value).join(' · ') : 'бросает…'}
+    </span>
+  );
+};
 
 /**
  * The table's talk over the combat screen, with the table's throws: in a fight the others' dice show
@@ -121,9 +132,7 @@ export const CombatChat: React.FC<{ party: PartyDto; userId: string | undefined;
                             : roll.authorName
                           : (roll.heroName ?? roll.authorName)}
                       </span>
-                      <span className="truncate">
-                        {roll.label || roll.dice.map((die) => die.label ?? die.value).join(' · ')}
-                      </span>
+                      <RollText roll={roll} />
                     </li>
                   ) : (
                     <li

@@ -1,6 +1,6 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, OptionDef, SubclassDef } from '../../types';
-import { HALF_CASTER_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading, weaponMasteryChoice } from './shared';
+import { abilityScoreImprovement, byTable, epicBoon, subclassHeading, weaponMasteryChoice, multiclassProficiencies } from './shared';
 
 /** Следопыт of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -278,6 +278,7 @@ const gloomStalker: SubclassDef = {
         name: 'Теневой взор',
         description:
           'Вы получаете тёмное зрение на 60 футов (если оно уже есть — его дальность растёт на 60 футов). Пока вы целиком в темноте, существо, видящее вас там только тёмным зрением, считает вас невидимым.',
+        effects: [{ type: 'darkvision', range: 60, extend: true }],
         iconName: 'hooded-figure',
       },
     ],
@@ -631,13 +632,18 @@ export const RANGER: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
+  multiclass: {
+    requires: [['dexterity', 'wisdom']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields', 'martialWeapons'),
+    skills: 1,
+  },
   subclassLevel: 3,
   subclasses: [beastMaster, feyWanderer, gloomStalker, hunter, winterWalker, hollowWarden],
   startingEquipment: RANGER_KITS,
   spellcasting: {
     ability: 'wisdom',
     list: 'ranger',
-    slots: HALF_CASTER_SLOTS,
+    progression: 'half',
     mode: 'prepared',
     prepared: byTable([2, 3, 4, 5, 6, 6, 7, 7, 9, 9, 10, 10, 11, 11, 12, 12, 14, 14, 15, 15]),
   },
@@ -697,6 +703,7 @@ export const RANGER: ClassDef = {
         description: 'Совершая действие «Атака» в свой ход, вы атакуете дважды вместо одного раза.',
         action: 'passive',
         iconName: 'arrow-cluster',
+        effects: [{ type: 'extraAttack', attacks: 2 }],
       },
     ],
     6: [
@@ -705,7 +712,11 @@ export const RANGER: ClassDef = {
         name: 'Вездеходность',
         description: 'Пока вы не носите тяжёлый доспех, ваша скорость увеличивается на 10 футов. Вы также получаете скорость лазания и плавания, равные вашей скорости.',
         iconName: 'footprint',
-        effects: [{ type: 'speed', amount: 10 }],
+        effects: [
+          { type: 'speed', amount: 10, when: 'noHeavyArmor' },
+          { type: 'movement', mode: 'climb' },
+          { type: 'movement', mode: 'swim' },
+        ],
       },
     ],
     8: [abilityScoreImprovement('ranger', 8)],

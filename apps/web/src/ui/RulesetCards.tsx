@@ -3,6 +3,7 @@ import { Kraken, type TentacleSpec } from './art/lovecraft';
 import { ChoiceCarousel } from './ChoiceCarousel';
 import { Corners } from './ornaments';
 import { cx } from './primitives';
+import { useAtLeast } from './useBreakpoint';
 import { WireDie, type DieShape } from './WireDie';
 import { RULES_CHOICES, RULES_TITLE, type RulesChoice } from '../systems';
 
@@ -173,27 +174,31 @@ const RulebookFace: React.FC<{
   scene: React.ReactNode;
   awake: boolean;
   chosen: boolean;
-}> = ({ title, dice, scene, awake, chosen }) => (
-  <>
-    <span className="ui-world__scene" aria-hidden>
-      {scene}
-    </span>
-    <span className="ui-world__veil" aria-hidden />
-    <Corners />
-    <span className="ui-rulebook-card__dice text-frame-bright">
-      {dice.map((shape, i) => (
-        <WireDie
-          key={i}
-          shape={shape}
-          spin={(awake ? 7 : chosen ? 2 : 0.7) * (i % 2 === 0 ? 1 : 1.3)}
-          phase={i * 1.9}
-          className={dice.length > 1 ? 'h-24 w-24' : 'h-36 w-36'}
-        />
-      ))}
-    </span>
-    <span className="ui-world__name ui-display ui-title">{title}</span>
-  </>
-);
+}> = ({ title, dice, scene, awake, chosen }) => {
+  // A phone card is small: corners would crowd the dice and the name.
+  const ornate = useAtLeast('tablet');
+  return (
+    <>
+      <span className="ui-world__scene" aria-hidden>
+        {scene}
+      </span>
+      <span className="ui-world__veil" aria-hidden />
+      {ornate && <Corners />}
+      <span className="ui-rulebook-card__dice text-frame-bright">
+        {dice.map((shape, i) => (
+          <WireDie
+            key={i}
+            shape={shape}
+            spin={(awake ? 7 : chosen ? 2 : 0.7) * (i % 2 === 0 ? 1 : 1.3)}
+            phase={i * 1.9}
+            className={dice.length > 1 ? 'h-24 w-24' : 'h-36 w-36'}
+          />
+        ))}
+      </span>
+      <span className="ui-world__name ui-display ui-title">{title}</span>
+    </>
+  );
+};
 
 /** Every rulebook's card: a new system needs one before the carousel compiles. */
 const RULES_CARDS: Record<RulesChoice, { dice: DieShape[]; scene: (awake: boolean) => React.ReactNode }> = {

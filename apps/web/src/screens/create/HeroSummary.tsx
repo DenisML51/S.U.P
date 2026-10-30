@@ -7,12 +7,14 @@ import {
   formatModifier,
   initiativeModifier,
   maxSanityOf,
+  speedHint,
+  speedOf,
 } from '@itd/game-logic';
 import {
   DND_ICONS,
   describeGrant,
   dndBuildOf,
-  findClass,
+  hitDieAt,
 } from '@itd/game-logic/dnd';
 import type { CharacterDraft, CharacterImages, Setting } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
@@ -54,12 +56,13 @@ const IconBlock: React.FC<{
   );
 
 /** A round figure under the scores: initiative, hit points and hit die, armour, speed, sanity. */
-const Badge: React.FC<{ icon: React.ReactNode; value: React.ReactNode; label: string }> = ({
+const Badge: React.FC<{ icon: React.ReactNode; value: React.ReactNode; label: string; hint?: string }> = ({
   icon,
   value,
   label,
+  hint,
 }) => (
-  <div className="flex flex-col items-center gap-1" title={label}>
+  <div className="flex flex-col items-center gap-1" title={hint ?? label}>
     <span className="ui-summary__badge">
       {icon}
       <span className="ui-numeric">{value}</span>
@@ -89,7 +92,8 @@ export const HeroSummary: React.FC<{
   const proficiencies = sheet.traits.find((t) => t.id === 'g-proficiencies')?.description;
   const mastery = sheet.traits.find((t) => t.id === 'g-weapon-mastery')?.description;
   const build = dndBuildOf(sheet);
-  const hitDie = findClass(build?.class)?.hitDie;
+  // The hero's first hit die: the class they start in.
+  const hitDie = build && hitDieAt(build, 1);
   const features = sheet.traits.filter((t) => t.id !== 'g-proficiencies' && t.id !== 'g-weapon-mastery');
   const [open, setOpen] = useState<{ entry: EntryInfo; kind: IconKind } | null>(null);
   const show = (entry: EntryInfo, kind: IconKind) => setOpen({ entry, kind });
@@ -160,7 +164,7 @@ export const HeroSummary: React.FC<{
             label={hitDie ? `Хиты к${hitDie}` : 'Хиты'}
           />
           <Badge icon={<IconArmor width={13} height={13} />} value={armorClassOf(sheet)} label="КБ" />
-          <Badge icon={<IconSpeed width={13} height={13} />} value={sheet.speed} label="Скорость" />
+          <Badge icon={<IconSpeed width={13} height={13} />} value={speedOf(sheet)} label="Скорость" hint={speedHint(sheet)} />
           <Badge icon={<IconSanity width={13} height={13} />} value={maxSanityOf(sheet)} label="Рассудок" />
         </div>
 

@@ -1,15 +1,14 @@
 @import './ui/theme/tokens.css';
 @import './ui/theme/base.css';
 @import './ui/theme/party.css';
-@import './ui/theme/settings/high-fantasy.css';
+@import './ui/theme/moments.css';
 @import './ui/theme/settings/sci-fi.css';
-@import './ui/theme/settings/dark-fantasy.css';
-@import './ui/theme/settings/dark-fantasy-material.css';
-@import './ui/theme/settings/cyberpunk.css';
 @import './ui/theme/settings/lovecraft.css';
 @import './ui/theme/settings/elden-ring.css';
+@import './ui/theme/settings/fable.css';
 @import './ui/theme/service.css';
 @import './ui/theme/gate.css';
+@import './ui/theme/en.css';
 
 @tailwind base;
 @tailwind components;

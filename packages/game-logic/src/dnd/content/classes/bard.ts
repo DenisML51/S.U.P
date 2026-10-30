@@ -7,6 +7,7 @@ import {
   byTable,
   epicBoon,
   subclassHeading,
+  multiclassProficiencies,
 } from './shared';
 
 /** Бард of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
@@ -262,6 +263,7 @@ const valor: SubclassDef = {
           'Совершая действие «Атака» в свой ход, вы атакуете дважды вместо одного раза. Одну из этих атак можно заменить сотворением заговора со временем накладывания «действие».',
         action: 'passive',
         iconName: 'sword-spin',
+        effects: [{ type: 'extraAttack', attacks: 2 }],
       },
     ],
     14: [
@@ -455,6 +457,15 @@ export const BARD_KITS: KitOption[] = [
   { id: 'b', label: 'B', items: [], gold: 90 },
 ];
 
+/** Musical instruments a bard plays: three for one who starts as a bard, one for one who takes the class later. */
+const instruments = (count: number): FeatureDef => ({
+  id: 'bard.instruments',
+  name: 'Музыкальные инструменты',
+  description: count === 1 ? 'Вы владеете одним музыкальным инструментом на свой выбор.' : `Вы владеете ${count} музыкальными инструментами на свой выбор.`,
+  hidden: true,
+  choices: [{ id: 'tools', label: `Музыкальные инструменты (${count})`, count, options: { from: 'tools', list: MUSICAL_INSTRUMENT_NAMES } }],
+});
+
 export const BARD: ClassDef = {
   id: 'bard',
   name: 'Бард',
@@ -467,6 +478,13 @@ export const BARD: ClassDef = {
     { type: 'proficiency', category: 'armor', value: 'Лёгкие доспехи' },
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
   ],
+  starting: [instruments(3)],
+  multiclass: {
+    requires: [['charisma']],
+    proficiencies: multiclassProficiencies('lightArmor'),
+    skills: 1,
+    features: [instruments(1)],
+  },
   subclassLevel: 3,
   subclasses: [dance, glamour, lore, valor, moon, spirits],
   startingEquipment: BARD_KITS,
@@ -477,7 +495,7 @@ export const BARD: ClassDef = {
   spellcasting: {
     ability: 'charisma',
     list: 'bard',
-    slots: FULL_CASTER_SLOTS,
+    progression: 'full',
     mode: 'known',
     prepared: byTable([4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22]),
     cantrips: byClassLevel({ 1: 2, 4: 3, 10: 4 }),
@@ -510,13 +528,6 @@ export const BARD: ClassDef = {
           'Вы творите заклинания барда Харизмой (СЛ = 8 + бонус мастерства + модификатор Харизмы; бонус атаки = бонус мастерства + модификатор Харизмы). Вы знаете 2 заговора (3 с 4-го уровня, 4 с 10-го) и держите подготовленными заклинания из списка барда: 4 на 1-м уровне, дальше по таблице класса. Повышая уровень, можно заменить один заговор и одно заклинание. Музыкальный инструмент служит заклинательной фокусировкой.',
         action: 'passive',
         iconName: 'spell-book',
-      },
-      {
-        id: 'bard.instruments',
-        name: 'Музыкальные инструменты',
-        description: 'Вы владеете тремя музыкальными инструментами на свой выбор.',
-        hidden: true,
-        choices: [{ id: 'tools', label: 'Музыкальные инструменты (3)', count: 3, options: { from: 'tools', list: MUSICAL_INSTRUMENT_NAMES } }],
       },
     ],
     2: [

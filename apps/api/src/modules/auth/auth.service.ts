@@ -173,6 +173,27 @@ export class AuthService {
     return this.startSession(updated, randomUUID(), client);
   }
 
+  /**
+   * Sets a new password without the old one — the server admin's answer to a forgotten password
+   * (there is no mail to send a link by). Every session of the account ends.
+   */
+  async resetPassword(email: string, newPassword: string): Promise<UserRow> {
+    const passwordHash = await hashPassword(newPassword);
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(users)
+        .set({ passwordHash, updatedAt: new Date() })
+        .where(eq(users.email, email))
+        .returning();
+      if (!row) throw new AppError(404, ErrorCode.notFound, `Пользователь ${email} не найден`);
+      await tx
+        .update(refreshTokens)
+        .set({ revokedAt: new Date(), revokedReason: 'password_change' })
+        .where(and(eq(refreshTokens.userId, row.id), isNull(refreshTokens.revokedAt)));
+      return row;
+    });
+  }
+
   /** Verifies an access token and returns the user id it was issued to. */
   async authenticate(accessToken: string): Promise<string | null> {
     const claims = await this.signer.verify(accessToken);

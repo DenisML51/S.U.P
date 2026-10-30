@@ -83,11 +83,16 @@ export const ItemTypeSchema = z.enum(['armor', 'weapon', 'ammunition', 'item']);
 export const WeaponClassSchema = z.enum(['melee', 'ranged']);
 export const ResistanceLevelSchema = z.enum(['resistance', 'vulnerability', 'immunity', 'none']);
 /** The universe a character comes from; drives the visual theme of the sheet. */
-export const SETTINGS = ['high-fantasy', 'sci-fi', 'dark-fantasy', 'cyberpunk', 'lovecraft', 'elden-ring'] as const;
+export const SETTINGS = ['fable', 'sci-fi', 'lovecraft', 'elden-ring'] as const;
 export const SettingSchema = z.enum(SETTINGS);
-export const DEFAULT_SETTING: z.infer<typeof SettingSchema> = 'high-fantasy';
-/** Settings that were merged into another one; documents saved with them read as their successor. */
-const RETIRED_SETTINGS: Record<string, z.infer<typeof SettingSchema>> = { grimdark: 'dark-fantasy' };
+export const DEFAULT_SETTING: z.infer<typeof SettingSchema> = 'fable';
+/** Settings that were removed; documents saved with them read as the closest one left. */
+const RETIRED_SETTINGS: Record<string, z.infer<typeof SettingSchema>> = {
+  grimdark: 'elden-ring',
+  'dark-fantasy': 'elden-ring',
+  cyberpunk: 'sci-fi',
+  'high-fantasy': 'fable',
+};
 
 /** When a resource comes back: on a short rest (and a long one), only on a long rest, or by hand. */
 export const RecoverySchema = z.enum(['short', 'long', 'manual']);
@@ -97,6 +102,8 @@ export const HistoryEntryTypeSchema = z.enum(['health', 'sanity', 'resource', 'i
 export const DamageComponentSchema = passthroughObject({
   damage: shortTextOr(),
   type: shortTextOr(),
+  /** Dealt beside the weapon by a feature (Crimson Rite): not the weapon's own dice for Savage Attacker. */
+  extra: optionalFlag,
 });
 
 export const SkillSchema = passthroughObject({
@@ -165,6 +172,8 @@ export const InventoryItemSchema = passthroughObject({
   damageType: optionalShortText,
   damageComponents: optionalList(DamageComponentSchema),
   ammunitionType: optionalShortText,
+  /** A weapon that can be thrown (dagger, javelin, dart): a throw spends one from its stack. */
+  thrown: optionalFlag,
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset weapon, armour or gear the item was made from (D&D 2024 tables). */
@@ -183,6 +192,16 @@ export const AttackSchema = passthroughObject({
   weaponId: optionalNestedId,
   usesAmmunition: optionalFlag,
   ammunitionCost: optionalNumber,
+  /** The stack of ammunition the player chose for it, when several would fit. */
+  ammunitionItemId: optionalNestedId,
+  /** A throw of the weapon itself: spends one from the weapon's stack, if it is counted. */
+  thrown: optionalFlag,
+  /** Made at range (a bow, a thrown dagger): no smite rides on it. */
+  ranged: optionalFlag,
+  /** Dice of its damage count as at least this (Great Weapon Fighting: 3). */
+  minDie: optionalNumber,
+  /** Its damage held in both hands (a versatile weapon: "1d10 + 3"). */
+  damageTwoHanded: optionalShortText,
   attribute: optionalShortText,
   /** Call of Cthulhu: the skill it is rolled with (`firearms:handgun`). */
   skill: optionalShortText,
@@ -199,6 +218,19 @@ export const AttackSchema = passthroughObject({
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry (a Monk's Unarmed Strike); rebuilt from the build. */
   grant: optionalShortText,
+});
+
+/**
+ * Hit points a feature costs: `dice` rolled, the lower of two rolls when `rollTwice`, less `minus`
+ * but not below `min`. `lowersMax` takes them off the maximum too until a long rest (a Vital
+ * Sacrifice); otherwise they are lost as damage no defence reduces.
+ */
+export const HitPointCostSchema = passthroughObject({
+  dice: shortText,
+  lowersMax: optionalFlag,
+  rollTwice: optionalFlag,
+  minus: optionalNumber,
+  min: optionalNumber,
 });
 
 export const AbilitySchema = passthroughObject({
@@ -218,10 +250,62 @@ export const AbilitySchema = passthroughObject({
   hitBonus: optionalNumber,
   /** Using it starts concentration, which a new concentration, a failed save or incapacitation ends. */
   concentration: optionalFlag,
+  /** The most of `resourceId` one use may spend (Lay on Hands: the whole pool); the player chooses. */
+  resourceCostMax: optionalNumber,
+  /** Dice or points per unit spent (Lay on Hands: "1" — a hit point for a point). */
+  damagePerPoint: optionalShortText,
+  /** Turns a spell slot into points of `resourceId`, or points into a slot (Font of Magic). */
+  convert: text(z.enum(['slotToPoints', 'pointsToSlot']).optional()),
+  /** Using it turns it on until it is ended (Rage, Bladesong); its effects count meanwhile. */
+  stance: optionalFlag,
+  /** Turning it on ends concentration (Rage). */
+  stanceEndsConcentration: optionalFlag,
+  /** No spells are cast while it is on (Rage, Wild Shape). */
+  stanceNoSpells: optionalFlag,
+  /** Only one ability of a group is on at a time (the forms of Wild Shape). */
+  stanceGroup: optionalShortText,
+  /** Temporary hit points it gives when it starts (Wild Shape). */
+  stanceTempHP: optionalNumber,
+  /** Hit points using it costs, rolled on use (Crimson Rite: a hemocraft die); no defence reduces them. */
+  hpCost: text(HitPointCostSchema.optional()),
+  /** With its pool empty it may still be used, for these hit points instead of a use (a Blood Rite). */
+  hpCostWhenSpent: text(HitPointCostSchema.optional()),
+  /**
+   * It may be strengthened when used (an amplified Blood Curse): what that does, the hit points it
+   * costs on top, and the dice it deals instead of `damage`.
+   */
+  amplify: text(
+    passthroughObject({ description: longTextOr(), hpCost: text(HitPointCostSchema.optional()), damage: optionalShortText }).optional(),
+  ),
+  /** It stays on until a short rest as well as a long one (Crimson Rite, a Mutagen). */
+  stanceUntilShortRest: optionalFlag,
+  /** The user gains temporary hit points of this share of the damage it deals (Rite of Siphoning: all of it). */
+  tempHPFromDamage: optionalNumber,
+  /** Dealt with a hit, not on its own (a smite): cast after a hit of a melee weapon or an unarmed strike, or of any weapon. */
+  onHit: text(z.enum(['melee', 'weapon']).optional()),
   iconName: optionalShortText,
   color: optionalShortText,
   /** Id of the preset feature that wrote this entry; such entries are rebuilt from the build. */
   grant: optionalShortText,
+});
+
+/**
+ * A rule of a feature for damage dice (Savage Attacker, Piercer): what rolls it changes and how.
+ * Written from the build; `on` is `weapon`, `unarmed`, `attack` (any attack roll), `spell` or `healing`.
+ */
+export const DamageRuleSchema = passthroughObject({
+  id: nestedId,
+  name: shortText,
+  on: text(z.enum(['weapon', 'unarmed', 'attack', 'spell', 'healing'])),
+  /** Only damage of this type (Piercer: piercing). */
+  damageType: optionalShortText,
+  twice: optionalFlag,
+  rerollOnes: optionalFlag,
+  rerollLowest: optionalFlag,
+  onesAsTwos: optionalFlag,
+  extraCritDice: optionalNumber,
+  /** Only on the first roll of the turn it fits (in a fight). */
+  oncePerTurn: optionalFlag,
 });
 
 export const LimbSchema = passthroughObject({
@@ -247,6 +331,29 @@ export const TraitSchema = passthroughObject({
   grant: optionalShortText,
 });
 
+/**
+ * Sheets saved before several ways of unarmoured armour class kept one: unarmored an ability and
+ * unarmoredNoShield whether a shield ends it. They read as a list of that one.
+ */
+function unarmoredAsList(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+  const { unarmored, unarmoredNoShield, ...rest } = value as Record<string, unknown>;
+  if (typeof unarmored !== 'string') return unarmoredNoShield === undefined ? value : rest;
+  return { ...rest, unarmored: [{ attribute: unarmored, noShield: unarmoredNoShield === true || undefined }] };
+}
+
+/** A class the hero casts spells of, as the sheet shows it. */
+export const SpellcasterSchema = passthroughObject({
+  /** The class id (wizard). */
+  id: nestedId,
+  name: shortText,
+  ability: shortText,
+  saveDC: numeric(int),
+  attackBonus: numeric(int),
+  /** How many of its spells (of 1st level and up) may be prepared; absent for a class that knows its spells. */
+  prepared: optionalNumber,
+});
+
 export const SpellSchema = passthroughObject({
   id: nestedId,
   name: shortText,
@@ -265,20 +372,33 @@ export const SpellSchema = passthroughObject({
   damageComponents: optionalList(DamageComponentSchema),
   /** Dice added per slot level above the spell's own when cast with a higher slot. */
   upcastDamage: optionalShortText,
+  /** Dice from a slot level on, when they grow in steps (Shadow Blade: 3d8 from 3rd, 4d8 from 5th). */
+  slotDamage: text(z.record(z.string().max(2), shortString).optional()),
+  /** Dealt with a hit, not on its own (a smite): cast after a hit of a melee weapon or an unarmed strike, or of any weapon. */
+  onHit: text(z.enum(['melee', 'weapon']).optional()),
   /** A cantrip whose dice count grows with character level (5, 11, 17). */
   cantripScaling: optionalFlag,
   /** The spellcasting modifier is added to the damage or healing. */
   addModifier: optionalFlag,
+  /** Added to the damage by features (Agonizing Blast, Potent Spellcasting). */
+  damageBonus: optionalNumber,
   /** A spell attack roll (`melee`/`ranged`) or the ability of the target's saving throw. */
   attackRoll: text(z.enum(['melee', 'ranged']).optional()),
   saveAttribute: optionalShortText,
   /** Casting it starts concentration, which a new concentration, a failed save or incapacitation ends. */
   concentration: optionalFlag,
+  /** Can be cast as a ritual: 10 minutes longer, without a spell slot. */
+  ritual: optionalFlag,
   prepared: flag(false),
   /** Granted by a feature (oath spells): always prepared and not counted against the limit. */
   alwaysPrepared: optionalFlag,
   /** Spellcasting ability of a spell granted outside the class list (species, feats). */
   ability: optionalShortText,
+  /**
+   * Id of the class whose spell it is (a hero of several casting classes): it is cast with that
+   * class's ability and DC and counts against that class's prepared spells (see casters).
+   */
+  caster: optionalShortText,
   resourceId: optionalNestedId,
   resourceCost: optionalNumber,
   iconName: optionalShortText,
@@ -310,10 +430,18 @@ export const ConcentrationSchema = passthroughObject({
   startedAt: numeric(num),
 });
 
+/** Death saving throws of a hero at 0 hit points: three successes steady them, three failures kill. */
+export const DeathSavesSchema = passthroughObject({
+  successes: numeric(int.min(0).max(3).default(0)),
+  failures: numeric(int.min(0).max(3).default(0)),
+});
+
 export const ActionCountersSchema =passthroughObject({
   action: numeric(int.min(0).default(0)),
   bonus: numeric(int.min(0).default(0)),
   reaction: numeric(int.min(0).default(0)),
+  /** Spent turns only: attacks made with the Attack action taken last, for Extra Attack. */
+  strikes: numeric(int.min(0).optional()),
 });
 
 const numberMap = (maxKeyLength: number) =>
@@ -327,6 +455,26 @@ const numberMap = (maxKeyLength: number) =>
 export const RULESETS = ['dnd2024', 'coc7'] as const;
 export type RulesetId = (typeof RULESETS)[number];
 
+/** A class of a D&D hero and the character levels the hero took in it. */
+export const DndClassSchema = passthroughObject({
+  class: shortText,
+  subclass: optionalShortText,
+  /**
+   * Character levels taken in this class, ascending: a fighter who took a wizard level third has
+   * the fighter's `[1, 2, 4]` and the wizard's `[3]`. Its class level is how many there are.
+   */
+  levels: text(z.array(numeric(int.min(1).max(20))).min(1).max(20)),
+});
+
+/** Every character level from 1 up belongs to exactly one class, each class's in ascending order. */
+const hasLevelsInOrder = (classes: { levels: number[] }[]): boolean => {
+  const all = classes.flatMap((c) => c.levels).sort((a, b) => a - b);
+  return (
+    all.every((level, i) => level === i + 1) &&
+    classes.every((c) => c.levels.every((level, i) => i === 0 || level > c.levels[i - 1]!))
+  );
+};
+
 /**
  * The preset choices a hero was built from (D&D 2024). The sheet's granted entries (abilities,
  * traits, resources, spells marked with `grant`) are derived from it and rebuilt on every level-up;
@@ -336,8 +484,18 @@ export const DndBuildSchema = passthroughObject({
   ruleset: z.literal('dnd2024'),
   species: shortTextOr(),
   background: shortTextOr(),
-  class: shortTextOr(),
-  subclass: optionalShortText,
+  /**
+   * Classes in the order they were taken; the first is the one the hero started in. Empty while
+   * a hero in the making has no class yet.
+   */
+  classes: text(
+    z
+      .array(DndClassSchema)
+      .max(20)
+      .default([])
+      .refine(hasLevelsInOrder, 'Уровни классов должны идти с 1-го подряд, каждый у одного класса')
+      .refine((classes) => new Set(classes.map((c) => c.class)).size === classes.length, 'Класс указан дважды'),
+  ),
   abilityMethod: text(z.enum(['pointBuy', 'roll', 'manual']).default('manual')),
   /** Scores before any increase. */
   baseAttributes: numberMap(64),
@@ -345,15 +503,16 @@ export const DndBuildSchema = passthroughObject({
   backgroundBonuses: numberMap(64),
   /** Picks by choice path (`class:fighter.fighting-style/style`). */
   choices: text(z.record(z.string().max(500), z.array(shortString).max(50)).default({})),
-  /** Hit points gained on each level after the first. */
+  /** Hit points gained on each character level after the first, with the die of the class that took it. */
   hitPoints: list(
     passthroughObject({
       level: numeric(int.min(2).max(20)),
       method: z.enum(['average', 'roll']),
       value: numeric(int.min(1).max(20)),
+      /** The class the die was thrown for; a level taken in another class does not count it. */
+      class: optionalShortText,
     }),
   ),
-  level: numeric(int.min(1).max(20).default(1)),
 });
 
 /**
@@ -373,7 +532,35 @@ export const CocBuildSchema = passthroughObject({
   age: numeric(int.min(15).max(99).default(25)),
 });
 
-export const BuildSchema = z.discriminatedUnion('ruleset', [DndBuildSchema, CocBuildSchema]);
+/**
+ * A D&D build saved before multiclassing named one `class`, its `subclass` and the `level`. It
+ * reads as that class taking every level, and the picks of its spellcasting move under the
+ * class's name, where they are now kept apart per class (`casting:spells-3/…` →
+ * `casting:wizard.spells-3/…`, `swap:known-spells@4/…` → `swap:bard.known-spells@4/…`).
+ */
+function singleClassBuild(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+  const build = value as Record<string, unknown>;
+  if (build.ruleset !== 'dnd2024' || 'classes' in build) return value;
+  const { class: classId, subclass, level, ...rest } = build;
+  if (typeof classId !== 'string' || classId === '') return { ...rest, classes: [] };
+  const total = Math.min(20, Math.max(1, Math.trunc(Number(level)) || 1));
+  const scoped = (key: string) =>
+    key
+      .replace(/^casting:spells-/, `casting:${classId}.spells-`)
+      .replace(/^swap:known-(spells|cantrips)@/, `swap:${classId}.known-$1@`);
+  const choices =
+    typeof rest.choices === 'object' && rest.choices !== null
+      ? Object.fromEntries(Object.entries(rest.choices).map(([key, picks]) => [scoped(key), picks]))
+      : rest.choices;
+  return {
+    ...rest,
+    choices,
+    classes: [{ class: classId, subclass, levels: Array.from({ length: total }, (_, i) => i + 1) }],
+  };
+}
+
+export const BuildSchema = z.preprocess(singleClassBuild, z.discriminatedUnion('ruleset', [DndBuildSchema, CocBuildSchema]));
 
 /** A percentile skill of an investigator; `id` is the content id (`spot-hidden`, `science:biology`). */
 export const CocSkillSchema = passthroughObject({
@@ -467,6 +654,15 @@ export const CharacterSchema = passthroughObject({
   level: numeric(int.min(1).max(100).default(1)),
   experience: numberOr(0),
   speed: numberOr(30),
+  /**
+   * Walking speed features add only while the gear allows it: `unarmored` without armour or a
+   * shield (Unarmored Movement), `noHeavyArmor` unless heavy armour is worn (Fast Movement).
+   */
+  speedBonus: text(passthroughObject({ unarmored: optionalNumber, noHeavyArmor: optionalNumber }).optional()),
+  /** Climbing, swimming and flying speed in feet; 0 means equal to the walking speed. */
+  movement: text(passthroughObject({ climb: optionalNumber, swim: optionalNumber, fly: optionalNumber }).optional()),
+  /** Darkvision range in feet. */
+  darkvision: optionalNumber,
   /** The armour class as older versions stored it; read once to derive `armorClassBonus.manual`. */
   armorClass: numberOr(10),
   /**
@@ -474,19 +670,48 @@ export const CharacterSchema = passthroughObject({
    * and the player's own modifier. `manual` is absent on sheets saved before it existed.
    */
   armorClassBonus: text(
-    passthroughObject({
-      always: numberOr(0),
-      armored: numberOr(0),
-      manual: optionalNumber,
-      /** Unarmored Defense: without armour the AC is 10 + Dexterity + this ability's modifier. */
-      unarmored: optionalShortText,
-      /** The Unarmored Defense is lost while holding a shield (Monk). */
-      unarmoredNoShield: optionalFlag,
-    }).optional(),
+    z.preprocess(
+      unarmoredAsList,
+      passthroughObject({
+        always: numberOr(0),
+        armored: numberOr(0),
+        manual: optionalNumber,
+        /**
+         * Ways to count the armour class without armour: 10 + Dexterity + an ability's modifier
+         * (Unarmored Defense, Draconic Resilience). Only one counts at a time, the hero's best; one
+         * marked 
+oShield is lost while holding a shield (a Monk's).
+         */
+        unarmored: optionalList(passthroughObject({ attribute: shortText, noShield: optionalFlag })),
+        /** In a beast's shape (Wild Shape) the armour class is the form's, whatever is worn. */
+        form: optionalNumber,
+        /** From features, unless heavy armour is worn (a Lycan's Resilient Hide). */
+        noHeavyArmor: optionalNumber,
+      }),
+    ).optional(),
   ),
   initiativeBonus: optionalNumber,
   /** Half the proficiency bonus on checks without proficiency, initiative included (Jack of All Trades). */
   halfProficiency: optionalFlag,
+  /** Ritual spells of the spellbook are cast as rituals without being prepared (a Wizard). */
+  ritualsFromBook: optionalFlag,
+  /** Attacks one Attack action makes (Extra Attack); absent means one. */
+  attacksPerAction: numeric(int.min(1).max(8).optional()),
+  /** The lowest natural d20 of a weapon attack that is a critical hit (19 for a Champion); absent means 20. */
+  critRange: numeric(int.min(2).max(20).optional()),
+  /**
+   * d20 rolls the hero always makes with advantage, from features: `initiative`, `deathSave`,
+   * `skill:<id>`, `save:<ability>`, `check:<ability>`, `attack:spell`, `attack:weapon`.
+   */
+  advantageOn: optionalList(shortString),
+  /** d20 rolls the hero always makes with disadvantage, from features (a Mutagen's side effect); keys as `advantageOn`. */
+  disadvantageOn: optionalList(shortString),
+  /** Added to saving throws of an ability, from features (Dark Augmentation). */
+  saveBonuses: text(z.record(z.string().max(32), num).optional()),
+  /** Dice added to d20 rolls of the keys (`advantageOn`'s), from features: a Rite Die to Strength saves. */
+  rollDice: optionalList(passthroughObject({ on: list(shortString), dice: shortText })),
+  /** Exhaustion level 0–6 (D&D 2024): −2 per level to every d20 test and −5 feet of speed; 6 is death. */
+  exhaustion: numeric(int.min(0).max(6).optional()),
 
   sanity: numberOr(50),
   /**
@@ -498,11 +723,21 @@ export const CharacterSchema = passthroughObject({
   maxHP: numberOr(10),
   tempHP: numberOr(0),
   maxHPBonus: numberOr(0),
+  /** Taken off the maximum hit points until a long rest (a Vital Sacrifice, a wight's drain). */
+  maxHPReduction: optionalNumber,
   limbs: list(LimbSchema),
   resistances: list(ResistanceSchema),
   conditions: list(shortString),
+  /** Rules of features for damage dice (Savage Attacker, Piercer), from the build. */
+  damageRules: optionalList(DamageRuleSchema),
+  /** Ids of the damage rules already used this turn (once a turn); a new turn clears them. */
+  turnUses: optionalList(shortString),
+  /** Ids of the abilities that are on now (Rage, Bladesong): their effects count until they end. */
+  activeFeatures: optionalList(shortString),
   /** The spell or ability the hero keeps concentration on; absent when not concentrating. */
   concentratingOn: text(ConcentrationSchema.optional()),
+  /** Kept while the hero lies at 0 hit points; absent otherwise. */
+  deathSaves: text(DeathSavesSchema.optional()),
 
   attributes: numberMap(64),
   attributeBonuses: numberMap(64),
@@ -520,6 +755,11 @@ export const CharacterSchema = passthroughObject({
   spells: list(SpellSchema),
   spellcastingDifficultyName: optionalShortText,
   spellcastingDifficultyValue: optionalNumber,
+  /**
+   * The classes the hero casts spells of, each with its own ability, save DC, attack bonus and, for
+   * a class that prepares spells, how many (written from the build; a spell names its in caster).
+   */
+  casters: optionalList(SpellcasterSchema),
   knownSchools: list(shortString),
   /** Maximum prepared spells, keyed by spell level ("0".."9"). */
   maxPreparedSpells: numberMap(8),
@@ -558,6 +798,7 @@ export type HistoryEntryType = z.infer<typeof HistoryEntryTypeSchema>;
 export type Recovery = z.infer<typeof RecoverySchema>;
 export type Setting = z.infer<typeof SettingSchema>;
 export type DamageComponent = z.infer<typeof DamageComponentSchema>;
+export type HitPointCost = z.infer<typeof HitPointCostSchema>;
 export type Skill = z.infer<typeof SkillSchema>;
 export type Resource = z.infer<typeof ResourceSchema>;
 export type Currency = z.infer<typeof CurrencySchema>;
@@ -568,13 +809,17 @@ export type Ability = z.infer<typeof AbilitySchema>;
 export type Limb = z.infer<typeof LimbSchema>;
 export type Trait = z.infer<typeof TraitSchema>;
 export type Spell = z.infer<typeof SpellSchema>;
+export type Spellcaster = z.infer<typeof SpellcasterSchema>;
 export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 export type Resistance = z.infer<typeof ResistanceSchema>;
 export type ActionCounters = z.infer<typeof ActionCountersSchema>;
 export type Concentration = z.infer<typeof ConcentrationSchema>;
+export type DamageRule = z.infer<typeof DamageRuleSchema>;
+export type DeathSaves = z.infer<typeof DeathSavesSchema>;
 export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
 export type Build = z.infer<typeof BuildSchema>;
 export type DndBuild = z.infer<typeof DndBuildSchema>;
+export type DndClass = z.infer<typeof DndClassSchema>;
 export type CocBuild = z.infer<typeof CocBuildSchema>;
 export type CocSheet = z.infer<typeof CocSheetSchema>;
 export type CocSkill = z.infer<typeof CocSkillSchema>;

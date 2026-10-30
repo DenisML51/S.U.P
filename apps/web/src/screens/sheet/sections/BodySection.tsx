@@ -8,8 +8,12 @@ import {
   changeLimbHP,
   getLimbInjuryLevel,
   getLimbType,
+  exhaustionLevel,
   limbArmorClassOf,
+  movementOf,
   setCondition,
+  setExhaustion,
+  speedBreakdown,
 } from '@itd/game-logic';
 import type { Character, Limb, ResistanceLevel } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
@@ -51,7 +55,7 @@ const LimbPlate: React.FC<{ limb: Limb; armorClass: number; onChange: (delta: nu
       as="article"
       interactive
       ornate={false}
-      className="flex flex-col gap-2 px-4 py-3"
+      className="flex flex-col gap-2 px-4 py-3 max-sm:px-3"
       onClick={onOpen}
       role="button"
       tabIndex={0}
@@ -69,7 +73,7 @@ const LimbPlate: React.FC<{ limb: Limb; armorClass: number; onChange: (delta: nu
         {level === 'destroyed' ? (
           <span className="ui-display flex-1 text-center text-xl leading-none text-danger">{injury.label}</span>
         ) : (
-          <span className="ui-display ui-numeric flex-1 text-center text-2xl leading-none">
+          <span className="ui-display ui-numeric flex-1 whitespace-nowrap text-center text-2xl leading-none">
             <span className={cx(limb.currentHP <= 0 && 'text-danger')}>{limb.currentHP}</span>
             <span className="text-base text-ink-faint"> / {limb.maxHP}</span>
           </span>
@@ -97,6 +101,27 @@ const LimbPlate: React.FC<{ limb: Limb; armorClass: number; onChange: (delta: nu
  * The body: wounds by limb, conditions, and what the hero is protected against. Everything that
  * answers "what is wrong with me right now" in one place.
  */
+/**
+ * Speed as the gear allows it now, with its terms when there are more than the base, then other
+ * movement and darkvision: "45 фт (основа 30 · без доспехов +15) · лазание 45 · тёмное зрение 60".
+ */
+const Movement: React.FC<{ character: Character }> = ({ character }) => {
+  const speed = speedBreakdown(character);
+  const more = [...movementOf(character).map((m) => m.text), ...(character.darkvision ? [`тёмное зрение ${character.darkvision}`] : [])];
+  return (
+    <div className="mb-3 flex items-baseline gap-3">
+      <span className="text-sm text-ink-faint">Скорость</span>
+      <p className="min-w-0 text-sm text-ink-faint">
+        <span className="ui-display ui-numeric text-2xl leading-none text-ink">{speed.total}</span> фт
+        {speed.parts.length > 1 && <> ({speed.parts.map((p) => p.text).join(' · ')})</>}
+        {more.map((text) => (
+          <React.Fragment key={text}> · {text}</React.Fragment>
+        ))}
+      </p>
+    </div>
+  );
+};
+
 export const BodySection: React.FC<{ character: Character }> = ({ character }) => {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const dialogs = useSheetDialogs();
@@ -106,20 +131,106 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
   const others = CONDITIONS.filter((c) => !active.has(c.id));
   const [marking, setMarking] = useState(false);
 
-  const changeLimb = (limb: Limb, delta: number) => updateCharacter((doc) => changeLimbHP(doc, limb.id, delta));
+  // Every wound or mending of a limb is in the log, and so can be undone.
+  const changeLimb = (limb: Limb, delta: number) =>
+    updateCharacter((doc) => changeLimbHP(doc, limb.id, delta), {
+      log: {
+        message: `${limb.name}: ${delta < 0 ? 'рана' : 'лечение'} ${delta > 0 ? '+' : '−'}${Math.abs(delta)} — ${Math.max(LIMB_LOST_HP, Math.min(limb.maxHP, limb.currentHP + delta))}/${limb.maxHP}`,
+        type: 'health',
+      },
+    });
 
   const toggleCondition = (id: string, name: string) => {
     const on = !active.has(id);
+    if (id === 'exhaustion') return changeExhaustion(on ? 1 : 0);
     updateCharacter((doc) => setCondition(doc, id, on), { log: { message: on ? `Состояние: ${name}` : `Состояние снято: ${name}`, type: 'other' } });
   };
 
+  const exhaustion = exhaustionLevel(character);
+  const changeExhaustion = (level: number) =>
+    updateCharacter((doc) => setExhaustion(doc, level), {
+      log: {
+        message: level >= 6 ? 'Истощение 6 — герой погибает' : level > 0 ? `Истощение: уровень ${level}` : 'Истощение снято',
+        type: 'other',
+      },
+    });
+
   return (
-    <div className="grid h-full grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-8">
-      <div className="flex min-h-0 min-w-0 flex-col gap-6">
+    <div className="flex justify-center">
+      {/* One page down the middle: what acts on the hero now first, then the wounds and the
+          protection under it. */}
+      <div className="flex w-full min-w-0 flex-col gap-8" style={{ maxWidth: 780 }}>
+        {/* What acts on the hero now, in full; the rest wait folded behind "Отметить состояние". */}
+        <Ledger
+          title="Состояния"
+          scroll={false}
+          aside={<span>{active.size > 0 ? `действует: ${active.size}` : 'нет'}</span>}
+          addLabel={marking ? 'Свернуть' : 'Отметить состояние'}
+          onAdd={() => setMarking(!marking)}
+        >
+          {current.map((condition) =>
+            condition.id === 'exhaustion' ? (
+              // Exhaustion has levels: the row steps them, down to gone.
+              <LedgerRow
+                key={condition.id}
+                title={`${condition.name}: ${exhaustion}`}
+                meta={`${condition.description} Сейчас: −${2 * exhaustion} к к20, −${5 * exhaustion} фт скорости.`}
+                wrapMeta
+                active
+                action={
+                  <span className="flex items-center gap-1">
+                    <IconButton label="Снять уровень истощения" size={26} onClick={() => changeExhaustion(exhaustion - 1)}>
+                      <IconMinus width={14} height={14} />
+                    </IconButton>
+                    <IconButton
+                      label="Добавить уровень истощения"
+                      size={26}
+                      disabled={exhaustion >= 6}
+                      onClick={() => changeExhaustion(exhaustion + 1)}
+                    >
+                      <IconPlus width={14} height={14} />
+                    </IconButton>
+                  </span>
+                }
+              />
+            ) : (
+              <LedgerRow
+                key={condition.id}
+                title={condition.name}
+                meta={condition.description}
+                wrapMeta
+                active
+                onOpen={() => toggleCondition(condition.id, condition.name)}
+                action={
+                  <IconButton label={`Снять: ${condition.name}`} size={26} onClick={() => toggleCondition(condition.id, condition.name)}>
+                    <IconClose width={14} height={14} />
+                  </IconButton>
+                }
+              />
+            ),
+          )}
+          {current.length === 0 && !marking && <li className="py-4 text-sm opacity-60">Ничто не мешает герою</li>}
+          {marking && (
+            <li className="flex flex-wrap gap-1.5 py-3">
+              {others.map((condition) => (
+                <button
+                  key={condition.id}
+                  type="button"
+                  className="ui-chip flex items-center gap-1.5"
+                  onClick={() => toggleCondition(condition.id, condition.name)}
+                >
+                  <CatalogIcon id={CONDITION_ICONS[condition.id] ?? 'terror'} size={14} />
+                  {condition.name}
+                </button>
+              ))}
+            </li>
+          )}
+        </Ledger>
+
         <section>
           <SectionTitle className="mb-4">Раны</SectionTitle>
           {character.limbs.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-2">
               {ordered(character.limbs).map((limb) => (
                 <LimbPlate
                   key={limb.id}
@@ -150,10 +261,11 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
             <span className="text-sm text-ink-faint">Класс брони</span>
             <ArmorClassSum breakdown={armorClass} large className="min-w-0" />
           </div>
+          <Movement character={character} />
           {character.resistances.length === 0 ? (
             <p className="text-sm text-ink-faint">Сопротивлений и уязвимостей нет: урон проходит полностью.</p>
           ) : (
-            <ul className="grid grid-cols-2 gap-x-8 text-sm">
+            <ul className="grid grid-cols-2 gap-x-8 text-sm max-sm:grid-cols-1">
               {character.resistances.map((r) => (
                 <li key={r.id} className="flex justify-between gap-3 border-b border-line/50 py-1.5">
                   <span className="truncate text-ink">{r.type}</span>
@@ -166,48 +278,6 @@ export const BodySection: React.FC<{ character: Character }> = ({ character }) =
           )}
         </section>
       </div>
-
-      {/* What acts on the hero now, in full; the rest wait folded behind "Отметить состояние". */}
-      <Ledger
-        className="max-h-full self-start"
-        title="Состояния"
-        aside={<span>{active.size > 0 ? `действует: ${active.size}` : 'нет'}</span>}
-        addLabel={marking ? 'Свернуть' : 'Отметить состояние'}
-        onAdd={() => setMarking(!marking)}
-      >
-        {current.map((condition) => (
-          <LedgerRow
-            key={condition.id}
-            title={condition.name}
-            meta={condition.description}
-            wrapMeta
-            active
-            onOpen={() => toggleCondition(condition.id, condition.name)}
-            action={
-              <IconButton label={`Снять: ${condition.name}`} size={26} onClick={() => toggleCondition(condition.id, condition.name)}>
-                <IconClose width={14} height={14} />
-              </IconButton>
-            }
-          />
-        ))}
-        {current.length === 0 && !marking && <li className="py-4 text-sm opacity-60">Ничто не мешает герою</li>}
-        {marking && (
-          <li className="flex flex-wrap gap-1.5 py-3">
-            {others.map((condition) => (
-              <button
-                key={condition.id}
-                type="button"
-                className="ui-chip flex items-center gap-1.5"
-                title={condition.description}
-                onClick={() => toggleCondition(condition.id, condition.name)}
-              >
-                <CatalogIcon id={CONDITION_ICONS[condition.id] ?? 'terror'} size={14} />
-                {condition.name}
-              </button>
-            ))}
-          </li>
-        )}
-      </Ledger>
     </div>
   );
 };

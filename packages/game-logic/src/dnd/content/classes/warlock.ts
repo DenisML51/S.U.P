@@ -1,6 +1,6 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
-import { PACT_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
+import { PACT_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading, multiclassProficiencies } from './shared';
 
 /** Колдун of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -52,6 +52,8 @@ const mysticArcanum = (spellLevel: number): FeatureDef => {
         id: 'spell',
         label: `Арканум: заклинание ${spellLevel} круга`,
         count: 1,
+        // Its own pool: on a later level the arcanum may be given up for another of its level.
+        pool: `arcanum-${spellLevel}`,
         spellAbility: 'charisma',
         spellResource: resource,
         options: { from: 'spells', lists: ['warlock'], minLevel: spellLevel, maxLevel: spellLevel },
@@ -544,14 +546,21 @@ export const WARLOCK: ClassDef = {
     { type: 'proficiency', category: 'armor', value: 'Лёгкие доспехи' },
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
   ],
+  multiclass: {
+    requires: [['charisma']],
+    proficiencies: multiclassProficiencies('lightArmor'),
+  },
   subclassLevel: 3,
   subclasses: [archfey, celestial, fiend, greatOldOne, undead, vestige],
   startingEquipment: WARLOCK_KITS,
-  replaceable: [{ pool: INVOCATIONS_POOL, label: 'Замена воззвания' }],
+  replaceable: [
+    { pool: INVOCATIONS_POOL, label: 'Замена воззвания' },
+    ...[6, 7, 8, 9].map((level) => ({ pool: `arcanum-${level}`, label: `Замена арканума ${level} круга` })),
+  ],
   spellcasting: {
     ability: 'charisma',
     list: 'warlock',
-    slots: [],
+    progression: 'pact',
     pact: PACT_SLOTS,
     mode: 'known',
     cantrips: byClassLevel({ 1: 2, 4: 3, 10: 4 }),

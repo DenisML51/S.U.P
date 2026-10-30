@@ -8,6 +8,7 @@ import {
   type RulesetId,
   type Setting,
 } from './character';
+import { randomId } from './id';
 
 /** What the character list needs; derived from the document, never stored separately. */
 export interface CharacterPreview {
@@ -20,6 +21,7 @@ export interface CharacterPreview {
   subclass: string;
   level: number;
   currentHP: number;
+  /** The whole maximum, the sheet's bonus included (as game-logic's `totalMaxHP`). */
   maxHP: number;
   images?: CharacterImages;
   /** Legacy embedded portrait. */
@@ -52,7 +54,7 @@ export const toCharacterPreview = (character: Character): CharacterPreview => ({
   subclass: character.subclass,
   level: character.level,
   currentHP: character.currentHP,
-  maxHP: character.maxHP,
+  maxHP: character.maxHP + character.maxHPBonus,
   images: character.images,
   avatar: character.avatar,
   resistances: character.resistances,
@@ -60,7 +62,7 @@ export const toCharacterPreview = (character: Character): CharacterPreview => ({
   investigator: investigatorOf(character),
 });
 
-export const newCharacterId = (): string => crypto.randomUUID();
+export const newCharacterId = (): string => randomId();
 
 /** Gives a draft its identity and validates it, producing a storable document. */
 export const createCharacterDocument = (draft: CharacterDraft, id: string = newCharacterId()): Character =>

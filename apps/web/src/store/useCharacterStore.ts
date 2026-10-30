@@ -16,7 +16,8 @@ import {
   appendHistory,
   changeResource,
   createEntityId,
-  hitDiceOf,
+  hitDicePools,
+  hitDiceToSpend,
   loadRuleSystem,
   longRest,
   performAction as performGameAction,
@@ -196,6 +197,18 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
   };
 
   /**
+   * A feature turned on or off (Rage, Bladesong) changes the numbers its effects give: a preset hero
+   * is rebuilt the moment the set of what is on changes, whatever edit changed it (using the ability,
+   * falling unconscious, a long rest).
+   */
+  const withActiveFeatures = (before: Character, after: Character): Character => {
+    const was = before.activeFeatures ?? [];
+    const now = after.activeFeatures ?? [];
+    const same = was.length === now.length && was.every((id) => now.includes(id));
+    return same || !after.build ? after : rulesOf(after.build).rebuild(after, after.build);
+  };
+
+  /**
    * A preset hero picks up improvements of the preset content (damage that grows, saves) the moment
    * it is opened; the rebuild keeps uses, damage taken and preparation.
    */
@@ -317,7 +330,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       const now = Date.now();
       const patch = typeof updater === 'function' ? null : changedFields(current, updater);
       const change = (doc: Character): Character => {
-        const next = patch ? { ...doc, ...patch } : (updater as (previous: Character) => Character)(doc);
+        const next = withActiveFeatures(doc, patch ? { ...doc, ...patch } : (updater as (previous: Character) => Character)(doc));
         return log ? appendHistory(next, log, now, logId) : next;
       };
 
@@ -383,10 +396,11 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       const current = get().character;
       if (!current) return null;
       // Dice are rolled once here: the edit runs again on the stored copy and must heal the same.
-      const hitDie = hitDiceOf(current)?.hitDie;
       const rolls =
-        kind === 'short' && options.method !== 'average' && hitDie
-          ? Array.from({ length: Math.max(0, options.hitDice ?? 0) }, () => rollDie(hitDie))
+        kind === 'short' && options.method !== 'average'
+          ? Object.fromEntries(
+              hitDicePools(current).map((pool) => [pool.id, Array.from({ length: hitDiceToSpend(pool, options) }, () => rollDie(pool.hitDie!))]),
+            )
           : undefined;
       const apply = (doc: Character): RestResult => (kind === 'short' ? shortRest(doc, { ...options, rolls }) : longRest(doc));
 
@@ -400,14 +414,26 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       if (!current) return null;
       // A reaction answers someone else's turn: it is the one thing a hero may do out of their own.
       if (!isReaction(current, request) && refuseOffTurn()) return null;
-      const result = performGameAction(current, request);
+      // What it rolls (the hit points a Crimson Rite costs) is rolled once: the edit of the stored
+      // document replays the dice the message was made with.
+      const rolled: number[] = [];
+      const record = () => {
+        const value = Math.random();
+        rolled.push(value);
+        return value;
+      };
+      const replay = () => {
+        let next = 0;
+        return () => rolled[next++] ?? Math.random();
+      };
+      const result = performGameAction(current, { ...request, random: request.random ?? record });
       if (!result.ok) {
         toast.error(result.message);
         return result;
       }
       get().updateCharacter(
         (doc) => {
-          const applied = performGameAction(doc, request);
+          const applied = performGameAction(doc, { ...request, random: request.random ?? replay() });
           return applied.ok ? applied.character : doc;
         },
         { log: { message: result.message, type: 'other' }, quiet: options?.quiet },
@@ -468,14 +494,11 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       if (await repository.has(character.id)) character = { ...character, id: newCharacterId() };
 
       await repository.create(character);
-      set({
-        character,
-        charactersList: [...get().charactersList, toCharacterPreview(character)],
-        viewMode: 'tabs',
-        undoable: [],
-      });
-      rememberOpen(character.id);
+      set({ charactersList: [...get().charactersList, toCharacterPreview(character)] });
       notify(`Персонаж ${character.name} импортирован`);
+      // Opened the way any hero is: its rules system loaded first, then one change of screen. Setting
+      // it straight away showed the sheet before its rules and left the screen dark mid-transition.
+      await get().loadCharacter(character.id);
       return character.id;
     },
 

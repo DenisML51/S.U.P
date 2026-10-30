@@ -1,9 +1,9 @@
-import React from 'react';
-import { formatModifier, isUsable } from '@itd/game-logic';
+import React, { useState } from 'react';
+import { formatModifier, isActiveFeature, isUsable } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { Ledger, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
-import { Button } from '../../../ui/primitives';
+import { Button, Tabs } from '../../../ui/primitives';
 import { IconDice } from '../../../ui/icons';
 import { damageParts, describeDamage } from '../parts/damage';
 import { SectionNotes } from '../parts/EditableText';
@@ -17,20 +17,35 @@ import { plainText } from '../../../ui/text';
 const resourceName = (character: Character, id?: string) =>
   character.resources.find((r) => r.id === id)?.name;
 
-/** Attacks and abilities: what the hero does on their turn, one click from the roll. */
+type ActionsTab = 'attacks' | 'abilities';
+
+/**
+ * Attacks and abilities: what the hero does on their turn, one click from the roll. Each is a tab
+ * of its own, as the circles of the spellbook are: one page in the middle, giving way to the card.
+ */
 export const ActionsSection: React.FC<{ character: Character }> = ({ character }) => {
   const saveText = useSheetText();
   const { attack, activate } = useActs();
   const dialogs = useSheetDialogs();
+  const [tab, setTab] = useState<ActionsTab>('attacks');
 
   const passive = character.abilities.filter((a) => !isUsable(a));
   const active = character.abilities.filter(isUsable);
 
   return (
     <div className="flex h-full gap-8">
-      <SectionList maxWidth={1180}>
-        <div className="ui-section__columns grid min-h-0 flex-1 grid-cols-2 gap-8">
-          <div className="flex min-h-0 min-w-0 flex-col gap-5">
+      <SectionList>
+        <Tabs
+          label="Действия"
+          value={tab}
+          onChange={setTab}
+          items={[
+            { id: 'attacks', label: 'Атаки', count: character.attacks.length },
+            { id: 'abilities', label: 'Способности', count: character.abilities.length },
+          ]}
+        />
+        {tab === 'attacks' && (
+          <>
             <Ledger title="Атаки" addLabel="Добавить атаку" onAdd={() => dialogs.open({ kind: 'attack' })}>
               {character.attacks.map((entry) => {
                 const parts = damageParts(entry);
@@ -67,10 +82,11 @@ export const ActionsSection: React.FC<{ character: Character }> = ({ character }
               })}
               {character.attacks.length === 0 && <li className="py-4 text-sm opacity-60">Атак пока нет</li>}
             </Ledger>
-            <SectionNotes value={character.attacksNotes} onSave={saveText('attacksNotes')} />
-          </div>
-
-          <div className="flex min-h-0 min-w-0 flex-col gap-5">
+            <SectionNotes value={character.attacksNotes} onSave={saveText('attacksNotes')} className="mt-8" />
+          </>
+        )}
+        {tab === 'abilities' && (
+          <>
             <Ledger
               title="Способности"
               addLabel="Добавить способность"
@@ -91,9 +107,10 @@ export const ActionsSection: React.FC<{ character: Character }> = ({ character }
                       <MetaLine
                         parts={[
                           entry.actionType === 'passive' ? 'без действия' : ACTION_TYPES[entry.actionType].short,
-                          entry.resourceId && (
+                          // A conversion (Font of Magic) has no price of its own; a chosen cost shows its range.
+                          entry.resourceId && !entry.convert && (
                             <>
-                              <MetaValue>{entry.resourceCost ?? 1}</MetaValue>{' '}
+                              <MetaValue>{entry.resourceCostMax ? `${entry.resourceCost ?? 1}–${entry.resourceCostMax}` : (entry.resourceCost ?? 1)}</MetaValue>{' '}
                               {resourceName(character, entry.resourceId) ?? 'ресурс'}
                             </>
                           ),
@@ -106,7 +123,7 @@ export const ActionsSection: React.FC<{ character: Character }> = ({ character }
                     onOpen={() => dialogs.openEntry('ability', entry.id)}
                     action={
                       <Button size="row" variant="secondary" onClick={() => activate(entry)}>
-                        Использовать
+                        {isActiveFeature(character, entry.id) ? 'Прекратить' : 'Использовать'}
                       </Button>
                     }
                   />
@@ -126,11 +143,11 @@ export const ActionsSection: React.FC<{ character: Character }> = ({ character }
                 <li className="py-4 text-sm opacity-60">Способностей пока нет</li>
               )}
             </Ledger>
-            <SectionNotes value={character.abilitiesNotes} onSave={saveText('abilitiesNotes')} />
-          </div>
-        </div>
+            <SectionNotes value={character.abilitiesNotes} onSave={saveText('abilitiesNotes')} className="mt-8" />
+          </>
+        )}
       </SectionList>
-      <SectionAside />
+      <SectionAside fit />
     </div>
   );
 };

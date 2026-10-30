@@ -13,7 +13,6 @@ import { SyncBadge } from '../select/SyncBadge';
 import { Wordmark } from '../select/Wordmark';
 import { SettingBackdrop } from '../../ui/SettingBackdrop';
 import { SettingScope } from '../../ui/theme/SettingScope';
-import { ClosedTableDialog } from '../party/ClosedTableDialog';
 import { InviteDialog } from '../party/InviteDialog';
 import { readLastHero } from './lastHero';
 import { rulebookLabel } from '../../systems';
@@ -33,19 +32,16 @@ export const useHomeItems = () => {
 
 // ------------------------------------------------------------------------------------------------
 
-/** Opening a table from home: a player's closed table offers to take the hero back instead. */
+/** Opening a table from home; between sessions a player finds it as a lobby (seats, heroes, chronicle). */
 export const usePartyEntry = () => {
   const go = useNavStore((s) => s.go);
-  const [waiting, setWaiting] = useState<PartyListItemDto | null>(null);
   const [invite, setInvite] = useState<{ code: string; preview: InvitePreviewDto } | null>(null);
   const openTable = (partyId: string) => go({ screen: 'party', partyId });
 
-  const enter = (party: PartyListItemDto) =>
-    party.role === 'player' && !party.inSession ? setWaiting(party) : openTable(party.id);
+  const enter = (party: PartyListItemDto) => openTable(party.id);
 
   const dialogs = (
     <>
-      <ClosedTableDialog party={waiting} onClose={() => setWaiting(null)} />
       <InviteDialog
         invite={invite}
         onClose={() => setInvite(null)}
@@ -117,14 +113,7 @@ export const InviteCodeField: React.FC<{
 
 // ------------------------------------------------------------------------------------------------
 
-export const plural = (count: number, one: string, few: string, many: string) => {
-  const tens = count % 100;
-  const ones = count % 10;
-  if (tens >= 11 && tens <= 14) return many;
-  if (ones === 1) return one;
-  if (ones >= 2 && ones <= 4) return few;
-  return many;
-};
+export { plural } from '../../i18n';
 
 export const partyState = (party: PartyListItemDto) =>
   party.inCombat ? 'Идёт бой' : party.inSession ? 'Сессия идёт' : 'Ждёт сессии';
@@ -218,9 +207,12 @@ export const HeroVitals: React.FC<{
 };
 
 /** The service name and the account, the same over every layout of the page. */
-export const HomeHeader: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => (
+export const HomeHeader: React.FC<{ onOpenSettings: () => void; extra?: React.ReactNode }> = ({
+  onOpenSettings,
+  extra,
+}) => (
   <motion.header
-    className="relative z-20 flex items-center justify-between px-24 pt-10"
+    className="relative z-20 flex items-center justify-between gap-4 px-24 pt-10 max-lg:px-8 max-lg:pt-8 max-sm:px-4 max-sm:pt-3"
     initial={{ opacity: 0, y: -12 }}
     animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE, delay: 0.1 } }}
     exit={{ opacity: 0, y: -12, transition: { duration: 0.25 } }}
@@ -228,6 +220,7 @@ export const HomeHeader: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSet
     <Wordmark />
     <div className="flex items-center gap-3">
       <SyncBadge />
+      {extra}
       <IconButton label="Настройки" onClick={onOpenSettings}>
         <IconSettings width={22} height={22} />
       </IconButton>

@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { armorClassOf, startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, createDndHero, levelPlan, setPicks } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -47,15 +47,15 @@ describe('bard', () => {
 
   it('asks for cantrips, known spells, three skills and three instruments on level 1', () => {
     const b = build();
-    const plan = levelPlan(b, 1);
+    const plan = levelPlan(atLevel(b, 1), 1);
     const cantrips = plan.choices.find((c) => c.choice.id === 'cantrips')!;
     const spells = plan.choices.find((c) => c.choice.id === 'spells')!;
     expect(cantrips.count).toBe(2);
     expect(spells.count).toBe(4);
-    const options = choiceOptions(b, 1, spells);
+    const options = choiceOptions(atLevel(b, 1), 1, spells);
     expect(options.some((o) => o.id === 'healing-word')).toBe(true);
     expect(options.every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
-    expect(choiceOptions(b, 1, cantrips).every((o) => o.meta?.startsWith('Заговор'))).toBe(true);
+    expect(choiceOptions(atLevel(b, 1), 1, cantrips).every((o) => o.meta?.startsWith('Заговор'))).toBe(true);
     expect(plan.choices.find((c) => c.key === 'class:bard.skills/skills')?.count).toBe(3);
     expect(plan.choices.find((c) => c.key === 'class:bard.instruments/tools')?.count).toBe(3);
   });
@@ -74,8 +74,8 @@ describe('bard', () => {
   it('gets Jack of All Trades and Expertise on level 2 and 9', () => {
     const c = apply(build({ level: 2 }));
     expect(c.halfProficiency).toBe(true);
-    expect(levelPlan(build(), 2).choices.find((c) => c.choice.id === 'expertise')?.count).toBe(2);
-    expect(levelPlan(build(), 9).choices.find((c) => c.choice.id === 'expertise')?.count).toBe(2);
+    expect(levelPlan(atLevel(build(), 2), 2).choices.find((c) => c.choice.id === 'expertise')?.count).toBe(2);
+    expect(levelPlan(atLevel(build(), 9), 9).choices.find((c) => c.choice.id === 'expertise')?.count).toBe(2);
   });
 
   it('follows the full caster slots and the prepared spells column', () => {
@@ -84,33 +84,33 @@ describe('bard', () => {
     const twenty = apply(build({ level: 20 }));
     expect(twenty.resources.find((r) => r.id === 'slot-9')?.max).toBe(1);
     expect(twenty.resources.find((r) => r.id === 'slot-7')?.max).toBe(2);
-    const spellsAt = (level: number) => levelPlan(b, level).choices.find((c) => c.choice.id === 'spells')?.count ?? 0;
-    const cantripsAt = (level: number) => levelPlan(b, level).choices.find((c) => c.choice.id === 'cantrips')?.count ?? 0;
+    const spellsAt = (level: number) => levelPlan(atLevel(b, level), level).choices.find((c) => c.choice.id === 'spells')?.count ?? 0;
+    const cantripsAt = (level: number) => levelPlan(atLevel(b, level), level).choices.find((c) => c.choice.id === 'cantrips')?.count ?? 0;
     expect([1, 2, 3, 4, 5, 9, 12, 13, 20].map(spellsAt)).toEqual([4, 1, 1, 1, 2, 2, 0, 1, 1]);
     expect([1, 2, 4, 10, 11].map(cantripsAt)).toEqual([2, 0, 1, 1, 0]);
   });
 
   it('opens other lists with Magical Secrets on level 10', () => {
     const b = build();
-    const before = levelPlan(b, 9).choices.find((c) => c.choice.id === 'spells')!;
-    expect(choiceOptions(b, 9, before).some((o) => o.id === 'cone-of-cold')).toBe(false);
-    const secrets = levelPlan(b, 10).choices.find((c) => c.choice.id === 'spells')!;
-    const options = choiceOptions(b, 10, secrets);
+    const before = levelPlan(atLevel(b, 9), 9).choices.find((c) => c.choice.id === 'spells')!;
+    expect(choiceOptions(atLevel(b, 9), 9, before).some((o) => o.id === 'cone-of-cold')).toBe(false);
+    const secrets = levelPlan(atLevel(b, 10), 10).choices.find((c) => c.choice.id === 'spells')!;
+    const options = choiceOptions(atLevel(b, 10), 10, secrets);
     expect(options.some((o) => o.id === 'cone-of-cold')).toBe(true);
     expect(options.some((o) => o.id === 'mass-cure-wounds')).toBe(true);
   });
 
   it('lets a known spell be replaced on a later level', () => {
     let b = build();
-    const spells = levelPlan(b, 1).choices.find((c) => c.choice.id === 'spells')!;
-    const picks = choiceOptions(b, 1, spells).slice(0, 4).map((o) => o.id);
+    const spells = levelPlan(atLevel(b, 1), 1).choices.find((c) => c.choice.id === 'spells')!;
+    const picks = choiceOptions(atLevel(b, 1), 1, spells).slice(0, 4).map((o) => o.id);
     b = setPicks(b, spells.key, picks);
-    const forget = levelPlan(b, 2).choices.find((c) => c.choice.options.from === 'forget' && c.choice.label.startsWith('Замена заклинания'))!;
+    const forget = levelPlan(atLevel(b, 2), 2).choices.find((c) => c.choice.options.from === 'forget' && c.choice.label.startsWith('Замена заклинания'))!;
     expect(forget).toBeDefined();
-    b = setPicks({ ...b, level: 2 }, forget.key, [picks[0]!]);
-    const learn = levelPlan(b, 2).choices.find((c) => c.key === forget.key.replace(/forget$/, 'learn'))!;
+    b = setPicks(atLevel(b, 2), forget.key, [picks[0]!]);
+    const learn = levelPlan(atLevel(b, 2), 2).choices.find((c) => c.key === forget.key.replace(/forget$/, 'learn'))!;
     expect(learn.count).toBe(1);
-    const options = choiceOptions(b, 2, learn).filter((o) => !o.disabled).map((o) => o.id);
+    const options = choiceOptions(atLevel(b, 2), 2, learn).filter((o) => !o.disabled).map((o) => o.id);
     const replacement = options.find((id) => !picks.includes(id))!;
     b = setPicks(b, learn.key, [replacement]);
     const known = apply(b).spells.filter((s) => s.level > 0).map((s) => s.id);
@@ -121,8 +121,8 @@ describe('bard', () => {
   });
 
   it('gets an epic boon on level 19 and Words of Creation on level 20', () => {
-    expect(levelPlan(build(), 19).choices.some((c) => c.key.startsWith('class:bard.epic-boon'))).toBe(true);
-    expect(levelPlan(build(), 20).features.some((f) => f.feature.id === 'bard.words-of-creation')).toBe(true);
+    expect(levelPlan(atLevel(build(), 19), 19).choices.some((c) => c.key.startsWith('class:bard.epic-boon'))).toBe(true);
+    expect(levelPlan(atLevel(build(), 20), 20).features.some((f) => f.feature.id === 'bard.words-of-creation')).toBe(true);
   });
 });
 
@@ -141,8 +141,8 @@ describe('bard colleges', () => {
     expect(armorClassOf(hero)).toBe(10 + 2 + 3);
     const strike = apply(b).attacks.find((a) => a.id === 'g-attack-dance.unarmed-strike')!;
     expect(strike).toMatchObject({ damage: '1d6+2', damageType: 'Дробящий', attribute: 'dexterity', hitBonus: 2 + 2 });
-    expect(apply({ ...b, level: 10 }).attacks.find((a) => a.id === 'g-attack-dance.unarmed-strike')?.damage).toBe('1d10+2');
-    expect(apply({ ...b, level: 6 }).abilities.some((a) => a.name === 'Вдохновляющие движения' && a.actionType === 'reaction')).toBe(true);
+    expect(apply(atLevel(b, 10)).attacks.find((a) => a.id === 'g-attack-dance.unarmed-strike')?.damage).toBe('1d10+2');
+    expect(apply(atLevel(b, 6)).abilities.some((a) => a.name === 'Вдохновляющие движения' && a.actionType === 'reaction')).toBe(true);
   });
 
   it('College of Glamour: always-prepared spells and once-a-rest features', () => {
@@ -155,17 +155,17 @@ describe('bard colleges', () => {
 
   it('College of Lore: three skills and two Magical Discoveries from other lists', () => {
     const b = build({ subclass: 'college-of-lore', level: 6 });
-    expect(levelPlan(b, 3).choices.find((c) => c.key === 'subclass:lore.bonus-proficiencies/skills')?.count).toBe(3);
-    const discoveries = levelPlan(b, 6).choices.find((c) => c.key === 'subclass:lore.magical-discoveries/spells')!;
+    expect(levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === 'subclass:lore.bonus-proficiencies/skills')?.count).toBe(3);
+    const discoveries = levelPlan(atLevel(b, 6), 6).choices.find((c) => c.key === 'subclass:lore.magical-discoveries/spells')!;
     expect(discoveries.count).toBe(2);
-    const options = choiceOptions(b, 6, discoveries);
+    const options = choiceOptions(atLevel(b, 6), 6, discoveries);
     expect(options.some((o) => o.id === 'spirit-guardians')).toBe(true);
     expect(options.some((o) => o.id === 'guidance')).toBe(true);
     expect(options.every((o) => !o.meta?.startsWith('4 круг'))).toBe(true);
     const c = apply(setPicks(b, discoveries.key, ['spirit-guardians', 'guidance']));
     expect(c.spells.find((s) => s.id === 'spell-spirit-guardians')?.alwaysPrepared).toBe(true);
     // They can be swapped on a later level.
-    const swap = levelPlan(setPicks({ ...b, level: 7 }, discoveries.key, ['spirit-guardians', 'guidance']), 7).choices;
+    const swap = levelPlan(atLevel(setPicks(atLevel(b, 7), discoveries.key, ['spirit-guardians', 'guidance']), 7), 7).choices;
     expect(swap.some((c) => c.choice.label.startsWith('Замена магического открытия'))).toBe(true);
   });
 

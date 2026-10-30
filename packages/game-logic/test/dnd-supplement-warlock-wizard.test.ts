@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { startingSkills } from '../src';
 import { DND, type Effect, applyBuild, choiceOptions, levelPlan, setPicks, weaponProficient } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const warlockBuild = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const warlockBuild = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'sage',
@@ -19,7 +19,7 @@ const warlockBuild = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ...patch,
 });
 
-const wizardBuild = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const wizardBuild = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ...warlockBuild(),
   class: 'wizard',
   // Intelligence 17 (+3).
@@ -84,8 +84,8 @@ describe('supplement warlock and wizard subclasses', () => {
 
   it('vestige patron: picks a cleric domain whose spells follow the warlock level', () => {
     let b = warlockBuild({ level: 5, subclass: 'vestige-patron' });
-    const domain = levelPlan(b, 3).choices.find((c) => c.key === 'subclass:vestige.vestige-spells/domain')!;
-    expect(choiceOptions(b, 3, domain).map((o) => o.id)).toEqual(['war', 'life', 'trickery', 'light']);
+    const domain = levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === 'subclass:vestige.vestige-spells/domain')!;
+    expect(choiceOptions(atLevel(b, 3), 3, domain).map((o) => o.id)).toEqual(['war', 'life', 'trickery', 'light']);
     b = setPicks(b, domain.key, ['war']);
     const c = apply(b);
     expect(['guiding-bolt', 'magic-weapon', 'shield-of-faith', 'spiritual-weapon', 'crusaders-mantle', 'spirit-guardians'].every((s) => prepared(c, s))).toBe(true);
@@ -108,8 +108,8 @@ describe('supplement warlock and wizard subclasses', () => {
     expect(weaponProficient(weapon('greatsword'), profs)).toBe(false);
     expect(weaponProficient(weapon('lance'), profs)).toBe(false);
     expect(weaponProficient(weapon('longbow'), profs)).toBe(false);
-    const skill = levelPlan(b, 3).choices.find((k) => k.key === 'subclass:bladesinger.training-in-war-and-song/skill')!;
-    expect(choiceOptions(b, 3, skill).map((o) => o.id).sort()).toEqual(['acrobatics', 'athletics', 'performance', 'persuasion']);
+    const skill = levelPlan(atLevel(b, 3), 3).choices.find((k) => k.key === 'subclass:bladesinger.training-in-war-and-song/skill')!;
+    expect(choiceOptions(atLevel(b, 3), 3, skill).map((o) => o.id).sort()).toEqual(['acrobatics', 'athletics', 'performance', 'persuasion']);
     b = setPicks(b, skill.key, ['acrobatics']);
     expect(apply(b).skills.find((s) => s.id === 'acrobatics')?.proficient).toBe(true);
     expect(ability(apply(wizardBuild({ level: 14, subclass: 'bladesinger' })), 'Песнь победы')?.actionType).toBe('bonus');
@@ -123,13 +123,13 @@ describe('supplement warlock and wizard subclasses', () => {
   ] as const) {
     it(`${id}: Savant picks of its school at 3 and on new spell levels`, () => {
       const b = wizardBuild({ level: 17, subclass: id });
-      const at3 = levelPlan(b, 3).choices.find((c) => c.key === `subclass:${id}.savant/spells`)!;
+      const at3 = levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === `subclass:${id}.savant/spells`)!;
       expect(at3.count).toBe(2);
-      const options = choiceOptions(b, 3, at3);
+      const options = choiceOptions(atLevel(b, 3), 3, at3);
       expect(options.length).toBeGreaterThan(0);
       expect(options.every((o) => school(o.id) === schoolName)).toBe(true);
       for (const level of [5, 7, 9, 11, 13, 15, 17]) {
-        expect(levelPlan(b, level).choices.find((c) => c.key === `subclass:${id}.savant-${level}/spells`)?.count).toBe(1);
+        expect(levelPlan(atLevel(b, level), level).choices.find((c) => c.key === `subclass:${id}.savant-${level}/spells`)?.count).toBe(1);
       }
     });
   }
@@ -148,8 +148,8 @@ describe('supplement warlock and wizard subclasses', () => {
 
   it('enchanter: Beguiling Speaker skill with an Intelligence bonus and Mesmerizing Presence', () => {
     let b = wizardBuild({ level: 10, subclass: 'enchanter' });
-    const speaker = levelPlan(b, 3).choices.find((c) => c.key === 'subclass:enchanter.beguiling-speaker/skill')!;
-    expect(choiceOptions(b, 3, speaker).map((o) => o.id)).toEqual(['intimidation', 'deception', 'persuasion']);
+    const speaker = levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === 'subclass:enchanter.beguiling-speaker/skill')!;
+    expect(choiceOptions(atLevel(b, 3), 3, speaker).map((o) => o.id)).toEqual(['intimidation', 'deception', 'persuasion']);
     b = setPicks(b, speaker.key, ['persuasion']);
     const c = apply(b);
     expect(c.skills.find((s) => s.id === 'persuasion')).toMatchObject({ proficient: true, bonus: 3 });

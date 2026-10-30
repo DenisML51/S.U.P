@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Prose } from './Prose';
 import { TextArea, cx } from './primitives';
 import { IconMinus, IconNext, IconPlus } from './icons';
+import { t } from '../i18n';
 
 // ------------------------------------------------------------------------------------------------
 // Segmented: one of a few options, all visible at once (action type, item type).
@@ -340,7 +341,7 @@ export const Suggest: React.FC<{
   const [open, setOpen] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const query = value.trim().toLowerCase();
-  const matches = suggestions.filter((s) => s.toLowerCase().includes(query) && s.toLowerCase() !== query);
+  const matches = suggestions.filter((s) => t(s).toLowerCase().includes(query) && t(s).toLowerCase() !== query);
   const pick = (index: number) => {
     onChange(matches[index]!);
     setOpen(false);

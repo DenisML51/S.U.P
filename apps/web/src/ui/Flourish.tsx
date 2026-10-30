@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import type { Setting } from '@itd/schema';
 import { SETTING_ART } from './art';
 
-/** How long the longest flourish runs, in ms; the overlay is removed after it. */
+/** How long a flourish runs, in ms, unless its setting says otherwise; the overlay is removed after it. */
 const DURATION = 1600;
 
 /** Loose particles every flourish gets; a setting styles them (sparks, embers, broken blocks) or hides them. */
@@ -17,10 +17,11 @@ const PARTICLES = 28;
  * gone in about a second.
  */
 export const Flourish: React.FC<{ setting: Setting; x: number; y: number; onEnd: () => void }> = ({ setting, x, y, onEnd }) => {
+  const { Flourish: Art, flourishMs = DURATION } = SETTING_ART[setting];
   useEffect(() => {
-    const timer = window.setTimeout(onEnd, DURATION);
+    const timer = window.setTimeout(onEnd, flourishMs);
     return () => window.clearTimeout(timer);
-  }, [onEnd]);
+  }, [onEnd, flourishMs]);
   const particles = useMemo(
     () =>
       Array.from({ length: PARTICLES }, () => ({
@@ -31,7 +32,6 @@ export const Flourish: React.FC<{ setting: Setting; x: number; y: number; onEnd:
       })),
     [],
   );
-  const { Flourish: Art } = SETTING_ART[setting];
   return createPortal(
     <div
       className={`ui-flourish ui-flourish--${setting}`}

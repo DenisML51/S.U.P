@@ -148,21 +148,29 @@ export const SkillsSection: React.FC<{ character: Character }> = ({ character })
     <div className="flex h-full flex-col gap-6">
       <section>
         <SectionTitle className="mb-4">Характеристики</SectionTitle>
-        <div className="grid grid-cols-6 gap-3">
+        <div className="grid grid-cols-6 gap-3 max-sm:grid-cols-3">
           {ATTRIBUTES_LIST.map((attribute) => (
             <AttributePlate
               key={attribute.id}
               character={character}
               attribute={attribute}
               onEdit={() => dialogs.open({ kind: 'attribute', id: attribute.id })}
-              onCheck={() => roll.check(`Проверка: ${attribute.name}`, attributeModifier(character, attribute.id))}
-              onSave={() => roll.check(`Спасбросок: ${attribute.name}`, savingThrowModifier(character, attribute.id))}
+              onCheck={() =>
+                roll.check(`Проверка: ${attribute.name}`, attributeModifier(character, attribute.id), {
+                  test: { kind: 'check', attribute: attribute.id },
+                })
+              }
+              onSave={() =>
+                roll.check(`Спасбросок: ${attribute.name}`, savingThrowModifier(character, attribute.id), {
+                  test: { kind: 'save', attribute: attribute.id },
+                })
+              }
             />
           ))}
         </div>
       </section>
 
-      <section className="min-h-0">
+      <section className="shrink-0">
         <SectionTitle
           className="mb-3"
           action={
@@ -175,15 +183,19 @@ export const SkillsSection: React.FC<{ character: Character }> = ({ character })
         >
           Навыки
         </SectionTitle>
-        <div className="grid grid-cols-3 gap-x-8">
+        <div className="grid grid-cols-3 gap-x-8 max-xl:block max-xl:columns-2 max-sm:columns-1">
           {columns.map((column, index) => (
-            <ul key={index} className="divide-y divide-line/40">
+            <ul key={index} className="divide-y divide-line/40 max-xl:contents">
               {column.map((skill) => (
-                <li key={skill.id} className="flex items-center gap-2 py-1.5">
+                <li key={skill.id} className="flex items-center gap-2 py-1.5 max-xl:break-inside-avoid max-xl:!border-t-0 max-xl:border-b max-xl:border-line/40 max-lg:py-2">
                   <ProficiencyMark skill={skill} onCycle={() => cycleProficiency(skill)} />
                   <button
                     type="button"
-                    onClick={() => roll.check(skill.name, skillModifier(character, skill.id))}
+                    onClick={() =>
+                      roll.check(skill.name, skillModifier(character, skill.id), {
+                        test: { kind: 'check', attribute: skill.attribute, skill: skill.id },
+                      })
+                    }
                     className="min-w-0 flex-1 truncate text-left text-[15px] text-ink transition-colors hover:text-frame-bright"
                     title={`Бросить: ${skill.name}`}
                   >

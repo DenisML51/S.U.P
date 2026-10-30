@@ -1,69 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { TableDie } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useNavStore } from '../../store/useNavStore';
 import { usePartyStore } from '../../store/usePartyStore';
 import { useTableRollStore, type ShownRoll } from '../../store/useTableRollStore';
 import { RollingDie } from '../../ui/RollingDie';
 import { cx } from '../../ui/primitives';
+import { OUTCOME_LABEL, checkOutcome, outcomeSucceeded } from '../../ui/checkOutcome';
 
-/** Between the landings of two dice of one throw, in ms. */
-const STAGGER_MS = 120;
+/** Between the landings of two dice of one throw, in ms (the table's logs wait for them too). */
+export const TABLE_DIE_STAGGER_MS = 120;
+
+type Place = 'portrait' | 'screen';
 
 /** The edge of a die: as large as the place allows, smaller as the handful grows. */
-const dieSize = (count: number, place: 'portrait' | 'screen') =>
+const dieSize = (count: number, place: Place) =>
   place === 'screen'
-    ? count <= 2
-      ? '13rem'
-      : count <= 4
-        ? '9.5rem'
-        : count <= 8
-          ? '7rem'
-          : '5rem'
-    : count <= 1
-      ? '6.5rem'
-      : count <= 2
-        ? '4.75rem'
-        : count <= 4
-          ? '3.4rem'
-          : count <= 9
-            ? '2.4rem'
-            : '1.7rem';
-
-/** The dice of one throw, only the dice with their numbers, landing one after another. */
-const Dice: React.FC<{ dice: TableDie[]; place: 'portrait' | 'screen' }> = ({ dice, place }) => {
-  const size = dieSize(dice.length, place);
-  return (
-    <span
-      className={cx(
-        'flex flex-wrap items-center justify-center',
-        place === 'screen' ? 'max-w-[min(56rem,90vw)] gap-x-8 gap-y-5' : 'max-w-full gap-1.5 p-2',
-      )}
-    >
-      {dice.map((die, index) => (
-        <RollingDie
-          key={index}
-          sides={die.sides}
-          value={die.label ?? die.value}
-          dropped={die.dropped}
-          size={size}
-          delay={index * STAGGER_MS}
-          phase={index * 1.3 + die.sides * 0.1}
-          tone={
-            die.label
-              ? undefined
-              : die.value === die.sides && die.sides > 2
-                ? 'success'
-                : die.value === 1
-                  ? 'danger'
-                  : undefined
-          }
-        />
-      ))}
-    </span>
-  );
-};
+    ? count <= 2 ? '13rem' : count <= 4 ? '9.5rem' : count <= 8 ? '7rem' : '5rem'
+    : count <= 1 ? '6.5rem' : count <= 2 ? '4.75rem' : count <= 4 ? '3.4rem' : count <= 9 ? '2.4rem' : '1.7rem';
 
 /** The setting's own haze behind dice laid over a portrait: the whole card, so they never melt into the art. */
 const CARD_HAZE = 'bg-[rgb(var(--c-bg-deep)/0.62)] backdrop-blur-[6px]';
@@ -83,51 +37,78 @@ const ScreenHaze: React.FC = () => (
   />
 );
 
-const Thrown: React.FC<{ roll: ShownRoll | undefined; place: 'portrait' | 'screen'; className?: string }> = ({
-  roll,
-  place,
-  className,
-}) => (
-  <AnimatePresence>
-    {roll && (
-      <motion.span
-        // A new throw replaces the last one and tumbles again.
-        key={roll.id}
-        className={cx(
-          'pointer-events-none flex items-center justify-center text-frame-bright',
-          place === 'portrait' && CARD_HAZE,
-          className,
-        )}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1, transition: { duration: 0.18 } }}
-        exit={{ opacity: 0, transition: { duration: 0.45 } }}
-        aria-hidden
-      >
-        <span className="relative flex items-center justify-center">
-          {place === 'screen' && <ScreenHaze />}
-          <span className="relative">
-            <Dice dice={roll.dice} place={place} />
-          </span>
+/**
+ * A throw laid over its place: the dice only, with their numbers, landing one after another. Over a
+ * portrait the outcome follows under them once they are down, when the throw had a target.
+ */
+const Thrown: React.FC<{ roll: ShownRoll; place: Place; className?: string }> = ({ roll, place, className }) => {
+  const [landed, setLanded] = useState(false);
+  const outcome = place === 'portrait' && roll.check ? checkOutcome(roll.check) : null;
+  const size = dieSize(roll.dice.length, place);
+  return (
+    <motion.span
+      className={cx('pointer-events-none flex flex-col items-center justify-center text-frame-bright', place === 'portrait' && CARD_HAZE, className)}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, transition: { duration: 0.18 } }}
+      exit={{ opacity: 0, transition: { duration: 0.45 } }}
+      aria-hidden
+    >
+      <span className="relative flex items-center justify-center">
+        {place === 'screen' && <ScreenHaze />}
+        <span
+          className={cx(
+            'relative flex flex-wrap items-center justify-center',
+            place === 'screen' ? 'max-w-[min(56rem,90vw)] gap-x-8 gap-y-5' : 'max-w-full gap-1.5 p-2',
+          )}
+        >
+          {roll.dice.map((die, index) => (
+            <RollingDie
+              key={index}
+              sides={die.sides}
+              value={die.label ?? die.value}
+              dropped={die.dropped}
+              size={size}
+              delay={index * TABLE_DIE_STAGGER_MS}
+              phase={index * 1.3 + die.sides * 0.1}
+              tone={die.label ? undefined : die.value === die.sides && die.sides > 2 ? 'success' : die.value === 1 ? 'danger' : undefined}
+              onLanded={index === roll.dice.length - 1 ? () => setLanded(true) : undefined}
+            />
+          ))}
         </span>
-      </motion.span>
-    )}
-  </AnimatePresence>
-);
+      </span>
+      {outcome && (
+        <motion.span
+          className={cx('ui-check-stamp ui-check-stamp--small', outcomeSucceeded(outcome) ? 'text-success' : 'text-danger')}
+          initial={{ opacity: 0, scale: 1.3 }}
+          animate={landed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.3 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 20 }}
+        >
+          {roll.check?.total} · {OUTCOME_LABEL[outcome]}
+        </motion.span>
+      )}
+    </motion.span>
+  );
+};
 
-/** A hero's latest throw over its portrait, for a few seconds. */
+/** A hero's latest throw over its portrait, for a few seconds; a new throw replaces it and tumbles again. */
 export const HeroRoll: React.FC<{ partyId: string; heroId: string; className?: string }> = ({
   partyId,
   heroId,
   className,
 }) => {
   const roll = useTableRollStore((s) => s.heroes[partyId]?.[heroId]);
-  return <Thrown roll={roll} place="portrait" className={cx('absolute inset-0 z-10', className)} />;
+  return (
+    <AnimatePresence>
+      {roll && <Thrown key={roll.id} roll={roll} place="portrait" className={cx('absolute inset-0 z-10', className)} />}
+    </AnimatePresence>
+  );
 };
 
 /**
  * The master's own throw over the whole screen of whoever it was meant for, while they are at that
- * party's table: on the table itself, or in a hero while the table fights. Heroes' throws never
- * come here: they land on the squad's portraits, and in the fight's chat.
+ * party's table: on the table itself, or in a hero while the table fights — the dice alone on a soft
+ * haze. Heroes' throws never come here (those the master called for too): they land on the squad's
+ * portraits, and in the fight's chat; the check plate is the called player's own.
  */
 export const TableRollOverlay: React.FC = () => {
   const place = useNavStore((s) => s.place);
@@ -135,6 +116,10 @@ export const TableRollOverlay: React.FC = () => {
   const roll = useTableRollStore((s) => (partyId ? s.centre[partyId] : undefined));
   const heroOpen = useCharacterStore((s) => s.character !== null);
   const fighting = usePartyStore((s) => (partyId ? !!s.parties[partyId]?.combat : false));
-  const shown = roll && roll.kind === 'master' && (!heroOpen || fighting) ? roll : undefined;
-  return <Thrown roll={shown} place="screen" className="fixed inset-0 z-[70]" />;
+  const shown = roll && (!heroOpen || fighting) ? roll : undefined;
+  return (
+    <AnimatePresence>
+      {shown && <Thrown key={shown.id} roll={shown} place="screen" className="fixed inset-0 z-[70]" />}
+    </AnimatePresence>
+  );
 };

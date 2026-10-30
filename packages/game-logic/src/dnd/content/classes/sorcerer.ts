@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
 import { SORCERY_POINTS } from '../metamagic';
-import { FULL_CASTER_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
+import { abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
 
 /** Чародей of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -82,7 +82,7 @@ const aberrant: SubclassDef = {
         description:
           'Бонусным действием вы тратите 1 или больше очков чародейства и на 10 минут меняете тело; за каждое очко выберите одно:\n\n- **Водная адаптация:** скорость плавания вдвое больше скорости, дыхание под водой.\n- **Блестящий полёт:** скорость полёта равна скорости, можно парить.\n- **Видеть невидимое:** вы видите невидимых существ в пределах 60 футов, кроме тех, что за полным укрытием.\n- **Червеобразное перемещение:** вы протискиваетесь в щель шириной 1 дюйм и тратите 5 футов перемещения, чтобы освободиться от немагических пут или захвата.',
         action: 'bonus',
-        usesResource: { id: SORCERY_POINTS, cost: 1 },
+        usesResource: { id: SORCERY_POINTS, cost: 1, max: 4 },
         iconName: 'tentacle-strike',
       },
     ],
@@ -162,7 +162,10 @@ const draconic: SubclassDef = {
                 id: e.id,
                 name: e.name,
                 description: `Сопротивление: ${e.name.toLowerCase()}; +модификатор Харизмы к одному броску урона заклинаний этого типа.`,
-                effects: [{ type: 'resistance' as const, damageType: e.damageType }],
+                effects: [
+                  { type: 'resistance' as const, damageType: e.damageType },
+                  { type: 'spellDamage' as const, list: 'sorcerer' as const, damageType: e.damageType, amount: (ctx: BuildContext) => ctx.modifier('charisma') },
+                ],
               })),
             },
           },
@@ -175,6 +178,7 @@ const draconic: SubclassDef = {
         name: 'Крылья дракона',
         description: 'Бонусным действием у вас вырастают драконьи крылья на 1 час (или пока вы их не уберёте, без действия): скорость полёта 60 футов.',
         action: 'bonus',
+        stance: { effects: [{ type: 'movement', mode: 'fly', feet: 60 }] },
         iconName: 'angel-wings',
         points: 3,
       }),
@@ -229,7 +233,7 @@ const clockwork: SubclassDef = {
         description:
           'Действием «Магия» вы тратите от 1 до 5 очков чародейства и окружаете себя или видимое существо в пределах 30 футов защитой из стольких же к8. Получая урон, существо может бросить любое число этих костей и уменьшить урон на сумму. Защита держится до вашего продолжительного отдыха или до нового использования умения.',
         action: 'action',
-        usesResource: { id: SORCERY_POINTS, cost: 1 },
+        usesResource: { id: SORCERY_POINTS, cost: 1, max: 5, perPoint: '1d8' },
         iconName: 'energy-shield',
       },
     ],
@@ -434,6 +438,7 @@ const shadow: SubclassDef = {
         description:
           '**Глаза тьмы.** Тёмное зрение на 120 футов и слепое зрение на 10 футов. Вы видите сквозь Темноту, созданную вашими заклинаниями.\n\n**Сила могилы.** Если ваши хиты опускаются до 0, но вы не убиты мгновенно, вы можете совершить спасбросок Харизмы (СЛ 5 + полученный урон). При успехе хиты становятся равны модификатору Харизмы + уровень чародея. После успеха умение недоступно до продолжительного отдыха.',
         action: 'passive',
+        effects: [{ type: 'darkvision', range: 120 }],
         resource: { id: 'shadow.strength-of-the-grave', name: 'Сила могилы', max: 1, recharge: 'long', iconName: 'death-skull' },
         iconName: 'evil-eyes',
       },
@@ -495,13 +500,17 @@ export const SORCERER: ClassDef = {
   saves: ['constitution', 'charisma'],
   skillChoices: { count: 2, list: ['arcana', 'deception', 'insight', 'intimidation', 'persuasion', 'religion'] },
   proficiencies: [{ type: 'proficiency', category: 'weapon', value: 'Простое оружие' }],
+  multiclass: {
+    requires: [['charisma']],
+    proficiencies: [],
+  },
   subclassLevel: 3,
   subclasses: [aberrant, clockwork, draconic, wildMagic, spellfire, shadow],
   startingEquipment: SORCERER_KITS,
   spellcasting: {
     ability: 'charisma',
     list: 'sorcerer',
-    slots: FULL_CASTER_SLOTS,
+    progression: 'full',
     mode: 'known',
     prepared: byTable([2, 4, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22]),
     cantrips: byClassLevel({ 1: 4, 4: 5, 10: 6 }),
@@ -523,6 +532,7 @@ export const SORCERER: ClassDef = {
         description: 'Бонусным действием вы на 1 минуту высвобождаете врождённую магию: СЛ спасбросков ваших заклинаний чародея +1, а броски атаки ими совершаются с преимуществом. Дважды за продолжительный отдых.',
         action: 'bonus',
         resource: { id: 'sorcerer.innate-sorcery', name: 'Врождённое чародейство', max: 2, recharge: 'long', iconName: 'glowing-hands' },
+        stance: { effects: [{ type: 'spellSaveDC', amount: 1 }, { type: 'advantage', on: ['attack:spell'] }] },
         iconName: 'glowing-hands',
         color: '#b36ad9',
       },
@@ -536,9 +546,31 @@ export const SORCERER: ClassDef = {
           '- **Ячейка → очки** (без действия): потратьте ячейку и получите очки, равные её кругу.',
           '- **Очки → ячейка** (бонусное действие): 1 круг — 2 очка (с 2-го уровня), 2 круг — 3 очка (с 3-го), 3 круг — 5 очков (с 5-го), 4 круг — 6 очков (с 7-го), 5 круг — 7 очков (с 9-го). Ячейки выше 5-го круга создать нельзя; созданные ячейки пропадают после продолжительного отдыха.',
         ].join('\n'),
-        action: 'bonus',
+        // The pool itself; the two ways of turning it are their own abilities below.
+        action: 'passive',
         resource: { id: SORCERY_POINTS, name: 'Очки чародейства', max: (ctx) => ctx.classLevel, recharge: 'long', iconName: 'energise', color: '#b36ad9' },
         iconName: 'energise',
+      },
+      {
+        id: 'sorcerer.font-slot-to-points',
+        name: 'Ячейка → очки чародейства',
+        description: 'Без действия вы тратите ячейку заклинаний и получаете очки чародейства, равные её кругу (не больше максимума).',
+        action: 'passive',
+        usesResource: { id: SORCERY_POINTS },
+        convert: 'slotToPoints',
+        iconName: 'energise',
+        color: '#b36ad9',
+      },
+      {
+        id: 'sorcerer.font-points-to-slot',
+        name: 'Очки чародейства → ячейка',
+        description:
+          'Бонусным действием вы превращаете очки чародейства в ячейку: 1 круг — 2 очка, 2 — 3, 3 — 5, 4 — 6, 5 — 7. Ячейка не выше 5-го круга и только того круга, ячейки которого у вас уже есть; созданная исчезает после продолжительного отдыха.',
+        action: 'bonus',
+        usesResource: { id: SORCERY_POINTS },
+        convert: 'pointsToSlot',
+        iconName: 'magic-swirl',
+        color: '#b36ad9',
       },
       {
         id: 'sorcerer.metamagic',

@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, levelPlan, setPicks } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'sage',
@@ -35,27 +35,27 @@ describe('wizard', () => {
     expect(c.traits.find((t) => t.id === 'g-proficiencies')?.description).toContain('Простое оружие');
     expect(resource(c, 'wizard.arcane-recovery')).toMatchObject({ max: 1, recovery: 'long' });
     expect(resource(c, 'slot-1')?.max).toBe(2);
-    expect(c.maxPreparedSpells.total).toBe(4);
+    expect(c.casters?.[0]?.prepared).toBe(4);
     expect(c.spellcastingDifficultyValue).toBe(8 + 2 + 3);
     expect(DND.classes.find((k) => k.id === 'wizard')?.startingEquipment[0]?.items.some((i) => i.ref === 'spellbook')).toBe(true);
   });
 
   it('writes six spells into the book on level 1 and two a level after, with three cantrips', () => {
     let b = build();
-    const plan = levelPlan(b, 1);
+    const plan = levelPlan(atLevel(b, 1), 1);
     const book = plan.choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spellbook')!;
     expect(book.count).toBe(6);
     expect(plan.choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(3);
     b = setPicks(b, book.key, ['magic-missile', 'shield']);
     const c = apply(b);
     expect(c.spells.find((s) => s.id === 'spell-magic-missile')?.alwaysPrepared).toBeFalsy();
-    expect(levelPlan(b, 2).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spellbook')?.count).toBe(2);
-    expect(levelPlan(b, 4).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
-    expect(levelPlan(b, 10).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
+    expect(levelPlan(atLevel(b, 2), 2).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spellbook')?.count).toBe(2);
+    expect(levelPlan(atLevel(b, 4), 4).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
+    expect(levelPlan(atLevel(b, 10), 10).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
   });
 
   it('prepares spells by the class table', () => {
-    const prepared = (level: number) => apply(build({ level })).maxPreparedSpells.total;
+    const prepared = (level: number) => apply(build({ level })).casters?.[0]?.prepared;
     expect([1, 5, 12, 13, 15, 16, 20].map(prepared)).toEqual([4, 9, 16, 17, 19, 21, 25]);
     const slots = apply(build({ level: 20 })).resources.filter((r) => r.id.startsWith('slot-')).map((r) => r.max);
     expect(slots).toEqual([4, 3, 3, 3, 3, 2, 2, 1, 1]);
@@ -63,10 +63,10 @@ describe('wizard', () => {
 
   it('offers Scholar expertise only among its skills', () => {
     let b = build({ level: 2 });
-    const skills = levelPlan(b, 1).choices.find((c) => c.key === 'class:wizard.skills/skills')!;
+    const skills = levelPlan(atLevel(b, 1), 1).choices.find((c) => c.key === 'class:wizard.skills/skills')!;
     b = setPicks(b, skills.key, ['arcana', 'insight']);
-    const expertise = levelPlan(b, 2).choices.find((c) => c.key === 'class:wizard.scholar/expertise')!;
-    const ids = choiceOptions(b, 2, expertise).map((o) => o.id);
+    const expertise = levelPlan(atLevel(b, 2), 2).choices.find((c) => c.key === 'class:wizard.scholar/expertise')!;
+    const ids = choiceOptions(atLevel(b, 2), 2, expertise).map((o) => o.id);
     expect(ids).toContain('arcana');
     expect(ids).toContain('history'); // the Sage background gives History
     expect(ids).not.toContain('insight');
@@ -74,19 +74,19 @@ describe('wizard', () => {
 
   it('adds Savant spells of the school to the book on level 3 and on every new spell level', () => {
     let b = build({ level: 3, subclass: 'evoker' });
-    const savant = levelPlan(b, 3).choices.find((c) => c.key === 'subclass:evoker.savant/spells')!;
+    const savant = levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === 'subclass:evoker.savant/spells')!;
     expect(savant.count).toBe(2);
-    const options = choiceOptions(b, 3, savant);
+    const options = choiceOptions(atLevel(b, 3), 3, savant);
     expect(options.length).toBeGreaterThan(0);
     expect(options.every((o) => school(o.id) === 'Воплощение')).toBe(true);
     expect(options.every((o) => o.meta?.startsWith('1 круг') || o.meta?.startsWith('2 круг'))).toBe(true);
     b = setPicks(b, savant.key, ['magic-missile']);
     expect(apply(b).spells.find((s) => s.id === 'spell-magic-missile')?.alwaysPrepared).toBeFalsy();
-    const fifth = levelPlan(b, 5).choices.find((c) => c.key === 'subclass:evoker.savant-5/spells')!;
+    const fifth = levelPlan(atLevel(b, 5), 5).choices.find((c) => c.key === 'subclass:evoker.savant-5/spells')!;
     expect(fifth.count).toBe(1);
-    expect(choiceOptions({ ...b, level: 5 }, 5, fifth).some((o) => o.id === 'fireball')).toBe(true);
-    expect(levelPlan(b, 6).choices.some((c) => c.key.startsWith('subclass:evoker.savant'))).toBe(false);
-    expect(levelPlan(b, 17).choices.find((c) => c.key === 'subclass:evoker.savant-17/spells')).toBeDefined();
+    expect(choiceOptions(atLevel(b, 5), 5, fifth).some((o) => o.id === 'fireball')).toBe(true);
+    expect(levelPlan(atLevel(b, 6), 6).choices.some((c) => c.key.startsWith('subclass:evoker.savant'))).toBe(false);
+    expect(levelPlan(atLevel(b, 17), 17).choices.find((c) => c.key === 'subclass:evoker.savant-17/spells')).toBeDefined();
   });
 
   it('computes the school resources', () => {
@@ -105,11 +105,11 @@ describe('wizard', () => {
 
   it('picks Spell Mastery and Signature Spells as always prepared', () => {
     let b = build({ level: 20 });
-    const first = levelPlan(b, 18).choices.find((c) => c.key === 'class:wizard.spell-mastery/first')!;
-    const second = levelPlan(b, 18).choices.find((c) => c.key === 'class:wizard.spell-mastery/second')!;
-    expect(choiceOptions(b, 18, first).every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
-    expect(choiceOptions(b, 18, second).every((o) => o.meta?.startsWith('2 круг'))).toBe(true);
-    const signature = levelPlan(b, 20).choices.find((c) => c.key === 'class:wizard.signature-spells/spells')!;
+    const first = levelPlan(atLevel(b, 18), 18).choices.find((c) => c.key === 'class:wizard.spell-mastery/first')!;
+    const second = levelPlan(atLevel(b, 18), 18).choices.find((c) => c.key === 'class:wizard.spell-mastery/second')!;
+    expect(choiceOptions(atLevel(b, 18), 18, first).every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
+    expect(choiceOptions(atLevel(b, 18), 18, second).every((o) => o.meta?.startsWith('2 круг'))).toBe(true);
+    const signature = levelPlan(atLevel(b, 20), 20).choices.find((c) => c.key === 'class:wizard.signature-spells/spells')!;
     expect(signature.count).toBe(2);
     b = setPicks(b, signature.key, ['fireball', 'counterspell']);
     const c = apply(b);

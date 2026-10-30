@@ -39,6 +39,12 @@ export interface CharacterSummary {
   /** Initiative modifier (D&D), or DEX for an investigator (Call of Cthulhu acts in DEX order). */
   initiative: number;
   conditions: string[];
+  /** The spell or ability the hero keeps concentration on. */
+  concentration?: string;
+  /** Death saving throws while the hero lies at 0 hit points. */
+  deathSaves?: { successes: number; failures: number };
+  /** Exhaustion level (D&D 2024), when there is any. */
+  exhaustion?: number;
   /** An investigator's numbers (Call of Cthulhu). */
   coc?: InvestigatorVitals;
 }
@@ -80,7 +86,11 @@ export const formatInviteCode = (code: string): string => `${code.slice(0, 4)}-$
 // Requests
 // ---------------------------------------------------------------------------------------------
 
-const PartyNameSchema = z.string().trim().min(1, 'Назовите партию').max(80, 'Название не длиннее 80 символов');
+const PartyNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Назовите партию')
+  .max(80, 'Название не длиннее 80 символов');
 const DescriptionSchema = z.string().trim().max(2000, 'Описание не длиннее 2000 символов');
 /** The party's chronicle: the long story in Markdown, read by everyone at the table. */
 const LoreSchema = z.string().trim().max(50_000, 'Летопись не длиннее 50 000 символов');
@@ -112,6 +122,8 @@ export const UpdatePartyRequestSchema = z
     name: PartyNameSchema,
     description: DescriptionSchema,
     lore: LoreSchema,
+    /** The master's own notes: only the master sends and gets them. */
+    masterNotes: z.string().trim().max(50_000, 'Заметки не длиннее 50 000 символов'),
     setting: SettingSchema,
     rules: PartyRulesSchema.nullable(),
     coverAssetId: AssetIdSchema.nullable(),
@@ -148,6 +160,14 @@ export const NpcAttackSchema = z.object({
   damage: z.string().trim().max(30, 'Урон не длиннее 30 символов').default(''),
 });
 export type NpcAttack = z.infer<typeof NpcAttackSchema>;
+
+/** One attack of a D&D NPC: its bonus to hit and its damage (`1d6 + 2 колющий`). */
+export const NpcDndAttackSchema = z.object({
+  name: z.string().trim().min(1, 'Назовите атаку').max(60),
+  hitBonus: z.number().int().min(-20).max(40),
+  damage: z.string().trim().max(60, 'Урон не длиннее 60 символов').default(''),
+});
+export type NpcDndAttack = z.infer<typeof NpcDndAttackSchema>;
 
 /** Dice like `1D4`, `+1D6`, `−1`, `0/1D6`: digits, D, +, −, / and spaces. */
 const diceText = (max: number) =>
@@ -196,13 +216,27 @@ const NpcFieldsSchema = z.object({
   initiativeBonus: z.number().int().min(-20).max(200),
   disposition: NpcDispositionSchema,
   coc: NpcCocSchema.nullable(),
+  /** Condition ids (`poisoned`, `prone`), as on a hero's sheet. */
+  conditions: z.array(z.string().trim().min(1).max(40)).max(20),
+  attacks: z.array(NpcDndAttackSchema).max(8),
+  notes: z.string().trim().max(5_000, 'Заметки не длиннее 5 000 символов'),
 });
 
-/** A quick NPC; it starts unhurt unless current hit points are given. */
+/** Most copies of one NPC made at once ("гоблин ×6"). */
+export const NPC_COPIES_MAX = 20;
+
+/**
+ * A quick NPC; it starts unhurt unless current hit points are given. `count` makes that many
+ * copies, each its own NPC with its own hit points, numbered after the name ("Гоблин 1", "Гоблин 2").
+ */
 export const CreateNpcRequestSchema = NpcFieldsSchema.partial({ currentHP: true }).extend({
   portraitAssetId: AssetIdSchema.nullable().default(null),
   disposition: NpcDispositionSchema.default('hostile'),
   coc: NpcCocSchema.nullable().default(null),
+  conditions: NpcFieldsSchema.shape.conditions.default([]),
+  attacks: NpcFieldsSchema.shape.attacks.default([]),
+  notes: NpcFieldsSchema.shape.notes.default(''),
+  count: z.number().int().min(1).max(NPC_COPIES_MAX).default(1),
 });
 export type CreateNpcRequest = z.input<typeof CreateNpcRequestSchema>;
 
@@ -210,7 +244,10 @@ export const UpdateNpcRequestSchema = NpcFieldsSchema.partial();
 export type UpdateNpcRequest = z.input<typeof UpdateNpcRequestSchema>;
 
 const ParticipantsSchema = z.object({
-  heroIds: z.array(z.uuid()).max(PARTY_LIMITS.members * PARTY_LIMITS.masterHeroes).default([]),
+  heroIds: z
+    .array(z.uuid())
+    .max(PARTY_LIMITS.members * PARTY_LIMITS.masterHeroes)
+    .default([]),
   npcIds: z.array(z.uuid()).max(PARTY_LIMITS.npcs).default([]),
 });
 
@@ -273,6 +310,9 @@ export interface HeroVitalsDto {
   armorClass: number;
   initiative: number;
   conditions: string[];
+  concentration?: string;
+  deathSaves?: { successes: number; failures: number };
+  exhaustion?: number;
   coc?: InvestigatorVitals;
 }
 
@@ -310,6 +350,10 @@ export interface PartyNpcDto {
   disposition: NpcDisposition;
   /** Call of Cthulhu numbers; `null` for other NPCs. */
   coc: NpcCocStats | null;
+  conditions: string[];
+  /** D&D attacks (an investigator's foes keep theirs in `coc`). */
+  attacks: NpcDndAttack[];
+  notes: string;
 }
 
 export interface CombatantDto {
@@ -326,8 +370,18 @@ export interface CombatantDto {
   initiative: number | null;
   /** The viewer acts for it: rolls its initiative, ends its turn. */
   controlled: boolean;
-  /** Hit points and armour when the viewer may see them. */
-  vitals: { currentHP: number; maxHP: number; tempHP: number; armorClass: number } | null;
+  /** Hit points, armour and what weighs on it, when the viewer may see them. */
+  vitals: CombatantVitalsDto | null;
+}
+
+export interface CombatantVitalsDto {
+  currentHP: number;
+  maxHP: number;
+  tempHP: number;
+  armorClass: number;
+  conditions: string[];
+  concentration?: string;
+  deathSaves?: { successes: number; failures: number };
 }
 
 export type CombatPhase = 'initiative' | 'active';
@@ -364,6 +418,8 @@ export interface PartyDto {
   heroes: PartyHeroDto[];
   /** `null` for players. */
   npcs: PartyNpcDto[] | null;
+  /** The master's own notes; `null` for players. */
+  masterNotes: string | null;
   combat: CombatDto | null;
   /** When the running session began; `null` between sessions (only the master sees the table then). */
   sessionStartedAt: string | null;
@@ -413,18 +469,78 @@ export type SendMessageRequest = z.input<typeof SendMessageRequestSchema>;
 // ---------------------------------------------------------------------------------------------
 
 /** A die of a throw shown at the table: its size and the face it landed on, nothing more. */
-export const TableDieSchema = z.object({
-  sides: z.number().int().min(2).max(100),
-  value: z.number().int().min(0).max(100),
-  /** What the die shows when it is not its own number (a percentile tens die: "00", "70"). */
-  label: z.string().trim().max(3).optional(),
-  /** Thrown but not counted (the other die of advantage, a tens die not kept). */
-  dropped: z.boolean().optional(),
-});
+export const TableDieSchema = z
+  .object({
+    sides: z.number().int().min(2).max(100),
+    value: z.number().int().min(0).max(100),
+    /** What the die shows when it is not its own number (a percentile tens die: "00", "70"). */
+    label: z.string().trim().max(3).optional(),
+    /** Thrown but not counted (the other die of advantage, a tens die not kept). */
+    dropped: z.boolean().optional(),
+  })
+  // No face beyond the die's own (a tens die of a d100 shows 00–90).
+  .refine((die) => die.value <= die.sides || (die.sides === 10 && die.value % 10 === 0 && die.value <= 90), {
+    message: 'На кубике нет такой грани',
+    path: ['value'],
+  });
 export type TableDie = z.infer<typeof TableDieSchema>;
 
 /** Dice of one throw the table may see at most. */
 export const TABLE_ROLL_DICE = 20;
+
+/**
+ * What a throw was, for the table's centre panel: its name, its formula and total, and the number
+ * it had to reach — a difficulty to meet or beat, or (`under`, a percentile skill) a value to roll
+ * at or under.
+ */
+export const TableCheckSchema = z.object({
+  /** What was checked ("Скрытность"); empty: the throw goes by its formula. */
+  title: z.string().trim().max(60).default(''),
+  formula: z.string().trim().max(40),
+  bonus: z.number().int().min(-999).max(999),
+  total: z.number().int().min(-999).max(9999),
+  target: z.number().int().min(1).max(100).optional(),
+  under: z.boolean().optional(),
+  /** The master's call this throw answers (`TableRollCallDto.id`). */
+  callId: z.uuid().optional(),
+});
+export type TableCheck = z.infer<typeof TableCheckSchema>;
+
+/** What the master calls for: a skill, an ability check, a saving throw, or a bare d20. */
+export const RollCallKindSchema = z.enum(['skill', 'ability', 'save', 'plain']);
+export type RollCallKind = z.infer<typeof RollCallKindSchema>;
+
+/**
+ * The master calls on some heroes for a d20: each of their players gets a plate with their own
+ * bonuses and throws it themselves; the throw comes back to the table as theirs.
+ */
+export const TableRollCallRequestSchema = z.object({
+  heroIds: z.array(z.uuid()).min(1).max(32),
+  kind: RollCallKindSchema,
+  /** A skill id (`skill`) or an attribute id (`ability`, `save`). */
+  key: z.string().trim().max(40).optional(),
+  /** What it is called at the table; empty: the skill's or ability's name. */
+  title: z.string().trim().max(60).default(''),
+  /** The difficulty, when the master tells it. */
+  target: z.number().int().min(1).max(40).optional(),
+  mode: z.enum(['normal', 'advantage', 'disadvantage']).default('normal'),
+});
+export type TableRollCallRequest = z.input<typeof TableRollCallRequestSchema>;
+
+export interface TableRollCallDto {
+  id: string;
+  /** The party hero called on, and the player's own character behind it. */
+  heroId: string;
+  characterId: string;
+  heroName: string;
+  kind: RollCallKind;
+  key: string | null;
+  title: string;
+  target: number | null;
+  mode: 'normal' | 'advantage' | 'disadvantage';
+  masterName: string;
+  createdAt: string;
+}
 
 /**
  * A throw shown at the table, never stored. A hero's (`characterId`, by its owner or the master)
@@ -439,6 +555,7 @@ export const TableRollRequestSchema = z
     heroIds: z.array(z.uuid()).min(1).max(32).optional(),
     /** What was thrown, for the table's dice log ("Внимание: 21 — трудный успех"); the dice on screen go without it. */
     label: z.string().trim().max(120).default(''),
+    check: TableCheckSchema.optional(),
   })
   .refine((roll) => !(roll.characterId && roll.heroIds), { message: 'Бросок героя виден всем', path: ['heroIds'] });
 export type TableRollRequest = z.input<typeof TableRollRequestSchema>;
@@ -456,6 +573,8 @@ export interface TableRollDto {
   authorName: string;
   dice: TableDie[];
   label: string;
+  /** What the throw was, when the thrower said: for the centre panel. */
+  check: TableCheck | null;
   /** The master's throw meant for some players only: their names. `null`: for everyone. */
   audienceNames: string[] | null;
   createdAt: string;

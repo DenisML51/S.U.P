@@ -5,9 +5,10 @@ import { useChatStore } from '../../store/useChatStore';
 import { Segmented, Select } from '../../ui/forms';
 import { IconNext } from '../../ui/icons';
 import { IconButton, cx } from '../../ui/primitives';
+import { locale } from '../../i18n';
 
 const EVERYONE = 'all';
-const time = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
+const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' });
 
 /**
  * Talk at the table. Everyone writes to everyone; the master also writes to one player privately

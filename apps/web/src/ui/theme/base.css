@@ -251,6 +251,14 @@
   background: repeating-linear-gradient(135deg, rgb(var(--meter-extra-color)) 0 3px, rgb(var(--meter-extra-color) / 0.55) 3px 6px);
 }
 
+/* The maximum lost until a rest: a struck-out end of the gauge, no longer there to fill. */
+.ui-meter__lost {
+  position: absolute;
+  inset: 0 0 0 auto;
+  background: repeating-linear-gradient(135deg, rgb(var(--c-danger) / 0.5) 0 2px, transparent 2px 5px);
+  box-shadow: inset 1px 0 0 rgb(var(--c-danger) / 0.7);
+}
+
 /* Notches every 10% read as a gauge rather than a progress bar. */
 .ui-meter--ticks::after {
   content: '';
@@ -337,8 +345,7 @@
 /* ------------------------------------------------------------------ Interactive surfaces */
 /*
  * Hover and the active state differ by setting, not only by colour: gilt corners unfold in high
- * fantasy, a scan line runs along the edge in sci-fi, darkness
- * creeps from the edges in dark fantasy. `.ui-fx` is the effect layer the Panel renders.
+ * fantasy, a scan line runs along the edge in sci-fi. `.ui-fx` is the effect layer the Panel renders.
  */
 .ui-interactive {
   cursor: pointer;
@@ -646,6 +653,27 @@
 /* ------------------------------------------------------------------ Dialog chrome per setting */
 /* Body and footer line up with the header's text, which leaves room for the close button. */
 .ui-dialog__frame { display: none; }
+/* A round opening at the middle of the window's top edge, where the new level's emblem stands: the
+   window, its frame and lines are cut through there. The mask reaches past the window so that its
+   shadow and ornaments outside it stay. It widens from the middle once the emblem is on it. */
+@property --hole-r {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+.ui-dialog.ui-dialog--hole {
+  transition:
+    --hole-r 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s;
+  --hole-reach: 120px;
+  mask-image: radial-gradient(circle at 50% var(--hole-reach), transparent var(--hole-r), #000 calc(var(--hole-r) + 1px));
+  mask-size: calc(100% + 2 * var(--hole-reach)) calc(100% + 2 * var(--hole-reach));
+  mask-position: calc(-1 * var(--hole-reach)) calc(-1 * var(--hole-reach));
+  mask-repeat: no-repeat;
+  mask-clip: no-clip;
+}
 
 .ui-dialog__rule { display: none; }
 
@@ -659,11 +687,15 @@
 
 .ui-resource-count > span { font-size: 2.6rem; line-height: 1; }
 
-/* Grimdark: figures stamped between bronze brackets. */
 .ui-segmented--compact .ui-segmented__option { padding: 0 0.55rem; font-size: 0.8rem; }
 
 /* Portraits in the hero select strip take the radius of the theme they are shown in. */
 .ui-strip-thumb { border-radius: var(--radius); }
+/* Upright, the portraits are strung on a hairline rail that fades out at both ends; it stays put
+   while the column scrolls. */
+.ui-strip-rail {
+  background: linear-gradient(transparent, rgb(var(--c-frame) / 0.5) 12%, rgb(var(--c-frame) / 0.5) 88%, transparent) 50% 0 / 1px 100% no-repeat;
+}
 
 /* ------------------------------------------------------------------ Profile */
 .ui-image-slot {
@@ -759,6 +791,12 @@
 
 .ui-hud-slot--blocked { filter: grayscale(0.9); opacity: 0.42; }
 
+/* An ability that is on (Rage): ringed until it ends. An outline, so no setting's tile hides it. */
+[data-setting] .ui-hud-slot.ui-hud-slot--on {
+  outline: 2px solid rgb(var(--c-accent));
+  outline-offset: 2px;
+}
+
 .ui-hud-slot__level,
 .ui-hud-slot__count {
   position: absolute;
@@ -798,6 +836,10 @@
 }
 
 /* A small square of the HUD: a condition, a defence, a resource. */
+/* Over an open window the messages keep to the bottom edge: lifted above a HUD they would cover the
+   window's own controls. */
+html:has([role='dialog'][aria-modal='true']) .ui-toasts { bottom: 1.5rem !important; }
+
 .ui-hud-chip {
   position: relative;
   display: grid;
@@ -812,6 +854,14 @@
 }
 
 .ui-hud-chip:hover { border-color: rgb(var(--c-frame-bright)); transform: translateY(-1px); }
+
+.ui-hud-chip--toggle { color: rgb(var(--chip-tone)); border-color: rgb(var(--chip-tone) / 0.45); }
+.ui-hud-chip--toggle[aria-pressed='true'] {
+  color: rgb(var(--c-ink));
+  background: rgb(var(--chip-tone) / 0.28);
+  border-color: rgb(var(--chip-tone));
+  box-shadow: 0 0 12px rgb(var(--chip-tone) / 0.4), inset 0 0 0 1px rgb(var(--chip-tone) / 0.35);
+}
 
 .ui-hud-chip--condition { color: rgb(var(--c-warning)); border-color: rgb(var(--c-warning) / 0.5); background: rgb(var(--c-warning) / 0.1); }
 
@@ -872,6 +922,25 @@
   50% { box-shadow: 0 0 22px rgb(var(--c-danger) / 0.45); }
 }
 
+/* The beast of a Wild Shape, in the portrait's corner. */
+.ui-hud-portrait__form {
+  position: absolute;
+  left: 0.45rem;
+  bottom: 0.45rem;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  color: rgb(var(--c-accent));
+  background: rgb(var(--c-bg-deep) / 0.88);
+  border: 1px solid rgb(var(--c-accent) / 0.75);
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgb(var(--c-accent) / 0.35);
+}
+
+/* On the sheet's art band, under the edit corner, clear of the name. */
+.ui-hud-portrait__form--sheet { left: auto; right: 1rem; bottom: auto; top: 1rem; }
+
 .ui-hud-portrait__temp {
   position: absolute;
   bottom: 0.6rem;
@@ -924,6 +993,16 @@
 
 .ui-vbar__extra {
   background: repeating-linear-gradient(135deg, rgb(var(--c-temp-hp) / 0.85) 0 4px, rgb(var(--c-temp-hp) / 0.55) 4px 8px);
+}
+
+/* The maximum lost until a rest, struck out at the top of the bar. */
+.ui-vbar__lost {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  background: repeating-linear-gradient(135deg, rgb(var(--c-danger) / 0.5) 0 2px, transparent 2px 6px);
+  box-shadow: inset 0 -1px 0 rgb(var(--c-danger) / 0.7);
 }
 
 .ui-vbar__label {
@@ -1110,11 +1189,13 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 /* Once down, the drawing steps back so the number reads first. */
 .ui-rolling-die--landed .ui-die-glyph { opacity: 0.55; }
 
-.ui-rolling-die--success { color: rgb(var(--c-success)); }
+/* A natural 20 or 1 tints the die and its number once it is down. Written to outrank a setting's
+   own colour for dice (the toned classes only ever come with the landed one). */
+.ui-rolling-die.ui-rolling-die--landed.ui-rolling-die--success { color: rgb(var(--c-success)); }
 
-.ui-rolling-die--danger { color: rgb(var(--c-danger)); }
+.ui-rolling-die.ui-rolling-die--landed.ui-rolling-die--danger { color: rgb(var(--c-danger)); }
 
-.ui-rolling-die:is(.ui-rolling-die--success, .ui-rolling-die--danger).ui-rolling-die--landed .ui-die-glyph { color: currentColor; }
+.ui-rolling-die:is(.ui-rolling-die--success, .ui-rolling-die--danger).ui-rolling-die--landed .ui-die-glyph { color: currentColor; opacity: 0.8; }
 
 .ui-rolling-die--dropped { opacity: 0.4; }
 
@@ -1300,6 +1381,10 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 }
 
 .ui-section__aside { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; align-self: center; }
+/* On a phone a part's controls go under its name when both do not fit on one line. */
+@media (max-width: 639.98px) {
+  .ui-section__head { flex-wrap: wrap; row-gap: 0.4rem; }
+}
 
 .ui-section__hint { margin: -0.35rem 0 0.7rem; font-size: 0.8rem; line-height: 1.4; color: rgb(var(--c-ink-faint)); }
 
@@ -1494,7 +1579,7 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   border-right: 1px solid rgb(var(--c-line) / 0.7);
 }
 .ui-rail__item {
-  color: rgb(var(--c-ink-faint));
+  color: rgb(var(--c-ink-muted));
   transition: color 150ms, background-color 150ms;
 }
 .ui-rail__item:hover { color: rgb(var(--c-ink-muted)); }
@@ -1510,6 +1595,92 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 }
 .ui-rail__item[aria-current='page'] .ui-rail__mark { background: rgb(var(--c-frame-bright)); }
 .ui-rail__divider { background: rgb(var(--c-line) / 0.7); }
+
+/* The rail's places along the bottom of a narrow screen: the mark of the open one runs along their top. */
+.ui-tabbar {
+  border-right: 0;
+  border-top: 1px solid rgb(var(--c-line) / 0.7);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.ui-tabbar .ui-rail__item {
+  min-width: 0;
+  min-height: 3.5rem;
+  justify-content: center;
+}
+.ui-rail.ui-tabbar .ui-rail__label {
+  max-width: 100%;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-tabbar .ui-rail__item .ui-rail__mark {
+  top: 0;
+  bottom: auto;
+  left: 25%;
+  right: 25%;
+  width: auto !important;
+  height: 2px;
+}
+
+/* Below the desktop what a finger presses grows to 40px (docs/MOBILE.md). */
+@media (max-width: 1023.98px) {
+  /* A section laid out to fill a desktop screen runs down the page instead: its panels take the
+     height of what they hold, and the page scrolls rather than each list inside it. */
+  .ui-flow .h-full {
+    height: auto;
+  }
+  /* Views of a list that do not fit the width scroll sideways under the finger. */
+  .ui-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .ui-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .ui-tabs__tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  /* A choice of a few that is wider than its place scrolls the same way, inside its frame. */
+  .ui-segmented {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ui-segmented::-webkit-scrollbar {
+    display: none;
+  }
+  .ui-segmented__option {
+    flex-shrink: 0;
+  }
+}
+@media (max-width: 639.98px) {
+  .ui-flow .ui-ledger__head {
+    flex-wrap: wrap;
+    padding-inline: 1rem;
+  }
+  .ui-flow .ui-ledger__list {
+    padding-inline: 1rem;
+  }
+}
+@media (max-width: 1023.98px) {
+  .ui-touch .ui-button--row,
+  .ui-touch .ui-button--sm,
+  .ui-touch .ui-button--md {
+    min-height: 2.5rem;
+  }
+  .ui-touch .ui-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+  }
+  .ui-touch .ui-icon-button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+}
 
 /* ------------------------------------------------------------------ Tabs */
 .ui-tabs {
@@ -1667,6 +1838,8 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-vital__value { grid-area: value; line-height: 1; white-space: nowrap; }
 .ui-vital__current { font-size: 1.2rem; color: rgb(var(--c-ink)); }
 .ui-vital__max { margin-left: 0.15rem; font-size: 0.8rem; color: rgb(var(--c-ink-faint)); }
+/* How much of the maximum is lost until a rest, beside it. */
+.ui-vital__lost { margin-left: 0.3rem; font-size: 0.75rem; color: rgb(var(--c-danger)); }
 .ui-vital__extra { grid-area: extra; align-self: center; margin-left: 0.45rem; font-size: 0.8rem; line-height: 1; color: rgb(var(--c-temp-hp)); }
 .ui-vital__gauge { grid-area: gauge; position: relative; display: block; }
 .ui-vital:hover .ui-vital__label { color: rgb(var(--c-ink-muted)); }
@@ -1736,16 +1909,6 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 .ui-keyfield > .ui-input { width: 100%; }
 
 /* ------------------------------------------------------------------ Sheet sections */
-/* Side-by-side lists stack when the section gives up room to an entry's card. */
-.ui-section-list { container: section-list / inline-size; }
-@container section-list (max-width: 760px) {
-  .ui-section-list .ui-section__columns { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; align-content: start; }
-}
-/* The hero's story and their features: a page beside a page, one under the other when narrow. */
-.ui-persona__columns { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
-@container section-list (max-width: 900px) {
-  .ui-section-list .ui-persona__columns { grid-template-columns: minmax(0, 1fr); }
-}
 
 /* ------------------------------------------------------------------ Chips */
 /* A small on/off choice among several (studied schools). */
@@ -1776,6 +1939,103 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   z-index: 1;
 }
 .ui-level-ready > svg { width: 100%; height: 100%; overflow: visible; }
+/* Under the setting's marvel: a glow breathing along the bar and a light running down its length. */
+.ui-level-ready__glow {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: calc(50% - 6px);
+  height: 12px;
+  border-radius: 999px;
+  background: rgb(var(--c-xp) / 0.5);
+  filter: blur(9px);
+  animation: ui-ready-breathe 2.4s ease-in-out infinite;
+}
+@keyframes ui-ready-breathe {
+  0%, 100% { opacity: 0.35; transform: scaleY(0.8); }
+  50% { opacity: 1; transform: scaleY(1.5); }
+}
+.ui-level-ready__sheen {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: calc(50% - 3px);
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+.ui-level-ready__sheen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  left: -30%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.75), transparent);
+  mix-blend-mode: screen;
+  animation: ui-ready-sheen 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes ui-ready-sheen { 0% { left: -30%; } 70%, 100% { left: 100%; } }
+/* A spark beating at the bar's full end. */
+.ui-level-ready__spark {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  translate: 0 -50%;
+  background: rgb(255 250 235);
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  filter: drop-shadow(0 0 4px rgb(var(--c-xp)));
+  animation: ui-ready-spark 1.6s ease-in-out infinite;
+}
+@keyframes ui-ready-spark {
+  0%, 100% { transform: scale(0.55) rotate(0deg); opacity: 0.6; }
+  50% { transform: scale(1.15) rotate(45deg); opacity: 1; }
+}
+/* Motes rising off the bar; each setting gives them its own look. */
+.ui-level-ready__motes { position: absolute; left: 6px; right: 6px; top: 50%; height: 0; }
+.ui-level-ready__motes > i {
+  position: absolute;
+  top: 0;
+  border-radius: 50%;
+  background: rgb(var(--c-xp));
+  box-shadow: 0 0 6px 1px rgb(var(--c-xp) / 0.8);
+  opacity: 0;
+  animation: ui-ready-mote ease-out infinite;
+}
+@keyframes ui-ready-mote {
+  0% { opacity: 0; transform: translate(0, 0) scale(1); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--drift), calc(var(--rise) * -1)) scale(0.4); }
+}
+/* Fable: four-pointed stars of gold. */
+[data-setting='fable'] .ui-level-ready__motes > i {
+  border-radius: 0;
+  background: rgb(255 240 200);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  box-shadow: none;
+  filter: drop-shadow(0 0 3px rgb(var(--c-frame-bright)));
+  width: 7px !important;
+  height: 7px !important;
+}
+/* Sci-fi: bits of data, square and quick. */
+[data-setting='sci-fi'] .ui-level-ready__motes > i { border-radius: 0; background: rgb(var(--c-frame-bright)); box-shadow: 0 0 5px rgb(var(--c-frame-bright)); animation-timing-function: steps(6); }
+/* Elden Ring: motes of grace. */
+[data-setting='elden-ring'] .ui-level-ready__motes > i { background: rgb(255 226 160); box-shadow: 0 0 8px 2px rgb(255 200 110 / 0.7); }
+/* Lovecraft: pale spores, swaying as they drift. */
+[data-setting='lovecraft'] .ui-level-ready__motes > i { background: rgb(var(--c-eldritch)); box-shadow: 0 0 8px 2px rgb(var(--c-eldritch) / 0.6); animation-timing-function: ease-in-out; }
+/* The spark at the bar's end in each setting's own shape. */
+[data-setting='sci-fi'] .ui-level-ready__spark { width: 10px; height: 10px; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); background: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright))); animation-timing-function: steps(4); }
+[data-setting='lovecraft'] .ui-level-ready__spark { width: 9px; height: 9px; clip-path: none; border-radius: 50%; background: radial-gradient(circle, rgb(220 255 220), rgb(var(--c-eldritch))); filter: drop-shadow(0 0 6px rgb(var(--c-eldritch))); }
+[data-setting='elden-ring'] .ui-level-ready__spark { display: none; }
+.ui-xp[data-ready] { animation: ui-ready-plaque 2.4s ease-in-out infinite; }
+@keyframes ui-ready-plaque {
+  50% { box-shadow: var(--shadow-panel), 0 0 18px -4px rgb(var(--c-xp) / 0.55); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-level-ready *, .ui-level-ready *::after, .ui-xp[data-ready] { animation: none !important; }
+}
 
 /* ------------------------------------------------------------------ World cards (hero creation) */
 /* A world to begin in, as a window into it: its atmosphere behind, its emblem and name over it. */
@@ -1804,6 +2064,10 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   opacity: 0.85;
   transition: opacity 600ms, transform 1200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+/* A card far at the side of a carousel shows no atmosphere: it is not drawn until it comes nearer. */
+.ui-world .ui-world__scene[data-distant] { opacity: 0; content-visibility: hidden; }
+/* The dark a card at the side of a carousel stands in, over all of it. */
+.ui-world__shade { position: absolute; inset: 0; z-index: 5; background: rgb(0 0 0); pointer-events: none; transition: opacity 450ms cubic-bezier(0.22, 1, 0.36, 1); }
 .ui-world__veil {
   position: absolute;
   inset: 0;
@@ -1846,6 +2110,84 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
   transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .ui-rulebook-card[data-awake] .ui-rulebook-card__dice { transform: translateY(-6px) scale(1.06); }
+
+/* ------------------------------------------------------------------ Class cards (D&D creation) */
+/* A class in the rulebook's frame: the emblem above, the name on the line between, the hit die below. */
+.ui-class-card { justify-content: stretch; gap: 0; padding: 1.5rem 1rem 1.25rem; }
+.ui-class-card__half { position: relative; flex: 1 1 0; display: grid; place-items: center; min-height: 0; }
+.ui-class-card__half--die { align-content: center; gap: 0.6rem; }
+.ui-class-card__emblem {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 9.5rem;
+  height: 9.5rem;
+  color: rgb(var(--c-frame-bright));
+  filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.8));
+  transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-class-card__emblem::before {
+  content: '';
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(var(--c-frame-bright) / 0.16), transparent 70%);
+  opacity: 0.5;
+  transition: opacity 600ms;
+}
+.ui-class-card__halo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.35;
+  animation: ui-class-halo 60s linear infinite;
+  transition: opacity 600ms;
+}
+@keyframes ui-class-halo { to { transform: rotate(360deg); } }
+/* The name stands on the line that halves the card, the homebrew's author under it. */
+.ui-class-card__title {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.55rem 0.5rem;
+  text-align: center;
+}
+.ui-class-card__title::before,
+.ui-class-card__title::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.55), transparent);
+}
+.ui-class-card__title::before { top: 0; }
+.ui-class-card__title::after { bottom: 0; }
+.ui-class-card__name {
+  font-family: var(--setting-display);
+  font-size: 1.55rem;
+  line-height: 1.1;
+  color: rgb(var(--c-ink));
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.8);
+  text-wrap: balance;
+  transition: color 300ms;
+}
+.ui-class-card__name[data-long] { font-size: 1.2rem; }
+.ui-class-card__source { font-size: 0.68rem; letter-spacing: 0.06em; color: rgb(var(--c-ink-faint)); }
+.ui-class-card__die { width: 5.25rem; height: 5.25rem; color: rgb(var(--c-frame-bright) / 0.85); transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1); }
+.ui-class-card__die-label { font-size: 0.78rem; letter-spacing: 0.04em; color: rgb(var(--c-ink-muted)); }
+.ui-class-card__die-label b { font-weight: 400; color: rgb(var(--c-frame-bright)); }
+.ui-class-card[data-awake] .ui-class-card__emblem { transform: translateY(-4px) scale(1.04); }
+.ui-class-card[data-awake] .ui-class-card__die { transform: translateY(-3px) scale(1.06); }
+.ui-class-card:is([data-awake], [aria-pressed='true']) .ui-class-card__halo { opacity: 0.8; animation-duration: 18s; }
+.ui-class-card:is([data-awake], [aria-pressed='true']) .ui-class-card__emblem::before { opacity: 1; }
+.ui-class-card[aria-pressed='true'] .ui-class-card__name { color: rgb(var(--c-frame-bright)); }
+@media (prefers-reduced-motion: reduce) {
+  .ui-class-card__halo { animation: none; }
+}
 
 /* D&D: embers rising off the dragon when the card wakes. */
 .ui-embers { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 600ms; }
@@ -1963,4 +2305,101 @@ button:hover .ui-hud-xp { border-color: rgb(var(--c-xp) / 0.6); }
 @media (prefers-reduced-motion: reduce) {
   .ui-flourish { display: none; }
   [data-flourish] { animation: none !important; }
+}
+
+/* Without a hover, what a pointer reveals by hovering its row (an edit pencil, "отменить до сюда",
+   a card's close button) is shown all the time: a finger has no other way to find it. */
+@media (hover: none) {
+  html [class*='group-hover:opacity-'],
+  html [class*='group-hover/text:opacity-'] {
+    opacity: 0.7;
+  }
+}
+
+/* What a held finger opens (a card, a menu) is not taken for text to select or a link to share. */
+.ui-hud-slot,
+.ui-hud-chip,
+.ui-token,
+.ui-die {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* A stage of the hero's creation (the world, the rules): on a phone its cards shrink a little, so
+   the card, its button and the step's buttons fit the screen without scrolling. */
+@media (max-width: 639.98px) {
+  .ui-stage {
+    --stage-fit: 0.85;
+  }
+  /* The worlds name themselves in their own type, sized for a full card: scaled with the card. */
+  .ui-stage .ui-world__name {
+    zoom: 0.75;
+  }
+}
+
+/* The skill points of creation on a phone: a row is a card, the name and total over the pools' fields. */
+@media (max-width: 639.98px) {
+  .coc-points thead {
+    display: none;
+  }
+  .coc-points tbody tr:not(:first-child) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 0.75rem;
+    padding: 0.6rem 0;
+  }
+  .coc-points tbody tr:not(:first-child) > td:first-child {
+    order: -2;
+  }
+  .coc-points tbody tr:not(:first-child) > td:last-child {
+    order: -1;
+  }
+  .coc-points td[data-pool] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    grid-column: 1 / -1;
+  }
+  .coc-points td[data-pool]:empty {
+    display: none;
+  }
+  .coc-points td[data-pool]::before {
+    content: attr(data-pool);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(var(--c-ink-faint));
+  }
+}
+
+/* ------------------------------------------------------------------ Phone scrolling */
+/* A phone shows no scrollbars: a caret at the bottom of a scroller says there is more (ScrollCues). */
+@media (max-width: 639px) {
+  /* Over every scroller's own bar style (.ui-scroll and the like), hence the !important. */
+  * { scrollbar-width: none !important; }
+  *::-webkit-scrollbar { display: none; }
+}
+.ui-scroll-cue {
+  position: fixed;
+  z-index: 150;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-left: -1rem;
+  border-radius: 9999px;
+  color: rgb(var(--c-frame-bright));
+  background: rgb(var(--c-bg-deep) / 0.72);
+  border: 1px solid rgb(var(--c-frame) / 0.45);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(6px);
+}
+.ui-scroll-cue svg { animation: ui-scroll-cue-bob 1.8s ease-in-out infinite; }
+@keyframes ui-scroll-cue-bob {
+  50% { transform: translateY(2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-scroll-cue svg { animation: none; }
 }

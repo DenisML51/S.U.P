@@ -32,7 +32,7 @@ export const Section: React.FC<{
       <h4 className="ui-section__title">{title}</h4>
       {origin && (
         <span className="ui-section__origin" title={origin}>
-          от «{origin}»
+          {`от «${origin}»`}
         </span>
       )}
       {(aside || count) && (

@@ -1,4 +1,4 @@
-import type { CatalogEntryDef, ChoiceDef, OptionDef, SpellListId } from '../types';
+import type { CatalogEntryDef, ChoiceDef, Effect, OptionDef, SpellListId } from '../types';
 import { PACT_SLOTS } from './classes/shared';
 
 /**
@@ -21,16 +21,17 @@ const CANTRIPS: Record<string, string> = {
   'toll-the-dead': 'Погребальный звон',
 };
 
-const cantripOptions = (ids: string[]): OptionDef[] => ids.map((id) => ({ id, name: CANTRIPS[id]!, description: '' }));
+const cantripOptions = (ids: string[], effects?: (id: string) => Effect[]): OptionDef[] =>
+  ids.map((id) => ({ id, name: CANTRIPS[id]!, description: '', ...(effects ? { effects: effects(id) } : {}) }));
 
 /** The cantrip a repeatable cantrip invocation improves; a new one each time it is taken. */
-const cantripChoice = (invocation: string, ids: string[]): ChoiceDef => ({
+const cantripChoice = (invocation: string, ids: string[], effects?: (id: string) => Effect[]): ChoiceDef => ({
   id: 'cantrip',
   label: 'Заговор',
   count: 1,
   pool: `${invocation}-cantrips`,
   hint: 'Известный вам заговор колдуна, наносящий урон.',
-  options: { from: 'options', options: cantripOptions(ids) },
+  options: { from: 'options', options: cantripOptions(ids, effects) },
 });
 
 const DAMAGING = 'заговор колдуна, наносящий урон';
@@ -94,7 +95,9 @@ export const INVOCATIONS: CatalogEntryDef[] = [
     iconName: 'fire-ray',
     prerequisite: { level: 2, text: DAMAGING },
     repeatable: true,
-    choices: [cantripChoice('agonizing-blast', Object.keys(CANTRIPS))],
+    choices: [
+      cantripChoice('agonizing-blast', Object.keys(CANTRIPS), (spell) => [{ type: 'spellDamage', spell, amount: (ctx) => ctx.modifier('charisma') }]),
+    ],
   },
   {
     id: 'eldritch-spear',
@@ -146,6 +149,7 @@ export const INVOCATIONS: CatalogEntryDef[] = [
     action: 'passive',
     iconName: 'crossed-swords',
     prerequisite: { level: 5, entry: 'pact-of-the-blade' },
+    effects: [{ type: 'extraAttack', attacks: 2 }],
   },
   {
     id: 'eldritch-smite',
@@ -154,6 +158,7 @@ export const INVOCATIONS: CatalogEntryDef[] = [
     description:
       'Раз в ход, попав оружием договора, вы можете потратить ячейку Магии договора: цель получает 1к8 силового урона плюс 1к8 за каждый круг ячейки и, если она Огромная или меньше, может быть сбита с ног.',
     action: 'passive',
+    onHit: 'weapon',
     iconName: 'spiky-explosion',
     usesResource: { id: PACT_POOL },
     damage: (ctx) => `${1 + (PACT_SLOTS[Math.min(20, Math.max(1, ctx.classLevel)) - 1]?.level ?? 1)}d8`,
@@ -180,6 +185,7 @@ export const INVOCATIONS: CatalogEntryDef[] = [
     action: 'passive',
     iconName: 'sword-spin',
     prerequisite: { level: 12, entry: 'thirsting-blade' },
+    effects: [{ type: 'extraAttack', attacks: 3 }],
   },
 
   // Pact of the Chain and Pact of the Tome.
@@ -252,7 +258,10 @@ export const INVOCATIONS: CatalogEntryDef[] = [
     action: 'passive',
     iconName: 'wave-crest',
     resource: { id: 'gift-of-the-depths', name: 'Подводное дыхание без ячейки', max: 1, recharge: 'long' },
-    effects: [{ type: 'spell', spell: 'water-breathing', alwaysPrepared: true }],
+    effects: [
+      { type: 'spell', spell: 'water-breathing', alwaysPrepared: true },
+      { type: 'movement', mode: 'swim' },
+    ],
     prerequisite: { level: 5 },
   },
   {

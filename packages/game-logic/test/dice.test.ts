@@ -34,3 +34,12 @@ describe('formatDice', () => {
     ]);
   });
 });
+
+describe('Great Weapon Fighting', () => {
+  it('counts a 1 or 2 on a damage die as 3', async () => {
+    const { rollFormula } = await import('../src');
+    const lowest = () => 0;
+    expect(rollFormula('2d6 + 3', lowest, { minDie: 3 }).total).toBe(9);
+    expect(rollFormula('2d6 + 3', lowest).total).toBe(5);
+  });
+});

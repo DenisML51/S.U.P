@@ -10,16 +10,7 @@ import { useTableOfCharacter } from '../../store/usePartyStore';
  * table, when the hero was opened from it or sits at a table in session — and back to the heroes.
  */
 export const HeroExits: React.FC = () => {
-  const characterId = useCharacterStore((s) => s.character?.id);
-  const goToCharacterList = useCharacterStore((s) => s.goToCharacterList);
-  const place = useNavStore((s) => s.place);
-  const go = useNavStore((s) => s.go);
-  const { listed, atTable } = useTableOfCharacter(characterId);
-  const tableId = place.screen === 'party' ? place.partyId : atTable ? listed?.id : undefined;
-  const leave = (to: Parameters<typeof go>[0]) => {
-    go(to);
-    goToCharacterList();
-  };
+  const { tableId, leave } = useHeroExits();
   return (
     <>
       {tableId ? (
@@ -30,4 +21,22 @@ export const HeroExits: React.FC = () => {
       <RailButton label="Герои" Icon={IconPrev} onClick={() => leave({ screen: 'heroes' })} hint="К выбору героя" />
     </>
   );
+};
+
+/**
+ * Where an open hero leaves to: the party's table it was opened from or sits at in session, if any,
+ * and a way to leave for a place.
+ */
+export const useHeroExits = () => {
+  const characterId = useCharacterStore((s) => s.character?.id);
+  const goToCharacterList = useCharacterStore((s) => s.goToCharacterList);
+  const place = useNavStore((s) => s.place);
+  const go = useNavStore((s) => s.go);
+  const { listed, atTable } = useTableOfCharacter(characterId);
+  const tableId = place.screen === 'party' ? place.partyId : atTable ? listed?.id : undefined;
+  const leave = (to: Parameters<typeof go>[0]) => {
+    go(to);
+    goToCharacterList();
+  };
+  return { tableId, leave };
 };

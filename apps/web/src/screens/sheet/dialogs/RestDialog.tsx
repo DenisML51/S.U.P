@@ -3,7 +3,8 @@ import {
   attributeModifier,
   averageHitPoints,
   formatModifier,
-  hitDiceOf,
+  hitDicePools,
+  hitDiceToSpend,
   longRest,
   shortRest,
   type HitDieMethod,
@@ -20,7 +21,7 @@ import { FormSection } from './parts';
 const ABOUT: Record<RestKind, string> = {
   short:
     'Час передышки. Можно потратить кости хитов на лечение; возвращаются ресурсы с восстановлением «короткий отдых».',
-  long: 'Ночь сна. Хиты в максимум, временные хиты пропадают, возвращаются ресурсы короткого и долгого отдыха и половина костей хитов, концентрация прекращается. Рассудок сном не лечится.',
+  long: 'Ночь сна. Хиты в максимум, временные хиты пропадают, возвращаются ресурсы короткого и долгого отдыха и все кости хитов, снимается уровень истощения, раны конечностей заживают наполовину, концентрация прекращается. Рассудок сном не лечится.',
 };
 
 /** "Хиты 12 → 30 / 44": one line of the preview. */
@@ -44,16 +45,21 @@ export const RestDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
   const character = useCharacterStore((s) => s.character) as Character;
   const rest = useCharacterStore((s) => s.rest);
   const [kind, setKind] = useState<RestKind>('short');
-  const [hitDice, setHitDice] = useState(0);
+  const [hitDice, setHitDice] = useState<Record<string, number>>({});
   const [method, setMethod] = useState<HitDieMethod>('roll');
 
-  const pool = hitDiceOf(character);
-  const spend = Math.min(hitDice, pool?.current ?? 0);
+  const pools = hitDicePools(character);
+  const spend = Object.fromEntries(pools.map((pool) => [pool.id, hitDiceToSpend(pool, { hitDice })]));
   // A roll is not known yet: the preview counts the average and marks the hit points as approximate.
   const preview =
     kind === 'short' ? shortRest(character, { hitDice: spend, method: 'average' }) : longRest(character);
-  const rolling = kind === 'short' && method === 'roll' && spend > 0;
+  const rolling = kind === 'short' && method === 'roll' && Object.values(spend).some((n) => n > 0);
+  // One pool names its die on the choice of healing; with several each pool names its own.
+  const [single] = pools.length === 1 ? pools : [];
   const constitution = formatModifier(attributeModifier(character, 'constitution'));
+
+  // A long rest needs at least 1 hit point to begin.
+  const cannotSleep = kind === 'long' && character.currentHP <= 0;
 
   const finish = () => {
     rest(kind, kind === 'short' ? { hitDice: spend, method } : undefined);
@@ -71,7 +77,7 @@ export const RestDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
           <Button variant="ghost" onClick={onClose}>
             Отмена
           </Button>
-          <Button variant="primary" onClick={finish}>
+          <Button variant="primary" onClick={finish} disabled={cannotSleep}>
             {kind === 'short' ? 'Отдохнуть час' : 'Лечь спать'}
           </Button>
         </>
@@ -88,29 +94,38 @@ export const RestDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ o
         className="w-full"
       />
       <p className="mt-3 text-sm text-ink-muted">{ABOUT[kind]}</p>
+      {cannotSleep && (
+        <p className="mt-2 text-sm text-danger">Долгий отдых начинают хотя бы с 1 хитом: сначала лечение или короткий отдых.</p>
+      )}
 
-      {kind === 'short' && pool?.hitDie !== undefined && (
+      {kind === 'short' && pools.length > 0 && (
         <div className="mt-5 flex flex-wrap items-end gap-4">
-          <Field label="Потратить кости хитов" hint={`Осталось ${pool.current} из ${pool.max}`}>
-            {({ id }) => (
-              <NumberField
-                id={id}
-                min={0}
-                max={pool.current}
-                value={spend}
-                onChange={setHitDice}
-                className="w-36"
-              />
-            )}
-          </Field>
+          {pools.map((pool) => (
+            <Field
+              key={pool.id}
+              label={single ? 'Потратить кости хитов' : `Потратить к${pool.hitDie}`}
+              hint={`Осталось ${pool.current} из ${pool.max}`}
+            >
+              {({ id }) => (
+                <NumberField
+                  id={id}
+                  min={0}
+                  max={pool.current}
+                  value={spend[pool.id] ?? 0}
+                  onChange={(value) => setHitDice((all) => ({ ...all, [pool.id]: value }))}
+                  className="w-36"
+                />
+              )}
+            </Field>
+          ))}
           <FormSection label="Лечение за кость">
             <Segmented
               label="Лечение за кость"
               value={method}
               onChange={setMethod}
               options={[
-                { value: 'roll', label: `бросок к${pool.hitDie}` },
-                { value: 'average', label: `среднее ${averageHitPoints(pool.hitDie!)}` },
+                { value: 'roll', label: single ? `бросок к${single.hitDie}` : 'бросок' },
+                { value: 'average', label: single ? `среднее ${averageHitPoints(single.hitDie!)}` : 'среднее' },
               ]}
             />
           </FormSection>

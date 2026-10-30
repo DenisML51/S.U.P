@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, levelPlan } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, atLevel } from './helpers';
 
 /** Ranger: Wisdom 15 (+2); rogue: Dexterity 17 (+3), Intelligence 14 (+2); sorcerer: Charisma 17 (+3). */
 const ATTRIBUTES: Record<string, Pick<DndBuild, 'background' | 'baseAttributes' | 'backgroundBonuses'>> = {
@@ -23,7 +23,7 @@ const ATTRIBUTES: Record<string, Pick<DndBuild, 'background' | 'baseAttributes' 
   },
 };
 
-const build = (cls: string, subclass: string, level: number, choices: DndBuild['choices'] = {}): DndBuild => ({
+const build = (cls: string, subclass: string, level: number, choices: DndBuild['choices'] = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   class: cls,
@@ -99,8 +99,8 @@ describe('supplement subclasses of ranger, rogue and sorcerer', () => {
   it('Scion of the Three: Bloodthirst uses, a deity with resistance and an Intelligence cantrip', () => {
     const key = 'subclass:scion-of-the-three.dread-allegiance/deity';
     const b = build('rogue', 'scion-of-the-three', 3);
-    const deity = levelPlan(b, 3).choices.find((c) => c.key === key)!;
-    expect(choiceOptions(b, 3, deity).map((o) => o.id)).toEqual(['bhaal', 'bane', 'myrkul']);
+    const deity = levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === key)!;
+    expect(choiceOptions(atLevel(b, 3), 3, deity).map((o) => o.id)).toEqual(['bhaal', 'bane', 'myrkul']);
     const c = apply(build('rogue', 'scion-of-the-three', 3, { [key]: ['myrkul'] }));
     expect(resource(c, 'scion-of-the-three.bloodthirst')).toMatchObject({ max: 2, recovery: 'long' });
     expect(ability(c, 'Кровожадность')?.actionType).toBe('reaction');

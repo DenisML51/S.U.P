@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
-import { baseMaxSanityOf, experienceProgress, maxSanityOf, totalMaxHP, type Coin } from '@itd/game-logic';
-import type { Character } from '@itd/schema';
+import { DAMAGE_TYPES, baseMaxSanityOf, experienceProgress, maxSanityOf, rulesOf, totalMaxHP, type Coin } from '@itd/game-logic';
+import type { Build, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
+import { useMomentStore } from '../../../store/useMomentStore';
 import { Dialog } from '../../../ui/Dialog';
-import { NumberField, Segmented } from '../../../ui/forms';
+import { settingOf } from '../../../ui/theme/settings';
+import { NumberField, Segmented, Select } from '../../../ui/forms';
 import { Button, Field, Meter, cx, type MeterTone } from '../../../ui/primitives';
 import { useVitals } from '../useVitals';
 import { useSheetDialogs } from './context';
+import { DeathSaves } from '../parts/DeathSaves';
+import { SIGN_HINT, cleanAmount, signedAmount } from '../parts/amount';
+import { toast } from 'react-hot-toast';
+import { locale } from '../../../i18n';
 
 interface VitalProps {
   open: boolean;
@@ -15,7 +21,8 @@ interface VitalProps {
 
 /**
  * An amount and what to do with it: "8 → Урон". Enter applies the first action, so the most
- * common one is a number and a key away.
+ * common one is a number and a key away — unless `signed` names the actions of a minus and a plus
+ * (health, sanity): there a bare number could mean either, so Enter wants "−8" or "+8".
  */
 const AmountBar: React.FC<{
   actions: {
@@ -23,41 +30,48 @@ const AmountBar: React.FC<{
     variant?: 'primary' | 'secondary' | 'danger';
     onApply: (amount: number) => void;
   }[];
+  signed?: { minus: number; plus: number };
   children?: React.ReactNode;
-}> = ({ actions, children }) => {
+}> = ({ actions, signed, children }) => {
   const [text, setText] = useState('');
-  const amount = Number(text);
-  const valid = text.trim() !== '' && Number.isFinite(amount) && amount > 0;
+  const { sign, value: amount } = signedAmount(text);
+  const valid = amount > 0;
   const apply = (index: number) => {
     if (!valid) return;
     actions[index]!.onApply(amount);
     setText('');
   };
+  const enter = () => {
+    if (!signed) return apply(0);
+    if (sign) apply(sign === '-' ? signed.minus : signed.plus);
+    else if (valid) toast(SIGN_HINT, { id: 'amount-sign' });
+  };
   return (
     <form
-      className="flex gap-2"
+      className="flex gap-2 max-sm:flex-wrap"
       onSubmit={(e) => {
         e.preventDefault();
-        apply(0);
+        enter();
       }}
+      title={signed ? SIGN_HINT : undefined}
     >
       <input
-        className="ui-input w-24 text-center text-lg tabular-nums"
+        className="ui-input w-24 text-center text-lg tabular-nums max-sm:w-full"
         inputMode="numeric"
         placeholder="0"
         aria-label="Сколько"
         value={text}
-        onChange={(e) => setText(e.target.value.replace(/[^\d]/g, ''))}
+        onChange={(e) => setText(signed ? cleanAmount(e.target.value) : e.target.value.replace(/[^\d]/g, ''))}
         data-autofocus
       />
       {children}
       {actions.map((action, index) => (
         <Button
           key={action.label}
-          type={index === 0 ? 'submit' : 'button'}
+          type="button"
           variant={action.variant ?? 'secondary'}
           disabled={!valid}
-          onClick={index === 0 ? undefined : () => apply(index)}
+          onClick={() => apply(index)}
           className="flex-1"
         >
           {action.label}
@@ -100,9 +114,19 @@ const Done: React.FC<{ onClose: () => void }> = ({ onClose }) => (
   </Button>
 );
 
+/** Damage types a hit may carry; healing is not one of them. */
+const HIT_TYPES = DAMAGE_TYPES.filter((type) => type !== 'Лечение');
+
+const DEFENCE_LABEL = { resistance: 'Сопротивление', vulnerability: 'Уязвимость', immunity: 'Иммунитет' } as const;
+
 export const HealthDialog: React.FC<VitalProps> = ({ open, onClose }) => {
   const character = useCharacterStore((s) => s.character) as Character;
   const vitals = useVitals();
+  const [type, setType] = useState<string>('');
+  // The hero's defences by kind, so the player sees why a type matters.
+  const defences = (['immunity', 'resistance', 'vulnerability'] as const)
+    .map((level) => [level, character.resistances.filter((r) => r.level === level).map((r) => r.type)] as const)
+    .filter(([, types]) => types.length > 0);
   const max = totalMaxHP(character);
   const down = character.currentHP <= 0;
   return (
@@ -123,22 +147,42 @@ export const HealthDialog: React.FC<VitalProps> = ({ open, onClose }) => {
         max={max}
         extra={character.tempHP}
         tone="hp"
-        note={
-          down ? (
-            <span className="text-danger">Без сознания</span>
-          ) : character.tempHP > 0 ? (
-            'Временные хиты принимают урон первыми'
-          ) : null
-        }
+        note={character.tempHP > 0 ? 'Временные хиты принимают урон первыми' : null}
       />
+      <DeathSaves character={character} className="mx-auto mt-4 max-w-sm" />
       <div className="mt-6">
         <AmountBar
+          signed={{ minus: 0, plus: 1 }}
           actions={[
-            { label: 'Урон', variant: 'danger', onApply: vitals.damage },
+            { label: 'Урон', variant: 'danger', onApply: (n) => vitals.damage(n, { type: type || undefined }) },
             { label: 'Лечение', onApply: vitals.heal },
-            { label: 'Временные', onApply: vitals.addTemp },
+            ...(down
+              ? [{ label: 'Крит. урон', variant: 'danger' as const, onApply: (n: number) => vitals.damage(n, { critical: true, type: type || undefined }) }]
+              : [{ label: 'Временные', onApply: vitals.addTemp }]),
           ]}
         />
+        <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-2">
+          <Field label="Тип урона" className="w-56">
+            {({ id }) => (
+              <Select
+                id={id}
+                value={type}
+                onChange={setType}
+                options={[{ value: '', label: 'Без типа' }, ...HIT_TYPES.map((t) => ({ value: t, label: t }))]}
+              />
+            )}
+          </Field>
+          {defences.length > 0 && (
+            <p className="pb-2.5 text-xs text-ink-muted">
+              {defences.map(([level, types]) => `${DEFENCE_LABEL[level]}: ${types.join(', ')}`).join(' · ')}
+            </p>
+          )}
+        </div>
+        {down && (
+          <p className="mt-2 text-xs text-ink-faint">
+            Урон при 0 хитов — провал спасброска, критический — два; урон не меньше максимума хитов убивает.
+          </p>
+        )}
       </div>
       <div className="mt-6 grid grid-cols-3 gap-4">
         <Field label="Максимум">
@@ -175,6 +219,23 @@ export const HealthDialog: React.FC<VitalProps> = ({ open, onClose }) => {
           )}
         </Field>
       </div>
+      {!!character.maxHPReduction && (
+        // A Vital Sacrifice took it off until a long rest; a feature may win it back sooner (Essence Drain).
+        <div className="mt-4 flex items-end gap-4">
+          <Field label="Максимум снижен до отдыха" className="w-56">
+            {({ id }) => (
+              <NumberField
+                id={id}
+                min={0}
+                value={character.maxHPReduction ?? 0}
+                onChange={(v) => vitals.setHealthField('maxHPReduction', v)}
+                className="w-full"
+              />
+            )}
+          </Field>
+          <p className="pb-2.5 text-xs text-ink-muted">Жизненные жертвы; продолжительный отдых вернёт максимум.</p>
+        </div>
+      )}
     </Dialog>
   );
 };
@@ -218,6 +279,7 @@ export const SanityDialog: React.FC<VitalProps> = ({ open, onClose }) => {
       />
       <div className="mt-6">
         <AmountBar
+          signed={{ minus: 0, plus: 1 }}
           actions={[
             { label: 'Потеря', variant: 'danger', onApply: (n) => vitals.changeSanity(-n) },
             { label: 'Восстановить', onApply: (n) => vitals.changeSanity(n) },
@@ -235,12 +297,54 @@ export const SanityDialog: React.FC<VitalProps> = ({ open, onClose }) => {
   );
 };
 
+/**
+ * Giving back a preset hero's last level (taken by mistake, or a level drained): the level, its picks
+ * and its hit points go, asked once more before. Experience stays as it is.
+ */
+const GiveBackLevel: React.FC<{ character: Character; build: Build }> = ({ character, build }) => {
+  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
+  const [asking, setAsking] = useState(false);
+  const lastLevel = rulesOf(build).lastLevel;
+  const last = lastLevel?.describe(build);
+  if (!lastLevel || !last) return null;
+  const giveBack = () => {
+    updateCharacter((doc) => (doc.build ? lastLevel.giveBack(doc, doc.build) : doc), {
+      log: { message: `Уровень понижен до ${character.level - 1}: ${last}`, type: 'exp' },
+    });
+    setAsking(false);
+  };
+  return (
+    <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line/40 pt-4 text-sm text-ink-muted">
+      {asking ? (
+        <>
+          <span className="min-w-0">{`Вернуть уровень «${last}»? Его выборы и хиты забудутся.`}</span>
+          <span className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setAsking(false)}>
+              Отмена
+            </Button>
+            <Button variant="danger" size="sm" onClick={giveBack}>
+              Понизить
+            </Button>
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="min-w-0">{`Последний уровень: ${last}`}</span>
+          <Button variant="ghost" size="sm" onClick={() => setAsking(true)}>
+            Понизить уровень
+          </Button>
+        </>
+      )}
+    </div>
+  );
+};
+
 export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
   const character = useCharacterStore((s) => s.character) as Character;
   const vitals = useVitals();
   const dialogs = useSheetDialogs();
   const progress = experienceProgress(character.level, character.experience);
-  const format = (n: number) => n.toLocaleString('ru-RU');
+  const format = (n: number) => n.toLocaleString(locale);
   return (
     <Dialog
       open={open}
@@ -251,9 +355,20 @@ export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
         vitals.canLevelUp ? (
           <Button
             variant="primary"
-            onClick={() => (character.build ? dialogs.open({ kind: 'levelUp' }) : vitals.setLevel(character.level + 1))}
+            onClick={() => {
+              // The window goes first, so the new level plays over the sheet and not under it.
+              onClose();
+              if (!character.build) return vitals.setLevel(character.level + 1);
+              useMomentStore.getState().celebrate({
+                from: character.level,
+                to: character.level + 1,
+                setting: settingOf(character),
+                gains: [],
+                onDock: () => dialogs.open({ kind: 'levelUp' }),
+              });
+            }}
           >
-            Повысить до {character.level + 1} уровня
+            {`Повысить до ${character.level + 1} уровня`}
           </Button>
         ) : (
           <Done onClose={onClose} />
@@ -287,6 +402,7 @@ export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
           ]}
         />
       </div>
+      {character.build && <GiveBackLevel character={character} build={character.build} />}
       {/* A preset hero's level follows its build: it only grows through the level-up window. */}
       {!character.build && (
         <div className="mt-6 flex items-center justify-between gap-4 text-sm text-ink-muted">

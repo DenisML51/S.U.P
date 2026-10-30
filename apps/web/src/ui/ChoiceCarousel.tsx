@@ -9,17 +9,21 @@ export interface CarouselItem<T extends string> {
   render: (state: { focused: boolean; hovered: boolean }) => React.ReactNode;
   /** Shown dimmed and cannot be chosen (rules a table does not play by). */
   disabled?: boolean;
+  /** Why it cannot be chosen, said under it in place of disabledLabel (a requirement the hero does not meet). */
+  disabledReason?: string;
 }
 
 /**
  * A few cards fanned round the one in front, as the worlds are on the creation's first step: the
  * cards turn and fall back with depth, the one in front stays awake. A card is chosen by clicking
- * it in front or with the button under it; arrows and the keyboard turn the fan.
+ * it in front or with the button under it; arrows and the keyboard turn the fan. Given `onClear`,
+ * the chosen one can be let go again from under it.
  */
 export function ChoiceCarousel<T extends string>({
   items,
   chosen,
   onChoose,
+  onClear,
   onFocus,
   preferred,
   chooseLabel,
@@ -27,10 +31,13 @@ export function ChoiceCarousel<T extends string>({
   disabledLabel,
   height = 'min(46vh, 460px)',
   label,
+  reach,
 }: {
   items: CarouselItem<T>[];
   chosen: T | null;
   onChoose: (id: T) => void;
+  /** Lets the choice go: nothing is chosen again. */
+  onClear?: () => void;
   onFocus?: (id: T) => void;
   /** The card in front at first when nothing is chosen yet (the rules that go with the world). */
   preferred?: T;
@@ -40,8 +47,12 @@ export function ChoiceCarousel<T extends string>({
   height?: string;
   /** Accessible name of the arrows' subject ("правила"). */
   label: string;
+  /** Cards further than this from the one in front are not drawn (a long fan: the classes). */
+  reach?: number;
 }) {
   const count = items.length;
+  // Scaled down on a phone by the stage around it (`--stage-fit`), so the words below still fit.
+  const fitted = `calc(${height} * var(--stage-fit, 1))`;
   const [index, setIndex] = useState(() =>
     Math.max(
       0,
@@ -76,7 +87,7 @@ export function ChoiceCarousel<T extends string>({
 
   return (
     <div className="flex w-full flex-col items-center">
-      <div className="relative w-full shrink-0" style={{ height, perspective: 1600 }}>
+      <div className="relative w-full shrink-0" style={{ height: fitted, perspective: 1600 }}>
         {items.map((item, i) => {
           const offset = offsets[i]!;
           const distance = Math.abs(offset);
@@ -87,7 +98,7 @@ export function ChoiceCarousel<T extends string>({
             <motion.div
               key={item.id}
               className="absolute left-1/2 top-0"
-              style={{ height, aspectRatio: '0.66', zIndex: 10 - distance }}
+              style={{ height: fitted, aspectRatio: '0.66', zIndex: 10 - distance, visibility: reach !== undefined && distance > reach ? 'hidden' : undefined }}
               initial={false}
               animate={{
                 x: `calc(-50% + ${Math.sign(offset) * (distance === 0 ? 0 : 92 + (distance - 1) * 50)}%)`,
@@ -102,7 +113,7 @@ export function ChoiceCarousel<T extends string>({
               onPointerLeave={() => setHovered((h) => (h === i ? null : h))}
               onClick={() => (isFocused ? !item.disabled && onChoose(item.id) : setIndex(i))}
             >
-              {item.render({ focused: isFocused, hovered: hovered === i })}
+              {reach === undefined || distance <= reach ? item.render({ focused: isFocused, hovered: hovered === i }) : null}
             </motion.div>
           );
         })}
@@ -129,12 +140,19 @@ export function ChoiceCarousel<T extends string>({
       </div>
       <div className="mt-6 flex h-11 items-center">
         {chosen === focused.id ? (
-          <span className="flex items-center gap-2 text-frame-bright">
-            <IconCheck width={16} height={16} />
-            {chosenLabel}
+          <span className="flex items-center gap-4">
+            <span className="flex items-center gap-2 text-frame-bright">
+              <IconCheck width={16} height={16} />
+              {chosenLabel}
+            </span>
+            {onClear && (
+              <Button variant="ghost" size="sm" onClick={onClear}>
+                Снять выбор
+              </Button>
+            )}
           </span>
         ) : focused.disabled ? (
-          <span className="text-sm text-ink-faint">{disabledLabel}</span>
+          <span className="max-w-md text-center text-sm text-ink-faint">{focused.disabledReason ?? disabledLabel}</span>
         ) : (
           <Button variant="primary" onClick={() => onChoose(focused.id)}>
             {chooseLabel}

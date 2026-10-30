@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import { WEAPONS } from '../equipment';
 import type { ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
-import { FULL_CASTER_SLOTS, abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
+import { abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
 
 /** Волшебник of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -201,6 +201,7 @@ const evoker: SubclassDef = {
           id: 'evoker.empowered-evocation',
           name: 'Усиленное воплощение',
           description: 'К одному броску урона любого вашего заклинания волшебника школы Воплощения вы добавляете модификатор Интеллекта.',
+          effects: [{ type: 'spellDamage', list: 'wizard', school: 'Воплощение', amount: (ctx) => ctx.modifier('intelligence') }],
           iconName: 'lightning-helix',
         },
       ],
@@ -301,6 +302,13 @@ const bladesinger: SubclassDef = {
           'Бонусным действием, без доспехов и щита, вы начинаете Песнь клинка на 1 минуту. Она кончается раньше, если вы недееспособны, надеваете доспех или щит или атакуете оружием двумя руками; прервать её можно в любой момент (без действия). Использований — модификатор Интеллекта (минимум 1) за продолжительный отдых; Магическое восстановление возвращает одно. Пока она длится:\n\n- **Подвижность:** бонус к КЗ, равный модификатору Интеллекта (минимум +1), скорость +10 футов, преимущество на проверки Ловкости (Акробатика);\n- **Техника фехтования:** атакуя оружием, которым владеете, вы можете использовать Интеллект вместо Силы или Ловкости для бросков атаки и урона;\n- **Сосредоточенность:** к спасброскам Телосложения для концентрации вы добавляете модификатор Интеллекта.',
         action: 'bonus',
         resource: { id: 'bladesinger.bladesong', name: 'Песнь клинка', max: modifierOf('intelligence'), recharge: 'long' },
+        stance: {
+          effects: [
+            { type: 'armorClass', amount: (ctx) => Math.max(1, ctx.modifier('intelligence')) },
+            { type: 'speed', amount: 10 },
+            { type: 'advantage', on: ['skill:acrobatics'] },
+          ],
+        },
         iconName: 'sparkling-sabre',
         color: '#7fc3d9',
       },
@@ -320,6 +328,7 @@ const bladesinger: SubclassDef = {
         name: 'Дополнительная атака',
         description: 'Совершая в свой ход действие Атака, вы можете атаковать дважды. Одну из этих атак можно заменить сотворением заговора волшебника со временем сотворения «действие».',
         iconName: 'sword-clash',
+        effects: [{ type: 'extraAttack', attacks: 2 }],
       },
     ],
     10: [
@@ -669,13 +678,17 @@ export const WIZARD: ClassDef = {
   saves: ['intelligence', 'wisdom'],
   skillChoices: { count: 2, list: ['arcana', 'history', 'insight', 'investigation', 'medicine', 'nature', 'religion'] },
   proficiencies: [{ type: 'proficiency', category: 'weapon', value: 'Простое оружие' }],
+  multiclass: {
+    requires: [['intelligence']],
+    proficiencies: [],
+  },
   subclassLevel: 3,
   subclasses: [abjurer, diviner, evoker, illusionist, bladesinger, necromancer, enchanter, transmuter, conjurer],
   startingEquipment: WIZARD_KITS,
   spellcasting: {
     ability: 'intelligence',
     list: 'wizard',
-    slots: FULL_CASTER_SLOTS,
+    progression: 'full',
     mode: 'spellbook',
     prepared: byTable([4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 18, 19, 21, 22, 23, 24, 25]),
     cantrips: byClassLevel({ 1: 3, 4: 4, 10: 5 }),

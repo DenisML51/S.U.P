@@ -253,8 +253,35 @@ export const applyWeeklyRecovery =
     return result.clearsMajorWound ? setConditions(healed, [], [CONDITION_IDS.majorWound]) : healed;
   };
 
-/** A successful First Aid on someone dying keeps them alive for the hour, with a point of hit points. */
-export const stabilise: Edit = (doc) => heal(1)(doc);
+/**
+ * A successful First Aid on someone dying: a point of hit points and the hour it buys. They are
+ * stabilised, not out of danger: Medicine within the hour saves them, else they are dying again.
+ */
+export const stabilise: Edit = (doc) =>
+  setConditions({ ...doc, currentHP: Math.max(1, doc.currentHP + 1) }, [CONDITION_IDS.stabilised], [CONDITION_IDS.dying]);
+
+/** Medicine in time for the stabilised: the hit points it gives (1d3, rolled outside) and the danger over. */
+export const treatWithMedicine =
+  (amount: number): Edit =>
+  (doc) =>
+    setConditions(heal(amount)(doc), [], [CONDITION_IDS.stabilised]);
+
+/** The hour of First Aid passed without Medicine: dying again at 0 hit points. */
+export const stabilisationLapses: Edit = (doc) =>
+  setConditions({ ...doc, currentHP: 0 }, [CONDITION_IDS.dying], [CONDITION_IDS.stabilised]);
+
+/**
+ * The CON roll a wound calls for, made: a failure with a major wound knocks the investigator out; a
+ * failure while dying kills. A success changes nothing.
+ */
+export const afterWoundRoll =
+  (success: boolean): Edit =>
+  (doc) => {
+    if (success) return doc;
+    if (doc.conditions.includes(CONDITION_IDS.dying)) return setConditions(doc, [CONDITION_IDS.dead], [CONDITION_IDS.dying]);
+    if (doc.conditions.includes(CONDITION_IDS.majorWound)) return setConditions(doc, [CONDITION_IDS.unconscious]);
+    return doc;
+  };
 
 // ------------------------------------------------------------------------------------------------
 // Weapons

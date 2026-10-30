@@ -6,19 +6,28 @@ import {
   clampSanity,
   experienceProgress,
   grantTempHP,
-  keepConcentration,
+  damageAfterDefences,
+  isDead,
   maxSanityOf,
+  rescaleLimbs,
+  rollDeathSave,
+  setDeathSaves,
+  settleHealth,
   receiveCoins,
   setExperience,
   spendCoins,
   totalMaxHP,
   type Coin,
 } from '@itd/game-logic';
-import type { Character } from '@itd/schema';
+import type { Character, DeathSaves } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
+import { levelGains, useMomentStore } from '../../store/useMomentStore';
+import { settingOf } from '../../ui/theme/settings';
 import { useConcentrationPrompt } from './Concentration';
 
 const COIN_NAME: Record<Coin, string> = { gold: 'зм', silver: 'см', copper: 'мм' };
+
+const DEFENCE_WORD = { resistance: 'сопротивление', vulnerability: 'уязвимость', immunity: 'иммунитет' } as const;
 
 /**
  * What changes minute to minute at the table: health, sanity, experience, coins. Every change is
@@ -29,13 +38,27 @@ export function useVitals() {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const max = totalMaxHP(character);
 
-  const damage = (value: number) => {
-    const preview = applyDamage(character, value);
-    const absorbed = preview.absorbed ? ` (${preview.absorbed} поглощено временными)` : '';
-    updateCharacter((doc) => applyDamage(doc, value).character, { log: { message: `Получен урон: ${value}${absorbed} — ${preview.character.currentHP}/${max}`, type: 'health' },
+  const damage = (value: number, { critical = false, type }: { critical?: boolean; type?: string } = {}) => {
+    const preview = applyDamage(character, value, { critical, type });
+    const taken = damageAfterDefences(character, value, type);
+    // Pieces joined by " — ", each said on its own in the other language.
+    const parts = [
+      `Получен урон: ${value}`,
+      ...(type ? [type.toLowerCase()] : []),
+      ...(taken.defence ? [`${DEFENCE_WORD[taken.defence]}: ${taken.amount}`] : []),
+      ...(preview.absorbed ? [`поглощено временными: ${preview.absorbed}`] : []),
+      `${preview.character.currentHP}/${max}`,
+    ];
+    if (isDead(preview.character)) parts.push('погиб');
+    else if (character.currentHP <= 0 && preview.character.deathSaves)
+      parts.push(`провалов спасбросков: ${preview.character.deathSaves.failures}`);
+    else if (preview.character.currentHP <= 0 && character.currentHP > 0) parts.push('без сознания');
+    updateCharacter((doc) => applyDamage(doc, value, { critical, type }).character, {
+      log: { message: parts.join(' — '), type: 'health' },
     });
-    // Concentration that survives the hit still has to survive a Constitution save.
-    if (preview.character.concentratingOn) useConcentrationPrompt.getState().askSave(value);
+    if (isDead(preview.character)) toast.error(`${character.name} погибает`);
+    // Concentration that survives the hit still has to survive a Constitution save, of the damage taken.
+    if (preview.character.concentratingOn && taken.amount > 0) useConcentrationPrompt.getState().askSave(taken.amount);
   };
 
   const heal = (value: number) => {
@@ -50,10 +73,35 @@ export function useVitals() {
 
   const healFully = () => heal(max - character.currentHP);
 
-  const setHealthField = (field: 'maxHP' | 'maxHPBonus' | 'tempHP' | 'currentHP', value: number) =>
+  const setHealthField = (field: 'maxHP' | 'maxHPBonus' | 'maxHPReduction' | 'tempHP' | 'currentHP', value: number) =>
     updateCharacter((doc) => {
       const next = { ...doc, [field]: Math.max(field === 'maxHPBonus' ? -Infinity : 0, value) };
-      return keepConcentration({ ...next, currentHP: Math.min(next.currentHP, totalMaxHP(next)) });
+      // Nothing taken off the maximum any more (a Vital Sacrifice won back): the field goes away.
+      if (field === 'maxHPReduction' && !next.maxHPReduction) delete next.maxHPReduction;
+      // A new maximum carries the limbs along (their wounds stay).
+      const limbs = field === 'maxHP' || field === 'maxHPBonus' ? rescaleLimbs(next) : next;
+      return settleHealth({ ...limbs, currentHP: Math.min(limbs.currentHP, totalMaxHP(limbs)) });
+    });
+
+  /** A death saving throw already thrown (`die` the d20 that counted, `modifier` what was added). */
+  const deathSave = (die: number, modifier = 0) => {
+    const { outcome } = rollDeathSave(character, die, modifier);
+    const said = {
+      success: 'успех',
+      failure: die <= 1 ? 'два провала' : 'провал',
+      stable: 'третий успех — стабилен',
+      dead: 'третий провал — погиб',
+      revived: 'приходит в себя с 1 хитом',
+    }[outcome];
+    updateCharacter((doc) => rollDeathSave(doc, die, modifier).character, {
+      // A natural 1 or 20 is what counts; otherwise the total, exhaustion taken off.
+      log: { message: `Спасбросок от смерти: ${die === 1 || die === 20 ? die : die + modifier} — ${said}`, type: 'health' },
+    });
+  };
+
+  const markDeathSaves = (saves: DeathSaves) =>
+    updateCharacter((doc) => setDeathSaves(doc, saves), {
+      log: { message: `Спасброски от смерти: успехов ${saves.successes}, провалов ${saves.failures}`, type: 'health' },
     });
 
   const changeSanity = (delta: number) => {
@@ -81,7 +129,13 @@ export function useVitals() {
     if (level === character.level) return;
     updateCharacter((doc) => setExperience(doc, doc.experience, level), { log: { message: level > character.level ? `Уровень повышен до ${level}` : `Уровень изменён: ${level}`, type: 'exp' },
     });
-    if (level > character.level) toast.success(`Новый уровень: ${level}`);
+    if (level > character.level)
+      useMomentStore.getState().celebrate({
+        from: character.level,
+        to: level,
+        setting: settingOf(character),
+        gains: levelGains(character, setExperience(character, character.experience, level)),
+      });
   };
 
   const canLevelUp = experienceProgress(character.level, character.experience).canLevelUp;
@@ -111,6 +165,8 @@ export function useVitals() {
     addTemp,
     healFully,
     setHealthField,
+    deathSave,
+    markDeathSaves,
     changeSanity,
     setSanityBonus,
     addExperience,

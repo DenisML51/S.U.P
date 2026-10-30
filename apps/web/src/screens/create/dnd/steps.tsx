@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   ATTRIBUTES_LIST,
   SKILLS_LIST,
@@ -15,20 +16,23 @@ import {
   findBackground,
   findClass,
   findFeat,
+  classAtLevel,
   kitItems,
-  preparedSpellsChoice,
+  preparedSpellsChoices,
+  setHeroLevel,
   type KitOption,
 } from '@itd/game-logic/dnd';
 import type { DndBuild } from '@itd/schema';
 import { GameIcon } from '../../../ui/GameIcon';
-import { ImageSlot } from '../../../ui/ImageSlot';
 import { NumberField, Segmented } from '../../../ui/forms';
 import { Facts, Section } from '../../../ui/Section';
 import { Button, IconButton, cx } from '../../../ui/primitives';
 import { IconCoins, IconDice, IconMinus, IconPlus } from '../../../ui/icons';
 import { ChoiceField } from '../../progression/ChoiceField';
+import { ClassPick } from '../../progression/ClassPick';
 import { CLASS_SOURCES, LevelPlanView, planIssues } from '../../progression/LevelPlanView';
-import { EmblemGrid, Picked, ScoreCard, ThrownScore, throwAbilityScores } from '../kit';
+import { EmblemGrid, IdentityStep as SharedIdentityStep, Picked, ScoreCard, ThrownScore, throwAbilityScores } from '../kit';
+import { ClassCarousel } from './ClassCarousel';
 import type { DndCreation } from './useDndCreation';
 
 const skillName = (id: string) => SKILLS_LIST.find((s) => s.id === id)?.name ?? id;
@@ -118,7 +122,7 @@ const BackgroundBonuses: React.FC<{ build: DndBuild; onChange: (build: DndBuild)
         />
       }
     >
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 max-sm:grid-cols-1">
         {background.abilities.map((attribute) => (
           <button
             key={attribute}
@@ -180,65 +184,74 @@ export const BackgroundStep: React.FC<{ creation: DndCreation }> = ({ creation }
 // ------------------------------------------------------------------------------------------------
 
 export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => {
-  const { build } = creation;
-  const classDef = findClass(build.class);
+  const classDef = findClass(creation.classId);
   const levels = classDef
     ? Object.entries(classDef.levels)
         .map(([level, features]) => [Number(level), features.filter((f) => !f.hidden).map((f) => f.name)] as const)
         .filter(([, names]) => names.length > 0)
     : [];
+  const chosen = !!classDef;
+  // Until a class is chosen the cards stand in the middle of the panel; the choice lifts them to its
+  // top, and what the class is comes in under them.
   return (
-    <>
-      <EmblemGrid
-        columns={6}
-        items={DND.classes.map((c) => ({ id: c.id, name: c.name, icon: DND_ICONS.classes[c.id] }))}
-        selected={build.class}
-        onSelect={creation.setClass}
-      />
-      <Picked
-        title={classDef?.name}
-        text={classDef?.description}
-        empty="Выберите класс — то, чему герой посвятил жизнь."
-        facts={
-          classDef && (
-            <Facts
-              facts={[
-                ['Кость хитов', `к${classDef.hitDie}`],
-                ['Основные', classDef.primary.map(attributeName).join(', ')],
-                ['Спасброски', classDef.saves.map(attributeName).join(', ')],
-                ['Подкласс', `с ${classDef.subclassLevel}-го уровня`],
-              ]}
-            />
-          )
-        }
+    <div className="flex min-h-full flex-col">
+      {!chosen && <div className="flex-1" aria-hidden />}
+      <motion.div layout="position" transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
+        <ClassCarousel value={creation.classId ?? ''} onChange={creation.setClass} onClear={creation.clearClass} />
+      </motion.div>
+      <motion.div
+        key={chosen ? 'chosen' : 'empty'}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: chosen ? 0.2 : 0 }}
       >
-        {classDef && (
-          <>
-            {/* Only to read: the subclass is picked on the level that brings it, on «Развитие». */}
-            <Section title="Подклассы" hint={`Подкласс выбирается на ${classDef.subclassLevel}-м уровне, на шаге «Развитие».`}>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-x-6 gap-y-2.5">
-                {classDef.subclasses.map((subclass) => (
-                  <li key={subclass.id} className="flex items-center gap-2.5 text-sm text-ink-muted" title={subclass.description}>
-                    <GameIcon name={DND_ICONS.subclasses[subclass.id]} kind="ability" size={22} className="ui-origin__icon shrink-0" />
-                    {subclass.name}
-                  </li>
-                ))}
-              </ul>
-            </Section>
-            <Section title="Развитие по уровням">
-              <ol className="divide-y divide-line/40 border-y border-line/40 text-[13px]">
-                {levels.map(([level, names]) => (
-                  <li key={level} className="grid grid-cols-[3rem_1fr] items-baseline py-1.5">
-                    <span className="ui-numeric text-center text-ink-faint">{level}</span>
-                    <span className="text-ink-muted">{names.join(', ')}</span>
-                  </li>
-                ))}
-              </ol>
-            </Section>
-          </>
-        )}
-      </Picked>
-    </>
+        <Picked
+          title={classDef?.name}
+          text={classDef?.description}
+          empty="Выберите класс — то, чему герой посвятил жизнь."
+          facts={
+            classDef && (
+              <Facts
+                facts={[
+                  ['Кость хитов', `к${classDef.hitDie}`],
+                  ['Основные', classDef.primary.map(attributeName).join(', ')],
+                  ['Спасброски', classDef.saves.map(attributeName).join(', ')],
+                  ['Подкласс', `с ${classDef.subclassLevel}-го уровня`],
+                  ...(classDef.source ? [['Источник', `Хоумбрю · ${classDef.source}`] as [string, string]] : []),
+                ]}
+              />
+            )
+          }
+        >
+          {classDef && (
+            <>
+              {/* Only to read: the subclass is picked on the level that brings it, on «Развитие». */}
+              <Section title="Подклассы" hint={`Подкласс выбирается на ${classDef.subclassLevel}-м уровне, на шаге «Развитие».`}>
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-x-6 gap-y-2.5">
+                  {classDef.subclasses.map((subclass) => (
+                    <li key={subclass.id} className="flex items-center gap-2.5 text-sm text-ink-muted" title={subclass.description}>
+                      <GameIcon name={DND_ICONS.subclasses[subclass.id]} kind="ability" size={22} className="ui-origin__icon shrink-0" />
+                      {subclass.name}
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+              <Section title="Развитие по уровням">
+                <ol className="divide-y divide-line/40 border-y border-line/40 text-[13px]">
+                  {levels.map(([level, names]) => (
+                    <li key={level} className="grid grid-cols-[3rem_1fr] items-baseline py-1.5">
+                      <span className="ui-numeric text-center text-ink-faint">{level}</span>
+                      <span className="text-ink-muted">{names.join(', ')}</span>
+                    </li>
+                  ))}
+                </ol>
+              </Section>
+            </>
+          )}
+        </Picked>
+      </motion.div>
+      {!chosen && <div className="flex-1" aria-hidden />}
+    </div>
   );
 };
 
@@ -279,7 +292,7 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
   };
   const points = pointsRemaining(scores);
   /** The class's main scores, marked on their cards: where the points matter most. */
-  const primary = new Set<string>(findClass(build.class)?.primary ?? []);
+  const primary = new Set<string>(findClass(creation.classId)?.primary ?? []);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col items-center">
@@ -310,7 +323,7 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
           {rolls ? 'Перебросить' : 'Бросить'}
         </Button>
       )}
-      <div className="mt-6 grid w-full grid-cols-6 gap-3">
+      <div className="mt-6 grid w-full grid-cols-6 gap-3 max-lg:grid-cols-3 max-sm:grid-cols-2">
         {ATTRIBUTES_LIST.map((attribute, index) => {
           const base = scores[attribute.id] ?? 8;
           const bonus = build.backgroundBonuses[attribute.id] ?? 0;
@@ -364,50 +377,76 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
 
 export const ProgressionStep: React.FC<{ creation: DndCreation }> = ({ creation }) => {
   const { build } = creation;
-  /** A level number, or "spells" for the spells a preparing caster starts with. */
-  const [shown, setShown] = useState<number | 'spells'>(1);
-  const prepared = preparedSpellsChoice(build);
-  const spellsShown = shown === 'spells' && !!prepared;
-  const level = spellsShown ? build.level : Math.min(shown === 'spells' ? 1 : shown, build.level);
+  /** A level number, or the class whose starting prepared spells are shown. */
+  const [shown, setShown] = useState<number | { spells: string }>(1);
+  const prepared = preparedSpellsChoices(build);
+  const spells = typeof shown === 'object' ? prepared.find((choice) => choice.owner.classId === shown.spells) : undefined;
+  const level = spells ? creation.level : Math.min(typeof shown === 'number' ? shown : 1, creation.level);
+  const several = build.classes.length > 1;
+  const classOf = (l: number) => classAtLevel(build, l)?.entry.def;
   return (
-    <div className="grid grid-cols-[11rem_minmax(0,1fr)] gap-6">
+    <div className="grid grid-cols-[11rem_minmax(0,1fr)] gap-6 max-sm:grid-cols-1">
       <div className="flex min-h-0 flex-col">
         <label className="ui-label">Начальный уровень</label>
-        <NumberField value={build.level} min={1} max={20} onChange={creation.setLevel} label="Начальный уровень" className="mb-4" />
+        <NumberField value={creation.level} min={1} max={20} onChange={creation.setLevel} label="Начальный уровень" className="mb-4" />
         <div className="ui-scroll grid min-h-0 content-start gap-1 overflow-y-auto pr-1">
-          {Array.from({ length: build.level }, (_, i) => i + 1).map((l) => {
+          {Array.from({ length: creation.level }, (_, i) => i + 1).map((l) => {
             const open = planIssues(build, l, CLASS_SOURCES).length;
             return (
-              <button key={l} type="button" className="ui-option flex-row items-center justify-between py-1.5" aria-pressed={!spellsShown && l === level} onClick={() => setShown(l)}>
-                <span className="text-sm">Уровень {l}</span>
+              <button key={l} type="button" className="ui-option flex-row items-center justify-between py-1.5" aria-pressed={!spells && l === level} onClick={() => setShown(l)}>
+                <span className="flex min-w-0 flex-col items-start">
+                  <span className="text-sm">Уровень {l}</span>
+                  {/* With several classes each level says whose it is. */}
+                  {several && <span className="ui-option__meta truncate">{classOf(l)?.name}</span>}
+                </span>
                 <span className={cx('text-xs', open ? 'text-warning' : 'text-success')}>{open ? `выбрать: ${open}` : '✓'}</span>
               </button>
             );
           })}
-          {prepared && (
-            <button type="button" className="ui-option mt-2 flex-row items-center justify-between py-1.5" aria-pressed={spellsShown} onClick={() => setShown('spells')}>
-              <span className="text-sm">Заклинания</span>
+          {prepared.map((choice) => (
+            <button
+              key={choice.key}
+              type="button"
+              className="ui-option mt-2 flex-row items-center justify-between py-1.5"
+              aria-pressed={spells?.key === choice.key}
+              onClick={() => setShown({ spells: choice.owner.classId! })}
+            >
+              <span className="flex min-w-0 flex-col items-start">
+                <span className="text-sm">Заклинания</span>
+                {prepared.length > 1 && <span className="ui-option__meta truncate">{findClass(choice.owner.classId)?.name}</span>}
+              </span>
               <span className="ui-numeric text-xs text-ink-faint">
-                {prepared.picked.length} / {prepared.count}
+                {choice.picked.length} / {choice.count}
               </span>
             </button>
-          )}
+          ))}
         </div>
       </div>
       <div className="min-w-0 border-l border-line/60 pl-6">
         <h3 className="ui-display ui-title mb-4 text-[1.6rem] leading-tight text-frame-bright">
-          {spellsShown ? 'Заклинания' : `${findClass(build.class)?.name} · уровень ${level}`}
+          {spells ? 'Заклинания' : `${classOf(level)?.name} · уровень ${level}`}
         </h3>
-        {spellsShown && prepared ? (
-          <ChoiceField build={build} level={build.level} open={prepared} onChange={creation.setBuild} />
+        {spells ? (
+          <ChoiceField build={build} level={creation.level} open={spells} onChange={creation.setBuild} />
         ) : (
-          <LevelPlanView build={build} level={level} sources={CLASS_SOURCES} onChange={creation.setBuild} />
+          <>
+            {/* After the first, a level may go to another class (multiclassing). */}
+            {level > 1 && (
+              <ClassPick
+                key={level}
+                build={setHeroLevel(build, level - 1)}
+                selected={classOf(level)?.id}
+                title="Класс уровня"
+                onPick={(id) => creation.setLevelClass(level, id)}
+              />
+            )}
+            <LevelPlanView build={build} level={level} sources={CLASS_SOURCES} onChange={creation.setBuild} />
+          </>
         )}
       </div>
     </div>
   );
 };
-
 // ------------------------------------------------------------------------------------------------
 // Equipment
 // ------------------------------------------------------------------------------------------------
@@ -464,7 +503,7 @@ const KitChoice: React.FC<{ title: string; origin: string; kits: KitOption[]; se
 );
 
 export const EquipmentStep: React.FC<{ creation: DndCreation }> = ({ creation }) => {
-  const classDef = findClass(creation.build.class);
+  const classDef = findClass(creation.classId);
   const background = findBackground(creation.build.background);
   return (
     <div className="mx-auto max-w-5xl">
@@ -481,20 +520,5 @@ export const EquipmentStep: React.FC<{ creation: DndCreation }> = ({ creation })
 /** Name and pictures; shared by both ways of creating a hero. */
 export const IdentityStep: React.FC<{
   creation: Pick<DndCreation, 'name' | 'setName' | 'images' | 'setImages'>;
-}> = ({ creation }) => (
-  <div className="mx-auto flex h-full max-w-3xl flex-col justify-center gap-8">
-    <input
-      value={creation.name}
-      onChange={(e) => creation.setName(e.target.value)}
-      placeholder="Имя героя"
-      aria-label="Имя героя"
-      autoFocus
-      className="ui-display border-b border-frame/50 bg-transparent pb-2 text-center text-4xl text-ink outline-none placeholder:text-ink-faint focus:border-frame-bright"
-    />
-    <div className="flex items-start justify-center gap-6">
-      <ImageSlot label="Полный арт" kind="full" hint="Во весь рост" asset={creation.images.full} onUploaded={(full) => creation.setImages({ ...creation.images, full })} className="h-[16.6rem] w-40" />
-      <ImageSlot label="Портрет" kind="portrait" hint="Лицо" asset={creation.images.portrait} onUploaded={(portrait) => creation.setImages({ ...creation.images, portrait })} className="h-[9.6rem] w-32" />
-    </div>
-  </div>
-);
+}> = ({ creation }) => <SharedIdentityStep creation={creation} placeholder="Имя героя" />;
 

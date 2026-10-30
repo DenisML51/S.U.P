@@ -1,4 +1,4 @@
-import type { ActionType } from '@itd/schema';
+import type { ActionType, DamageRule, HitPointCost } from '@itd/schema';
 import type { AttributeId } from '../content/attributes';
 
 /**
@@ -44,6 +44,10 @@ export interface BuildContext {
   score: (attribute: AttributeId) => number;
   /** Ability modifier after every increase of the build. */
   modifier: (attribute: AttributeId) => number;
+  /** The subclass chosen, once it is (an order that changes a class die). */
+  subclass?: string;
+  /** The class's key ability the hero chose, when the class lets them (a blood hunter's hemocraft). */
+  keyAbility?: AttributeId;
 }
 
 /** A number that may depend on the hero (uses per long rest equal to the Charisma modifier, …). */
@@ -54,6 +58,8 @@ export type Amount = number | ((ctx: BuildContext) => number);
 // ------------------------------------------------------------------------------------------------
 
 export type ProficiencyCategory = 'armor' | 'weapon' | 'tool' | 'language';
+export type SpeedCondition = 'unarmored' | 'noHeavyArmor';
+export type MovementMode = 'climb' | 'swim' | 'fly';
 
 export type Effect =
   /** Ability score increase; the score cannot go above `max` this way (20 unless stated). */
@@ -66,14 +72,22 @@ export type Effect =
   | { type: 'proficiency'; category: ProficiencyCategory; value: string }
   /** Walking speed set by the species; the largest base wins. */
   | { type: 'baseSpeed'; value: number }
-  | { type: 'speed'; amount: number }
-  /** Extra maximum hit points per character level (Tough, Dwarven Toughness). */
+  /**
+   * Walking speed added, only while the gear allows it when `when` is set: `unarmored` without
+   * armour or a shield (Unarmored Movement), `noHeavyArmor` unless heavy armour is worn (Fast Movement).
+   */
+  | { type: 'speed'; amount: Amount; when?: SpeedCondition }
+  /** Climbing, swimming or flying speed in feet; without `feet` it equals the walking speed. */
+  | { type: 'movement'; mode: MovementMode; feet?: number }
+  /** Darkvision in feet; `extend` adds the range to darkvision the hero already has, else gives it. */
+  | { type: 'darkvision'; range: number; extend?: boolean }
+  /** Extra maximum hit points per level: of the class for a class's feature (Draconic Resilience), of the hero for the rest (Tough, Dwarven Toughness). */
   | { type: 'hpPerLevel'; amount: number }
   | { type: 'hp'; amount: Amount }
   | { type: 'initiative'; amount: Amount }
-  /** Armour class bonus, only while wearing armour when `armored` (Defense). */
-  | { type: 'armorClass'; amount: number; armored?: boolean }
-  | { type: 'resistance'; damageType: string; level?: 'resistance' | 'immunity' }
+  /** Armour class bonus, only while wearing armour when `armored` (Defense), only without heavy armour when `noHeavyArmor`. */
+  | { type: 'armorClass'; amount: Amount; armored?: boolean; noHeavyArmor?: boolean }
+  | { type: 'resistance'; damageType: string; level?: 'resistance' | 'immunity' | 'vulnerability' }
   /**
    * A spell the hero always has. `alwaysPrepared` spells never count against the prepared limit;
    * `ability` overrides the spellcasting ability for it (species and feat spells).
@@ -98,6 +112,49 @@ export type Effect =
   | { type: 'halfProficiency' }
   /** An attack the hero always has, without a weapon (a Monk's Unarmed Strike, Psychic Blades). */
   | { type: 'attack'; attack: GrantedAttackDef }
+  /** A fighting style that changes weapon damage: Dueling +2, Great Weapon Fighting 1–2 → 3, Two-Weapon Fighting. */
+  | { type: 'weaponStyle'; style: 'dueling' | 'greatWeapon' | 'twoWeapon' }
+  /** Attacks made with one Attack action (Extra Attack: 2; a Fighter's 3 and 4). */
+  | { type: 'extraAttack'; attacks: number }
+  /** Weapon attacks are critical hits from this natural roll up (Champion: 19, then 18). */
+  | { type: 'critRange'; min: number }
+  /**
+   * d20 rolls always made with advantage: `initiative`, `deathSave`, `skill:<id>`, `save:<ability>`,
+   * `check:<ability>`, `attack:spell`, `attack:weapon`.
+   */
+  | { type: 'advantage'; on: string[] }
+  /** d20 rolls always made with disadvantage (a Mutagen's side effect); keys as `advantage`. */
+  | { type: 'disadvantage'; on: string[] }
+  /** Added to saving throws of the abilities (Dark Augmentation: the hemocraft modifier). */
+  | { type: 'saveBonus'; attributes: AttributeId[]; amount: Amount }
+  /** Dice added to d20 rolls of the keys (`advantage`'s): a Rite Die to Strength saves. */
+  | { type: 'rollDice'; on: string[]; dice: string | ((ctx: BuildContext) => string) }
+  /**
+   * Damage added to weapon and unarmed attacks made with this ability, any when absent (Rage:
+   * Strength); only with Heavy weapons when `heavy` (Great Weapon Master), only in melee when `melee`
+   * (a Lycan's Feral Might), only with weapons when `weapon` (a Crimson Rite). A flat `amount` adds to
+   * the attack's own damage; `dice` of a `damageType` are dealt beside it (Crimson Rite: 1d4 fire).
+   */
+  | ({ type: 'damageBonus'; ability?: AttributeId; heavy?: boolean; melee?: boolean; weapon?: boolean } & (
+      | { amount: Amount }
+      | { dice: string | ((ctx: BuildContext) => string); damageType: string }
+    ))
+  /**
+   * Damage added to spells that fit: one spell, a class list, its cantrips, a school, a damage type
+   * (Agonizing Blast, Potent Spellcasting, Empowered Evocation, Elemental Affinity).
+   */
+  | { type: 'spellDamage'; amount: Amount; spell?: string; list?: SpellListId; cantrips?: boolean; school?: string; damageType?: string }
+  /** A rule for damage dice (Savage Attacker: rolled twice; Piercer: one die again). */
+  | { type: 'damageRoll'; rule: Omit<DamageRule, 'id'> }
+  /** Added to the spell save DC (Innate Sorcery). */
+  | { type: 'spellSaveDC'; amount: number }
+  /** In the shape of a beast (Wild Shape): its physical scores, armour class, speeds, senses and attacks. */
+  | { type: 'form'; beast: string }
+  /**
+   * What a druid's forms gain (Circle Forms): armour class at least `armorClass`, temporary hit
+   * points multiplied by `tempHPMultiplier`, beasts up to challenge `maxCR`.
+   */
+  | { type: 'wildShape'; armorClass?: Amount; tempHPMultiplier?: number; maxCR?: Amount }
   /** A bonus to attack rolls with weapons of a kind (Archery: +2 with ranged weapons). */
   | { type: 'attackBonus'; kind: 'melee' | 'ranged'; amount: number }
   /**
@@ -118,6 +175,10 @@ export interface GrantedAttackDef {
   damageType: string;
   /** The ability added to the attack and damage; the best of several when a list. */
   abilities: AttributeId[];
+  /** Added to the attack roll (a Lycan's Improved Predatory Strikes). */
+  hitBonus?: Amount;
+  /** A melee attack (an unarmed strike) unless `ranged`. */
+  ranged?: boolean;
   actionType?: ActionType;
   iconName?: string;
 }
@@ -154,8 +215,13 @@ export interface FeatureDef {
   action?: ActionType;
   /** A pool of uses this feature brings. */
   resource?: ResourceDef;
-  /** Spending a pool of another feature (Channel Divinity options, maneuvers). */
-  usesResource?: { id: string; cost?: number };
+  /**
+   * Spending a pool (its own or another feature's: Channel Divinity options, maneuvers): `cost`
+   * a use, or as much as the player chooses up to `max`, each unit giving `perPoint` (Lay on Hands).
+   */
+  usesResource?: { id: string; cost?: number; max?: Amount; perPoint?: string };
+  /** Turns a spell slot into points of `usesResource`, or points into a slot (Font of Magic). */
+  convert?: 'slotToPoints' | 'pointsToSlot';
   /** Dice it deals or heals, growing with level when a function (`1d10` → `4d10` breath). */
   damage?: string | ((ctx: BuildContext) => string);
   /** `Лечение` for healing. */
@@ -163,6 +229,23 @@ export interface FeatureDef {
   /** The saving throw a target makes against it, and its DC. */
   saveAttribute?: AttributeId;
   saveDC?: Amount;
+  /** The user gains temporary hit points of this share of the damage it deals (Rite of Siphoning: 1). */
+  tempHPFromDamage?: number;
+  /** Dealt with a hit of a melee weapon or unarmed strike, or of any weapon (Eldritch Smite), not on its own. */
+  onHit?: 'melee' | 'weapon';
+  /** Hit points every use costs (Crimson Rite: a hemocraft die; a Vital Sacrifice off the maximum too). */
+  hpCost?: HitPointCostDef;
+  /** With its pool empty it may still be used, for these hit points instead of a use (a Blood Rite). */
+  hpCostWhenSpent?: HitPointCostDef;
+  /**
+   * It may be strengthened when used (an amplified Blood Curse, an empowered Blood Rite): what that
+   * does, the hit points it costs on top, and the dice it deals instead of `damage`.
+   */
+  amplify?: {
+    description: string;
+    hpCost?: HitPointCostDef;
+    damage?: string | ((ctx: BuildContext) => string);
+  };
   effects?: Effect[] | ((ctx: BuildContext) => Effect[]);
   choices?: ChoiceDef[];
   /** Game-icons id and colour the hotbar shows (see apps/web GameIcon catalogue). */
@@ -170,8 +253,66 @@ export interface FeatureDef {
   color?: string;
   /** Only informational (a heading in the level-up window), never written onto the sheet. */
   hidden?: boolean;
-  /** Character level the feature opens at, for species and feats that grow (Draconic Flight at 5). */
+  /**
+   * Level the feature opens at: the class level for a class's feature (Improved Blessed Strikes at
+   * 14), the character level for a species' or a feat's (Draconic Flight at 5).
+   */
   minLevel?: number;
+  /** The last level it lasts to, counted the same way, when a later one replaces it (a transformation that turns unlimited). */
+  maxLevel?: number;
+  /**
+   * Using it turns it on until it is ended (Rage, Bladesong, Draconic Flight): these effects count
+   * only meanwhile. Starting it ends concentration when `endsConcentration` (a raging barbarian).
+   */
+  stance?: StanceDef;
+}
+
+export interface StanceDef {
+  effects: Effect[] | ((ctx: BuildContext) => Effect[]);
+  /** Starting it ends concentration (a raging barbarian). */
+  endsConcentration?: boolean;
+  /** No spells are cast while it is on (Rage; Wild Shape before level 18). */
+  noSpells?: boolean | ((ctx: BuildContext) => boolean);
+  /** Only one feature of a group is on at a time: a new form of Wild Shape replaces the old. */
+  group?: string;
+  /** Temporary hit points it gives when it starts (Wild Shape: the druid level). */
+  tempHP?: Amount;
+  /** It ends with a short rest as well as a long one (Crimson Rite, a Mutagen). */
+  untilShortRest?: boolean;
+}
+
+/** Hit points a feature costs (see `HitPointCost`), written for the hero's numbers when a function. */
+export type HitPointCostDef = HitPointCost | ((ctx: BuildContext) => HitPointCost);
+
+/** One attack of a beast's stat block, with its own numbers. */
+export interface BeastAttackDef {
+  name: string;
+  hit: number;
+  /** Empty for an attack that only does what its note says (a web). */
+  damage: string;
+  damageType: string;
+  note?: string;
+}
+
+/** A beast of Wild Shape: what of its stat block replaces the druid's. */
+export interface BeastFormDef {
+  id: string;
+  name: string;
+  /** Challenge rating: 0, 1/8, 1/4, 1/2, 1, 2… */
+  cr: number;
+  size: string;
+  ac: number;
+  speed: number;
+  climb?: number;
+  swim?: number;
+  fly?: number;
+  darkvision?: number;
+  str: number;
+  dex: number;
+  con: number;
+  attacks: BeastAttackDef[];
+  traits?: string;
+  iconName?: string;
 }
 
 /** An inline option of a choice (an elf lineage, a dragon ancestry, a Channel Divinity option). */
@@ -182,13 +323,17 @@ export interface OptionDef {
   effects?: Effect[] | ((ctx: BuildContext) => Effect[]);
   /** Features the option brings, each written onto the sheet. */
   features?: FeatureDef[];
+  /** Class level it may be picked from (Crimson Offering's necrotic, psychic and thunder at 11). */
+  minLevel?: number;
+  /** Game-icons id of its card in the picker (a patron's, a damage type's). */
+  iconName?: string;
 }
 
 export type FeatCategory = 'origin' | 'general' | 'fightingStyle' | 'epicBoon';
-export type SpellListId = 'bard' | 'cleric' | 'druid' | 'paladin' | 'ranger' | 'sorcerer' | 'warlock' | 'wizard';
+export type SpellListId = 'bard' | 'cleric' | 'druid' | 'paladin' | 'ranger' | 'sorcerer' | 'warlock' | 'wizard' | 'witchKnight';
 
 /** Lists of picks other than feats and spells (Eldritch Invocations, Metamagic). */
-export type CatalogId = 'invocations' | 'metamagic';
+export type CatalogId = 'invocations' | 'metamagic' | 'bloodCurses' | 'crimsonRites' | 'mutagens' | 'bloodRites' | 'latentMutagens' | 'bloodHunterStyles';
 
 export type OptionSource =
   | { from: 'skills'; list?: SkillId[] }
@@ -215,6 +360,12 @@ export type OptionSource =
   | { from: 'weapons'; filter: WeaponFilter }
   | { from: 'maneuvers' }
   | { from: 'catalog'; catalog: CatalogId }
+  /**
+   * Beasts of Wild Shape up to the challenge the druid's level allows (flying ones from level 8), or
+   * any beast up to `maxCR` (a Pale Moon hunter's curse); `features` make the shape's own features
+   * instead of Wild Shape's.
+   */
+  | { from: 'beasts'; maxCR?: number; features?: (beast: BeastFormDef) => FeatureDef[] }
   /** Picks made earlier in a pool, one of which is given up for a new one (a spell replaced on a level-up). */
   | { from: 'forget'; pool: string }
   | { from: 'tools'; list?: string[] }
@@ -246,6 +397,8 @@ export interface ChoiceDef {
   spellResource?: string;
   /** The player may leave it without a pick (giving up a spell on a level-up). */
   optional?: boolean;
+  /** Picks can be changed on the sheet as well, any time (Wild Shape forms, swapped after a rest). */
+  onSheet?: boolean;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -276,6 +429,10 @@ export interface SpellDef {
   damageType?: string;
   /** Dice added per slot level above the spell's level (`1d6`), when the spell grows by slot. */
   upcastDamage?: string;
+  /** Dice from a slot level on, when they grow in steps rather than by slot (Shadow Blade: `{ 3: '3d8', 5: '4d8' }`). */
+  slotDamage?: Partial<Record<number, string>>;
+  /** A smite: cast right after a hit of a melee weapon or unarmed strike, its dice dealt with the hit's. */
+  onHit?: 'melee' | 'weapon';
   /** A cantrip whose dice count grows at character levels 5, 11 and 17 (×2, ×3, ×4). */
   cantripScaling?: boolean;
   /** The caster's spellcasting modifier is added to the damage or healing (Cure Wounds). */
@@ -289,16 +446,30 @@ export interface SpellDef {
   color?: string;
 }
 
-/** Spell slots by class level: `slots[classLevel - 1][spellLevel - 1]`. */
+/**
+ * How a casting's class levels count for spell slots: `full` casters (bard, cleric, druid,
+ * sorcerer, wizard) all of them, `half` (paladin, ranger) half rounded up, `third` (Eldritch
+ * Knight, Arcane Trickster) a third rounded down; `pact` casters (warlock) have Pact Magic instead.
+ * A lone casting reads its own table; several add up to one caster level of the full table.
+ */
+export type CasterProgression = 'full' | 'half' | 'third' | 'pact';
+
 export interface SpellcastingDef {
-  ability: AttributeId;
+  /** `key`: the class's key ability the hero chose (a Profane Soul casts with their hemocraft). */
+  ability: AttributeId | 'key';
   list: SpellListId;
-  slots: number[][];
+  progression: CasterProgression;
   /**
-   * Pact Magic (Warlock): instead of `slots`, a few slots all of one level that come back on a
-   * short rest, by class level.
+   * Pact Magic (`pact` progression): a few slots all of one level that come back on a short rest,
+   * by class level.
    */
   pact?: { count: number; level: number }[];
+  /**
+   * Beside another class's Pact Magic, the pact slots are counted together on that class's table,
+   * this casting's class levels as a third of them, rounded down (a Profane Soul with a warlock);
+   * all of them when absent.
+   */
+  pactShare?: 'third';
   /**
    * `prepared`: every spell of the list the hero can cast is on the sheet and they prepare
    * `prepared(level)` of them (paladin, cleric, druid, ranger). `known`: the hero picks spells in
@@ -336,21 +507,49 @@ export interface ClassDef {
   id: string;
   name: string;
   description: string;
+  /** The author of a class outside the Player's Handbook (a homebrew: "Мэтт Мерсер"). */
+  source?: string;
   hitDie: number;
   primary: AttributeId[];
   saves: AttributeId[];
   skillChoices: { count: number; list: SkillId[] };
   proficiencies: Effect[];
+  /** Features only a hero who starts in the class gains, not one who takes it later (a bard's three instruments). */
+  starting?: FeatureDef[];
+  multiclass: MulticlassDef;
   levels: Record<number, FeatureDef[]>;
   subclassLevel: number;
   subclasses: SubclassDef[];
   spellcasting?: SpellcastingDef;
+  /**
+   * A key ability the hero chooses at level 1 among `options` (hemocraft: Intelligence or Wisdom);
+   * features read it as `ctx.keyAbility`, a casting with `ability: 'key'` casts with it.
+   */
+  keyAbility?: { label: string; description: string; options: AttributeId[]; notes?: Partial<Record<AttributeId, string>> };
   /**
    * Pools of picks one of which may be replaced on every later class level (maneuvers, Eldritch
    * Invocations, Metamagic). Known spells and cantrips of a caster are replaceable without listing.
    */
   replaceable?: { pool: string; label: string }[];
   startingEquipment: KitOption[];
+}
+
+/**
+ * Taking the class after another one (PHB 2024, "As a Multiclass Character"): the scores it asks
+ * for, and the part of its starting proficiencies it gives instead of all of them (no saving throws).
+ */
+export interface MulticlassDef {
+  /**
+   * Scores of 13 the hero needs, to take the class and to leave it for another: any one group in
+   * full. `[['strength'], ['dexterity']]` is "Strength or Dexterity 13", `[['dexterity', 'wisdom']]`
+   * "Dexterity and Wisdom 13".
+   */
+  requires: AttributeId[][];
+  proficiencies: Effect[];
+  /** Skill proficiencies picked from the class's own skill list (a bard's is every skill). */
+  skills?: number;
+  /** Features in place of the class's `starting` ones (a bard's one instrument). */
+  features?: FeatureDef[];
 }
 
 export interface SpeciesDef {
@@ -403,6 +602,10 @@ export interface CatalogEntryDef extends FeatureDef {
     spell?: string;
     /** Another entry of the catalog the hero must have (Pact of the Blade). */
     entry?: string;
+    /** At least `min` in one of the scores, or in each when `all` (a fighting style's Dexterity 13). */
+    attributes?: { list: AttributeId[]; min: number; all?: boolean };
+    /** A skill the hero must be proficient in (Featherweight Fighting: Acrobatics). */
+    skill?: SkillId;
     text?: string;
   };
   /** May be taken more than once (each time with its own picks). */

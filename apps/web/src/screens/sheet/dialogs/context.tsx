@@ -11,7 +11,9 @@ export type EntryKind = 'attack' | 'ability' | 'spell' | 'item' | 'trait' | 'res
 export type SheetDialog =
   | { kind: EntryKind; id?: string; edit?: boolean }
   | { kind: 'health' | 'sanity' | 'experience' | 'currency' | 'armor' | 'body' | 'profile' | 'dice' | 'levelUp' | 'rest' }
-  | { kind: 'attribute' | 'limb'; id: string };
+  | { kind: 'attribute' | 'limb'; id: string }
+  /** Picks of a feature changed on the sheet (the known forms of Wild Shape), by the feature's grant. */
+  | { kind: 'choices'; grant: string };
 
 /** An entry whose card is shown beside its list. */
 export interface SelectedEntry {
@@ -30,6 +32,11 @@ interface SheetDialogs {
   /** Whether this entry's card is the one beside its list. */
   isSelected: (kind: EntryKind, id: string) => boolean;
   clearSelection: () => void;
+  /**
+   * A section that measures its own room says whether the card fits beside its list (null: it
+   * does not say, and the screen's width decides).
+   */
+  setPaneRoom: (room: boolean | null) => void;
 }
 
 /** Below this width the section has no room for a list and a card side by side. */
@@ -52,7 +59,9 @@ const Context = createContext<SheetDialogs | null>(null);
 export const SheetDialogsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [dialog, setDialog] = useState<SheetDialog | null>(null);
   const [selected, setSelected] = useState<SelectedEntry | null>(null);
-  const wide = useWideSheet();
+  const wideScreen = useWideSheet();
+  const [paneRoom, setPaneRoom] = useState<boolean | null>(null);
+  const wide = paneRoom ?? wideScreen;
   const close = useCallback(() => setDialog(null), []);
   const clearSelection = useCallback(() => setSelected(null), []);
   const openEntry = useCallback(
@@ -69,6 +78,7 @@ export const SheetDialogsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       openEntry,
       isSelected: (kind: EntryKind, id: string) => shown?.kind === kind && shown.id === id,
       clearSelection,
+      setPaneRoom,
     };
   }, [dialog, close, selected, wide, openEntry, clearSelection]);
   return <Context.Provider value={value}>{children}</Context.Provider>;

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
-import { startingSkills } from '../src';
+import { speedOf, startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, levelPlan } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'guide',
@@ -42,12 +42,12 @@ describe('ranger', () => {
     expect(mark?.alwaysPrepared && mark.prepared).toBe(true);
     expect(resource(c, 'slot-1')?.max).toBe(2);
     expect(resource(c, 'slot-2')).toBeUndefined();
-    expect(c.maxPreparedSpells.total).toBe(2);
+    expect(c.casters?.[0]?.prepared).toBe(2);
     expect(c.spellcastingDifficultyValue).toBe(8 + 2 + 2);
   });
 
   it('asks for skills and weapon masteries on level 1', () => {
-    const plan = levelPlan(build(), 1);
+    const plan = levelPlan(atLevel(build(), 1), 1);
     expect(plan.choices.find((c) => c.key === 'class:ranger.skills/skills')?.count).toBe(3);
     expect(plan.choices.find((c) => c.choice.pool === 'weapon-mastery')?.count).toBe(2);
     // A preparing caster has no picks of known spells.
@@ -56,19 +56,19 @@ describe('ranger', () => {
 
   it('opens Deft Explorer and the Fighting Style on level 2', () => {
     const b = build({ level: 2, choices: { 'class:ranger.skills/skills': ['stealth', 'perception', 'nature'] } });
-    const plan = levelPlan(b, 2);
+    const plan = levelPlan(atLevel(b, 2), 2);
     const expertise = plan.choices.find((c) => c.key === 'class:ranger.deft-explorer/expertise')!;
     expect(expertise.count).toBe(1);
-    expect(choiceOptions(b, 2, expertise).map((o) => o.id)).toEqual(expect.arrayContaining(['stealth', 'perception', 'nature']));
+    expect(choiceOptions(atLevel(b, 2), 2, expertise).map((o) => o.id)).toEqual(expect.arrayContaining(['stealth', 'perception', 'nature']));
     expect(plan.choices.find((c) => c.key === 'class:ranger.deft-explorer/languages')?.count).toBe(2);
 
     const style = plan.choices.find((c) => c.key === 'class:ranger.fighting-style/style')!;
-    expect(choiceOptions(b, 2, style).map((o) => o.id)).toEqual(['feat', 'druidic-warrior']);
+    expect(choiceOptions(atLevel(b, 2), 2, style).map((o) => o.id)).toEqual(['feat', 'druidic-warrior']);
     const druidic = { ...b, choices: { ...b.choices, [style.key]: ['druidic-warrior'] } };
-    const cantrips = levelPlan(druidic, 2).choices.find((c) => c.key.endsWith('ranger.druidic-warrior/cantrips'))!;
+    const cantrips = levelPlan(atLevel(druidic, 2), 2).choices.find((c) => c.key.endsWith('ranger.druidic-warrior/cantrips'))!;
     expect(cantrips.count).toBe(2);
     expect(cantrips.choice.spellAbility).toBe('wisdom');
-    const options = choiceOptions(druidic, 2, cantrips);
+    const options = choiceOptions(atLevel(druidic, 2), 2, cantrips);
     expect(options.length).toBeGreaterThan(3);
     expect(options.every((o) => o.meta?.startsWith('Заговор'))).toBe(true);
   });
@@ -80,9 +80,9 @@ describe('ranger', () => {
     expect(resource(at(9), 'ranger.favored-enemy')?.max).toBe(4);
     expect(resource(at(13), 'ranger.favored-enemy')?.max).toBe(5);
     expect(resource(at(17), 'ranger.favored-enemy')?.max).toBe(6);
-    expect(at(5).maxPreparedSpells.total).toBe(6);
-    expect(at(9).maxPreparedSpells.total).toBe(9);
-    expect(at(20).maxPreparedSpells.total).toBe(15);
+    expect(at(5).casters?.[0]?.prepared).toBe(6);
+    expect(at(9).casters?.[0]?.prepared).toBe(9);
+    expect(at(20).casters?.[0]?.prepared).toBe(15);
     expect(resource(at(5), 'slot-2')?.max).toBe(2);
     expect(resource(at(17), 'slot-5')?.max).toBe(1);
     expect(resource(at(20), 'slot-5')?.max).toBe(2);
@@ -90,13 +90,13 @@ describe('ranger', () => {
 
   it('adds Roving speed, Tireless and Nature’s Veil with Wisdom uses', () => {
     const c10 = apply(build({ level: 10 }));
-    expect(c10.speed).toBe(40);
+    expect(speedOf(c10)).toBe(40);
     expect(resource(c10, 'ranger.tireless')?.max).toBe(2);
     expect(ability(c10, 'Неутомимость')).toMatchObject({ actionType: 'action', damage: '1d8+2' });
     const c14 = apply(build({ level: 14 }));
     expect(resource(c14, 'ranger.natures-veil')?.max).toBe(2);
     expect(ability(c14, 'Завеса природы')?.actionType).toBe('bonus');
-    expect(levelPlan(build({ level: 9 }), 9).choices.find((c) => c.key === 'class:ranger.expertise/expertise')?.count).toBe(2);
+    expect(levelPlan(atLevel(build({ level: 9 }), 9), 9).choices.find((c) => c.key === 'class:ranger.expertise/expertise')?.count).toBe(2);
   });
 
   it('gives the Beast Master a primal companion with its own strike', () => {
@@ -138,9 +138,9 @@ describe('ranger', () => {
 
   it('lets the Hunter pick its prey and tactics', () => {
     const b = build({ level: 7, subclass: 'hunter' });
-    const plan = levelPlan(b, 3);
+    const plan = levelPlan(atLevel(b, 3), 3);
     const prey = plan.choices.find((c) => c.key === 'subclass:hunter.hunters-prey/prey')!;
-    expect(choiceOptions(b, 3, prey).map((o) => o.id)).toEqual(['colossus-slayer', 'horde-breaker']);
+    expect(choiceOptions(atLevel(b, 3), 3, prey).map((o) => o.id)).toEqual(['colossus-slayer', 'horde-breaker']);
     const c = apply({ ...b, choices: { [prey.key]: ['colossus-slayer'], 'subclass:hunter.defensive-tactics/tactics': ['escape-the-horde'] } });
     expect(ability(c, 'Убийца колоссов')?.damage).toBe('1d8');
     expect(ability(c, 'Побег от орды')).toBeDefined();

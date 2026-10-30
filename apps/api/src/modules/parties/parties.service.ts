@@ -24,11 +24,11 @@ import {
   partyMembers,
   partyNpcs,
 } from '../../db/schema';
-import { conflictError, forbidden, notFound, sessionClosed, validationError } from '../../lib/errors';
+import { conflictError, forbidden, notFound, validationError } from '../../lib/errors';
 import { isUniqueViolation } from '../../lib/postgres';
 import type { CharacterChangeListener } from '../characters/characters.service';
 import type { CombatService } from './combat.service';
-import { CODE_WAITS, masterOnly, partyNotFound, type PartyAccess } from './partyAccess';
+import { masterOnly, partyNotFound, type PartyAccess } from './partyAccess';
 import { combatRulesOf } from './parties.queries';
 
 type CreateParty = z.output<typeof CreatePartyRequestSchema>;
@@ -39,6 +39,8 @@ type UpdateNpc = z.output<typeof UpdateNpcRequestSchema>;
 const INVITE_ATTEMPTS = 5;
 /** Leaving the table (or taking one's hero from it) is allowed between sessions too. */
 const LEAVING = { openTable: false } as const;
+/** Seating a hero is a lobby thing: a player may do it between sessions too. */
+const SEATING = { openTable: false } as const;
 
 const generateInviteCode = (): string =>
   Array.from(
@@ -216,7 +218,7 @@ export class PartiesService implements CharacterChangeListener {
         .where(eq(parties.id, party.id))
         .for('update');
       if (!locked || locked.inviteCode !== code) throw partyNotFound();
-      if (!locked.sessionStartedAt) throw sessionClosed(CODE_WAITS);
+      // A seat is taken any time: between sessions the player looks round and seats a hero ahead.
 
       const members = await tx
         .select({ userId: partyMembers.userId })
@@ -300,7 +302,7 @@ export class PartiesService implements CharacterChangeListener {
         if (isUniqueViolation(error)) throw conflictError('Этот герой уже состоит в партии');
         throw error;
       }
-    });
+    }, SEATING);
   }
 
   /** The hero's owner takes them away, or the master sends them off. */
@@ -338,32 +340,42 @@ export class PartiesService implements CharacterChangeListener {
   // NPCs
   // ------------------------------------------------------------------------------------------
 
-  createNpc(userId: string, partyId: string, input: CreateNpc): Promise<{ id: string }> {
+  /**
+   * Makes an NPC, or `count` copies of one: each its own NPC (hit points, conditions, turn), numbered
+   * after the name so the table tells them apart ("Гоблин 1", "Гоблин 2").
+   */
+  createNpc(userId: string, partyId: string, input: CreateNpc): Promise<{ id: string; ids: string[] }> {
     return this.access.change(userId, partyId, 'master', async ({ tx }) => {
       const [existing] = await tx
         .select({ value: count() })
         .from(partyNpcs)
         .where(eq(partyNpcs.partyId, partyId));
-      if ((existing?.value ?? 0) >= PARTY_LIMITS.npcs)
+      const copies = input.count;
+      if ((existing?.value ?? 0) + copies > PARTY_LIMITS.npcs)
         throw conflictError(`Не больше ${PARTY_LIMITS.npcs} НПС`);
       await assertOwnAsset(tx, userId, input.portraitAssetId);
       const currentHP = input.currentHP ?? input.maxHP;
       assertNpcHP(currentHP, input.maxHP, input.coc !== null || (await combatRulesOf(tx, partyId)) === 'coc7');
-      const [npc] = await tx
+      const rows = await tx
         .insert(partyNpcs)
-        .values({
-          partyId,
-          name: input.name,
-          portraitAssetId: input.portraitAssetId,
-          maxHp: input.maxHP,
-          currentHp: currentHP,
-          armorClass: input.armorClass,
-          initiativeBonus: input.initiativeBonus,
-          disposition: input.disposition,
-          coc: input.coc,
-        })
+        .values(
+          Array.from({ length: copies }, (_, index) => ({
+            partyId,
+            name: copies > 1 ? `${input.name} ${index + 1}`.slice(0, 80) : input.name,
+            portraitAssetId: input.portraitAssetId,
+            maxHp: input.maxHP,
+            currentHp: currentHP,
+            armorClass: input.armorClass,
+            initiativeBonus: input.initiativeBonus,
+            disposition: input.disposition,
+            coc: input.coc,
+            conditions: input.conditions,
+            attacks: input.attacks,
+            notes: input.notes,
+          })),
+        )
         .returning({ id: partyNpcs.id });
-      return npc!;
+      return { id: rows[0]!.id, ids: rows.map((row) => row.id) };
     });
   }
 
@@ -400,6 +412,9 @@ export class PartiesService implements CharacterChangeListener {
           initiativeBonus: input.initiativeBonus,
           disposition: input.disposition,
           coc: input.coc,
+          conditions: input.conditions,
+          attacks: input.attacks,
+          notes: input.notes,
         })
         .where(where);
     });

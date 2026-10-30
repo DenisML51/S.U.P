@@ -32,11 +32,12 @@ export function skillModifier(
 }
 
 export function savingThrowModifier(
-  character: AttributeSource & Pick<Character, 'savingThrowProficiencies' | 'proficiencyBonus'>,
+  character: AttributeSource & Pick<Character, 'savingThrowProficiencies' | 'proficiencyBonus'> & Partial<Pick<Character, 'saveBonuses'>>,
   attributeId: string,
 ): number {
   const proficient = character.savingThrowProficiencies.includes(attributeId);
-  return attributeModifier(character, attributeId) + (proficient ? character.proficiencyBonus : 0);
+  // Features add to some saves (Dark Augmentation).
+  return attributeModifier(character, attributeId) + (proficient ? character.proficiencyBonus : 0) + (character.saveBonuses?.[attributeId] ?? 0);
 }
 
 export const initiativeModifier = (

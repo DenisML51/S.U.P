@@ -92,6 +92,34 @@
       "when": 1792978079801,
       "tag": "0012_party_rolls",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793007218004,
+      "tag": "0013_npc_conditions_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793090000562,
+      "tag": "0014_party_roll_checks",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793102339514,
+      "tag": "0015_retire_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793103321725,
+      "tag": "0016_retire_high_fantasy",
+      "breakpoints": true
     }
   ]
 }

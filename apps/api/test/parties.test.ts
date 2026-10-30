@@ -8,7 +8,7 @@ import type {
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { characters, partyCombats } from '../src/db/schema';
-import { nextTurn, turnOrder } from '../src/modules/parties/turnOrder';
+import { nextTurn, previousTurn, turnOrder } from '../src/modules/parties/turnOrder';
 import { makeCharacter, registerUser, useTestApp } from './helpers';
 
 const ctx = useTestApp();
@@ -48,7 +48,7 @@ async function table(app: App) {
   const player = await registerUser(app, 'Игрок');
   const created = await call(app, master, 'POST', '/parties', {
     name: 'Тени Ульдуара',
-    setting: 'dark-fantasy',
+    setting: 'elden-ring',
   });
   expect(created.statusCode).toBe(201);
   const partyId = created.json<{ id: string }>().id;
@@ -134,6 +134,12 @@ describe('turn order', () => {
     expect(nextTurn(entries, 'b')).toMatchObject({ next: { id: 'd' }, wrapped: true });
     expect(nextTurn(entries, 'c', new Set(['a', 'b']))).toMatchObject({ next: { id: 'd' }, wrapped: true });
     expect(nextTurn(entries, 'a', new Set(['a', 'b', 'c', 'd']))).toBeNull();
+  });
+
+  it('gives the turn back, into the round before from the first turn', () => {
+    expect(previousTurn(entries, 'a')).toMatchObject({ previous: { id: 'c' }, wrapped: false });
+    expect(previousTurn(entries, 'd')).toMatchObject({ previous: { id: 'b' }, wrapped: true });
+    expect(previousTurn(entries, 'a', new Set(['c']))).toMatchObject({ previous: { id: 'd' }, wrapped: false });
   });
 });
 
@@ -262,6 +268,72 @@ describe('parties', () => {
       (await call(app, master, 'POST', `/parties/${partyId}/heroes`, { characterId: playerHero.id }))
         .statusCode,
     ).toBe(404);
+  });
+
+  it('makes copies of an NPC, each its own, with conditions, attacks and notes', async () => {
+    const app = await ctx.app();
+    const { master, partyId } = await table(app);
+
+    const created = await call(app, master, 'POST', `/parties/${partyId}/npcs`, {
+      name: 'Гоблин',
+      maxHP: 7,
+      armorClass: 15,
+      initiativeBonus: 2,
+      attacks: [{ name: 'Скимитар', hitBonus: 4, damage: '1d6 + 2 рубящий' }],
+      notes: 'Бегут при первой смерти',
+      count: 3,
+    });
+    expect(created.statusCode).toBe(201);
+    const { ids } = created.json<{ ids: string[] }>();
+    expect(ids).toHaveLength(3);
+
+    await call(app, master, 'PATCH', `/parties/${partyId}/npcs/${ids[1]}`, { currentHP: 2, conditions: ['prone'] });
+    const npcs = (await view(app, master, partyId)).npcs!;
+    expect(npcs.map((n) => [n.name, n.currentHP, n.conditions])).toEqual(
+      expect.arrayContaining([
+        ['Гоблин 1', 7, []],
+        ['Гоблин 2', 2, ['prone']],
+        ['Гоблин 3', 7, []],
+      ]),
+    );
+    expect(npcs[0]).toMatchObject({ attacks: [{ name: 'Скимитар', hitBonus: 4 }], notes: 'Бегут при первой смерти' });
+  });
+
+  it('keeps the master’s notes and the heroes’ troubles to the master', async () => {
+    const app = await ctx.app();
+    const { master, player, partyId, playerHero } = await table(app);
+
+    expect((await call(app, master, 'PATCH', `/parties/${partyId}`, { masterNotes: 'Предатель — трактирщик' })).statusCode).toBe(204);
+    expect((await view(app, master, partyId)).masterNotes).toBe('Предатель — трактирщик');
+    expect((await view(app, player, partyId)).masterNotes).toBeNull();
+
+    // The hero falls: the master sees the death saves, the condition and the concentration lost.
+    const fallen = await call(app, player, 'GET', `/characters/${playerHero.id}`);
+    await saveHero(
+      app,
+      player,
+      { ...playerHero, currentHP: 0, conditions: ['unconscious'], deathSaves: { successes: 1, failures: 2 } },
+      fallen.json<{ revision: number }>().revision,
+    );
+    const seen = (await view(app, master, partyId)).heroes.find((h) => h.characterId === playerHero.id)!.vitals!;
+    expect(seen).toMatchObject({ conditions: ['unconscious'], deathSaves: { successes: 1, failures: 2 } });
+  });
+
+  it('turns back to the one before, but not before the first turn of the fight', async () => {
+    const app = await ctx.app();
+    const { master, partyId } = await table(app);
+    await call(app, master, 'POST', `/parties/${partyId}/npcs`, { name: 'Гуль', maxHP: 9, armorClass: 12, initiativeBonus: 0, count: 2 });
+    const npcIds = (await view(app, master, partyId)).npcs!.map((n) => n.id);
+    await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds });
+    await call(app, master, 'POST', `/parties/${partyId}/combat/roll-npcs`);
+    await call(app, master, 'POST', `/parties/${partyId}/combat/begin`);
+    const first = (await view(app, master, partyId)).combat!;
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat/previous`, { from: first.currentCombatantId })).statusCode).toBe(409);
+    await call(app, master, 'POST', `/parties/${partyId}/combat/next`, { from: first.currentCombatantId });
+    const second = (await view(app, master, partyId)).combat!;
+    expect(second.currentCombatantId).not.toBe(first.currentCombatantId);
+    expect((await call(app, master, 'POST', `/parties/${partyId}/combat/previous`, { from: second.currentCombatantId })).statusCode).toBe(204);
+    expect((await view(app, master, partyId)).combat!.currentCombatantId).toBe(first.currentCombatantId);
   });
 
   it('keeps NPCs to the master', async () => {
@@ -819,6 +891,38 @@ describe('dice at the table', () => {
     socket.terminate();
   });
 
+  it("calls on a player's hero for a throw, and keeps the check the answer comes with", async () => {
+    const app = await ctx.app();
+    const { master, player, partyId, playerHero } = await table(app);
+    const socket = await app.injectWS('/api/ws');
+    const received: WsServerMessage[] = [];
+    socket.on('message', (raw) => received.push(JSON.parse(raw.toString()) as WsServerMessage));
+    socket.send(JSON.stringify({ type: 'auth', token: player.accessToken }));
+    await expect.poll(() => received.some((m) => m.type === 'ready')).toBe(true);
+
+    const hunter = (await view(app, master, partyId)).heroes.find((hero) => hero.name === 'Охотник')!;
+    const ask = (user: User, body: object) => call(app, user, 'POST', `/parties/${partyId}/roll-calls`, body);
+    // Only the master calls.
+    expect((await ask(player, { heroIds: [hunter.id], kind: 'plain' })).statusCode).toBe(403);
+    const asked = await ask(master, { heroIds: [hunter.id], kind: 'save', key: 'constitution', target: 15 });
+    expect(asked.statusCode, asked.body).toBe(204);
+    await expect.poll(() => received.find((m) => m.type === 'party.rollCall')).toBeTruthy();
+    const message = received.find((m) => m.type === 'party.rollCall');
+    if (message?.type !== 'party.rollCall') throw new Error('no call');
+    expect(message.call).toMatchObject({ heroId: hunter.id, characterId: playerHero.id, kind: 'save', key: 'constitution', target: 15, mode: 'normal' });
+
+    const check = { title: 'Спасбросок Телосложения', formula: '1d20 + 2', bonus: 2, total: 16, target: 15, callId: message.call.id };
+    const answered = await call(app, player, 'POST', `/parties/${partyId}/rolls`, {
+      characterId: playerHero.id,
+      dice: [{ sides: 20, value: 14 }],
+      check,
+    });
+    expect(answered.statusCode, answered.body).toBe(204);
+    const log = (await call(app, master, 'GET', `/parties/${partyId}/rolls`)).json<TableRollsDto>().items;
+    expect(log.at(-1)!.check).toEqual(check);
+    socket.terminate();
+  });
+
   it('shows nothing while the table is closed', async () => {
     const app = await ctx.app();
     const { master, player, partyId, playerHero } = await table(app);
@@ -832,7 +936,7 @@ describe('dice at the table', () => {
 });
 
 describe('sessions', () => {
-  it('closes the table between sessions, keeping everything but the fight', async () => {
+  it('closes the table between sessions to all but its lobby, keeping everything but the fight', async () => {
     const app = await ctx.app();
     const { master, player, partyId, code } = await table(app);
     const npcId = (
@@ -850,10 +954,9 @@ describe('sessions', () => {
     expect((await call(app, player, 'DELETE', `/parties/${partyId}/session`)).statusCode).toBe(403);
     expect((await call(app, master, 'DELETE', `/parties/${partyId}/session`)).statusCode).toBe(204);
 
-    // Players are out; the master keeps the table, its NPCs and the talk, but not the fight.
-    const closed = await call(app, player, 'GET', `/parties/${partyId}`);
-    expect(closed.statusCode).toBe(409);
-    expect(closed.json()).toMatchObject({ error: 'session_closed' });
+    // Players see the lobby (no fight, no NPCs, no talk); the master keeps the table, its NPCs and the talk.
+    expect(await view(app, player, partyId)).toMatchObject({ sessionStartedAt: null, combat: null, npcs: null });
+    expect((await call(app, player, 'GET', `/parties/${partyId}/messages`)).statusCode).toBe(409);
     expect((await call(app, player, 'GET', '/parties')).json<PartyListItemDto[]>()[0]).toMatchObject({
       inSession: false,
     });
@@ -870,14 +973,15 @@ describe('sessions', () => {
       (await call(app, master, 'POST', `/parties/${partyId}/combat`, { npcIds: [npcId] })).statusCode,
     ).toBe(409);
 
-    // The code waits for the next session.
+    // The code works between sessions: a newcomer takes a seat and brings a hero ahead of the game.
     const late = await registerUser(app, 'Опоздавший');
-    expect((await call(app, late, 'GET', `/invites/${code}`)).statusCode).toBe(409);
-    expect((await call(app, late, 'POST', `/invites/${code}/accept`)).statusCode).toBe(409);
+    expect((await call(app, late, 'GET', `/invites/${code}`)).json()).toMatchObject({ inSession: false, member: false });
+    expect((await call(app, late, 'POST', `/invites/${code}/accept`)).statusCode).toBe(200);
+    const lateHero = await saveHero(app, late, { name: 'Новичок' });
+    expect((await call(app, late, 'POST', `/parties/${partyId}/heroes`, { characterId: lateHero.id })).statusCode).toBe(201);
 
     expect((await call(app, master, 'POST', `/parties/${partyId}/session`)).statusCode).toBe(204);
     expect((await view(app, player, partyId)).sessionStartedAt).not.toBeNull();
-    expect((await call(app, late, 'POST', `/invites/${code}/accept`)).statusCode).toBe(200);
   });
 
   it('lets a player leave between sessions; their hero goes with them and keeps what happened to it', async () => {

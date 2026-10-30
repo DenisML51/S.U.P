@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CharacterSchema, createCharacterDocument, type CocBuild } from '@itd/schema';
 import { maxSanityOf, rulesOf } from '../src';
+import { makeCharacter } from './helpers';
 import {
   ARCHETYPES,
   OCCUPATIONS,
@@ -701,5 +702,22 @@ describe('Call of Cthulhu rules by the book', () => {
     const once = add(investigator());
     expect(once.coc!.madness.map((m) => m.id)).toEqual(['madness-1']);
     expect(add(once).coc!.madness).toHaveLength(1);
+  });
+});
+
+describe('wounds and care', () => {
+  it('a failed CON roll knocks out the wounded and kills the dying; First Aid buys an hour', async () => {
+    const coc = await import('../src/coc');
+    const base = makeCharacter({ currentHP: 5, maxHP: 12, conditions: [coc.CONDITION_IDS.majorWound] });
+    expect(coc.afterWoundRoll(false)(base).conditions).toContain(coc.CONDITION_IDS.unconscious);
+    expect(coc.afterWoundRoll(true)(base).conditions).not.toContain(coc.CONDITION_IDS.unconscious);
+    const dying = { ...base, currentHP: 0, conditions: [coc.CONDITION_IDS.majorWound, coc.CONDITION_IDS.dying] };
+    expect(coc.afterWoundRoll(false)(dying).conditions).toContain(coc.CONDITION_IDS.dead);
+    const aided = coc.stabilise(dying);
+    expect(aided.currentHP).toBe(1);
+    expect(aided.conditions).toEqual(expect.arrayContaining([coc.CONDITION_IDS.stabilised]));
+    expect(aided.conditions).not.toContain(coc.CONDITION_IDS.dying);
+    expect(coc.stabilisationLapses(aided).conditions).toContain(coc.CONDITION_IDS.dying);
+    expect(coc.treatWithMedicine(2)(aided).conditions).not.toContain(coc.CONDITION_IDS.stabilised);
   });
 });

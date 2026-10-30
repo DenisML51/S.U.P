@@ -1,4 +1,4 @@
-import type { Build, Character, RulesetId } from '@itd/schema';
+import type { Build, Character, RulesetId, Spell } from '@itd/schema';
 
 /** Where a granted entry of the sheet comes from, in terms the generic sheet can group by. */
 export interface FeatureOrigin {
@@ -8,6 +8,20 @@ export interface FeatureOrigin {
   parent?: string;
   /** What it is, when its name alone does not say ("Черта"). */
   label?: string;
+}
+
+/** A spell of a system's book, as the picker lists it. */
+export interface CatalogSpell {
+  id: string;
+  name: string;
+  level: number;
+  school: string;
+  ritual: boolean;
+  concentration: boolean;
+  /** On the hero's own class list. */
+  ownList: boolean;
+  /** Within the levels the hero can cast now. */
+  castable: boolean;
 }
 
 /**
@@ -24,6 +38,27 @@ export interface RuleSystem {
   featureOrigins(build: Build): Map<string, FeatureOrigin>;
   /** Where a granted entry comes from, for people ("Паладин, 2 уровень"). */
   describeGrant(build: Build, grant: string | undefined): string | undefined;
+  /**
+   * Choices of a feature that the sheet changes directly, any time (the known forms of Wild Shape),
+   * by the feature's `grant` key: what the button to change them says.
+   */
+  sheetChoices?(build: Build, grant: string): { key: string; label: string; count: number; picked: number }[];
+  /**
+   * The system's spells for the hero to write onto the sheet themselves (a Wizard copying a spell
+   * into the book, a scroll learned): the list, and a sheet entry of one of them.
+   */
+  spellCatalog?: {
+    list(build: Build): CatalogSpell[];
+    entry(build: Build, id: string): Spell | undefined;
+  };
+  /**
+   * Giving back the hero's last level: what it was, for people ("Волшебник, 2 уровень"; none when
+   * there is no level to give back), and the sheet without it, its picks and hit points forgotten.
+   */
+  lastLevel?: {
+    describe(build: Build): string | undefined;
+    giveBack(character: Character, build: Build): Character;
+  };
 }
 
 /**

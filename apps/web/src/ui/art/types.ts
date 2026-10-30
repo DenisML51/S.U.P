@@ -20,12 +20,19 @@ export interface SettingArt {
    * corners (combat, where the bar has its own ornaments).
    */
   Backdrop: React.FC<{ frame?: boolean }>;
+  /**
+   * The setting's panels are glass: the sheet, which has no atmosphere of its own, lays the backdrop
+   * under them so the world shows through.
+   */
+  glass?: boolean;
   /** Laid over the experience bar when a new level can be taken: the setting's own marvel. */
   LevelReady: React.FC;
   /** Drawn round the emblem of the setting's world card, if the setting has such a thing. */
   WorldSigil?: React.FC;
   /** A picture of its own in the flourish played when the setting's world is chosen (lightning). */
   Flourish?: React.FC<{ x: number; y: number }>;
+  /** How long the flourish runs, in ms, when it needs longer than the usual moment (a name written out). */
+  flourishMs?: number;
   /** The hero's level in the vitals panel's corner as the setting's own token of rank. */
   StatusLevel: React.FC<{ level: number }>;
   /** Laid round the focused hero card on hero select, outside its frame, if the setting reads one. */

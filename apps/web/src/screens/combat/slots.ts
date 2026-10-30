@@ -1,11 +1,19 @@
 import {
+  attacksPerActionOf,
   formatModifier,
+  activeFormOf,
+  isActiveFeature,
+  isFormAttack,
   isStackable,
+  spellBlocker,
+  isWeaponStack,
   itemQuantity,
   remainingActions,
   resolveAmmunition,
+  slotConversions,
   spellColor,
   isUsable,
+  strikesLeft,
 } from '@itd/game-logic';
 import type { ActionType, Character, InventoryItem } from '@itd/schema';
 import { ACTION_TYPES } from '../../ui/actionTypes';
@@ -13,13 +21,14 @@ import { itemClassName } from '../../ui/characterLabels';
 import type { GameIconId, IconKind } from '../../ui/GameIcon';
 import { damageFact as damageLine, damageParts, hitLabel, spellDamageParts } from '../sheet/parts/damage';
 import type { EntryKind } from '../sheet/dialogs/context';
+import { tIn } from '../../i18n';
 
 export type SlotGroup = 'attacks' | 'abilities' | 'spells' | 'items';
 
 export const SLOT_GROUPS: { id: SlotGroup; label: string; icon: GameIconId; empty: string }[] = [
   { id: 'attacks', label: 'Атаки', icon: 'crossed-swords', empty: 'Нет атак' },
   { id: 'abilities', label: 'Умения', icon: 'sparkles', empty: 'Нет активных умений' },
-  { id: 'spells', label: 'Магия', icon: 'spell-book', empty: 'Нет подготовленных заклинаний' },
+  { id: 'spells', label: tIn('ui', 'Магия'), icon: 'spell-book', empty: 'Нет подготовленных заклинаний' },
   { id: 'items', label: 'Вещи', icon: 'swap-bag', empty: 'Нет расходуемых вещей' },
 ];
 
@@ -42,11 +51,13 @@ export interface Slot {
   count?: number;
   /** Why it cannot be used now, if it cannot. */
   blocked: string | null;
+  /** An ability that is on (Rage): using the slot ends it. */
+  active?: boolean;
   description: string;
   effect?: string;
 }
 
-const costFact = (character: Character, resourceId?: string, cost?: number): [string, string] | null => {
+const costFact = (character: Character, resourceId?: string, cost?: number | string): [string, string] | null => {
   const resource = resourceId ? character.resources.find((r) => r.id === resourceId) : undefined;
   return resource ? ['Стоимость', `${cost ?? 1} ${resource.name} (есть ${resource.current})`] : null;
 };
@@ -78,12 +89,20 @@ const usableItem = (item: InventoryItem) => item.type === 'item' && isStackable(
 
 /** The combat bar's icons by group, with what blocks each of them right now. */
 export function buildSlots(character: Character, inCombat: boolean): Record<SlotGroup, Slot[]> {
-  const attacks = character.attacks.map((attack): Slot => {
-    let blocked = blockedBy(character, inCombat, attack.actionType);
+  // In a beast's shape the bar holds the beast's attacks; spells wait while something forbids them.
+  const inForm = !!activeFormOf(character);
+  const noSpells = !!spellBlocker(character);
+  const attacks = character.attacks.filter((attack) => !inForm || isFormAttack(attack)).map((attack): Slot => {
+    // The next attack of an Attack action already taken (Extra Attack) needs no action of its own.
+    const followUp = attack.actionType === 'action' && strikesLeft(character) > 0;
+    let blocked = followUp ? null : blockedBy(character, inCombat, attack.actionType);
     const ammunition = attack.usesAmmunition ? resolveAmmunition(character, attack) : undefined;
     if (!blocked && ammunition && itemQuantity(ammunition) < (attack.ammunitionCost ?? 1))
       blocked = `Кончились: ${ammunition.name}`;
     const weapon = attack.weaponId ? character.inventory.find((i) => i.id === attack.weaponId) : undefined;
+    // A throw from a counted stack (javelins, darts) counts down the weapon itself.
+    const thrownStack = attack.thrown && weapon && isWeaponStack(weapon) ? weapon : undefined;
+    if (!blocked && thrownStack && itemQuantity(thrownStack) < 1) blocked = `Кончились: ${thrownStack.name}`;
     return {
       key: `attack:${attack.id}`,
       kind: 'attack',
@@ -95,10 +114,13 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
       facts: facts(
         ['Попадание', formatModifier(attack.hitBonus)],
         damageFact(attack),
+        attack.actionType === 'action' && attacksPerActionOf(character) > 1 && ['Атак за действие', `${attacksPerActionOf(character)}`],
         ammunition && ['Боеприпасы', `${ammunition.name}: ${itemQuantity(ammunition)}`],
+        thrownStack && ['Осталось', `${itemQuantity(thrownStack)}`],
+        !!attack.damageTwoHanded && ['Двумя руками', attack.damageTwoHanded],
       ),
       actionType: attack.actionType,
-      count: ammunition ? itemQuantity(ammunition) : undefined,
+      count: ammunition ? itemQuantity(ammunition) : thrownStack ? itemQuantity(thrownStack) : undefined,
       blocked,
       description: attack.description ?? '',
     };
@@ -113,26 +135,32 @@ export function buildSlots(character: Character, inCombat: boolean): Record<Slot
       name: ability.name,
       iconName: ability.iconName,
       color: ability.color,
-      subtitle: 'Умение',
+      subtitle: isActiveFeature(character, ability.id) ? 'Умение · действует' : 'Умение',
+      active: isActiveFeature(character, ability.id) || undefined,
       facts: facts(
-        costFact(character, ability.resourceId, ability.resourceCost),
+        costFact(
+          character,
+          ability.convert ? undefined : ability.resourceId,
+          ability.resourceCostMax ? `${ability.resourceCost ?? 1}–${ability.resourceCostMax}` : ability.resourceCost,
+        ),
         damageFact(ability),
         ['Попадание', hitLabel(character, ability) ?? ''],
       ),
       actionType: ability.actionType,
-      blocked: blockedBy(
-        character,
-        inCombat,
-        ability.actionType,
-        ability.resourceId,
-        ability.resourceCost ?? 1,
-      ),
+      // Ending what is on costs nothing.
+      blocked: isActiveFeature(character, ability.id)
+        ? null
+        : ability.convert && ability.resourceId
+          ? // A conversion (Font of Magic) needs one of its ways open, not points of its own.
+            blockedBy(character, inCombat, ability.actionType) ??
+            (slotConversions(character, ability.resourceId, ability.convert).every((o) => o.blocked) ? 'Сейчас нечего превращать' : null)
+          : blockedBy(character, inCombat, ability.actionType, ability.resourceId, ability.resourceCost ?? 1),
       description: ability.description,
       effect: ability.effect,
     }));
 
   const spells = character.spells
-    .filter((s) => s.prepared)
+    .filter((s) => s.prepared && !noSpells)
     .sort((a, b) => a.level - b.level)
     .map((spell): Slot => ({
       key: `spell:${spell.id}`,

@@ -14,13 +14,14 @@ import {
   IconSettings,
   IconSpells,
 } from '../../ui/icons';
+import { tIn } from '../../i18n';
 
 export type SheetSection = 'attributes' | 'actions' | 'magic' | 'equipment' | 'body' | 'persona' | 'journal';
 
 export const SHEET_SECTIONS: { id: SheetSection; label: string; Icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
   { id: 'attributes', label: 'Навыки', Icon: IconAttributes },
   { id: 'actions', label: 'Действия', Icon: IconAttacks },
-  { id: 'magic', label: 'Магия', Icon: IconSpells },
+  { id: 'magic', label: tIn('ui', 'Магия'), Icon: IconSpells },
   { id: 'equipment', label: 'Вещи', Icon: IconInventory },
   { id: 'body', label: 'Тело', Icon: IconArmor },
   { id: 'persona', label: 'Личность', Icon: IconCharacter },

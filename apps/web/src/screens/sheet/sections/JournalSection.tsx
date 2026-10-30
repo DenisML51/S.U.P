@@ -4,6 +4,7 @@ import { useCharacterStore } from '../../../store/useCharacterStore';
 import { Ledger, LedgerGroup } from '../../../ui/Ledger';
 import { cx } from '../../../ui/primitives';
 import { foldRepeats } from '../parts/history';
+import { locale } from '../../../i18n';
 
 type Filter = 'all' | HistoryEntryType;
 
@@ -34,7 +35,7 @@ const dayTitle = (timestamp: number) => {
   const yesterday = new Date(today.getTime() - 86_400_000);
   if (day.toDateString() === today.toDateString()) return 'Сегодня';
   if (day.toDateString() === yesterday.toDateString()) return 'Вчера';
-  return day.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: day.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
+  return day.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: day.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
 };
 
 /** Entries grouped by day, newest first, with repeats folded. */
@@ -59,8 +60,8 @@ export const JournalSection: React.FC<{ character: Character }> = ({ character }
   const groups = byDay(entries);
 
   return (
-    <div className="flex flex-col gap-3">
-      <nav className="flex gap-4" aria-label="Тип записей">
+    <div className="mx-auto flex w-full max-w-[780px] flex-col gap-3">
+      <nav className="flex flex-wrap gap-x-4 gap-y-1.5" aria-label="Тип записей">
         {FILTERS.map((option) => (
           <button
             key={option.id}
@@ -83,7 +84,7 @@ export const JournalSection: React.FC<{ character: Character }> = ({ character }
             {group.lines.map(({ entry, last, count }) => (
               <li key={entry.id} className="ui-ledger__row group flex items-baseline gap-4 py-2 text-sm">
                 <span className="w-11 shrink-0 tabular-nums opacity-60">
-                  {new Date(entry.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(entry.timestamp).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 <span className="mt-[0.45em] h-1.5 w-1.5 shrink-0 rotate-45" style={{ background: `rgb(${TONE[entry.type]})` }} aria-hidden />
                 <span className="min-w-0 flex-1">

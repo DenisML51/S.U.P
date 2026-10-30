@@ -43,20 +43,33 @@ const ABILITY_LABELS: Record<string, string> = {
   charisma: 'ХАР',
 };
 
+/** Heavy armour adds none of the wearer's Dexterity; that is how a sheet's armour tells it apart. */
+export const wearsHeavyArmor = (character: Pick<Character, 'inventory'>): boolean => equippedArmor(character.inventory)?.dexModifier === false;
+
 const hasShield = (character: ArmorSource): boolean => character.inventory.some((item) => item.equipped && isShield(item));
 
 /**
- * Unarmoured: 10 + Dexterity, plus features that always apply. Unarmored Defense adds an ability
- * (Constitution, Wisdom) unless it is lost to a shield.
+ * The ability an unarmoured armour class adds now: of the ways the hero has (Unarmored Defense of a
+ * barbarian and of a monk, Draconic Resilience) only one counts at a time, so the best of those a
+ * shield does not end (PHB 2024: one alternative armour class calculation at a time).
  */
+export function unarmoredAbility(character: ArmorSource): string | undefined {
+  const shield = hasShield(character);
+  return (character.armorClassBonus?.unarmored ?? [])
+    .filter((way) => !(way.noShield && shield))
+    .map((way) => way.attribute)
+    .reduce<string | undefined>((best, attribute) => (best === undefined || attributeModifier(character, attribute) > attributeModifier(character, best) ? attribute : best), undefined);
+}
+
+/** Unarmoured: 10 + Dexterity, plus features that always apply and the ability of the way it is counted. */
 const unarmoredParts = (character: ArmorSource): ArmorClassPart[] => {
   const bonus = character.armorClassBonus;
-  const unarmored = bonus?.unarmored && !(bonus.unarmoredNoShield && hasShield(character)) ? bonus.unarmored : undefined;
+  const unarmored = unarmoredAbility(character);
   return [
     { label: 'основа', value: BASE_ARMOR_CLASS },
     { label: 'ЛВК', value: attributeModifier(character, 'dexterity') },
     ...(unarmored ? [{ label: ABILITY_LABELS[unarmored] ?? unarmored, value: attributeModifier(character, unarmored) }] : []),
-    { label: 'особенности', value: bonus?.always ?? 0 },
+    { label: 'особенности', value: (bonus?.always ?? 0) + (bonus?.noHeavyArmor ?? 0) },
   ];
 };
 
@@ -66,6 +79,9 @@ const unarmoredParts = (character: ArmorSource): ArmorClassPart[] => {
  * (a fighting style) add their bonus.
  */
 function gearParts(character: ArmorSource): ArmorClassPart[] {
+  // A beast's shape has its own armour class; what the druid wore merges into the form.
+  const form = character.armorClassBonus?.form;
+  if (form) return [{ label: 'облик', value: form }];
   const armor = equippedArmor(character.inventory);
   const shield = hasShield(character);
   const shieldPart = { label: 'щит', value: shield ? SHIELD_ARMOR_BONUS : 0 };
@@ -79,7 +95,7 @@ function gearParts(character: ArmorSource): ArmorClassPart[] {
     { label: 'броня', value: armor.baseAC ?? BASE_ARMOR_CLASS },
     { label: 'ЛВК', value: appliedDexterity },
     shieldPart,
-    { label: 'особенности', value: (bonus?.always ?? 0) + (bonus?.armored ?? 0) },
+    { label: 'особенности', value: (bonus?.always ?? 0) + (bonus?.armored ?? 0) + (armor.dexModifier === false ? 0 : (bonus?.noHeavyArmor ?? 0)) },
   ];
 }
 

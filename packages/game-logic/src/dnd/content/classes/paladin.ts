@@ -1,19 +1,20 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, SubclassDef } from '../../types';
 import { PALADIN_KITS } from '../equipment';
-import { HALF_CASTER_SLOTS, abilityScoreImprovement, epicBoon, weaponMasteryChoice } from './shared';
+import { abilityScoreImprovement, epicBoon, weaponMasteryChoice, multiclassProficiencies } from './shared';
 
 /** Paladin of the 2024 Player's Handbook (Паладин). Descriptions are our own summaries of the rules. */
 
 const CHANNEL_DIVINITY = 'paladin.channel-divinity';
 
 /** A capstone transformation: once per long rest, or again by spending a 5th-level slot. */
-const capstone = (id: string, name: string, description: string): FeatureDef => ({
+const capstone = (id: string, name: string, description: string, stance?: FeatureDef['stance']): FeatureDef => ({
   id,
   name,
   description: `${description}\n\nРаз в продолжительный отдых; повторно — потратив ячейку 5-го круга.`,
   action: 'bonus',
   resource: { id, name, max: 1, recharge: 'long' },
+  stance,
   iconName: 'sun-radiations',
 });
 
@@ -225,6 +226,7 @@ const vengeance: SubclassDef = {
         'vengeance.avenging-angel',
         'Ангел мести',
         'Бонусным действием вы на 10 минут обретаете крылья (скорость полёта 60 футов, можно парить) и ауру угрозы 30 футов: враг, впервые за ход входящий в неё или начинающий там ход, совершает спасбросок Мудрости или пугается на 1 минуту; атаки по испуганному совершаются с преимуществом.',
+        { effects: [{ type: 'movement', mode: 'fly', feet: 60 }] },
       ),
     ],
   },
@@ -422,13 +424,17 @@ export const PALADIN: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
+  multiclass: {
+    requires: [['strength', 'charisma']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields', 'martialWeapons'),
+  },
   subclassLevel: 3,
   subclasses: [devotion, glory, ancients, vengeance, nobleGenies],
   startingEquipment: PALADIN_KITS,
   spellcasting: {
     ability: 'charisma',
     list: 'paladin',
-    slots: HALF_CASTER_SLOTS,
+    progression: 'half',
     mode: 'prepared',
     prepared: byClassLevel({ 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 7: 7, 9: 9, 11: 10, 13: 11, 15: 12, 17: 14, 19: 15 }),
   },
@@ -441,6 +447,9 @@ export const PALADIN: ClassDef = {
           'У вас есть запас целительной силы: 5 × уровень паладина хитов, восполняется после продолжительного отдыха. Бонусным действием, касаясь существа, вы восстанавливаете ему хиты из запаса или тратите 5 единиц, чтобы снять состояние «Отравлен».',
         action: 'bonus',
         resource: { id: 'paladin.lay-on-hands', name: 'Наложение рук', max: (ctx) => 5 * ctx.classLevel, recharge: 'long', iconName: 'healing' },
+        // As many points of the pool as the player chooses, a hit point each.
+        usesResource: { id: 'paladin.lay-on-hands', max: (ctx) => 5 * ctx.classLevel, perPoint: '1' },
+        damageType: 'Лечение',
         iconName: 'healing',
         color: '#d4a94e',
       },
@@ -498,6 +507,7 @@ export const PALADIN: ClassDef = {
         description: 'Совершая действие «Атака» в свой ход, вы атакуете дважды вместо одного раза.',
         action: 'passive',
         iconName: 'crossed-swords',
+        effects: [{ type: 'extraAttack', attacks: 2 }],
       },
       {
         id: 'paladin.faithful-steed',

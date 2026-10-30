@@ -149,6 +149,12 @@
 .coc-skills--wide {
   columns: 3;
 }
+/* A laptop's sheet has room for two columns of skills only: three would cut the names to a few letters. */
+@media (max-width: 1399.98px) {
+  .coc-skills--wide {
+    columns: 2;
+  }
+}
 .coc-skill {
   break-inside: avoid;
   display: grid;
@@ -432,31 +438,6 @@
   border-radius: 50%;
 }
 
-/* High fantasy — gilded parchment: cards are vellum tablets with gold edges, numbers in Garamond. */
-[data-setting='high-fantasy'] .coc-char {
-  background: radial-gradient(120% 90% at 50% 0%, rgb(var(--c-paper) / 0.95), rgb(var(--c-paper) / 0.8));
-  color: rgb(var(--c-paper-ink));
-  border: 1px solid rgb(var(--c-frame));
-  box-shadow:
-    inset 0 0 0 2px rgb(var(--c-paper)),
-    inset 0 0 0 3px rgb(var(--c-frame) / 0.55),
-    0 6px 16px -10px rgb(0 0 0 / 0.8);
-}
-[data-setting='high-fantasy'] .coc-char__label,
-[data-setting='high-fantasy'] .coc-char__part,
-[data-setting='high-fantasy'] .coc-char__part small {
-  color: rgb(var(--c-paper-muted));
-}
-[data-setting='high-fantasy'] .coc-char__value {
-  color: rgb(var(--c-paper-ink));
-}
-[data-setting='high-fantasy'] .coc-pip {
-  transform: rotate(45deg);
-  width: 0.6rem;
-  height: 0.6rem;
-  margin: 1px;
-}
-
 /* Sci-fi — a data readout: flat matte cells, a lit left edge, values in Tektur. */
 [data-setting='sci-fi'] .coc-char {
   background: rgb(var(--c-surface-2) / 0.75);
@@ -470,39 +451,6 @@
 [data-setting='sci-fi'] .coc-pip {
   height: 0.45rem;
   width: 0.9rem;
-}
-
-/* Dark fantasy — iron and wax: heavy dark cards with a blood-red rule, a wax seal for the tick. */
-[data-setting='dark-fantasy'] .coc-char {
-  background: linear-gradient(180deg, rgb(var(--c-surface-2)), rgb(var(--c-surface)));
-  border: 1px solid rgb(var(--c-frame) / 0.8);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.05),
-    inset 0 -2px 0 rgb(var(--c-hp) / 0.55);
-}
-[data-setting='dark-fantasy'] .coc-skill__tick[data-on] {
-  background: rgb(var(--c-hp));
-  border-color: rgb(var(--c-hp));
-  border-radius: 50%;
-  color: rgb(var(--c-ink));
-}
-
-/* Cyberpunk — neon on black: cut corners, a glowing value, a scanline tick. */
-[data-setting='cyberpunk'] .coc-char {
-  background: rgb(var(--c-bg) / 0.85);
-  border: 1px solid rgb(var(--c-accent) / 0.55);
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-}
-[data-setting='cyberpunk'] .coc-char__value {
-  color: rgb(var(--c-accent));
-  text-shadow: 0 0 14px rgb(var(--c-accent) / 0.55);
-}
-[data-setting='cyberpunk'] .coc-char:hover {
-  border-color: rgb(var(--c-accent));
-  background: rgb(var(--c-accent) / 0.08);
-}
-[data-setting='cyberpunk'] .coc-pip[data-on] {
-  box-shadow: 0 0 6px rgb(var(--coc-pip-tone, var(--c-hp)) / 0.8);
 }
 
 /* Elden Ring — tarnished gold on grey stone: a thin gold frame, the value in Cinzel, a grace glow. */
@@ -860,25 +808,15 @@
 [data-setting='lovecraft'] .coc-veil {
   --veil: var(--c-eldritch);
 }
-[data-setting='high-fantasy'] .coc-veil {
-  --veil: 150 96 220;
-}
-[data-setting='dark-fantasy'] .coc-veil {
-  --veil: var(--c-hp);
-}
 [data-setting='elden-ring'] .coc-veil {
   --veil: 236 196 60;
 }
 [data-setting='sci-fi'] .coc-veil {
   --veil: var(--c-accent);
 }
-[data-setting='cyberpunk'] .coc-veil {
-  --veil: var(--c-accent);
-}
 
 /* Glitch worlds: the veil tears in scanlines instead of veins. */
-[data-setting='sci-fi'] .coc-veil__noise--b,
-[data-setting='cyberpunk'] .coc-veil__noise--b {
+[data-setting='sci-fi'] .coc-veil__noise--b {
   background: repeating-linear-gradient(0deg, rgb(var(--veil) / 0.7) 0 2px, transparent 2px 5px);
   animation: coc-veil-cross 0.9s steps(3, jump-none) infinite alternate;
 }
@@ -890,25 +828,6 @@
  * bottom and its column for a drawer, the fight's panels go one under another, and what the finger
  * presses grows to 40px. The desktop above it is untouched.
  */
-
-/* The rail's places laid along the bottom: the mark of the open one runs along their top edge. */
-.coc-tabbar {
-  border-right: 0;
-  border-top: 1px solid rgb(var(--c-line) / 0.7);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-.coc-tabbar .ui-rail__item {
-  min-height: 3.5rem;
-  justify-content: center;
-}
-.coc-tabbar .ui-rail__item .ui-rail__mark {
-  top: 0;
-  bottom: auto;
-  left: 25%;
-  right: 25%;
-  width: auto !important;
-  height: 2px;
-}
 
 @media (max-width: 1023.98px) {
   .coc-skills--wide {
@@ -983,5 +902,13 @@
   }
   .coc-skill .coc-info {
     opacity: 0.6;
+  }
+}
+
+/* In a phone's grid of buttons the note of the next roll takes a row of its own, after them. */
+@media (max-width: 639.98px) {
+  .coc-sheet .max-sm\:grid > .coc-mods__note {
+    grid-column: 1 / -1;
+    order: 2;
   }
 }

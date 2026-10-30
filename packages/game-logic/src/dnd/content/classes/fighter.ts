@@ -2,10 +2,10 @@ import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ChoiceDef, ClassDef, FeatureDef, OptionDef, SubclassDef } from '../../types';
 import { ARTISAN_TOOL_NAMES, FIGHTER_KITS } from '../equipment';
 import {
-  THIRD_CASTER_SLOTS,
   abilityScoreImprovement,
   epicBoon,
   weaponMasteryChoice,
+  multiclassProficiencies,
 } from './shared';
 
 /** Fighter of the 2024 Player's Handbook (Воин). Descriptions are our own summaries of the rules. */
@@ -21,6 +21,7 @@ const extraAttack = (level: number, attacks: number, name: string): FeatureDef =
   description: `Совершая действие «Атака» в свой ход, вы атакуете ${attacks === 2 ? 'дважды' : attacks === 3 ? 'трижды' : 'четырежды'} вместо одного раза.`,
   action: 'passive',
   iconName: 'crossed-swords',
+  effects: [{ type: 'extraAttack', attacks }],
 });
 
 // ------------------------------------------------------------------------------------------------
@@ -125,6 +126,7 @@ const champion: SubclassDef = {
         description: 'Ваши атаки оружием и безоружные удары совершают критическое попадание при результате 19–20 на к20.',
         action: 'passive',
         iconName: 'crossed-swords',
+        effects: [{ type: 'critRange', min: 19 }],
       },
       {
         id: 'champion.remarkable-athlete',
@@ -132,6 +134,7 @@ const champion: SubclassDef = {
         description:
           'Вы совершаете с преимуществом броски инициативы и проверки Силы (Атлетика). Сразу после критического попадания вы можете переместиться на половину скорости, не провоцируя атак.',
         action: 'passive',
+        effects: [{ type: 'advantage', on: ['initiative', 'skill:athletics'] }],
       },
     ],
     7: [
@@ -156,6 +159,7 @@ const champion: SubclassDef = {
         name: 'Превосходный критический удар',
         description: 'Критическое попадание происходит при результате 18–20 на к20.',
         action: 'passive',
+        effects: [{ type: 'critRange', min: 18 }],
       },
     ],
     18: [
@@ -165,6 +169,7 @@ const champion: SubclassDef = {
         description:
           '**Отказ смерти.** Спасброски от смерти вы совершаете с преимуществом, а результат 18–20 считается выпавшей «20».\n\n**Героическое сплочение.** В начале своего хода, если у вас осталось не больше половины хитов (но больше 0), вы восстанавливаете 5 + модификатор Телосложения хитов.',
         action: 'passive',
+        effects: [{ type: 'advantage', on: ['deathSave'] }],
       },
     ],
   },
@@ -177,7 +182,7 @@ const eldritchKnight: SubclassDef = {
   spellcasting: {
     ability: 'intelligence',
     list: 'wizard',
-    slots: THIRD_CASTER_SLOTS,
+    progression: 'third',
     mode: 'known',
     prepared: byClassLevel({ 3: 3, 4: 4, 7: 5, 8: 6, 10: 7, 11: 8, 13: 9, 14: 10, 16: 11, 19: 12, 20: 13 }),
     cantrips: byClassLevel({ 3: 2, 10: 3 }),
@@ -654,6 +659,10 @@ export const FIGHTER: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
+  multiclass: {
+    requires: [['strength'], ['dexterity']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields', 'martialWeapons'),
+  },
   subclassLevel: 3,
   subclasses: [battleMaster, champion, eldritchKnight, psiWarrior, banneret, arcaneArcher],
   replaceable: [

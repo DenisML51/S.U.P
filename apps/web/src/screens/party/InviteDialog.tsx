@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import type { InvitePreviewDto } from '@itd/schema';
+import { plural } from '../../i18n';
 import { usePartyStore } from '../../store/usePartyStore';
 import { Dialog } from '../../ui/Dialog';
 import { Button } from '../../ui/primitives';
 import { SETTING_INFO } from '../../ui/theme/settings';
 import { PartyCover } from './PartyCover';
 
-const seats = (count: number) => {
-  const tens = count % 100;
-  const ones = count % 10;
-  const word = tens >= 11 && tens <= 14 ? 'участников' : ones === 1 ? 'участник' : ones >= 2 && ones <= 4 ? 'участника' : 'участников';
-  return `${count} ${word}`;
-};
+const seats = (count: number) => `${count} ${plural(count, 'участник', 'участника', 'участников')}`;
 
 /** An invitation read from a code: the table's world, its cover and who runs it, before taking a seat. */
 export const InviteDialog: React.FC<{
@@ -61,6 +57,9 @@ export const InviteDialog: React.FC<{
             <p className="text-[15px] text-ink-faint">Мастер ещё не рассказал, что ждёт за этим столом.</p>
           )}
           {preview.member && <p className="text-sm text-frame-bright">Вы уже за этим столом.</p>}
+          {!preview.member && !preview.inSession && (
+            <p className="text-sm text-ink-muted">Сессия пока не идёт: можно сесть за стол и привести героя заранее.</p>
+          )}
         </div>
       )}
     </Dialog>

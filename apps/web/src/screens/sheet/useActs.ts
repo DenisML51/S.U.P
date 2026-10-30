@@ -1,11 +1,34 @@
 import type { Ability, Attack, Spell } from '@itd/schema';
-import { castableSlots, spellAttackBonusFor } from '@itd/game-logic';
+import {
+  ammunitionChoices,
+  castableSlots,
+  formatModifier,
+  isActiveFeature,
+  onHitAttacks,
+  performAction as tryAction,
+  resolveAmmunition,
+  slotConversions,
+  spellAttackBonusFor,
+  type DamageSource,
+  type PerformActionRequest,
+} from '@itd/game-logic';
 import { toast } from 'react-hot-toast';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { damageParts, spellDamageParts } from './parts/damage';
-import { useConcentrationPrompt } from './Concentration';
+import { damageParts, describeDamage, hitPointCostsOf, priceLabel, spellDamageParts } from './parts/damage';
+import { useConcentrationPrompt, useEndFeature } from './Concentration';
 import { useSlotPrompt } from './SlotPrompt';
-import { useRolls, type DamageComponents } from './useRolls';
+import { useAmmoPrompt } from './AmmoPrompt';
+import { useAmountPrompt } from './AmountPrompt';
+import { useRolls, type DamageComponents, type HitRider, type RollFollowUp } from './useRolls';
+import { useVitals } from './useVitals';
+
+/** What `amount` units of an ability of a chosen cost give: "1" a unit is the amount, "1d8" so many dice. */
+function perPoint(entry: Ability, amount: number): { damage: string; type: string }[] {
+  const each = entry.damagePerPoint ?? '';
+  const dice = /^(\d*)d(\d+)$/.exec(each);
+  const damage = dice ? `${amount * Number(dice[1] || 1)}d${dice[2]}` : /^\d+$/.test(each) ? String(amount * Number(each)) : '';
+  return damage ? [{ damage, type: entry.damageType ?? '' }] : [];
+}
 
 /**
  * What the hero does with an entry of the sheet: attack, use an ability, cast a spell. The same
@@ -19,8 +42,13 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
   const logHistory = useCharacterStore((s) => s.logHistory);
   const character = useCharacterStore((s) => s.character);
   const askSlot = useSlotPrompt((s) => s.ask);
+  const askAmmo = useAmmoPrompt((s) => s.ask);
+  const askAmount = useAmountPrompt((s) => s.ask);
+  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const askReplace = useConcentrationPrompt((s) => s.askReplace);
+  const endFeature = useEndFeature();
   const roll = useRolls();
+  const vitals = useVitals();
   const turnLock = useCharacterStore((s) => s.turnLock);
   /** Out of the hero's turn in a party's fight only reactions are taken, wherever they are asked from. */
   const onTurn = (entry: Attack | Ability | Spell, run: () => void) => {
@@ -32,15 +60,97 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
    * What an entry rolls once it is used. With an attack roll the hit comes first and its damage is
    * rolled from the hit's toast; a saving throw or an effect that always lands rolls straight away.
    */
-  const strike = (label: string, hitBonus: number | undefined, parts: DamageComponents) => {
-    if (hitBonus !== undefined) roll.attack(label, hitBonus, parts);
-    else roll.damage(label, parts);
+  const strike = (
+    label: string,
+    hitBonus: number | undefined,
+    parts: DamageComponents,
+    weapon: { minDie?: number; twoHanded?: DamageComponents; spell?: boolean; source?: DamageSource; rider?: HitRider } = {},
+    entry?: Pick<Ability, 'tempHPFromDamage'>,
+  ) => {
+    const follow = followUp(parts, entry);
+    // In a fight a once-a-turn feature (Savage Attacker) is spent with the roll it changes.
+    if (hitBonus !== undefined) roll.attack(label, hitBonus, parts, { ...weapon, tracked: inCombat, follow });
+    else roll.damage(label, parts, { minDie: weapon.minDie, source: weapon.source, tracked: inCombat, follow });
   };
 
-  const attack = (entry: Attack) => {
+  /**
+   * What the hero may take for themselves from a roll: healing on themselves (the target may be
+   * another, so it is offered, not done), temporary hit points from the damage a feature deals
+   * (Rite of Siphoning).
+   */
+  const followUp = (parts: DamageComponents, entry?: Pick<Ability, 'tempHPFromDamage'>): RollFollowUp | undefined => {
+    const healing = parts.length > 0 && parts.every((p) => p.type === 'Лечение');
+    const share = entry?.tempHPFromDamage;
+    if (!healing && !share) return undefined;
+    return (total) => [
+      ...(healing ? [{ label: 'На себя', onClick: () => vitals.heal(total) }] : []),
+      ...(share && !healing ? [{ label: `Временные хиты +${Math.floor(total * share)}`, onClick: () => vitals.addTemp(Math.floor(total * share)) }] : []),
+    ];
+  };
+
+  /** An attack, with a smite riding on it (`ride`): named after both, the smite paid with the damage of a hit. */
+  const attack = (entry: Attack, ammunitionItemId?: string, ride?: { name: string; rider: HitRider }) => {
+    // Different stacks would do (arrows and +1 arrows): the player says which, once for this attack.
+    if (entry.usesAmmunition && !ammunitionItemId && character && !resolveAmmunition(character, entry) && ammunitionChoices(character).length > 1) {
+      askAmmo(entry, (itemId) => {
+        updateCharacter((doc) => ({
+          ...doc,
+          attacks: doc.attacks.map((a) => (a.id === entry.id ? { ...a, ammunitionItemId: itemId } : a)),
+        }));
+        attack(entry, itemId, ride);
+      });
+      return;
+    }
     // The roll tells what happened; spending the action or the arrow shows no message of its own.
-    if ((entry.usesAmmunition || inCombat) && !performAction({ kind: 'attack', id: entry.id, trackActionEconomy: inCombat }, { quiet: true })?.ok) return;
-    strike(entry.name, entry.hitBonus, damageParts(entry));
+    const pays = entry.usesAmmunition || entry.thrown || inCombat;
+    if (pays && !performAction({ kind: 'attack', id: entry.id, trackActionEconomy: inCombat, ammunitionItemId }, { quiet: true })?.ok) return;
+    // A versatile weapon offers its two-handed damage beside the one-handed; dice a feature deals
+    // beside the weapon's (Crimson Rite) go with either.
+    const twoHanded = entry.damageTwoHanded
+      ? [{ damage: entry.damageTwoHanded, type: damageParts(entry)[0]?.type }, ...damageParts(entry).slice(1)]
+      : undefined;
+    const source: DamageSource = {
+      kind: entry.weaponId ? 'weapon' : entry.id.includes('unarmed-strike') ? 'unarmed' : 'other',
+      attack: true,
+    };
+    const name = ride ? `${entry.name} + ${ride.name}` : entry.name;
+    strike(name, entry.hitBonus, damageParts(entry), { minDie: entry.minDie, twoHanded, source, rider: ride?.rider });
+  };
+
+  /**
+   * A smite: cast right after a hit, so it is not cast on its own. The player picks the attack it
+   * rides on; the hit is rolled, and only a hit's damage pays for the smite and rolls its dice with
+   * the weapon's — a critical hit doubling both. A miss leaves the slot unspent.
+   */
+  const smite = (name: string, onHit: 'melee' | 'weapon', parts: DamageComponents, request: PerformActionRequest) => {
+    if (!character) return;
+    // What would refuse it (no slot, no bonus action left) is said before the attack, not after.
+    const check = tryAction(character, request);
+    if (!check.ok) {
+      toast.error(check.message);
+      return;
+    }
+    const attacks = onHitAttacks(character, onHit);
+    if (attacks.length === 0) {
+      toast.error(onHit === 'melee' ? 'Нет рукопашной атаки, с которой её сотворить' : 'Нет атаки оружием, с которой её сотворить');
+      return;
+    }
+    // Its dice are the hit's companions, not the weapon's own (Savage Attacker leaves them be).
+    const rider: HitRider = {
+      parts: parts.map((p) => ({ ...p, extra: true })),
+      pay: () => !!performAction(request, { quiet: true })?.ok,
+    };
+    askAmount({
+      kind: 'options',
+      title: name,
+      options: attacks.map((a) => ({
+        key: a.id,
+        label: a.name,
+        detail: `${formatModifier(a.hitBonus)} · ${describeDamage([...damageParts(a), ...parts])}`,
+        blocked: null,
+        onPick: () => attack(a, undefined, { name, rider }),
+      })),
+    });
   };
 
   /** An entry that needs concentration asks first when it would end another one. */
@@ -50,16 +160,98 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     else run();
   };
 
-  const use = (entry: Ability) => {
-    const parts = damageParts(entry);
+  /**
+   * An ability: one of a chosen cost (Lay on Hands) asks how much first, a conversion (Font of
+   * Magic) which slot, one that can be strengthened (an amplified Blood Curse) which way; what it
+   * deals follows the choice.
+   */
+  const apply = (entry: Ability, choice: { amount?: number; level?: number; amplify?: boolean } = {}) => {
+    const pool = character?.resources.find((r) => r.id === entry.resourceId);
+    // Spent with no blood to buy another use: nothing to choose, the use is refused below.
+    const spent = !!pool && pool.current < (entry.resourceCost ?? 1) && !entry.hpCostWhenSpent;
+    if (entry.amplify && choice.amplify === undefined && !spent) {
+      // What each way costs in blood: its own price, a use bought with hit points once the pool is empty.
+      const plain = hitPointCostsOf(entry, pool);
+      askAmount({
+        kind: 'options',
+        title: entry.name,
+        options: [
+          { key: 'plain', label: 'Обычно', detail: priceLabel(plain), blocked: null, onPick: () => apply(entry, { ...choice, amplify: false }) },
+          {
+            key: 'amplified',
+            label: 'Усилить',
+            detail: priceLabel([...plain, entry.amplify.hpCost]),
+            blocked: null,
+            onPick: () => apply(entry, { ...choice, amplify: true }),
+          },
+        ],
+      });
+      return;
+    }
+    if (entry.convert && choice.level === undefined && character && entry.resourceId) {
+      const toPoints = entry.convert === 'slotToPoints';
+      askAmount({
+        kind: 'options',
+        title: entry.name,
+        options: slotConversions(character, entry.resourceId, entry.convert).map((o) => ({
+          key: String(o.level),
+          label: `Ячейка ${o.level} круга`,
+          detail: toPoints ? `+${o.amount} очк.` : `−${o.amount} очк.`,
+          blocked: o.blocked,
+          onPick: () => apply(entry, { level: o.level }),
+        })),
+      });
+      return;
+    }
+    if (entry.onHit) {
+      smite(entry.name, entry.onHit, damageParts(entry), { kind: 'ability', id: entry.id, trackActionEconomy: inCombat });
+      return;
+    }
+    const least = entry.resourceCost ?? 1;
+    if (entry.resourceCostMax && entry.resourceCostMax > least && choice.amount === undefined && pool) {
+      const most = Math.min(entry.resourceCostMax, pool.current);
+      if (most < least) {
+        toast.error(`Недостаточно ресурса «${pool.name}»: нужно ${least}, есть ${pool.current}`);
+        return;
+      }
+      askAmount({
+        kind: 'amount',
+        title: entry.name,
+        unit: pool.name,
+        min: least,
+        max: most,
+        preview: entry.damagePerPoint ? (n) => describeDamage(perPoint(entry, n)) : undefined,
+        onPick: (amount) => apply(entry, { amount }),
+      });
+      return;
+    }
+    const parts =
+      choice.amount !== undefined && entry.damagePerPoint
+        ? perPoint(entry, choice.amount)
+        : choice.amplify && entry.amplify?.damage
+          ? damageParts({ ...entry, damage: entry.amplify.damage, damageComponents: undefined })
+          : damageParts(entry);
     const hitBonus = entry.saveAttribute ? undefined : entry.hitBonus;
     const rolls = hitBonus !== undefined || parts.length > 0;
-    if (entry.resourceId || entry.concentration || inCombat) {
-      if (!performAction({ kind: 'ability', id: entry.id, trackActionEconomy: inCombat }, { quiet: rolls })?.ok) return;
+    // Anything that pays, concentrates or turns on (a free toggle: a latent Mutagen) goes through the rules.
+    if (entry.resourceId || entry.concentration || entry.hpCost || entry.stance || choice.amplify || inCombat) {
+      const request = {
+        kind: 'ability' as const,
+        id: entry.id,
+        trackActionEconomy: inCombat,
+        resourceAmount: choice.amount,
+        conversionLevel: choice.level,
+        amplify: choice.amplify,
+      };
+      if (!performAction(request, { quiet: rolls })?.ok) return;
     } else {
       logHistory(`Способность: ${entry.name}`);
     }
-    if (rolls) strike(entry.name, hitBonus, parts);
+    // A die of no damage type that nothing hits or saves against is no damage: a Bardic Inspiration,
+    // the Rite Die a Rite of Blindness takes off an attack. It is rolled as it is.
+    const plainDie = hitBonus === undefined && !entry.saveAttribute && parts.length > 0 && parts.every((p) => !p.type);
+    if (plainDie) roll.formula(entry.name, parts.map((p) => p.damage).join('+'));
+    else if (rolls) strike(entry.name, hitBonus, parts, {}, entry);
   };
 
   const castWith = (spell: Spell, slotLevel?: number) => {
@@ -67,9 +259,14 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     const parts = spellDamageParts(character, spell, slotLevel ?? spell.level);
     const hitBonus = spell.attackRoll ? spellAttackBonusFor(character, spell) : undefined;
     const rolls = hitBonus !== undefined || parts.length > 0;
-    if (!performAction({ kind: 'spell', id: spell.id, trackActionEconomy: inCombat, slotLevel }, { quiet: rolls })?.ok) return;
     const upcast = slotLevel !== undefined && slotLevel > spell.level ? ` (${slotLevel} круг)` : '';
-    if (rolls) strike(`${spell.name}${upcast}`, hitBonus, parts);
+    const request = { kind: 'spell' as const, id: spell.id, trackActionEconomy: inCombat, slotLevel };
+    if (spell.onHit) {
+      smite(`${spell.name}${upcast}`, spell.onHit, parts, request);
+      return;
+    }
+    if (!performAction(request, { quiet: rolls })?.ok) return;
+    if (rolls) strike(`${spell.name}${upcast}`, hitBonus, parts, { spell: true, source: { kind: 'spell', attack: hitBonus !== undefined } });
   };
 
   const castFrom = (spell: Spell) => {
@@ -82,8 +279,27 @@ export function useActs({ inCombat = false }: { inCombat?: boolean } = {}) {
     else castWith(spell, slots[0]);
   };
 
-  const activate = (entry: Ability) => onTurn(entry, () => concentrating(entry, () => use(entry)));
+  /** A ritual: no slot, ten minutes longer, so out of a fight's turn; what it deals still rolls. */
+  const ritual = (spell: Spell) => {
+    if (!character) return;
+    const parts = spellDamageParts(character, spell, spell.level);
+    const hitBonus = spell.attackRoll ? spellAttackBonusFor(character, spell) : undefined;
+    const rolls = hitBonus !== undefined || parts.length > 0;
+    if (!performAction({ kind: 'spell', id: spell.id, asRitual: true }, { quiet: rolls })?.ok) return;
+    if (rolls) strike(`${spell.name} (ритуал)`, hitBonus, parts, { spell: true, source: { kind: 'spell', attack: hitBonus !== undefined } });
+  };
+
+  // An ability that is on (Rage) is ended by the same button, without an action.
+  const activate = (entry: Ability) =>
+    entry.stance && character && isActiveFeature(character, entry.id)
+      ? endFeature(entry.id, entry.name)
+      : onTurn(entry, () => concentrating(entry, () => apply(entry)));
   const cast = (spell: Spell) => onTurn(spell, () => concentrating(spell, () => castFrom(spell)));
 
-  return { attack: (entry: Attack) => onTurn(entry, () => attack(entry)), activate, cast };
+  return {
+    attack: (entry: Attack) => onTurn(entry, () => attack(entry)),
+    activate,
+    cast,
+    ritual: (spell: Spell) => concentrating(spell, () => ritual(spell)),
+  };
 }

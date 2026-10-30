@@ -1,5 +1,5 @@
 import React from 'react';
-import { createEntityId, isUsable, removeById, upsertById } from '@itd/game-logic';
+import { createEntityId, isActiveFeature, isUsable, removeById, rulesOf, upsertById } from '@itd/game-logic';
 import type { Ability, ActionType, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
@@ -7,8 +7,9 @@ import { MarkdownField, Segmented, Switch } from '../../../ui/forms';
 import { Button, Field } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
 import { DamageBlock } from '../../../ui/DamageBlock';
-import { damageParts, hitLabel } from '../parts/damage';
+import { costFact, damageParts, hitLabel } from '../parts/damage';
 import { useActs } from '../useActs';
+import { useSheetDialogs } from './context';
 import { EntryForm, EntryView, useEntryDraft } from './entry';
 import {
   CardRule,
@@ -41,6 +42,7 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const acts = useActs();
+  const dialogs = useSheetDialogs();
   const { entry, draft, setDraft, startEditing, stopEditing } = useEntryDraft(
     character.abilities,
     id,
@@ -145,8 +147,21 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
 
   if (!entry) return null;
   const parts = damageParts(entry);
-  const cost = costLabel(character, entry.resourceId, entry.resourceCost);
+  const cost = costLabel(
+    character,
+    entry.convert ? undefined : entry.resourceId,
+    entry.resourceCostMax ? `${entry.resourceCost ?? 1}–${entry.resourceCostMax}` : entry.resourceCost,
+  );
   const passive = !isUsable(entry);
+  // What it costs: uses of a pool, hit points on every use, hit points once the pool is empty, and to strengthen it.
+  const facts = [
+    cost && { label: 'Стоимость', value: cost },
+    entry.hpCost && costFact('Цена', entry.hpCost),
+    entry.hpCostWhenSpent && costFact('Без запаса', entry.hpCostWhenSpent),
+    entry.amplify && (entry.amplify.hpCost ? costFact('Усиление', entry.amplify.hpCost) : { label: 'Усиление', value: 'без платы' }),
+  ].filter((fact): fact is { label: string; value: string } => !!fact);
+  // Picks the sheet changes any time (the known forms of Wild Shape).
+  const choices = character.build && entry.grant ? (rulesOf(character.build).sheetChoices?.(character.build, entry.grant) ?? []) : [];
 
   return (
     <EntryView
@@ -164,17 +179,25 @@ export const AbilityDialog: React.FC<{ open: boolean; id?: string; edit?: boolea
       }
       onEdit={startEditing}
       primary={
-        !passive && (
-          <Button variant="primary" onClick={() => acts.activate(entry)} data-autofocus>
-            Использовать
-          </Button>
-        )
+        <>
+          {/* Picks the sheet changes (Wild Shape's forms, an Alchemist's mutagens), beside the use itself. */}
+          {choices[0] && (
+            <Button variant={passive ? 'primary' : 'secondary'} onClick={() => dialogs.open({ kind: 'choices', grant: entry.grant! })}>
+              {`${choices[0].label}: ${choices[0].picked} из ${choices[0].count}`}
+            </Button>
+          )}
+          {!passive && (
+            <Button variant="primary" onClick={() => acts.activate(entry)} data-autofocus>
+              {isActiveFeature(character, entry.id) ? 'Прекратить' : 'Использовать'}
+            </Button>
+          )}
+        </>
       }
     >
       <DamageBlock parts={parts} hit={hitLabel(character, entry)} className="mb-4" />
-      {cost && <KeyFacts facts={[{ label: 'Стоимость', value: cost }]} />}
+      {facts.length > 0 && <KeyFacts facts={facts} />}
       {entry.effect.trim() && (
-        <Prose className={cost || parts.length > 0 ? 'mt-4' : undefined}>{entry.effect}</Prose>
+        <Prose className={facts.length > 0 || parts.length > 0 ? 'mt-4' : undefined}>{entry.effect}</Prose>
       )}
       {entry.description.trim() && (
         <>

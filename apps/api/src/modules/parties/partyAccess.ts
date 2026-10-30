@@ -16,7 +16,6 @@ export interface PartyContext {
 
 export const partyNotFound = () => notFound('Партия не найдена');
 export const masterOnly = () => forbidden('Это может только мастер');
-export const CODE_WAITS = 'Мастер ещё не начал сессию — код заработает, когда стол откроется';
 
 /**
  * Runs a change to a party: locks the party row (changes to one party apply one at a time), checks

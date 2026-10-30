@@ -1,4 +1,4 @@
-import type { Character, Concentration } from '@itd/schema';
+import type { Ability, Attack, Character, Concentration } from '@itd/schema';
 
 /** Conditions that leave the hero incapacitated, which ends concentration at once. */
 export const CONCENTRATION_BREAKING_CONDITIONS: readonly string[] = [
@@ -32,6 +32,69 @@ export const startConcentration = (
   now: number = Date.now(),
 ): Character => ({ ...character, concentratingOn: { ...target, startedAt: now } });
 
-/** Ends concentration the hero can no longer keep (0 hit points, incapacitated). */
+/**
+ * Ends what the hero can no longer keep up at 0 hit points or incapacitated: concentration, and
+ * the features that are on (Rage, Wild Shape).
+ */
 export const keepConcentration = (character: Character): Character =>
-  character.concentratingOn && !canConcentrate(character) ? endConcentration(character) : character;
+  canConcentrate(character) ? character : endAllFeatures(endConcentration(character));
+
+// ------------------------------------------------------------------------------------------------
+// Features that are on (Rage, Bladesong): kept, like concentration, while the hero can act
+// ------------------------------------------------------------------------------------------------
+
+/** Whether the ability is on now. */
+export const isActiveFeature = (character: Pick<Character, 'activeFeatures'>, id: string): boolean =>
+  !!character.activeFeatures?.includes(id);
+
+/** The abilities that are on now, in the order of the sheet. */
+export const activeFeaturesOf = (character: Pick<Character, 'abilities' | 'activeFeatures'>): Ability[] =>
+  character.abilities.filter((a) => a.stance && isActiveFeature(character, a.id));
+
+/** A feature that is on and forbids spells (Rage, Wild Shape), if any. */
+export const spellBlocker = (character: Pick<Character, 'abilities' | 'activeFeatures'>): Ability | undefined =>
+  activeFeaturesOf(character).find((a) => a.stanceNoSpells);
+
+/**
+ * Turns an ability on. Another of its group goes off (a new form of Wild Shape replaces the old);
+ * one that forbids concentration ends it; temporary hit points it gives replace smaller ones.
+ */
+export function startFeature(
+  character: Character,
+  ability: Pick<Ability, 'id' | 'stanceEndsConcentration' | 'stanceGroup' | 'stanceTempHP'>,
+): Character {
+  const rivals = ability.stanceGroup
+    ? character.abilities.filter((a) => a.id !== ability.id && a.stanceGroup === ability.stanceGroup).map((a) => a.id)
+    : [];
+  const active = (character.activeFeatures ?? []).filter((id) => !rivals.includes(id));
+  let next: Character = { ...character, activeFeatures: active.includes(ability.id) ? active : [...active, ability.id] };
+  if (ability.stanceTempHP) next = { ...next, tempHP: Math.max(next.tempHP, ability.stanceTempHP) };
+  return ability.stanceEndsConcentration ? endConcentration(next) : next;
+}
+
+/** Turns an ability off; the field goes away with the last one. */
+export function endFeature(character: Character, id: string): Character {
+  const active = (character.activeFeatures ?? []).filter((a) => a !== id);
+  if (active.length === (character.activeFeatures?.length ?? 0)) return character;
+  if (active.length > 0) return { ...character, activeFeatures: active };
+  const { activeFeatures: _ended, ...rest } = character;
+  return rest;
+}
+
+/** Turns every ability off (a long rest, falling unconscious). */
+export const endAllFeatures = (character: Character): Character =>
+  (character.activeFeatures ?? []).reduce(endFeature, character);
+
+/** Turns off the abilities that are on and match (those lasting until a short rest, on one). */
+export const endFeatures = (character: Character, which: (ability: Ability) => boolean): Character =>
+  activeFeaturesOf(character).filter(which).reduce((next, ability) => endFeature(next, ability.id), character);
+
+/** Abilities of this group are shapes the hero takes (Wild Shape): the beast's attacks stand in for theirs. */
+export const FORM_GROUP = 'wild-shape';
+
+/** The shape the hero is in (a form of Wild Shape), if any. */
+export const activeFormOf = (character: Pick<Character, 'abilities' | 'activeFeatures'>): Ability | undefined =>
+  activeFeaturesOf(character).find((a) => a.stanceGroup === FORM_GROUP);
+
+/** An attack of the shape's stat block (a wolf's bite), written by the rules system with this grant. */
+export const isFormAttack = (attack: Pick<Attack, 'grant'>): boolean => !!attack.grant?.startsWith('form:');

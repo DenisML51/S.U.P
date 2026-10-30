@@ -1,6 +1,6 @@
 import { byClassLevel } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
-import { abilityScoreImprovement, epicBoon, subclassHeading, weaponMasteryChoice } from './shared';
+import { abilityScoreImprovement, epicBoon, subclassHeading, weaponMasteryChoice, multiclassProficiencies } from './shared';
 
 /** Варвар of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -126,19 +126,19 @@ const wildHeart: SubclassDef = {
                   id: 'owl',
                   name: 'Сова',
                   description: 'Тёмное зрение на 60 футов (или +60 футов к имеющемуся).',
-                  features: [{ id: 'wild-heart.aspect-owl', name: 'Аспект совы', description: 'У вас есть тёмное зрение на 60 футов; если оно уже было, его дальность увеличивается на 60 футов.', iconName: 'beast-eye' }],
+                  features: [{ id: 'wild-heart.aspect-owl', name: 'Аспект совы', description: 'У вас есть тёмное зрение на 60 футов; если оно уже было, его дальность увеличивается на 60 футов.', effects: [{ type: 'darkvision', range: 60, extend: true }], iconName: 'beast-eye' }],
                 },
                 {
                   id: 'panther',
                   name: 'Пантера',
                   description: 'Скорость лазания, равная скорости ходьбы.',
-                  features: [{ id: 'wild-heart.aspect-panther', name: 'Аспект пантеры', description: 'У вас есть скорость лазания, равная вашей скорости.', iconName: 'cat' }],
+                  features: [{ id: 'wild-heart.aspect-panther', name: 'Аспект пантеры', description: 'У вас есть скорость лазания, равная вашей скорости.', effects: [{ type: 'movement', mode: 'climb' }], iconName: 'cat' }],
                 },
                 {
                   id: 'salmon',
                   name: 'Лосось',
                   description: 'Скорость плавания, равная скорости ходьбы.',
-                  features: [{ id: 'wild-heart.aspect-salmon', name: 'Аспект лосося', description: 'У вас есть скорость плавания, равная вашей скорости.', iconName: 'wave-crest' }],
+                  features: [{ id: 'wild-heart.aspect-salmon', name: 'Аспект лосося', description: 'У вас есть скорость плавания, равная вашей скорости.', effects: [{ type: 'movement', mode: 'swim' }], iconName: 'wave-crest' }],
                 },
               ],
             },
@@ -318,6 +318,10 @@ export const BARBARIAN: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
+  multiclass: {
+    requires: [['strength']],
+    proficiencies: multiclassProficiencies('shields', 'martialWeapons'),
+  },
   subclassLevel: 3,
   subclasses: [berserker, wildHeart, worldTree, zealot],
   startingEquipment: BARBARIAN_KITS,
@@ -338,6 +342,17 @@ export const BARBARIAN: ClassDef = {
           description: 'Бонус урона Ярости: +2, с 9-го уровня +3, с 16-го +4. Короткий отдых возвращает одно использование.',
           iconName: 'angry-eyes',
           color: '#c0392b',
+        },
+        stance: {
+          endsConcentration: true,
+          noSpells: true,
+          effects: [
+            { type: 'resistance', damageType: 'Дробящий' },
+            { type: 'resistance', damageType: 'Колющий' },
+            { type: 'resistance', damageType: 'Рубящий' },
+            { type: 'damageBonus', ability: 'strength', amount: rageDamage },
+            { type: 'advantage', on: ['check:strength', 'save:strength'] },
+          ],
         },
         iconName: 'angry-eyes',
         color: '#c0392b',
@@ -364,6 +379,7 @@ export const BARBARIAN: ClassDef = {
         name: 'Чувство опасности',
         description: 'Вы совершаете спасброски Ловкости с преимуществом, если не недееспособны.',
         action: 'passive',
+        effects: [{ type: 'advantage', on: ['save:dexterity'] }],
         iconName: 'dodge',
       },
       {
@@ -401,12 +417,13 @@ export const BARBARIAN: ClassDef = {
         description: 'Совершая действие «Атака» в свой ход, вы атакуете дважды вместо одного раза.',
         action: 'passive',
         iconName: 'crossed-swords',
+        effects: [{ type: 'extraAttack', attacks: 2 }],
       },
       {
         id: 'barbarian.fast-movement',
         name: 'Быстрое передвижение',
         description: 'Пока вы не носите тяжёлых доспехов, ваша скорость увеличивается на 10 футов.',
-        effects: [{ type: 'speed', amount: 10 }],
+        effects: [{ type: 'speed', amount: 10, when: 'noHeavyArmor' }],
         iconName: 'run',
       },
     ],
@@ -416,6 +433,7 @@ export const BARBARIAN: ClassDef = {
         name: 'Дикий инстинкт',
         description: 'Вы совершаете броски инициативы с преимуществом.',
         action: 'passive',
+        effects: [{ type: 'advantage', on: ['initiative'] }],
         iconName: 'beast-eye',
       },
       {

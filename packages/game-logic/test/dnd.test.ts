@@ -15,9 +15,9 @@ import {
   unfinishedChoices,
   type FeatureDef,
 } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { atLevel, makeCharacter, singleClass, type SingleClassBuild } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -89,7 +89,7 @@ describe('D&D content', () => {
         }
       }
     };
-    scan([DND.classes, DND.species, DND.feats, DND.spells, DND.maneuvers, DND.catalogs]);
+    scan([DND.classes, DND.species, DND.feats, DND.spells, DND.maneuvers, DND.catalogs, DND.beasts]);
     expect([...used].filter((icon) => !known.has(icon))).toEqual([]);
   });
 });
@@ -112,15 +112,15 @@ describe('build engine', () => {
 
   it('asks for the picks of level 1 and records them', () => {
     let b = build();
-    const plan = levelPlan(b, 1);
+    const plan = levelPlan(atLevel(b, 1), 1);
     const style = plan.choices.find((c) => c.key === 'class:fighter.fighting-style/style')!;
     expect(style).toBeDefined();
-    const options = choiceOptions(b, 1, style);
+    const options = choiceOptions(atLevel(b, 1), 1, style);
     expect(options.some((o) => o.id === 'defense')).toBe(true);
     expect(options.every((o) => DND.feats.find((f) => f.id === o.id)?.category === 'fightingStyle')).toBe(true);
 
     b = setPicks(b, style.key, ['defense']);
-    expect(unfinishedChoices(b, levelPlan(b, 1)).some((c) => c.key === style.key)).toBe(false);
+    expect(unfinishedChoices(b, levelPlan(atLevel(b, 1), 1)).some((c) => c.key === style.key)).toBe(false);
     expect(collect(b).features.some((f) => f.feature.id === 'defense')).toBe(true);
   });
 
@@ -140,7 +140,7 @@ describe('build engine', () => {
     expect(character.resources.some((r) => r.id === 'slot-3')).toBe(false);
     expect(character.resources.find((r) => r.id === 'paladin.lay-on-hands')?.max).toBe(25);
     expect(character.resources.find((r) => r.id === 'paladin.channel-divinity')?.max).toBe(2);
-    expect(character.maxPreparedSpells.total).toBe(6);
+    expect(character.casters?.[0]?.prepared).toBe(6);
     const smite = character.spells.find((s) => s.id === 'spell-divine-smite');
     expect(smite?.alwaysPrepared && smite.prepared).toBe(true);
     expect(character.spells.find((s) => s.id === 'spell-aid')?.alwaysPrepared).toBe(true);
@@ -161,7 +161,7 @@ describe('build engine', () => {
       resources: character.resources.map((r) => (r.id === 'paladin.lay-on-hands' ? { ...r, current: 1 } : r)),
       spells: character.spells.map((s) => (s.id === 'spell-bless' ? { ...s, prepared: true } : s)),
     };
-    const next = apply({ ...b, level: 2, hitPoints: [{ level: 2, method: 'roll', value: 7 }] }, character);
+    const next = apply({ ...atLevel(b, 2), hitPoints: [{ level: 2, method: 'roll', value: 7 }] }, character);
     expect(next.maxHP).toBe(character.maxHP + 7 + 2);
     expect(next.currentHP).toBe(next.maxHP - 5);
     expect(next.resources.find((r) => r.id === 'paladin.lay-on-hands')).toMatchObject({ max: 10, current: 6 });
@@ -174,7 +174,7 @@ describe('build engine', () => {
       choices: { 'class:fighter.asi-4/feat': ['ability-score-improvement'] },
     });
     const key = 'class:fighter.asi-4/feat:ability-score-improvement';
-    const asiChoice = levelPlan(b, 4).choices.find((c) => c.key.startsWith(key))!;
+    const asiChoice = levelPlan(atLevel(b, 4), 4).choices.find((c) => c.key.startsWith(key))!;
     expect(asiChoice).toBeDefined();
     const character = apply(setPicks(b, asiChoice.key, ['strength', 'strength']));
     expect(character.attributes.strength).toBe(19);
@@ -183,21 +183,21 @@ describe('build engine', () => {
   });
 
   it('opens the subclass on level 3 and the subclass choices after it is chosen', () => {
-    expect(levelPlan(build(), 3).needsSubclass).toBe(true);
-    const plan = levelPlan(build({ subclass: 'battle-master' }), 3);
+    expect(levelPlan(atLevel(build(), 3), 3).needsSubclass).toBe(true);
+    const plan = levelPlan(atLevel(build({ subclass: 'battle-master' }), 3), 3);
     expect(plan.needsSubclass).toBe(false);
     expect(plan.choices.some((c) => c.choice.options.from === 'maneuvers' && c.count === 3)).toBe(true);
   });
 
   it('offers an Eldritch Knight new wizard spells on the levels they come', () => {
     const b = build({ subclass: 'eldritch-knight', level: 3 });
-    const plan = levelPlan(b, 3);
+    const plan = levelPlan(atLevel(b, 3), 3);
     const spells = plan.choices.find((c) => c.choice.id === 'spells')!;
     expect(spells.count).toBe(3);
-    const options = choiceOptions(b, 3, spells);
+    const options = choiceOptions(atLevel(b, 3), 3, spells);
     expect(options.length).toBeGreaterThan(10);
     expect(options.every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
-    expect(levelPlan(b, 4).choices.find((c) => c.choice.id === 'spells')?.count).toBe(1);
+    expect(levelPlan(atLevel(b, 4), 4).choices.find((c) => c.choice.id === 'spells')?.count).toBe(1);
   });
 
   it('drops picks that depended on a replaced pick', () => {
@@ -295,6 +295,9 @@ describe('damage that grows', () => {
     expect(cure.upcastDamage).toBe('2d8');
     // Charisma 10 → +0, so only dice: 2d8 at 1st, +2d8 for each slot above.
     expect(spellDamageAt(hero, cure, 3)).toBe('6d8');
+    // Dice in steps of slot levels (Shadow Blade): the highest step the slot reaches.
+    const blade = { ...cure, level: 2, damage: '2d8', upcastDamage: undefined, slotDamage: { 3: '3d8', 5: '4d8', 7: '5d8' } };
+    expect([2, 3, 4, 5, 9].map((slot) => spellDamageAt(hero, blade, slot))).toEqual(['2d8', '3d8', '3d8', '4d8', '5d8']);
   });
 
   it('writes feature damage for the current level', () => {

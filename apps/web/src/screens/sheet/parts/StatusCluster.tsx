@@ -6,9 +6,13 @@ import { GameIcon, tileStyle } from '../../../ui/GameIcon';
 import { LevelReady, useSettingArt } from '../../../ui/ornaments';
 import { Button, IconButton, Meter, Panel, cx, type MeterTone } from '../../../ui/primitives';
 import { IconHealth, IconMinus, IconPlus, IconRest, IconSanity } from '../../../ui/icons';
-import { ConcentrationBadge } from '../Concentration';
+import { ActiveFeaturesBadge, ConcentrationBadge } from '../Concentration';
+import { DeathSaves } from './DeathSaves';
 import { useSheetDialogs } from '../dialogs/context';
 import { useVitals } from '../useVitals';
+import { locale } from '../../../i18n';
+import { toast } from 'react-hot-toast';
+import { SIGN_HINT, cleanAmount, signedAmount } from './amount';
 
 /**
  * One of the vitals: its picture, name and figures over the gauge. The setting decides what the
@@ -20,18 +24,27 @@ const StatusBar: React.FC<{
   value: number;
   max: number;
   extra?: number;
+  /** Part of the maximum lost until a rest (a Vital Sacrifice). */
+  lost?: number;
   tone: MeterTone;
   onClick: () => void;
-}> = ({ icon, label, value, max, extra = 0, tone, onClick }) => (
-  <button type="button" onClick={onClick} title={label} className="ui-vital" data-tone={tone}>
+}> = ({ icon, label, value, max, extra = 0, lost = 0, tone, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={lost > 0 ? `${label} · максимум снижен на ${lost} до продолжительного отдыха` : label}
+    className="ui-vital"
+    data-tone={tone}
+  >
     <span className="ui-vital__icon">{icon}</span>
     <span className="ui-vital__label">{label}</span>
     <span className="ui-vital__value ui-numeric">
       <span className="ui-vital__current">{value}</span>
       <span className="ui-vital__max">/{max}</span>
+      {lost > 0 && <span className="ui-vital__lost">−{lost}</span>}
     </span>
     <span className="ui-vital__gauge">
-      <Meter value={value} max={max} extra={extra} tone={tone} height={8} ticks label={label} />
+      <Meter value={value} max={max} extra={extra} lost={lost} tone={tone} height={8} ticks label={label} />
     </span>
     {extra > 0 && <span className="ui-vital__extra ui-numeric">+{extra}</span>}
   </button>
@@ -40,8 +53,8 @@ const StatusBar: React.FC<{
 const QuickHealth: React.FC = () => {
   const vitals = useVitals();
   const [amount, setAmount] = useState('');
-  const value = Number(amount);
-  const valid = amount.trim() !== '' && Number.isFinite(value) && value > 0;
+  const { sign, value } = signedAmount(amount);
+  const valid = value > 0;
 
   const apply = (kind: 'damage' | 'heal') => {
     if (!valid) return;
@@ -55,9 +68,11 @@ const QuickHealth: React.FC = () => {
       className="flex gap-1.5"
       onSubmit={(event) => {
         event.preventDefault();
-        apply('damage');
+        // Enter needs a sign: a bare number could be either, and a heal taken as damage hurts.
+        if (sign) apply(sign === '-' ? 'damage' : 'heal');
+        else if (valid) toast(SIGN_HINT, { id: 'health-sign' });
       }}
-      title="Введите число: Enter — урон"
+      title={SIGN_HINT}
     >
       {/* The amount sits among the buttons and takes their silhouette. */}
       <span className="ui-keyfield w-16 shrink-0">
@@ -67,12 +82,13 @@ const QuickHealth: React.FC = () => {
           placeholder="0"
           aria-label="Количество здоровья"
           value={amount}
-          onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
+          onChange={(e) => setAmount(cleanAmount(e.target.value))}
         />
       </span>
       <button
-        type="submit"
+        type="button"
         disabled={!valid}
+        onClick={() => apply('damage')}
         className="ui-button ui-button--danger ui-button--row !h-8 min-w-0 flex-1"
       >
         Урон
@@ -112,7 +128,7 @@ const LevelPlate: React.FC<{ character: Character; onClick: () => void }> = ({ c
 /** Experience on a plaque fixed under the vitals: the label and the figures over a graduated bar. */
 const ExperienceLine: React.FC<{ character: Character; onClick: () => void }> = ({ character, onClick }) => {
   const progress = experienceProgress(character.level, character.experience);
-  const format = (value: number) => value.toLocaleString('ru-RU');
+  const format = (value: number) => value.toLocaleString(locale);
   return (
     <button
       type="button"
@@ -199,6 +215,7 @@ export const StatusCluster: React.FC<{ character: Character; className?: string 
             value={character.currentHP}
             max={totalMaxHP(character)}
             extra={character.tempHP}
+            lost={character.maxHPReduction}
             tone="hp"
             onClick={() => dialogs.open({ kind: 'health' })}
           />
@@ -212,6 +229,8 @@ export const StatusCluster: React.FC<{ character: Character; className?: string 
           />
         </div>
         <ConcentrationBadge character={character} />
+        <ActiveFeaturesBadge character={character} />
+        <DeathSaves character={character} />
         <QuickHealth />
       </Panel>
       <ExperienceLine character={character} onClick={() => dialogs.open({ kind: 'experience' })} />

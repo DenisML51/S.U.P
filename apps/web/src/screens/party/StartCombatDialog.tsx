@@ -12,10 +12,13 @@ interface Candidate {
   name: string;
   portrait: string | null;
   note: string;
+  /** Ticked when a fight begins. */
+  ready: boolean;
 }
 
 /**
- * Who goes into the fight (or joins one under way). Everyone starts picked when a fight begins;
+ * Who goes into the fight (or joins one under way). When a fight begins everyone starts picked but
+ * the master's hidden heroes and NPCs already down;
  * once it is under way, only those not yet in it are offered.
  */
 export const StartCombatDialog: React.FC<{
@@ -37,15 +40,31 @@ export const StartCombatDialog: React.FC<{
           id: hero.id,
           name: hero.name,
           portrait: hero.portrait ?? null,
-          note: hero.ownerId === party.masterId ? 'мастер' : (owners.get(hero.ownerId) ?? ''),
+          // A hidden hero of the master's becomes visible to the players once in the fight.
+          note: hero.hidden
+            ? 'скрыт · раскроется в бою'
+            : hero.ownerId === party.masterId
+              ? 'мастер'
+              : (owners.get(hero.ownerId) ?? ''),
+          ready: !hero.hidden,
         })),
       npcs: (party.npcs ?? [])
         .filter((npc) => !inFight.has(npc.id))
-        .map<Candidate>((npc) => ({ id: npc.id, name: npc.name, portrait: npc.portraitAssetId, note: `${npc.disposition === 'hostile' ? 'враг' : 'союзник'} · ${npc.currentHP}/${npc.maxHP} хитов` })),
+        .map<Candidate>((npc) => ({
+          id: npc.id,
+          name: npc.name,
+          portrait: npc.portraitAssetId,
+          note: `${npc.disposition === 'hostile' ? 'враг' : 'союзник'} · ${npc.currentHP}/${npc.maxHP} хитов`,
+          // One already down does not rise for the next fight by itself.
+          ready: npc.currentHP > 0,
+        })),
     };
   }, [party]);
 
-  const [picked, setPicked] = useState<Set<string>>(() => (joining ? new Set() : new Set([...heroes, ...npcs].map((p) => p.id))));
+  // Ticked to start: the players' heroes, the master's shown ones and NPCs still standing.
+  const [picked, setPicked] = useState<Set<string>>(() =>
+    joining ? new Set() : new Set([...heroes, ...npcs].filter((p) => p.ready).map((p) => p.id)),
+  );
   const [busy, setBusy] = useState(false);
   const toggle = (id: string) =>
     setPicked((current) => {
@@ -92,7 +111,7 @@ export const StartCombatDialog: React.FC<{
     >
       <div className="space-y-5 pt-1">
         <Group title="Герои" items={heroes} picked={picked} onToggle={toggle} empty="Все герои уже в бою" />
-        <Group title="НПС" items={npcs} picked={picked} onToggle={toggle} empty="Добавьте НПС на панели справа" />
+        <Group title="НПС" items={npcs} picked={picked} onToggle={toggle} empty="Добавьте НПС в стопки «Враги» и «Союзники» на столе" />
       </div>
     </Dialog>
   );

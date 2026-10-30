@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import type { PartyDto, TableDie } from '@itd/schema';
+import type { PartyDto, TableCheck, TableDie } from '@itd/schema';
 import { announceMasterRoll, announceRoll } from '../../store/useTableRollStore';
 import { DiceDialog, type DiceTarget } from '../sheet/dialogs/DiceDialog';
 import { Segmented } from '../../ui/forms';
@@ -18,7 +18,7 @@ export const MasterDiceDialog: React.FC<{
   onClose: () => void;
   hero?: { characterId: string; name: string };
 }> = ({ open, party, onClose, hero }) => {
-  const [audience, setAudience] = useState<'all' | 'some'>('all');
+  const [audience, setAudience] = useState<'all' | 'some' | 'me'>('all');
   const [spread, setSpread] = useState<'shared' | 'each'>('shared');
   const [chosen, setChosen] = useState<string[]>([]);
   const heroes = party.heroes.filter((h) => h.ownerId !== party.masterId);
@@ -28,9 +28,11 @@ export const MasterDiceDialog: React.FC<{
     ? heroes.filter((h) => picked.includes(h.id)).map((h) => ({ id: h.id, name: h.name }))
     : undefined;
 
-  const thrown = (dice: TableDie[], label: string, target?: DiceTarget) => {
+  const thrown = (dice: TableDie[], label: string, target: DiceTarget | undefined, check: TableCheck) => {
+    // A secret throw: the master sees it in the tray, the table never does.
+    if (audience === 'me') return;
     if (audience === 'all' && hero) {
-      announceRoll(hero.characterId, dice, label);
+      announceRoll(hero.characterId, dice, label, check);
       return;
     }
     if (audience === 'some' && picked.length === 0) {
@@ -38,7 +40,7 @@ export const MasterDiceDialog: React.FC<{
       return;
     }
     const heroIds = target ? [target.id] : audience === 'some' ? picked : undefined;
-    announceMasterRoll(party.id, dice, hero ? `${hero.name}: ${label}` : label, heroIds).catch(() =>
+    announceMasterRoll(party.id, dice, hero ? `${hero.name}: ${label}` : label, heroIds, check).catch(() =>
       toast.error('Бросок не дошёл до стола'),
     );
   };
@@ -60,6 +62,7 @@ export const MasterDiceDialog: React.FC<{
           options={[
             { value: 'all', label: 'всем' },
             { value: 'some', label: 'выбранным героям' },
+            { value: 'me', label: 'только мне' },
           ]}
         />
         {audience === 'some' &&

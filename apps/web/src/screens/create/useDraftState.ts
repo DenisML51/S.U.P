@@ -47,13 +47,15 @@ export function useClearDraft(): () => void {
 
 /**
  * State of the hero creation that is kept on the device until the hero is made: a reload, a closed
- * tab or a trip back to the heroes does not throw the choices away.
+ * tab or a trip back to the heroes does not throw the choices away. `revive` brings a value kept by
+ * an older version of the app to the current shape (`undefined`: start over).
  */
-export function useDraftState<T>(key: string, initial: T | (() => T)) {
+export function useDraftState<T>(key: string, initial: T | (() => T), revive?: (stored: unknown) => T | undefined) {
   const scope = useContext(DraftScopeContext);
   const [value, setValue] = useState<T>(() => {
     const stored = read<T>(scope, key);
-    if (stored !== undefined) return stored;
+    const kept = stored !== undefined && revive ? revive(stored) : stored;
+    if (kept !== undefined) return kept;
     return typeof initial === 'function' ? (initial as () => T)() : initial;
   });
   useEffect(() => {

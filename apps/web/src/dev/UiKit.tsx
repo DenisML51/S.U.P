@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import type { Setting } from '@itd/schema';
 import { SETTING_LIST } from '../ui/theme/settings';
-import { SettingScope, useDocumentSetting } from '../ui/theme/SettingScope';
-import { Button, Field, IconButton, Input, Meter, Panel, SectionTitle, Tabs, Tag, cx } from '../ui/primitives';
+import { SettingScope, useDocumentSetting, useSetting } from '../ui/theme/SettingScope';
+import { Button, Field, IconButton, Input, Meter, Panel, Rule, SectionTitle, Tabs, Tag, cx } from '../ui/primitives';
 import { NumberField, Segmented, Switch } from '../ui/forms';
 import { Ledger, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../ui/Ledger';
 import { DetailsPane } from '../ui/DetailsPane';
@@ -14,17 +14,27 @@ import { SettingBackdrop } from '../ui/SettingBackdrop';
 import { Toasts } from '../ui/Toasts';
 import { LevelReady, SettingEmblem, useSettingArt } from '../ui/ornaments';
 import { WorldCard } from '../screens/create/WorldCard';
+import { RollToast } from '../screens/sheet/useRolls';
+import { DieGlyph } from '../ui/RollingDie';
+import { CheckPanel } from '../ui/CheckPanel';
+import { LevelUpBurst } from '../ui/LevelUpBurst';
+import { InitiativePlate } from '../screens/party/InitiativeDialog';
+import type { LevelUpMoment } from '../store/useMomentStore';
 import {
   IconArmor,
   IconAttacks,
   IconAttributes,
   IconCharacter,
+  IconCheck,
+  IconClose,
   IconCombat,
   IconDice,
+  IconHealth,
   IconHistory,
   IconInventory,
   IconPrev,
   IconRest,
+  IconSanity,
   IconSettings,
   IconSpells,
 } from '../ui/icons';
@@ -160,7 +170,7 @@ const HeroSample: React.FC = () => (
 );
 
 /** One section of the sheet: a list of spells and the chosen spell's card beside it. */
-const ScreenSample: React.FC = () => {
+const ScreenSample: React.FC<{ bare: boolean }> = ({ bare }) => {
   const [selected, setSelected] = useState('chain');
   const [level, setLevel] = useState<(typeof LEVEL_TABS)[number]['id']>('all');
   const spell = SPELLS.find((s) => s.id === selected) ?? SPELLS[0];
@@ -168,7 +178,7 @@ const ScreenSample: React.FC = () => {
   const levels = [...new Set(shown.map((s) => s.level))];
 
   return (
-    <div className="ui-screen relative flex h-[860px] overflow-hidden">
+    <div className={cx('ui-screen relative flex h-[860px] overflow-hidden', bare && 'invisible')}>
       <Rail label="Разделы">
         <RailButton label="Герои" Icon={IconPrev} onClick={() => undefined} />
         <RailDivider />
@@ -265,6 +275,352 @@ const Board: React.FC<{ title: string; children: React.ReactNode; className?: st
   </Panel>
 );
 
+/** The vitals panel of the sheet as StatusCluster draws it: the bars, the level token, the plaque of experience. */
+const VitalsSample: React.FC = () => {
+  const { StatusLevel } = useSettingArt();
+  return (
+    <div className="ui-status">
+      <Panel className="ui-status__panel space-y-2.5 px-4 py-3">
+        <span className="ui-level">
+          <StatusLevel level={7} />
+        </span>
+        <div className="ui-status__bars">
+          {(
+            [
+              ['Здоровье', 31, 44, 'hp', 5, <IconHealth key="hp" width={18} height={18} />],
+              ['Рассудок', 57, 57, 'sanity', 0, <IconSanity key="sanity" width={18} height={18} />],
+            ] as const
+          ).map(([label, value, max, tone, extra, icon]) => (
+            <button key={label} type="button" className="ui-vital" data-tone={tone}>
+              <span className="ui-vital__icon">{icon}</span>
+              <span className="ui-vital__label">{label}</span>
+              <span className="ui-vital__value ui-numeric">
+                <span className="ui-vital__current">{value}</span>
+                <span className="ui-vital__max">/{max}</span>
+              </span>
+              <span className="ui-vital__gauge">
+                <Meter value={value} max={max} extra={extra} tone={tone} height={8} ticks label={label} />
+              </span>
+              {extra > 0 && <span className="ui-vital__extra ui-numeric">+{extra}</span>}
+            </button>
+          ))}
+        </div>
+      </Panel>
+      <button type="button" className="ui-xp">
+        <span className="ui-xp__label">Опыт</span>
+        <span className="ui-xp__value ui-numeric">
+          6 500<span className="ui-xp__of"> / 14 000</span>
+        </span>
+        <span className="ui-xp__rail" aria-hidden>
+          <span className="ui-xp__track">
+            <span className="ui-xp__fill" style={{ width: '46%' }} />
+          </span>
+        </span>
+      </button>
+    </div>
+  );
+};
+
+/** A hero's card on hero select, focused: the rulebook plate under it, the setting's readout beside it. */
+const HeroCardSample: React.FC = () => {
+  const { HeroReadout } = useSettingArt();
+  const setting = useSetting();
+  const tag = { '--tag-tone': 'var(--c-frame-bright)' } as React.CSSProperties;
+  return (
+    <div className="flex justify-center px-10 pb-16 pt-6">
+      <SettingScope setting={setting} className="ui-hero-card relative h-[360px] w-[230px]" data-focused="">
+        <div className="ui-rulebook-plate">
+          <span className="ui-tag ui-rulebook" style={tag}>
+            D&amp;D 5e
+          </span>
+        </div>
+        {HeroReadout && <HeroReadout id="kit-hero" level={7} hp={31} maxHp={44} />}
+        <Panel as="button" interactive active className="flex h-full w-full flex-col overflow-hidden p-0 text-left">
+          <span className="absolute inset-0 grid place-items-center text-frame/40">
+            <SettingEmblem size={120} />
+          </span>
+          <span className="absolute inset-0 bg-gradient-to-t from-bg-deep from-10% via-bg-deep/60 via-35% to-transparent to-60%" />
+          <span className="relative mt-auto block space-y-2 p-5">
+            <span className="ui-display block text-[1.75rem] leading-[1.05] text-ink">Сота Сил</span>
+            <span className="block text-sm text-ink-muted">Химер · Механик-чародей</span>
+            <span className="ui-tag ui-rulebook" style={tag}>
+              D&amp;D 5e
+            </span>
+          </span>
+        </Panel>
+      </SettingScope>
+    </div>
+  );
+};
+
+/** The steps of hero creation, origin tiles and the small picks. */
+const CreationSample: React.FC = () => {
+  const [origin, setOrigin] = useState('wizard');
+  const [picks, setPicks] = useState<string[]>(['arcana']);
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-0.5">
+        {(
+          [
+            ['Мир', 'Высокое фэнтези', 'done'],
+            ['Происхождение', 'Химер', 'done'],
+            ['Класс', 'выбор…', 'current'],
+            ['Снаряжение', '—', 'ahead'],
+          ] as const
+        ).map(([label, value, state], i) => (
+          <button
+            key={label}
+            type="button"
+            className="ui-steps__item"
+            aria-current={state === 'current' ? 'step' : undefined}
+            data-done={state === 'done' || undefined}
+            disabled={state === 'ahead'}
+          >
+            <span className="ui-steps__mark">
+              <span>{state === 'done' ? <IconCheck width={12} height={12} /> : i + 1}</span>
+            </span>
+            <span className="ui-steps__label">{label}</span>
+            <span className="ui-steps__value">{value}</span>
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-1.5">
+        {(
+          [
+            ['wizard', 'Волшебник', 'wizard-staff'],
+            ['rogue', 'Плут', 'hood'],
+            ['bard', 'Бард', 'lyre'],
+          ] as const
+        ).map(([id, name, icon]) => (
+          <button key={id} type="button" className="ui-origin" aria-pressed={origin === id} onClick={() => setOrigin(id)}>
+            <GameIcon name={icon} kind="ability" size={40} className="ui-origin__icon" />
+            <span className="ui-origin__name">{name}</span>
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {(
+          [
+            ['arcana', 'Магия'],
+            ['history', 'История'],
+            ['insight', 'Проницательность'],
+          ] as const
+        ).map(([id, name]) => (
+          <button
+            key={id}
+            type="button"
+            className="ui-option ui-option--chip"
+            aria-pressed={picks.includes(id)}
+            onClick={() => setPicks((all) => (all.includes(id) ? all.filter((p) => p !== id) : [...all, id]))}
+          >
+            {name}
+          </button>
+        ))}
+        <span className="ui-count" data-done={picks.length >= 2 || undefined}>
+          {picks.length} / 2
+        </span>
+      </div>
+    </div>
+  );
+};
+
+/** The setting's type, from the largest title down to a figure and a line of prose. */
+const TypeSample: React.FC = () => (
+  <div className="space-y-3">
+    <div className="ui-display ui-title text-[2.4rem] leading-none text-ink">Цепная молния</div>
+    <SectionTitle>Заклинания</SectionTitle>
+    <div className="flex items-baseline gap-4">
+      <span className="ui-label !mb-0">Метка поля</span>
+      <span className="ui-display ui-numeric text-3xl text-frame-bright">+8 · 14 200</span>
+    </div>
+    <p className="text-[15px] leading-relaxed text-ink-muted">
+      Разряд молнии бьёт в цель и перескакивает ещё на три цели рядом. <em>Курсив для заметок,</em>{' '}
+      <b className="text-ink">полужирный для главного.</b>
+    </p>
+    <Rule />
+  </div>
+);
+
+/** The setting's colours, as the tokens the parts are painted with. */
+const PALETTE = [
+  ['bg', 'фон'],
+  ['surface', 'панель'],
+  ['surface-2', 'панель 2'],
+  ['frame', 'рамка'],
+  ['frame-bright', 'рамка ярк.'],
+  ['ink', 'текст'],
+  ['ink-muted', 'текст 2'],
+  ['accent', 'акцент'],
+  ['hp', 'здоровье'],
+  ['sanity', 'рассудок'],
+  ['xp', 'опыт'],
+  ['success', 'успех'],
+  ['danger', 'опасность'],
+  ['warning', 'внимание'],
+  ['act-bonus', 'бонусное'],
+  ['act-reaction', 'реакция'],
+] as const;
+
+const PaletteSample: React.FC = () => (
+  <div className="grid grid-cols-4 gap-x-3 gap-y-2.5">
+    {PALETTE.map(([token, name]) => (
+      <div key={token} className="flex min-w-0 items-center gap-2">
+        <span
+          className="h-6 w-6 shrink-0 rounded-full border border-white/15"
+          style={{ background: `rgb(var(--c-${token}))` }}
+        />
+        <span className="truncate text-xs text-ink-muted">{name}</span>
+      </div>
+    ))}
+  </div>
+);
+
+/** Messages as they stand on the screen, without waiting for a click. */
+const ToastSample: React.FC = () => (
+  <div className="flex flex-col items-center gap-4">
+    {(
+      [
+        [undefined, 'Отряд разбил лагерь'],
+        ['success', 'Заклинание сохранено'],
+        ['error', 'Не хватает ячеек 5 круга'],
+      ] as const
+    ).map(([type, text]) => (
+      <div key={text} className={cx('ui-toast', type && `ui-toast--${type}`)}>
+        <div className="ui-toast__body flex min-w-0 items-center gap-3">
+          {type === 'success' && <IconCheck width={18} height={18} className="shrink-0 text-success" />}
+          {type === 'error' && <IconClose width={18} height={18} className="shrink-0 text-danger" />}
+          <span className="ui-toast__text min-w-0 text-left">{text}</span>
+        </div>
+      </div>
+    ))}
+    <div className="ui-toast">
+      <div className="ui-toast__body flex min-w-0 items-center gap-3">
+        <span className="min-w-0 text-left">
+          <RollToast
+            label="Атака: Посох"
+            total={27}
+            detail="1к20 (20) + 7"
+            tone="crit"
+            dice={[{ sides: 20, value: 20 }]}
+            kept={20}
+            actions={[{ label: 'Урон', onClick: () => undefined }]}
+          />
+        </span>
+      </div>
+    </div>
+  </div>
+);
+
+/** A window as it stands open, in place: its head, a field, its foot. */
+const DialogSample: React.FC = () => (
+  <Panel as="section" ornate crest className="ui-dialog">
+    <span className="ui-dialog__frame" aria-hidden />
+    <header className="ui-dialog__head relative pb-4 pl-6 pr-14 pt-5">
+      <div className="min-w-0">
+        <div className="ui-dialog__eyebrow mb-1.5 text-[11px] uppercase tracking-[0.18em] opacity-70">Ресурс</div>
+        <div className="ui-dialog__title ui-display ui-title text-2xl leading-tight">Ячейки 5 круга</div>
+      </div>
+      <Rule className="ui-dialog__rule mt-3" />
+    </header>
+    <div className="space-y-4 px-6 pb-5">
+      <Field label="Название">{(props) => <Input {...props} defaultValue="Ячейки 5 круга" />}</Field>
+      <p className="text-sm leading-relaxed text-ink-muted">Восстанавливаются после долгого отдыха.</p>
+    </div>
+    <footer className="ui-dialog__foot flex items-center gap-3 px-6 py-4">
+      <Button variant="danger">Удалить</Button>
+      <div className="ml-auto flex gap-3">
+        <Button variant="ghost">Отмена</Button>
+        <Button variant="primary">Сохранить</Button>
+      </div>
+    </footer>
+    <IconButton label="Закрыть" className="!absolute right-4 top-4 z-[2]">
+      <IconClose width={18} height={18} />
+    </IconButton>
+  </Panel>
+);
+
+/** A list that drops out of a field, in place. */
+const PopoverSample: React.FC = () => (
+  <div className="ui-popover !static w-64">
+    {(
+      [
+        ['Огненный шар', '3 круг', 'active'],
+        ['Цепная молния', '6 круг', 'selected'],
+        ['Остановка хода', '9 круг', ''],
+      ] as const
+    ).map(([name, level, state]) => (
+      <div key={name} className="ui-popover__option" data-active={state === 'active' || undefined} aria-selected={state === 'selected'}>
+        <span>{name}</span>
+        <span className="text-xs opacity-70">{level}</span>
+      </div>
+    ))}
+  </div>
+);
+
+/** The dice tray: a die put into the pool, the rest waiting. */
+const DiceSample: React.FC = () => (
+  <div className="grid grid-cols-6 gap-2">
+    {[4, 6, 8, 10, 12, 20].map((sides) => (
+      <button key={sides} type="button" className={cx('ui-die', sides === 20 && 'ui-die--in')}>
+        <DieGlyph sides={sides} />
+        <span className="ui-die__name">к{sides}</span>
+        {sides === 20 && <span className="ui-die__count">2</span>}
+      </button>
+    ))}
+  </div>
+);
+
+/** The combat HUD: the hero's portrait between the tall bars, a panel of the hotbar beside it. */
+const HudSample: React.FC = () => (
+  <div className="flex items-end gap-5">
+    <span className="ui-vbar">
+      <span className="ui-vbar__track">
+        <span className="ui-vbar__fill" style={{ height: '70%', backgroundColor: 'rgb(var(--c-hp))' }} />
+        <span className="ui-vbar__extra" style={{ bottom: '70%', height: '11%' }} />
+      </span>
+      <span className="ui-vbar__label">Здоровье</span>
+      <span className="ui-vbar__value">31</span>
+    </span>
+    <span className="ui-hud-portrait ui-hud-portrait--shielded grid place-items-center">
+      <span className="grid h-full w-full place-items-center rounded-[inherit] bg-inset text-frame/60">
+        <SettingEmblem size={72} />
+      </span>
+      <span className="ui-hud-portrait__temp">+5</span>
+    </span>
+    <span className="ui-vbar">
+      <span className="ui-vbar__track">
+        <span className="ui-vbar__fill" style={{ height: '100%', backgroundColor: 'rgb(var(--c-sanity))' }} />
+      </span>
+      <span className="ui-vbar__label">Рассудок</span>
+      <span className="ui-vbar__value">57</span>
+    </span>
+    <Panel className="ui-hud-panel ml-2 flex min-w-0 flex-1 flex-col">
+      <header className="ui-hud-panel__head">
+        <IconSpells width={16} height={16} className="text-frame-bright" />
+        <span>Заклинания</span>
+        <span className="ml-auto tabular-nums text-ink-faint">{SPELLS.length}</span>
+      </header>
+      <div className="flex flex-wrap gap-2 p-3">
+        {SPELLS.map((spell) => (
+          <Tile key={spell.id} spell={spell} />
+        ))}
+      </div>
+    </Panel>
+  </div>
+);
+
+/** A page of notes on the setting's paper. */
+const PaperSample: React.FC = () => (
+  <Panel variant="paper" className="space-y-2 p-6">
+    <div className="ui-display text-xl">Дневник</div>
+    <Rule />
+    <p className="text-[15px] leading-relaxed">
+      День третий. Ковен оставил знаки на камнях у старой мельницы; молния в ладони отвечает им дрожью. Завтра —
+      к башне, пока туман не сошёл с холмов.
+    </p>
+  </Panel>
+);
+
 /** Every primitive in its states. */
 const ComponentsSample: React.FC<{ setting: Setting }> = ({ setting }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -274,7 +630,7 @@ const ComponentsSample: React.FC<{ setting: Setting }> = ({ setting }) => {
   const [tab, setTab] = useState<'all' | 'weapon' | 'armor'>('all');
 
   return (
-    <div className="grid grid-cols-3 gap-5 p-6">
+    <div className="grid grid-flow-row-dense grid-cols-3 gap-5 p-6">
       <Board title="Кнопки" className="col-span-2">
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="primary" size="lg">
@@ -312,6 +668,35 @@ const ComponentsSample: React.FC<{ setting: Setting }> = ({ setting }) => {
           <Button onClick={() => setDialogOpen(true)}>Открыть окно</Button>
           <Button onClick={() => toast.success('Бросок 1к20 + 8: 23')}>Сообщение</Button>
           <Button onClick={() => toast.error('Не хватает ячеек 5 круга')}>Ошибка</Button>
+          <Button onClick={() => toast('Отряд разбил лагерь')}>Весть</Button>
+          {(
+            [
+              ['Бросок', 14, undefined],
+              ['Крит', 20, 'crit'],
+              ['Провал', 1, 'fumble'],
+            ] as const
+          ).map(([name, die, tone]) => (
+            <Button
+              key={name}
+              size="sm"
+              onClick={() =>
+                toast(
+                  <RollToast
+                    label="Атака: Посох"
+                    total={die + 7}
+                    detail={`1к20 (${die}) + 7`}
+                    tone={tone}
+                    dice={[{ sides: 20, value: die }]}
+                    kept={die}
+                    actions={tone === 'fumble' ? [] : [{ label: 'Урон', onClick: () => undefined }]}
+                  />,
+                  { duration: 6000 },
+                )
+              }
+            >
+              {name}
+            </Button>
+          ))}
         </div>
         <Dialog
           open={dialogOpen}
@@ -443,11 +828,67 @@ const ComponentsSample: React.FC<{ setting: Setting }> = ({ setting }) => {
         {/* The setting's world card as hero creation shows it, at rest and chosen. */}
         <div className="flex justify-center gap-4">
           {[false, true].map((selected) => (
-            <div key={String(selected)} style={{ height: 380, aspectRatio: '0.62' }}>
+            <div key={String(selected)} style={{ height: 300, aspectRatio: '0.62' }}>
               <WorldCard setting={setting} selected={selected} onSelect={() => undefined} />
             </div>
           ))}
         </div>
+      </Board>
+
+      <Board title="Здоровье и уровень">
+        <VitalsSample />
+      </Board>
+
+      <Board title="Шрифты" className="col-span-2">
+        <TypeSample />
+      </Board>
+
+      <Board title="Палитра">
+        <PaletteSample />
+      </Board>
+
+      <Board title="Сообщения" className="col-span-2">
+        <ToastSample />
+      </Board>
+
+      <Board title="Список">
+        <PopoverSample />
+      </Board>
+
+      <Board title="Окно" className="col-span-2">
+        <DialogSample />
+      </Board>
+
+      <Board title="Записи">
+        <PaperSample />
+      </Board>
+
+      <Board title="Бой" className="col-span-2">
+        <HudSample />
+      </Board>
+
+      <Board title="Кубики">
+        <DiceSample />
+      </Board>
+
+      <Board title="Проверка у стола" className="col-span-3">
+        <CheckSample />
+      </Board>
+
+      <Board title="Инициатива">
+        <InitiativeSample setting={setting} />
+      </Board>
+
+      <Board title="Новый уровень: момент" className="col-span-3">
+        <LevelUpSample key={setting} setting={setting} />
+      </Board>
+
+      <Board title="Карточка героя" className="row-span-2">
+        <HeroCardSample />
+      </Board>
+
+      <Board title="Создание">
+        <CreationSample />
       </Board>
 
       <Board title="Выбор">
@@ -466,9 +907,127 @@ const ComponentsSample: React.FC<{ setting: Setting }> = ({ setting }) => {
   );
 };
 
+/**
+ * A check at the table, as the middle of the screen shows it: thrown against a difficulty (played
+ * again on demand, to watch it frame by frame), and waiting for the player's click on a call.
+ */
+const CheckSample: React.FC = () => {
+  const [run, setRun] = useState(0);
+  const [waiting, setWaiting] = useState(true);
+  const [hit, setHit] = useState(true);
+  const value = hit ? 14 : 6;
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={() => setRun((n) => n + 1)}>
+          Ещё раз
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setHit((h) => !h)}>
+          {hit ? 'Показать провал' : 'Показать успех'}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setWaiting(true)}>
+          Ждать клика
+        </Button>
+      </div>
+      {/* One under the other: each plate's weather spreads wide, as it does alone on the screen. */}
+      <div className="flex flex-col items-center gap-48 py-24">
+        <CheckPanel
+          key={`thrown-${run}-${hit}`}
+          title="Магия"
+          subtitle="Проверка Интеллекта · 1d20 + 5"
+          dice={[{ sides: 20, value }]}
+          check={{ title: 'Магия', formula: '1d20 + 5', bonus: 5, total: value + 5, target: 15 }}
+          parts={[
+            { label: 'Интеллект', value: 3, icon: 'brain' },
+            { label: 'Владение навыком', value: 2, icon: 'laurel-crown' },
+          ]}
+        />
+        <CheckPanel
+          key={`call-${run}`}
+          title="Спасбросок Телосложения"
+          subtitle="Мастер просит бросок · Эдгар Хайт"
+          dice={waiting ? [] : [{ sides: 20, value: 17 }]}
+          check={{ title: 'Спасбросок Телосложения', formula: '1d20 + 6', bonus: 6, total: 23, target: 18 }}
+          parts={[
+            { label: 'Телосложение', value: 3, icon: 'heart-plus' },
+            { label: 'Владение спасброском', value: 3, icon: 'laurel-crown' },
+          ]}
+          onRoll={waiting ? () => setWaiting(false) : undefined}
+        />
+      </div>
+    </div>
+  );
+};
+
+/** A combatant's initiative as the plate a player throws it on; nothing is sent. */
+const InitiativeSample: React.FC<{ setting: Setting }> = ({ setting }) => {
+  const [open, setOpen] = useState(false);
+  const [rolled, setRolled] = useState<{ die: number; total: number } | null>(null);
+  const [manual, setManual] = useState(13);
+  const close = () => {
+    setOpen(false);
+    setRolled(null);
+  };
+  return (
+    <div>
+      <Button size="sm" onClick={() => setOpen(true)}>
+        Открыть
+      </Button>
+      <InitiativePlate
+        open={open}
+        setting={setting}
+        name="Ивейн Дюфорт"
+        bonus={3}
+        rolled={rolled}
+        busy={false}
+        manual={manual}
+        onManual={setManual}
+        onRoll={() => {
+          const die = 1 + Math.floor(Math.random() * 20);
+          setRolled({ die, total: die + 3 });
+        }}
+        onSettled={() => window.setTimeout(close, 1100)}
+        onWrite={close}
+        onRemove={close}
+        onClose={close}
+      />
+    </div>
+  );
+};
+
+/** A new level as it plays over the sheet, played again on demand. */
+const LevelUpSample: React.FC<{ setting: Setting }> = ({ setting }) => {
+  const [moment, setMoment] = useState<LevelUpMoment | null>(null);
+  const play = () =>
+    setMoment({
+      key: Date.now(),
+      from: 2,
+      to: 3,
+      setting,
+      gains: [
+        { label: 'Максимум здоровья', value: '+7' },
+        { label: 'Бонус мастерства', value: '+1' },
+        { label: 'Новые умения', value: '+2' },
+      ],
+    });
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <Button size="sm" onClick={play}>
+          Сыграть
+        </Button>
+      </div>
+      <div className="relative h-[760px] overflow-hidden">
+        <LevelUpBurst moment={moment} onDone={() => setMoment(null)} inline />
+      </div>
+    </div>
+  );
+};
+
 /** Showcase page: a setting switcher in the service's own type, then the screen and the parts. */
 export const UiKit = () => {
-  const [setting, setSetting] = useState<Setting>(() => (new URLSearchParams(window.location.search).get('kit') as Setting) || 'high-fantasy');
+  const [setting, setSetting] = useState<Setting>(() => (new URLSearchParams(window.location.search).get('kit') as Setting) || 'fable');
+  const [bare, setBare] = useState(false);
   useDocumentSetting(setting);
   const choose = (next: Setting) => {
     setSetting(next);
@@ -480,10 +1039,13 @@ export const UiKit = () => {
       <header className="ui-service flex items-center gap-6 border-b border-line px-6 py-3">
         <span className="text-sm text-ink-muted">Витрина дизайна</span>
         <Segmented label="Сеттинг" value={setting} onChange={choose} options={SETTING_LIST.map((s) => ({ value: s.id, label: s.label }))} />
+        <span className="ml-auto">
+          <Switch checked={bare} onChange={setBare} label="Только фон" />
+        </span>
       </header>
       <div className="relative">
-        <SettingBackdrop setting={setting} strength={0.8} />
-        <ScreenSample />
+        <SettingBackdrop setting={setting} strength={bare ? 1 : 0.8} />
+        <ScreenSample bare={bare} />
       </div>
       <ComponentsSample setting={setting} />
       <Toasts />

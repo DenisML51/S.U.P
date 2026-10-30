@@ -15,6 +15,7 @@ import type {
   PartyDto,
   PartyListItemDto,
   PartyMessageDto,
+  TableRollCallRequest,
   TableRollRequest,
   TableRollsDto,
   PartyMessagesDto,
@@ -25,11 +26,12 @@ import type {
   UpdatePartyRequest,
   UserDto,
 } from '@itd/schema';
+import { randomId } from '@itd/schema';
 
 export const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
 
 /** Identifies this browser tab to the server, so the tab can ignore notifications about its own writes. */
-export const CLIENT_SESSION_ID = crypto.randomUUID();
+export const CLIENT_SESSION_ID = randomId();
 
 /** The server answered with an error. */
 export class ApiError extends Error {
@@ -212,6 +214,8 @@ export const api = {
     list: (id: string) => apiClient.request<TableRollsDto>(`/parties/${encode(id)}/rolls`),
     send: (id: string, body: TableRollRequest) =>
       apiClient.request<void>(`/parties/${encode(id)}/rolls`, { method: 'POST', body }),
+    call: (id: string, body: TableRollCallRequest) =>
+      apiClient.request<void>(`/parties/${encode(id)}/roll-calls`, { method: 'POST', body }),
   },
   invites: {
     preview: (code: string) => apiClient.request<InvitePreviewDto>(`/invites/${encode(code)}`),
@@ -234,5 +238,7 @@ export const api = {
     begin: (id: string) => apiClient.request<void>(`/parties/${encode(id)}/combat/begin`, { method: 'POST' }),
     next: (id: string, from: string | null) =>
       apiClient.request<void>(`/parties/${encode(id)}/combat/next`, { method: 'POST', body: { from } }),
+    previous: (id: string, from: string | null) =>
+      apiClient.request<void>(`/parties/${encode(id)}/combat/previous`, { method: 'POST', body: { from } }),
   },
 };

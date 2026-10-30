@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LayoutGroup, motion } from 'framer-motion';
-import { npcMinHP, type NpcAttack, type PartyDto, type PartyHeroDto, type PartyNpcDto, type NpcDisposition } from '@itd/schema';
+import { npcMinHP, type NpcAttack, type NpcDndAttack, type PartyDto, type PartyHeroDto, type PartyNpcDto, type NpcDisposition } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
 import { usePartyStore } from '../../store/usePartyStore';
 import { CharacterArt } from '../../ui/CharacterArt';
@@ -18,9 +18,13 @@ import {
 import { IconButton, Meter, Panel, cx } from '../../ui/primitives';
 import { formatBonus, isCocFight } from './partyView';
 import { HeroRoll } from './TableDice';
+import { Troubles } from './Troubles';
+import { useMediaQuery } from '../../ui/useBreakpoint';
 
 /** "Нож 40% 1D4" — an attack of a Call of Cthulhu NPC on its card. */
 const attackLine = (attack: NpcAttack) => [attack.name, `${attack.skill}%`, attack.damage].filter(Boolean).join(' ');
+const dndAttackLine = (attack: NpcDndAttack) =>
+  [attack.name, formatBonus(attack.hitBonus), attack.damage].filter(Boolean).join(' ');
 
 const SPRING = { type: 'spring', stiffness: 260, damping: 30 } as const;
 /** How far each card behind peeks out of a stack (party.css reserves room for three: keep `--stack-peek` in step). */
@@ -52,6 +56,8 @@ export const TableDecks: React.FC<{
   onNpc: (npc?: PartyNpcDto, disposition?: NpcDisposition) => void;
 }> = ({ party, userId, canBring, onBring, onPlay, onRemoveHero, onNpc }) => {
   const [open, setOpen] = useState<GroupId | null>(null);
+  // Below the desktop there is no room for stacks side by side: each group lays its cards out instead.
+  const narrow = useMediaQuery('(max-width: 1023.98px)');
   const setHeroHidden = usePartyStore((s) => s.setHeroHidden);
   const npcs = party.npcs ?? [];
   const fighting = new Set(party.combat?.combatants.map((c) => c.refId));
@@ -94,7 +100,7 @@ export const TableDecks: React.FC<{
     id: GroupId;
     title: string;
     cards: Card[];
-    add?: { label: string; hint: string; onAdd: () => void };
+    add?: { label: string; onAdd: () => void };
     empty?: string;
   }[] = [
     {
@@ -110,7 +116,6 @@ export const TableDecks: React.FC<{
       add: canBring
         ? {
             label: 'Добавить героя',
-            hint: 'Под вашим управлением; игроки увидят, когда покажете',
             onAdd: onBring,
           }
         : undefined,
@@ -121,7 +126,6 @@ export const TableDecks: React.FC<{
       cards: npcCards(true),
       add: {
         label: 'Быстрый НПС',
-        hint: isCocFight(party) ? 'Хиты, броня и ЛВК — видите только вы' : 'Хиты, КБ и инициатива — видите только вы',
         onAdd: () => onNpc(undefined, 'hostile'),
       },
     },
@@ -129,7 +133,7 @@ export const TableDecks: React.FC<{
       id: 'allies',
       title: 'Союзники',
       cards: npcCards(false),
-      add: { label: 'Быстрый НПС', hint: 'Друзья отряда; цифры видите только вы', onAdd: () => onNpc(undefined, 'friendly') },
+      add: { label: 'Быстрый НПС', onAdd: () => onNpc(undefined, 'friendly') },
     },
   ];
 
@@ -147,6 +151,16 @@ export const TableDecks: React.FC<{
   );
   const spread = groups.find((group) => group.id === open);
 
+  if (narrow)
+    return (
+      // On a tablet the groups stand two side by side, on a phone one under another.
+      <div className="grid grid-cols-2 items-start gap-x-6 gap-y-5 max-sm:grid-cols-1">
+        {groups.map((group) => (
+          <Strip key={group.id} title={group.title} cards={group.cards} add={group.add} empty={group.empty} />
+        ))}
+      </div>
+    );
+
   // One stack laid out takes the row; the others shrink to small stacks beside it.
   return (
     <LayoutGroup>
@@ -155,7 +169,10 @@ export const TableDecks: React.FC<{
           shrinking the cards past reading or spilling over the chat beside the table. */}
       <div className={cx('ui-decks-room flex min-h-0 flex-1', !spread && 'ui-decks-room--wrap')}>
         <div
-          className={cx('ui-decks flex min-h-0 flex-1 items-start gap-8', !spread && 'flex-wrap gap-y-6')}
+          className={cx(
+            'ui-decks flex min-h-0 flex-1 items-start gap-8',
+            !spread && 'flex-wrap gap-y-6',
+          )}
           style={{ '--groups': groups.length } as React.CSSProperties}
         >
           {spread ? (
@@ -176,12 +193,56 @@ export const TableDecks: React.FC<{
 
 // ------------------------------------------------------------------------------------------------
 
+/**
+ * A group below the desktop: its name and count over its cards, two to a row across its width, the
+ * card to add one at the end.
+ */
+const Strip: React.FC<{
+  title: string;
+  cards: Card[];
+  add?: { label: string; onAdd: () => void };
+  empty?: string;
+}> = ({ title, cards, add, empty }) => (
+  <section className="ui-deck-strip flex min-w-0 flex-col">
+    <div className="flex items-baseline gap-2">
+      <span className="ui-display ui-title ui-section-title text-[1.25rem] leading-none text-frame-bright">{title}</span>
+      <span className="ui-numeric text-sm text-ink-faint">{cards.length}</span>
+    </div>
+    {cards.length === 0 && !add ? (
+      <p className="mt-2 text-sm text-ink-faint">{empty}</p>
+    ) : cards.length === 0 && add ? (
+      // Nothing in the group yet: a quiet line to add the first, not a card standing alone.
+      <button
+        type="button"
+        onClick={add.onAdd}
+        className="ui-deck__empty mt-3 flex min-h-[3.25rem] items-center gap-3 px-4 py-2 text-left"
+      >
+        <IconCreate width={18} height={18} className="shrink-0 text-frame-bright" />
+        <span className="min-w-0 text-sm text-ink">{add.label}</span>
+      </button>
+    ) : (
+      <div className="ui-deck-grid mt-3 grid grid-cols-2 gap-3">
+        {cards.map((card) => (
+          <div key={card.key} className="ui-deck__card">
+            {card.render('spread')}
+          </div>
+        ))}
+        {add && (
+          <div className="ui-deck__card">
+            <AddCard label={add.label} mode="spread" onAdd={add.onAdd} />
+          </div>
+        )}
+      </div>
+    )}
+  </section>
+);
+
 type DeckMode = 'stack' | 'spread' | 'small';
 
 const Deck: React.FC<{
   title: string;
   cards: Card[];
-  add?: { label: string; hint: string; onAdd: () => void };
+  add?: { label: string; onAdd: () => void };
   /** Said in place of a stack with nothing in it and nothing to add. */
   empty?: string;
   mode: DeckMode;
@@ -197,7 +258,7 @@ const Deck: React.FC<{
         ...cards,
         {
           key: `add-${title}`,
-          render: (shown) => <AddCard label={add.label} hint={add.hint} mode={shown} onAdd={add.onAdd} />,
+          render: (shown) => <AddCard label={add.label} mode={shown} onAdd={add.onAdd} />,
         },
       ]
     : cards;
@@ -371,9 +432,8 @@ const Line: React.FC<{ count: number; children: React.ReactNode }> = ({ count, c
   );
 };
 
-const AddCard: React.FC<{ label: string; hint: string; mode: DeckMode; onAdd: () => void }> = ({
+const AddCard: React.FC<{ label: string; mode: DeckMode; onAdd: () => void }> = ({
   label,
-  hint,
   mode,
   onAdd,
 }) => {
@@ -395,13 +455,12 @@ const AddCard: React.FC<{ label: string; hint: string; mode: DeckMode; onAdd: ()
       >
         <IconCreate width={spread ? 26 : 18} height={spread ? 26 : 18} />
       </span>
-      {/* Side-stack: just the plus. Stack: plus and the label. Laid out: the hint as well. */}
+      {/* Side-stack: just the plus. Otherwise the plus and the label. */}
       {!small && (
         <span className={cx('ui-display ui-title leading-tight text-ink', spread ? 'text-lg' : 'text-sm')}>
           {label}
         </span>
       )}
-      {spread && <span className="text-xs text-ink-muted">{hint}</span>}
     </Panel>
   );
 };
@@ -449,13 +508,17 @@ const HeroCard: React.FC<{
               {spread && (label || onToggleHidden) && (
                 <span
                   className={cx(
-                    'flex items-center gap-1.5 truncate text-[10px] uppercase tracking-[0.2em]',
+                    'flex min-w-0 items-center gap-1.5 text-[10px] uppercase tracking-[0.2em]',
                     hidden ? 'text-ink-faint' : 'text-frame-bright/80',
                   )}
                 >
                   {onToggleHidden &&
-                    (hidden ? <IconHidden width={12} height={12} /> : <IconShown width={12} height={12} />)}
-                  {label}
+                    (hidden ? (
+                      <IconHidden width={12} height={12} className="shrink-0" />
+                    ) : (
+                      <IconShown width={12} height={12} className="shrink-0" />
+                    ))}
+                  <span className="min-w-0 truncate">{label}</span>
                 </span>
               )}
               <span
@@ -468,7 +531,9 @@ const HeroCard: React.FC<{
               </span>
               {spread && (
                 <span className="block truncate text-xs text-ink-muted">
-                  {[origin.calling || origin.race, !vitals?.coc && `${hero.level} ур.`].filter(Boolean).join(' · ')}
+{/* Each part said on its own: one string would let "{0} ур." take the class in as its number. */}
+                  {origin.calling || origin.race}
+                  {!vitals?.coc && <>{(origin.calling || origin.race) && ' · '}{`${hero.level} ур.`}</>}
                 </span>
               )}
               {spread && vitals && (
@@ -499,6 +564,8 @@ const HeroCard: React.FC<{
                   )}
                 </span>
               )}
+              {/* What weighs on the hero (death saves first): read without opening the sheet, even stacked. */}
+              {vitals && <Troubles of={vitals} size={spread ? 14 : 12} />}
             </span>
           </>
         )}
@@ -680,6 +747,12 @@ const NpcCard: React.FC<{ party: PartyDto; npc: PartyNpcDto; mode: DeckMode; onO
                     {stats.attacks.map(attackLine).join(' · ')}
                   </span>
                 )}
+                {!coc && npc.attacks.length > 0 && (
+                  <span className="block truncate text-[11px] text-ink-muted" title={npc.attacks.map(dndAttackLine).join('\n')}>
+                    {npc.attacks.map(dndAttackLine).join(' · ')}
+                  </span>
+                )}
+                <Troubles of={npc} />
                 <span className="block h-5" />
               </>
             )}

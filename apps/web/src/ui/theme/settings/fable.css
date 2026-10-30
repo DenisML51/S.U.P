@@ -1,0 +1,1308 @@
+@font-face {
+  font-family: 'Albion Capitals';
+  font-weight: 700;
+  font-display: swap;
+  src: url('../../../assets/fonts/albion-capitals-700.woff') format('woff');
+}
+@font-face {
+  font-family: 'Albion Capitals';
+  font-weight: 900;
+  font-display: swap;
+  src: url('../../../assets/fonts/albion-capitals-900.woff') format('woff');
+}
+
+/* ================================================================== Fable
+ * "The storybook HUD": Albion as Fable draws it. Nothing is framed in metal: panels are tinted glass
+ * of a deep sea-green through which the light behind shows, lit along the top by a gilt hairline
+ * that fades out at its ends; plates are round, a count sits in a diamond, and the mark of
+ * everything is the four-pointed sparkle of the quest tracker and the fairy's dust. A serif with a
+ * storybook hand (Alegreya) and its small capitals for labels, titles in the logo's flared capitals;
+ * the chosen thing is ivory; records are heaps of parchment. Wine-red, the card a villager tells the hero what they think of them on, is
+ * kept for what must stand out (danger, a refusal, the bookmark); a word of praise or shame is written
+ * in a flowing hand.
+ * It is also the app's default look, outside any setting.
+ */
+
+:root,
+[data-setting='fable'] {
+  /* The setting's own display face; the service's type may stand in for --font-display, never for it. */
+  /* The title face is the game's logo: flared roman capitals with a curled F — Cinzel Decorative,
+     given a Cyrillic of its own (scripts/albion-capitals.py). */
+  --setting-display: 'Albion Capitals', 'Alegreya', Georgia, serif;
+  --font-display: var(--setting-display);
+  /* The storybook serif everything else is written in. */
+  --font-serif: 'Alegreya', Georgia, serif;
+  --font-numeric: var(--font-serif);
+  /* Headings of a tracker and labels: the face's small capitals. */
+  --font-caps: 'Alegreya SC', Georgia, serif;
+  /* A word of praise or shame, written in a flowing hand. */
+  --font-script: 'Marck Script', 'Segoe Script', cursive;
+  --display-tracking: 0.01em;
+  --display-weight: 700;
+  /* The logo's gold: pale at the crown of a letter, deep in its middle, catching light at its foot. */
+  --fb-gilt: linear-gradient(180deg, rgb(255 244 204) 0%, rgb(240 207 122) 38%, rgb(185 138 58) 62%, rgb(243 214 140) 82%, rgb(156 112 48) 100%);
+  /* The light a world card is lit by: the sun behind the castle. */
+  --world-light: rgb(240 214 150 / 0.3);
+  /* The whole world speaks in the storybook serif, figures standing on the line. */
+  font-family: var(--font-serif);
+  font-variant-numeric: lining-nums;
+
+  --c-bg: 10 24 27;
+  --c-bg-deep: 5 13 16;
+  --c-surface: 15 36 40;
+  --c-surface-2: 26 56 60;
+  --c-inset: 7 20 23;
+  --c-line: 52 84 84;
+  --c-frame: 178 154 106;
+  --c-frame-bright: 238 216 162;
+  --c-ink: 244 236 218;
+  --c-ink-muted: 188 196 184;
+  --c-ink-faint: 124 146 140;
+  /* The chosen thing is ivory, as the game lights the option under the stick. */
+  --c-accent: 238 226 194;
+  --c-accent-ink: 18 40 44;
+  /* Records are kept on parchment, as the ribbon under a villager's opinion is: a heap of loose sheets. */
+  --c-paper: 238 226 196;
+  --c-paper-ink: 52 36 28;
+  --c-paper-muted: 134 106 76;
+  /* The top sheet of a heap, its edge worn uneven like the sheets under it. */
+  --ragged-top: polygon(0.0% 0.0px, 3.6% 1.1px, 7.1% 0.5px, 10.7% 1.3px, 14.3% 0.8px, 17.9% 1.5px, 21.4% 0.7px, 25.0% 0.1px, 28.6% 0.4px, 32.1% 1.3px, 35.7% 0.9px, 39.3% 0.9px, 42.9% 0.1px, 46.4% 1.2px, 50.0% 1.8px, 53.6% 1.3px, 57.1% 0.5px, 60.7% 0.4px, 64.3% 0.0px, 67.9% 1.1px, 71.4% 0.4px, 75.0% 1.4px, 78.6% 0.7px, 82.1% 0.6px, 85.7% 0.9px, 89.3% 0.4px, 92.9% 1.9px, 96.4% 2.1px, 100.0% 0.8px, calc(100% - 1.5px) 10.0%, calc(100% - 0.1px) 20.0%, calc(100% - 1.8px) 30.0%, calc(100% - 0.0px) 40.0%, calc(100% - 2.1px) 50.0%, calc(100% - 0.5px) 60.0%, calc(100% - 0.4px) 70.0%, calc(100% - 1.0px) 80.0%, calc(100% - 0.8px) 90.0%, calc(100% - 0.6px) 100.0%, 96.4% calc(100% - 2.1px), 92.9% calc(100% - 1.0px), 89.3% calc(100% - 1.0px), 85.7% calc(100% - 2.2px), 82.1% calc(100% - 6.3px), 78.6% calc(100% - 1.3px), 75.0% calc(100% - 2.0px), 71.4% calc(100% - 1.0px), 67.9% calc(100% - 0.3px), 64.3% calc(100% - 1.3px), 60.7% calc(100% - 1.9px), 57.1% calc(100% - 1.4px), 53.6% calc(100% - 8.5px), 50.0% calc(100% - 0.6px), 46.4% calc(100% - 0.4px), 42.9% calc(100% - 2.1px), 39.3% calc(100% - 2.0px), 35.7% calc(100% - 0.1px), 32.1% calc(100% - 1.4px), 28.6% calc(100% - 2.1px), 25.0% calc(100% - 5.2px), 21.4% calc(100% - 0.8px), 17.9% calc(100% - 0.2px), 14.3% calc(100% - 1.0px), 10.7% calc(100% - 6.5px), 7.1% calc(100% - 4.4px), 3.6% calc(100% - 1.3px), 0.0% calc(100% - 1.5px), 1.2px 90.0%, 2.0px 80.0%, 0.3px 70.0%, 1.4px 60.0%, 0.3px 50.0%, 0.4px 40.0%, 1.1px 30.0%, 1.6px 20.0%, 0.4px 10.0%);
+
+  /* The wine-red of a villager's opinion card, and the parchment of its ribbon. */
+  --c-wine: 92 28 42;
+  --c-wine-deep: 56 15 26;
+  --c-parchment: 238 226 196;
+  --c-parchment-ink: 54 34 28;
+  /* The fairy's light: the glow of dust, of a word written in a flowing hand. */
+  --c-fairy: 132 230 216;
+
+  /* Health is green, as the hero's bar in Albion is. */
+  --c-hp: 126 206 94;
+  --c-temp-hp: 132 220 232;
+  --c-sanity: 208 136 222;
+  --c-xp: 234 200 124;
+  --c-armor: 172 202 212;
+  --c-success: 132 206 120;
+  --c-danger: 226 96 86;
+  --c-warning: 238 178 86;
+
+  --c-act-action: 238 216 162;
+  --c-act-bonus: 132 222 212;
+  --c-act-reaction: 220 146 202;
+  --c-act-passive: 164 180 178;
+
+  --radius: 10px;
+  --chamfer: 0px;
+  --panel-texture: none;
+  --panel-texture-opacity: 0;
+  --shadow-panel: 0 20px 44px -26px rgb(0 0 0 / 0.85);
+
+  /* The glass of a panel, a little clearer towards its foot. */
+  --glass: linear-gradient(180deg, rgb(var(--c-surface) / 0.76), rgb(var(--c-surface) / 0.62));
+  /* A hairline of light along the top edge, fading out at both ends. */
+  --hairline: linear-gradient(90deg, transparent, rgb(var(--c-frame-bright) / 0.75) 30%, rgb(var(--c-frame-bright) / 0.75) 70%, transparent);
+  /* Ivory of a chosen plate and of a command. */
+  --ivory: linear-gradient(180deg, rgb(252 246 228), rgb(232 218 184) 55%, rgb(208 190 148));
+  /* The wine-red card. */
+  --wine: linear-gradient(180deg, rgb(104 34 50), rgb(var(--c-wine)) 45%, rgb(var(--c-wine-deep)));
+  /* The sea-green nameplate set over a card. */
+  --nameplate: linear-gradient(180deg, rgb(38 80 84), rgb(20 50 54) 60%, rgb(14 38 42));
+  /* The sparkle, as a mask for anything that has to wear it. */
+  --spark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 0Q11.6 8.4 20 10Q11.6 11.6 10 20Q8.4 11.6 0 10Q8.4 8.4 10 0Z'/%3E%3C/svg%3E");
+}
+
+[data-setting='fable'] {
+  /* ---------------------------------------------------------------- Panels */
+  /* Tinted glass, the glade showing through; a light catching its top edge, a glint in the corner
+     where the sun is. */
+  .ui-panel:where(:not(.ui-panel--inset)) {
+    background-color: transparent;
+    background-image: var(--glass);
+    border-color: rgb(var(--c-frame) / 0.22);
+    box-shadow: inset 0 1px 0 rgb(255 240 200 / 0.06), inset 0 0 44px rgb(0 0 0 / 0.16), var(--shadow-panel);
+  }
+  .ui-panel:where(:not(.ui-panel--inset))::before {
+    background: radial-gradient(80% 60% at 18% 0%, rgb(var(--c-frame-bright) / 0.08), transparent 70%);
+    opacity: 1;
+    mix-blend-mode: normal;
+  }
+  .ui-panel:where(:not(.ui-panel--inset))::after {
+    display: block;
+    inset: -1px 6% auto;
+    height: 1px;
+    z-index: 1;
+    border-radius: 0;
+    background: var(--hairline);
+    opacity: 1;
+    mix-blend-mode: normal;
+  }
+  /* Records are parchment: the page itself drawn by ::before with its worn edge, a fine grain over it
+     by ::after, older sheets heaped under it (the leaves), each pushed its own way, of another age and
+     tint, showing only where they stick out. */
+  .ui-panel--paper:not(.ui-dialog) { margin-inline: 12px 8px; }
+  .ui-panel--paper {
+    color: rgb(var(--c-paper-ink));
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+  .ui-panel--paper::before {
+    inset: -1px;
+    z-index: -1;
+    border-radius: 0;
+    opacity: 1;
+    mix-blend-mode: normal;
+    clip-path: var(--ragged-top);
+    background-color: rgb(var(--c-paper));
+    /* Lighter where the light falls, browned towards the edges and in one corner, as old paper is. */
+    background-image:
+      radial-gradient(ellipse 70% 55% at 28% 18%, rgb(255 250 232 / 0.55), transparent 70%),
+      radial-gradient(ellipse 40% 30% at 94% 8%, rgb(var(--c-paper-muted) / 0.28), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 85% 96%, rgb(var(--c-paper-muted) / 0.3), transparent 70%);
+    box-shadow: inset 0 0 0 1px rgb(var(--c-paper-muted) / 0.35), inset 0 0 70px rgb(var(--c-paper-muted) / 0.5);
+  }
+  .ui-panel--paper::after {
+    inset: -1px;
+    width: auto;
+    height: auto;
+    z-index: -1;
+    clip-path: var(--ragged-top);
+    background: var(--grain);
+    opacity: 0.22;
+    mix-blend-mode: multiply;
+  }
+  .ui-leaf {
+    display: block;
+    position: absolute;
+    inset: -1px;
+    z-index: -2;
+    pointer-events: none;
+    background: var(--leaf);
+    box-shadow: inset 0 0 0 1px rgb(var(--c-paper-ink) / 0.2), inset 0 0 44px rgb(var(--c-paper-muted) / 0.55);
+  }
+  /* A fresher sheet, whiter. */
+  .ui-leaf--1 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 75%, rgb(255 252 240)); }
+  /* A sheet gone tan with age. */
+  .ui-leaf--2 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 62%, rgb(196 164 110)); }
+  /* A sheet of greener rag paper. */
+  .ui-leaf--3 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 70%, rgb(176 186 146)); }
+  /* The oldest, browned through. */
+  .ui-leaf--4 { --leaf: color-mix(in srgb, rgb(var(--c-paper)) 50%, rgb(var(--c-paper-muted))); }
+  .ui-panel--inset {
+    background-color: rgb(var(--c-inset) / 0.6);
+    border-color: rgb(var(--c-line) / 0.55);
+    border-radius: 8px;
+    box-shadow: inset 0 2px 8px rgb(0 0 0 / 0.4);
+  }
+
+  /* A sparkle on two opposite corners only, as the game sets them, hairlines leaving it. */
+  .ui-corner { width: 20px; height: 20px; color: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 3px rgb(var(--c-frame-bright) / 0.45)); }
+  .ui-corner--tl { top: -4px; left: -4px; }
+  .ui-corner--br { bottom: -4px; right: -4px; }
+  .ui-corner--tr,
+  .ui-corner--bl { display: none; }
+  /* Parchment has its worn edge for an ornament. */
+  .ui-panel--paper .ui-corner { display: none; }
+  .ui-crest { filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.35)) drop-shadow(0 2px 3px rgb(0 0 0 / 0.6)); }
+  .ui-details { --crest-width: 140px; }
+  .ui-crest { width: var(--crest-width, 120px); height: calc(var(--crest-width, 120px) / 5); }
+
+  /* Hover: a shaft of sunlight falls on the plate from its top corner. */
+  .ui-fx {
+    border-radius: inherit;
+    background:
+      radial-gradient(70% 90% at 12% 0%, rgb(var(--c-frame-bright) / 0.16), transparent 70%),
+      linear-gradient(115deg, transparent 30%, rgb(255 240 200 / 0.06) 45%, transparent 60%);
+    box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.35), 0 0 22px -8px rgb(var(--c-frame-bright) / 0.45);
+  }
+  .ui-interactive:hover,
+  .ui-interactive[data-active='true'] { border-color: rgb(var(--c-frame-bright) / 0.55); }
+
+  /* ---------------------------------------------------------------- Type and rules */
+  /* The logo's face sets its lower case as small capitals, which equalising the x-height shrinks
+     below the Cyrillic; capitals of one height keep English and Russian titles one size. */
+  .ui-display { font-size-adjust: cap-height 0.7; }
+  .ui-section-title { font-size: 1.6rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  /* Titles and a hero's name are gilt as the logo is: gold poured top to bottom, a dark bevel under
+     each letter and a shadow under the word. */
+  :is(.ui-section-title, .ui-hero-name) {
+    color: transparent;
+    background: var(--fb-gilt);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 1px 0 rgb(48 30 10)) drop-shadow(0 3px 8px rgb(0 0 0 / 0.75));
+  }
+  .ui-rule::before,
+  .ui-rule::after { background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.7), transparent); }
+  /* A rule led by a sparkle and fading to the right. */
+  .ui-rule--left::after {
+    height: 10px;
+    background:
+      linear-gradient(rgb(var(--c-frame-bright)), rgb(var(--c-frame-bright))) 0 50% / 10px 10px no-repeat,
+      linear-gradient(90deg, rgb(var(--c-frame) / 0.75), transparent) 16px 50% / 100% 1px no-repeat;
+    -webkit-mask: var(--spark) 0 50% / 10px 10px no-repeat, linear-gradient(#000 0 0) 16px 50% / 100% 1px no-repeat;
+    mask: var(--spark) 0 50% / 10px 10px no-repeat, linear-gradient(#000 0 0) 16px 50% / 100% 1px no-repeat;
+  }
+  .ui-label { font-family: var(--font-caps); font-size: 0.82rem; font-weight: 500; letter-spacing: 0.06em; text-transform: none; color: rgb(var(--c-frame)); }
+  .ui-section__title { font-size: 1.2rem; }
+  .ui-section__origin { font-style: italic; }
+  .ui-count { font-family: var(--font-caps); border-radius: 999px; }
+
+  /* ---------------------------------------------------------------- Buttons */
+  /* Round-ended plates. A plain one is sea-green glass rimmed in gold; the command is ivory with a
+     gilt line inside its edge; danger is the wine-red card. */
+  .ui-button {
+    border-radius: 999px;
+    font-family: var(--font-caps);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: none;
+    transition: background-color 150ms, border-color 150ms, color 150ms, box-shadow 200ms, filter 150ms;
+  }
+  .ui-button--md { padding: 0 1.3rem; }
+  .ui-button--lg { padding: 0 1.9rem; }
+  .ui-button--secondary {
+    color: rgb(var(--c-ink));
+    background: linear-gradient(180deg, rgb(var(--c-surface-2) / 0.88), rgb(var(--c-surface) / 0.88));
+    border-color: rgb(var(--c-frame) / 0.55);
+    box-shadow: inset 0 1px 0 rgb(255 240 200 / 0.1), 0 4px 12px -6px rgb(0 0 0 / 0.7);
+  }
+  .ui-button--secondary:not(:disabled):hover {
+    color: rgb(var(--c-frame-bright));
+    border-color: rgb(var(--c-frame-bright));
+    box-shadow: inset 0 1px 0 rgb(255 240 200 / 0.14), 0 0 16px -4px rgb(var(--c-frame-bright) / 0.5);
+  }
+  .ui-button--primary {
+    color: rgb(var(--c-accent-ink));
+    background: var(--ivory);
+    border-color: rgb(255 250 236 / 0.95);
+    box-shadow:
+      inset 0 0 0 2px rgb(255 250 236 / 0.5),
+      inset 0 0 0 3px rgb(var(--c-frame) / 0.55),
+      0 0 0 1px rgb(var(--c-frame) / 0.45),
+      0 6px 16px -8px rgb(0 0 0 / 0.8),
+      0 0 20px -8px rgb(255 232 176 / 0.5);
+  }
+  .ui-button--primary:not(:disabled):hover {
+    filter: brightness(1.05);
+    box-shadow:
+      inset 0 0 0 2px rgb(255 250 236 / 0.6),
+      inset 0 0 0 3px rgb(var(--c-frame) / 0.7),
+      0 0 0 1px rgb(var(--c-frame-bright) / 0.7),
+      0 6px 16px -8px rgb(0 0 0 / 0.8),
+      0 0 26px -4px rgb(255 232 176 / 0.7);
+  }
+  .ui-button--primary:not(:disabled):active { filter: brightness(0.95); }
+  .ui-button--danger {
+    color: rgb(250 214 204);
+    background: var(--wine);
+    border-color: rgb(236 150 140 / 0.55);
+    box-shadow: inset 0 1px 0 rgb(255 200 190 / 0.18), 0 4px 12px -6px rgb(0 0 0 / 0.7);
+  }
+  .ui-button--danger:not(:disabled):hover { color: rgb(255 236 228); border-color: rgb(250 180 168); background: var(--wine); box-shadow: inset 0 1px 0 rgb(255 200 190 / 0.2), 0 0 16px -4px rgb(var(--c-danger) / 0.6); }
+  /* Ghost: words in the light, a sparkle coming up beside them on hover. */
+  .ui-button--ghost { color: rgb(var(--c-ink-muted)); }
+  .ui-button--ghost::before {
+    content: '';
+    position: absolute;
+    left: 0.3rem;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    margin-top: -4px;
+    background: rgb(var(--c-frame-bright));
+    -webkit-mask: var(--spark) center / contain no-repeat;
+    mask: var(--spark) center / contain no-repeat;
+    opacity: 0;
+    transform: scale(0.3) rotate(-45deg);
+    transition: opacity 200ms, transform 300ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .ui-button--ghost:not(:disabled):hover { color: rgb(var(--c-frame-bright)); background: none; text-shadow: 0 0 12px rgb(var(--c-frame-bright) / 0.5); }
+  .ui-button--ghost:not(:disabled):hover::before { opacity: 1; transform: none; }
+  .ui-button:disabled { opacity: 0.4; filter: saturate(0.4); }
+  .ui-button:focus-visible { outline: 1px solid rgb(var(--c-frame-bright)); outline-offset: 3px; }
+  .ui-button--row,
+  .ui-button--sm { font-family: var(--font-caps); font-size: 0.82rem; font-weight: 500; letter-spacing: 0.04em; }
+  .ui-button--row { padding: 0 0.85rem; }
+
+  /* Icon buttons are the round buttons of a choice: clear until touched, ivory with dark ink when on. */
+  .ui-icon-button { color: rgb(var(--c-ink-muted)); border-radius: 999px; }
+  .ui-icon-button:not(:disabled):hover {
+    color: rgb(var(--c-frame-bright));
+    border-color: rgb(var(--c-frame) / 0.6);
+    background: radial-gradient(circle at 50% 30%, rgb(var(--c-surface-2)), rgb(var(--c-surface)));
+    box-shadow: 0 0 12px -4px rgb(var(--c-frame-bright) / 0.5);
+  }
+  .ui-icon-button[aria-pressed='true'] {
+    color: rgb(var(--c-accent-ink));
+    border-color: rgb(255 250 236);
+    background: var(--ivory);
+    box-shadow: inset 0 0 0 2px rgb(var(--c-frame) / 0.4), 0 0 14px -4px rgb(255 232 176 / 0.6);
+  }
+
+  /* ---------------------------------------------------------------- Tabs */
+  /* Small capitals; the open one lit ivory with a sparkle under it. */
+  .ui-tabs { gap: 1.5rem; border-bottom-color: rgb(var(--c-frame) / 0.22); }
+  .ui-tabs__tab {
+    padding-bottom: 0.7rem;
+    font-family: var(--font-caps);
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: rgb(var(--c-ink-faint));
+  }
+  .ui-tabs__tab:hover { color: rgb(var(--c-frame-bright)); }
+  .ui-tabs__tab[aria-selected='true'] { color: rgb(var(--c-ink)); text-shadow: 0 0 14px rgb(var(--c-frame-bright) / 0.45); }
+  .ui-tabs__tab::after {
+    left: 50%;
+    right: auto;
+    bottom: -5px;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    background: rgb(var(--c-frame-bright));
+    -webkit-mask: var(--spark) center / contain no-repeat;
+    mask: var(--spark) center / contain no-repeat;
+    filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright)));
+    transform: scale(0) rotate(-90deg);
+    transition: transform 300ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .ui-tabs__tab[aria-selected='true']::after { transform: none; }
+  .ui-tabs__count { font-family: var(--font-numeric); font-size: 0.8rem; color: rgb(var(--c-frame)); }
+
+  /* ---------------------------------------------------------------- Lists */
+  /* A page of the hero's records: the title in wine-red small capitals under a wine-red bookmark,
+     entries in dark ink, each led by the quest's sparkle in old gold; what is worn or prepared has it
+     filled, the entry open beside the list is underlined by a band of gold wash with a wine-red mark. */
+  .ui-ledger__ribbon {
+    right: 1.6rem;
+    width: 20px;
+    height: 44px;
+    background: linear-gradient(90deg, rgb(0 0 0 / 0.25), transparent 35%, transparent 65%, rgb(0 0 0 / 0.3)), var(--wine);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+  }
+  .ui-ledger__head { padding-top: 1.05rem; border-bottom: 1px solid rgb(var(--c-paper-muted) / 0.4); }
+  .ui-ledger__head h2 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; letter-spacing: 0.02em; font-size-adjust: cap-height 0.7; color: rgb(var(--c-wine)); }
+  .ui-ledger__head > svg { color: rgb(var(--c-wine)); }
+  .ui-ledger__row { position: relative; border-bottom: 1px solid rgb(var(--c-paper-muted) / 0.28); transition: background-color 200ms; }
+  .ui-ledger__row:last-child { border-bottom: 0; }
+  .ui-ledger__row:hover { background-color: rgb(var(--c-paper-ink) / 0.05); }
+  .ui-ledger__row:hover .ui-ledger__title { text-decoration: none; color: rgb(var(--c-wine)); }
+  .ui-ledger__title { font-family: var(--font-serif); font-size: 1.08rem; font-weight: 500; color: rgb(var(--c-paper-ink)); }
+  .ui-ledger__meta { color: rgb(var(--c-paper-muted)); }
+  .ui-ledger__bullet { color: rgb(150 112 50 / 0.75); opacity: 1; }
+  .ui-ledger__row[data-active] .ui-ledger__bullet { color: rgb(160 116 40); }
+  .ui-ledger__row--dim { opacity: 1; }
+  .ui-ledger__row--dim .ui-ledger__title { color: rgb(var(--c-paper-ink) / 0.6); }
+  .ui-ledger__row--dim .ui-ledger__meta { color: rgb(var(--c-paper-muted) / 0.8); }
+  /* The chosen entry is ringed in the wine ink, as a reader circles a line on the page: a loose
+     loop of a pen, its end running past its start, drawn in from the left. */
+  .ui-ledger__row[data-selected],
+  .ui-ledger__row[data-selected]:hover { background: transparent; }
+  .ui-ledger__row[data-selected]::after {
+    content: '';
+    position: absolute;
+    inset: 1px -12px;
+    pointer-events: none;
+    background: rgb(var(--c-wine) / 0.85);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 60' preserveAspectRatio='none' fill='none' stroke='%23000' stroke-linecap='round'%3E%3Cpath vector-effect='non-scaling-stroke' stroke-width='1.6' d='M22 7C120 1 288 2 386 8C397 10 399 46 388 52C282 59 112 58 13 53C2 50 2 14 16 8C40 2 62 3 84 5'/%3E%3Cpath vector-effect='non-scaling-stroke' stroke-width='0.7' stroke-opacity='0.55' d='M30 9C140 4 300 5 383 11C394 14 395 44 384 50C280 56 120 55 17 50C6 47 7 16 22 10'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 60' preserveAspectRatio='none' fill='none' stroke='%23000' stroke-linecap='round'%3E%3Cpath vector-effect='non-scaling-stroke' stroke-width='1.6' d='M22 7C120 1 288 2 386 8C397 10 399 46 388 52C282 59 112 58 13 53C2 50 2 14 16 8C40 2 62 3 84 5'/%3E%3Cpath vector-effect='non-scaling-stroke' stroke-width='0.7' stroke-opacity='0.55' d='M30 9C140 4 300 5 383 11C394 14 395 44 384 50C280 56 120 55 17 50C6 47 7 16 22 10'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+    animation: fb-ring 420ms ease-out both;
+  }
+  .ui-ledger__row[data-selected] .ui-ledger__title { color: rgb(var(--c-wine)); }
+  .ui-ledger__row[data-selected] .ui-ledger__bullet { color: rgb(var(--c-wine)); }
+  .ui-ledger--log .ui-ledger__bullet { color: rgb(var(--c-paper-muted)); }
+  .ui-ledger__group { font-family: var(--font-caps); font-size: 0.85rem; letter-spacing: 0.06em; text-transform: none; color: rgb(var(--c-paper-muted)); opacity: 1; }
+  .ui-ledger__add {
+    font-family: var(--font-caps);
+    color: rgb(var(--c-paper-muted));
+    background: transparent;
+    border: 1px dashed rgb(var(--c-paper-muted) / 0.5);
+    border-radius: 999px;
+  }
+  .ui-ledger__add:hover { color: rgb(var(--c-wine)); background: rgb(var(--c-wine) / 0.06); border-color: rgb(var(--c-wine) / 0.6); }
+  /* On parchment a plain button is drawn in its ink; pressed it fills with wine. */
+  .ui-panel--paper :is(.ui-button--secondary, .ui-button--row:not(.ui-button--danger):not(.ui-button--primary)) {
+    color: rgb(var(--c-paper-ink));
+    background: rgb(var(--c-paper-muted) / 0.08);
+    border-color: rgb(var(--c-paper-muted) / 0.6);
+    box-shadow: none;
+  }
+  .ui-panel--paper :is(.ui-button--secondary, .ui-button--row:not(.ui-button--danger):not(.ui-button--primary)):not(:disabled):hover {
+    color: rgb(255 240 228);
+    background: var(--wine);
+    border-color: rgb(var(--c-wine));
+    box-shadow: 0 4px 10px -6px rgb(var(--c-wine-deep));
+  }
+  .ui-panel--paper .ui-button--ghost { color: rgb(var(--c-paper-muted)); }
+  .ui-panel--paper .ui-button--ghost:not(:disabled):hover { color: rgb(var(--c-wine)); text-shadow: none; }
+  .ui-panel--paper .ui-button--ghost::before { background: rgb(var(--c-wine)); }
+  .ui-panel--paper .ui-input { color: rgb(var(--c-paper-ink)); background: rgb(var(--c-paper-muted) / 0.1); border-color: rgb(var(--c-paper-muted) / 0.5); }
+  .ui-panel--paper .ui-input:focus { border-color: rgb(var(--c-wine)); box-shadow: 0 0 0 3px rgb(var(--c-wine) / 0.12); }
+  .ui-panel--paper .ui-input::placeholder { color: rgb(var(--c-paper-muted)); }
+  .ui-panel.ui-panel--paper .ui-icon-button:not(:disabled):hover { color: rgb(var(--c-wine)); border-color: rgb(var(--c-wine) / 0.6); background: rgb(var(--c-wine) / 0.06); box-shadow: none; }
+  .ui-panel--paper .ui-chip { color: rgb(var(--c-paper-ink) / 0.7); border-color: rgb(var(--c-paper-muted) / 0.55); }
+  .ui-panel--paper .ui-chip:hover { color: rgb(var(--c-paper-ink)); border-color: rgb(var(--c-paper-muted)); }
+  .ui-panel--paper .ui-tabs { border-bottom-color: rgb(var(--c-paper-muted) / 0.4); }
+  .ui-panel--paper .ui-tabs__tab { color: rgb(var(--c-paper-muted)); }
+  .ui-panel--paper .ui-tabs__tab:hover,
+  .ui-panel--paper .ui-tabs__tab[aria-selected='true'] { color: rgb(var(--c-wine)); text-shadow: none; }
+  .ui-panel--paper .ui-tabs__tab::after { background: rgb(var(--c-wine)); filter: none; }
+  .ui-panel--paper .ui-label { color: rgb(var(--c-paper-muted)); }
+
+  /* ---------------------------------------------------------------- Details pane */
+  /* A card of the game's menus: the kind in small capitals, the name large in the light, the
+     figures side by side between gilt hairlines; what an entry deals is told on a nameplate card. */
+  .ui-details__head { padding-top: 1.8rem; }
+  /* Clear of the pane's tools in its top corner. */
+  .ui-details__eyebrow { padding-right: 2.75rem; font-family: var(--font-caps); font-size: 0.85rem; letter-spacing: 0.06em; text-transform: none; color: rgb(var(--c-frame)); }
+  .ui-details__title { font-size: 1.85rem; font-weight: 500; color: rgb(var(--c-ink)); text-shadow: 0 1px 10px rgb(0 0 0 / 0.6), 0 0 22px rgb(var(--c-frame-bright) / 0.2); }
+  .ui-details__rule { color: rgb(var(--c-frame-bright)); }
+  .ui-details__facts { gap: 0; background: none; border: 0; border-block: 1px solid transparent; border-image: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.5), transparent) 1; }
+  .ui-details__fact { padding: 0.55rem 0.5rem; text-align: center; background: none; }
+  .ui-details__fact + .ui-details__fact { border-left: 1px solid transparent; border-image: linear-gradient(180deg, transparent, rgb(var(--c-frame) / 0.4), transparent) 1; }
+  .ui-details__fact dt { font-family: var(--font-caps); font-size: 0.78rem; letter-spacing: 0.05em; text-transform: none; color: rgb(var(--c-frame)); }
+  .ui-details__fact dd { font-size: 1.08rem; }
+  .ui-details__foot { border-top: 1px solid transparent; border-image: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.4), transparent) 1; }
+  .ui-damage-block {
+    padding: 0.7rem 1rem 0.8rem;
+    text-align: center;
+    background: var(--nameplate);
+    border: 1px solid rgb(var(--c-frame-bright) / 0.45);
+    border-radius: 14px;
+    box-shadow: inset 0 0 0 3px rgb(14 38 42 / 0.8), inset 0 0 0 4px rgb(var(--c-frame) / 0.3), 0 10px 22px -12px rgb(0 0 0 / 0.8);
+  }
+
+  /* ---------------------------------------------------------------- Figures */
+  .ui-stat__label { font-family: var(--font-caps); font-size: 0.8rem; letter-spacing: 0.04em; text-transform: none; color: rgb(var(--c-frame)); }
+  .ui-stat:hover .ui-stat__label { color: rgb(var(--c-frame-bright)); }
+  /* Gauges are rounded channels, their fill glowing as the hero's bar does. */
+  .ui-meter { border-radius: 999px; border-color: rgb(0 0 0 / 0.45); background: rgb(var(--c-inset) / 0.75); box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(var(--c-frame) / 0.18); }
+  .ui-meter__fill { border-radius: inherit; background: linear-gradient(180deg, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0.05) 50%, rgb(0 0 0 / 0.15)), rgb(var(--meter-color)); box-shadow: 0 0 8px rgb(var(--meter-color) / 0.6); }
+  .ui-meter__extra { border-radius: inherit; }
+  .ui-meter--ticks::after { background-image: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgb(var(--c-bg-deep) / 0.35) calc(10% - 1px) 10%); }
+  .ui-prof-mark { transform: rotate(45deg) scale(0.8); border-radius: 1px; }
+  .ui-prof-mark.bg-frame-bright { box-shadow: 0 0 6px rgb(var(--c-frame-bright) / 0.7); }
+
+  /* ---------------------------------------------------------------- Vitals */
+  /* The hero's bars: each picture in a round sea-green plate with a gilt ring, as the ability
+     wheel's; the name in small capitals, the figure in the serif, the gauge a glowing rounded bar. */
+  .ui-status__bars { gap: 0.9rem; }
+  .ui-vital__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    color: rgb(var(--meter-color, var(--c-frame-bright)));
+    background: radial-gradient(circle at 50% 30%, rgb(var(--c-surface-2)), rgb(var(--c-inset)) 80%);
+    box-shadow: 0 0 0 1px rgb(var(--c-frame-bright) / 0.6), 0 0 0 3px rgb(var(--c-bg-deep) / 0.6), 0 0 14px -2px rgb(var(--meter-color, var(--c-frame-bright)) / 0.45);
+  }
+  .ui-vital[data-tone='hp'] .ui-vital__icon { --meter-color: var(--c-hp); }
+  .ui-vital[data-tone='sanity'] .ui-vital__icon { --meter-color: var(--c-sanity); }
+  .ui-vital__icon svg { width: 16px; height: 16px; filter: drop-shadow(0 0 4px currentColor); }
+  .ui-vital__label { font-family: var(--font-caps); font-size: 0.82rem; letter-spacing: 0.04em; text-transform: none; color: rgb(var(--c-frame)); }
+  .ui-vital:hover .ui-vital__label { color: rgb(var(--c-frame-bright)); }
+  .ui-vital__current { font-size: 1.5rem; font-weight: 500; text-shadow: 0 0 12px rgb(0 0 0 / 0.6); }
+  .ui-vital__max { color: rgb(var(--c-ink-faint)); }
+  .ui-vital .ui-meter { height: 9px; }
+  .ui-vital:hover .ui-meter__fill { box-shadow: 0 0 12px rgb(var(--meter-color) / 0.85); }
+
+  /* ---------------------------------------------------------------- Level and experience */
+  /* The level in the HUD's diamond: a sea-green plate, its rim lit, sparkles on its points. */
+  .ui-level { top: 0.5rem; right: 0.7rem; width: 4rem; height: 4.8rem; filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.6)); }
+  .ui-level:hover { filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.6)) drop-shadow(0 0 10px rgb(var(--c-frame-bright) / 0.5)); }
+  .fb-diamond__plate { fill: rgb(var(--c-surface)); stroke: rgb(var(--c-frame-bright)); stroke-width: 1.6; }
+  .fb-diamond__inner { fill: rgb(var(--c-surface-2) / 0.5); stroke: rgb(var(--c-frame) / 0.6); stroke-width: 0.8; }
+  .fb-diamond__spark { fill: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 2px rgb(var(--c-frame-bright))); }
+  .fb-diamond__level {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    font-size: 1.75rem;
+    font-weight: 500;
+    line-height: 1;
+    color: rgb(var(--c-ink));
+    text-shadow: 0 0 10px rgb(var(--c-frame-bright) / 0.45);
+    transform: translate(-50%, -54%);
+  }
+  .ui-xp {
+    background-color: transparent;
+    background-image: var(--glass);
+    border-color: rgb(var(--c-frame) / 0.22);
+    border-radius: 0 0 12px 12px;
+  }
+  .ui-xp__label { font-family: var(--font-caps); font-size: 0.8rem; letter-spacing: 0.04em; text-transform: none; color: rgb(var(--c-frame)); }
+  .ui-xp__value { font-size: 0.86rem; }
+  .ui-xp__track { height: 6px; border-radius: 999px; border-color: rgb(0 0 0 / 0.45); background: rgb(var(--c-inset) / 0.75); box-shadow: 0 0 0 1px rgb(var(--c-frame) / 0.18); }
+  .ui-xp__fill { border-radius: inherit; background: linear-gradient(180deg, rgb(255 248 220), rgb(var(--c-xp)) 60%, rgb(190 150 80)); box-shadow: 0 0 8px rgb(var(--c-xp) / 0.7); }
+  .ui-hud-xp { border-radius: 999px; border-color: rgb(0 0 0 / 0.45); box-shadow: 0 0 0 1px rgb(var(--c-frame) / 0.18); }
+  .ui-hud-xp__fill { background: linear-gradient(180deg, rgb(255 248 220), rgb(var(--c-xp)) 60%, rgb(190 150 80)); box-shadow: 0 0 8px rgb(var(--c-xp) / 0.7); }
+
+  /* ---------------------------------------------------------------- Rail and hero column */
+  /* A strip of dark glass; the open section's picture sits in a round plate lit gold, as on the
+     ability wheel. */
+  .ui-rail {
+    background: linear-gradient(90deg, rgb(var(--c-bg-deep) / 0.82), rgb(var(--c-bg) / 0.62));
+    border-right: 1px solid transparent;
+    border-image: linear-gradient(180deg, transparent, rgb(var(--c-frame) / 0.4) 20%, rgb(var(--c-frame) / 0.4) 80%, transparent) 1;
+  }
+  .ui-rail__item { isolation: isolate; color: rgb(var(--c-ink-muted) / 0.85); }
+  .ui-rail__label { font-family: var(--font-caps); font-size: 0.74rem; letter-spacing: 0.02em; }
+  .ui-rail__item:not([aria-current]):hover { color: rgb(var(--c-frame-bright)); }
+  .ui-rail__item::before {
+    content: '';
+    position: absolute;
+    top: calc(0.625rem + 12px - 19px);
+    left: 50%;
+    z-index: -1;
+    width: 38px;
+    height: 38px;
+    margin-left: -19px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 50% 30%, rgb(var(--c-surface-2)), rgb(var(--c-inset)) 80%);
+    box-shadow: 0 0 0 1px rgb(var(--c-frame-bright) / 0.7), 0 0 16px -2px rgb(var(--c-frame-bright) / 0.45);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 200ms, transform 300ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .ui-rail__item[aria-current='page'] { color: rgb(var(--c-ink)); }
+  .ui-rail__item[aria-current='page']::before { opacity: 1; transform: none; }
+  .ui-rail__item[aria-current='page'] .ui-rail__icon { color: rgb(var(--c-frame-bright)); filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.6)); }
+  .ui-rail__item[aria-current='page'] .ui-rail__mark { width: 2px; background: linear-gradient(180deg, transparent, rgb(var(--c-frame-bright)), transparent); box-shadow: 0 0 8px rgb(var(--c-frame-bright)); }
+  .ui-rail__divider { background: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.6), transparent); }
+  .ui-tabbar .ui-rail__item::before { top: calc(50% - 0.6rem - 19px); }
+  .ui-tabbar .ui-rail__item[aria-current='page'] .ui-rail__mark { background: linear-gradient(90deg, transparent, rgb(var(--c-frame-bright)), transparent); }
+  .ui-tabbar { border-image: none; border-top: 1px solid rgb(var(--c-frame) / 0.3); }
+  .ui-hero-column {
+    background: linear-gradient(90deg, rgb(var(--c-bg-deep) / 0.5), rgb(var(--c-bg) / 0.2));
+    border-right: 1px solid transparent;
+    border-image: linear-gradient(180deg, transparent, rgb(var(--c-frame) / 0.3) 20%, rgb(var(--c-frame) / 0.3) 80%, transparent) 1;
+  }
+
+  /* ---------------------------------------------------------------- Fields and controls */
+  .ui-input { background: rgb(var(--c-inset) / 0.65); border-color: rgb(var(--c-line) / 0.75); border-radius: 8px; }
+  .ui-input:hover { border-color: rgb(var(--c-frame) / 0.6); }
+  .ui-input:focus { border-color: rgb(var(--c-frame-bright)); box-shadow: 0 0 0 3px rgb(var(--c-frame-bright) / 0.12), 0 0 16px -6px rgb(var(--c-frame-bright) / 0.6); }
+  .ui-input::placeholder { font-style: italic; }
+  .ui-segmented { padding: 3px; border-radius: 999px; background: rgb(var(--c-inset) / 0.65); border-color: rgb(var(--c-frame) / 0.3); }
+  .ui-segmented__option { --segment-tone: var(--c-accent); font-family: var(--font-caps); font-size: 0.92rem; letter-spacing: 0.03em; border-radius: 999px; }
+  .ui-segmented__option[aria-checked='true'] {
+    color: rgb(var(--c-accent-ink));
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.35), transparent 60%), rgb(var(--segment-tone));
+    border-color: rgb(255 250 236 / 0.8);
+    box-shadow: 0 0 12px -3px rgb(var(--segment-tone) / 0.6);
+  }
+  .ui-switch { border-color: rgb(var(--c-frame) / 0.35); background: rgb(var(--c-inset) / 0.7); }
+  .ui-switch::after { background: rgb(var(--c-ink-faint)); }
+  [aria-checked='true'] > .ui-switch { background: rgb(var(--c-frame) / 0.35); border-color: rgb(var(--c-frame-bright)); box-shadow: 0 0 10px -2px rgb(var(--c-frame-bright) / 0.6); }
+  [aria-checked='true'] > .ui-switch::after { background: var(--ivory); box-shadow: 0 0 6px rgb(255 240 200 / 0.8); }
+  .ui-popover {
+    font-family: var(--font-serif);
+    color: rgb(var(--c-ink-muted));
+    background: linear-gradient(180deg, rgb(24 52 56), rgb(var(--c-surface)));
+    border-color: rgb(var(--c-frame) / 0.45);
+    border-radius: 12px;
+    box-shadow: inset 0 1px 0 rgb(255 240 200 / 0.08), 0 18px 36px -12px rgb(0 0 0 / 0.85);
+  }
+  .ui-popover__option { border-radius: 8px; }
+  .ui-popover__option[data-active] { color: rgb(var(--c-ink)); background: rgb(var(--c-frame-bright) / 0.1); }
+  .ui-popover__option[aria-selected='true'] { color: rgb(var(--c-frame-bright)); }
+
+  .ui-keyfield { border-radius: 999px; }
+  .ui-keyfield > .ui-input { border-radius: 999px; text-align: center; }
+  .ui-number { border-radius: 999px; background: rgb(var(--c-inset) / 0.65); border-color: rgb(var(--c-frame) / 0.3); overflow: hidden; }
+  .ui-number button { color: rgb(var(--c-frame)); }
+  .ui-number button:not(:disabled):hover { color: rgb(var(--c-frame-bright)); background: rgb(var(--c-frame-bright) / 0.1); }
+  .ui-swatch--selected { box-shadow: 0 0 0 2px rgb(var(--c-bg)), 0 0 0 3px rgb(var(--c-frame-bright)), 0 0 10px rgb(var(--c-frame-bright) / 0.6); }
+
+  /* ---------------------------------------------------------------- Toasts */
+  /* A notice as the game shows a new place or a new business: a band of dark glass fading out at
+     both ends, gilt hairlines over and under it, a small-capital heading between two sparkles over
+     the words; it rises into view out of a blur. A natural 20 or 1 is written across it in the
+     flowing hand, as the game writes what Albion thinks of the hero. */
+  .ui-toast {
+    /* Messages are drawn outside the screen's scope, under <body>: they take the serif themselves. */
+    font-family: var(--font-serif);
+    font-variant-numeric: lining-nums;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: min(19rem, calc(100vw - 2rem));
+    max-width: min(26rem, calc(100vw - 2rem));
+    padding: 0.75rem 2.6rem 0.95rem;
+    font-size: 1rem;
+    text-align: center;
+    border: 0;
+    border-radius: 0;
+    background:
+      linear-gradient(90deg, transparent, rgb(var(--c-frame-bright) / 0.8) 30%, rgb(var(--c-frame-bright) / 0.8) 70%, transparent) top / 100% 1px no-repeat,
+      linear-gradient(90deg, transparent, rgb(var(--c-frame-bright) / 0.5) 30%, rgb(var(--c-frame-bright) / 0.5) 70%, transparent) bottom / 100% 1px no-repeat,
+      radial-gradient(60% 120% at 50% 0%, rgb(var(--c-frame-bright) / 0.1), transparent 70%),
+      linear-gradient(90deg, transparent, rgb(var(--c-surface) / 0.94) 15%, rgb(var(--c-surface) / 0.94) 85%, transparent);
+    box-shadow: none;
+    backdrop-filter: none;
+    filter: drop-shadow(0 10px 18px rgb(0 0 0 / 0.5));
+    animation: fb-toast 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .ui-toast::before {
+    content: 'Весть';
+    display: block;
+    margin: 0 auto 0.35rem;
+    padding: 0 1.15rem;
+    font: 500 0.82rem/1.3 var(--font-caps);
+    letter-spacing: 0.08em;
+    color: rgb(var(--c-frame-bright));
+    background:
+      linear-gradient(rgb(var(--c-frame-bright)), rgb(var(--c-frame-bright))) left center / 9px 9px no-repeat,
+      linear-gradient(rgb(var(--c-frame-bright)), rgb(var(--c-frame-bright))) right center / 9px 9px no-repeat;
+    -webkit-mask: var(--spark) left center / 9px 9px no-repeat, var(--spark) right center / 9px 9px no-repeat, linear-gradient(#000 0 0) center / calc(100% - 1.6rem) 100% no-repeat;
+    mask: var(--spark) left center / 9px 9px no-repeat, var(--spark) right center / 9px 9px no-repeat, linear-gradient(#000 0 0) center / calc(100% - 1.6rem) 100% no-repeat;
+  }
+  .ui-toast--success::before { content: 'Удача'; }
+  .ui-toast--error::before { content: 'Увы'; color: rgb(250 170 156); }
+  .ui-toast--error {
+    background:
+      linear-gradient(90deg, transparent, rgb(236 150 140 / 0.8) 30%, rgb(236 150 140 / 0.8) 70%, transparent) top / 100% 1px no-repeat,
+      linear-gradient(90deg, transparent, rgb(236 150 140 / 0.5) 30%, rgb(236 150 140 / 0.5) 70%, transparent) bottom / 100% 1px no-repeat,
+      linear-gradient(90deg, transparent, rgb(var(--c-wine) / 0.95) 15%, rgb(var(--c-wine) / 0.95) 85%, transparent);
+  }
+  .ui-toast__body { justify-content: center; }
+  .ui-toast:is(.ui-toast--error, .ui-toast--success) .ui-toast__body > svg { display: none; }
+  .ui-toast button { color: rgb(var(--c-frame-bright)); }
+  .ui-toast .ui-roll-toast { position: relative; margin-inline: auto; text-align: left; }
+  /* The stamp sits right of the dice and the total, in room kept for it. */
+  .ui-toast .ui-roll-toast:is([data-tone='crit'], [data-tone='fumble']) > :first-child { padding-right: 6.5rem; }
+  .ui-toast .ui-roll-toast[data-landed]:is([data-tone='crit'], [data-tone='fumble'])::after {
+    position: absolute;
+    top: 0.3rem;
+    right: 0;
+    max-width: 7rem;
+    font: 400 1.6rem/1.05 var(--font-script);
+    text-align: center;
+    pointer-events: none;
+    transform: rotate(-8deg);
+    animation: fb-write 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .ui-toast .ui-roll-toast[data-tone='crit']::after { content: 'Героично!'; color: rgb(var(--c-fairy)); text-shadow: 0 0 12px rgb(var(--c-fairy) / 0.7); }
+  .ui-toast .ui-roll-toast[data-tone='fumble']::after { content: 'Позорище'; color: rgb(244 150 160); text-shadow: 0 0 12px rgb(244 120 130 / 0.6); }
+
+  /* ---------------------------------------------------------------- Dialogs */
+  /* A window is a card of the HUD's sea-green, deeper and solid: rounded, a thin gilt line inside its
+     edge; its name on a nameplate across the top, its heading in small capitals above. */
+  .ui-panel.ui-dialog {
+    --c-paper: var(--c-surface);
+    --c-paper-ink: var(--c-ink);
+    --c-paper-muted: var(--c-ink-muted);
+    color: rgb(var(--c-ink));
+    background-image:
+      radial-gradient(120% 55% at 50% 0%, rgb(var(--c-frame-bright) / 0.08), transparent 70%),
+      linear-gradient(180deg, rgb(24 52 56), rgb(var(--c-surface)) 40%, rgb(10 26 30));
+    border: 1px solid rgb(var(--c-frame) / 0.5);
+    border-radius: 18px;
+    box-shadow:
+      inset 0 0 0 5px rgb(var(--c-bg-deep) / 0.45),
+      inset 0 0 0 6px rgb(var(--c-frame) / 0.3),
+      inset 0 0 60px rgb(0 0 0 / 0.3),
+      0 30px 70px -24px rgb(0 0 0 / 0.95);
+  }
+  .ui-panel.ui-dialog::before { inset: 0; border-radius: inherit; box-shadow: none; background: radial-gradient(70% 40% at 50% 100%, rgb(0 0 0 / 0.25), transparent 70%); }
+  .ui-panel.ui-dialog::after { inset: -1px 18% auto; }
+  .ui-dialog .ui-corner,
+  .ui-dialog .ui-leaf { display: none; }
+  .ui-panel.ui-dialog::before,
+  .ui-panel.ui-dialog::after { clip-path: none; }
+  .ui-panel.ui-dialog::after { background: var(--hairline); opacity: 1; mix-blend-mode: normal; height: 1px; z-index: 1; }
+  .ui-dialog__head { padding: 1.7rem 3.5rem 0.9rem; text-align: center; }
+  .ui-dialog__head > div { justify-content: center; }
+  .ui-dialog__eyebrow { font-family: var(--font-caps); font-size: 0.85rem; letter-spacing: 0.08em; text-transform: none; color: rgb(var(--c-frame)); opacity: 1; }
+  .ui-dialog__title {
+    display: table;
+    margin-inline: auto;
+    padding: 0.35rem 1.7rem 0.45rem;
+    font-size: 1.55rem;
+    color: rgb(var(--c-ink));
+    background: var(--nameplate);
+    border: 1px solid rgb(var(--c-frame-bright) / 0.6);
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 3px rgb(14 38 42), inset 0 0 0 4px rgb(var(--c-frame) / 0.35), 0 0 0 4px rgb(var(--c-bg-deep) / 0.35), 0 8px 18px -10px rgb(0 0 0 / 0.9);
+    text-shadow: 0 1px 6px rgb(0 0 0 / 0.6);
+  }
+  /* A title too long for the pill in one line is set smaller, not broken over two (see DialogTitle). */
+  .ui-dialog__title[data-long] { font-size: 1.15rem; padding-inline: 1.15rem; text-wrap: balance; }
+  .ui-dialog__rule { display: flex; color: rgb(var(--c-frame-bright)); }
+  .ui-dialog__foot { border-top: 1px solid transparent; border-image: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.45), transparent) 1; }
+  :is(.ui-dialog, .ui-details) .ui-keyfacts dt { font-family: var(--font-caps); font-size: 0.8rem; letter-spacing: 0.05em; text-transform: none; opacity: 0.85; }
+  .ui-keyfacts dd { font-family: var(--font-serif); }
+
+  .ui-chip { font-family: var(--font-caps); font-size: 0.85rem; letter-spacing: 0.03em; border-radius: 999px; padding-inline: 0.8rem; }
+  /* A chip that is only a picture stays a true circle, its picture in the middle. */
+  .ui-chip--icon { padding: 0; }
+  .ui-chip:hover { color: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame) / 0.7); }
+  .ui-chip[aria-pressed='true'] { color: rgb(var(--c-accent-ink)); background: var(--ivory); border-color: rgb(255 250 236); box-shadow: 0 0 10px -3px rgb(255 232 176 / 0.6); }
+  .ui-panel--paper .ui-chip[aria-pressed='true'] { color: rgb(255 240 228); background: var(--wine); border-color: rgb(var(--c-wine)); box-shadow: none; }
+
+  /* ---------------------------------------------------------------- Choices */
+  .ui-tag { padding: 0.22rem 0.55rem; border-radius: 999px; font-family: var(--font-caps); font-size: 12px; letter-spacing: 0.03em; }
+  .ui-option { border-radius: 12px; background: rgb(var(--c-surface) / 0.55); border-color: rgb(var(--c-frame) / 0.22); }
+  .ui-option:not(:disabled):hover { border-color: rgb(var(--c-frame-bright) / 0.6); background: rgb(var(--c-surface-2) / 0.7); }
+  /* The chosen option is lit as under the sun, a sparkle in its corner. */
+  .ui-option[aria-pressed='true'] {
+    color: rgb(var(--c-frame-bright));
+    background: radial-gradient(100% 120% at 0% 0%, rgb(var(--c-frame-bright) / 0.18), transparent 70%), rgb(var(--c-surface-2) / 0.7);
+    border-color: rgb(var(--c-frame-bright));
+    box-shadow: inset 0 0 0 1px rgb(var(--c-frame-bright) / 0.25), 0 0 18px -6px rgb(var(--c-frame-bright) / 0.6);
+  }
+  .ui-option[aria-pressed='true']::after {
+    content: '';
+    position: absolute;
+    top: 0.45rem;
+    right: 0.5rem;
+    width: 10px;
+    height: 10px;
+    background: rgb(var(--c-frame-bright));
+    -webkit-mask: var(--spark) center / contain no-repeat;
+    mask: var(--spark) center / contain no-repeat;
+    filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright)));
+  }
+  /* A short pick is chosen as a chip is: an ivory plate, no room for a sparkle beside its word. */
+  .ui-option--chip { border-radius: 999px; }
+  .ui-option--chip[aria-pressed='true'] { color: rgb(var(--c-accent-ink)); background: var(--ivory); border-color: rgb(255 250 236); box-shadow: 0 0 12px -3px rgb(255 232 176 / 0.6); }
+  .ui-option--chip[aria-pressed='true']::after { display: none; }
+  .ui-option[data-focus]:not([aria-pressed='true']) { border-color: rgb(var(--c-frame-bright) / 0.6); }
+  .ui-steps__label { font-family: var(--font-caps); font-size: 1rem; letter-spacing: 0.02em; }
+  .ui-steps__value { font-style: italic; }
+  /* A step's mark is the HUD's diamond. */
+  .ui-steps__mark { border-radius: 3px; transform: rotate(45deg) scale(0.78); border-color: rgb(var(--c-frame) / 0.5); background: rgb(var(--c-inset) / 0.6); }
+  .ui-steps__mark > * { transform: rotate(-45deg); }
+  .ui-steps__item[aria-current='step'] .ui-steps__mark { color: rgb(var(--c-accent-ink)); background: var(--ivory); border-color: rgb(255 250 236); box-shadow: 0 0 12px rgb(255 232 176 / 0.6); }
+  .ui-steps__item:not(:disabled):hover { background: rgb(var(--c-frame-bright) / 0.06); }
+  .ui-origin { border-radius: 14px; }
+  .ui-origin[aria-pressed='true'] { background: radial-gradient(circle at 50% 30%, rgb(var(--c-frame-bright) / 0.18), transparent 70%); border-color: rgb(var(--c-frame-bright) / 0.85); box-shadow: 0 0 18px -6px rgb(var(--c-frame-bright) / 0.7); }
+  .ui-summary__badge { background: radial-gradient(circle at 50% 30%, rgb(var(--c-surface-2)), rgb(var(--c-inset))); border-color: rgb(var(--c-frame-bright) / 0.6); box-shadow: 0 0 12px -4px rgb(var(--c-frame-bright) / 0.5); }
+  .ui-summary__portrait { border-color: rgb(var(--c-frame-bright) / 0.8); box-shadow: 0 0 0 3px rgb(var(--c-bg-deep) / 0.6), 0 0 16px -4px rgb(var(--c-frame-bright) / 0.6); }
+  .ui-summary__heading { font-family: var(--font-caps); }
+  .ui-facts,
+  .ui-facts > div + div { border-color: rgb(var(--c-frame) / 0.22); }
+  .ui-facts dt { font-family: var(--font-caps); font-size: 0.78rem; letter-spacing: 0.04em; text-transform: none; color: rgb(var(--c-frame)); }
+  .ui-setting-option { background: rgb(var(--c-surface) / 0.6); border-radius: 12px; }
+
+  /* ---------------------------------------------------------------- Combat */
+  /* Slots are the round plates of the ability wheel: sea-green glass, a gilt ring. */
+  .ui-hud-slot {
+    border-radius: 999px;
+    background: radial-gradient(circle at 50% 30%, rgb(var(--c-surface-2) / 0.9), rgb(var(--c-inset) / 0.9) 80%);
+    border-color: rgb(var(--c-frame) / 0.5);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 -8px 14px rgb(0 0 0 / 0.3), 0 4px 10px -4px rgb(0 0 0 / 0.6);
+  }
+  .ui-hud-slot:hover,
+  .ui-hud-slot[data-active] { border-color: rgb(var(--c-frame-bright)); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 0 16px -4px rgb(var(--c-frame-bright) / 0.7); }
+  .ui-hud-slot__count { bottom: 2px; right: 2px; min-width: 1rem; padding: 0 3px; text-align: center; color: rgb(var(--c-accent-ink)); text-shadow: none; background: var(--ivory); border-radius: 999px; }
+  /* An entry's picture: its colour glowing inside a round plate of dark glass, the pictogram in ivory. */
+  [data-setting] .ui-hud-slot--tile,
+  .ui-hud-slot--tile {
+    color: rgb(250 244 228);
+    border: 1px solid color-mix(in srgb, var(--tile-color) 35%, rgb(var(--c-frame-bright)));
+    background:
+      radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--tile-color) 70%, #fff) 0%, color-mix(in srgb, var(--tile-color) 55%, #000) 55%, color-mix(in srgb, var(--tile-color) 15%, rgb(var(--c-bg-deep))) 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
+      inset 0 0 0 2px rgb(0 0 0 / 0.35),
+      inset 0 -6px 12px rgb(0 0 0 / 0.4),
+      0 0 0 1px rgb(var(--c-bg-deep) / 0.6),
+      0 3px 8px rgb(0 0 0 / 0.55);
+  }
+  .ui-hud-slot--tile:hover { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 0 0 2px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(var(--c-frame-bright) / 0.8), 0 0 16px -2px color-mix(in srgb, var(--tile-color) 70%, transparent); }
+  .ui-hud-chip { border-radius: 999px; background: rgb(var(--c-inset) / 0.8); }
+  .ui-hud-chip__count { color: rgb(var(--c-accent-ink)); background: var(--ivory); border-color: rgb(255 250 236); }
+  .ui-hud-panel__head { font-family: var(--font-caps); font-size: 0.85rem; letter-spacing: 0.05em; text-transform: none; color: rgb(var(--c-frame-bright)); border-bottom: 1px solid transparent; border-image: linear-gradient(90deg, rgb(var(--c-frame) / 0.5), transparent) 1; }
+  .ui-hud-portrait { border-radius: 20px; border-width: 1px; border-color: rgb(var(--portrait-frame) / 0.75); box-shadow: inset 0 0 0 4px rgb(var(--c-bg-deep) / 0.6), 0 0 22px -8px rgb(var(--c-frame-bright) / 0.5), var(--shadow-panel); }
+  .ui-hud-portrait { --portrait-frame: var(--c-frame-bright); }
+  .ui-hud-portrait--shielded { --portrait-frame: var(--c-temp-hp); }
+  .ui-hud-portrait--down { --portrait-frame: var(--c-danger); }
+  .ui-hud-portrait > button { border-radius: 15px; }
+  .ui-hud-portrait__temp,
+  .ui-hud-portrait__form { border-radius: 999px; }
+  .ui-vbar__track { border-radius: 999px; border-color: rgb(var(--c-frame) / 0.4); background: rgb(var(--c-inset) / 0.75); }
+  .ui-vbar__fill { opacity: 1; background-image: linear-gradient(90deg, rgb(0 0 0 / 0.2), rgb(255 255 255 / 0.25) 35%, transparent 60%, rgb(0 0 0 / 0.2)); box-shadow: 0 0 10px rgb(var(--c-hp) / 0.5); }
+  .ui-vbar__label { font-family: var(--font-caps); letter-spacing: 0.12em; text-transform: none; }
+  .ui-die { border-radius: 14px; background: rgb(var(--c-surface) / 0.6); border-color: rgb(var(--c-frame) / 0.25); }
+  .ui-die--in { color: rgb(var(--c-frame-bright)); border-color: rgb(var(--c-frame-bright)); background: radial-gradient(circle at 50% 20%, rgb(var(--c-frame-bright) / 0.16), transparent 70%), rgb(var(--c-surface) / 0.6); box-shadow: 0 0 16px -6px rgb(var(--c-frame-bright) / 0.7); }
+  .ui-die__count { color: rgb(var(--c-accent-ink)); background: var(--ivory); }
+  .ui-die-face { border-radius: 8px; }
+  .ui-crop__corner--nw,
+  .ui-crop__corner--ne,
+  .ui-crop__corner--sw,
+  .ui-crop__corner--se { border-color: rgb(var(--c-frame-bright)); }
+  .ui-image-slot { border-radius: 12px; border-color: rgb(var(--c-frame) / 0.4); }
+  .ui-rolling-die { color: rgb(var(--c-frame-bright)); }
+
+  /* ---------------------------------------------------------------- Hero cards (hero select) */
+  /* The hero as a picture in a storybook, flat on the page: a gilt hairline round it. Looked at, the
+     page is illuminated round it: gilt tendrils in its corners, a fine vine up each side, the chapter
+     written over scrollwork on its top edge, fireflies. */
+  &.ui-hero-card > .ui-panel {
+    border-radius: 16px;
+    border-color: rgb(var(--c-frame) / 0.45);
+    box-shadow: inset 0 0 0 4px rgb(var(--c-bg-deep) / 0.35), 0 22px 44px -18px rgb(0 0 0 / 0.9);
+    transition: border-color 400ms, box-shadow 400ms;
+  }
+  &.ui-hero-card[data-focused] > .ui-panel {
+    border-color: rgb(var(--c-frame-bright) / 0.9);
+    box-shadow: inset 0 0 0 4px rgb(var(--c-bg-deep) / 0.35), 0 0 34px -8px rgb(var(--c-frame-bright) / 0.5), 0 22px 44px -18px rgb(0 0 0 / 0.9);
+  }
+  &.ui-hero-card .ui-fx { border-radius: inherit; }
+
+  .fb-herald {
+    position: absolute;
+    inset: -46px -40px -26px;
+    z-index: 3;
+    pointer-events: none;
+    color: rgb(var(--c-frame-bright));
+    filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.5)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.6));
+    opacity: 0;
+    transition: opacity 500ms;
+  }
+  &.ui-hero-card[data-focused] .fb-herald { opacity: 1; }
+  .fb-herald__chapter {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    white-space: nowrap;
+    font: 500 1.05rem/1 var(--font-caps);
+    letter-spacing: 0.16em;
+    transform: translateX(-50%);
+  }
+  /* The scrollwork with the sparkle on the card's top edge. */
+  .fb-herald__crest { position: absolute; top: 4px; left: 50%; width: 170px; transform: translateX(-50%); }
+  /* A fine vine climbs each side, on the card's edge. */
+  .fb-herald__vine { position: absolute; top: 30%; width: 36px; height: 52%; }
+  .fb-herald__vine--l { left: 22px; }
+  .fb-herald__vine--r { right: 22px; transform: scaleX(-1); }
+  /* The screen's gilt tendrils, small, in the card's own corners. */
+  /* Kept within the card's margin, clear of what is written on it. */
+  .fb-herald__corner { position: absolute; width: 50px; height: 50px; opacity: 0; transition: opacity 600ms 300ms; }
+  .fb-herald__corner > svg { width: 100%; height: 100%; }
+  .fb-herald__corner--tl { top: 51px; left: 45px; }
+  .fb-herald__corner--tr { top: 51px; right: 45px; transform: scaleX(-1); }
+  .fb-herald__corner--bl { bottom: 31px; left: 45px; transform: scaleY(-1); }
+  .fb-herald__corner--br { bottom: 31px; right: 45px; transform: scale(-1); }
+  &.ui-hero-card[data-focused] .fb-herald__corner { opacity: 0.9; }
+  /* The vines and the scrollwork draw themselves in; their leaves and the sparkle come after. */
+  .fb-draw { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.6s cubic-bezier(0.3, 0.6, 0.3, 1) 0.1s; }
+  &.ui-hero-card[data-focused] .fb-draw { stroke-dashoffset: 0; }
+  .fb-herald__leaves,
+  .fb-herald__spark { opacity: 0; transition: opacity 700ms 1s; }
+  &.ui-hero-card[data-focused] :is(.fb-herald__leaves, .fb-herald__spark) { opacity: 1; }
+  .fb-firefly {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(226 255 248), rgb(120 226 214 / 0.8) 35%, transparent 70%);
+    box-shadow: 0 0 8px 2px rgb(120 226 214 / 0.45);
+    animation: fb-firefly 6s ease-in-out infinite;
+  }
+  .fb-firefly--gold { background: radial-gradient(circle, rgb(255 250 226), rgb(246 212 136 / 0.8) 35%, transparent 70%); box-shadow: 0 0 8px 2px rgb(246 212 136 / 0.45); }
+
+  /* ---------------------------------------------------------------- Atmosphere (backdrop) */
+  /* The deep sea-green of the wood is the screen's own; over it a lighter green where the sun comes
+     in from above. Nothing here is painted over the whole screen, so on hero select the hero's art
+     blurred behind shows through. */
+  .fb-glade { background: radial-gradient(90% 70% at 50% 0%, rgb(38 74 74 / 0.55), transparent 70%); }
+  /* The sun itself, a warm glow over the top edge. */
+  .fb-sun { background: radial-gradient(45% 32% at 50% -4%, rgb(250 230 170 / 0.32), rgb(240 214 150 / 0.08) 55%, transparent 80%); }
+  /* Its rays fanning down through the canopy, soft-edged (each ray its own soft fall-off, no blur),
+     fading before the foot; they breathe as a cloud passes (the layer as a whole, so nothing is
+     painted again). */
+  .fb-light {
+    background: conic-gradient(
+      from 152deg at 50% -6%,
+      transparent 0deg,
+      rgb(255 238 196 / 0.04) 3deg, rgb(255 238 196 / 0.09) 5deg, rgb(255 238 196 / 0.04) 7deg, transparent 10deg,
+      transparent 14deg, rgb(255 238 196 / 0.03) 16deg, rgb(255 238 196 / 0.065) 18deg, rgb(255 238 196 / 0.03) 20deg, transparent 23deg,
+      transparent 26deg, rgb(255 238 196 / 0.05) 29deg, rgb(255 238 196 / 0.11) 32deg, rgb(255 238 196 / 0.05) 35deg, transparent 38deg,
+      transparent 43deg, rgb(255 238 196 / 0.025) 45deg, rgb(255 238 196 / 0.055) 47deg, rgb(255 238 196 / 0.025) 49deg, transparent 51deg,
+      transparent 56deg
+    );
+    -webkit-mask: linear-gradient(180deg, #000 10%, transparent 85%);
+    mask: linear-gradient(180deg, #000 10%, transparent 85%);
+    will-change: opacity;
+    animation: fb-rays 11s ease-in-out infinite alternate;
+  }
+  /* The trail's sheet, laid out in its own pixels and scaled to cover the screen from its middle. */
+  .fb-sheet {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 1600px;
+    height: 900px;
+    transform: translate(-50%, -50%) scale(var(--fb-cover, 1));
+    pointer-events: none;
+  }
+  .fb-trail { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; opacity: 0.75; }
+  /* The dust lies in stretches, lit one after another: waves of light flow along the trail into
+     the distance (each stretch a layer of its own that only fades). */
+  .fb-trail__glint { opacity: 0.15; will-change: opacity; animation: fb-flow 4s linear infinite; }
+  /* Fireflies and fairy dust: a soft dot of light each, drifting its own way and glowing as it goes
+     (transform and opacity only, on fixed keyframes). */
+  .fb-mote {
+    position: absolute;
+    display: block;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(220 255 248), rgb(120 226 214 / 0.7) 30%, transparent 68%);
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: fb-float-0 ease-in-out infinite;
+  }
+  .fb-mote--gold { background: radial-gradient(circle, rgb(255 250 226), rgb(246 212 136 / 0.7) 30%, transparent 68%); }
+  .fb-mote--1 { animation-name: fb-float-1; }
+  .fb-mote--2 { animation-name: fb-float-2; }
+  /* Mist lying along the foot, drifting. */
+  .fb-mist {
+    background:
+      radial-gradient(40% 50% at 25% 60%, rgb(190 220 210 / 0.1), transparent 70%),
+      radial-gradient(35% 45% at 70% 70%, rgb(200 226 214 / 0.09), transparent 70%),
+      radial-gradient(55% 40% at 50% 95%, rgb(180 210 200 / 0.12), transparent 75%);
+    will-change: transform;
+    animation: fb-mist 40s ease-in-out infinite alternate;
+  }
+  /* The edges of the screen dim, as round a picture in a storybook. */
+  .fb-veil { box-shadow: inset 0 0 220px 70px rgb(var(--c-bg-deep) / 0.88); }
+  .fb-screen-corner { color: rgb(var(--c-frame-bright)); opacity: 0.75; filter: drop-shadow(0 0 4px rgb(var(--c-frame-bright) / 0.5)); }
+}
+
+/* The service keeps its own type over a world's colours (hero select, the service's windows). */
+.ui-service[data-setting='fable'],
+.ui-service [data-setting='fable'] { font-family: var(--font-body); }
+
+@keyframes fb-rays {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+@keyframes fb-float-0 {
+  0%, 100% { opacity: 0.15; transform: translate(0, 0); }
+  30% { opacity: 1; }
+  50% { opacity: 0.5; transform: translate(14px, -28px); }
+  75% { opacity: 0.9; }
+}
+@keyframes fb-float-1 {
+  0%, 100% { opacity: 0.2; transform: translate(0, 0); }
+  40% { opacity: 0.95; transform: translate(-18px, -16px); }
+  70% { opacity: 0.35; }
+}
+@keyframes fb-float-2 {
+  0%, 100% { opacity: 0.1; transform: translate(0, 0); }
+  25% { opacity: 0.8; }
+  60% { opacity: 1; transform: translate(8px, -40px); }
+}
+/* A stretch lights up quickly and dims slowly: the wave's crest has a glow trailing behind it. */
+@keyframes fb-flow {
+  0% { opacity: 1; }
+  40% { opacity: 0.15; }
+  84% { opacity: 0.15; }
+  100% { opacity: 1; }
+}
+@keyframes fb-firefly {
+  0%, 100% { opacity: 0.3; transform: translate(0, 0); }
+  35% { opacity: 1; transform: translate(6px, -12px); }
+  65% { opacity: 0.6; transform: translate(-5px, -20px); }
+}
+@keyframes fb-mist {
+  from { transform: translateX(-4%); }
+  to { transform: translateX(4%); }
+}
+/* A notice rises into view out of a blur, as the game's banners come in. */
+@keyframes fb-toast {
+  from { opacity: 0; translate: 0 10px; filter: blur(6px) drop-shadow(0 10px 18px rgb(0 0 0 / 0.5)); }
+  to { opacity: 1; translate: 0 0; filter: blur(0) drop-shadow(0 10px 18px rgb(0 0 0 / 0.5)); }
+}
+/* The word is written in: it comes up out of nothing, a little large, and settles. */
+@keyframes fb-write {
+  from { opacity: 0; transform: rotate(-8deg) scale(1.3); filter: blur(4px); }
+  to { opacity: 1; transform: rotate(-8deg) scale(1); filter: blur(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='fable'] :is(.fb-light, .fb-mote, .fb-mist, .fb-firefly, .fb-trail__glint) { animation: none; }
+  [data-setting='fable'] .fb-mote { opacity: 0.6; }
+  [data-setting='fable'] .ui-toast,
+  [data-setting='fable'] .ui-toast .ui-roll-toast[data-landed]::after { animation: none; }
+}
+
+/* ------------------------------------------------------------------ Level ready */
+/* Two thin gilt threads grow along the bar and braid round it; tendrils curl off them into spirals,
+   a leaf opening at each root and a sparkle at each heart; a glint runs along the threads. */
+[data-setting='fable'] {
+  .ui-xp[data-ready] { animation: fb-plaque 2.4s ease-in-out infinite; }
+  .ui-level-ready > .fb-ready { overflow: visible; }
+  .fb-thread {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    filter: drop-shadow(0 0 1.5px rgb(255 214 130 / 0.8));
+    animation: fb-grow 1.8s ease-out forwards;
+  }
+  .fb-thread-glint {
+    stroke: rgb(255 250 230);
+    stroke-dasharray: 4 96;
+    stroke-dashoffset: 100;
+    opacity: 0;
+    filter: drop-shadow(0 0 3px rgb(255 226 160));
+    animation: fb-glint 3s linear infinite;
+  }
+  .fb-tendril__curl { stroke-dasharray: 100; stroke-dashoffset: 100; animation: fb-grow 0.9s ease-out forwards; }
+  .fb-tendril__leaf {
+    transform-box: fill-box;
+    transform-origin: 100% 50%;
+    transform: scale(0);
+    animation: fb-leaf 0.5s ease-out forwards;
+  }
+  .fb-tendril__spark {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(0);
+    filter: drop-shadow(0 0 2.5px rgb(255 226 160));
+    animation: fb-bloom 0.5s ease-out forwards, fb-twinkle 2.6s ease-in-out infinite;
+  }
+}
+@keyframes fb-plaque {
+  50% { box-shadow: 0 0 22px -6px rgb(var(--c-xp) / 0.7), var(--shadow-panel); }
+}
+@keyframes fb-grow { to { stroke-dashoffset: 0; } }
+@keyframes fb-glint {
+  0% { stroke-dashoffset: 100; opacity: 0; }
+  10%, 80% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes fb-leaf {
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+@keyframes fb-bloom {
+  60% { transform: scale(1.6) rotate(45deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes fb-twinkle {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.6); opacity: 0.5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='fable'] :is(.fb-thread, .fb-tendril__curl, .fb-tendril__leaf, .fb-tendril__spark) { animation-duration: 1ms; animation-iteration-count: 1; }
+  [data-setting='fable'] :is(.ui-xp[data-ready], .fb-thread-glint) { animation: none; }
+}
+
+/* ------------------------------------------------------------------ World card */
+/* The book's cover: the glade behind, the fairy in a gilt ring and the name in gilt capitals, as
+   the title is set. Looked at or chosen, the sun comes out: the rays behind the ring wake and turn,
+   the fairy glows and the fireflies come up brighter. */
+[data-setting='fable'] {
+  & > .ui-world { border-radius: 16px; border-color: rgb(var(--c-frame) / 0.45); gap: 2.6rem; }
+  & > .ui-world .ui-world__veil { background: radial-gradient(70% 60% at 50% 42%, rgb(var(--c-bg-deep) / 0.35), rgb(var(--c-bg-deep) / 0.75)); }
+  /* The logo itself: the face's capitals are its swash forms — the curled F, the A and L with tails. */
+  & > .ui-world .ui-world__name {
+    font-weight: 900;
+    font-size: 3rem;
+    font-size-adjust: none;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: transparent;
+    background: var(--fb-gilt);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 2px 0 rgb(48 30 10)) drop-shadow(0 4px 10px rgb(0 0 0 / 0.8)) drop-shadow(0 0 14px rgb(255 214 130 / 0.3));
+  }
+  & > .ui-world .ui-world__emblem { color: rgb(var(--c-frame-bright)); transition: color 600ms, filter 800ms; }
+  & > .ui-world .ui-world__sigil { width: 200px; height: 200px; }
+  & > .ui-world :is(.ui-corner, .fb-screen-corner) { display: none; }
+  .fb-sigil { color: rgb(var(--c-frame-bright)); opacity: 0.7; transition: opacity 600ms; }
+  .fb-sigil__rays { opacity: 0; transform-origin: 0 0; transition: opacity 800ms; }
+  /* On the card the trail runs up its middle, from its foot towards the fairy. */
+  & > .ui-world .fb-sheet { --fb-card: calc(var(--fb-cover, 1) * 1.5); transform: translate(calc(-50% - 470px * var(--fb-card)), calc(-50% - 300px * var(--fb-card))) scale(var(--fb-card)); }
+  & > .ui-world .fb-trail { opacity: 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) { transform: translateY(-4px); border-color: rgb(var(--c-frame-bright)); box-shadow: 0 0 40px -10px rgb(var(--c-frame-bright) / 0.6), var(--shadow-panel); }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .fb-sigil { opacity: 1; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .fb-sigil__rays { opacity: 0.55; animation: fb-turn 40s linear infinite; }
+  & > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .ui-world__emblem { color: rgb(255 248 226); filter: drop-shadow(0 0 16px rgb(var(--c-frame-bright) / 0.8)); }
+}
+@keyframes fb-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='fable'] > :is(.ui-world:hover, .ui-world[aria-pressed='true']) .fb-sigil__rays { animation: none; }
+}
+
+/* ------------------------------------------------------------------ World flourish */
+/* A region entered in Albion: its name in golden script. The fairy flies up from the chosen card and
+   writes the name as it passes along the line, dust fading behind it; a flourish draws itself under
+   the name, which lingers and fades. Only the light, the dust and the reveal move. */
+.ui-flourish--fable {
+  /* A soft warmth where the card was chosen, as the fairy leaves it. */
+  &::after {
+    inset: 0;
+    background: radial-gradient(circle at var(--fx-x) var(--fx-y), rgb(255 240 200 / 0.3), rgb(240 214 150 / 0.08) 18%, transparent 36%);
+    animation: fb-leave 1s ease-out forwards;
+  }
+  & > i,
+  .ui-flourish__p { display: none; }
+}
+/* A dusk behind the name, so it reads over anything. */
+.fb-writ-haze {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 42vh;
+  background: radial-gradient(40% 44% at 50% 42%, rgb(var(--c-bg-deep) / 0.92), rgb(var(--c-bg-deep) / 0.6) 55%, transparent 80%);
+  opacity: 0;
+  animation: fb-writ-stay 2.6s ease-in-out forwards;
+}
+.fb-writ {
+  position: absolute;
+  left: 50%;
+  top: 9vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  animation: fb-writ-stay 2.6s ease-in-out forwards;
+}
+/* The name in gilt script, revealed from the left as the fairy's light passes along it. */
+.fb-writ__word {
+  padding: 0 0.15em;
+  font-family: var(--font-script);
+  font-size: clamp(4rem, 8vw, 7.5rem);
+  line-height: 1.15;
+  white-space: nowrap;
+  color: transparent;
+  background: linear-gradient(180deg, rgb(255 248 222) 12%, rgb(240 210 140) 48%, rgb(190 146 72) 82%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 2px 0 rgb(48 30 10)) drop-shadow(0 6px 18px rgb(0 0 0 / 0.75));
+  clip-path: inset(-25% 100% -25% -5%);
+  animation: fb-writ-reveal linear forwards;
+}
+/* The script's capital stands apart from the letter after it; drawn in, as a hand would join them. */
+.fb-writ__word::first-letter { letter-spacing: -0.14em; }
+/* The flourish under the name, drawn in one stroke from its middle out, a sparkle set on it. */
+.fb-writ__swash {
+  width: 115%;
+  height: 1.8rem;
+  margin-top: -0.6rem;
+  overflow: visible;
+}
+.fb-writ__swash path:first-child {
+  stroke: rgb(236 204 136);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 4px rgb(246 214 140 / 0.6));
+  animation: fb-writ-draw 0.55s ease-out forwards;
+}
+.fb-writ__spark {
+  fill: rgb(255 248 226);
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: fb-writ-spark 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+/* The fairy: a little light with its glow. */
+.fb-writ-fairy {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 248) 0, rgb(255 250 228) 10%, rgb(255 228 164 / 0.8) 22%, rgb(255 210 130 / 0.28) 45%, transparent 70%);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+/* Dust it leaves behind: each grain lights up as the fairy passes, then drifts down and fades. */
+.fb-writ-dust {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 246 214), rgb(255 222 150 / 0.55) 40%, transparent 70%);
+  opacity: 0;
+  animation: fb-writ-dust 1.2s ease-out forwards;
+}
+.fb-writ-dust:nth-child(3n) { background: radial-gradient(circle, rgb(226 255 248), rgb(132 230 216 / 0.55) 40%, transparent 70%); }
+@keyframes fb-leave {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes fb-writ-stay {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes fb-writ-reveal { to { clip-path: inset(-25% -5% -25% -5%); } }
+@keyframes fb-writ-draw { to { stroke-dashoffset: 0; } }
+@keyframes fb-writ-spark {
+  0% { opacity: 0; transform: scale(0) rotate(-45deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes fb-writ-dust {
+  0% { opacity: 0; transform: scale(0.4); }
+  12% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: translateY(18px) scale(0.5); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fb-writ-fairy,
+  .fb-writ-dust { display: none; }
+  .fb-writ__word { clip-path: none; animation: none; }
+}
+
+/* The rulebook on a hero's card: a sea-green nameplate with a gilt rim, as over a villager. */
+[data-setting='fable'] .ui-rulebook {
+  padding: 0.28rem 0.9rem 0.32rem;
+  font-family: var(--font-caps);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  color: rgb(var(--c-ink));
+  background: var(--nameplate);
+  border: 1px solid rgb(var(--c-frame-bright) / 0.55);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 2px rgb(14 38 42), inset 0 0 0 3px rgb(var(--c-frame) / 0.3);
+}
+/* Under the hero card it is the name of a choice as the game sets it: a sea-green nameplate in a gilt
+   rim, and gilt hairlines leaving it to both sides, beaded, a sparkle at each end. */
+[data-setting='fable'] .ui-rulebook-plate .ui-rulebook {
+  position: relative;
+  padding: 0.42rem 1.6rem 0.48rem;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: rgb(var(--c-frame-bright));
+  background: var(--nameplate);
+  border: 1px solid rgb(var(--c-frame-bright) / 0.6);
+  box-shadow: inset 0 0 0 2px rgb(14 38 42), inset 0 0 0 3px rgb(var(--c-frame) / 0.35), 0 8px 18px -8px rgb(0 0 0 / 0.9);
+  text-shadow: 0 0 10px rgb(var(--c-frame-bright) / 0.35);
+}
+[data-setting='fable'] .ui-rulebook-plate .ui-rulebook::before,
+[data-setting='fable'] .ui-rulebook-plate .ui-rulebook::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 64px;
+  height: 10px;
+  margin-top: -5px;
+  border: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgb(var(--c-frame-bright)) 0 2px, transparent 2.5px) 70% 50% / 10px 10px no-repeat,
+    linear-gradient(rgb(var(--c-frame-bright) / 0.7), rgb(var(--c-frame-bright) / 0.7)) 100% 50% / 100% 1px no-repeat,
+    linear-gradient(rgb(var(--c-frame-bright)), rgb(var(--c-frame-bright))) 0 50% / 10px 10px no-repeat;
+  -webkit-mask: var(--spark) 0 50% / 10px 10px no-repeat, linear-gradient(#000 0 0) 100% 50% / calc(100% - 14px) 100% no-repeat;
+  mask: var(--spark) 0 50% / 10px 10px no-repeat, linear-gradient(#000 0 0) 100% 50% / calc(100% - 14px) 100% no-repeat;
+}
+[data-setting='fable'] .ui-rulebook-plate .ui-rulebook::before { right: calc(100% + 6px); left: auto; }
+[data-setting='fable'] .ui-rulebook-plate .ui-rulebook::after { left: calc(100% + 6px); transform: scaleX(-1); }
+
+@keyframes fb-ring {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-setting='fable'] .ui-ledger__row[data-selected]::after { animation: none; }
+}

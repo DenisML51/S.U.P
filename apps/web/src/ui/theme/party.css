@@ -150,12 +150,36 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
   --card-h: max(8.5rem, min(var(--card-tall), calc((var(--deck-share) - var(--stack-peek)) / 0.75)));
   --card-w: calc(var(--card-h) * 0.75);
 }
+/* A room about half a wide screen: four stacks in a row would leave the cards small and the height
+   empty, so they stand two by two, the cards a little larger. */
+@container (max-width: 1000px) {
+  .ui-decks {
+    --per-row: 2;
+    --card-tall: clamp(11rem, 30vh, 15.5rem);
+  }
+  .ui-decks-room--wrap > .ui-decks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 1.75rem 2rem;
+  }
+  /* The left column stands a little in from the edge, off the cover's corner. */
+  .ui-decks-room--wrap > .ui-decks > :nth-child(odd) { margin-left: 1.5rem; }
+}
 /* Too narrow for every stack in one row even with small cards: two to a row, a little lower, so
    both rows mostly fit the screen. */
 @container (max-width: 680px) {
   .ui-decks {
     --per-row: 2;
     --card-tall: clamp(8.5rem, 24vh, 13rem);
+  }
+}
+/* A narrow room leaves a title little width: it goes onto a second line rather than losing its end. */
+@container (max-width: 820px) {
+  .ui-deck__title .ui-deck__title-text {
+    overflow: visible;
+    white-space: normal;
+    line-height: 1.1;
   }
 }
 /* A title never widens its column past the stack's share of the room: wider, it would push the row
@@ -460,3 +484,23 @@ button.ui-initiative__token:hover .ui-initiative__portrait {
 
 /* The hero's name gives way on a short screen, so the tables below keep room for a few rows. */
 .ui-hub-name { font-size: clamp(2.4rem, 5.4vh, 3.2rem); }
+
+/* Below the desktop the table runs down the page: the stacks take the height of their cards and the
+   page scrolls, rather than the stacks scrolling in a box of their own. */
+/* A group below the desktop: two cards to a row, each half the group's width. */
+.ui-deck-strip {
+  container-type: inline-size;
+}
+.ui-deck-grid {
+  --card-w: calc((100cqw - 0.75rem) / 2);
+  --card-h: calc(var(--card-w) / 0.75);
+}
+@media (max-width: 1023.98px) {
+  .ui-table-main > * {
+    flex-shrink: 0;
+  }
+  .ui-table-main .ui-decks-room {
+    flex: none;
+    overflow: visible;
+  }
+}

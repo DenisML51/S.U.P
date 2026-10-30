@@ -182,4 +182,20 @@ export const SPELL_LISTS: Record<SpellListId, string[]> = {
     'astral-projection', 'foresight', 'gate', 'imprisonment', 'meteor-swarm', 'power-word-kill', 'prismatic-wall',
     'shapechange', 'time-stop', 'true-polymorph', 'weird', 'wish',
   ],
+  // The Witch Knights of the Alternate Blood Hunter (laserllama); its reworked spells are read as the
+  // ones we carry, Branding Smite as the 2014 spell.
+  witchKnight: [
+    'blade-ward', 'booming-blade', 'chill-touch', 'control-flames', 'friends', 'frostbite', 'green-flame-blade',
+    'infestation', 'lightning-lure', 'mage-hand', 'magic-stone', 'mind-sliver', 'minor-illusion', 'poison-spray',
+    'prestidigitation', 'resistance', 'shocking-grasp', 'spare-the-dying', 'sword-burst', 'toll-the-dead', 'true-strike',
+    'absorb-elements', 'armor-of-agathys', 'arms-of-hadar', 'burning-hands', 'cause-fear', 'charm-person', 'compelled-duel',
+    'detect-evil-and-good', 'expeditious-retreat', 'false-life', 'hellish-rebuke', 'hex', 'illusory-script',
+    'inflict-wounds', 'protection-from-evil-and-good', 'searing-smite', 'shield', 'thunderous-smite', 'unseen-servant',
+    'witch-bolt', 'branding-smite', 'cloud-of-daggers', 'crown-of-madness', 'darkness', 'earthbind', 'hold-person',
+    'invisibility', 'mind-spike', 'mirror-image', 'misty-step', 'ray-of-enfeeblement', 'scorching-ray', 'shadow-blade',
+    'shatter', 'spider-climb', 'suggestion', 'blinding-smite', 'counterspell', 'dispel-magic', 'enemies-abound', 'fear',
+    'hunger-of-hadar', 'hypnotic-pattern', 'intellect-fortress', 'magic-circle', 'major-image', 'remove-curse',
+    'spirit-shroud', 'vampiric-touch', 'banishment', 'blight', 'charm-monster', 'dimension-door', 'elemental-bane',
+    'hallucinatory-terrain', 'phantasmal-killer', 'staggering-smite', 'shadow-of-moil', 'sickening-radiance',
+  ],
 };

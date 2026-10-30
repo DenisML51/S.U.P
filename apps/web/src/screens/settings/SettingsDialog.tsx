@@ -8,7 +8,9 @@ import { ConfirmDialog, Dialog } from '../../ui/Dialog';
 import { Segmented, Switch } from '../../ui/forms';
 import { Button, cx } from '../../ui/primitives';
 import { IconExit, IconSync } from '../../ui/icons';
+import { AccountEditors } from './AccountSection';
 import type { Theme } from '../../ui/theme/settings';
+import { language, locale, setLanguage, type Language } from '../../i18n';
 
 const syncLine = (sync: SyncStatus, offline: boolean): { text: string; tone: string } => {
   if (offline || sync.state === 'offline') return { text: 'Нет связи: изменения сохраняются на устройстве', tone: 'text-warning' };
@@ -20,7 +22,7 @@ const syncLine = (sync: SyncStatus, offline: boolean): { text: string; tone: str
 };
 
 const time = (timestamp: number | null) =>
-  timestamp ? new Date(timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '—';
+  timestamp ? new Date(timestamp).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '—';
 
 /** Account, sync and the few preferences of this device. */
 export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
@@ -84,12 +86,13 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
               Выйти
             </Button>
           </div>
+          <AccountEditors />
         </section>
 
         <section className="mt-6">
           <h3 className="ui-label">Синхронизация</h3>
-          <div className="flex items-center justify-between gap-4">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="min-w-0">
               <div className={cx('text-sm', line.tone)}>{line.text}</div>
               <div className="text-xs text-ink-faint">последняя: {time(sync.lastSyncedAt)}</div>
             </div>
@@ -120,22 +123,27 @@ export const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = 
             checked={settings.notifications}
             onChange={(notifications) => set({ notifications })}
             label="Уведомления"
-            hint="Сообщения об изменениях с кнопкой «Отменить», о тратах ресурсов и импорте героев"
           />
           <Switch
             checked={settings.fullscreen}
             onChange={(fullscreen) => set({ fullscreen })}
             label="Полный экран"
-            hint="Лист рассчитан на весь экран без прокрутки"
           />
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="text-ink">Эффекты безумия</div>
-              <div className="text-sm text-ink-faint">
-                Как безумие сыщика «Зова Ктулху» меняет экран. Спокойно — без мерцания, вспышек и
-                качки; при системной настройке «уменьшить движение» эффекты всегда спокойные
-              </div>
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="min-w-0 text-ink">Язык</div>
+            {/* Each language by its own name; choosing one reloads the page in it. */}
+            <Segmented<Language>
+              label="Язык"
+              value={language}
+              onChange={setLanguage}
+              options={[
+                { value: 'ru', label: 'Русский' },
+                { value: 'en', label: 'English' },
+              ]}
+            />
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="min-w-0 text-ink">Эффекты безумия</div>
             <Segmented<MadnessEffects>
               label="Эффекты безумия"
               value={settings.madnessEffects}

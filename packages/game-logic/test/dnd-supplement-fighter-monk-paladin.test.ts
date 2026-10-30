@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { armorClassOf, startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, createDndHero, levelPlan, setPicks } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -49,10 +49,10 @@ describe('supplement subclasses: fighter, monk, paladin', () => {
 
   it('Banneret: envoy picks, Group Recovery healing and Team Resilience from Indomitable', () => {
     const b = build({ subclass: 'banneret', level: 3 });
-    const plan = levelPlan(b, 3);
+    const plan = levelPlan(atLevel(b, 3), 3);
     expect(plan.choices.some((c) => c.key === 'subclass:banneret.knightly-envoy/language')).toBe(true);
     const skill = plan.choices.find((c) => c.key === 'subclass:banneret.knightly-envoy/skill')!;
-    expect(choiceOptions(b, 3, skill).map((o) => o.id).sort()).toEqual(['insight', 'intimidation', 'performance', 'persuasion']);
+    expect(choiceOptions(atLevel(b, 3), 3, skill).map((o) => o.id).sort()).toEqual(['insight', 'intimidation', 'performance', 'persuasion']);
 
     const c3 = apply(setPicks(b, 'subclass:banneret.knightly-envoy/skill', ['persuasion']));
     expect(c3.skills.find((s) => s.id === 'persuasion')?.proficient).toBe(true);
@@ -60,7 +60,7 @@ describe('supplement subclasses: fighter, monk, paladin', () => {
     expect(ability(c3, 'Групповое оздоровление')).toMatchObject({ damage: '1d4+3', damageType: 'Лечение' });
     expect(resource(c3, 'banneret.group-recovery')).toMatchObject({ max: 1, recovery: 'short' });
 
-    const c20 = apply({ ...b, level: 20 });
+    const c20 = apply(atLevel(b, 20));
     expect(ability(c20, 'Групповое оздоровление')?.damage).toBe('1d4+20');
     expect(ability(c20, 'Устойчивость команды')).toMatchObject({ actionType: 'reaction', resourceId: 'fighter.indomitable' });
     expect(ability(c20, 'Вдохновляющий командир')).toBeTruthy();
@@ -69,10 +69,10 @@ describe('supplement subclasses: fighter, monk, paladin', () => {
   it('Arcane Archer: lore, Arcane Shot uses, die and DC, options in one pool and their swap', () => {
     // Intelligence 16 (+3).
     const base = build({ subclass: 'arcane-archer', level: 3, baseAttributes: { ...build().baseAttributes, intelligence: 15 }, backgroundBonuses: { intelligence: 1 } });
-    const plan = levelPlan(base, 3);
+    const plan = levelPlan(atLevel(base, 3), 3);
     const shots = plan.choices.find((c) => c.key === 'subclass:arcane-archer.arcane-shot/arcane-shots')!;
     expect(shots.count).toBe(2);
-    expect(choiceOptions(base, 3, shots)).toHaveLength(8);
+    expect(choiceOptions(atLevel(base, 3), 3, shots)).toHaveLength(8);
     expect(plan.choices.some((c) => c.key === 'subclass:arcane-archer.lore/cantrip')).toBe(true);
 
     let b = setPicks(base, 'subclass:arcane-archer.arcane-shot/arcane-shots', ['bursting-arrow', 'banishing-arrow']);
@@ -86,23 +86,23 @@ describe('supplement subclasses: fighter, monk, paladin', () => {
     expect(ability(c3, 'Изгоняющий выстрел')).toMatchObject({ damage: '1d6', saveAttribute: 'charisma', saveDC: 8 + 2 + 3 });
 
     // One more option at 7, 10, 15 and 18; nothing at 8.
-    const newShots = (level: number) => levelPlan(b, level).choices.find((c) => c.key === `subclass:arcane-archer.arcane-shot-${level}/arcane-shots`)?.count ?? 0;
+    const newShots = (level: number) => levelPlan(atLevel(b, level), level).choices.find((c) => c.key === `subclass:arcane-archer.arcane-shot-${level}/arcane-shots`)?.count ?? 0;
     expect([7, 10, 15, 18].map(newShots)).toEqual([1, 1, 1, 1]);
-    expect(levelPlan(b, 8).choices.some((c) => c.choice.pool === 'arcane-shots' && c.choice.id === 'arcane-shots')).toBe(false);
+    expect(levelPlan(atLevel(b, 8), 8).choices.some((c) => c.choice.pool === 'arcane-shots' && c.choice.id === 'arcane-shots')).toBe(false);
 
     // A known option may be given up for another on a later level.
-    expect(levelPlan(b, 7).choices.some((c) => c.key === 'swap:arcane-shots@7/forget')).toBe(true);
+    expect(levelPlan(atLevel(b, 7), 7).choices.some((c) => c.key === 'swap:arcane-shots@7/forget')).toBe(true);
     let swapped = setPicks(b, 'swap:arcane-shots@7/forget', ['banishing-arrow']);
     swapped = setPicks(swapped, 'swap:arcane-shots@7/learn', ['shadow-arrow']);
-    const c7 = apply({ ...swapped, level: 7 });
+    const c7 = apply(atLevel(swapped, 7));
     expect(ability(c7, 'Изгоняющий выстрел')).toBeUndefined();
     expect(ability(c7, 'Тьмяной выстрел')).toMatchObject({ saveAttribute: 'wisdom' });
     expect(resource(c7, 'arcane-archer.magic-ammunition')).toMatchObject({ max: 1, recovery: 'short' });
     expect(ability(c7, 'Странствующая стрела')?.actionType).toBe('bonus');
 
-    const at = (level: number) => ability(apply({ ...b, level }), 'Взрывной выстрел')?.damage;
+    const at = (level: number) => ability(apply(atLevel(b, level)), 'Взрывной выстрел')?.damage;
     expect([at(9), at(10), at(15), at(18)]).toEqual(['2d6', '2d8', '2d10', '2d12']);
-    expect(ability(apply({ ...b, level: 18 }), 'Изгоняющий выстрел')?.saveDC).toBe(8 + 6 + 3);
+    expect(ability(apply(atLevel(b, 18)), 'Изгоняющий выстрел')?.saveDC).toBe(8 + 6 + 3);
   });
 
   it('Warrior of the Mystic Arts: sorcerer spells with Wisdom on third-caster slots', () => {
@@ -113,13 +113,13 @@ describe('supplement subclasses: fighter, monk, paladin', () => {
       baseAttributes: { strength: 8, dexterity: 15, constitution: 13, intelligence: 10, wisdom: 15, charisma: 10 },
       backgroundBonuses: { dexterity: 2, wisdom: 1 },
     });
-    const plan = levelPlan(b, 3);
+    const plan = levelPlan(atLevel(b, 3), 3);
     const cantrips = plan.choices.find((c) => c.choice.id === 'cantrips')!;
     const spells = plan.choices.find((c) => c.choice.id === 'spells')!;
     expect(cantrips.count).toBe(2);
     expect(spells.count).toBe(3);
-    expect(choiceOptions(b, 3, spells).every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
-    expect(choiceOptions(b, 3, cantrips).some((o) => o.id === 'blade-ward')).toBe(true);
+    expect(choiceOptions(atLevel(b, 3), 3, spells).every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
+    expect(choiceOptions(atLevel(b, 3), 3, cantrips).some((o) => o.id === 'blade-ward')).toBe(true);
 
     const picked = setPicks(setPicks(b, cantrips.key, ['blade-ward', 'thunderclap']), spells.key, ['magic-missile', 'jump', 'shield']);
     const c3 = apply(picked);
@@ -128,13 +128,13 @@ describe('supplement subclasses: fighter, monk, paladin', () => {
     // Wisdom 16 (+3), proficiency +2.
     expect(c3.spellcastingDifficultyValue).toBe(8 + 2 + 3);
 
-    expect(levelPlan(picked, 4).choices.some((c) => c.key === 'swap:known-spells@4/forget')).toBe(true);
-    expect(levelPlan(picked, 4).choices.some((c) => c.key === 'swap:known-cantrips@4/forget')).toBe(true);
-    expect(levelPlan(b, 10).choices.find((c) => c.choice.id === 'cantrips')?.count).toBe(1);
-    const spellsAt = (level: number) => levelPlan(b, level).choices.find((c) => c.choice.id === 'spells')?.count ?? 0;
+    expect(levelPlan(atLevel(picked, 4), 4).choices.some((c) => c.key === 'swap:monk.known-spells@4/forget')).toBe(true);
+    expect(levelPlan(atLevel(picked, 4), 4).choices.some((c) => c.key === 'swap:monk.known-cantrips@4/forget')).toBe(true);
+    expect(levelPlan(atLevel(b, 10), 10).choices.find((c) => c.choice.id === 'cantrips')?.count).toBe(1);
+    const spellsAt = (level: number) => levelPlan(atLevel(b, level), level).choices.find((c) => c.choice.id === 'spells')?.count ?? 0;
     expect([4, 5, 7, 8, 13, 19, 20].map(spellsAt)).toEqual([1, 0, 1, 1, 1, 1, 1]);
 
-    const c20 = apply({ ...b, level: 20 });
+    const c20 = apply(atLevel(b, 20));
     expect(c20.resources.filter((r) => r.id.startsWith('slot-')).map((r) => r.max)).toEqual([4, 3, 3, 1]);
     expect(ability(c20, 'Мистическая сосредоточенность')).toBeTruthy();
     expect(ability(c20, 'Улучшенный стиль мистического воина')).toBeTruthy();
@@ -157,8 +157,8 @@ describe('supplement subclasses: fighter, monk, paladin', () => {
     expect(ability(c3, 'Ярость ифрита')).toMatchObject({ damage: '2d4', damageType: 'Огонь' });
     expect(ability(c3, 'Побег джинна')).toBeTruthy();
     expect(ability(c3, 'Давление дао')).toBeTruthy();
-    const skill = levelPlan(b, 3).choices.find((c) => c.key === 'subclass:noble-genies.genies-splendor/skill')!;
-    expect(choiceOptions(b, 3, skill).map((o) => o.id).sort()).toEqual(['acrobatics', 'intimidation', 'performance', 'persuasion']);
+    const skill = levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === 'subclass:noble-genies.genies-splendor/skill')!;
+    expect(choiceOptions(atLevel(b, 3), 3, skill).map((o) => o.id).sort()).toEqual(['acrobatics', 'intimidation', 'performance', 'persuasion']);
 
     const hero = createDndHero({ name: 'Т', build: b, classKitId: 'b', backgroundKitId: 'b' });
     // 10 + Dexterity (+2) + Charisma (+3).
@@ -169,7 +169,7 @@ describe('supplement subclasses: fighter, monk, paladin', () => {
     };
     expect(armorClassOf(withShield as typeof hero)).toBe(17);
 
-    const c17 = apply({ ...b, level: 17 });
+    const c17 = apply(atLevel(b, 17));
     expect(c17.spells.filter((s) => s.alwaysPrepared).map((s) => s.id)).toEqual(
       expect.arrayContaining(['spell-fly', 'spell-summon-elemental', 'spell-banishing-smite', 'spell-contact-other-plane']),
     );
@@ -177,7 +177,7 @@ describe('supplement subclasses: fighter, monk, paladin', () => {
     expect(resource(c17, 'noble-genies.elemental-rebuke')).toMatchObject({ max: 3, recovery: 'long' });
     expect(ability(c17, 'Аура стихийной защиты')).toBeTruthy();
 
-    const c20 = apply({ ...b, level: 20 });
+    const c20 = apply(atLevel(b, 20));
     expect(ability(c20, 'Благородный гений')).toMatchObject({ actionType: 'bonus' });
     expect(resource(c20, 'noble-genies.noble-genie')).toMatchObject({ max: 1, recovery: 'long' });
   });

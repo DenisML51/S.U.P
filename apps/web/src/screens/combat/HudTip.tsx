@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Panel, cx } from '../../ui/primitives';
+import { useMediaQuery } from '../../ui/useBreakpoint';
 
 /** Props that make an element show a hint while hovered or focused. */
 export interface TipBinding {
@@ -39,16 +40,26 @@ export function useHudTip<T>() {
     hideTimer.current = window.setTimeout(() => setTip(null), 160);
   }, []);
   const keep = useCallback(() => window.clearTimeout(hideTimer.current), []);
+  const clear = useCallback(() => setTip(null), []);
   /** Props for the element the hint describes. */
   const bind = (value: T): TipBinding => ({
     onMouseEnter: (e: React.MouseEvent<HTMLElement>) => show(value, e.currentTarget),
     onMouseLeave: hide,
-    onFocus: (e: React.FocusEvent<HTMLElement>) => show(value, e.currentTarget),
+    // Only a keyboard's focus: focus handed back by a closing dialog, or left by a tap, is no ask for a hint.
+    onFocus: (e: React.FocusEvent<HTMLElement>) => {
+      if (e.currentTarget.matches(':focus-visible')) show(value, e.currentTarget);
+    },
     onBlur: hide,
   });
   const hold: TipHold = { onMouseEnter: keep, onMouseLeave: hide };
-  return { tip, bind, hold, clear: () => setTip(null) };
+  return { tip, bind, hold, show, clear };
 }
+
+/**
+ * Whether the HUD is used by touch: no hover, or a screen narrower than the desktop. There a tap
+ * picks before it acts and a long press stands for the right click, and the hints say so.
+ */
+export const useTouchHud = (): boolean => useMediaQuery('(hover: none), (max-width: 1023.98px)');
 
 /** What stands in the screen's upper half gets its hints and menus below it. */
 export const below = (rect: DOMRect) => rect.top < window.innerHeight / 2;
@@ -72,9 +83,11 @@ export const HudTip: React.FC<{
       {rect && (
         <motion.div
           key={tipKey}
+          data-hud-tip
           // The padding toward the icon bridges the gap, so the cursor can travel onto the hint.
           className={cx(
-            'fixed z-[60]',
+            // Above the toasts (z-200): a hint asked for is read over a passing message.
+            'fixed z-[250]',
             below(rect) ? 'pt-3' : 'pb-3',
             hold ? 'pointer-events-auto' : 'pointer-events-none',
           )}

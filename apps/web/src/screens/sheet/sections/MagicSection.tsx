@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   SPELL_SCHOOLS,
   UNLIMITED_PREPARED,
+  formatModifier,
   maxPrepared,
   preparationBlocker,
   preparedCount,
@@ -11,13 +12,15 @@ import {
   spellLevelName,
   toggleKnownSchool,
   togglePrepared,
+  rulesOf,
 } from '@itd/game-logic';
-import type { Character, Spell } from '@itd/schema';
+import type { Character, Spell, Spellcaster } from '@itd/schema';
+import { SpellCatalogDialog } from '../dialogs/SpellCatalogDialog';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
 import { Ledger, LedgerBullet, LedgerGroup, LedgerRow, MetaLine, MetaValue } from '../../../ui/Ledger';
 import { Select } from '../../../ui/forms';
-import { Button, IconButton, Input, Panel, Tabs } from '../../../ui/primitives';
+import { Button, IconButton, Input, Tabs } from '../../../ui/primitives';
 import { IconMinus, IconPlus } from '../../../ui/icons';
 import { SectionNotes } from '../parts/EditableText';
 import { SectionAside, SectionList } from '../SectionAside';
@@ -26,30 +29,9 @@ import { ConcentrationMark } from '../Concentration';
 import { useActs } from '../useActs';
 import { useSheetDialogs } from '../dialogs/context';
 import { describeDamage, spellDamageParts } from '../parts/damage';
+import { t } from '../../../i18n';
 
 type LevelFilter = 'all' | number;
-
-/**
- * Below this width the book would be squeezed by the column beside it: what it is cast with goes
- * under it instead. Above it the book gives up a little of its page width and the column stays.
- */
-const NARROW = 960;
-
-/** Whether the element is narrower than `width`, kept up as it resizes. */
-function useNarrow<T extends HTMLElement>(width: number) {
-  const ref = useRef<T>(null);
-  const [narrow, setNarrow] = useState(false);
-  useLayoutEffect(() => {
-    const box = ref.current;
-    if (!box) return;
-    const measure = () => setNarrow(box.clientWidth < width);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(box);
-    return () => observer.disconnect();
-  }, [width]);
-  return { ref, narrow };
-}
 
 /**
  * The circles as tabs while they all fit in a row, a dropdown once they don't. The tabs stay laid
@@ -116,8 +98,10 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
   const limit = maxPrepared(character, level);
   const unlimited = limit >= UNLIMITED_PREPARED;
   const slots = slotResourceFor(character, level);
-  // A class that prepares N spells of any level (paladin) sets one limit for all circles.
+  // A class that prepares N spells of any level (paladin) sets one limit for all circles; a preset
+  // hero's classes keep theirs in the book's header.
   const classLimit = level > 0 && character.maxPreparedSpells[TOTAL_PREPARED] !== undefined;
+  const byClass = !!character.casters?.length;
   // A preset caster who knows their spells (bard, warlock) never prepares them: no counter.
   const known = !!character.build && character.spells.filter((s) => s.level === level).every((s) => s.alwaysPrepared);
   return (
@@ -128,7 +112,7 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
           <span className="tabular-nums">{limit}</span>
         </span>
       )}
-      {level > 0 && !classLimit && !known && (
+      {level > 0 && !classLimit && !byClass && !known && (
         <span className="flex items-center gap-1" title="Сколько заклинаний этого круга можно подготовить">
           подготовлено <span className="tabular-nums">{preparedCount(character, level)}</span> из
           <IconButton
@@ -158,7 +142,27 @@ const LevelSummary: React.FC<{ character: Character; level: number; onLimit: (va
   );
 };
 
-/** Spellcasting difficulty: its name and value, edited in place. */
+/**
+ * A class the hero casts as, in the book's header: its save DC and spell attack, and for a class that
+ * prepares its spells how many of them are. Of several classes it is the one whose tab is open.
+ */
+const CasterSummary: React.FC<{ character: Character; caster: Spellcaster }> = ({ character, caster }) => (
+  <span className="flex items-baseline gap-1.5 whitespace-nowrap" title={`Заклинания класса «${caster.name}»`}>
+    <span>СЛ</span>
+    <span className="ui-display ui-numeric text-2xl leading-none text-paper-ink">{caster.saveDC}</span>
+    <span className="text-sm">
+      атака <span className="ui-numeric">{formatModifier(caster.attackBonus)}</span>
+    </span>
+    {caster.prepared !== undefined && (
+      <span className="text-sm" title="Сколько заклинаний класса всех кругов можно подготовить; задаётся классом и уровнем">
+        <span aria-hidden>·</span> подготовлено <span className="tabular-nums">{preparedCount(character, 1, caster.id)}</span> из{' '}
+        <span className="tabular-nums">{caster.prepared}</span>
+      </span>
+    )}
+  </span>
+);
+
+/** Spellcasting difficulty in the book's header: its name and value, edited in place. */
 const DifficultyEditor: React.FC<{
   name: string;
   value: number;
@@ -171,20 +175,22 @@ const DifficultyEditor: React.FC<{
     return (
       <button
         type="button"
-        onClick={() => setEditing(true)}
-        className="group block w-full text-left"
+        onClick={() => {
+          setDraftName(name);
+          setDraftValue(String(value));
+          setEditing(true);
+        }}
+        className="group flex items-baseline gap-1.5 whitespace-nowrap"
         title="Изменить"
       >
-        <span className="ui-display ui-numeric text-4xl leading-none text-ink group-hover:text-frame-bright">
-          {value}
-        </span>
-        <span className="mt-1 block text-xs text-ink-faint">{name}</span>
+        <span>{name}</span>
+        <span className="ui-display ui-numeric text-2xl leading-none text-paper-ink group-hover:opacity-70">{value}</span>
       </button>
     );
   }
   return (
     <form
-      className="space-y-2"
+      className="flex items-center gap-1.5"
       onSubmit={(event) => {
         event.preventDefault();
         const parsed = Number(draftValue);
@@ -192,39 +198,25 @@ const DifficultyEditor: React.FC<{
         setEditing(false);
       }}
     >
-      <Input value={draftName} onChange={(e) => setDraftName(e.target.value)} aria-label="Название" />
-      <div className="flex gap-2">
-        <Input
-          value={draftValue}
-          onChange={(e) => setDraftValue(e.target.value)}
-          inputMode="numeric"
-          aria-label="Значение"
-        />
-        <Button type="submit" size="sm" variant="primary">
-          Готово
-        </Button>
-      </div>
+      <Input value={draftName} onChange={(e) => setDraftName(e.target.value)} aria-label="Название" className="!h-8 !w-32 text-sm" />
+      <Input
+        value={draftValue}
+        onChange={(e) => setDraftValue(e.target.value)}
+        inputMode="numeric"
+        aria-label="Значение"
+        className="!h-8 !w-12 text-center text-sm"
+      />
+      <Button type="submit" size="sm" variant="primary">
+        Готово
+      </Button>
     </form>
   );
 };
 
-/** What the book is cast with: the difficulty, the studied schools, notes. `below` lays it out under the book. */
-const CastingInfo: React.FC<{ character: Character; below?: boolean }> = ({ character, below }) => {
-  const saveText = useSheetText();
+/** The schools a homebrew caster studies; preset heroes prepare by their class rules. */
+const StudiedSchools: React.FC<{ character: Character }> = ({ character }) => {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
-  const difficulty = (
-    <Panel className="px-5 py-4">
-      <DifficultyEditor
-        name={character.spellcastingDifficultyName ?? 'СЛ заклинаний'}
-        value={character.spellcastingDifficultyValue ?? 10}
-        onSave={(spellcastingDifficultyName, spellcastingDifficultyValue) =>
-          updateCharacter((doc) => ({ ...doc, spellcastingDifficultyName, spellcastingDifficultyValue }))
-        }
-      />
-    </Panel>
-  );
-  // Studied schools are a homebrew limit; preset heroes prepare by their class rules.
-  const schools = !character.build && (
+  return (
     <section className="min-w-0">
       <div className="ui-label">Изучаемые школы</div>
       <div className="flex flex-wrap gap-1.5">
@@ -245,36 +237,28 @@ const CastingInfo: React.FC<{ character: Character; below?: boolean }> = ({ char
       )}
     </section>
   );
-  const notes = <SectionNotes value={character.spellsNotes} onSave={saveText('spellsNotes')} />;
-  if (below) {
-    return (
-      <div className="mt-4 flex shrink-0 flex-col gap-4">
-        <div className="flex items-start gap-5">
-          <div className="w-44 shrink-0">{difficulty}</div>
-          {schools}
-        </div>
-        {notes}
-      </div>
-    );
-  }
-  return (
-    <>
-      {difficulty}
-      {schools}
-      <div className="mt-auto">{notes}</div>
-    </>
-  );
 };
 
 /** Spells: the whole spellbook, preparation for the day and casting, in one place. */
 export const MagicSection: React.FC<{ character: Character }> = ({ character }) => {
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
-  const { cast } = useActs();
+  const acts = useActs();
+  const { cast } = acts;
   const dialogs = useSheetDialogs();
   const [level, setLevel] = useState<LevelFilter>('all');
+  // A hero of several casting classes reads the book class by class.
+  const casters = character.casters ?? [];
+  const several = casters.length > 1;
+  // The tab of a class the hero no longer has (a level given back) falls back to all of them.
+  const [chosenCaster, setCaster] = useState<string>('all');
+  const caster = casters.some((c) => c.id === chosenCaster) ? chosenCaster : 'all';
+  const shownCasters = caster === 'all' ? casters : casters.filter((c) => c.id === caster);
   const [preparedOnly, setPreparedOnly] = useState(false);
   const [query, setQuery] = useState('');
-  const { ref, narrow } = useNarrow<HTMLDivElement>(NARROW);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  // A hero of a rules system adds from its book of spells; a spell of one's own is made by hand.
+  const hasCatalog = !!character.build && !!rulesOf(character.build).spellCatalog;
+  const saveText = useSheetText();
 
   const levels = useMemo(
     () => [...new Set(character.spells.map((s) => s.level))].sort((a, b) => a - b),
@@ -282,9 +266,10 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   );
   const visible = character.spells.filter(
     (spell) =>
+      (caster === 'all' || spell.caster === caster) &&
       (level === 'all' || spell.level === level) &&
       (!preparedOnly || spell.prepared) &&
-      (!query.trim() || spell.name.toLowerCase().includes(query.trim().toLowerCase())),
+      (!query.trim() || t(spell.name).toLowerCase().includes(query.trim().toLowerCase())),
   );
   const groups = levels
     .map((lvl) => ({ level: lvl, spells: visible.filter((s) => s.level === lvl) }))
@@ -301,14 +286,49 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
   };
 
   return (
-    <div ref={ref} className="flex h-full gap-8">
+    <div className="flex h-full gap-8">
       <SectionList>
+        {several && (
+          <Tabs
+            label="Класс"
+            value={caster}
+            onChange={setCaster}
+            items={[{ id: 'all', label: 'Все классы' }, ...casters.map((c) => ({ id: c.id, label: c.name }))]}
+            className="mb-2"
+          />
+        )}
         <LevelPicker levels={levels} value={level} onChange={setLevel} />
 
         <Ledger
           title="Книга заклинаний"
           aside={
             <>
+              {casters.length > 0 ? (
+                // A preset hero's classes cast by their own numbers, written from the build: all of
+                // them by their DCs, one class (or the only one) with its attack and prepared spells.
+                shownCasters.length > 1 ? (
+                  <span className="flex items-baseline gap-1.5 whitespace-nowrap" title="Сложность спасброска от заклинаний каждого класса">
+                    <span>СЛ</span>
+                    {shownCasters.map((c, index) => (
+                      <React.Fragment key={c.id}>
+                        {index > 0 && <span aria-hidden>·</span>}
+                        <span>{c.name}</span>
+                        <span className="ui-display ui-numeric text-2xl leading-none text-paper-ink">{c.saveDC}</span>
+                      </React.Fragment>
+                    ))}
+                  </span>
+                ) : (
+                  shownCasters.map((c) => <CasterSummary key={c.id} character={character} caster={c} />)
+                )
+              ) : (
+                <DifficultyEditor
+                  name={character.spellcastingDifficultyName ?? 'СЛ заклинаний'}
+                  value={character.spellcastingDifficultyValue ?? 10}
+                  onSave={(spellcastingDifficultyName, spellcastingDifficultyValue) =>
+                    updateCharacter((doc) => ({ ...doc, spellcastingDifficultyName, spellcastingDifficultyValue }))
+                  }
+                />
+              )}
               {/* Only the prepared: the mark a prepared spell carries in the book. */}
               <button
                 type="button"
@@ -330,7 +350,7 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
           }
           className="min-h-0"
           addLabel="Добавить заклинание"
-          onAdd={() => dialogs.open({ kind: 'spell' })}
+          onAdd={() => (hasCatalog ? setCatalogOpen(true) : dialogs.open({ kind: 'spell' }))}
         >
           {groups.map((group) => (
             <React.Fragment key={group.level}>
@@ -368,6 +388,7 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
                     meta={
                       <MetaLine
                         parts={[
+                          several && caster === 'all' && casters.find((c) => c.id === spell.caster)?.name,
                           spell.school,
                           spell.castingTime || ACTION_TYPES[spell.actionType].short,
                           spell.range,
@@ -379,10 +400,20 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
                     selected={dialogs.isSelected('spell', spell.id)}
                     onOpen={() => dialogs.openEntry('spell', spell.id)}
                     action={
-                      spell.prepared && (
-                        <Button size="row" variant="secondary" onClick={() => cast(spell)}>
-                          Сотворить
-                        </Button>
+                      (spell.prepared || (spell.ritual && character.ritualsFromBook)) && (
+                        <span className="flex gap-1.5">
+                          {/* A ritual takes no slot; a Wizard's comes straight from the book. */}
+                          {spell.ritual && (
+                            <Button size="row" variant="ghost" onClick={() => acts.ritual(spell)} title="Без ячейки, на 10 минут дольше">
+                              Ритуал
+                            </Button>
+                          )}
+                          {spell.prepared && (
+                            <Button size="row" variant="secondary" onClick={() => cast(spell)}>
+                              Сотворить
+                            </Button>
+                          )}
+                        </span>
                       )
                     }
                   />
@@ -396,11 +427,20 @@ export const MagicSection: React.FC<{ character: Character }> = ({ character }) 
             </li>
           )}
         </Ledger>
-        {narrow && <CastingInfo character={character} below />}
+        {catalogOpen && (
+          <SpellCatalogDialog
+            open
+            onClose={() => setCatalogOpen(false)}
+            onOwn={() => {
+              setCatalogOpen(false);
+              dialogs.open({ kind: 'spell' });
+            }}
+          />
+        )}
+        {!character.build && <StudiedSchools character={character} />}
+        <SectionNotes value={character.spellsNotes} onSave={saveText('spellsNotes')} className="mt-8" />
       </SectionList>
-
-      {/* What the book is cast with sits beside it, or under it when the room is narrow. */}
-      <SectionAside width={narrow ? 0 : 270}>{!narrow && <CastingInfo character={character} />}</SectionAside>
+      <SectionAside fit />
     </div>
   );
 };

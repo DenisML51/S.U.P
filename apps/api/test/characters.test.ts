@@ -150,6 +150,9 @@ describe('sync', () => {
 
     expect((await pull(second.cursor)).items).toEqual([]);
     expect((await pull(second.cursor)).cursor).toBe(second.cursor);
+    // The account's newest change, whatever cursor was asked for.
+    expect((await pull('0')).latest).toBe(second.cursor);
+    expect((await pull('999')).latest).toBe(second.cursor);
   });
 
   it('reports deletions as tombstones without data', async () => {

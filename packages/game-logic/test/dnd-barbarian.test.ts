@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
-import { armorClassOf, startingSkills } from '../src';
+import { armorClassOf, speedOf, startingSkills } from '../src';
 import { DND, applyBuild, createDndHero, levelPlan, setPicks } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -48,19 +48,19 @@ describe('Barbarian', () => {
   });
 
   it('offers two melee weapon masteries at level 1 and one more at 4 and 10', () => {
-    const plan = levelPlan(build(), 1);
+    const plan = levelPlan(atLevel(build(), 1), 1);
     const mastery = plan.choices.find((c) => c.key === 'class:barbarian.weapon-mastery/mastery')!;
     expect(mastery.count).toBe(2);
     expect(mastery.choice.pool).toBe('weapon-mastery');
-    expect(levelPlan(build({ level: 4 }), 4).choices.some((c) => c.choice.pool === 'weapon-mastery' && c.count === 1)).toBe(true);
-    expect(levelPlan(build({ level: 10 }), 10).choices.some((c) => c.choice.pool === 'weapon-mastery' && c.count === 1)).toBe(true);
-    expect(levelPlan(build({ level: 3 }), 3).choices.some((c) => c.key === 'class:barbarian.primal-knowledge/skill')).toBe(true);
+    expect(levelPlan(atLevel(build({ level: 4 }), 4), 4).choices.some((c) => c.choice.pool === 'weapon-mastery' && c.count === 1)).toBe(true);
+    expect(levelPlan(atLevel(build({ level: 10 }), 10), 10).choices.some((c) => c.choice.pool === 'weapon-mastery' && c.count === 1)).toBe(true);
+    expect(levelPlan(atLevel(build({ level: 3 }), 3), 3).choices.some((c) => c.key === 'class:barbarian.primal-knowledge/skill')).toBe(true);
   });
 
   it('grows rage uses, speed, Brutal Strike and the capstone with level', () => {
     const rage = (level: number) => apply(build({ level })).resources.find((r) => r.id === 'barbarian.rage')?.max;
     expect([1, 3, 6, 12, 17].map(rage)).toEqual([2, 3, 4, 5, 6]);
-    expect(apply(build({ level: 5 })).speed).toBe(40);
+    expect(speedOf(apply(build({ level: 5 })))).toBe(40);
     expect(ability(apply(build({ level: 9 })), 'Жестокий удар')?.damage).toBe('1d10');
     expect(ability(apply(build({ level: 17 })), 'Жестокий удар')?.damage).toBe('2d10');
     const twenty = apply(build({ level: 20 }));
@@ -82,7 +82,7 @@ describe('Barbarian', () => {
 
   it('lets a Wild Heart barbarian pick an aspect and cast its rituals with Wisdom', () => {
     let b = build({ subclass: 'path-of-the-wild-heart', level: 6 });
-    const aspect = levelPlan(b, 6).choices.find((c) => c.key === 'subclass:wild-heart.aspect-of-the-wilds/aspect')!;
+    const aspect = levelPlan(atLevel(b, 6), 6).choices.find((c) => c.key === 'subclass:wild-heart.aspect-of-the-wilds/aspect')!;
     expect(aspect).toBeDefined();
     b = setPicks(b, aspect.key, ['owl']);
     const c = apply(b);

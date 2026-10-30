@@ -44,6 +44,7 @@ import { useCocSelection } from './details';
 import { CharacteristicsGrid, DerivedStrip, ModsNote, RollModsBar, SkillList } from './parts';
 import { ItemDialog, PickerDialog, type PickOption } from './picker';
 import { addCondition, isSanitySpec, parseCashInput, setAssets } from './sheetRules';
+import { locale, tIn } from '../../i18n';
 
 /** "Add" under a list: a quiet button that opens the dialog to pick from. */
 const AddButton: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
@@ -412,20 +413,22 @@ const RegainSanity: React.FC = () => {
     setReason('');
   };
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    // On a phone: the amount beside the reason, the button across the width under them.
+    <div className="flex flex-wrap items-center gap-2 [&>button]:shrink-0 max-sm:grid max-sm:grid-cols-[auto_minmax(0,1fr)]">
       <NumberField label="Сколько восстановить" value={amount} min={1} max={99} onChange={setAmount} className="w-20" />
       <Input
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder="За что: лечение, победа над ужасом…"
         aria-label="Причина восстановления рассудка"
-        className="!h-9 min-w-0 flex-1"
+        className="!h-9 min-w-[10rem] flex-1 max-sm:min-w-0"
       />
       <Button
         size="sm"
         disabled={room === 0}
         onClick={regain}
         title={room === 0 ? `Рассудок уже на пределе (${max})` : `Не выше ${max} (99 − Мифы Ктулху)`}
+        className="max-sm:col-span-2"
       >
         Восстановить
       </Button>
@@ -464,7 +467,7 @@ export const SanitySection: React.FC = () => {
             </span>
           </div>
           <div className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-end gap-2">
+            <div className="flex flex-wrap items-end gap-2 max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_6rem]">
               <Input
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
@@ -483,6 +486,7 @@ export const SanitySection: React.FC = () => {
               />
               <Button
                 variant="primary"
+                className="max-sm:col-span-2"
                 disabled={!specOk}
                 onClick={() => sanityRoll(source.trim() || 'Проверка рассудка', spec.replace(/\s/g, ''))}
               >
@@ -495,7 +499,7 @@ export const SanitySection: React.FC = () => {
               </p>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 [&>button]:shrink-0 max-sm:grid max-sm:grid-cols-2">
             <Button
               size="sm"
               onClick={() => update(startDay, { message: 'Начался новый день', type: 'sanity' })}
@@ -504,6 +508,7 @@ export const SanitySection: React.FC = () => {
             </Button>
             <Button
               size="sm"
+              className="max-sm:order-1 max-sm:col-span-2"
               onClick={() => rollModded({ label: 'Мифы Ктулху', value: mythos, kind: 'skill', id: 'cthulhu-mythos' })}
             >
               Бросок Мифов ({mythos})
@@ -611,7 +616,7 @@ const MagicPanel: React.FC = () => {
         aside={
           <span className="flex items-center gap-2">
             ПМ <b className="tabular-nums">{coc.magicPoints}</b> / {maxMP}
-            <Button size="row" variant="ghost" onClick={() => update(changeMagic(-1))} aria-label="Магия: −1">
+            <Button size="row" variant="ghost" onClick={() => update(changeMagic(-1))} aria-label={`${tIn('ui', 'Магия')}: −1`}>
               −1
             </Button>
             <Button
@@ -619,7 +624,7 @@ const MagicPanel: React.FC = () => {
               variant="ghost"
               onClick={() => update(changeMagic(1))}
               title="Магия восстанавливается по 1 ПМ в час"
-              aria-label="Магия: +1"
+              aria-label={`${tIn('ui', 'Магия')}: +1`}
             >
               +1
             </Button>
@@ -753,7 +758,7 @@ export const GearSection: React.FC = () => {
             {credit} · {wealth.label}
           </span>
           <span className="text-ink-muted">Расходы в день</span>
-          <span className="text-right">${wealth.spendingLevel.toLocaleString('ru-RU')}</span>
+          <span className="text-right">${wealth.spendingLevel.toLocaleString(locale)}</span>
           <label className="text-ink-muted" htmlFor="coc-cash">
             Наличные, $
           </label>

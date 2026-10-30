@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DndBuild, Character } from '@itd/schema';
+import { CharacterSchema, type DndBuild, type Character } from '@itd/schema';
 import {
   armorClassOf,
   initiativeModifier,
@@ -17,11 +17,11 @@ import {
   weaponProficient,
   DND,
 } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
 /** Engine mechanics shared by the classes: replacing picks, catalogs, attacks, armour without armour. */
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -43,23 +43,23 @@ describe('replacing picks on a level-up', () => {
     build({ subclass: 'battle-master', level, choices: { 'subclass:battle-master.combat-superiority/maneuvers': ['maneuver.ambush', 'maneuver.bait-and-switch', 'maneuver.riposte'], ...choices } });
 
   it('offers to give up one maneuver from level 4 on, without requiring it', () => {
-    expect(levelPlan(master(3), 3).choices.some((c) => c.key.startsWith('swap:'))).toBe(false);
-    const plan = levelPlan(master(4), 4);
+    expect(levelPlan(atLevel(master(3), 3), 3).choices.some((c) => c.key.startsWith('swap:'))).toBe(false);
+    const plan = levelPlan(atLevel(master(4), 4), 4);
     const forget = plan.choices.find((c) => c.key === 'swap:maneuvers@4/forget');
     expect(forget?.choice.optional).toBe(true);
     expect(unfinishedChoices(master(4), plan).some((c) => c.key === forget?.key)).toBe(false);
-    expect(choiceOptions(master(4), 4, forget!).map((o) => o.id).sort()).toEqual(['maneuver.ambush', 'maneuver.bait-and-switch', 'maneuver.riposte']);
+    expect(choiceOptions(atLevel(master(4), 4), 4, forget!).map((o) => o.id).sort()).toEqual(['maneuver.ambush', 'maneuver.bait-and-switch', 'maneuver.riposte']);
     // Nothing given up: no replacement asked for.
     expect(plan.choices.some((c) => c.key === 'swap:maneuvers@4/learn')).toBe(false);
   });
 
   it('drops the given-up maneuver and asks for its replacement', () => {
     let b = setPicks(master(4), 'swap:maneuvers@4/forget', ['maneuver.riposte']);
-    const learn = levelPlan(b, 4).choices.find((c) => c.key === 'swap:maneuvers@4/learn')!;
+    const learn = levelPlan(atLevel(b, 4), 4).choices.find((c) => c.key === 'swap:maneuvers@4/learn')!;
     expect(learn.count).toBe(1);
-    const options = choiceOptions(b, 4, learn);
+    const options = choiceOptions(atLevel(b, 4), 4, learn);
     expect(options.find((o) => o.id === 'maneuver.ambush')?.disabled).toBeTruthy();
-    expect(unfinishedChoices(b, levelPlan(b, 4)).some((c) => c.key === learn.key)).toBe(true);
+    expect(unfinishedChoices(b, levelPlan(atLevel(b, 4), 4)).some((c) => c.key === learn.key)).toBe(true);
 
     b = setPicks(b, learn.key, ['maneuver.parry']);
     const ids = collect(b).features.map((f) => f.feature.id);
@@ -73,12 +73,12 @@ describe('replacing picks on a level-up', () => {
       subclass: 'eldritch-knight',
       level: 4,
       baseAttributes: { strength: 15, dexterity: 12, constitution: 14, intelligence: 14, wisdom: 10, charisma: 8 },
-      choices: { 'casting:spells-3/spells': ['shield', 'magic-missile', 'sleep'], 'casting:spells-3/cantrips': ['fire-bolt', 'light'] },
+      choices: { 'casting:fighter.spells-3/spells': ['shield', 'magic-missile', 'sleep'], 'casting:fighter.spells-3/cantrips': ['fire-bolt', 'light'] },
     });
-    const plan = levelPlan(b, 4);
-    expect(plan.choices.some((c) => c.key === 'swap:known-spells@4/forget')).toBe(true);
-    expect(plan.choices.some((c) => c.key === 'swap:known-cantrips@4/forget')).toBe(true);
-    const swapped = setPicks(setPicks(b, 'swap:known-spells@4/forget', ['sleep']), 'swap:known-spells@4/learn', ['thunderwave']);
+    const plan = levelPlan(atLevel(b, 4), 4);
+    expect(plan.choices.some((c) => c.key === 'swap:fighter.known-spells@4/forget')).toBe(true);
+    expect(plan.choices.some((c) => c.key === 'swap:fighter.known-cantrips@4/forget')).toBe(true);
+    const swapped = setPicks(setPicks(b, 'swap:fighter.known-spells@4/forget', ['sleep']), 'swap:fighter.known-spells@4/learn', ['thunderwave']);
     const spells = apply(swapped).spells.map((s) => s.id);
     expect(spells).toContain('spell-thunderwave');
     expect(spells).not.toContain('spell-sleep');
@@ -99,10 +99,24 @@ describe('weapon attacks of a preset hero', () => {
 describe('sheet rules the presets rely on', () => {
   it('derives Unarmored Defense and loses it to a shield when the feature says so', () => {
     const base = makeCharacter({ attributes: { dexterity: 14, wisdom: 16, constitution: 10 } });
-    const monk = { ...base, armorClassBonus: { always: 0, armored: 0, unarmored: 'wisdom', unarmoredNoShield: true } };
+    const monk = { ...base, armorClassBonus: { always: 0, armored: 0, unarmored: [{ attribute: 'wisdom', noShield: true }] } };
     expect(armorClassOf(monk)).toBe(10 + 2 + 3);
     const shield = { id: 's', name: 'Щит', type: 'armor' as const, equipped: true, weight: 6, cost: 10, description: '' };
     expect(armorClassOf({ ...monk, inventory: [shield] })).toBe(10 + 2 + 2);
+  });
+
+  it('counts one way of unarmoured armour class at a time: the best a shield leaves', () => {
+    // A monk-barbarian: Wisdom 16 (+3) without a shield, Constitution 14 (+2) with one.
+    const base = makeCharacter({ attributes: { dexterity: 14, wisdom: 16, constitution: 14 } });
+    const both = { ...base, armorClassBonus: { always: 0, armored: 0, unarmored: [{ attribute: 'constitution' }, { attribute: 'wisdom', noShield: true }] } };
+    expect(armorClassOf(both)).toBe(10 + 2 + 3);
+    const shield = { id: 's', name: 'Щит', type: 'armor' as const, equipped: true, weight: 6, cost: 10, description: '' };
+    expect(armorClassOf({ ...both, inventory: [shield] })).toBe(10 + 2 + 2 + 2);
+  });
+
+  it('reads the one unarmoured ability of a sheet saved before there could be several', () => {
+    const saved = CharacterSchema.parse({ ...makeCharacter(), armorClassBonus: { always: 0, armored: 0, unarmored: 'wisdom', unarmoredNoShield: true } });
+    expect(saved.armorClassBonus).toEqual({ always: 0, armored: 0, unarmored: [{ attribute: 'wisdom', noShield: true }] });
   });
 
   it('adds half proficiency to unproficient checks and initiative, and flat skill bonuses', () => {
@@ -148,10 +162,10 @@ describe('wizard spellbook', () => {
       level: 18,
       baseAttributes: { strength: 8, dexterity: 14, constitution: 14, intelligence: 15, wisdom: 12, charisma: 10 },
       backgroundBonuses: { intelligence: 2, constitution: 1 },
-      choices: { 'casting:spells-1/spellbook': ['shield', 'magic-missile', 'sleep', 'detect-magic', 'mage-armor', 'thunderwave'] },
+      choices: { 'casting:wizard.spells-1/spellbook': ['shield', 'magic-missile', 'sleep', 'detect-magic', 'mage-armor', 'thunderwave'] },
     });
     const open = collect(b).choices.find((c) => c.key.endsWith('wizard.spell-mastery/first'))!;
-    const options = choiceOptions(b, 18, open);
+    const options = choiceOptions(atLevel(b, 18), 18, open);
     expect(options.map((o) => o.id).sort()).toEqual(['detect-magic', 'mage-armor', 'magic-missile', 'shield', 'sleep', 'thunderwave']);
     expect(options.every((o) => !o.disabled)).toBe(true);
   });

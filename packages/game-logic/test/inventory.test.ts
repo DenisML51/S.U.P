@@ -181,7 +181,9 @@ describe('equipping', () => {
     expect(twice.attacks).toHaveLength(1);
     expect(twice.attacks[0]).toMatchObject({
       id: weaponAttackId('bow'),
-      damage: '1d8',
+      // Dexterity 16 (+3) and proficiency +2.
+      damage: '1d8 + 3',
+      hitBonus: 5,
       damageType: 'Колющий',
       usesAmmunition: true,
       attribute: 'dexterity',

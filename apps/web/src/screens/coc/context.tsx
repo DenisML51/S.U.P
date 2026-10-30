@@ -19,6 +19,7 @@ import {
   SUCCESS_LABELS,
   addMadness,
   afterIntRoll,
+  afterWoundRoll,
   afterSkillRoll,
   checkSkill,
   cocCharacteristics,
@@ -36,6 +37,7 @@ import {
 } from '@itd/game-logic/coc';
 import type { Character, TableDie } from '@itd/schema';
 import { announceRoll } from '../../store/useTableRollStore';
+import { diceToast } from '../../ui/Toasts';
 import { NO_MODS, diceOnly, modsAfterRoll, modsToRoll, type RollMods } from './sheetRules';
 import { rollVerdictOf, type RollVerdict } from './verdict';
 
@@ -262,7 +264,7 @@ export function percentileDice(check: Pick<SkillCheck, 'tens' | 'units' | 'total
 }
 
 /** The one toast that carries the latest roll; a new roll or a follow-up replaces its content. */
-const ROLL_TOAST = 'coc-roll';
+const ROLL_TOAST = diceToast('coc').id;
 
 const tickFor = (request: RollRequest) =>
   request.skill ?? (request.kind === 'skill' ? request.id : undefined);
@@ -347,6 +349,8 @@ export const CocSheetProvider: React.FC<{
       update(
         (doc) => {
           const edited = skill ? afterSkillRoll(skill, next.check)(doc) : doc;
+          // A wound's CON roll decides: unconscious after a major wound, dead while dying.
+          if (request.combat === 'wound') return afterWoundRoll(next.check.success)(edited);
           return request.kind === 'int' ? afterIntRoll(next.check.success)(edited) : edited;
         },
         { message: describe(next), type: 'other' },
@@ -605,8 +609,7 @@ export const CocSheetProvider: React.FC<{
     if (!last || !renderRoll || shown.current === last) return;
     shown.current = last;
     toast(() => <ApiStoreContext.Provider value={store}>{renderRoll(last)}</ApiStoreContext.Provider>, {
-      id: ROLL_TOAST,
-      duration: Infinity,
+      ...diceToast('coc'),
     });
   }, [last, renderRoll, store]);
   useEffect(() => () => toast.dismiss(ROLL_TOAST), []);

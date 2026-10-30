@@ -21,15 +21,15 @@ export const Companions: React.FC<{ party: PartyDto; userId: string | undefined 
       {others.length === 0 ? (
         <p className="mt-4 text-sm text-ink-muted">Пока за столом только вы — остальные герои появятся здесь.</p>
       ) : (
-        <ul className="mt-5 flex flex-wrap gap-8">
+        <ul className="mt-5 flex flex-wrap gap-8 max-sm:grid max-sm:grid-cols-2 max-sm:gap-4">
           {others.map((hero, index) => (
             <motion.li
               key={hero.id}
-              className="flex w-40 flex-col items-center gap-2 text-center"
+              className="flex w-40 flex-col items-center gap-2 text-center max-sm:w-auto"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0, transition: { delay: 0.05 * index } }}
             >
-              <span className="ui-companion relative block h-40 w-40 overflow-hidden">
+              <span className="ui-companion relative block h-40 w-40 overflow-hidden max-sm:aspect-square max-sm:h-auto max-sm:w-full">
                 <CharacterArt source={art(hero)} kind="portrait" className="h-full w-full" />
                 <HeroRoll partyId={party.id} heroId={hero.id} />
                 <Corners />
@@ -77,7 +77,7 @@ export const MyHero: React.FC<{
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-frame-bright/80">Ваш герой</div>
           <div className="ui-display mt-1 truncate text-[1.6rem] leading-tight text-ink">{hero.name}</div>
-          <div className="truncate text-xs text-ink-muted">{[origin.calling || origin.race, !vitals?.coc && `${hero.level} ур.`].filter(Boolean).join(' · ')}</div>
+          <div className="truncate text-xs text-ink-muted">{origin.calling || origin.race}{!vitals?.coc && <>{(origin.calling || origin.race) && ' · '}{`${hero.level} ур.`}</>}</div>
         </div>
         {vitals && (
           <div className="flex items-center gap-3">

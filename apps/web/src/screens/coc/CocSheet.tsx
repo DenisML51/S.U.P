@@ -13,9 +13,11 @@ import {
   occupationDef,
   setLuck,
   stabilise,
+  stabilisationLapses,
+  treatWithMedicine,
   weeklyRecovery,
 } from '@itd/game-logic/coc';
-import { maxSanityOf } from '@itd/game-logic';
+import { maxSanityOf, rollDie } from '@itd/game-logic';
 import { useNavStore } from '../../store/useNavStore';
 import { CharacterArt } from '../../ui/CharacterArt';
 import { Rail, RailButton, RailDivider } from '../../ui/Rail';
@@ -23,6 +25,7 @@ import { HeroExits } from '../sheet/HeroExits';
 import { Button, IconButton, cx } from '../../ui/primitives';
 import { useAtLeast } from '../../ui/useBreakpoint';
 import { NumberField } from '../../ui/forms';
+import { useToastOffset } from '../../ui/Toasts';
 import {
   IconAttacks,
   IconAttributes,
@@ -44,6 +47,7 @@ import { Track } from './parts';
 import { CocDetailsLayout, CocSelectionProvider, useCocSelection } from './details';
 import { GearSection, InvestigatorSection, SanitySection, StorySection, WeaponsSection } from './sections';
 import './coc.css';
+import { tIn } from '../../i18n';
 
 export type CocSection = 'investigator' | 'weapons' | 'sanity' | 'gear' | 'story' | 'journal';
 
@@ -52,7 +56,7 @@ const SECTIONS: { id: CocSection; label: string; Icon: React.FC<React.SVGProps<S
   { id: 'weapons', label: 'Оружие', Icon: IconAttacks },
   { id: 'sanity', label: 'Рассудок', Icon: IconSanity },
   { id: 'gear', label: 'Вещи', Icon: IconInventory },
-  { id: 'story', label: 'История', Icon: IconCharacter },
+  { id: 'story', label: tIn('ui', 'История'), Icon: IconCharacter },
   { id: 'journal', label: 'Журнал', Icon: IconHistory },
 ];
 
@@ -147,7 +151,7 @@ const InvestigatorColumn: React.FC<{
       <div className="ui-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-3">
         <FollowUpBanners />
         <Track label="Хиты" value={character.currentHP} max={character.maxHP} tone="hp" />
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 max-lg:[&>button]:flex-1">
           <NumberField
             label="Сколько"
             value={amount}
@@ -170,7 +174,7 @@ const InvestigatorColumn: React.FC<{
             Лечение
           </Button>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 max-lg:[&>button]:flex-1">
           <span className="text-sm text-ink-muted">Броня</span>
           <NumberField
             label="Броня"
@@ -185,12 +189,35 @@ const InvestigatorColumn: React.FC<{
               size="sm"
               variant="primary"
               onClick={() =>
-                update(stabilise, { message: 'Первая помощь: состояние стабильно, +1 хит', type: 'health' })
+                update(stabilise, { message: 'Первая помощь: стабилизирован на час, +1 хит', type: 'health' })
               }
-              title="Успешная первая помощь при смерти: +1 хит, жизнь вне опасности на час"
+              title="Успешная первая помощь при смерти: +1 хит и час; за этот час нужна Медицина"
             >
               Первая помощь
             </Button>
+          )}
+          {/* The hour First Aid bought: Medicine saves, without it the investigator is dying again. */}
+          {has(CONDITION_IDS.stabilised) && (
+            <>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => {
+                  const amount = rollDie(3);
+                  update(treatWithMedicine(amount), { message: `Медицина: опасность миновала, +${amount} хит.`, type: 'health' });
+                }}
+                title="Успешная Медицина в течение часа: +1d3 хита, опасность миновала"
+              >
+                Медицина
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => update(stabilisationLapses, { message: 'Час без медицины: снова при смерти', type: 'health' })}
+              >
+                Час без медицины
+              </Button>
+            </>
           )}
           {majorWound ? (
             <Button
@@ -212,7 +239,7 @@ const InvestigatorColumn: React.FC<{
           )}
         </div>
         <Track
-          label="Магия"
+          label={tIn('ui', 'Магия')}
           value={coc.magicPoints}
           max={maxMP}
           tone="accent"
@@ -413,6 +440,8 @@ const NarrowLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
   const { close } = useCocSelection();
   const [section, setSection] = useState<CocSection>('investigator');
   const [drawer, setDrawer] = useState(false);
+  // Messages rise above the tabs along the bottom.
+  useToastOffset('calc(4.75rem + env(safe-area-inset-bottom))');
   const stage = madnessStage(character);
   const atTable = useNavStore((s) => s.place.screen === 'party');
   const coc = character.coc!;
@@ -458,11 +487,14 @@ const NarrowLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
               {character.name}
             </span>
             <span className="flex gap-3 overflow-hidden whitespace-nowrap text-xs tabular-nums text-ink-muted">
-              <span>
-                хиты <b className="font-normal text-hp">{character.currentHP}</b>/{character.maxHP}
+              {/* On a phone the colours say which is which: the words would push the sanity out. */}
+              <span title="Хиты">
+                <span className="max-sm:hidden">хиты </span>
+                <b className="font-normal text-hp">{character.currentHP}</b>/{character.maxHP}
               </span>
-              <span>
-                рассудок <b className="font-normal text-sanity">{character.sanity}</b>
+              <span title="Рассудок">
+                <span className="max-sm:hidden">рассудок </span>
+                <b className="font-normal text-sanity">{character.sanity}</b>/{maxSanityOf(character)}
               </span>
               <span className="max-sm:hidden">
                 магия <b className="font-normal text-accent">{coc.magicPoints}</b>/{maxMP}
@@ -498,7 +530,7 @@ const NarrowLayout: React.FC<React.ComponentProps<typeof CocSheetView>> = ({
         </CocDetailsLayout>
       </main>
 
-      <nav className="ui-rail coc-tabbar grid shrink-0 grid-cols-6" aria-label="Разделы листа">
+      <nav className="ui-rail ui-tabbar grid shrink-0 grid-cols-6" aria-label="Разделы листа">
         {SECTIONS.map(({ id, label, Icon }) => (
           <RailButton
             key={id}

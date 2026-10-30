@@ -1,11 +1,12 @@
 import React from 'react';
 import { DAMAGE_COLORS } from '@itd/game-logic';
+import { DIE } from '../i18n';
 import { cx } from './primitives';
 
-/** Dice written for people: `2d8+3` → `2к8 + 3`. */
+/** Dice written for people: `2d8+3` → `2к8 + 3` (in English, `2d8 + 3`). */
 export const readableDice = (formula: string) =>
   formula
-    .replace(/(\d*)d(\d+)/gi, '$1к$2')
+    .replace(/(\d*)d(\d+)/gi, `$1${DIE}$2`)
     .replace(/\+/g, ' + ')
     .replace(/(\d)-(\d)/g, '$1 − $2');
 
@@ -19,12 +20,14 @@ export const DamageBlock: React.FC<{
   hit?: string | null;
   /** "+1к6 за каждый круг ячейки выше 3-го". */
   growth?: string | null;
+  /** Without the setting's plate around it: a line inside something framed already (a choice of slot). */
+  plain?: boolean;
   className?: string;
-}> = ({ parts, hit, growth, className }) => {
+}> = ({ parts, hit, growth, plain = false, className }) => {
   if (parts.length === 0 && !hit) return null;
   const healing = parts.length > 0 && parts.every((p) => p.type === 'Лечение');
   return (
-    <div className={cx('ui-damage-block', className)}>
+    <div className={cx(!plain && 'ui-damage-block', className)}>
       {parts.length > 0 && (
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="text-[11px] uppercase tracking-[0.16em] text-ink-faint">{healing ? 'Лечение' : 'Урон'}</span>

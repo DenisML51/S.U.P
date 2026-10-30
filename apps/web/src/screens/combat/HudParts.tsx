@@ -5,14 +5,23 @@ import {
   ACTION_SLOTS,
   CONDITIONS,
   actionLimitsOf,
+  activeFeaturesOf,
+  activeFormOf,
   armorClassOf,
+  attacksPerActionOf,
   experienceProgress,
   formatModifier,
   initiativeModifier,
+  isDead,
+  isStable,
   isStackable,
   itemQuantity,
   maxSanityOf,
+  rollsDeathSaves,
   setActionLimit,
+  speedHint,
+  speedOf,
+  strikesLeft,
   setSpentActions,
   spentActionsOf,
   totalCopper,
@@ -27,11 +36,15 @@ import { NumberField } from '../../ui/forms';
 import { CONDITION_ICONS, CatalogIcon, GameIcon } from '../../ui/GameIcon';
 import { Panel, cx } from '../../ui/primitives';
 import { LevelReady } from '../../ui/ornaments';
-import { IconAmmunition, IconCoins } from '../../ui/icons';
-import { useEndConcentration } from '../sheet/Concentration';
+import { IconAdvantage, IconAmmunition, IconCoins, IconDisadvantage } from '../../ui/icons';
+import { useEndConcentration, useEndFeature } from '../sheet/Concentration';
+import { useRollMode } from '../sheet/RollMode';
+import { SaveMark } from '../sheet/parts/DeathSaves';
 import { useSheetDialogs } from '../sheet/dialogs/context';
 import { ActionShape } from './Hotbar';
-import { HudTip, below, useHudTip, type TipBinding } from './HudTip';
+import { longPress } from '../../ui/longPress';
+import { HudTip, below, useHudTip, useTouchHud, type TipBinding } from './HudTip';
+import { locale } from '../../i18n';
 
 interface Hint {
   key: string;
@@ -73,11 +86,13 @@ const VitalBar: React.FC<{
   value: number;
   max: number;
   extra?: number;
+  /** Part of the maximum lost until a rest (a Vital Sacrifice), struck out at the top. */
+  lost?: number;
   tone: 'hp' | 'sanity';
   onClick: () => void;
   hint: TipBinding;
-}> = ({ label, value, max, extra = 0, tone, onClick, hint }) => {
-  const share = (n: number) => `${Math.max(0, Math.min(100, (n / Math.max(max, 1)) * 100))}%`;
+}> = ({ label, value, max, extra = 0, lost = 0, tone, onClick, hint }) => {
+  const share = (n: number) => `${Math.max(0, Math.min(100, (n / Math.max(max + lost, 1)) * 100))}%`;
   const low = value <= 0 || value / Math.max(max, 1) < 0.25;
   return (
     <button
@@ -102,23 +117,29 @@ const VitalBar: React.FC<{
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
           />
         )}
+        {lost > 0 && <span className="ui-vbar__lost" style={{ height: share(lost) }} />}
       </span>
       <span className="ui-vbar__label">{label}</span>
       <span className="ui-vbar__value">
         {value}
         {extra > 0 && <span className="mb-0.5 text-[0.7rem] text-temp-hp">+{extra}</span>}
+        {lost > 0 && <span className="mb-0.5 text-[0.7rem] text-danger">−{lost}</span>}
       </span>
     </button>
   );
 };
 
-export const VitalBars: React.FC<{ character: Character }> = ({ character }) => {
+/**
+ * Sanity and health side by side; given `between` (the portrait on a narrow screen), they stand on
+ * either side of it instead.
+ */
+export const VitalBars: React.FC<{ character: Character; between?: React.ReactNode }> = ({ character, between }) => {
   const dialogs = useSheetDialogs();
   const { bind, view } = useHint();
   const maxHP = totalMaxHP(character);
   const maxSanity = maxSanityOf(character);
   return (
-    <div className="flex gap-2.5">
+    <div className={cx('flex', between ? 'items-end justify-center gap-3' : 'gap-2.5')}>
       <VitalBar
         label="Рассудок"
         value={character.sanity}
@@ -131,11 +152,13 @@ export const VitalBars: React.FC<{ character: Character }> = ({ character }) => 
           lines: [`${character.sanity} / ${maxSanity}`, 'Нажмите, чтобы изменить'],
         })}
       />
+      {between}
       <VitalBar
         label="Здоровье"
         value={character.currentHP}
         max={maxHP}
         extra={character.tempHP}
+        lost={character.maxHPReduction}
         tone="hp"
         onClick={() => dialogs.open({ kind: 'health' })}
         hint={bind({
@@ -143,6 +166,7 @@ export const VitalBars: React.FC<{ character: Character }> = ({ character }) => 
           title: 'Здоровье',
           lines: [
             `${character.currentHP} / ${maxHP}${character.tempHP > 0 ? ` · временные ${character.tempHP}` : ''}`,
+            ...(character.maxHPReduction ? [`Максимум снижен на ${character.maxHPReduction} до продолжительного отдыха`] : []),
             'Нажмите: урон и лечение',
           ],
         })}
@@ -198,6 +222,8 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
   const dialogs = useSheetDialogs();
   const { bind, view } = useHint();
   const endConcentration = useEndConcentration();
+  const endFeature = useEndFeature();
+  const form = activeFormOf(character);
   const down = character.currentHP <= 0;
   const conditions = character.conditions.map((id) => ({ id, condition: CONDITIONS.find((c) => c.id === id) }));
   const shown = conditions.slice(0, CONDITIONS_SHOWN);
@@ -241,7 +267,7 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
               {...bind({
                 key: `c:${id}`,
                 title: condition?.name ?? id,
-                lines: [condition?.description ?? '', 'Нажмите: тело и состояния'],
+                lines: ['Нажмите: тело и состояния'],
               })}
             >
               <CatalogIcon id={CONDITION_ICONS[id] ?? 'terror'} size={16} />
@@ -263,23 +289,80 @@ export const Portrait: React.FC<{ character: Character }> = ({ character }) => {
           </button>
         )}
       </div>
-      {character.concentratingOn && (
-        <button
-          type="button"
-          onClick={() => endConcentration('по желанию')}
-          className="ui-hud-chip ui-hud-chip--mini absolute right-2 top-2"
-          style={{ color: 'rgb(var(--c-accent))', borderColor: 'rgb(var(--c-accent) / 0.6)' }}
-          aria-label={`Прекратить концентрацию: ${character.concentratingOn.name}`}
-          {...bind({
-            key: 'concentration',
-            title: `Концентрация: ${character.concentratingOn.name}`,
-            lines: ['Урон требует спасброска Телосложения', 'Нажмите, чтобы прекратить'],
-          })}
+      <div className="absolute right-2 top-2 flex flex-col gap-1">
+        {character.concentratingOn && (
+          <button
+            type="button"
+            onClick={() => endConcentration('по желанию')}
+            className="ui-hud-chip ui-hud-chip--mini"
+            style={{ color: 'rgb(var(--c-accent))', borderColor: 'rgb(var(--c-accent) / 0.6)' }}
+            aria-label={`Прекратить концентрацию: ${character.concentratingOn.name}`}
+            {...bind({
+              key: 'concentration',
+              title: `Концентрация: ${character.concentratingOn.name}`,
+              lines: ['Урон требует спасброска Телосложения', 'Нажмите, чтобы прекратить'],
+            })}
+          >
+            <CatalogIcon id="psychic-waves" size={16} />
+          </button>
+        )}
+        {activeFeaturesOf(character).map((ability) => (
+          <button
+            key={ability.id}
+            type="button"
+            onClick={() => endFeature(ability.id, ability.name)}
+            className="ui-hud-chip ui-hud-chip--mini"
+            style={{ color: 'rgb(var(--c-accent))', borderColor: 'rgb(var(--c-accent) / 0.6)' }}
+            aria-label={`Прекратить: ${ability.name}`}
+            {...bind({ key: `f:${ability.id}`, title: `Действует: ${ability.name}`, lines: ['Нажмите, чтобы прекратить'] })}
+          >
+            <GameIcon name={ability.iconName} kind="ability" size={16} />
+          </button>
+        ))}
+      </div>
+      {form && (
+        <span
+          className="ui-hud-portrait__form"
+          aria-label={form.name}
+          {...bind({ key: 'form', title: form.name, lines: ['Звериный облик: атаки зверя на панели', 'Прекратить — на портрете справа'] })}
         >
-          <CatalogIcon id="psychic-waves" size={16} />
-        </button>
+          <GameIcon name={form.iconName} kind="ability" size={22} />
+        </span>
       )}
       {character.tempHP > 0 && <span className="ui-hud-portrait__temp">+{character.tempHP}</span>}
+      {down && rollsDeathSaves(character) && (
+        <button
+          type="button"
+          onClick={() => dialogs.open({ kind: 'health' })}
+          className="ui-hud-chip absolute inset-x-2 bottom-2 !flex !h-7 !w-auto items-center justify-center gap-2 text-xs tabular-nums"
+          style={{ color: 'rgb(var(--c-danger))', borderColor: 'rgb(var(--c-danger) / 0.6)' }}
+          {...bind({
+            key: 'death-saves',
+            title: isDead(character) ? 'Погиб' : isStable(character) ? 'Стабилен' : 'Спасброски от смерти',
+            lines: [
+              `Успехов ${character.deathSaves?.successes ?? 0} из 3 · провалов ${character.deathSaves?.failures ?? 0} из 3`,
+              'Нажмите: бросок и отметки',
+            ],
+          })}
+        >
+          {isDead(character) ? (
+            'Погиб'
+          ) : (
+            <>
+              <span className="flex gap-0.5">
+                {[1, 2, 3].map((mark) => (
+                  <SaveMark key={mark} size={11} tone="success" on={mark <= (character.deathSaves?.successes ?? 0)} />
+                ))}
+              </span>
+              <span className="flex gap-0.5">
+                {[1, 2, 3].map((mark) => (
+                  <SaveMark key={mark} size={11} tone="danger" on={mark <= (character.deathSaves?.failures ?? 0)} />
+                ))}
+              </span>
+            </>
+          )}
+        </button>
+      )}
       {view}
     </div>
   );
@@ -290,6 +373,7 @@ export const ActionTokens: React.FC<{ character: Character }> = ({ character }) 
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const { bind, view } = useHint();
   const [editing, setEditing] = useState(false);
+  const touch = useTouchHud();
   const anchor = useRef<HTMLElement>(null);
   const limits = actionLimitsOf(character);
   const spent = spentActionsOf(character);
@@ -309,16 +393,16 @@ export const ActionTokens: React.FC<{ character: Character }> = ({ character }) 
                 key={i}
                 type="button"
                 onClick={() => toggle(slot, i)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  setEditing(true);
-                }}
+                {...longPress(() => setEditing(true))}
                 aria-pressed={used}
                 className={cx('ui-token', used && 'ui-token--spent')}
                 {...bind({
                   key: `${slot}:${i}`,
                   title: ACTION_TYPES[slot].label,
-                  lines: [used ? 'Потрачено' : 'Доступно', 'ЛКМ — отметить · ПКМ — сколько за ход'],
+                  lines: [
+                    used ? 'Потрачено' : 'Доступно',
+                    touch ? 'Нажать — отметить · удерживать — сколько за ход' : 'ЛКМ — отметить · ПКМ — сколько за ход',
+                  ],
                 })}
               >
                 <ActionShape type={slot} size={20} hollow={used} />
@@ -327,6 +411,22 @@ export const ActionTokens: React.FC<{ character: Character }> = ({ character }) 
           })}
         </div>
       ))}
+      {/* Extra Attack: attacks made of the Attack action taken, the rest free of a new action. */}
+      {(spent.strikes ?? 0) > 0 && attacksPerActionOf(character) > 1 && (
+        <span
+          className="ui-hud-chip !h-7 !w-auto px-2 text-xs tabular-nums"
+          {...bind({
+            key: 'strikes',
+            title: 'Действие «Атака»',
+            lines: [
+              `Атак: ${spent.strikes} из ${attacksPerActionOf(character)}`,
+              strikesLeft(character) > 0 ? 'Следующая атака — без нового действия' : 'Все атаки действия сделаны',
+            ],
+          })}
+        >
+          {spent.strikes}/{attacksPerActionOf(character)}
+        </span>
+      )}
       <Flyout anchor={anchor} open={editing} onClose={() => setEditing(false)}>
         <div className="mb-2 text-xs uppercase tracking-[0.16em] text-ink-muted">Действий за ход</div>
         <div className="grid grid-cols-3 gap-2">
@@ -361,6 +461,7 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
   const updateResourceCount = useCharacterStore((s) => s.updateResourceCount);
   const dialogs = useSheetDialogs();
   const { bind, view } = useHint();
+  const touch = useTouchHud();
   const [expanded, setExpanded] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   // Room to the right of the strip: the laid-out set grows that way, then upward in rows.
@@ -392,15 +493,15 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
       key={resource.id}
       type="button"
       onClick={() => updateResourceCount(resource.id, -1)}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        dialogs.open({ kind: 'resource', id: resource.id });
-      }}
+      {...longPress(() => dialogs.open({ kind: 'resource', id: resource.id }))}
       className={cx('ui-hud-chip', resource.current === 0 && 'ui-hud-chip--empty')}
       {...bind({
         key: resource.id,
         title: resource.name,
-        lines: [`${resource.current} / ${resource.max}`, 'ЛКМ — потратить · ПКМ — карточка'],
+        lines: [
+          `${resource.current} / ${resource.max}`,
+          touch ? 'Нажать — потратить · удерживать — карточка' : 'ЛКМ — потратить · ПКМ — карточка',
+        ],
       })}
     >
       <GameIcon name={resource.iconName} kind="resource" size={20} color={resource.color} />
@@ -439,7 +540,7 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
           key: 'coins',
           title: 'Кошелёк',
           lines: [
-            `${gold.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} зм`,
+            `${gold.toLocaleString(locale, { maximumFractionDigits: 2 })} зм`,
             'Нажмите: получить или потратить',
           ],
         })}
@@ -466,9 +567,9 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
   );
 
   return (
-    <div ref={box} className="relative">
+    <div ref={box} className="relative max-sm:w-full">
       {/* The bar keeps its place (and its width) while the full set lies over it. */}
-      <Panel className={cx('ui-hud-strip h-full', open && 'invisible')}>
+      <Panel className={cx('ui-hud-strip h-full max-sm:justify-center', open && 'invisible')}>
         {resources.slice(0, RESOURCES_SHOWN).map(tile)}
         {hiddenCount > 0 && toggle}
         {extras}
@@ -499,6 +600,40 @@ export const ResourceStrip: React.FC<{ character: Character }> = ({ character })
   );
 };
 
+/** Advantage or disadvantage on the next d20, as two pictures beside the fight's numbers. */
+const RollModeIcons: React.FC = () => {
+  const chosen = useRollMode((s) => s.chosen);
+  const choose = useRollMode((s) => s.choose);
+  const { bind, view } = useHint();
+  const options = [
+    { value: 'advantage', Icon: IconAdvantage, tone: 'success', title: 'С преимуществом', line: 'Следующий бросок к20 — два кубика, берётся больший' },
+    { value: 'disadvantage', Icon: IconDisadvantage, tone: 'danger', title: 'С помехой', line: 'Следующий бросок к20 — два кубика, берётся меньший' },
+  ] as const;
+  return (
+    <div role="group" aria-label="Следующий бросок к20" className="flex items-center gap-1 px-2">
+      {options.map(({ value, Icon, tone, title, line }) => {
+        const on = chosen === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={on}
+            aria-label={title}
+            onClick={() => choose(on ? null : value)}
+            // The setting's own chip, in the tone of the choice; lit while it waits for the roll.
+            className="ui-hud-chip ui-hud-chip--toggle"
+            style={{ '--chip-tone': `var(--c-${tone})` } as React.CSSProperties}
+            {...bind({ key: `mode:${value}`, title, lines: [line, on ? 'Нажмите, чтобы отменить' : 'Действует на один бросок'] })}
+          >
+            <Icon width={18} height={18} />
+          </button>
+        );
+      })}
+      {view}
+    </div>
+  );
+};
+
 /** The numbers a fight asks for: armour, initiative, proficiency, speed and spell difficulty. */
 export const CombatStats: React.FC<{
   character: Character;
@@ -507,6 +642,7 @@ export const CombatStats: React.FC<{
   onInitiative?: () => void;
 }> = ({ character, initiative, onInitiative }) => {
   const dialogs = useSheetDialogs();
+  const casters = character.casters ?? [];
   const stats: { label: string; value: React.ReactNode; onClick?: () => void; hint: string }[] = [
     {
       label: 'КБ',
@@ -521,15 +657,21 @@ export const CombatStats: React.FC<{
       hint: initiative !== null ? 'Выпавшая инициатива' : onInitiative ? 'Бросить инициативу и начать бой' : 'Модификатор инициативы',
     },
     { label: 'Мастер.', value: formatModifier(character.proficiencyBonus), hint: 'Бонус мастерства' },
-    { label: 'Скор.', value: character.speed, hint: 'Скорость, фт' },
+    {
+      label: 'Скор.',
+      value: speedOf(character),
+      hint: speedHint(character),
+    },
     {
       label: character.spellcastingDifficultyName || 'СЛ',
-      value: character.spellcastingDifficultyValue ?? '—',
-      hint: 'Сложность спасброска от ваших чар',
+      // A hero of several casting classes casts each class's spells with its own DC.
+      value: casters.length > 1 ? casters.map((c) => c.saveDC).join(' / ') : (character.spellcastingDifficultyValue ?? '—'),
+      hint: casters.length > 1 ? casters.map((c) => `${c.name}: ${c.saveDC}`).join(', ') : 'Сложность спасброска от ваших чар',
     },
   ];
   return (
-    <Panel className="ui-hud-strip !gap-0 divide-x divide-line/60">
+    <Panel className="ui-hud-strip !gap-0 divide-x divide-line/60 max-lg:w-full">
+      <RollModeIcons />
       {stats.map((stat) => {
         const Tag = stat.onClick ? 'button' : 'div';
         return (
@@ -539,11 +681,11 @@ export const CombatStats: React.FC<{
             onClick={stat.onClick}
             title={stat.hint}
             className={cx(
-              'flex min-w-[3.6rem] flex-col items-center px-3',
+              'flex min-w-[3.6rem] flex-col items-center px-3 max-lg:min-w-0 max-lg:flex-1 max-lg:px-1',
               stat.onClick && 'transition-colors hover:text-frame-bright',
             )}
           >
-            <span className="text-[10px] uppercase tracking-[0.14em] text-ink-faint">{stat.label}</span>
+            <span className="text-[10px] uppercase tracking-[0.14em] text-ink-faint max-lg:max-w-full max-lg:truncate max-lg:tracking-normal">{stat.label}</span>
             <span className="ui-display ui-numeric text-lg leading-tight">{stat.value}</span>
           </Tag>
         );
@@ -578,8 +720,8 @@ export const ExperienceBar: React.FC<{ character: Character }> = ({ character })
         <span className="ui-display ui-numeric text-base text-frame-bright">{character.level}</span>
         ур.
         <span className="tabular-nums">
-          {character.experience.toLocaleString('ru-RU')}
-          {!progress.isMaxLevel && ` / ${progress.nextLevelXP.toLocaleString('ru-RU')}`}
+          {character.experience.toLocaleString(locale)}
+          {!progress.isMaxLevel && ` / ${progress.nextLevelXP.toLocaleString(locale)}`}
         </span>
         {progress.canLevelUp && <span className="text-xp">новый уровень</span>}
       </span>

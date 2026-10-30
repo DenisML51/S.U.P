@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { cx } from './primitives';
 import { WireDie, type DieShape } from './WireDie';
@@ -81,9 +81,11 @@ export const RollingDie: React.FC<{
       className={cx(
         'ui-rolling-die',
         sides === 100 && 'ui-rolling-die--pair',
-        tone && `ui-rolling-die--${tone}`,
+        // What the face means (a natural 20 or 1, the die advantage drops) shows only with its number:
+        // a tinted die still tumbling would give the result away.
+        landed && tone && `ui-rolling-die--${tone}`,
         landed && 'ui-rolling-die--landed',
-        dropped && 'ui-rolling-die--dropped',
+        landed && dropped && 'ui-rolling-die--dropped',
         className,
       )}
       style={size ? ({ '--die-size': size } as React.CSSProperties) : undefined}
@@ -107,6 +109,8 @@ export const RollingDie: React.FC<{
       <AnimatePresence>
         {landed && (
           <motion.span
+            // A new value (a total replacing the face) pops in afresh.
+            key={String(value)}
             className="ui-rolling-die__value ui-display ui-numeric"
             initial={still ? false : { opacity: 0, scale: 0.3 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -163,23 +167,60 @@ export const RollingDice: React.FC<{
 
 /**
  * A value held back until its dice are down, then popped in. Before that it keeps its place, so
- * nothing around it moves.
+ * nothing around it moves. A new throw hides it in the very render that brings the new value: an
+ * animation would only start on the next frame, and the new value would be seen for a moment
+ * before its dice even start to tumble.
  */
 export const LandedValue: React.FC<{ landed: boolean; className?: string; children: React.ReactNode }> = ({
   landed,
   className,
   children,
-}) => (
-  <motion.span
-    className={cx('inline-block', className)}
-    initial={false}
-    animate={landed ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }}
-    transition={{ type: 'spring', stiffness: 460, damping: 18 }}
-    aria-hidden={!landed}
-  >
-    {children}
-  </motion.span>
-);
+}) => {
+  // It pops in only after having been hidden; a value shown from the start just stands there.
+  const wasHidden = useRef(!landed);
+  const popIn = wasHidden.current;
+  useLayoutEffect(() => {
+    wasHidden.current = !landed;
+  });
+  if (!landed) {
+    return (
+      <span className={cx('invisible inline-block', className)} aria-hidden>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <motion.span
+      className={cx('inline-block', className)}
+      initial={popIn ? { opacity: 0, scale: 0.6 } : false}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 460, damping: 18 }}
+    >
+      {children}
+    </motion.span>
+  );
+};
+
+/** How long a throw of `count` dice takes to land, `stagger` ms between two landings. */
+export const landingMs = (count: number, stagger = 110): number => TUMBLE_MS + Math.max(0, count - 1) * stagger;
+
+/** A throw older than this (by its own time) is from before: it is told at once. */
+const FRESH_MS = 15_000;
+
+/**
+ * Whether a throw made at `at` (an ISO time) may be told yet. A fresh one waits as long as its dice
+ * take to land where they are shown, counted from when it arrived here, so a log beside the dice
+ * never says the result before they do; one from before is told at once.
+ */
+export function useHeldUntilLanded(at: string, count: number, stagger?: number): boolean {
+  const [ready, setReady] = useState(() => Math.abs(Date.now() - Date.parse(at)) > FRESH_MS);
+  useEffect(() => {
+    if (ready) return;
+    const timer = window.setTimeout(() => setReady(true), landingMs(count, stagger));
+    return () => window.clearTimeout(timer);
+  }, [ready, count, stagger]);
+  return ready;
+}
 
 /**
  * Whether the throw `key` has landed, and the callback that marks it. A new key starts over; a null

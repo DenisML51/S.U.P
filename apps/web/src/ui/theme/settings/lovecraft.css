@@ -266,6 +266,8 @@
   .ui-button--ghost:not(:disabled):hover { color: rgb(var(--c-frame-bright)); background: none; filter: none; }
   .ui-button--ghost:not(:disabled):hover::before { transform: scaleX(1); }
   .ui-button--row { --step: 2px; font-family: var(--font-typed); font-size: 0.7rem; letter-spacing: 0.1em; }
+  /* Poiret One's hairline capitals blur at a small size («Е» reads as «Г»): small plates are typed. */
+  .ui-button--sm { font-family: var(--font-typed); font-size: 0.74rem; letter-spacing: 0.1em; }
   .ui-panel--paper :is(.ui-button--secondary, .ui-button--row) {
     --rim: rgb(var(--c-paper-ink) / 0.55);
     --fill: rgb(var(--c-paper));
@@ -313,6 +315,8 @@
   .ui-ledger__row:last-child { border-bottom: 0; }
   .ui-ledger__row:hover { background-color: rgb(var(--c-paper-ink) / 0.05); }
   .ui-ledger__title { font-family: var(--font-typed); font-size: 0.95rem; letter-spacing: 0; color: rgb(var(--c-paper-ink)); }
+  /* A heading typed on a paper reads like a ledger's title: Poiret One's hairlines fade on the paper. */
+  .ui-panel--paper h3.ui-display { font-family: var(--font-typed); font-size: 0.95rem; font-weight: 700; letter-spacing: 0; color: rgb(var(--c-paper-ink)); }
   .ui-ledger__meta { color: rgb(var(--c-paper-muted)); }
   .ui-ledger__bullet { color: rgb(var(--c-paper-muted)); }
   .ui-ledger__row[data-active] .ui-ledger__bullet { color: rgb(var(--c-pen)); }
@@ -454,7 +458,7 @@
     box-shadow: inset -1px 0 0 rgb(var(--c-frame) / 0.7), inset -3px 0 0 rgb(var(--c-wood-dark)), inset -4px 0 0 rgb(var(--c-frame) / 0.3);
   }
   .ui-rail__item { color: rgb(var(--c-frame) / 0.9); }
-  .ui-rail__label { font-family: var(--font-typed); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .ui-rail__label { font-family: var(--font-typed); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.08em; }
   .ui-rail__item:not([aria-current]):hover { color: rgb(var(--c-frame-bright)); }
   .ui-rail__item[aria-current='page'] {
     color: rgb(var(--c-ink));
@@ -692,6 +696,8 @@
     clip-path: var(--deco-shape);
     box-shadow: inset 0 0 0 1px rgb(80 58 28 / 0.7), inset 0 0 0 3px rgb(255 240 200 / 0.18);
   }
+  /* A title too long for the plate in one line is engraved smaller, not broken over two (see DialogTitle). */
+  .ui-dialog__title[data-long] { font-size: 1.1rem; padding-inline: 0.9rem; text-wrap: balance; }
   .ui-dialog__eyebrow { font-family: var(--font-typed); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--c-frame)); opacity: 1; }
   .ui-dialog__rule { display: flex; opacity: 0.75; }
   .ui-dialog__foot { border-top-color: rgb(var(--c-frame) / 0.3); }

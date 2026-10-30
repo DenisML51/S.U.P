@@ -20,6 +20,7 @@ const darkvision = (owner: string, range: number): FeatureDef => ({
   name: 'Тёмное зрение',
   description: `Видите в тусклом свете в пределах ${range} фт. как при ярком, а в темноте — как при тусклом (только оттенки серого).`,
   iconName: 'evil-eyes',
+  effects: [{ type: 'darkvision', range }],
 });
 
 const speedFeature = (owner: string, speed: number, size: string): FeatureDef => ({
@@ -210,6 +211,7 @@ const DRAGONBORN: SpeciesDef = {
         recharge: 'long',
         iconName: 'feather',
       },
+      stance: { effects: [{ type: 'movement', mode: 'fly' }] },
       iconName: 'feather',
     },
   ],
@@ -277,6 +279,7 @@ const ELF_LINEAGES: OptionDef[] = [
         id: 'elf.drow-darkvision',
         name: 'Тёмное зрение дроу',
         description: 'Дальность Тёмного зрения увеличивается до 120 фт.',
+        effects: [{ type: 'darkvision', range: 120 }],
         iconName: 'evil-eyes',
       },
     ],
@@ -515,6 +518,7 @@ const GOLIATH: SpeciesDef = {
         'С 5-го уровня. Бонусным действием становитесь Большим на 10 минут (если хватает места): преимущество на проверки Силы, скорость +10 фт. Раз в долгий отдых.',
       action: 'bonus',
       resource: { id: 'goliath.large-form', name: 'Большая форма', max: 1, recharge: 'long', iconName: 'mailed-fist' },
+      stance: { effects: [{ type: 'advantage', on: ['check:strength'] }, { type: 'speed', amount: 10 }] },
       iconName: 'mailed-fist',
     },
     {

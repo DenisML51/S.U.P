@@ -12,7 +12,7 @@ type Entity = JsonObject & { id: string };
  * must both survive, so they merge as a set union rather than "local wins". (`build.choices` arrays
  * are deliberately excluded — a single-select choice there must not keep both devices' picks.)
  */
-const STRING_SET_FIELDS = new Set(['conditions', 'savingThrowProficiencies', 'knownSchools', 'build.talents']);
+const STRING_SET_FIELDS = new Set(['conditions', 'activeFeatures', 'turnUses', 'savingThrowProficiencies', 'knownSchools', 'build.talents']);
 
 export interface MergeResult {
   merged: Character;

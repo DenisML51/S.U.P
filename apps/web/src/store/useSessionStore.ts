@@ -12,6 +12,7 @@ import { createWorkspace, type Workspace } from '../data/workspace';
 import { useCharacterStore } from './useCharacterStore';
 import { useChatStore } from './useChatStore';
 import { useTableRollStore } from './useTableRollStore';
+import { useRollCallStore } from './useRollCallStore';
 import { usePartyStore } from './usePartyStore';
 
 export type SessionStatus = 'booting' | 'anonymous' | 'authenticated';
@@ -65,6 +66,7 @@ export const useSessionStore = create<SessionState>((set, get) => {
     usePartyStore.getState().attach(current);
     useChatStore.getState().attach(current);
     useTableRollStore.getState().attach(current);
+    useRollCallStore.getState().attach(current);
     current.start(online);
   };
 
@@ -89,6 +91,7 @@ export const useSessionStore = create<SessionState>((set, get) => {
     usePartyStore.getState().attach(null);
     useChatStore.getState().attach(null);
     useTableRollStore.getState().attach(null);
+    useRollCallStore.getState().attach(null);
     void useCharacterStore.getState().attachWorkspace(null);
   };
 
@@ -103,7 +106,16 @@ export const useSessionStore = create<SessionState>((set, get) => {
   sessionManager.setListeners({
     onSessionLost: () => void handleSessionLost(),
     onUserChanged: (user) => {
-      if (get().status === 'authenticated') set({ user, offline: false });
+      if (get().status !== 'authenticated') return;
+      set({ user, offline: false });
+      // The refresh cookie is the browser's, not the tab's: signing in to another account in
+      // another tab hands this tab that account's tokens. Its data must follow, or this account's
+      // database would be filled with the other's characters and written to the other's account.
+      if (workspace && workspace.userId !== user.id) {
+        closeWorkspace();
+        void openWorkspace(user, true);
+        toast(`В другой вкладке выполнен вход как ${user.displayName} — показаны его герои`, { duration: 6000 });
+      }
     },
   });
 
@@ -161,7 +173,7 @@ export const useSessionStore = create<SessionState>((set, get) => {
     },
 
     async syncNow() {
-      await workspace?.sync.sync();
+      await workspace?.sync.syncNow();
     },
 
     async changePassword(currentPassword, newPassword) {

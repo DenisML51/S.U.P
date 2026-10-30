@@ -240,8 +240,12 @@ export class CharacterRepository {
    * - local edits pending → three-way merge, keep the result pending so it is uploaded;
    * - remote deletion → drop the local copy, unless it has edits (an edit outlives a deletion);
    * - local deletion pending and a remote edit → the edit wins, the deletion is cancelled.
+   *
+   * Normally a record older than the local copy is stale and ignored. `authoritative` records are
+   * the server's truth (a conflict's answer, a pull started over): they are taken whatever revision
+   * the local copy claims, except by a copy the server refused, which waits for its owner.
    */
-  async applyRemote(records: CharacterRecordDto[]): Promise<string[]> {
+  async applyRemote(records: CharacterRecordDto[], { authoritative = false } = {}): Promise<string[]> {
     const changedIds: string[] = [];
 
     await this.db.transaction('rw', this.db.characters, async () => {
@@ -280,7 +284,9 @@ export class CharacterRepository {
           continue;
         }
 
-        if (row.revision !== null && record.revision <= row.revision) continue;
+        if (authoritative) {
+          if (row.syncError !== null || record.revision === row.revision) continue;
+        } else if (row.revision !== null && record.revision <= row.revision) continue;
 
         if (!row.dirty || row.deleted) {
           await this.db.characters.update(row.id, {
@@ -311,10 +317,18 @@ export class CharacterRepository {
 
   /**
    * Resolves a rejected write (409) against the server's current record by merging, so the next
-   * upload is based on the server's revision.
+   * upload is based on the server's revision — even when the local copy claims a later one (it
+   * came from another history): otherwise the same write would be refused forever.
    */
   async resolveConflict(current: CharacterRecordDto): Promise<void> {
-    await this.applyRemote([current]);
+    await this.applyRemote([current], { authoritative: true });
+  }
+
+  /** Lets the characters the server refused be sent again (asked for by hand: the rules may have changed). */
+  async clearRejections(): Promise<void> {
+    const rows = await this.rejected();
+    if (rows.length === 0) return;
+    await this.db.characters.bulkUpdate(rows.map((row) => ({ key: row.id, changes: { syncError: null } })));
   }
 
   async getCursor(): Promise<string> {

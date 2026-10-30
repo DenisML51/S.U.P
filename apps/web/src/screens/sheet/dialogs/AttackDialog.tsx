@@ -1,9 +1,9 @@
 import React from 'react';
-import { createEntityId, formatModifier, removeById, upsertById } from '@itd/game-logic';
+import { ammunitionChoices, createEntityId, formatModifier, itemQuantity, removeById, resolveAmmunition, upsertById } from '@itd/game-logic';
 import type { ActionType, Attack, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { ACTION_TYPES } from '../../../ui/actionTypes';
-import { MarkdownField, NumberField, Segmented, Switch } from '../../../ui/forms';
+import { MarkdownField, NumberField, Segmented, Select, Switch } from '../../../ui/forms';
 import { Button, Field } from '../../../ui/primitives';
 import { Prose } from '../../../ui/Prose';
 import { IconDice } from '../../../ui/icons';
@@ -129,6 +129,25 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
             )}
           </div>
         </div>
+        {draft.usesAmmunition && ammunitionChoices(character).length > 1 && (
+          <Field label="Чем стрелять">
+            {({ id }) => (
+              <Select
+                id={id}
+                value={draft.ammunitionItemId ?? 'auto'}
+                onChange={(value) => set({ ammunitionItemId: value === 'auto' ? undefined : value })}
+                options={[
+                  { value: 'auto', label: 'Подходящие по типу оружия' },
+                  ...ammunitionChoices(character).map((stack) => ({
+                    value: stack.id,
+                    label: stack.name,
+                    hint: `${itemQuantity(stack)}`,
+                  })),
+                ]}
+              />
+            )}
+          </Field>
+        )}
         <DamageEditor
           required
           value={draft.damageComponents ?? []}
@@ -151,6 +170,7 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
   if (!entry) return null;
   const parts = damageParts(entry);
   const weapon = entry.weaponId ? character.inventory.find((i) => i.id === entry.weaponId) : undefined;
+  const ammunition = entry.usesAmmunition ? resolveAmmunition(character, entry) : null;
 
   return (
     <EntryView
@@ -177,7 +197,16 @@ export const AttackDialog: React.FC<{ open: boolean; id?: string; edit?: boolean
       <DamageBlock parts={parts} hit={`${formatModifier(entry.hitBonus)} к попаданию`} className="mb-4" />
       <MinorFacts
         facts={[
-          entry.usesAmmunition && (['Боеприпасы', `${entry.ammunitionCost ?? 1} за атаку`] as const),
+          entry.usesAmmunition &&
+            ([
+              'Боеприпасы',
+              ammunition
+                ? `${ammunition.name}: ${itemQuantity(ammunition)} · ${entry.ammunitionCost ?? 1} за атаку`
+                : `${entry.ammunitionCost ?? 1} за атаку`,
+            ] as const),
+          entry.thrown && weapon?.quantity !== undefined && (['Осталось', `${itemQuantity(weapon)}`] as const),
+          !!entry.damageTwoHanded && (['Двумя руками', entry.damageTwoHanded] as const),
+          !!entry.minDie && (['Большое оружие', `на костях урона меньше ${entry.minDie} — ${entry.minDie}`] as const),
           weapon && (['Оружие', weapon.name] as const),
         ]}
       />

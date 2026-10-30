@@ -14,6 +14,7 @@ import { RULES_CHOICES, RULES_TITLE } from '../../systems';
 import { SettingScope, useDocumentSetting } from '../../ui/theme/SettingScope';
 import { SETTING_INFO } from '../../ui/theme/settings';
 import { MarkdownField } from '../../ui/forms';
+import { useAtLeast } from '../../ui/useBreakpoint';
 import { WorldCarousel } from '../create/WorldCarousel';
 
 const LORE_PLACEHOLDER = `## Пролог
@@ -67,6 +68,8 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
   }));
   const patch = (next: Partial<Draft>) => setDraft((current) => ({ ...current, ...next }));
   const [step, setStep] = useState<'world' | 'rules' | 'table'>(party ? 'table' : 'world');
+  // A phone keeps the screen to the cards: the setting's frame round it would crowd the header.
+  const tablet = useAtLeast('tablet');
   const [rulesChosen, setRulesChosen] = useState(!!party?.rules);
   const [worldChosen, setWorldChosen] = useState(!!party);
   const [inFront, setInFront] = useState<Setting | null>(null);
@@ -113,13 +116,16 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
   return (
     <SettingScope
       setting={shown}
-      className={cx('ui-morph relative flex h-screen flex-col overflow-clip bg-bg', step === 'world' && !worldChosen && 'ui-service')}
+      className={cx(
+        'ui-morph relative flex h-screen flex-col overflow-clip bg-bg max-lg:h-dvh',
+        step === 'world' && !worldChosen && 'ui-service',
+      )}
       data-flourish={flourish?.setting}
     >
       {flourish && <Flourish key={flourish.key} setting={flourish.setting} x={flourish.x} y={flourish.y} onEnd={endFlourish} />}
-      <SettingBackdrop setting={shown} strength={step === 'world' ? 0.6 : 0.45} />
+      <SettingBackdrop setting={shown} strength={step === 'world' ? 0.6 : 0.45} frame={step !== 'world' && tablet} />
 
-      <header className="relative z-10 flex items-center gap-4 px-24 pt-14">
+      <header className="relative z-10 flex items-center gap-4 px-24 pt-14 max-lg:px-6 max-lg:pt-6 max-sm:gap-2 max-sm:px-4 max-sm:pt-3">
         <Button
           variant="ghost"
           size="sm"
@@ -128,7 +134,7 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
         >
           {back.label}
         </Button>
-        <span className="text-[11px] uppercase tracking-[0.22em] text-ink-faint">
+        <span className="min-w-0 truncate text-[11px] uppercase tracking-[0.22em] text-ink-faint">
           {party ? 'Настройки партии' : `Новая партия · шаг ${step === 'world' ? 1 : step === 'rules' ? 2 : 3} из 3`}
         </span>
       </header>
@@ -137,12 +143,14 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
         {step === 'world' ? (
           <motion.main
             key="world"
-            className="relative z-10 flex min-h-0 flex-1 flex-col px-10 pt-4"
+            className="ui-stage relative z-10 flex min-h-0 flex-1 flex-col px-10 pt-4 max-lg:px-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.2 } }}
           >
-            <h1 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">Где развернётся ваша история?</h1>
+            <h1 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink max-sm:text-[1.5rem]">
+              Где развернётся ваша история?
+            </h1>
             <div className="flex min-h-0 flex-1 items-center">
               <WorldCarousel
                 chosen={worldChosen ? draft.setting : null}
@@ -151,25 +159,32 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
                   if (!(worldChosen && draft.setting === id)) setFlourish({ setting: id, ...origin, key: Date.now() });
                   patch({ setting: id });
                   setWorldChosen(true);
+                  // One choice on the step: it goes on by itself, as the hero's creation does.
+                  window.setTimeout(() => setStep(party ? 'table' : 'rules'), 420);
                 }}
               />
             </div>
-            <footer className="flex justify-center py-5">
-              <Button variant="primary" disabled={!worldChosen} onClick={() => setStep(party ? 'table' : 'rules')}>
-                Дальше
-              </Button>
-            </footer>
+            {/* Back on the step with a world already chosen: the way on without choosing again. */}
+            {worldChosen && (
+              <footer className="flex justify-center py-5">
+                <Button variant="primary" onClick={() => setStep(party ? 'table' : 'rules')}>
+                  Дальше
+                </Button>
+              </footer>
+            )}
           </motion.main>
         ) : step === 'rules' ? (
           <motion.main
             key="rules"
-            className="relative z-10 flex min-h-0 flex-1 flex-col px-10 pt-4"
+            className="ui-stage relative z-10 flex min-h-0 flex-1 flex-col px-10 pt-4 max-lg:px-4"
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0, transition: ENTER }}
             exit={{ opacity: 0, x: -30, transition: { duration: 0.2 } }}
           >
-            <h1 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink">По каким правилам играет стол?</h1>
-            <p className="mt-1 text-center text-sm text-ink-muted">
+            <h1 className="ui-display ui-title text-center text-[1.9rem] leading-tight text-ink max-sm:text-[1.5rem]">
+              По каким правилам играет стол?
+            </h1>
+            <p className="mt-1 text-center text-sm text-ink-muted max-sm:hidden">
               {allowedRules
                 ? `За столом уже сидят герои по правилам ${seatedRules.map((rules) => `«${RULES_TITLE[rules]}»`).join(', ')}: другие правила можно выбрать, когда они покинут стол`
                 : 'За стол сядут только герои, созданные по этим правилам'}
@@ -179,7 +194,7 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
                 value={rulesChosen ? draft.rules : null}
                 allowed={allowedRules}
                 setting={draft.setting}
-                chooseLabel="Играть за столом по этим правилам"
+                chooseLabel="Выбрать"
                 onChange={(rules) => {
                   patch({ rules });
                   setRulesChosen(true);
@@ -187,17 +202,32 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
                 }}
               />
             </div>
+            {/* Or no rulebook of its own: heroes of any rules sit down (fits every hero already seated). */}
+            <div className="flex flex-col items-center gap-1.5 pb-8 max-sm:pb-4">
+              <Button
+                variant={rulesChosen && draft.rules === null ? 'primary' : 'secondary'}
+                aria-pressed={rulesChosen && draft.rules === null}
+                onClick={() => {
+                  patch({ rules: null });
+                  setRulesChosen(true);
+                  setStep('table');
+                }}
+              >
+                Позволить все рулбуки
+              </Button>
+              <span className="text-xs text-ink-faint">За стол сядут герои, созданные по любым правилам</span>
+            </div>
           </motion.main>
         ) : (
           <motion.main
             key="table"
-            className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-24 pb-10"
+            className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-24 pb-10 max-lg:px-4 max-lg:pb-4 max-lg:pt-8"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0, transition: ENTER }}
             exit={{ opacity: 0, y: 10, transition: { duration: 0.2 } }}
           >
             <Panel crest className="flex max-h-full w-full max-w-[72rem] flex-col">
-              <div className="px-10 pb-2 pt-8 text-center">
+              <div className="px-10 pb-2 pt-8 text-center max-sm:px-4 max-sm:pt-6">
                 <div className="text-[11px] uppercase tracking-[0.22em] text-frame-bright/80">
                   {SETTING_INFO[draft.setting].label}
                   {' · '}
@@ -211,12 +241,14 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
                     {draft.rules ? RULES_TITLE[draft.rules] : 'Любые правила'}
                   </button>
                 </div>
-                <h1 className="ui-display ui-title mt-2 text-[2.2rem] leading-tight text-ink">{party ? 'Ваш стол' : 'Соберите свой стол'}</h1>
+                <h1 className="ui-display ui-title mt-2 text-[2.2rem] leading-tight text-ink max-sm:text-[1.7rem]">
+                  {party ? 'Ваш стол' : 'Соберите свой стол'}
+                </h1>
                 <p className="mt-1 text-sm text-ink-muted">
                   {party ? 'Игроки увидят изменения сразу' : 'Вы станете мастером: игроки войдут по коду приглашения'}
                 </p>
               </div>
-              <div className="ui-scroll grid min-h-0 grid-cols-2 gap-8 overflow-y-auto px-10 py-6">
+              <div className="ui-scroll grid min-h-0 grid-cols-2 gap-8 overflow-y-auto px-10 py-6 max-sm:grid-cols-1 max-sm:gap-5 max-sm:px-4 max-sm:py-4">
                 <div className="flex flex-col gap-5">
                   <ImageSlot
                     label="Обложка"
@@ -266,7 +298,8 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
                   </Field>
                 </div>
               </div>
-              <footer className="flex items-center gap-3 border-t border-line/50 px-10 py-5">
+              {/* On a phone the save stands on its own line, the rarer actions above it. */}
+              <footer className="flex items-center gap-3 border-t border-line/50 px-10 py-5 max-sm:flex-wrap max-sm:gap-2 max-sm:px-4 max-sm:py-3">
                 {party ? (
                   <>
                     <Button variant="ghost" size="sm" onClick={() => setStep('world')}>
@@ -277,7 +310,7 @@ const PartyForm: React.FC<{ party?: PartyDto }> = ({ party }) => {
                     </Button>
                   </>
                 ) : null}
-                <div className="ml-auto flex gap-3">
+                <div className="ml-auto flex gap-3 max-sm:ml-0 max-sm:w-full max-sm:[&>*]:flex-1">
                   <Button variant="secondary" onClick={party ? leave : () => setStep('world')}>
                     {party ? 'Отмена' : 'Назад'}
                   </Button>

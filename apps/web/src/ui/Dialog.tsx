@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Theme } from './theme/settings';
@@ -29,6 +29,12 @@ interface DialogProps {
   setting?: Theme;
   /** Paper suits reading (descriptions); plate suits forms. */
   variant?: 'plate' | 'paper';
+  /**
+   * An emblem settled on the window's top edge (the new level's): the window keeps its top at `y`
+   * and its heading below the emblem's radius `r`; once the emblem is there (`cut`), a round opening
+   * of that radius widens under it, through the window, its frame and lines.
+   */
+  hole?: { y: number; r: number; cut: boolean };
   className?: string;
 }
 
@@ -74,6 +80,33 @@ function useHeight(swapKey: string): [(node: HTMLElement | null) => void, number
  * the dialog and returns where it was on close. It stands in the middle of the screen. Rendered in a
  * portal so ancestors' overflow and transforms never clip it.
  */
+/**
+ * The title, set smaller once it does not fit one line: a nameplate (Fable's pill, Lovecraft's
+ * plate) broken over two lines looks broken. Measured as laid out (and again when the fonts land),
+ * so it holds for any title, language and setting. A new title starts over at the full size.
+ */
+const DialogTitle: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const [long, setLong] = useState(false);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element || long) return;
+    const check = () => {
+      const lineHeight = parseFloat(getComputedStyle(element).lineHeight);
+      if (lineHeight > 0 && element.offsetHeight > lineHeight * 1.5) setLong(true);
+    };
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [long]);
+  return (
+    <h2 ref={ref} id={id} data-long={long || undefined} className="ui-dialog__title ui-display ui-title text-2xl leading-tight">
+      {children}
+    </h2>
+  );
+};
+
 export const Dialog: React.FC<DialogProps> = ({
   open,
   onClose,
@@ -88,6 +121,7 @@ export const Dialog: React.FC<DialogProps> = ({
   width = 'md',
   variant = 'plate',
   setting: ownSetting,
+  hole,
   className,
 }) => {
   const scopeSetting = useSetting();
@@ -123,7 +157,11 @@ export const Dialog: React.FC<DialogProps> = ({
       {open && (
         <SettingScope
           setting={setting}
-          className={cx('fixed inset-0 z-[200] flex items-center justify-center px-6 py-[5vh] max-sm:px-4')}
+          className={cx(
+            'fixed inset-0 z-[200] flex justify-center px-6 py-[5vh] max-sm:px-4',
+            hole ? 'items-start' : 'items-center',
+          )}
+          style={hole && { paddingTop: hole.y }}
         >
           <motion.div
             className="absolute inset-0 bg-bg-deep/80"
@@ -147,11 +185,12 @@ export const Dialog: React.FC<DialogProps> = ({
               as="section"
               variant={variant}
               ornate
-              crest
+              crest={!hole}
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
-              className={cx('ui-dialog transition-colors', className)}
+              className={cx('ui-dialog transition-colors', hole && 'ui-dialog--hole', className)}
+              style={hole && ({ '--hole-r': `${hole.cut ? hole.r : 0}px` } as React.CSSProperties)}
             >
               <span className="ui-dialog__frame" aria-hidden />
               <motion.div
@@ -166,6 +205,7 @@ export const Dialog: React.FC<DialogProps> = ({
                     ref={measure}
                     data-swap={swapKey}
                     className="flex max-h-[86vh] flex-col"
+                    style={hole && { maxHeight: `calc(95vh - ${hole.y}px)` }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1, transition: { duration: 0.18, delay: 0.06 } }}
                     exit={{ opacity: 0, transition: { duration: 0.1 } }}
@@ -173,7 +213,10 @@ export const Dialog: React.FC<DialogProps> = ({
                       if ((definition as { opacity?: number }).opacity === 1) focusFirstField();
                     }}
                   >
-                    <header className="ui-dialog__head relative pb-4 pl-6 pr-14 pt-5">
+                    <header
+                      className="ui-dialog__head relative pb-4 pl-6 pr-14 pt-5"
+                      style={hole && { paddingTop: hole.r + 22 }}
+                    >
                       <div className={cx('min-w-0', !!icon && 'flex items-center gap-4')}>
                         {icon}
                         <div className="min-w-0 flex-1">
@@ -182,24 +225,25 @@ export const Dialog: React.FC<DialogProps> = ({
                               {eyebrow}
                             </div>
                           )}
-                          <h2
-                            id={titleId}
-                            className="ui-dialog__title ui-display ui-title text-2xl leading-tight"
-                          >
+                          <DialogTitle key={typeof title === 'string' ? title : undefined} id={titleId}>
                             {title}
-                          </h2>
+                          </DialogTitle>
                           {subtitle && <p className="mt-1 text-sm opacity-70">{subtitle}</p>}
                         </div>
                       </div>
                       <Rule className="ui-dialog__rule mt-3" />
                     </header>
                     {children && (
-                      <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 pb-5">{children}</div>
+                      <div className="ui-scroll min-h-0 flex-1 overflow-y-auto px-6 pb-5 max-sm:px-4">{children}</div>
                     )}
                     {(footer || footerStart) && (
-                      <footer className="ui-dialog__foot flex items-center gap-3 px-6 py-4">
+                      // Buttons that do not fit wrap to the end of the next line; on a phone they share the
+                      // width, and what stands at the start goes on its own line.
+                      <footer className="ui-dialog__foot flex items-center gap-3 px-6 py-4 max-sm:flex-wrap max-sm:px-4 max-sm:py-3">
                         {footerStart}
-                        <div className="ml-auto flex gap-3">{footer}</div>
+                        <div className="ml-auto flex flex-wrap justify-end gap-3 max-sm:min-w-0 max-sm:flex-1 max-sm:[&>*]:min-w-0 max-sm:[&>*]:flex-1">
+                          {footer}
+                        </div>
                       </footer>
                     )}
                   </motion.div>

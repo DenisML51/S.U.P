@@ -144,7 +144,7 @@ const RING_STARS = Array.from({ length: 12 }, (_, i) => {
  * An astrolabe, 760 units across, centred on the origin: graduated rings, the tilted ecliptic,
  * the rete's pointers. Shown large and half off-screen, it is the atlas the sheet is written in.
  */
-const Astrolabe: React.FC = () => (
+export const Astrolabe: React.FC = () => (
   <svg viewBox="-380 -380 760 760" fill="none" stroke="currentColor" aria-hidden className="h-full w-full">
     <circle r="372" strokeWidth="1" />
     <circle r="360" strokeWidth="0.6" />
@@ -165,7 +165,7 @@ const Astrolabe: React.FC = () => (
 );
 
 /** A faint field of stars, as on an atlas of the sky. Three scattered layers, so it never tiles. */
-const STARS =
+export const STARS =
   'radial-gradient(circle at 20% 30%, rgb(var(--c-frame-bright) / 0.7) 0 1px, transparent 1.5px) 0 0 / 173px 197px,' +
   'radial-gradient(circle at 70% 60%, rgb(var(--c-ink) / 0.45) 0 0.8px, transparent 1.3px) 0 0 / 89px 113px,' +
   'radial-gradient(circle at 40% 80%, rgb(var(--c-frame-bright) / 0.5) 0 1.4px, transparent 2px) 0 0 / 311px 277px';
@@ -193,57 +193,30 @@ const Backdrop: React.FC<{ frame?: boolean }> = ({ frame = true }) => (
 const READY_W = 272;
 const READY_H = 36;
 
-/** A stem winding along the bar: a sine of the given phase, as a smooth path. */
-const vinePath = (phase: number): string => {
-  const mid = READY_H / 2;
-  const points = Array.from({ length: 69 }, (_, i) => {
-    const x = 4 + i * 3.9;
-    return [x, mid + Math.sin(x / 9 + phase) * 7 * Math.min(1, x / 40, (READY_W - x) / 40)] as const;
-  });
-  return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
-};
-
-/** Leaves on the crests of the two stems, each opening in turn as the vine grows past it. */
-const VINE_LEAVES = Array.from({ length: 9 }, (_, i) => {
-  const x = 22 + i * 28.3;
+/** The stars of the constellation drawn along the bar, above and below it in turn, lit left to right. */
+const READY_STARS = Array.from({ length: 9 }, (_, i) => {
+  const x = 16 + i * 30;
   const up = i % 2 === 0;
-  return { x, y: READY_H / 2 + (up ? -7 : 7), angle: up ? -40 : 40, delay: 0.25 + (x / READY_W) * 1.5 };
+  return { x, y: READY_H / 2 + (up ? -1 : 1) * (7 + ((i * 5) % 4)), r: i % 3 === 0 ? 3.6 : 2.6, delay: 0.15 + i * 0.16 };
 });
+const READY_LINE = READY_STARS.map(({ x, y }, i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join('');
 
-/** Motes of light rising off the vine. */
-const MOTES = [18, 54, 83, 121, 150, 187, 214, 248].map((x, i) => ({ x, delay: (i * 0.37) % 2.4 }));
+/** The astrolabe's graduation under the bar: a tick every few points, a longer one every fourth. */
+const READY_TICKS = Array.from({ length: 33 }, (_, i) => {
+  const x = 8 + i * 8;
+  return `M${x} ${READY_H / 2 + 5}V${READY_H / 2 + (i % 4 === 0 ? 10 : 7)}`;
+}).join('');
 
 /**
- * The level is ready: two golden vines grow along the experience bar and wind round it, leaves
- * open on them one after another, a glint of magic runs along the stems and motes of light drift up.
+ * The level is ready, on the atlas of the sky: the astrolabe's graduation shows under the bar, its
+ * stars light one after another along it and the constellation is drawn between them.
  */
 const LevelReady: React.FC = () => (
   <svg viewBox={`0 0 ${READY_W} ${READY_H}`} preserveAspectRatio="none" fill="none" aria-hidden className="hf-ready">
-    <defs>
-      <linearGradient id="hf-vine-gold" x1="0" x2="1">
-        <stop offset="0" stopColor="rgb(var(--c-frame))" />
-        <stop offset="0.5" stopColor="rgb(var(--c-frame-bright))" />
-        <stop offset="1" stopColor="rgb(var(--c-frame))" />
-      </linearGradient>
-    </defs>
-    {[0, Math.PI].map((phase) => (
-      <g key={phase}>
-        <path className="hf-vine" d={vinePath(phase)} pathLength={100} stroke="url(#hf-vine-gold)" strokeWidth="1.3" />
-        <path className="hf-vine-glint" d={vinePath(phase)} pathLength={100} strokeWidth="2.4" />
-      </g>
-    ))}
-    {VINE_LEAVES.map(({ x, y, angle, delay }) => (
-      <g key={x} transform={`translate(${x} ${y}) rotate(${angle})`}>
-        <path
-          className="hf-leaf"
-          style={{ animationDelay: `${delay}s` }}
-          d="M0 0C2.2-2.2 5.8-2.2 8 0 5.8 2.2 2.2 2.2 0 0Z"
-          fill="rgb(var(--c-frame-bright))"
-        />
-      </g>
-    ))}
-    {MOTES.map(({ x, delay }) => (
-      <circle key={x} className="hf-mote" style={{ animationDelay: `${delay}s` }} cx={x} cy={READY_H / 2} r="1.2" fill="rgb(255 236 180)" />
+    <path className="hf-ticks" d={READY_TICKS} stroke="rgb(var(--c-frame))" strokeWidth="0.7" />
+    <path className="hf-constellation" d={READY_LINE} pathLength={100} stroke="rgb(var(--c-frame-bright))" strokeWidth="0.8" />
+    {READY_STARS.map(({ x, y, r, delay }) => (
+      <path key={x} className="hf-star" style={{ animationDelay: `${delay}s` }} d={starPath(x, y, r, r * 0.38, 4)} fill="rgb(255 244 210)" />
     ))}
   </svg>
 );

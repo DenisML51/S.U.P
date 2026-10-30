@@ -1,16 +1,32 @@
-import type { Character, Resource } from '@itd/schema';
+import type { Character, Limb, Resource } from '@itd/schema';
 import { attributeModifier } from './abilities';
 import { resetTurn } from './actions';
-import { endConcentration } from './concentration';
+import { endAllFeatures, endConcentration, endFeatures } from './concentration';
 import { rollDie, type RandomSource } from './dice';
-import { totalMaxHP } from './health';
+import { exhaustionLevel, setExhaustion } from './d20';
+import { LIMB_LOST_HP, settleHealth, totalMaxHP } from './health';
+
+/** A night's sleep mends a limb by half its maximum; a lost limb stays lost. */
+const mendLimb = (limb: Limb): Limb => {
+  if (limb.currentHP >= limb.maxHP || limb.currentHP <= LIMB_LOST_HP) return limb;
+  return { ...limb, currentHP: Math.min(limb.maxHP, limb.currentHP + Math.max(1, Math.ceil(limb.maxHP / 2))) };
+};
+
+/** Limbs still hurt, for the line of what a rest changed. */
+const hurtLimbs = (limbs: Limb[]) => limbs.filter((limb) => limb.currentHP < limb.maxHP).length;
 
 /** Hit points of a hit die taken as its average instead of a roll: d10 → 6. */
 export const averageHitPoints = (hitDie: number): number => hitDie / 2 + 1;
 
-/** The pool of hit dice, if the sheet keeps one. */
-export const hitDiceOf = (character: Pick<Character, 'resources'>): Resource | undefined =>
-  character.resources.find((r) => r.hitDie !== undefined);
+/**
+ * The pools of hit dice the sheet keeps, one per die size: a fighter who took wizard levels has d10s
+ * and d6s, spent and counted apart.
+ */
+export const hitDicePools = (character: Pick<Character, 'resources'>): Resource[] =>
+  character.resources.filter((r) => r.hitDie !== undefined);
+
+/** Id of a preset hero's pool of hit dice of one size. */
+export const hitDiceId = (hitDie: number): string => `hit-dice-${hitDie}`;
 
 /** One line of "what the rest changed": a value before and after. */
 export interface RestChange {
@@ -34,16 +50,21 @@ export type RestKind = 'short' | 'long';
 export type HitDieMethod = 'roll' | 'average';
 
 export interface ShortRestOptions {
-  /** Hit dice to spend on healing; at most what is left. */
-  hitDice?: number;
+  /** Hit dice to spend on healing, by the id of their pool; at most what is left of each. */
+  hitDice?: Record<string, number>;
   method?: HitDieMethod;
   /**
-   * Hit dice already rolled, in order. An edit may be applied more than once (on screen, then to the
-   * stored copy), so the caller rolls once and passes the results; missing ones are rolled here.
+   * Hit dice already rolled, by pool, in order. An edit may be applied more than once (on screen,
+   * then to the stored copy), so the caller rolls once and passes the results; missing ones are
+   * rolled here.
    */
-  rolls?: number[];
+  rolls?: Record<string, number[]>;
   random?: RandomSource;
 }
+
+/** How many dice of a pool a short rest spends: what was asked, at most what is left. */
+export const hitDiceToSpend = (pool: Resource, options: Pick<ShortRestOptions, 'hitDice'>): number =>
+  Math.max(0, Math.min(Math.trunc(options.hitDice?.[pool.id] ?? 0), pool.current));
 
 const describe = (title: string, changes: RestChange[]): string =>
   changes.length === 0
@@ -86,61 +107,73 @@ const replaceResource = (resources: Resource[], next: Resource): Resource[] =>
   resources.map((r) => (r.id === next.id ? next : r));
 
 /**
- * A short rest: the hero may spend hit dice, each healing its roll (or average) plus the
- * Constitution modifier, at least 1; resources that come back on a short rest return (all of them,
- * or `recoveryAmount`).
+ * A short rest: the hero may spend hit dice of any of their pools, each healing its roll (or
+ * average) plus the Constitution modifier, at least 1; resources that come back on a short rest
+ * return (all of them, or `recoveryAmount`).
  */
 export function shortRest(character: Character, options: ShortRestOptions = {}): RestResult {
   const { method = 'roll', random = Math.random } = options;
   const { resources, changes } = restoreResources(character, 'short');
-  let next: Character = { ...character, resources };
+  // Features that last until any rest (Crimson Rite, a Mutagen) end with this one.
+  let next: Character = endFeatures({ ...character, resources }, (ability) => !!ability.stanceUntilShortRest);
 
-  const pool = hitDiceOf(character);
-  const spent = pool ? Math.max(0, Math.min(Math.trunc(options.hitDice ?? 0), pool.current)) : 0;
-  const rolled: number[] = [];
-  if (pool && spent > 0) {
-    const constitution = attributeModifier(character, 'constitution');
-    let healing = 0;
+  const constitution = attributeModifier(character, 'constitution');
+  let healing = 0;
+  const poolChanges: RestChange[] = [];
+  const rolled: string[] = [];
+  for (const pool of hitDicePools(character)) {
+    const spent = hitDiceToSpend(pool, options);
+    if (spent === 0) continue;
+    const dice: number[] = [];
     for (let i = 0; i < spent; i += 1) {
-      const die =
-        method === 'average'
-          ? averageHitPoints(pool.hitDie!)
-          : (options.rolls?.[i] ?? rollDie(pool.hitDie!, random));
-      if (method === 'roll') rolled.push(die);
+      const die = method === 'average' ? averageHitPoints(pool.hitDie!) : (options.rolls?.[pool.id]?.[i] ?? rollDie(pool.hitDie!, random));
+      dice.push(die);
       healing += Math.max(1, die + constitution);
     }
+    if (method === 'roll') rolled.push(`к${pool.hitDie}: ${dice.join(', ')}`);
+    next = { ...next, resources: replaceResource(next.resources, { ...pool, current: pool.current - spent }) };
+    poolChanges.push({ id: pool.id, label: pool.name, before: pool.current, after: pool.current - spent, max: pool.max });
+  }
+  if (poolChanges.length > 0) {
     const currentHP = Math.min(totalMaxHP(character), character.currentHP + healing);
-    next = {
-      ...next,
-      currentHP,
-      resources: replaceResource(next.resources, { ...pool, current: pool.current - spent }),
-    };
-    changes.unshift(
-      { id: 'hp', label: 'Хиты', before: character.currentHP, after: currentHP, max: totalMaxHP(character) },
-      { id: pool.id, label: pool.name, before: pool.current, after: pool.current - spent, max: pool.max },
-    );
+    // Healed off the floor, the hero wakes and the death saves end.
+    next = settleHealth({ ...next, currentHP });
+    changes.unshift({ id: 'hp', label: 'Хиты', before: character.currentHP, after: currentHP, max: totalMaxHP(character) }, ...poolChanges);
   }
 
-  const dice = rolled.length > 0 ? ` (к${pool!.hitDie}: ${rolled.join(', ')})` : '';
+  const dice = rolled.length > 0 ? ` (${rolled.join('; ')})` : '';
   return { character: next, changes, message: describe('Короткий отдых', changes) + dice };
 }
 
 /**
  * A long rest: full hit points, no temporary ones, every short- and long-rest resource (spell slots
- * among them) restored, half of the hit dice back (at least one), this turn's actions reset and
- * concentration over.
+ * among them) restored, every hit die back (D&D 2024), one level of exhaustion gone, limbs mended by
+ * half their maximum (a lost one stays lost), this turn's actions reset and concentration over.
  * Sanity does not come back with sleep.
  */
 export function longRest(character: Character): RestResult {
   const { resources, changes } = restoreResources(character, 'long');
-  const maxHP = totalMaxHP(character);
-  let next: Character = endConcentration(resetTurn({ ...character, resources, currentHP: maxHP, tempHP: 0 }));
+  // What was taken off the maximum until a long rest (a Vital Sacrifice) comes back first.
+  const { maxHPReduction: lowered, ...whole } = character;
+  const maxHP = totalMaxHP(whole);
+  let next: Character = endAllFeatures(endConcentration(resetTurn({ ...whole, resources, currentHP: maxHP, tempHP: 0 })));
+  if (lowered) changes.push({ id: 'maxHP', label: 'Максимум хитов', before: totalMaxHP(character), after: maxHP });
 
-  const pool = hitDiceOf(character);
-  if (pool && pool.current < pool.max) {
-    const current = Math.min(pool.max, pool.current + Math.max(1, Math.floor(pool.max / 2)));
-    next = { ...next, resources: replaceResource(next.resources, { ...pool, current }) };
-    changes.unshift({ id: pool.id, label: pool.name, before: pool.current, after: current, max: pool.max });
+  // Every hit die of every pool comes back (D&D 2024).
+  for (const pool of [...hitDicePools(character)].reverse()) {
+    if (pool.current >= pool.max) continue;
+    next = { ...next, resources: replaceResource(next.resources, { ...pool, current: pool.max }) };
+    changes.unshift({ id: pool.id, label: pool.name, before: pool.current, after: pool.max, max: pool.max });
+  }
+  const mended = next.limbs.map(mendLimb);
+  if (mended.some((limb, i) => limb !== next.limbs[i])) {
+    next = { ...next, limbs: mended };
+    changes.push({ id: 'limbs', label: 'Раны конечностей', before: hurtLimbs(character.limbs), after: hurtLimbs(mended) });
+  }
+  const exhaustion = exhaustionLevel(character);
+  if (exhaustion > 0) {
+    next = setExhaustion(next, exhaustion - 1);
+    changes.push({ id: 'exhaustion', label: 'Истощение', before: exhaustion, after: exhaustion - 1 });
   }
   if (character.tempHP > 0)
     changes.unshift({ id: 'tempHP', label: 'Временные хиты', before: character.tempHP, after: 0 });

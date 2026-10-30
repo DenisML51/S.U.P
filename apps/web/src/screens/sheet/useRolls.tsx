@@ -1,10 +1,26 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { rollDie, rollFormula, type FormulaRoll } from '@itd/game-logic';
+import {
+  damageRulesFor,
+  isCriticalRoll,
+  planD20,
+  rollD20,
+  rollFormula,
+  rollOptionsOf,
+  spendTurnRules,
+  type D20Plan,
+  type D20Test,
+  type DamageSource,
+  type FormulaRoll,
+} from '@itd/game-logic';
+import type { DamageRule } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { announceRoll } from '../../store/useTableRollStore';
 import { RollingDie } from '../../ui/RollingDie';
+import { useRollMode } from './RollMode';
+import { diceToast } from '../../ui/Toasts';
+import { DIE } from '../../i18n';
 
 type Tone = 'crit' | 'fumble';
 
@@ -29,29 +45,35 @@ const dieSize = (count: number) =>
  * tinted on a natural 20 or 1), then the total and the breakdown come in. The values are known from
  * the start; only their reveal waits for the dice. A roll without dice shows its total at once.
  */
-const RollToast: React.FC<{
+export const RollToast: React.FC<{
   label: string;
   total: number;
   detail: string;
+  /** A critical hit or a natural 1 of an attack: the plate is stamped and the total coloured. */
   tone?: Tone;
   /** The dice thrown, in order. */
   dice: ThrownDie[];
+  /** The d20 that counts, tinted on a natural 20 or 1 (a check's too, though only attacks crit). */
+  kept?: number;
   /** The roll that follows this one ("Урон" after a hit), offered on the toast itself. */
-  action?: { label: string; onClick: () => void };
-}> = ({ label, total, detail, tone, dice, action }) => {
+  actions?: { label: string; onClick: () => void }[];
+}> = ({ label, total, detail, tone, dice, kept, actions = [] }) => {
   const shown = dice.slice(0, SHOWN_DICE);
   const [landed, setLanded] = useState(shown.length === 0);
   const size = dieSize(shown.length);
   const reveal = { opacity: landed ? 1 : 0, transition: { duration: 0.2 } };
-  const dieTone = tone === 'crit' ? 'success' : tone === 'fumble' ? 'danger' : undefined;
+  const keptTone = kept === 20 ? 'success' : kept === 1 ? 'danger' : undefined;
+  const keptIndex = kept === undefined ? -1 : dice.findIndex((die) => die.sides === 20 && die.value === kept);
   // By importance: the dice and the total first and large, the label, breakdown and follow-up below.
   return (
     <div
       className="ui-roll-toast flex min-w-[240px] max-w-[22rem] flex-col gap-2"
-      data-tone={tone}
+      // A critical or a natural 1 is told only once the dice are down: the plate keeps its plain
+      // look while they tumble.
+      data-tone={landed ? tone : undefined}
       data-landed={landed || undefined}
       // A setting may stamp a natural 20 or 1 across the plate (the Lovecraft telegram does).
-      data-stamp={tone === 'crit' ? 'Критический' : tone === 'fumble' ? 'Провал' : undefined}
+      data-stamp={!landed ? undefined : tone === 'crit' ? 'Критический' : tone === 'fumble' ? 'Провал' : undefined}
     >
       <div className="flex items-center gap-4">
         {shown.length > 0 && (
@@ -64,8 +86,8 @@ const RollToast: React.FC<{
                 size={size}
                 delay={index * STAGGER_MS}
                 phase={index * 1.3 + die.sides * 0.1}
-                // Only the lone d20 of a check or attack is natural 20 or 1.
-                tone={die.sides === 20 && dice.length === 1 ? dieTone : undefined}
+                // Only the d20 that counts is a natural 20 or 1.
+                tone={index === keptIndex ? keptTone : undefined}
                 onLanded={index === shown.length - 1 ? () => setLanded(true) : undefined}
               />
             ))}
@@ -98,18 +120,24 @@ const RollToast: React.FC<{
             {detail}
           </motion.span>
         </span>
-        {action && (
-          <button
-            type="button"
-            className="shrink-0 text-sm text-frame-bright underline-offset-4 hover:underline"
-            onClick={(event) => {
-              // The plate dismisses on click; the button runs its roll and then lets it go.
-              event.stopPropagation();
-              action.onClick();
-            }}
-          >
-            {action.label}
-          </button>
+        {/* What follows the roll ("Крит. урон") says how it went: it comes in with the result. */}
+        {actions.length > 0 && landed && (
+          <motion.span className="flex shrink-0 flex-col items-end gap-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+            {actions.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                className="text-sm text-frame-bright underline-offset-4 hover:underline"
+                onClick={(event) => {
+                  // The plate dismisses on click; the button runs its roll and then lets it go.
+                  event.stopPropagation();
+                  action.onClick();
+                }}
+              >
+                {action.label}
+              </button>
+            ))}
+          </motion.span>
         )}
       </div>
     </div>
@@ -123,12 +151,36 @@ const describeDice = (roll: FormulaRoll) =>
     .filter(Boolean)
     .join(' ');
 
-const toneOf = (die: number): Tone | undefined => (die === 20 ? 'crit' : die === 1 ? 'fumble' : undefined);
+const MODE_NAME = { advantage: 'с преимуществом', disadvantage: 'с помехой' } as const;
 
-/** How long a hit stays on screen waiting for its damage to be rolled. */
-const HIT_TOAST_MS = 15000;
+/**
+ * "к20: 15 и 7 → 15 + 6 · истощение −2 · преимущество: особенность": how the d20 total came about,
+ * in pieces joined by " · " so each is said on its own in the other language.
+ */
+function describeD20(plan: D20Plan, dice: number[], kept: number, modifier: number): string {
+  const thrown = dice.length > 1 ? `к20: ${dice[0]} и ${dice[1]} → ${kept}` : `к20: ${kept}`;
+  const pieces = [`${thrown} ${signed(modifier)}`];
+  if (plan.penalty) pieces.push(`истощение −${plan.penalty}`);
+  if (plan.mode !== 'normal')
+    pieces.push(`${MODE_NAME[plan.mode]}: ${(plan.mode === 'advantage' ? plan.advantage : plan.disadvantage).join(', ')}`);
+  else if (plan.advantage.length > 0 && plan.disadvantage.length > 0) pieces.push('преимущество и помеха гасят друг друга');
+  if (plan.autoFail) pieces.push(`автоматический провал: ${plan.autoFail}`);
+  return pieces.join(' · ');
+}
 
-export type DamageComponents = { damage: string; type?: string }[];
+export type DamageComponents = { damage: string; type?: string; extra?: boolean }[];
+
+/** What the hero may do with a rolled total on its plate: heal themselves with it, take it as temporary hit points. */
+export type RollFollowUp = (total: number) => { label: string; onClick: () => void }[];
+
+/**
+ * Damage dealt with the hit and paid only on a hit (a smite): its dice join the weapon's in one roll,
+ * a critical hit doubling them too. `pay` spends what it costs; refused, the weapon's damage goes alone.
+ */
+export interface HitRider {
+  parts: DamageComponents;
+  pay: () => boolean;
+}
 
 /**
  * Instant rolls from the sheet: the result shows as a toast and goes into the character's log.
@@ -137,32 +189,50 @@ export type DamageComponents = { damage: string; type?: string }[];
  */
 export function useRolls() {
   const logHistory = useCharacterStore((s) => s.logHistory);
+  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   // Every throw is also shown at the party table the hero sits at.
   const characterId = useCharacterStore((s) => s.character?.id);
   const show = (dice: ThrownDie[], label: string) => announceRoll(characterId, dice, label);
 
+  const character = useCharacterStore((s) => s.character);
+
   /**
-   * A d20 check or save with a modifier. `animated` (initiative at the start of a fight) keeps the
-   * plate a moment longer, so the landed die is seen after the tumble.
+   * A d20 thrown for a test: advantage or disadvantage from the hero's conditions and features and
+   * from the player's switch (spent by this roll), exhaustion's penalty taken off.
    */
-  const check = (label: string, modifier: number, { animated = false } = {}) => {
-    const die = rollDie(20);
-    const total = die + modifier;
-    const detail = `к20: ${die} ${signed(modifier)}`;
-    show([{ sides: 20, value: die }], `${label}: ${total}`);
-    toast(
-      <RollToast
-        label={label}
-        total={total}
-        detail={detail}
-        tone={toneOf(die)}
-        dice={[{ sides: 20, value: die }]}
-      />,
-      { duration: animated ? 6000 : 5000 },
-    );
-    logHistory(`${label}: ${total} (${detail})`);
-    return total;
+  const throwD20 = (test: D20Test) => {
+    const chosen = useRollMode.getState().take();
+    const plan: D20Plan = character
+      ? planD20(character, test, chosen)
+      : { mode: chosen ?? 'normal', advantage: [], disadvantage: [], penalty: 0 };
+    return { plan, ...rollD20(plan.mode) };
   };
+
+  /**
+   * A d20 check or save with a modifier; `test` says what for, so the rules on advantage apply.
+   * `unlogged` leaves the log to the caller; `inPlace` leaves the dice to the caller to show where
+   * they were thrown (a die in a dialog), with no toast of their own. Returns the total, the die that
+   * counted and every die thrown. Its plate stays until it is clicked or another message comes.
+   */
+  const roll20 = (
+    label: string,
+    modifier: number,
+    { unlogged = false, inPlace = false, test = { kind: 'check' } }: { unlogged?: boolean; inPlace?: boolean; test?: D20Test } = {},
+  ) => {
+    const { plan, dice, kept } = throwD20(test);
+    // Dice a feature adds to this kind of roll (a Rite Die to a Strength save).
+    const extra = (plan.dice ?? []).map((formula) => ({ formula, roll: rollFormula(formula) }));
+    const total = kept + modifier - plan.penalty + extra.reduce((sum, e) => sum + e.roll.total, 0);
+    const detail = [describeD20(plan, dice, kept, modifier), ...extra.map((e) => `${e.formula.replace(/d/gi, DIE)}: +${e.roll.total}`)].join(' · ');
+    const thrown = [...dice.map((value) => ({ sides: 20, value })), ...extra.flatMap((e) => e.roll.rolls)];
+    show(thrown, `${label}: ${total}`);
+    if (!inPlace) toast(<RollToast label={label} total={total} detail={detail} dice={thrown} kept={kept} />, diceToast());
+    if (!unlogged) logHistory(`${label}: ${total} (${detail})`);
+    return { total, die: kept, dice: thrown, detail };
+  };
+
+  const check = (label: string, modifier: number, options?: Parameters<typeof roll20>[2]) =>
+    roll20(label, modifier, options).total;
 
   /** A damage or effect formula such as `2d6+3`. */
   const formula = (label: string, expression: string) => {
@@ -173,10 +243,10 @@ export function useRolls() {
       <RollToast
         label={label}
         total={roll.total}
-        detail={`${expression}: ${describeDice(roll)}`}
+        detail={`${expression.replace(/d/gi, DIE)}: ${describeDice(roll)}`}
         dice={roll.rolls}
       />,
-      { duration: 5000 },
+      diceToast(),
     );
     logHistory(`${label}: ${roll.total} (${expression}: ${describeDice(roll)})`);
     return roll.total;
@@ -185,27 +255,71 @@ export function useRolls() {
   /**
    * Damage of an attack or effect: one roll per component, totalled, with each component's type
    * kept in the breakdown ("7 дробящий + 3 электричество"). A critical hit rolls every die twice.
+   * Features change the dice of what fits them (`source`): Savage Attacker rolls a weapon's twice,
+   * Piercer rolls a piercing die again; once-a-turn ones are spent for the turn in a fight (`tracked`).
    */
-  const damage = (label: string, components: DamageComponents, { critical = false } = {}) => {
+  const damage = (
+    label: string,
+    components: DamageComponents,
+    {
+      critical = false,
+      minDie,
+      source,
+      tracked,
+      follow,
+    }: { critical?: boolean; minDie?: number; source?: DamageSource; tracked?: boolean; follow?: RollFollowUp } = {},
+  ) => {
+    const hero = useCharacterStore.getState().character;
+    const applied = new Map<string, DamageRule>();
     const parts = components
       .filter((c) => c.damage.trim())
-      .map((c) => ({ ...c, roll: rollFormula(c.damage, Math.random, { critical }) }))
+      .map((c) => {
+        // Dice a feature deals beside the weapon (Crimson Rite) are not the weapon's own dice.
+        const from = c.extra && source?.kind === 'weapon' ? { ...source, kind: 'other' as const } : source;
+        const rules = hero && from ? damageRulesFor(hero, from, c.type) : [];
+        const healing = hero && !source && c.type === 'Лечение' ? damageRulesFor(hero, { kind: 'other' }, c.type) : [];
+        for (const rule of [...rules, ...healing]) applied.set(rule.id, rule);
+        return { ...c, roll: rollFormula(c.damage, Math.random, rollOptionsOf([...rules, ...healing], { critical, minDie })) };
+      })
       .filter((c) => c.roll.rolls.length > 0 || c.roll.bonus !== 0);
     if (parts.length === 0) return null;
+    if (tracked && applied.size > 0) {
+      updateCharacter((doc) => spendTurnRules(doc, [...applied.values()]), { undoable: false });
+    }
     const total = parts.reduce((sum, p) => sum + p.roll.total, 0);
-    const detail = parts.map((p) => `${p.roll.total}${p.type ? ` ${p.type.toLowerCase()}` : ''}`).join(' + ');
+    const rolledTwice = parts.flatMap((p) => (p.roll.discarded ? [p.roll.discarded.total] : []));
+    const ruleNames = [...new Set([...applied.values()].map((r) => r.name))];
+    const detail = [
+      parts.map((p) => `${p.roll.total}${p.type ? ` ${p.type.toLowerCase()}` : ''}`).join(' + '),
+      ...ruleNames,
+      ...(rolledTwice.length > 0 ? [`второй бросок ${rolledTwice.join(', ')}`] : []),
+    ].join(' · ');
     const healing = parts.every((p) => p.type === 'Лечение');
     const title = healing ? `${label}: лечение` : critical ? `${label}: критический урон` : `${label}: урон`;
     show(parts.flatMap((p) => p.roll.rolls), `${title}: ${total}`);
+    const after = follow?.(total) ?? [];
     toast(
-      <RollToast
-        label={title}
-        total={total}
-        detail={detail}
-        tone={critical ? 'crit' : undefined}
-        dice={parts.flatMap((p) => p.roll.rolls)}
-      />,
-      { duration: 6000 },
+      (t) => (
+        <RollToast
+          label={title}
+          total={total}
+          detail={detail}
+          tone={critical ? 'crit' : undefined}
+          dice={parts.flatMap((p) => p.roll.rolls)}
+          actions={
+            after.length > 0
+              ? after.map((action) => ({
+                  label: action.label,
+                  onClick: () => {
+                    toast.dismiss(t.id);
+                    action.onClick();
+                  },
+                }))
+              : undefined
+          }
+        />
+      ),
+      diceToast(),
     );
     logHistory(`${title}: ${total} (${detail})`);
     return total;
@@ -214,14 +328,41 @@ export function useRolls() {
   /**
    * An attack as the table plays it: the hit first, the damage when the player says it landed. The
    * hit's toast carries the damage roll; a natural 20 doubles its dice, a natural 1 misses outright.
+   * A smite riding on it (`rider`) is paid and rolled with that damage.
    */
-  const attack = (label: string, modifier: number, components: DamageComponents) => {
-    const die = rollDie(20);
-    const total = die + modifier;
-    const tone = toneOf(die);
-    const detail = `к20: ${die} ${signed(modifier)}${tone === 'crit' ? ' · критическое попадание' : tone === 'fumble' ? ' · промах' : ''}`;
+  const attack = (
+    label: string,
+    modifier: number,
+    components: DamageComponents,
+    // Great Weapon Fighting's floor on the dice; a versatile weapon's damage held in both hands; a
+    // spell's attack, which features may roll with advantage (Innate Sorcery).
+    {
+      minDie,
+      twoHanded,
+      spell,
+      source,
+      tracked,
+      follow,
+      rider,
+    }: {
+      minDie?: number;
+      twoHanded?: DamageComponents;
+      spell?: boolean;
+      source?: DamageSource;
+      tracked?: boolean;
+      follow?: RollFollowUp;
+      rider?: HitRider;
+    } = {},
+  ) => {
+    const { plan, dice, kept: die } = throwD20({ kind: 'attack', spell });
+    const withRider = (base: DamageComponents) => (rider && rider.pay() ? [...base, ...rider.parts] : base);
+    const total = die + modifier - plan.penalty;
+    // A natural 1 always misses; the hero's crit range (a Champion's 19) always hits hard.
+    const tone: Tone | undefined = die === 1 ? 'fumble' : character && isCriticalRoll(character, die) ? 'crit' : undefined;
+    const detail = `${describeD20(plan, dice, die, modifier)}${tone === 'crit' ? ' · критическое попадание' : tone === 'fumble' ? ' · промах' : ''}`;
     const hasDamage = components.some((c) => c.damage.trim());
-    show([{ sides: 20, value: die }], `${label}: попадание ${total}`);
+    const thrown = dice.map((value) => ({ sides: 20, value }));
+    show(thrown, `${label}: попадание ${total}`);
     toast(
       (t) => (
         <RollToast
@@ -229,25 +370,39 @@ export function useRolls() {
           total={total}
           detail={detail}
           tone={tone}
-          dice={[{ sides: 20, value: die }]}
-          action={
+          dice={thrown}
+          kept={die}
+          actions={
             hasDamage && tone !== 'fumble'
-              ? {
-                  label: tone === 'crit' ? 'Крит. урон' : 'Урон',
-                  onClick: () => {
-                    toast.dismiss(t.id);
-                    damage(label, components, { critical: tone === 'crit' });
+              ? [
+                  {
+                    label: tone === 'crit' ? 'Крит. урон' : 'Урон',
+                    onClick: () => {
+                      toast.dismiss(t.id);
+                      damage(label, withRider(components), { critical: tone === 'crit', minDie, source, tracked, follow });
+                    },
                   },
-                }
+                  ...(twoHanded
+                    ? [
+                        {
+                          label: 'Двумя руками',
+                          onClick: () => {
+                            toast.dismiss(t.id);
+                            damage(`${label} (двумя руками)`, withRider(twoHanded), { critical: tone === 'crit', minDie, source, tracked, follow });
+                          },
+                        },
+                      ]
+                    : []),
+                ]
               : undefined
           }
         />
       ),
-      { duration: hasDamage && tone !== 'fumble' ? HIT_TOAST_MS : 5000 },
+      diceToast(),
     );
     logHistory(`${label}: попадание ${total} (${detail})`);
     return total;
   };
 
-  return { check, formula, damage, attack };
+  return { check, roll20, formula, damage, attack };
 }
