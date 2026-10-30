@@ -210,13 +210,14 @@ export function useRolls() {
 
   /**
    * A d20 check or save with a modifier; `test` says what for, so the rules on advantage apply.
-   * `unlogged` leaves the log to the caller. Returns the total and the die that counted. Its plate
-   * stays until it is clicked or another message comes.
+   * `unlogged` leaves the log to the caller; `inPlace` leaves the dice to the caller to show where
+   * they were thrown (a die in a dialog), with no toast of their own. Returns the total, the die that
+   * counted and every die thrown. Its plate stays until it is clicked or another message comes.
    */
   const roll20 = (
     label: string,
     modifier: number,
-    { unlogged = false, test = { kind: 'check' } }: { unlogged?: boolean; test?: D20Test } = {},
+    { unlogged = false, inPlace = false, test = { kind: 'check' } }: { unlogged?: boolean; inPlace?: boolean; test?: D20Test } = {},
   ) => {
     const { plan, dice, kept } = throwD20(test);
     // Dice a feature adds to this kind of roll (a Rite Die to a Strength save).
@@ -225,9 +226,9 @@ export function useRolls() {
     const detail = [describeD20(plan, dice, kept, modifier), ...extra.map((e) => `${e.formula.replace(/d/gi, DIE)}: +${e.roll.total}`)].join(' · ');
     const thrown = [...dice.map((value) => ({ sides: 20, value })), ...extra.flatMap((e) => e.roll.rolls)];
     show(thrown, `${label}: ${total}`);
-    toast(<RollToast label={label} total={total} detail={detail} dice={thrown} kept={kept} />, diceToast());
+    if (!inPlace) toast(<RollToast label={label} total={total} detail={detail} dice={thrown} kept={kept} />, diceToast());
     if (!unlogged) logHistory(`${label}: ${total} (${detail})`);
-    return { total, die: kept };
+    return { total, die: kept, dice: thrown, detail };
   };
 
   const check = (label: string, modifier: number, options?: Parameters<typeof roll20>[2]) =>
