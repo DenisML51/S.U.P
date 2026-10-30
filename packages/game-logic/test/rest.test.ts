@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Resource } from '@itd/schema';
 import { longRest, shortRest } from '../src';
-import { HIT_DICE_ID, applyBuild } from '../src/dnd';
+import { upgradeCharacter } from '../src';
+import { applyBuild } from '../src/dnd';
 import { makeCharacter, sequence, singleClass } from './helpers';
 
 const pool = (id: string, patch: Partial<Resource>): Resource => ({
@@ -127,9 +128,21 @@ describe('rest rules of preset heroes', () => {
     };
     const { resources } = applyBuild(makeCharacter(), singleClass(build)).character;
     const byId = Object.fromEntries(resources.map((r) => [r.id, r]));
-    expect(byId[HIT_DICE_ID]).toMatchObject({ hitDie: 10, max: 2, current: 2 });
+    expect(byId['hit-dice-10']).toMatchObject({ hitDie: 10, max: 2, current: 2 });
     expect(byId['fighter.second-wind']).toMatchObject({ recovery: 'short', recoveryAmount: 1 });
     expect(byId['fighter.action-surge']).toMatchObject({ recovery: 'short' });
     expect(byId['fighter.action-surge']?.recoveryAmount).toBeUndefined();
+  });
+
+  it('keeps a pool of hit dice per die size, a class’s levels in the pool of its die', () => {
+    const build = singleClass({ ruleset: 'dnd2024', species: 'human', background: 'soldier', class: 'fighter', abilityMethod: 'manual', baseAttributes: {}, backgroundBonuses: {}, choices: {}, hitPoints: [], level: 2 });
+    const classes = [{ class: 'fighter', levels: [1, 2] }, { class: 'wizard', levels: [3] }, { class: 'paladin', levels: [4] }];
+    const { resources } = applyBuild(makeCharacter(), { ...build, classes }).character;
+    expect(resources.filter((r) => r.hitDie).map((r) => [r.id, r.max])).toEqual([['hit-dice-10', 3], ['hit-dice-6', 1]]);
+  });
+
+  it('moves the dice left in the one pool of a hero saved before multiclassing into the pool of its size', () => {
+    const legacy = makeCharacter({ resources: [pool('hit-dice', { hitDie: 8, current: 1, max: 3, grant: 'build' })] });
+    expect(upgradeCharacter(legacy).resources[0]).toMatchObject({ id: 'hit-dice-8', current: 1, max: 3 });
   });
 });

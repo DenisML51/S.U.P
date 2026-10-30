@@ -22,6 +22,9 @@ export const averageHitPoints = (hitDie: number): number => hitDie / 2 + 1;
 export const hitDiceOf = (character: Pick<Character, 'resources'>): Resource | undefined =>
   character.resources.find((r) => r.hitDie !== undefined);
 
+/** Id of a preset hero's pool of hit dice of one size. */
+export const hitDiceId = (hitDie: number): string => `hit-dice-${hitDie}`;
+
 /** One line of "what the rest changed": a value before and after. */
 export interface RestChange {
   /** `hp`, `tempHP` or the id of the resource. */
