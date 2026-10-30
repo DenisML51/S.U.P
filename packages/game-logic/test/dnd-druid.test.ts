@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, levelPlan, setPicks } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'sage',
@@ -25,7 +25,7 @@ const apply = (b: DndBuild) => run(b).character;
 const resource = (c: Character, id: string) => c.resources.find((r) => r.id === id);
 const ability = (c: Character, name: string) => c.abilities.find((a) => a.name === name);
 const classCantrips = (b: DndBuild, level: number) =>
-  levelPlan(b, level).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips');
+  levelPlan(atLevel(b, level), level).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips');
 
 const ORDER = 'class:druid.primal-order/order';
 const LAND = 'subclass:land.circle-spells/land';
@@ -55,7 +55,7 @@ describe('druid', () => {
     expect(classCantrips(build(), 4)?.count).toBe(1);
     expect(classCantrips(build(), 10)?.count).toBe(1);
     expect(classCantrips(build(), 5)).toBeUndefined();
-    expect(levelPlan(build(), 1).choices.some((c) => c.key === ORDER)).toBe(true);
+    expect(levelPlan(atLevel(build(), 1), 1).choices.some((c) => c.key === ORDER)).toBe(true);
   });
 
   it('gives the Warden martial weapons and medium armour', () => {
@@ -66,11 +66,11 @@ describe('druid', () => {
   });
 
   it('gives the Magician a cantrip from the shared pool and a Wisdom bonus to Arcana and Nature', () => {
-    let b = build({ choices: { 'casting:spells-1/cantrips': ['druidcraft', 'produce-flame'] } });
+    let b = build({ choices: { 'casting:druid.spells-1/cantrips': ['druidcraft', 'produce-flame'] } });
     b = setPicks(b, ORDER, ['magician']);
-    const extra = levelPlan(b, 1).choices.find((c) => c.key === `${ORDER}=magician:druid.magician/cantrip`)!;
+    const extra = levelPlan(atLevel(b, 1), 1).choices.find((c) => c.key === `${ORDER}=magician:druid.magician/cantrip`)!;
     expect(extra).toBeDefined();
-    expect(choiceOptions(b, 1, extra).find((o) => o.id === 'druidcraft')?.disabled).toBeTruthy();
+    expect(choiceOptions(atLevel(b, 1), 1, extra).find((o) => o.id === 'druidcraft')?.disabled).toBeTruthy();
     const c = apply(setPicks(b, extra.key, ['guidance']));
     expect(c.skills.find((s) => s.id === 'arcana')?.bonus).toBe(3);
     expect(c.skills.find((s) => s.id === 'nature')?.bonus).toBe(3);
@@ -78,8 +78,8 @@ describe('druid', () => {
   });
 
   it('offers to replace a cantrip on later levels', () => {
-    const b = build({ level: 3, choices: { 'casting:spells-1/cantrips': ['druidcraft', 'produce-flame'] } });
-    expect(levelPlan(b, 3).choices.some((c) => c.key === 'swap:known-cantrips@3/forget')).toBe(true);
+    const b = build({ level: 3, choices: { 'casting:druid.spells-1/cantrips': ['druidcraft', 'produce-flame'] } });
+    expect(levelPlan(atLevel(b, 3), 3).choices.some((c) => c.key === 'swap:druid.known-cantrips@3/forget')).toBe(true);
   });
 
   it('grows Wild Shape and Elemental Fury with level', () => {
@@ -97,7 +97,7 @@ describe('druid', () => {
     const strike = (level: number) => ability(apply(setPicks(build({ level }), key, ['primal-strike'])), 'Природный удар');
     expect(strike(7)?.damage).toBe('1d8');
     expect(strike(15)?.damage).toBe('2d8');
-    expect(levelPlan(setPicks(build(), key, ['potent-spellcasting']), 15).features.some((f) => f.feature.id === 'druid.improved-potent-spellcasting')).toBe(true);
+    expect(levelPlan(atLevel(setPicks(build(), key, ['potent-spellcasting']), 15), 15).features.some((f) => f.feature.id === 'druid.improved-potent-spellcasting')).toBe(true);
   });
 
   it('has full-caster slots and the prepared count of the table', () => {

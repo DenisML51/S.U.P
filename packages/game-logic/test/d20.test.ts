@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild } from '@itd/schema';
 import { exhaustionLevel, isCriticalRoll, isDead, longRest, planD20, rollDeathSave, setExhaustion, speedOf, applyDamage, startingSkills } from '../src';
 import { applyBuild } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild } from './helpers';
 
 describe('advantage and disadvantage on d20 tests', () => {
   it('conditions give them where the rules do', () => {
@@ -60,7 +60,7 @@ describe('exhaustion (2024)', () => {
 });
 
 describe('features from the build', () => {
-  const build = (patch: Partial<DndBuild>): DndBuild => ({
+  const build = (patch: Partial<SingleClassBuild>): DndBuild => singleClass({
     ruleset: 'dnd2024', species: 'human', background: 'soldier', class: 'fighter', abilityMethod: 'pointBuy',
     baseAttributes: { strength: 15, dexterity: 14, constitution: 14, intelligence: 10, wisdom: 10, charisma: 10 },
     backgroundBonuses: {}, choices: {}, hitPoints: [], level: 1, ...patch,

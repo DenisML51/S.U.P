@@ -7,14 +7,14 @@ import { equipItem } from '../rules/inventory';
 import { rollDie } from '../rules/dice';
 import { experienceForLevel } from '../rules/progression';
 import { maxSanityOf } from '../rules/sanity';
-import { applyBuild, collect, findBackground, findClass, maxSpellLevel, spellcastingOf, type OpenChoice } from './build';
+import { SPELLBOOK_POOL, applyBuild, buildContext, castersOf, classLevelAt, collect, findBackground, findClass, heroLevel, maxSpellLevel, type OpenChoice } from './build';
 import { DND } from './content';
 import { DND_ICONS, armorIcon, gearIcon } from './content/icons';
 import type { KitOption } from './types';
 
-/** A starting kit option of the build's class or background, by its id. */
-export const classKit = (build: Pick<DndBuild, 'class'>, id: string | undefined): KitOption | undefined =>
-  findClass(build.class)?.startingEquipment.find((kit) => kit.id === id);
+/** A starting kit option of the class the build starts in, or of its background, by its id. */
+export const classKit = (build: Pick<DndBuild, 'classes'>, id: string | undefined): KitOption | undefined =>
+  findClass(build.classes[0]?.class)?.startingEquipment.find((kit) => kit.id === id);
 export const backgroundKit = (build: Pick<DndBuild, 'background'>, id: string | undefined): KitOption | undefined =>
   findBackground(build.background)?.equipment.find((kit) => kit.id === id);
 
@@ -116,7 +116,7 @@ export function createDndHero({ name, build, classKitId, backgroundKitId }: DndH
   let hero = {
     ...built,
     currentHP: built.maxHP,
-    experience: experienceForLevel(build.level),
+    experience: experienceForLevel(heroLevel(build)),
     limbs: getDefaultLimbs(built.maxHP, attributeScore(built, 'constitution')),
     inventory,
     currency: { ...built.currency, gold: built.currency.gold + gold },
@@ -149,14 +149,15 @@ export const PREPARED_AT_CREATION = 'creation:prepared';
  * list for a preparing caster, from the spellbook for a wizard.
  */
 export function preparedSpellsChoice(build: DndBuild): OpenChoice | null {
-  const casting = spellcastingOf(build);
-  if (casting?.mode !== 'prepared' && casting?.mode !== 'spellbook') return null;
-  const level = build.level;
+  const caster = castersOf(build)[0];
+  const casting = caster?.casting;
+  if (!caster || (casting?.mode !== 'prepared' && casting?.mode !== 'spellbook')) return null;
+  const level = heroLevel(build);
   const count = applyBuild(skeleton('—'), build).character.maxPreparedSpells.total ?? 0;
-  const maxLevel = maxSpellLevel(casting, level);
+  const maxLevel = maxSpellLevel(casting, classLevelAt(caster, level));
   const book =
     casting.mode === 'spellbook'
-      ? collect(build).poolPicks.filter((p) => p.pool === 'spellbook' && p.active).map((p) => p.id)
+      ? collect(build).poolPicks.filter((p) => p.pool === SPELLBOOK_POOL && p.active).map((p) => p.id)
       : undefined;
   const feature = { id: 'creation.prepared', name: 'Использование заклинаний', description: '' };
   return {
@@ -173,7 +174,7 @@ export function preparedSpellsChoice(build: DndBuild): OpenChoice | null {
         ? 'Из заклинаний вашей книги. Список можно менять после продолжительного отдыха, на листе в разделе «Магия».'
         : 'Список можно менять после продолжительного отдыха, на листе в разделе «Магия».',
     },
-    owner: { key: 'creation', feature, level, source: 'class' },
+    owner: { key: 'creation', feature, level, source: 'class', classId: caster.def.id, classLevel: classLevelAt(caster, level), ctx: buildContext(build, caster) },
   };
 }
 
@@ -202,13 +203,12 @@ export const emptyBuild = (): DndBuild => ({
   ruleset: 'dnd2024',
   species: '',
   background: '',
-  class: '',
+  classes: [],
   abilityMethod: 'pointBuy',
   baseAttributes: startingAttributes(),
   backgroundBonuses: {},
   choices: {},
   hitPoints: [],
-  level: 1,
 });
 
 /** Picks under a root of the build (`species`, `background`, `class`…) are forgotten when it changes. */

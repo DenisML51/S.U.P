@@ -181,8 +181,7 @@ export const BackgroundStep: React.FC<{ creation: DndCreation }> = ({ creation }
 // ------------------------------------------------------------------------------------------------
 
 export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => {
-  const { build } = creation;
-  const classDef = findClass(build.class);
+  const classDef = findClass(creation.classId);
   const levels = classDef
     ? Object.entries(classDef.levels)
         .map(([level, features]) => [Number(level), features.filter((f) => !f.hidden).map((f) => f.name)] as const)
@@ -195,7 +194,7 @@ export const ClassStep: React.FC<{ creation: DndCreation }> = ({ creation }) => 
     <div className="flex min-h-full flex-col">
       {!chosen && <div className="flex-1" aria-hidden />}
       <motion.div layout="position" transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
-        <ClassCarousel value={build.class} onChange={creation.setClass} onClear={creation.clearClass} />
+        <ClassCarousel value={creation.classId ?? ''} onChange={creation.setClass} onClear={creation.clearClass} />
       </motion.div>
       <motion.div
         key={chosen ? 'chosen' : 'empty'}
@@ -290,7 +289,7 @@ export const AbilitiesStep: React.FC<{ creation: DndCreation }> = ({ creation })
   };
   const points = pointsRemaining(scores);
   /** The class's main scores, marked on their cards: where the points matter most. */
-  const primary = new Set<string>(findClass(build.class)?.primary ?? []);
+  const primary = new Set<string>(findClass(creation.classId)?.primary ?? []);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col items-center">
@@ -379,14 +378,14 @@ export const ProgressionStep: React.FC<{ creation: DndCreation }> = ({ creation 
   const [shown, setShown] = useState<number | 'spells'>(1);
   const prepared = preparedSpellsChoice(build);
   const spellsShown = shown === 'spells' && !!prepared;
-  const level = spellsShown ? build.level : Math.min(shown === 'spells' ? 1 : shown, build.level);
+  const level = spellsShown ? creation.level : Math.min(shown === 'spells' ? 1 : shown, creation.level);
   return (
     <div className="grid grid-cols-[11rem_minmax(0,1fr)] gap-6 max-sm:grid-cols-1">
       <div className="flex min-h-0 flex-col">
         <label className="ui-label">Начальный уровень</label>
-        <NumberField value={build.level} min={1} max={20} onChange={creation.setLevel} label="Начальный уровень" className="mb-4" />
+        <NumberField value={creation.level} min={1} max={20} onChange={creation.setLevel} label="Начальный уровень" className="mb-4" />
         <div className="ui-scroll grid min-h-0 content-start gap-1 overflow-y-auto pr-1">
-          {Array.from({ length: build.level }, (_, i) => i + 1).map((l) => {
+          {Array.from({ length: creation.level }, (_, i) => i + 1).map((l) => {
             const open = planIssues(build, l, CLASS_SOURCES).length;
             return (
               <button key={l} type="button" className="ui-option flex-row items-center justify-between py-1.5" aria-pressed={!spellsShown && l === level} onClick={() => setShown(l)}>
@@ -407,10 +406,10 @@ export const ProgressionStep: React.FC<{ creation: DndCreation }> = ({ creation 
       </div>
       <div className="min-w-0 border-l border-line/60 pl-6">
         <h3 className="ui-display ui-title mb-4 text-[1.6rem] leading-tight text-frame-bright">
-          {spellsShown ? 'Заклинания' : `${findClass(build.class)?.name} · уровень ${level}`}
+          {spellsShown ? 'Заклинания' : `${findClass(creation.classId)?.name} · уровень ${level}`}
         </h3>
         {spellsShown && prepared ? (
-          <ChoiceField build={build} level={build.level} open={prepared} onChange={creation.setBuild} />
+          <ChoiceField build={build} level={creation.level} open={prepared} onChange={creation.setBuild} />
         ) : (
           <LevelPlanView build={build} level={level} sources={CLASS_SOURCES} onChange={creation.setBuild} />
         )}
@@ -475,7 +474,7 @@ const KitChoice: React.FC<{ title: string; origin: string; kits: KitOption[]; se
 );
 
 export const EquipmentStep: React.FC<{ creation: DndCreation }> = ({ creation }) => {
-  const classDef = findClass(creation.build.class);
+  const classDef = findClass(creation.classId);
   const background = findBackground(creation.build.background);
   return (
     <div className="mx-auto max-w-5xl">

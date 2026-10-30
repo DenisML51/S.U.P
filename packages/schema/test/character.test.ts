@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CharacterSchema, createCharacterDocument, toCharacterPreview } from '../src';
+import { BuildSchema, CharacterSchema, createCharacterDocument, toCharacterPreview } from '../src';
 import { makeCharacter } from './fixtures';
 
 const minimal = {
@@ -133,6 +133,47 @@ describe('CharacterSchema', () => {
     const second = CharacterSchema.parse(minimal);
     expect(second.inventory).toEqual([]);
     expect(second.currency.gold).toBe(0);
+  });
+});
+
+describe('D&D build', () => {
+  const dnd = { ruleset: 'dnd2024', species: 'human', background: 'sage' };
+
+  it('reads a build saved before multiclassing as its one class taking every level', () => {
+    const build = BuildSchema.parse({
+      ...dnd,
+      class: 'wizard',
+      subclass: 'evoker',
+      level: 3,
+      choices: {
+        'casting:spells-1/spellbook': ['shield'],
+        'swap:known-cantrips@2/forget': ['light'],
+        'class:wizard.skills/skills': ['arcana', 'history'],
+      },
+    });
+    expect(build).toMatchObject({ classes: [{ class: 'wizard', subclass: 'evoker', levels: [1, 2, 3] }] });
+    expect(build).not.toHaveProperty('class');
+    expect(build).not.toHaveProperty('level');
+    // The picks of the class's spellcasting are kept under its name; the others stay as they were.
+    expect(build.ruleset === 'dnd2024' && Object.keys(build.choices).sort()).toEqual([
+      'casting:wizard.spells-1/spellbook',
+      'class:wizard.skills/skills',
+      'swap:wizard.known-cantrips@2/forget',
+    ]);
+  });
+
+  it('reads a hero in the making without a class as one with no classes yet', () => {
+    expect(BuildSchema.parse({ ...dnd, class: '', level: 1 })).toMatchObject({ classes: [] });
+  });
+
+  it('keeps every character level in exactly one class, from the first on', () => {
+    const parse = (classes: unknown) => BuildSchema.safeParse({ ...dnd, classes }).success;
+    expect(parse([{ class: 'fighter', levels: [1, 2, 4] }, { class: 'wizard', levels: [3] }])).toBe(true);
+    expect(parse([{ class: 'fighter', levels: [1, 2] }, { class: 'wizard', levels: [4] }])).toBe(false);
+    expect(parse([{ class: 'fighter', levels: [1, 2] }, { class: 'wizard', levels: [2] }])).toBe(false);
+    expect(parse([{ class: 'fighter', levels: [2, 1] }])).toBe(false);
+    expect(parse([{ class: 'fighter', levels: [1] }, { class: 'fighter', levels: [2] }])).toBe(false);
+    expect(parse([{ class: 'fighter', levels: [] }])).toBe(false);
   });
 });
 

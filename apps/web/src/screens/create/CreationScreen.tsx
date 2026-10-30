@@ -2,7 +2,7 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { pointsRemaining } from '@itd/game-logic';
 import { TALENTS } from '@itd/game-logic/coc';
-import { findBackground, findClass, findSubclass } from '@itd/game-logic/dnd';
+import { findBackground, findClass } from '@itd/game-logic/dnd';
 import { DEFAULT_SETTING, type Setting } from '@itd/schema';
 import { Button, IconButton, Panel, cx } from '../../ui/primitives';
 import { IconCharacter, IconCheck, IconClose, IconPrev } from '../../ui/icons';
@@ -180,8 +180,7 @@ export const CreationScreen: React.FC<{
   ];
 
   const { build, preview } = dnd;
-  const classDef = findClass(build.class);
-  const subclass = findSubclass(classDef, build.subclass);
+  const classDef = findClass(dnd.classId);
   const dndSteps: Step[] = [
     {
       id: 'species',
@@ -202,7 +201,7 @@ export const CreationScreen: React.FC<{
     {
       id: 'class',
       label: 'Класс',
-      value: [classDef?.name, subclass?.name].filter(Boolean).join(' · ') || undefined,
+      value: classDef ? [preview.class, preview.subclass].filter(Boolean).join(' · ') : undefined,
       question: 'Чему он посвятил жизнь?',
       issues: dnd.issues.class,
       content: <ClassStep creation={dnd} />,
@@ -221,7 +220,7 @@ export const CreationScreen: React.FC<{
     {
       id: 'progression',
       label: 'Развитие',
-      value: classDef ? `Уровень ${build.level}` : undefined,
+      value: classDef ? `Уровень ${dnd.level}` : undefined,
       question: 'Чему он научился на своём пути?',
       issues: dnd.issues.progression,
       content: <ProgressionStep creation={dnd} />,
@@ -479,7 +478,7 @@ export const CreationScreen: React.FC<{
         sheet={summary}
         setting={setting}
         images={images}
-        classIcon={path === 'dnd' ? build.class : undefined}
+        classIcon={path === 'dnd' ? dnd.classId : undefined}
       />
     );
 

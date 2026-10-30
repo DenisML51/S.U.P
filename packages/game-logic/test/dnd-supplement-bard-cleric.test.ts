@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, levelPlan, setPicks } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
 const fresh = (): Character => makeCharacter({ skills: startingSkills(), maxHP: 10, currentHP: 10 });
 const resource = (c: Character, id: string) => c.resources.find((r) => r.id === id);
 const ability = (c: Character, name: string) => c.abilities.find((a) => a.name === name);
 
-const bard = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const bard = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'entertainer',
@@ -23,7 +23,7 @@ const bard = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ...patch,
 });
 
-const cleric = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const cleric = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'acolyte',
@@ -82,19 +82,19 @@ describe('supplement subclasses of the bard and the cleric', () => {
     expect(c3.traits.find((t) => t.id === 'g-proficiencies')?.description).toContain('Друидический');
     expect(c3.spells.some((s) => s.id === 'spell-moonbeam')).toBe(false);
 
-    const plan = levelPlan(b3, 3);
+    const plan = levelPlan(atLevel(b3, 3), 3);
     const cantrip = plan.choices.find((c) => c.key.endsWith('moon.primal-lore/cantrip'))!;
     expect(cantrip.count).toBe(1);
-    const options = choiceOptions(b3, 3, cantrip).map((o) => o.id);
+    const options = choiceOptions(atLevel(b3, 3), 3, cantrip).map((o) => o.id);
     expect(options).toContain('druidcraft');
     expect(options.every((id) => DND.spells.find((s) => s.id === id)?.level === 0)).toBe(true);
     const skill = plan.choices.find((c) => c.key.endsWith('moon.primal-lore/skill'))!;
-    expect(choiceOptions(b3, 3, skill).map((o) => o.id).sort()).toEqual(['animalHandling', 'insight', 'medicine', 'nature', 'perception', 'survival']);
+    expect(choiceOptions(atLevel(b3, 3), 3, skill).map((o) => o.id).sort()).toEqual(['animalHandling', 'insight', 'medicine', 'nature', 'perception', 'survival']);
 
     const picked = setPicks(b3, cantrip.key, ['druidcraft']);
     expect(applyBuild(fresh(), picked).character.spells.find((s) => s.id === 'spell-druidcraft')?.alwaysPrepared).toBe(true);
     // The druid cantrip may be replaced on a later bard level.
-    expect(levelPlan({ ...picked, level: 4 }, 4).choices.some((c) => c.key.includes('moon-cantrip@4'))).toBe(true);
+    expect(levelPlan(atLevel(picked, 4), 4).choices.some((c) => c.key.includes('moon-cantrip@4'))).toBe(true);
 
     const c6 = applyBuild(fresh(), bard({ level: 6, subclass: 'college-of-the-moon' })).character;
     expect(c6.spells.find((s) => s.id === 'spell-moonbeam')?.alwaysPrepared).toBe(true);
@@ -130,10 +130,10 @@ describe('supplement subclasses of the bard and the cleric', () => {
 
   it('Knowledge Domain: expertise, mind magic, Intelligence saves and foresight', () => {
     const b3 = cleric({ level: 3, subclass: 'knowledge-domain' });
-    const plan = levelPlan(b3, 3);
+    const plan = levelPlan(atLevel(b3, 3), 3);
     const skills = plan.choices.find((c) => c.key.endsWith('knowledge.blessings-of-knowledge/skills'))!;
     expect(skills.count).toBe(2);
-    expect(choiceOptions(b3, 3, skills).map((o) => o.id).sort()).toEqual(['arcana', 'history', 'nature', 'religion']);
+    expect(choiceOptions(atLevel(b3, 3), 3, skills).map((o) => o.id).sort()).toEqual(['arcana', 'history', 'nature', 'religion']);
     expect(plan.choices.some((c) => c.key.endsWith('knowledge.blessings-of-knowledge/tool'))).toBe(true);
 
     const c3 = applyBuild(fresh(), setPicks(b3, skills.key, ['arcana', 'history'])).character;
@@ -176,26 +176,26 @@ describe('supplement subclasses of the bard and the cleric', () => {
     expect(ability(c3, 'Изменение магии: укрепляющее заклинание')).toMatchObject({ damage: '2d8+3', resourceId: 'cleric.channel-divinity' });
     expect(ability(c3, 'Изменение магии: упорное заклинание')).toMatchObject({ damage: '1d6', resourceId: 'cleric.channel-divinity' });
 
-    const plan = levelPlan(b3, 3);
+    const plan = levelPlan(atLevel(b3, 3), 3);
     const cantrips = plan.choices.find((c) => c.key.endsWith('arcana.arcane-initiate/cantrips'))!;
     expect(cantrips.count).toBe(2);
-    expect(choiceOptions(b3, 3, cantrips).map((o) => o.id)).toContain('fire-bolt');
+    expect(choiceOptions(atLevel(b3, 3), 3, cantrips).map((o) => o.id)).toContain('fire-bolt');
     const skill = plan.choices.find((c) => c.key.endsWith('arcana.arcane-initiate/skill'))!;
-    expect(choiceOptions(b3, 3, skill).map((o) => o.id)).toContain('arcana');
+    expect(choiceOptions(atLevel(b3, 3), 3, skill).map((o) => o.id)).toContain('arcana');
 
     const picked = setPicks(b3, cantrips.key, ['fire-bolt', 'mage-hand']);
     const withCantrips = applyBuild(fresh(), picked).character;
     expect(withCantrips.spells.find((s) => s.id === 'spell-fire-bolt')?.alwaysPrepared).toBe(true);
-    expect(levelPlan({ ...picked, level: 4 }, 4).choices.some((c) => c.key.includes('arcana-cantrips@4'))).toBe(true);
+    expect(levelPlan(atLevel(picked, 4), 4).choices.some((c) => c.key.includes('arcana-cantrips@4'))).toBe(true);
 
     const c6 = applyBuild(fresh(), cleric({ level: 6, subclass: 'arcana-domain' })).character;
     expect(resource(c6, 'arcana.dispelling-recovery')).toMatchObject({ max: 1, recovery: 'short' });
 
     const b17 = cleric({ level: 17, subclass: 'arcana-domain' });
-    const plan17 = levelPlan(b17, 17);
+    const plan17 = levelPlan(atLevel(b17, 17), 17);
     for (const circle of [6, 7, 8, 9]) {
       const choice = plan17.choices.find((c) => c.key.endsWith(`arcana.arcane-mastery/spell-${circle}`))!;
-      const ids = choiceOptions(b17, 17, choice).map((o) => o.id);
+      const ids = choiceOptions(atLevel(b17, 17), 17, choice).map((o) => o.id);
       expect(ids.length).toBeGreaterThan(0);
       expect(ids.every((id) => DND.spells.find((s) => s.id === id)?.level === circle)).toBe(true);
     }

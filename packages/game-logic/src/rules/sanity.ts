@@ -34,7 +34,7 @@ type SanitySource = Pick<Character, 'class' | 'attributes' | 'level' | 'build'> 
 export function baseMaxSanityOf(character: SanitySource): number {
   const build = character.build;
   if (build?.ruleset === 'coc7') return cocMaxSanity(character.coc);
-  const presetClass = build?.ruleset === 'dnd2024' ? build.class : undefined;
+  const presetClass = build?.ruleset === 'dnd2024' ? build.classes[0]?.class : undefined;
   return calculateMaxSanity(presetClass ?? character.class, attributeScore(character, 'wisdom'), character.level, !!presetClass);
 }
 

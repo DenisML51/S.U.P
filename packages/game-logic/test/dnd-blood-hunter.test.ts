@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createCharacterDocument, type Character, type DndBuild } from '@itd/schema';
 import { activeFeaturesOf, armorClassOf, longRest, performAction, planD20, savingThrowModifier, shortRest, speedOf, totalMaxHP } from '../src';
 import { applyBuild, choiceOptions, createDndHero, levelPlan, setPicks, sheetChoices, unfinishedChoices } from '../src/dnd';
-import { sequence } from './helpers';
+import { sequence, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
 /**
  * The homebrew Blood Hunters: Matthew Mercer's (2020, errata 2022) and laserllama's Alternate Blood
@@ -10,7 +10,7 @@ import { sequence } from './helpers';
  * Sacrifice off the maximum, amplified uses, dice of a stance dealt beside a weapon's damage.
  */
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -23,7 +23,7 @@ const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
   level: 1,
   ...patch,
 });
-const alt = (patch: Partial<DndBuild> = {}): DndBuild => build({ class: 'alt-blood-hunter', ...patch });
+const alt = (patch: Partial<SingleClassBuild> = {}): DndBuild => build({ class: 'alt-blood-hunter', ...patch });
 
 const hero = (b: DndBuild): Character => createCharacterDocument(createDndHero({ name: 'Т', build: b, classKitId: 'a', backgroundKitId: 'b' }));
 const rebuilt = (c: Character): Character => applyBuild(c, c.build as DndBuild).character;
@@ -41,7 +41,7 @@ const longsword = (c: Character) => c.attacks.find((a) => a.name === 'Длинн
 describe('Blood Hunter (Matthew Mercer)', () => {
   it('writes a level-1 hunter with hemocraft, Blood Maledict and a curse', () => {
     let b = build();
-    const plan = levelPlan(b, 1);
+    const plan = levelPlan(atLevel(b, 1), 1);
     expect(plan.choices.map((c) => c.key)).toEqual(
       expect.arrayContaining(['class:blood-hunter.skills/skills', 'class:blood-hunter.key-ability/ability', 'class:blood-hunter.blood-maledict/curse']),
     );
@@ -73,7 +73,7 @@ describe('Blood Hunter (Matthew Mercer)', () => {
     expect([1, 6, 13, 17].map((l) => uses(l))).toEqual([1, 2, 3, 4]);
     // Curse Specialist of the Ghostslayer.
     expect(uses(3, 'order-of-the-ghostslayer')).toBe(2);
-    const curses = (level: number) => levelPlan(build({ level }), level).choices.filter((c) => c.choice.pool === 'blood-curses').length;
+    const curses = (level: number) => levelPlan(atLevel(build({ level }), level), level).choices.filter((c) => c.choice.pool === 'blood-curses').length;
     expect([1, 6, 10, 14, 18].map(curses)).toEqual([1, 1, 1, 1, 1]);
     expect([2, 5, 9].map(curses)).toEqual([0, 0, 0]);
   });
@@ -109,13 +109,13 @@ describe('Blood Hunter (Matthew Mercer)', () => {
   it('offers esoteric rites only from level 14', () => {
     const open = (level: number) => {
       const b = build({ level });
-      const choice = levelPlan(b, 2).choices.find((c) => c.key === 'class:blood-hunter.crimson-rite/rite')!;
-      return choiceOptions(b, 2, choice).find((o) => o.id === 'rite-of-the-dead')!.disabled;
+      const choice = levelPlan(atLevel(b, 2), 2).choices.find((c) => c.key === 'class:blood-hunter.crimson-rite/rite')!;
+      return choiceOptions(atLevel(b, 2), 2, choice).find((o) => o.id === 'rite-of-the-dead')!.disabled;
     };
     expect(open(14)).toBe('С 14-го уровня');
     const b14 = build({ level: 14 });
-    const later = levelPlan(b14, 14).choices.find((c) => c.choice.pool === 'crimson-rites')!;
-    expect(choiceOptions(b14, 14, later).find((o) => o.id === 'rite-of-the-dead')!.disabled).toBeUndefined();
+    const later = levelPlan(atLevel(b14, 14), 14).choices.find((c) => c.choice.pool === 'crimson-rites')!;
+    expect(choiceOptions(atLevel(b14, 14), 14, later).find((o) => o.id === 'rite-of-the-dead')!.disabled).toBeUndefined();
   });
 
   it('amplifies a curse for a hemocraft die of its own and refuses it with no maledict left', () => {
@@ -183,7 +183,7 @@ describe('Blood Hunter (Matthew Mercer)', () => {
     expect(c.spellcastingDifficultyValue).toBe(15);
     expect(c.spells.find((s) => s.id === 'spell-scorching-ray')?.alwaysPrepared).toBe(true);
     expect(c.spells.find((s) => s.id === 'spell-fireball')?.resourceId).toBe('profane.unsealed-arcana');
-    const known = levelPlan(b, 3).choices.find((c2) => c2.choice.pool === 'known-spells')!;
+    const known = levelPlan(atLevel(b, 3), 3).choices.find((c2) => c2.choice.pool === 'blood-hunter.known-spells')!;
     expect(known.count).toBe(2);
     expect(known.choice.spellAbility).toBe('intelligence');
   });
@@ -200,7 +200,7 @@ describe('Blood Hunter (Matthew Mercer)', () => {
 describe('Alternate Blood Hunter (laserllama)', () => {
   it('writes a level-1 hunter: d12, Constitution and Charisma saves, a style and occult lore', () => {
     let b = alt();
-    const plan = levelPlan(b, 1);
+    const plan = levelPlan(atLevel(b, 1), 1);
     expect(plan.choices.map((c) => c.key)).toEqual(
       expect.arrayContaining(['class:alt-blood-hunter.fighting-style/style', 'class:alt-blood-hunter.occult-lore/skill']),
     );
@@ -214,8 +214,8 @@ describe('Alternate Blood Hunter (laserllama)', () => {
 
   it('checks the prerequisites of its fighting styles', () => {
     const b = alt({ baseAttributes: { strength: 15, dexterity: 10, constitution: 14, intelligence: 10, wisdom: 12, charisma: 8 }, backgroundBonuses: { strength: 2, constitution: 1 } });
-    const open = levelPlan(b, 1).choices.find((c) => c.key === 'class:alt-blood-hunter.fighting-style/style')!;
-    const options = choiceOptions(b, 1, open);
+    const open = levelPlan(atLevel(b, 1), 1).choices.find((c) => c.key === 'class:alt-blood-hunter.fighting-style/style')!;
+    const options = choiceOptions(atLevel(b, 1), 1, open);
     expect(options.find((o) => o.id === 'archery')?.disabled).toBe('Ловкость 13+');
     expect(options.find((o) => o.id === 'polearm-fighting')?.disabled).toBe('Сила и Ловкость 11+');
     expect(options.find((o) => o.id === 'featherweight-fighting')?.disabled).toBe('Ловкость 13+');
@@ -267,14 +267,14 @@ describe('Alternate Blood Hunter (laserllama)', () => {
     expect(performAction(used, { kind: 'ability', id: reaping.id }).ok).toBe(false);
     // Vital Control and Sanguine Mastery: the lower of two, less Constitution (+2), at least 1.
     expect(ability(c, 'Обряд агонии')?.hpCostWhenSpent).toEqual({ dice: '1d10', lowersMax: true, rollTwice: true });
-    const twenty = applyBuild(hero({ ...b, level: 20 }), { ...b, level: 20 }).character;
+    const twenty = applyBuild(hero(atLevel(b, 20)), atLevel(b, 20)).character;
     expect(ability(twenty, 'Обряд агонии')?.hpCostWhenSpent).toEqual({ dice: '1d10', lowersMax: true, rollTwice: true, minus: 2, min: 1 });
   });
 
   it('makes a Crimson Offering of the chosen type, free once a rest from level 6', () => {
     const pick = (level: number, type: string) => setPicks(alt({ level }), 'class:alt-blood-hunter.crimson-offering/type', [type]);
-    const open = levelPlan(alt({ level: 5 }), 2).choices.find((c) => c.key === 'class:alt-blood-hunter.crimson-offering/type')!;
-    expect(choiceOptions(alt({ level: 5 }), 2, open).find((o) => o.id === 'necrotic')?.disabled).toBe('С 11-го уровня');
+    const open = levelPlan(atLevel(alt({ level: 5 }), 2), 2).choices.find((c) => c.key === 'class:alt-blood-hunter.crimson-offering/type')!;
+    expect(choiceOptions(atLevel(alt({ level: 5 }), 2), 2, open).find((o) => o.id === 'necrotic')?.disabled).toBe('С 11-го уровня');
     const early = applyBuild(hero(pick(5, 'acid')), pick(5, 'acid')).character;
     const { character: acid, costs } = use(early, 'Багровое подношение: кислота', { dice: [0.2] });
     expect(costs.maxHitPoints).toBe(2);
@@ -300,16 +300,16 @@ describe('Alternate Blood Hunter (laserllama)', () => {
     expect(c.resources.find((r) => r.id === 'pact-slots')).toMatchObject({ max: 2, spellSlotLevel: 2 });
     // 8 + 3 + Constitution 15 (+2).
     expect(c.spellcastingDifficultyValue).toBe(13);
-    const cantrips = levelPlan(b, 3).choices.find((ch) => ch.choice.pool === 'known-cantrips')!;
-    const names = choiceOptions(b, 3, cantrips).map((o) => o.id);
+    const cantrips = levelPlan(atLevel(b, 3), 3).choices.find((ch) => ch.choice.pool === 'alt-blood-hunter.known-cantrips')!;
+    const names = choiceOptions(atLevel(b, 3), 3, cantrips).map((o) => o.id);
     expect(names).toEqual(expect.arrayContaining(['booming-blade', 'toll-the-dead', 'frostbite']));
     expect(names).not.toContain('eldritch-blast');
   });
 
   it('curses a Pale Moon hunter with a beast of challenge 1 to shift into', () => {
     let b = alt({ level: 3, subclass: 'order-of-the-pale-moon' });
-    const choice = levelPlan(b, 3).choices.find((c) => c.key === 'subclass:pale-moon.lycanthropic-curse/beast')!;
-    const options = choiceOptions(b, 3, choice);
+    const choice = levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === 'subclass:pale-moon.lycanthropic-curse/beast')!;
+    const options = choiceOptions(atLevel(b, 3), 3, choice);
     expect(options.find((o) => o.id === 'dire-wolf')?.disabled).toBeUndefined();
     expect(options.find((o) => o.id === 'giant-eagle')?.disabled).toBeUndefined();
     expect(options.find((o) => o.id === 'polar-bear')?.disabled).toBeDefined();
@@ -325,16 +325,16 @@ describe('Alternate Blood Hunter (laserllama)', () => {
 
   it('lets a Heretic take a domain Channel Divinity with the Rite DC', () => {
     let b = alt({ level: 3, subclass: 'order-of-heretics' });
-    const choice = levelPlan(b, 3).choices.find((c) => c.key === 'subclass:heretics.blasphemous-prayer/domain')!;
-    expect(choiceOptions(b, 3, choice).length).toBeGreaterThanOrEqual(4);
-    b = setPicks(b, choice.key, [choiceOptions(b, 3, choice).find((o) => o.name.includes('Домен света'))!.id]);
+    const choice = levelPlan(atLevel(b, 3), 3).choices.find((c) => c.key === 'subclass:heretics.blasphemous-prayer/domain')!;
+    expect(choiceOptions(atLevel(b, 3), 3, choice).length).toBeGreaterThanOrEqual(4);
+    b = setPicks(b, choice.key, [choiceOptions(atLevel(b, 3), 3, choice).find((o) => o.name.includes('Домен света'))!.id]);
     const c = applyBuild(hero(b), b).character;
     const dawn = c.abilities.find((a) => a.grant?.includes('heretics.') && a.saveAttribute);
     // 8 + 2 + Constitution 15 (+2).
     expect(dawn?.saveDC).toBe(12);
     expect(dawn?.hpCostWhenSpent?.lowersMax).toBe(true);
     expect(ability(c, 'Порицание божественного')?.amplify).toBeUndefined();
-    const anathema = applyBuild(hero({ ...b, level: 13 }), { ...b, level: 13 }).character;
+    const anathema = applyBuild(hero(atLevel(b, 13)), atLevel(b, 13)).character;
     expect(ability(anathema, 'Порицание божественного')?.amplify?.hpCost?.lowersMax).toBe(true);
   });
 
@@ -347,7 +347,7 @@ describe('Alternate Blood Hunter (laserllama)', () => {
     const { character: shelled } = use(mutated, 'Искусственный панцирь');
     expect(armorClassOf(shelled)).toBe(ac + 2);
     expect(ability(c, 'Искусственный панцирь')?.actionType).toBe('passive');
-    expect(unfinishedChoices(b, levelPlan(b, 3)).some((ch) => ch.key === 'subclass:alchemists.mutate/mutagens')).toBe(false);
+    expect(unfinishedChoices(b, levelPlan(atLevel(b, 3), 3)).some((ch) => ch.key === 'subclass:alchemists.mutate/mutagens')).toBe(false);
   });
 });
 
@@ -357,10 +357,10 @@ describe('Blood Hunters built to level 20', () => {
     let b = start;
     for (let level = 1; level <= 20; level += 1) {
       for (let guard = 0; guard < 12; guard += 1) {
-        const open = unfinishedChoices(b, levelPlan(b, level));
+        const open = unfinishedChoices(b, levelPlan(atLevel(b, level), level));
         if (open.length === 0) break;
         for (const choice of open) {
-          const free = choiceOptions(b, level, choice).filter((o) => !o.disabled && !choice.picked.includes(o.id));
+          const free = choiceOptions(atLevel(b, level), level, choice).filter((o) => !o.disabled && !choice.picked.includes(o.id));
           b = setPicks(b, choice.key, [...choice.picked, ...free.slice(0, choice.count - choice.picked.length).map((o) => o.id)]);
         }
       }
@@ -375,7 +375,7 @@ describe('Blood Hunters built to level 20', () => {
     for (const subclass of orders) {
       it(`${classId} / ${subclass}: every pick made, nothing missing`, () => {
         const b = filled(build({ class: classId, subclass, level: 20 }));
-        for (let level = 1; level <= 20; level += 1) expect(unfinishedChoices(b, levelPlan(b, level))).toEqual([]);
+        for (let level = 1; level <= 20; level += 1) expect(unfinishedChoices(b, levelPlan(atLevel(b, level), level))).toEqual([]);
         const { character, missing } = applyBuild(hero(b), b);
         expect(missing).toEqual([]);
         expect(character.level).toBe(20);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { applyBuild, dndBuildOf, sheetChoices } from '@itd/game-logic/dnd';
+import { applyBuild, dndBuildOf, heroLevel, sheetChoices } from '@itd/game-logic/dnd';
 import type { Character, DndBuild } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { Dialog } from '../../ui/Dialog';
@@ -43,7 +43,7 @@ export const SheetChoicesDialog: React.FC<{ open: boolean; grant: string; onClos
     >
       <div className="space-y-6">
         {choices.map((open) => (
-          <ChoiceField key={open.key} build={draft} level={draft.level} open={open} onChange={setDraft} />
+          <ChoiceField key={open.key} build={draft} level={heroLevel(draft)} open={open} onChange={setDraft} />
         ))}
       </div>
     </Dialog>

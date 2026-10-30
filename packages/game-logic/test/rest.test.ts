@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Resource } from '@itd/schema';
 import { longRest, shortRest } from '../src';
 import { HIT_DICE_ID, applyBuild } from '../src/dnd';
-import { makeCharacter, sequence } from './helpers';
+import { makeCharacter, sequence, singleClass } from './helpers';
 
 const pool = (id: string, patch: Partial<Resource>): Resource => ({
   id,
@@ -125,7 +125,7 @@ describe('rest rules of preset heroes', () => {
       hitPoints: [],
       level: 2,
     };
-    const { resources } = applyBuild(makeCharacter(), build).character;
+    const { resources } = applyBuild(makeCharacter(), singleClass(build)).character;
     const byId = Object.fromEntries(resources.map((r) => [r.id, r]));
     expect(byId[HIT_DICE_ID]).toMatchObject({ hitDie: 10, max: 2, current: 2 });
     expect(byId['fighter.second-wind']).toMatchObject({ recovery: 'short', recoveryAmount: 1 });

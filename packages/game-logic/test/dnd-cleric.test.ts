@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, levelPlan, setPicks } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'acolyte',
@@ -46,12 +46,12 @@ describe('cleric', () => {
   });
 
   it('asks for three cantrips and the Divine Order on level 1', () => {
-    const plan = levelPlan(build(), 1);
+    const plan = levelPlan(atLevel(build(), 1), 1);
     expect(plan.choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(3);
     expect(plan.choices.some((c) => c.key === ORDER)).toBe(true);
-    expect(levelPlan(build(), 4).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
-    expect(levelPlan(build(), 10).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
-    expect(levelPlan(build(), 5).choices.some((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')).toBe(false);
+    expect(levelPlan(atLevel(build(), 4), 4).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
+    expect(levelPlan(atLevel(build(), 10), 10).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
+    expect(levelPlan(atLevel(build(), 5), 5).choices.some((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')).toBe(false);
   });
 
   it('gives the Protector heavy armour and martial weapons', () => {
@@ -62,11 +62,11 @@ describe('cleric', () => {
   });
 
   it('gives the Thaumaturge a cantrip from the shared pool and a Wisdom bonus to Arcana and Religion', () => {
-    let b = build({ choices: { 'casting:spells-1/cantrips': ['guidance', 'sacred-flame', 'thaumaturgy'] } });
+    let b = build({ choices: { 'casting:cleric.spells-1/cantrips': ['guidance', 'sacred-flame', 'thaumaturgy'] } });
     b = setPicks(b, ORDER, ['thaumaturge']);
-    const extra = levelPlan(b, 1).choices.find((c) => c.key === `${ORDER}=thaumaturge:cleric.thaumaturge/cantrip`)!;
+    const extra = levelPlan(atLevel(b, 1), 1).choices.find((c) => c.key === `${ORDER}=thaumaturge:cleric.thaumaturge/cantrip`)!;
     expect(extra).toBeDefined();
-    const options = choiceOptions(b, 1, extra);
+    const options = choiceOptions(atLevel(b, 1), 1, extra);
     expect(options.find((o) => o.id === 'guidance')?.disabled).toBeTruthy();
     expect(options.every((o) => o.meta?.startsWith('Заговор'))).toBe(true);
     const c = apply(setPicks(b, extra.key, ['light']));
@@ -76,8 +76,8 @@ describe('cleric', () => {
   });
 
   it('offers to replace a cantrip on later levels', () => {
-    const b = build({ level: 2, choices: { 'casting:spells-1/cantrips': ['guidance', 'sacred-flame', 'thaumaturgy'] } });
-    const swap = levelPlan(b, 2).choices.find((c) => c.key === 'swap:known-cantrips@2/forget');
+    const b = build({ level: 2, choices: { 'casting:cleric.spells-1/cantrips': ['guidance', 'sacred-flame', 'thaumaturgy'] } });
+    const swap = levelPlan(atLevel(b, 2), 2).choices.find((c) => c.key === 'swap:cleric.known-cantrips@2/forget');
     expect(swap).toBeDefined();
   });
 
@@ -106,7 +106,7 @@ describe('cleric', () => {
     expect(potent(7).abilities.some((a) => a.name === 'Могущественные заклинания')).toBe(true);
     expect(potent(13).abilities.some((a) => a.id.startsWith('g-cleric.improved-potent-spellcasting'))).toBe(false);
     expect(potent(14).abilities.some((a) => a.id.startsWith('g-cleric.improved-potent-spellcasting'))).toBe(true);
-    expect(levelPlan(setPicks(build(), key, ['divine-strike']), 14).features.some((f) => f.feature.id === 'cleric.improved-divine-strike')).toBe(true);
+    expect(levelPlan(atLevel(setPicks(build(), key, ['divine-strike']), 14), 14).features.some((f) => f.feature.id === 'cleric.improved-divine-strike')).toBe(true);
   });
 
   it('has full-caster slots and the prepared count of the table', () => {

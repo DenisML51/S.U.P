@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { createCharacterDocument, type Character, type DndBuild } from '@itd/schema';
 import { activeFeaturesOf, endFeature, longRest, performAction, planD20, setCondition, speedOf } from '../src';
 import { applyBuild, createDndHero } from '../src/dnd';
+import { singleClass, type SingleClassBuild } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
@@ -25,7 +26,7 @@ const use = (c: Character, name: string): Character => {
   if (!result.ok) throw new Error(result.message);
   return rebuilt(result.character);
 };
-const hero = (patch: Partial<DndBuild> = {}): Character =>
+const hero = (patch: Partial<SingleClassBuild> = {}): Character =>
   createCharacterDocument(createDndHero({ name: 'Т', build: build(patch), classKitId: 'a', backgroundKitId: 'b' }));
 const greataxe = (c: Character) => c.attacks.find((a) => a.name === 'Секира')!;
 
@@ -73,7 +74,7 @@ describe('Rage', () => {
 
   it('forgets a feature that is on once the sheet no longer has it', () => {
     const raging = use(hero(), 'Ярость');
-    const fighter = applyBuild(raging, { ...(raging.build as DndBuild), class: 'fighter' }).character;
+    const fighter = applyBuild(raging, { ...(raging.build as DndBuild), classes: [{ class: 'fighter', levels: [1] }] }).character;
     expect(fighter.activeFeatures).toBeUndefined();
   });
 });

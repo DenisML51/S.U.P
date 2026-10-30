@@ -8,13 +8,23 @@ import {
   emptyBuild,
   findBackground,
   findClass,
+  heroLevel,
   validBackgroundBonuses,
   withoutPicks,
 } from '@itd/game-logic/dnd';
-import type { DndBuild, CharacterImages, Setting } from '@itd/schema';
+import { BuildSchema, type DndBuild, type CharacterImages, type Setting } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { useClearDraft, useDraftState } from '../useDraftState';
 import { CLASS_SOURCES, planIssues } from '../../progression/LevelPlanView';
+
+/** A kept draft build, read the way the schema reads builds saved before multiclassing. */
+const reviveBuild = (stored: unknown): DndBuild | undefined => {
+  const parsed = BuildSchema.safeParse(stored);
+  return parsed.success && parsed.data.ruleset === 'dnd2024' ? parsed.data : undefined;
+};
+
+/** Character levels 1 to level. */
+const upTo = (level: number) => Array.from({ length: level }, (_, i) => i + 1);
 
 /**
  * A D&D 2024 hero in the making: the build, the starting kits and the identity. The sheet it would
@@ -23,7 +33,11 @@ import { CLASS_SOURCES, planIssues } from '../../progression/LevelPlanView';
 export function useDndCreation(setting: Setting, onCreated: () => void) {
   const createCharacter = useCharacterStore((s) => s.createCharacter);
   const clearDraft = useClearDraft();
-  const [build, setBuild] = useDraftState<DndBuild>('build', emptyBuild);
+  const [build, setBuild] = useDraftState<DndBuild>('build', emptyBuild, reviveBuild);
+  // The start level is picked before the class too; the class then takes every level of it.
+  const [startLevel, setStartLevel] = useDraftState('level', () => Math.max(1, heroLevel(build)));
+  const classId = build.classes[0]?.class;
+  const level = classId ? heroLevel(build) : startLevel;
   const [rolls, setRolls] = useDraftState<number[] | null>('rolls', null);
   const [classKitId, setClassKitId] = useDraftState<string | undefined>('classKit', undefined);
   const [backgroundKitId, setBackgroundKitId] = useDraftState<string | undefined>('backgroundKit', undefined);
@@ -36,13 +50,13 @@ export function useDndCreation(setting: Setting, onCreated: () => void) {
     [build, name, classKitId, backgroundKitId],
   );
 
-  const levels = Array.from({ length: build.level }, (_, i) => i + 1);
+  const levels = upTo(level);
   const issues = {
     species: !build.species ? ['Вид'] : planIssues(build, 1, ['species']),
     background: !build.background
       ? ['Предыстория']
       : [...(validBackgroundBonuses(build) ? [] : ['Увеличение характеристик']), ...planIssues(build, 1, ['background'])],
-    class: build.class ? [] : ['Класс'],
+    class: classId ? [] : ['Класс'],
     abilities:
       build.abilityMethod === 'pointBuy'
         ? pointsRemaining(build.baseAttributes) === 0
@@ -84,26 +98,28 @@ export function useDndCreation(setting: Setting, onCreated: () => void) {
       setBuild((b) => (b.background === background ? b : { ...withoutPicks(b, 'background'), background, backgroundBonuses }));
       setBackgroundKitId(undefined);
     },
-    setClass: (classId: string) => {
-      setBuild((b) => (b.class === classId ? b : { ...withoutPicks(b, 'class', 'subclass', 'casting'), class: classId, subclass: undefined }));
+    classId,
+    level,
+    setClass: (id: string) => {
+      setBuild((b) => (b.classes[0]?.class === id ? b : { ...withoutPicks(b, 'class', 'subclass', 'casting', 'swap'), classes: [{ class: id, levels: upTo(level) }] }));
       setClassKitId(undefined);
     },
     /** No class again: what was picked for one goes with it. */
     clearClass: () => {
-      setBuild((b) => ({ ...withoutPicks(b, 'class', 'subclass', 'casting'), class: '', subclass: undefined }));
+      setBuild((b) => ({ ...withoutPicks(b, 'class', 'subclass', 'casting', 'swap'), classes: [] }));
       setClassKitId(undefined);
     },
     /** Lowering the start level forgets the hit points and the subclass of the levels above it. */
-    setLevel: (level: number) =>
+    setLevel: (next: number) => {
+      setStartLevel(next);
       setBuild((b) => {
-        const classDef = findClass(b.class);
-        return {
-          ...b,
-          level,
-          subclass: classDef && level < classDef.subclassLevel ? undefined : b.subclass,
-          hitPoints: b.hitPoints.filter((entry) => entry.level <= level),
-        };
-      }),
+        const [entry] = b.classes;
+        if (!entry) return b;
+        const classDef = findClass(entry.class);
+        const subclass = classDef && next < classDef.subclassLevel ? undefined : entry.subclass;
+        return { ...b, classes: [{ ...entry, subclass, levels: upTo(next) }], hitPoints: b.hitPoints.filter((e) => e.level <= next) };
+      });
+    },
     rolls,
     setRolls,
     classKitId,

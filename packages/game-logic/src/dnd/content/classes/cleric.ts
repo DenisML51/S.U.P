@@ -513,7 +513,7 @@ const divineOrder: FeatureDef = {
                     id: 'cantrip',
                     label: 'Заговор жреца (1)',
                     count: 1,
-                    pool: 'known-cantrips',
+                    pool: 'cleric.known-cantrips',
                     spellAbility: 'wisdom',
                     options: { from: 'spells', lists: ['cleric'], maxLevel: 0 },
                   },

@@ -417,7 +417,7 @@ const primalOrder: FeatureDef = {
                     id: 'cantrip',
                     label: 'Заговор друида (1)',
                     count: 1,
-                    pool: 'known-cantrips',
+                    pool: 'druid.known-cantrips',
                     spellAbility: 'wisdom',
                     options: { from: 'spells', lists: ['druid'], maxLevel: 0 },
                   },

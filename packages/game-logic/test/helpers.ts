@@ -1,4 +1,19 @@
-import { CharacterSchema, type Character, type InventoryItem } from '@itd/schema';
+import { CharacterSchema, type Character, type DndBuild, type InventoryItem } from '@itd/schema';
+
+/** A D&D build of one class, written the short way: its class, subclass and level. */
+export type SingleClassBuild = Omit<DndBuild, 'classes'> & { class: string; subclass?: string; level?: number };
+
+/** The build of a hero who took every level in one class. */
+export const singleClass = ({ class: classId, subclass, level = 1, ...build }: SingleClassBuild): DndBuild => ({
+  ...build,
+  classes: [{ class: classId, subclass, levels: Array.from({ length: level }, (_, i) => i + 1) }],
+});
+
+/** A single-class build taken to another level. */
+export const atLevel = (build: DndBuild, level: number): DndBuild => ({
+  ...build,
+  classes: build.classes.map((c) => ({ ...c, levels: Array.from({ length: level }, (_, i) => i + 1) })),
+});
 
 let counter = 0;
 

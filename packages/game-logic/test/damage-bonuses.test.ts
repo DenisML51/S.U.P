@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { createCharacterDocument, type Character, type DndBuild } from '@itd/schema';
 import { onHitAttacks, spellDamageAt } from '../src';
 import { applyBuild, createDndHero, levelPlan, setPicks } from '../src/dnd';
+import { singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'sage',
@@ -20,7 +21,7 @@ const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
 const hero = (b: DndBuild): Character => createCharacterDocument(createDndHero({ name: 'Т', build: b, classKitId: 'a', backgroundKitId: 'a' }));
 /** Picks every open choice of `level` whose key ends with `suffix`. */
 const pick = (b: DndBuild, level: number, suffix: string, ids: string[]): DndBuild => {
-  const open = levelPlan(b, level).choices.find((c) => c.key.endsWith(suffix));
+  const open = levelPlan(atLevel(b, level), level).choices.find((c) => c.key.endsWith(suffix));
   if (!open) throw new Error(`No choice ${suffix} on level ${level}`);
   return setPicks(b, open.key, ids);
 };
