@@ -8,6 +8,7 @@ import {
   emptyBuild,
   findBackground,
   heroLevel,
+  preparedAtCreationKey,
   setHeroLevel,
   setLevelClass,
   validBackgroundBonuses,
@@ -18,11 +19,20 @@ import { useCharacterStore } from '../../../store/useCharacterStore';
 import { useClearDraft, useDraftState } from '../useDraftState';
 import { CLASS_SOURCES, planIssues } from '../../progression/LevelPlanView';
 
-/** A kept draft build, read the way the schema reads builds saved before multiclassing. */
+/**
+ * A kept draft build, read the way the schema reads builds saved before multiclassing; its starting
+ * prepared spells, kept then for the one class, become that class's.
+ */
 const reviveBuild = (stored: unknown): DndBuild | undefined => {
   const parsed = BuildSchema.safeParse(stored);
-  return parsed.success && parsed.data.ruleset === 'dnd2024' ? parsed.data : undefined;
+  if (!parsed.success || parsed.data.ruleset !== 'dnd2024') return undefined;
+  const { [LEGACY_PREPARED]: prepared, ...choices } = parsed.data.choices;
+  const first = parsed.data.classes[0]?.class;
+  return prepared && first ? { ...parsed.data, choices: { ...choices, [preparedAtCreationKey(first)]: prepared } } : parsed.data;
 };
+
+/** Where a draft kept its starting prepared spells before they were kept per class. */
+const LEGACY_PREPARED = 'creation:prepared';
 
 /** Character levels 1 to level. */
 const upTo = (level: number) => Array.from({ length: level }, (_, i) => i + 1);
