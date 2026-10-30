@@ -59,10 +59,7 @@ export const SlotPrompt: React.FC = () => {
                     ))
                   )}
                 </span>
-                <DamageBlock
-                  parts={spellDamageParts(character, spell, level)}
-                  className="min-w-0 !border-0 !bg-transparent !p-0 [&>div]:justify-end"
-                />
+                <DamageBlock plain parts={spellDamageParts(character, spell, level)} className="min-w-0 [&>div]:justify-end" />
               </Button>
             );
           })}
