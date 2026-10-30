@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 import type { DndBuild, Character } from '@itd/schema';
 import { startingSkills } from '../src';
 import { DND, applyBuild, choiceOptions, collect, levelPlan } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass, type SingleClassBuild, atLevel } from './helpers';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'sage',
@@ -47,15 +47,15 @@ describe('warlock', () => {
   });
 
   it('asks for two cantrips, two spells and one invocation on level 1', () => {
-    const plan = levelPlan(build(), 1);
+    const plan = levelPlan(atLevel(build(), 1), 1);
     expect(plan.choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(2);
     expect(plan.choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')?.count).toBe(2);
     expect(plan.choices.find((c) => c.key === INVOCATIONS)?.count).toBe(1);
-    expect(levelPlan(build(), 4).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
-    expect(levelPlan(build(), 10).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
+    expect(levelPlan(atLevel(build(), 4), 4).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
+    expect(levelPlan(atLevel(build(), 10), 10).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'cantrips')?.count).toBe(1);
     // Prepared Spells column: 10 at level 9, 10 at level 10 — no new spell on 10.
-    expect(levelPlan(build(), 10).choices.some((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')).toBe(false);
-    expect(levelPlan(build(), 6).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')?.count).toBe(1);
+    expect(levelPlan(atLevel(build(), 10), 10).choices.some((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')).toBe(false);
+    expect(levelPlan(atLevel(build(), 6), 6).choices.find((c) => c.key.startsWith('casting:') && c.choice.id === 'spells')?.count).toBe(1);
   });
 
   it('casts with pact slots that grow by the table', () => {
@@ -75,8 +75,8 @@ describe('warlock', () => {
 
   it('disables invocations whose level or pact prerequisite is not met', () => {
     const b = build();
-    const open = levelPlan(b, 1).choices.find((c) => c.key === INVOCATIONS)!;
-    const options = choiceOptions(b, 1, open);
+    const open = levelPlan(atLevel(b, 1), 1).choices.find((c) => c.key === INVOCATIONS)!;
+    const options = choiceOptions(atLevel(b, 1), 1, open);
     expect(options.length).toBe(DND.catalogs.invocations.length);
     expect(options.find((o) => o.id === 'agonizing-blast')?.disabled).toBe('С 2-го уровня');
     expect(options.find((o) => o.id === 'witch-sight')?.disabled).toBe('С 15-го уровня');
@@ -84,11 +84,11 @@ describe('warlock', () => {
     expect(options.find((o) => o.id === 'pact-of-the-blade')?.disabled).toBeUndefined();
 
     const at5 = build({ level: 5 });
-    const fifth = levelPlan(at5, 5).choices.find((c) => c.key === 'class:warlock.invocations-5/invocations')!;
-    expect(choiceOptions(at5, 5, fifth).find((o) => o.id === 'thirsting-blade')?.disabled).toMatch(/Договор клинка/);
+    const fifth = levelPlan(atLevel(at5, 5), 5).choices.find((c) => c.key === 'class:warlock.invocations-5/invocations')!;
+    expect(choiceOptions(atLevel(at5, 5), 5, fifth).find((o) => o.id === 'thirsting-blade')?.disabled).toMatch(/Договор клинка/);
     const blade = build({ level: 5, choices: { [INVOCATIONS]: ['pact-of-the-blade'] } });
-    expect(choiceOptions(blade, 5, fifth).find((o) => o.id === 'thirsting-blade')?.disabled).toBeUndefined();
-    expect(choiceOptions(blade, 5, fifth).find((o) => o.id === 'pact-of-the-blade')?.disabled).toBe('Уже есть');
+    expect(choiceOptions(atLevel(blade, 5), 5, fifth).find((o) => o.id === 'thirsting-blade')?.disabled).toBeUndefined();
+    expect(choiceOptions(atLevel(blade, 5), 5, fifth).find((o) => o.id === 'pact-of-the-blade')?.disabled).toBe('Уже есть');
   });
 
   it('writes invocations onto the sheet', () => {
@@ -112,22 +112,22 @@ describe('warlock', () => {
 
   it('offers the Book of Shadows picks of Pact of the Tome and the cantrip of Agonizing Blast', () => {
     const b = build({ level: 2, choices: { [INVOCATIONS]: ['pact-of-the-tome'], 'class:warlock.invocations-2/invocations': ['agonizing-blast'] } });
-    const plan = levelPlan(b, 2);
-    const cantrips = levelPlan(b, 1).choices.find((c) => c.key === `${INVOCATIONS}:pact-of-the-tome/cantrips`)!;
+    const plan = levelPlan(atLevel(b, 2), 2);
+    const cantrips = levelPlan(atLevel(b, 1), 1).choices.find((c) => c.key === `${INVOCATIONS}:pact-of-the-tome/cantrips`)!;
     expect(cantrips.count).toBe(3);
     expect(cantrips.choice.spellAbility).toBe('charisma');
-    const rituals = levelPlan(b, 1).choices.find((c) => c.key === `${INVOCATIONS}:pact-of-the-tome/rituals`)!;
+    const rituals = levelPlan(atLevel(b, 1), 1).choices.find((c) => c.key === `${INVOCATIONS}:pact-of-the-tome/rituals`)!;
     expect(rituals.count).toBe(2);
-    expect(choiceOptions(b, 1, rituals).every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
+    expect(choiceOptions(atLevel(b, 1), 1, rituals).every((o) => o.meta?.startsWith('1 круг'))).toBe(true);
     const blast = plan.choices.find((c) => c.key.endsWith(':agonizing-blast/cantrip'))!;
-    expect(choiceOptions(b, 2, blast).map((o) => o.id)).toContain('eldritch-blast');
+    expect(choiceOptions(atLevel(b, 2), 2, blast).map((o) => o.id)).toContain('eldritch-blast');
   });
 
   it('offers to replace an invocation on later levels', () => {
     const b = build({ level: 2, choices: { [INVOCATIONS]: ['armor-of-shadows'] } });
-    const swap = levelPlan(b, 2).choices.find((c) => c.key === 'swap:invocations@2/forget')!;
+    const swap = levelPlan(atLevel(b, 2), 2).choices.find((c) => c.key === 'swap:invocations@2/forget')!;
     expect(swap).toBeDefined();
-    expect(choiceOptions(b, 2, swap).map((o) => o.id)).toEqual(['armor-of-shadows']);
+    expect(choiceOptions(atLevel(b, 2), 2, swap).map((o) => o.id)).toEqual(['armor-of-shadows']);
   });
 
   it('gives Magical Cunning, Contact Patron and a Mystic Arcanum of exactly its level', () => {
@@ -137,9 +137,9 @@ describe('warlock', () => {
     for (const level of [6, 7, 8, 9]) expect(resource(c, `warlock.arcanum-${level}`)).toMatchObject({ max: 1, recovery: 'long' });
 
     const b = build({ level: 11 });
-    const arcanum = levelPlan(b, 11).choices.find((c) => c.key === 'class:warlock.mystic-arcanum-6/spell')!;
+    const arcanum = levelPlan(atLevel(b, 11), 11).choices.find((c) => c.key === 'class:warlock.mystic-arcanum-6/spell')!;
     expect(arcanum.choice.spellResource).toBe('warlock.arcanum-6');
-    const options = choiceOptions(b, 11, arcanum);
+    const options = choiceOptions(atLevel(b, 11), 11, arcanum);
     expect(options.every((o) => o.meta?.startsWith('6 круг'))).toBe(true);
     if (options[0]) {
       const spell = apply({ ...b, choices: { [arcanum.key]: [options[0].id] } }).spells.find((s) => s.id === `spell-${options[0]!.id}`);

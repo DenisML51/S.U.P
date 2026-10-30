@@ -14,7 +14,7 @@ import {
   DND_ICONS,
   describeGrant,
   dndBuildOf,
-  findClass,
+  hitDieAt,
 } from '@itd/game-logic/dnd';
 import type { CharacterDraft, CharacterImages, Setting } from '@itd/schema';
 import { assetUrl } from '../../data/api/client';
@@ -92,7 +92,8 @@ export const HeroSummary: React.FC<{
   const proficiencies = sheet.traits.find((t) => t.id === 'g-proficiencies')?.description;
   const mastery = sheet.traits.find((t) => t.id === 'g-weapon-mastery')?.description;
   const build = dndBuildOf(sheet);
-  const hitDie = findClass(build?.class)?.hitDie;
+  // The hero's first hit die: the class they start in.
+  const hitDie = build && hitDieAt(build, 1);
   const features = sheet.traits.filter((t) => t.id !== 'g-proficiencies' && t.id !== 'g-weapon-mastery');
   const [open, setOpen] = useState<{ entry: EntryInfo; kind: IconKind } | null>(null);
   const show = (entry: EntryInfo, kind: IconKind) => setOpen({ entry, kind });

@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { DndBuild } from '@itd/schema';
 import { performAction, resetTurn, spentActionsOf, startingSkills, strikesLeft } from '../src';
 import { applyBuild } from '../src/dnd';
-import { makeCharacter } from './helpers';
+import { makeCharacter, singleClass } from './helpers';
 
 const fighter = (level: number) =>
   applyBuild(
@@ -13,11 +12,11 @@ const fighter = (level: number) =>
       attacks: [{ id: 'sword', name: 'Меч', damage: '1d8', damageType: 'Рубящий', hitBonus: 5, actionType: 'action' }],
       abilities: [{ id: 'dash', name: 'Рывок', description: '', actionType: 'action', effect: '' }],
     }),
-    {
+    singleClass({
       ruleset: 'dnd2024', species: 'human', background: 'soldier', class: 'fighter', abilityMethod: 'pointBuy',
       baseAttributes: { strength: 15, dexterity: 14, constitution: 14, intelligence: 10, wisdom: 10, charisma: 10 },
       backgroundBonuses: {}, choices: {}, hitPoints: [], level,
-    } as DndBuild,
+    }),
   ).character;
 
 const attack = (c: ReturnType<typeof fighter>) => performAction(c, { kind: 'attack', id: 'sword', trackActionEconomy: true });
@@ -57,11 +56,11 @@ describe('fighting styles and weapon properties', () => {
   const kit = (...refs: string[]) =>
     refs.map((ref, i) => ({ id: `w${i}`, ref, name: ref, type: 'weapon' as const, equipped: true, weight: 1, cost: 1, description: '', weaponClass: 'melee' as const, damage: '1d6' }));
   const build = (choices: Record<string, string[]>) =>
-    ({
+    singleClass({
       ruleset: 'dnd2024', species: 'human', background: 'soldier', class: 'fighter', abilityMethod: 'pointBuy',
       baseAttributes: { strength: 16, dexterity: 14, constitution: 14, intelligence: 10, wisdom: 10, charisma: 10 },
       backgroundBonuses: {}, choices, hitPoints: [], level: 1,
-    }) as DndBuild;
+    });
   const armed = (refs: string[], style: string) => {
     const inventory = kit(...refs);
     const attacks = inventory.map((item) => ({ id: `attack_weapon_${item.id}`, name: item.name, damage: '1d6', damageType: '', hitBonus: 0, actionType: 'action' as const, weaponId: item.id }));

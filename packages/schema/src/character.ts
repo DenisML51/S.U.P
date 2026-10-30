@@ -427,6 +427,26 @@ const numberMap = (maxKeyLength: number) =>
 export const RULESETS = ['dnd2024', 'coc7'] as const;
 export type RulesetId = (typeof RULESETS)[number];
 
+/** A class of a D&D hero and the character levels the hero took in it. */
+export const DndClassSchema = passthroughObject({
+  class: shortText,
+  subclass: optionalShortText,
+  /**
+   * Character levels taken in this class, ascending: a fighter who took a wizard level third has
+   * the fighter's `[1, 2, 4]` and the wizard's `[3]`. Its class level is how many there are.
+   */
+  levels: text(z.array(numeric(int.min(1).max(20))).min(1).max(20)),
+});
+
+/** Every character level from 1 up belongs to exactly one class, each class's in ascending order. */
+const hasLevelsInOrder = (classes: { levels: number[] }[]): boolean => {
+  const all = classes.flatMap((c) => c.levels).sort((a, b) => a - b);
+  return (
+    all.every((level, i) => level === i + 1) &&
+    classes.every((c) => c.levels.every((level, i) => i === 0 || level > c.levels[i - 1]!))
+  );
+};
+
 /**
  * The preset choices a hero was built from (D&D 2024). The sheet's granted entries (abilities,
  * traits, resources, spells marked with `grant`) are derived from it and rebuilt on every level-up;
@@ -436,8 +456,18 @@ export const DndBuildSchema = passthroughObject({
   ruleset: z.literal('dnd2024'),
   species: shortTextOr(),
   background: shortTextOr(),
-  class: shortTextOr(),
-  subclass: optionalShortText,
+  /**
+   * Classes in the order they were taken; the first is the one the hero started in. Empty while
+   * a hero in the making has no class yet.
+   */
+  classes: text(
+    z
+      .array(DndClassSchema)
+      .max(20)
+      .default([])
+      .refine(hasLevelsInOrder, 'Уровни классов должны идти с 1-го подряд, каждый у одного класса')
+      .refine((classes) => new Set(classes.map((c) => c.class)).size === classes.length, 'Класс указан дважды'),
+  ),
   abilityMethod: text(z.enum(['pointBuy', 'roll', 'manual']).default('manual')),
   /** Scores before any increase. */
   baseAttributes: numberMap(64),
@@ -445,7 +475,7 @@ export const DndBuildSchema = passthroughObject({
   backgroundBonuses: numberMap(64),
   /** Picks by choice path (`class:fighter.fighting-style/style`). */
   choices: text(z.record(z.string().max(500), z.array(shortString).max(50)).default({})),
-  /** Hit points gained on each level after the first. */
+  /** Hit points gained on each character level after the first, with the die of the class that took it. */
   hitPoints: list(
     passthroughObject({
       level: numeric(int.min(2).max(20)),
@@ -453,7 +483,6 @@ export const DndBuildSchema = passthroughObject({
       value: numeric(int.min(1).max(20)),
     }),
   ),
-  level: numeric(int.min(1).max(20).default(1)),
 });
 
 /**
@@ -473,7 +502,35 @@ export const CocBuildSchema = passthroughObject({
   age: numeric(int.min(15).max(99).default(25)),
 });
 
-export const BuildSchema = z.discriminatedUnion('ruleset', [DndBuildSchema, CocBuildSchema]);
+/**
+ * A D&D build saved before multiclassing named one `class`, its `subclass` and the `level`. It
+ * reads as that class taking every level, and the picks of its spellcasting move under the
+ * class's name, where they are now kept apart per class (`casting:spells-3/…` →
+ * `casting:wizard.spells-3/…`, `swap:known-spells@4/…` → `swap:bard.known-spells@4/…`).
+ */
+function singleClassBuild(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+  const build = value as Record<string, unknown>;
+  if (build.ruleset !== 'dnd2024' || 'classes' in build) return value;
+  const { class: classId, subclass, level, ...rest } = build;
+  if (typeof classId !== 'string' || classId === '') return { ...rest, classes: [] };
+  const total = Math.min(20, Math.max(1, Math.trunc(Number(level)) || 1));
+  const scoped = (key: string) =>
+    key
+      .replace(/^casting:spells-/, `casting:${classId}.spells-`)
+      .replace(/^swap:known-(spells|cantrips)@/, `swap:${classId}.known-$1@`);
+  const choices =
+    typeof rest.choices === 'object' && rest.choices !== null
+      ? Object.fromEntries(Object.entries(rest.choices).map(([key, picks]) => [scoped(key), picks]))
+      : rest.choices;
+  return {
+    ...rest,
+    choices,
+    classes: [{ class: classId, subclass, levels: Array.from({ length: total }, (_, i) => i + 1) }],
+  };
+}
+
+export const BuildSchema = z.preprocess(singleClassBuild, z.discriminatedUnion('ruleset', [DndBuildSchema, CocBuildSchema]));
 
 /** A percentile skill of an investigator; `id` is the content id (`spot-hidden`, `science:biology`). */
 export const CocSkillSchema = passthroughObject({
@@ -720,6 +777,7 @@ export type DeathSaves = z.infer<typeof DeathSavesSchema>;
 export type CharacterImages = z.infer<typeof CharacterImagesSchema>;
 export type Build = z.infer<typeof BuildSchema>;
 export type DndBuild = z.infer<typeof DndBuildSchema>;
+export type DndClass = z.infer<typeof DndClassSchema>;
 export type CocBuild = z.infer<typeof CocBuildSchema>;
 export type CocSheet = z.infer<typeof CocSheetSchema>;
 export type CocSkill = z.infer<typeof CocSkillSchema>;

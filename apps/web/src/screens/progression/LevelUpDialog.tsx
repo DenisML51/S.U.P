@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { applyBuild, dndBuildOf, findClass } from '@itd/game-logic/dnd';
+import { addLevel, applyBuild, classAtLevel, dndBuildOf, findClass, heroLevel, hitDieAt } from '@itd/game-logic/dnd';
 import type { DndBuild, Character } from '@itd/schema';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useMomentStore } from '../../store/useMomentStore';
@@ -17,10 +17,10 @@ export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = (
   const character = useCharacterStore((s) => s.character) as Character;
   const updateCharacter = useCharacterStore((s) => s.updateCharacter);
   const landed = useMomentStore((s) => s.landed);
-  const level = character.level + 1;
   const [draft, setDraft] = useState<DndBuild | undefined>(() => {
     const build = dndBuildOf(character);
-    return build ? { ...build, level } : undefined;
+    const last = build && classAtLevel(build, heroLevel(build));
+    return build && last ? addLevel(build, last.entry.def.id) : undefined;
   });
   // The new level's emblem, settled over the window as it opened, leaves with it — closed or gone
   // with the sheet. Going is put off a tick, so a remount (strict mode's included) keeps it.
@@ -35,12 +35,13 @@ export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = (
   }, [open]);
   if (!draft) return null;
 
+  const level = heroLevel(draft);
   const issues = planIssues(draft, level);
 
   // A thrown hit die stands: it goes onto the hero at once (closing the dialog does not undo it)
   // and the table sees it like any other throw.
   const keepHitDie = (at: number, value: number) => {
-    const hitDie = findClass(draft.class)?.hitDie ?? value;
+    const hitDie = hitDieAt(draft, at) ?? value;
     announceRoll(character.id, [{ sides: hitDie, value }], `Хиты, уровень ${at}: ${value}`);
     updateCharacter(
       (doc) => {
@@ -66,7 +67,7 @@ export const LevelUpDialog: React.FC<{ open: boolean; onClose: () => void }> = (
       width="xl"
       // The new level's emblem stands on the window's edge and says it: the heading names the class.
       hole={{ y: LEVEL_DOCK.y, r: LEVEL_DOCK.hole, cut: landed }}
-      title={findClass(draft.class)?.name ?? character.class}
+      title={findClass(classAtLevel(draft, level)?.entry.def.id)?.name ?? character.class}
       footerStart={
         issues.length > 0 ? <span className="text-sm text-ink-faint">Осталось выбрать: {issues.join(', ')}</span> : null
       }

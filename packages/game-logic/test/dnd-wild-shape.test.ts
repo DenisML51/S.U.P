@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { createCharacterDocument, type Character, type DndBuild } from '@itd/schema';
 import { activeFeaturesOf, armorClassOf, endFeature, performAction, speedOf } from '../src';
 import { applyBuild, choiceOptions, createDndHero, levelPlan, setPicks, sheetChoices } from '../src/dnd';
+import { singleClass, type SingleClassBuild, atLevel } from './helpers';
 
 const FORMS = 'class:druid.wild-shape/forms';
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'sage',
@@ -20,7 +21,7 @@ const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
   ...patch,
 });
 
-const hero = (patch: Partial<DndBuild> = {}): Character =>
+const hero = (patch: Partial<SingleClassBuild> = {}): Character =>
   createCharacterDocument(createDndHero({ name: 'Т', build: build(patch), classKitId: 'a', backgroundKitId: 'a' }));
 /** What the store does: an edit that turns a feature on or off is followed by a rebuild. */
 const rebuilt = (c: Character): Character => applyBuild(c, c.build as DndBuild).character;
@@ -42,7 +43,7 @@ describe('Wild Shape', () => {
   it('offers beasts by challenge and flight as the level allows, and four, six, eight of them', () => {
     const open = (level: number) => sheetChoices(build({ level })).find((c) => c.key === FORMS)!;
     expect([2, 4, 8].map((l) => open(l).count)).toEqual([4, 6, 8]);
-    const options = (level: number) => choiceOptions(build({ level }), level, open(level));
+    const options = (level: number) => choiceOptions(atLevel(build({ level }), level), level, open(level));
     const available = (level: number) => options(level).filter((o) => !o.disabled).map((o) => o.id);
     expect(available(2)).toContain('giant-poisonous-snake');
     expect(available(2)).not.toContain('black-bear');
@@ -50,7 +51,7 @@ describe('Wild Shape', () => {
     expect(available(4)).toContain('black-bear');
     expect(available(8)).toEqual(expect.arrayContaining(['brown-bear', 'giant-eagle', 'raven']));
     expect(available(8)).not.toContain('polar-bear');
-    expect(levelPlan(build(), 2).choices.some((c) => c.key === FORMS)).toBe(true);
+    expect(levelPlan(atLevel(build(), 2), 2).choices.some((c) => c.key === FORMS)).toBe(true);
   });
 
   it('takes the beast’s body: armour class, speed, physical scores, attacks and temporary hit points', () => {
@@ -93,7 +94,7 @@ describe('Wild Shape', () => {
     expect(armorClassOf(wolf)).toBe(16);
     expect(wolf.tempHP).toBe(9);
     const open = sheetChoices(build({ level: 6, subclass: 'circle-of-the-moon' })).find((c) => c.key === FORMS)!;
-    const available = choiceOptions(build({ level: 6, subclass: 'circle-of-the-moon' }), 6, open).filter((o) => !o.disabled).map((o) => o.id);
+    const available = choiceOptions(atLevel(build({ level: 6, subclass: 'circle-of-the-moon' }), 6), 6, open).filter((o) => !o.disabled).map((o) => o.id);
     expect(available).toContain('polar-bear');
     expect(available).not.toContain('ankylosaurus');
   });

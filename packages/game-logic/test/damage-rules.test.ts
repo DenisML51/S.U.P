@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createCharacterDocument, type Character, type DndBuild } from '@itd/schema';
 import { damageRulesFor, resetTurn, rollFormula, rollOptionsOf, spendTurnRules } from '../src';
 import { applyBuild, createDndHero, setPicks } from '../src/dnd';
-import { sequence } from './helpers';
+import { sequence, singleClass, type SingleClassBuild } from './helpers';
 
 /** A random source that lands each die of `sides` on the given faces, in order. */
 const faces = (sides: number, ...values: number[]) => sequence(...values.map((v) => (v - 0.5) / sides));
@@ -29,7 +29,7 @@ describe('dice options of features', () => {
   });
 });
 
-const build = (patch: Partial<DndBuild> = {}): DndBuild => ({
+const build = (patch: Partial<SingleClassBuild> = {}): DndBuild => singleClass({
   ruleset: 'dnd2024',
   species: 'human',
   background: 'soldier',
