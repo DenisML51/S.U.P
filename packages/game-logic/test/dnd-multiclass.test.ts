@@ -4,6 +4,7 @@ import { armorClassOf, castableSlots, preparationBlocker, preparedCount, slotPoo
 import { ATTRIBUTES_LIST } from '../src/content/attributes';
 import {
   DND,
+  DND_2024,
   addLevel,
   applyBuild,
   classAtLevel,
@@ -308,5 +309,26 @@ describe('armour class of several classes', () => {
     expect(c.armorClassBonus?.unarmored).toEqual([{ attribute: 'constitution' }, { attribute: 'wisdom', noShield: true }]);
     // 10 + Dexterity 14 (+2) + Wisdom 16 (+3).
     expect(armorClassOf(c)).toBe(15);
+  });
+});
+
+describe('hit points of a level and giving it back from the sheet', () => {
+  it('counts a die thrown for a level only in the class it was thrown for', () => {
+    const b = hero([{ class: 'fighter', levels: [1] }, { class: 'wizard', levels: [2] }], {
+      hitPoints: [{ level: 2, method: 'roll', value: 9, class: 'fighter' }],
+    });
+    // The level went to the wizard: the fighter's 9 does not count, the wizard's average 4 does.
+    expect(apply(b).maxHP).toBe(12 + 6);
+    expect(apply({ ...b, hitPoints: [{ level: 2, method: 'roll', value: 5, class: 'wizard' }] }).maxHP).toBe(12 + 7);
+  });
+
+  it('gives back the last level through the rules system, naming it first', () => {
+    const b = hero([{ class: 'fighter', levels: [1, 2] }, { class: 'wizard', levels: [3] }]);
+    const c = apply(b);
+    expect(DND_2024.lastLevel?.describe(b)).toBe('Волшебник, 1 уровень');
+    const back = DND_2024.lastLevel!.giveBack(c, b);
+    expect(back.level).toBe(2);
+    expect(back.class).toBe('Воин');
+    expect(DND_2024.lastLevel?.describe(hero([{ class: 'fighter', levels: [1] }]))).toBeUndefined();
   });
 });

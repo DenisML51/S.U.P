@@ -71,18 +71,20 @@ const featureKind = ({ feature }: GrantedFeature): IconKind => (feature.action &
 const HitPointsField: React.FC<{
   build: DndBuild;
   level: number;
+  classId?: string;
   hitDie: number;
   onChange: (build: DndBuild) => void;
   onRolled?: (value: number) => void;
-}> = ({ build, level, hitDie, onChange, onRolled }) => {
-  const entry = build.hitPoints.find((e) => e.level === level);
+}> = ({ build, level, classId, hitDie, onChange, onRolled }) => {
+  // A die thrown for another class (the level went elsewhere) does not count here.
+  const entry = build.hitPoints.find((e) => e.level === level && (!e.class || e.class === classId));
   const average = averageHitPoints(hitDie);
   const die = entry?.value ?? average;
   const constitution = abilityModifier(buildScores(build, level).constitution ?? 10);
   const gained = Math.max(1, die + constitution);
   const rolled = entry?.method === 'roll';
   const set = (method: 'average' | 'roll', value: number) =>
-    onChange({ ...build, hitPoints: [...build.hitPoints.filter((e) => e.level !== level), { level, method, value }] });
+    onChange({ ...build, hitPoints: [...build.hitPoints.filter((e) => e.level !== level), { level, method, value, class: classId }] });
   const roll = () => {
     const value = rollDie(hitDie);
     set('roll', value);
@@ -139,6 +141,11 @@ export const LevelPlanView: React.FC<{
     .sort((a, b) => Number(a.key.startsWith('swap:')) - Number(b.key.startsWith('swap:')));
   const subclassDue = !!classDef && plan.classLevel === classDef.subclassLevel && (!sources || sources.includes('subclass'));
   const showHitPoints = level > 1 && (!sources || sources.includes('class'));
+  // A class taken after the first gives only its row of the multiclass table.
+  const joined = classDef && level > 1 && plan.classLevel === 1 && (!sources || sources.includes('class'));
+  const joinedProficiencies = joined
+    ? classDef.multiclass.proficiencies.flatMap((effect) => (effect.type === 'proficiency' ? [effect.value] : []))
+    : [];
 
   // Picks of another subclass go with it, its spells too when it cast them (an Eldritch Knight).
   const chooseSubclass = (id: string) => classDef && onChange(setSubclass(build, classDef.id, id));
@@ -162,6 +169,12 @@ export const LevelPlanView: React.FC<{
               </button>
             ))}
           </div>
+        </Section>
+      )}
+
+      {joinedProficiencies.length > 0 && (
+        <Section title="Владения" hint="Взяв класс не первым, вы получаете только эти владения из его стартовых, без спасбросков">
+          <p className="text-sm text-ink-muted">{joinedProficiencies.join(', ')}</p>
         </Section>
       )}
 
@@ -193,6 +206,7 @@ export const LevelPlanView: React.FC<{
         <HitPointsField
           build={build}
           level={level}
+          classId={plan.classId}
           hitDie={plan.hitDie}
           onChange={onChange}
           onRolled={onHitDieRolled && ((value) => onHitDieRolled(level, value))}

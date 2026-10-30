@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { DAMAGE_TYPES, baseMaxSanityOf, experienceProgress, maxSanityOf, totalMaxHP, type Coin } from '@itd/game-logic';
-import type { Character } from '@itd/schema';
+import { DAMAGE_TYPES, baseMaxSanityOf, experienceProgress, maxSanityOf, rulesOf, totalMaxHP, type Coin } from '@itd/game-logic';
+import type { Build, Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
 import { useMomentStore } from '../../../store/useMomentStore';
 import { Dialog } from '../../../ui/Dialog';
@@ -297,6 +297,48 @@ export const SanityDialog: React.FC<VitalProps> = ({ open, onClose }) => {
   );
 };
 
+/**
+ * Giving back a preset hero's last level (taken by mistake, or a level drained): the level, its picks
+ * and its hit points go, asked once more before. Experience stays as it is.
+ */
+const GiveBackLevel: React.FC<{ character: Character; build: Build }> = ({ character, build }) => {
+  const updateCharacter = useCharacterStore((s) => s.updateCharacter);
+  const [asking, setAsking] = useState(false);
+  const lastLevel = rulesOf(build).lastLevel;
+  const last = lastLevel?.describe(build);
+  if (!lastLevel || !last) return null;
+  const giveBack = () => {
+    updateCharacter((doc) => (doc.build ? lastLevel.giveBack(doc, doc.build) : doc), {
+      log: { message: `Уровень понижен до ${character.level - 1}: ${last}`, type: 'exp' },
+    });
+    setAsking(false);
+  };
+  return (
+    <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line/40 pt-4 text-sm text-ink-muted">
+      {asking ? (
+        <>
+          <span className="min-w-0">{`Вернуть уровень «${last}»? Его выборы и хиты забудутся.`}</span>
+          <span className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setAsking(false)}>
+              Отмена
+            </Button>
+            <Button variant="danger" size="sm" onClick={giveBack}>
+              Понизить
+            </Button>
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="min-w-0">{`Последний уровень: ${last}`}</span>
+          <Button variant="ghost" size="sm" onClick={() => setAsking(true)}>
+            Понизить уровень
+          </Button>
+        </>
+      )}
+    </div>
+  );
+};
+
 export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
   const character = useCharacterStore((s) => s.character) as Character;
   const vitals = useVitals();
@@ -360,6 +402,7 @@ export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
           ]}
         />
       </div>
+      {character.build && <GiveBackLevel character={character} build={character.build} />}
       {/* A preset hero's level follows its build: it only grows through the level-up window. */}
       {!character.build && (
         <div className="mt-6 flex items-center justify-between gap-4 text-sm text-ink-muted">

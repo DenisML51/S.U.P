@@ -1,6 +1,6 @@
 import type { Build, DndBuild } from '@itd/schema';
 import type { RuleSystem } from '../systems';
-import { applyBuild, catalogSpellEntry, catalogSpells, describeGrant, featureOrigins, sheetChoices } from './build';
+import { applyBuild, catalogSpellEntry, catalogSpells, classAtLevel, describeGrant, dropLastLevel, featureOrigins, heroLevel, sheetChoices } from './build';
 
 const dnd = (build: Build): DndBuild => {
   if (build.ruleset !== 'dnd2024') throw new Error(`Not a D&D 2024 build: ${build.ruleset}`);
@@ -39,5 +39,13 @@ export const DND_2024: RuleSystem = {
         castable,
       })),
     entry: (_build, id) => catalogSpellEntry(id),
+  },
+  lastLevel: {
+    describe: (build) => {
+      const level = heroLevel(dnd(build));
+      const at = level > 1 ? classAtLevel(dnd(build), level) : undefined;
+      return at && `${at.entry.def.name}, ${at.classLevel} уровень`;
+    },
+    giveBack: (character, build) => applyBuild(character, dropLastLevel(dnd(build))).character,
   },
 };
