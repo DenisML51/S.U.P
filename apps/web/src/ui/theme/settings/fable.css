@@ -727,6 +727,8 @@
     box-shadow: inset 0 0 0 3px rgb(14 38 42), inset 0 0 0 4px rgb(var(--c-frame) / 0.35), 0 0 0 4px rgb(var(--c-bg-deep) / 0.35), 0 8px 18px -10px rgb(0 0 0 / 0.9);
     text-shadow: 0 1px 6px rgb(0 0 0 / 0.6);
   }
+  /* A title too long for the pill in one line is set smaller, not broken over two (see DialogTitle). */
+  .ui-dialog__title[data-long] { font-size: 1.15rem; padding-inline: 1.15rem; text-wrap: balance; }
   .ui-dialog__rule { display: flex; color: rgb(var(--c-frame-bright)); }
   .ui-dialog__foot { border-top: 1px solid transparent; border-image: linear-gradient(90deg, transparent, rgb(var(--c-frame) / 0.45), transparent) 1; }
   :is(.ui-dialog, .ui-details) .ui-keyfacts dt { font-family: var(--font-caps); font-size: 0.8rem; letter-spacing: 0.05em; text-transform: none; opacity: 0.85; }
