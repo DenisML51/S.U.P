@@ -331,6 +331,18 @@ export const TraitSchema = passthroughObject({
   grant: optionalShortText,
 });
 
+/** A class the hero casts spells of, as the sheet shows it. */
+export const SpellcasterSchema = passthroughObject({
+  /** The class id (wizard). */
+  id: nestedId,
+  name: shortText,
+  ability: shortText,
+  saveDC: numeric(int),
+  attackBonus: numeric(int),
+  /** How many of its spells (of 1st level and up) may be prepared; absent for a class that knows its spells. */
+  prepared: optionalNumber,
+});
+
 export const SpellSchema = passthroughObject({
   id: nestedId,
   name: shortText,
@@ -371,6 +383,11 @@ export const SpellSchema = passthroughObject({
   alwaysPrepared: optionalFlag,
   /** Spellcasting ability of a spell granted outside the class list (species, feats). */
   ability: optionalShortText,
+  /**
+   * Id of the class whose spell it is (a hero of several casting classes): it is cast with that
+   * class's ability and DC and counts against that class's prepared spells (see casters).
+   */
+  caster: optionalShortText,
   resourceId: optionalNestedId,
   resourceCost: optionalNumber,
   iconName: optionalShortText,
@@ -719,6 +736,11 @@ export const CharacterSchema = passthroughObject({
   spells: list(SpellSchema),
   spellcastingDifficultyName: optionalShortText,
   spellcastingDifficultyValue: optionalNumber,
+  /**
+   * The classes the hero casts spells of, each with its own ability, save DC, attack bonus and, for
+   * a class that prepares spells, how many (written from the build; a spell names its in caster).
+   */
+  casters: optionalList(SpellcasterSchema),
   knownSchools: list(shortString),
   /** Maximum prepared spells, keyed by spell level ("0".."9"). */
   maxPreparedSpells: numberMap(8),
@@ -768,6 +790,7 @@ export type Ability = z.infer<typeof AbilitySchema>;
 export type Limb = z.infer<typeof LimbSchema>;
 export type Trait = z.infer<typeof TraitSchema>;
 export type Spell = z.infer<typeof SpellSchema>;
+export type Spellcaster = z.infer<typeof SpellcasterSchema>;
 export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 export type Resistance = z.infer<typeof ResistanceSchema>;
 export type ActionCounters = z.infer<typeof ActionCountersSchema>;

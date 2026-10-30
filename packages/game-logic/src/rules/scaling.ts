@@ -1,4 +1,4 @@
-import type { Character, Spell } from '@itd/schema';
+import type { Character, Resource, Spell } from '@itd/schema';
 import { abilityModifier, attributeScore } from './abilities';
 
 /**
@@ -58,18 +58,31 @@ export function spellcastingModifier(character: Pick<Character, 'spellcastingDif
 export const spellAttackBonus = (character: Pick<Character, 'spellcastingDifficultyValue' | 'proficiencyBonus'>): number =>
   character.proficiencyBonus + spellcastingModifier(character);
 
-/** The modifier a spell uses: its own ability when it has one (species, feats), else the sheet's. */
-function modifierFor(character: Character, spell: Pick<Spell, 'ability'>): number {
-  return spell.ability ? abilityModifier(attributeScore(character, spell.ability)) : spellcastingModifier(character);
+type SpellSource = Pick<Spell, 'ability' | 'caster'>;
+
+/** The class a spell is cast as, when the sheet names it (a hero of several casting classes). */
+const casterOf = (character: Pick<Character, 'casters'>, spell: SpellSource) =>
+  spell.caster ? character.casters?.find((c) => c.id === spell.caster) : undefined;
+
+/**
+ * The modifier a spell uses: its own ability when it has one (species, feats), its class's when it
+ * names one, else the sheet's.
+ */
+function modifierFor(character: Character, spell: SpellSource): number {
+  if (spell.ability) return abilityModifier(attributeScore(character, spell.ability));
+  const caster = casterOf(character, spell);
+  return caster ? caster.attackBonus - character.proficiencyBonus : spellcastingModifier(character);
 }
 
 /** Attack bonus of a spell: a spell cast with its own ability (Magic Initiate) uses that ability. */
-export const spellAttackBonusFor = (character: Character, spell: Pick<Spell, 'ability'>): number =>
+export const spellAttackBonusFor = (character: Character, spell: SpellSource): number =>
   character.proficiencyBonus + modifierFor(character, spell);
 
-/** Save DC of a spell, by the same rule; a sheet's own DC stands for its class spells. */
-export const spellSaveDCFor = (character: Character, spell: Pick<Spell, 'ability'>): number | undefined =>
-  spell.ability ? 8 + character.proficiencyBonus + modifierFor(character, spell) : character.spellcastingDifficultyValue;
+/** Save DC of a spell, by the same rule; its class's DC stands for a class spell, the sheet's for the rest. */
+export const spellSaveDCFor = (character: Character, spell: SpellSource): number | undefined =>
+  spell.ability
+    ? 8 + character.proficiencyBonus + modifierFor(character, spell)
+    : (casterOf(character, spell)?.saveDC ?? character.spellcastingDifficultyValue);
 
 /**
  * The damage (or healing) of a spell cast with a slot of `slotLevel` (its own level when not given)
@@ -93,11 +106,23 @@ export function spellDamageAt(character: Character, spell: Spell, slotLevel = sp
   return formula;
 }
 
-/** Spell slots a spell can be cast with now: its level and above, with uses left. */
+/**
+ * Levels of the spell slots a spell can be cast with now: its level and above, with uses left. Pact
+ * slots and spell slots serve each other's spells, so a level counts once whichever pool has it.
+ */
 export function castableSlots(character: Pick<Character, 'resources'>, spell: Pick<Spell, 'level'>): number[] {
   if (spell.level < 1) return [];
-  return character.resources
+  const levels = character.resources
     .filter((r) => r.spellSlotLevel !== undefined && r.spellSlotLevel >= spell.level && r.current > 0)
-    .map((r) => r.spellSlotLevel!)
-    .sort((a, b) => a - b);
+    .map((r) => r.spellSlotLevel!);
+  return [...new Set(levels)].sort((a, b) => a - b);
+}
+
+/**
+ * The pool a spell cast with a slot of `level` spends: its own pool when that is the level and has
+ * a use left (a warlock spell its pact slot), else any pool of the level with one left.
+ */
+export function slotPoolFor(character: Pick<Character, 'resources'>, spell: Pick<Spell, 'resourceId'>, level: number): Resource | undefined {
+  const pools = character.resources.filter((r) => r.spellSlotLevel === level);
+  return pools.find((r) => r.id === spell.resourceId && r.current > 0) ?? pools.find((r) => r.current > 0) ?? pools[0];
 }

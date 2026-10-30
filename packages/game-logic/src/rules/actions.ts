@@ -1,9 +1,10 @@
-import type { Ability, ActionCounters, Attack, Character, InventoryItem } from '@itd/schema';
+import type { Ability, ActionCounters, Attack, Character, InventoryItem, Spell } from '@itd/schema';
 import { isActiveFeature, spellBlocker, startConcentration, startFeature } from './concentration';
 import type { RandomSource } from './dice';
 import { payHitPoints } from './health';
 import { changeItemQuantity, isWeaponStack, itemQuantity } from './inventory';
 import { SLOT_CREATION_COST, changeResource, convertSlot } from './resources';
+import { slotPoolFor } from './scaling';
 
 export type ActionSlot = keyof Pick<ActionCounters, 'action' | 'bonus' | 'reaction'>;
 
@@ -224,9 +225,7 @@ export function performAction(character: Character, request: PerformActionReques
 
   // A spell cast with a chosen slot spends that slot instead of the one of its own level.
   const chosenSlot =
-    request.kind === 'spell' && request.slotLevel !== undefined
-      ? next.resources.find((r) => r.spellSlotLevel === request.slotLevel)?.id
-      : undefined;
+    request.kind === 'spell' && request.slotLevel !== undefined ? slotPoolFor(next, source as Spell, request.slotLevel)?.id : undefined;
   // A ritual takes no slot.
   const ability = request.kind === 'ability' ? (source as Ability) : undefined;
   // A conversion (Font of Magic) moves a slot and points together, below.
