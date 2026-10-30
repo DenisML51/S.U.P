@@ -26,34 +26,43 @@ export const useSlotPrompt = create<SlotPromptState>((set) => ({
 
 /**
  * Asks which slot a spell is cast with when a higher one is free: each choice shows what the spell
- * then deals. Mounted once per screen that casts (the sheet, combat).
+ * then deals. The spell's name, however long, stands under the heading rather than in it. A level
+ * held by more than one pool (a warlock's pact slots beside spell slots) tells what is left in each.
+ * Mounted once per screen that casts (the sheet, combat).
  */
 export const SlotPrompt: React.FC = () => {
   const { spell, slots, onPick, close } = useSlotPrompt();
   const character = useCharacterStore((s) => s.character);
   return (
-    <Dialog open={!!spell && !!character} onClose={close} width="sm" eyebrow="Ячейка заклинания" title={spell?.name ?? ''}>
+    <Dialog open={!!spell && !!character} onClose={close} width="sm" title="Ячейка заклинания" subtitle={spell?.name}>
       {spell && character && (
         <div className="space-y-2">
           {slots.map((level) => {
-            const slot = character.resources.find((r) => r.spellSlotLevel === level);
+            const pools = character.resources.filter((r) => r.spellSlotLevel === level);
             return (
               <Button
                 key={level}
                 variant="secondary"
-                className="!h-auto w-full !justify-between !py-2.5 text-left"
+                className="!grid !h-auto w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-4 !whitespace-normal !py-2.5 text-left"
                 onClick={() => {
                   close();
                   onPick?.(level);
                 }}
               >
-                <span>
-                  {`${level} круг`}
-                  <span className="ml-2 text-xs opacity-70">
-                    {`осталось ${slot?.current ?? 0}/${slot?.max ?? 0}`}
-                  </span>
+                <span className="flex flex-col">
+                  <span className="whitespace-nowrap">{`${level} круг`}</span>
+                  {pools.length === 1 ? (
+                    <span className="text-xs opacity-70">{`осталось ${pools[0]!.current}/${pools[0]!.max}`}</span>
+                  ) : (
+                    pools.map((pool) => (
+                      <span key={pool.id} className="whitespace-nowrap text-xs opacity-70">{`${pool.name}: ${pool.current}/${pool.max}`}</span>
+                    ))
+                  )}
                 </span>
-                <DamageBlock parts={spellDamageParts(character, spell, level)} className="!border-0 !bg-transparent !p-0" />
+                <DamageBlock
+                  parts={spellDamageParts(character, spell, level)}
+                  className="min-w-0 !border-0 !bg-transparent !p-0 [&>div]:justify-end"
+                />
               </Button>
             );
           })}

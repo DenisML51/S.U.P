@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Theme } from './theme/settings';
@@ -80,6 +80,33 @@ function useHeight(swapKey: string): [(node: HTMLElement | null) => void, number
  * the dialog and returns where it was on close. It stands in the middle of the screen. Rendered in a
  * portal so ancestors' overflow and transforms never clip it.
  */
+/**
+ * The title, set smaller once it does not fit one line: a nameplate (Fable's pill, Lovecraft's
+ * plate) broken over two lines looks broken. Measured as laid out (and again when the fonts land),
+ * so it holds for any title, language and setting. A new title starts over at the full size.
+ */
+const DialogTitle: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const [long, setLong] = useState(false);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element || long) return;
+    const check = () => {
+      const lineHeight = parseFloat(getComputedStyle(element).lineHeight);
+      if (lineHeight > 0 && element.offsetHeight > lineHeight * 1.5) setLong(true);
+    };
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [long]);
+  return (
+    <h2 ref={ref} id={id} data-long={long || undefined} className="ui-dialog__title ui-display ui-title text-2xl leading-tight">
+      {children}
+    </h2>
+  );
+};
+
 export const Dialog: React.FC<DialogProps> = ({
   open,
   onClose,
@@ -198,12 +225,9 @@ export const Dialog: React.FC<DialogProps> = ({
                               {eyebrow}
                             </div>
                           )}
-                          <h2
-                            id={titleId}
-                            className="ui-dialog__title ui-display ui-title text-2xl leading-tight"
-                          >
+                          <DialogTitle key={typeof title === 'string' ? title : undefined} id={titleId}>
                             {title}
-                          </h2>
+                          </DialogTitle>
                           {subtitle && <p className="mt-1 text-sm opacity-70">{subtitle}</p>}
                         </div>
                       </div>
