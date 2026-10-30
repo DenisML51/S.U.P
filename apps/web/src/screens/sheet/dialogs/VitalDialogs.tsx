@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { DAMAGE_TYPES, baseMaxSanityOf, experienceProgress, maxSanityOf, totalMaxHP, type Coin } from '@itd/game-logic';
 import type { Character } from '@itd/schema';
 import { useCharacterStore } from '../../../store/useCharacterStore';
+import { useMomentStore } from '../../../store/useMomentStore';
 import { Dialog } from '../../../ui/Dialog';
+import { settingOf } from '../../../ui/theme/settings';
 import { NumberField, Segmented, Select } from '../../../ui/forms';
 import { Button, Field, Meter, cx, type MeterTone } from '../../../ui/primitives';
 import { useVitals } from '../useVitals';
@@ -311,7 +313,18 @@ export const ExperienceDialog: React.FC<VitalProps> = ({ open, onClose }) => {
         vitals.canLevelUp ? (
           <Button
             variant="primary"
-            onClick={() => (character.build ? dialogs.open({ kind: 'levelUp' }) : vitals.setLevel(character.level + 1))}
+            onClick={() => {
+              // The window goes first, so the new level plays over the sheet and not under it.
+              onClose();
+              if (!character.build) return vitals.setLevel(character.level + 1);
+              useMomentStore.getState().celebrate({
+                from: character.level,
+                to: character.level + 1,
+                setting: settingOf(character),
+                gains: [],
+                onDock: () => dialogs.open({ kind: 'levelUp' }),
+              });
+            }}
           >
             {`Повысить до ${character.level + 1} уровня`}
           </Button>

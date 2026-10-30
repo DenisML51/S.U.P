@@ -29,6 +29,12 @@ interface DialogProps {
   setting?: Theme;
   /** Paper suits reading (descriptions); plate suits forms. */
   variant?: 'plate' | 'paper';
+  /**
+   * An emblem settled on the window's top edge (the new level's): the window keeps its top at `y`
+   * and its heading below the emblem's radius `r`; once the emblem is there (`cut`), a round opening
+   * of that radius widens under it, through the window, its frame and lines.
+   */
+  hole?: { y: number; r: number; cut: boolean };
   className?: string;
 }
 
@@ -88,6 +94,7 @@ export const Dialog: React.FC<DialogProps> = ({
   width = 'md',
   variant = 'plate',
   setting: ownSetting,
+  hole,
   className,
 }) => {
   const scopeSetting = useSetting();
@@ -123,7 +130,11 @@ export const Dialog: React.FC<DialogProps> = ({
       {open && (
         <SettingScope
           setting={setting}
-          className={cx('fixed inset-0 z-[200] flex items-center justify-center px-6 py-[5vh] max-sm:px-4')}
+          className={cx(
+            'fixed inset-0 z-[200] flex justify-center px-6 py-[5vh] max-sm:px-4',
+            hole ? 'items-start' : 'items-center',
+          )}
+          style={hole && { paddingTop: hole.y }}
         >
           <motion.div
             className="absolute inset-0 bg-bg-deep/80"
@@ -147,11 +158,12 @@ export const Dialog: React.FC<DialogProps> = ({
               as="section"
               variant={variant}
               ornate
-              crest
+              crest={!hole}
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
-              className={cx('ui-dialog transition-colors', className)}
+              className={cx('ui-dialog transition-colors', hole && 'ui-dialog--hole', className)}
+              style={hole && ({ '--hole-r': `${hole.cut ? hole.r : 0}px` } as React.CSSProperties)}
             >
               <span className="ui-dialog__frame" aria-hidden />
               <motion.div
@@ -166,6 +178,7 @@ export const Dialog: React.FC<DialogProps> = ({
                     ref={measure}
                     data-swap={swapKey}
                     className="flex max-h-[86vh] flex-col"
+                    style={hole && { maxHeight: `calc(95vh - ${hole.y}px)` }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1, transition: { duration: 0.18, delay: 0.06 } }}
                     exit={{ opacity: 0, transition: { duration: 0.1 } }}
@@ -173,7 +186,10 @@ export const Dialog: React.FC<DialogProps> = ({
                       if ((definition as { opacity?: number }).opacity === 1) focusFirstField();
                     }}
                   >
-                    <header className="ui-dialog__head relative pb-4 pl-6 pr-14 pt-5">
+                    <header
+                      className="ui-dialog__head relative pb-4 pl-6 pr-14 pt-5"
+                      style={hole && { paddingTop: hole.r + 22 }}
+                    >
                       <div className={cx('min-w-0', !!icon && 'flex items-center gap-4')}>
                         {icon}
                         <div className="min-w-0 flex-1">

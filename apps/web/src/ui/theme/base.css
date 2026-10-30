@@ -653,6 +653,27 @@
 /* ------------------------------------------------------------------ Dialog chrome per setting */
 /* Body and footer line up with the header's text, which leaves room for the close button. */
 .ui-dialog__frame { display: none; }
+/* A round opening at the middle of the window's top edge, where the new level's emblem stands: the
+   window, its frame and lines are cut through there. The mask reaches past the window so that its
+   shadow and ornaments outside it stay. It widens from the middle once the emblem is on it. */
+@property --hole-r {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+.ui-dialog.ui-dialog--hole {
+  transition:
+    --hole-r 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s;
+  --hole-reach: 120px;
+  mask-image: radial-gradient(circle at 50% var(--hole-reach), transparent var(--hole-r), #000 calc(var(--hole-r) + 1px));
+  mask-size: calc(100% + 2 * var(--hole-reach)) calc(100% + 2 * var(--hole-reach));
+  mask-position: calc(-1 * var(--hole-reach)) calc(-1 * var(--hole-reach));
+  mask-repeat: no-repeat;
+  mask-clip: no-clip;
+}
 
 .ui-dialog__rule { display: none; }
 
