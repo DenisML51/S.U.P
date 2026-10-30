@@ -378,20 +378,26 @@ export const MONK: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие (лёгкое)' },
   ],
+  starting: [
+    {
+      id: 'monk.tool-proficiency',
+      name: 'Владение инструментами',
+      description: 'Вы владеете одним видом инструментов ремесленника или одним музыкальным инструментом.',
+      hidden: true,
+      choices: [
+        { id: 'tool', label: 'Инструменты', count: 1, options: { from: 'tools', list: [...ARTISAN_TOOL_NAMES, ...MUSICAL_INSTRUMENT_NAMES] } },
+      ],
+    },
+  ],
+  multiclass: {
+    requires: [['dexterity', 'wisdom']],
+    proficiencies: [],
+  },
   subclassLevel: 3,
   subclasses: [mercy, shadow, elements, openHand, mysticArts],
   startingEquipment: MONK_KITS,
   levels: {
     1: [
-      {
-        id: 'monk.tool-proficiency',
-        name: 'Владение инструментами',
-        description: 'Вы владеете одним видом инструментов ремесленника или одним музыкальным инструментом.',
-        hidden: true,
-        choices: [
-          { id: 'tool', label: 'Инструменты', count: 1, options: { from: 'tools', list: [...ARTISAN_TOOL_NAMES, ...MUSICAL_INSTRUMENT_NAMES] } },
-        ],
-      },
       {
         id: 'monk.martial-arts',
         name: 'Боевые искусства',

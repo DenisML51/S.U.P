@@ -500,6 +500,10 @@ export const SORCERER: ClassDef = {
   saves: ['constitution', 'charisma'],
   skillChoices: { count: 2, list: ['arcana', 'deception', 'insight', 'intimidation', 'persuasion', 'religion'] },
   proficiencies: [{ type: 'proficiency', category: 'weapon', value: 'Простое оружие' }],
+  multiclass: {
+    requires: [['charisma']],
+    proficiencies: [],
+  },
   subclassLevel: 3,
   subclasses: [aberrant, clockwork, draconic, wildMagic, spellfire, shadow],
   startingEquipment: SORCERER_KITS,

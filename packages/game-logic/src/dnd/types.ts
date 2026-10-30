@@ -505,6 +505,9 @@ export interface ClassDef {
   saves: AttributeId[];
   skillChoices: { count: number; list: SkillId[] };
   proficiencies: Effect[];
+  /** Features only a hero who starts in the class gains, not one who takes it later (a bard's three instruments). */
+  starting?: FeatureDef[];
+  multiclass: MulticlassDef;
   levels: Record<number, FeatureDef[]>;
   subclassLevel: number;
   subclasses: SubclassDef[];
@@ -520,6 +523,24 @@ export interface ClassDef {
    */
   replaceable?: { pool: string; label: string }[];
   startingEquipment: KitOption[];
+}
+
+/**
+ * Taking the class after another one (PHB 2024, "As a Multiclass Character"): the scores it asks
+ * for, and the part of its starting proficiencies it gives instead of all of them (no saving throws).
+ */
+export interface MulticlassDef {
+  /**
+   * Scores of 13 the hero needs, to take the class and to leave it for another: any one group in
+   * full. `[['strength'], ['dexterity']]` is "Strength or Dexterity 13", `[['dexterity', 'wisdom']]`
+   * "Dexterity and Wisdom 13".
+   */
+  requires: AttributeId[][];
+  proficiencies: Effect[];
+  /** Skill proficiencies picked from the class's own skill list (a bard's is every skill). */
+  skills?: number;
+  /** Features in place of the class's `starting` ones (a bard's one instrument). */
+  features?: FeatureDef[];
 }
 
 export interface SpeciesDef {

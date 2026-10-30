@@ -10,7 +10,7 @@ import {
   hemocraftDice,
 } from '../blood-hunter/hemocraft';
 import { FEATS } from '../feats';
-import { abilityScoreImprovement, byTable } from './shared';
+import { abilityScoreImprovement, byTable, multiclassProficiencies } from './shared';
 
 /**
  * Blood Hunter by Matthew Mercer (Охотник на крови): the 2020 class with the D&D Beyond errata of
@@ -473,6 +473,10 @@ export const BLOOD_HUNTER: ClassDef = {
     description: 'Характеристика гемокрафта: от неё СЛ ваших особенностей, урон Клейма и магия Осквернённой души. Интеллект — по правилам, Мудрость — вариант с согласия мастера.',
     options: ['intelligence', 'wisdom'],
     notes: { intelligence: 'По правилам класса.', wisdom: 'Вариант правил — с согласия мастера.' },
+  },
+  multiclass: {
+    requires: [['strength', 'intelligence'], ['dexterity', 'intelligence']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields', 'simpleWeapons', 'martialWeapons', 'alchemistsSupplies'),
   },
   subclassLevel: 3,
   subclasses: [ghostslayer, lycan, mutant, profaneSoul],

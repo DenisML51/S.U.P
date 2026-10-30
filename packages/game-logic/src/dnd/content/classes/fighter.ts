@@ -5,6 +5,7 @@ import {
   abilityScoreImprovement,
   epicBoon,
   weaponMasteryChoice,
+  multiclassProficiencies,
 } from './shared';
 
 /** Fighter of the 2024 Player's Handbook (Воин). Descriptions are our own summaries of the rules. */
@@ -658,6 +659,10 @@ export const FIGHTER: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
+  multiclass: {
+    requires: [['strength'], ['dexterity']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields', 'martialWeapons'),
+  },
   subclassLevel: 3,
   subclasses: [battleMaster, champion, eldritchKnight, psiWarrior, banneret, arcaneArcher],
   replaceable: [

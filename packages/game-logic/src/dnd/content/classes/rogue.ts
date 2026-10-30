@@ -1,6 +1,6 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SubclassDef } from '../../types';
-import { abilityScoreImprovement, epicBoon, subclassHeading, weaponMasteryChoice } from './shared';
+import { abilityScoreImprovement, epicBoon, subclassHeading, weaponMasteryChoice, multiclassProficiencies } from './shared';
 
 /** Плут of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -556,6 +556,11 @@ export const ROGUE: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие (фехтовальное или лёгкое)' },
     { type: 'proficiency', category: 'tool', value: 'Воровские инструменты' },
   ],
+  multiclass: {
+    requires: [['dexterity']],
+    proficiencies: multiclassProficiencies('lightArmor', 'thievesTools'),
+    skills: 1,
+  },
   subclassLevel: 3,
   subclasses: [arcaneTrickster, assassin, soulknife, thief, scionOfTheThree, phantom],
   startingEquipment: ROGUE_KITS,

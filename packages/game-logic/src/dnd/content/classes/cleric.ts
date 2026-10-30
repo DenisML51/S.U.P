@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, KitOption, SkillId, SubclassDef } from '../../types';
 import { ARTISAN_TOOL_NAMES } from '../equipment';
-import { abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
+import { abilityScoreImprovement, byTable, epicBoon, subclassHeading, multiclassProficiencies } from './shared';
 
 /** Жрец of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -608,6 +608,10 @@ export const CLERIC: ClassDef = {
     { type: 'proficiency', category: 'armor', value: 'Щиты' },
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
   ],
+  multiclass: {
+    requires: [['wisdom']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields'),
+  },
   subclassLevel: 3,
   subclasses: [life, light, trickery, war, knowledge, grave, arcana],
   startingEquipment: CLERIC_KITS,

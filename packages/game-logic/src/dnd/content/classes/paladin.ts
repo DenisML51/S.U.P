@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, FeatureDef, SubclassDef } from '../../types';
 import { PALADIN_KITS } from '../equipment';
-import { abilityScoreImprovement, epicBoon, weaponMasteryChoice } from './shared';
+import { abilityScoreImprovement, epicBoon, weaponMasteryChoice, multiclassProficiencies } from './shared';
 
 /** Paladin of the 2024 Player's Handbook (Паладин). Descriptions are our own summaries of the rules. */
 
@@ -424,6 +424,10 @@ export const PALADIN: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'weapon', value: 'Воинское оружие' },
   ],
+  multiclass: {
+    requires: [['strength', 'charisma']],
+    proficiencies: multiclassProficiencies('lightArmor', 'mediumArmor', 'shields', 'martialWeapons'),
+  },
   subclassLevel: 3,
   subclasses: [devotion, glory, ancients, vengeance, nobleGenies],
   startingEquipment: PALADIN_KITS,

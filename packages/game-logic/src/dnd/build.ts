@@ -360,6 +360,7 @@ export function collect(build: DndBuild, level = build.level, scores?: Record<st
       1,
       'class',
     );
+    for (const feature of classDef.starting ?? []) visitFeature(feature, 'class', 1, 'class');
 
     const subclass = findSubclass(classDef, build.subclass);
     const casting = classDef.spellcasting ?? subclass?.spellcasting;

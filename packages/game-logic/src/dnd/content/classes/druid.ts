@@ -1,7 +1,7 @@
 import { byClassLevel, modifierOf } from '../../helpers';
 import type { BuildContext, ClassDef, Effect, FeatureDef, KitOption, OptionDef, SubclassDef } from '../../types';
 import { WILD_SHAPE } from '../beasts';
-import { abilityScoreImprovement, byTable, epicBoon, subclassHeading } from './shared';
+import { abilityScoreImprovement, byTable, epicBoon, subclassHeading, multiclassProficiencies } from './shared';
 
 /** Друид of the 2024 Player's Handbook. Descriptions are our own summaries of the rules. */
 
@@ -521,6 +521,10 @@ export const DRUID: ClassDef = {
     { type: 'proficiency', category: 'weapon', value: 'Простое оружие' },
     { type: 'proficiency', category: 'tool', value: 'Набор травника' },
   ],
+  multiclass: {
+    requires: [['wisdom']],
+    proficiencies: multiclassProficiencies('lightArmor', 'shields'),
+  },
   subclassLevel: 3,
   subclasses: [land, moon, sea, stars],
   startingEquipment: DRUID_KITS,
