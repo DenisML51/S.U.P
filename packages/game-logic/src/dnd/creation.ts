@@ -153,7 +153,7 @@ export function preparedSpellsChoice(build: DndBuild): OpenChoice | null {
   const casting = caster?.casting;
   if (!caster || (casting?.mode !== 'prepared' && casting?.mode !== 'spellbook')) return null;
   const level = heroLevel(build);
-  const count = applyBuild(skeleton('—'), build).character.maxPreparedSpells.total ?? 0;
+  const count = applyBuild(skeleton('—'), build).character.casters?.find((c) => c.id === caster.def.id)?.prepared ?? 0;
   const maxLevel = maxSpellLevel(casting, classLevelAt(caster, level));
   const book =
     casting.mode === 'spellbook'

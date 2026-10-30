@@ -44,7 +44,7 @@ describe('druid', () => {
     expect(proficiencies).not.toContain('Средние доспехи');
     const speak = c.spells.find((s) => s.id === 'spell-speak-with-animals');
     expect(speak?.alwaysPrepared && speak.prepared).toBe(true);
-    expect(c.maxPreparedSpells.total).toBe(4);
+    expect(c.casters?.[0]?.prepared).toBe(4);
     expect(resource(c, 'slot-1')?.max).toBe(2);
     expect(c.spellcastingDifficultyValue).toBe(13);
     expect(resource(c, 'druid.wild-shape')).toBeUndefined();
@@ -103,10 +103,10 @@ describe('druid', () => {
   it('has full-caster slots and the prepared count of the table', () => {
     const c9 = apply(build({ level: 9 }));
     expect(resource(c9, 'slot-5')?.max).toBe(1);
-    expect(c9.maxPreparedSpells.total).toBe(14);
+    expect(c9.casters?.[0]?.prepared).toBe(14);
     const c20 = apply(build({ level: 20 }));
     expect(resource(c20, 'slot-9')?.max).toBe(1);
-    expect(c20.maxPreparedSpells.total).toBe(22);
+    expect(c20.casters?.[0]?.prepared).toBe(22);
   });
 
   it('builds every circle at level 20 with nothing missing but spells still being written', () => {

@@ -42,7 +42,7 @@ describe('ranger', () => {
     expect(mark?.alwaysPrepared && mark.prepared).toBe(true);
     expect(resource(c, 'slot-1')?.max).toBe(2);
     expect(resource(c, 'slot-2')).toBeUndefined();
-    expect(c.maxPreparedSpells.total).toBe(2);
+    expect(c.casters?.[0]?.prepared).toBe(2);
     expect(c.spellcastingDifficultyValue).toBe(8 + 2 + 2);
   });
 
@@ -80,9 +80,9 @@ describe('ranger', () => {
     expect(resource(at(9), 'ranger.favored-enemy')?.max).toBe(4);
     expect(resource(at(13), 'ranger.favored-enemy')?.max).toBe(5);
     expect(resource(at(17), 'ranger.favored-enemy')?.max).toBe(6);
-    expect(at(5).maxPreparedSpells.total).toBe(6);
-    expect(at(9).maxPreparedSpells.total).toBe(9);
-    expect(at(20).maxPreparedSpells.total).toBe(15);
+    expect(at(5).casters?.[0]?.prepared).toBe(6);
+    expect(at(9).casters?.[0]?.prepared).toBe(9);
+    expect(at(20).casters?.[0]?.prepared).toBe(15);
     expect(resource(at(5), 'slot-2')?.max).toBe(2);
     expect(resource(at(17), 'slot-5')?.max).toBe(1);
     expect(resource(at(20), 'slot-5')?.max).toBe(2);

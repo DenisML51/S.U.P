@@ -1,10 +1,11 @@
-import type { Ability, Attack, Build, Character, DamageComponent, DndBuild, HitPointCost, CharacterDraft, InventoryItem, Resistance, Resource, Spell, Trait } from '@itd/schema';
+import type { Ability, Attack, Build, Character, DamageComponent, DndBuild, HitPointCost, CharacterDraft, InventoryItem, Resistance, Resource, Spell, Spellcaster, Trait } from '@itd/schema';
 import { ATTRIBUTES_LIST, SKILLS_LIST } from '../content/attributes';
 import { spellColor } from '../content/combat';
 import { abilityModifier } from '../rules/abilities';
 import { rescaleLimbs } from '../rules/health';
 import { weaponAttack, weaponAttackId, weaponThrowId } from '../rules/inventory';
 import { averageHitPoints, hitDiceId } from '../rules/rest';
+import { TOTAL_PREPARED } from '../rules/spells';
 import { DND } from './content';
 import { beastFormFeature, beastSummary, challengeLabel } from './content/beasts';
 import { MULTICLASS_MIN_SCORE, SLOT_TABLES } from './content/classes/shared';
@@ -149,6 +150,42 @@ export const maxSpellLevel = (casting: SpellcastingDef | undefined, classLevel: 
 
 /** Id of the Pact Magic pool a warlock casts their spells with. */
 export const PACT_SLOTS_ID = 'pact-slots';
+
+/** How many levels of a class count toward the slots of several casters (PHB 2024: half rounded up, a third rounded down). */
+const casterLevels = (casting: SpellcastingDef, classLevel: number): number =>
+  casting.progression === 'half' ? Math.ceil(classLevel / 2) : casting.progression === 'third' ? Math.floor(classLevel / 3) : classLevel;
+
+/**
+ * Spell slots of a build at a character level. One class with Spellcasting reads its own table;
+ * several add their levels (full casters all, paladins and rangers half rounded up, Eldritch Knights
+ * and Arcane Tricksters a third rounded down) and read the full caster's table. Pact Magic is apart.
+ */
+export function spellSlotsOf(build: Pick<DndBuild, 'classes'>, level = heroLevel(build)): number[] {
+  const casters = castersOf(build).filter((c) => c.casting.progression !== 'pact' && classLevelAt(c, level) > 0);
+  if (casters.length === 1) return slotsAt(casters[0]!.casting, classLevelAt(casters[0]!, level));
+  const casterLevel = casters.reduce((sum, c) => sum + casterLevels(c.casting, classLevelAt(c, level)), 0);
+  return casterLevel > 0 ? (SLOT_TABLES.full[casterLevel - 1] ?? []) : [];
+}
+
+/**
+ * Pact Magic slots of a build at a character level. One pact class reads its own table; with
+ * another (a warlock and a Profane Soul) their levels add up on the table of the one that counts in
+ * full, the other's levels counted by its `pactShare`.
+ */
+export function pactSlotsOf(build: Pick<DndBuild, 'classes'>, level = heroLevel(build)): { count: number; level: number } | undefined {
+  const pacts = castersOf(build).filter((c) => c.casting.progression === 'pact' && classLevelAt(c, level) > 0);
+  if (pacts.length <= 1) return pacts[0] && pactAt(pacts[0].casting, classLevelAt(pacts[0], level));
+  const table = (pacts.find((c) => !c.casting.pactShare) ?? pacts[0]!).casting;
+  const pactLevel = pacts.reduce((sum, c) => {
+    const classLevel = classLevelAt(c, level);
+    return sum + (c.casting.pactShare === 'third' && c.casting !== table ? Math.floor(classLevel / 3) : classLevel);
+  }, 0);
+  return pactLevel > 0 ? pactAt(table, Math.min(20, pactLevel)) : undefined;
+}
+
+/** The highest level of the slots a build has, of spells or of a pact. */
+export const highestSlotOf = (build: Pick<DndBuild, 'classes'>, level = heroLevel(build)): number =>
+  Math.max(spellSlotsOf(build, level).length, pactSlotsOf(build, level)?.level ?? 0);
 
 // ------------------------------------------------------------------------------------------------
 // Walking the content
@@ -664,8 +701,7 @@ export function catalogSpellEntry(id: string): Spell | undefined {
 /** The book of spells as the picker lists them for a hero: the lists of their classes first, castable levels marked. */
 export function catalogSpells(build: DndBuild): { def: SpellDef; ownList: boolean; castable: boolean }[] {
   const casters = castersOf(build);
-  const level = heroLevel(build);
-  const highest = Math.max(0, ...casters.map((caster) => maxSpellLevel(caster.casting, classLevelAt(caster, level))));
+  const highest = highestSlotOf(build);
   return DND.spells.map((def) => ({
     def,
     ownList: casters.some((caster) => def.lists.includes(caster.casting.list)),
@@ -860,11 +896,9 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
       grant: granted.key,
     });
   }
-  const caster = castersOf(build)[0];
-  const casting = caster?.casting;
-  const casterCtx = caster && contextFor(level, scores, build, caster);
-  const slots = slotsAt(casting, casterCtx?.classLevel ?? 0);
-  const pact = pactAt(casting, casterCtx?.classLevel ?? 0);
+  // Spell slots of every casting class together, Pact Magic apart (see spellSlotsOf, pactSlotsOf).
+  const slots = spellSlotsOf(build, level);
+  const pact = pactSlotsOf(build, level);
   if (pact) {
     pushResource({
       id: PACT_SLOTS_ID,
@@ -975,17 +1009,56 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     if (trait) trait.description = `${trait.description}\n\n**Выбрано:**\n${lines.join('\n')}`;
   }
 
-  // Spells: the class list for a preparing caster, then every spell granted by a feature.
+  // The classes the hero casts spells of: each with its ability, its DC (its own bonuses: Innate
+  // Sorcery for sorcerer spells), its attack bonus and, for one that prepares, its limit.
+  const casters = castersOf(build)
+    .filter((entry) => classLevelAt(entry, level) > 0)
+    .map((entry) => {
+      const casterCtx = contextFor(level, scores, build, entry);
+      const ability = castingAbilityOf(entry.casting, build, entry.def);
+      const modifier = abilityModifier(scores[ability] ?? 10);
+      const dcBonus = collected.effects.reduce(
+        (sum, { effect, owner }) => (effect.type === 'spellSaveDC' && (!owner.classId || owner.classId === entry.def.id) ? sum + effect.amount : sum),
+        0,
+      );
+      const sheet: Spellcaster = {
+        id: entry.def.id,
+        name: entry.def.name,
+        ability,
+        saveDC: 8 + proficiency + modifier + dcBonus,
+        attackBonus: proficiency + modifier,
+        prepared: entry.casting.mode === 'prepared' || entry.casting.mode === 'spellbook' ? resolveAmount(entry.casting.prepared, casterCtx) : undefined,
+      };
+      return { ...entry, classLevel: casterCtx.classLevel, sheet };
+    });
+  const primary = casters[0];
+
+  // Spells: the list of every class that prepares from it, then every spell granted by a feature. A
+  // spell two classes cast is two entries, each of its class; the first casting class keeps the
+  // spell's plain id, so the entries of a hero who took one class stay as they were.
   const previousSpells = new Map(character.spells.map((s) => [s.id, s]));
   const spells = new Map<string, Spell>();
-  const castingAbility = caster ? castingAbilityOf(caster.casting, build, caster.def) : 'charisma';
-  // A warlock casts every spell with a pact slot.
-  const slotPatch = (def: SpellDef): Partial<Spell> => (pact && def.level > 0 ? { resourceId: PACT_SLOTS_ID } : {});
-  if (casting?.mode === 'prepared') {
-    const maxLevel = slots.length;
+  const defs = new Map<string, SpellDef>();
+  const sheetId = (def: SpellDef, caster: string | undefined) =>
+    !caster || caster === primary?.def.id ? `spell-${def.id}` : `spell-${def.id}-${caster}`;
+  const put = (def: SpellDef, caster: string | undefined, patch: (previous: Spell | undefined) => Partial<Spell>) => {
+    const id = sheetId(def, caster);
+    const previous = previousSpells.get(id);
+    defs.set(id, def);
+    spells.set(id, spellEntry(def, previous, { id, caster, ...patch(previous) }));
+  };
+  // A class spell takes a slot of its pool: a pact class's its pact slots, the others their spell slots.
+  // Slots of either serve the other's spells too when cast (see `slotPoolFor`).
+  const pactCasters = new Set(casters.filter((c) => c.casting.progression === 'pact').map((c) => c.def.id));
+  const slotOf = (def: SpellDef, caster: string | undefined): Partial<Spell> =>
+    def.level > 0 && pact && (caster ? pactCasters.has(caster) : slots.length === 0) ? { resourceId: PACT_SLOTS_ID } : {};
+  for (const caster of casters) {
+    if (caster.casting.mode !== 'prepared') continue;
+    // Spells up to the highest level the class could cast on its own (PHB 2024: prepared as if single-classed).
+    const maxLevel = maxSpellLevel(caster.casting, caster.classLevel);
     for (const def of DND.spells) {
-      if (!def.lists.includes(casting.list) || def.level < 1 || def.level > maxLevel) continue;
-      spells.set(def.id, spellEntry(def, previousSpells.get(`spell-${def.id}`), { grant: 'spellcasting', ...slotPatch(def) }));
+      if (!def.lists.includes(caster.casting.list) || def.level < 1 || def.level > maxLevel) continue;
+      put(def, caster.def.id, () => ({ grant: 'spellcasting', ...slotOf(def, caster.def.id) }));
     }
   }
   const alwaysPrepared = new Set<string>();
@@ -997,26 +1070,26 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
       continue;
     }
     const chosenAbility = collected.spellAbilities.find((s) => owner.key.startsWith(s.prefix))?.ability;
-    const ability = chosenAbility ?? effect.ability;
-    const own = effect.resourceId ? { resourceId: effect.resourceId, resourceCost: 1 } : slotPatch(def);
+    // A spell a casting class gives is that class's (cast with its ability); a species' or a feat's has its own ability.
+    const ownerCaster = casters.find((c) => c.def.id === owner.classId);
+    const caster = ownerCaster && !chosenAbility && (!effect.ability || effect.ability === ownerCaster.sheet.ability) ? ownerCaster.def.id : undefined;
+    const ability = caster ? undefined : (chosenAbility ?? effect.ability);
+    const own = effect.resourceId ? { resourceId: effect.resourceId, resourceCost: 1 } : slotOf(def, caster);
+    const id = sheetId(def, caster);
     if (effect.alwaysPrepared === false) {
       // A spell of the spellbook: the player prepares it; an always-prepared copy wins.
-      if (alwaysPrepared.has(def.id)) continue;
-      const previous = previousSpells.get(`spell-${def.id}`);
-      spells.set(def.id, spellEntry(def, previous, { prepared: previous?.alwaysPrepared ? false : (previous?.prepared ?? false), alwaysPrepared: undefined, grant: owner.key, ...own }));
+      if (alwaysPrepared.has(id)) continue;
+      put(def, caster, (previous) => ({ prepared: previous?.alwaysPrepared ? false : (previous?.prepared ?? false), alwaysPrepared: undefined, grant: owner.key, ...own }));
       continue;
     }
-    alwaysPrepared.add(def.id);
-    spells.set(
-      def.id,
-      spellEntry(def, previousSpells.get(`spell-${def.id}`), {
-        prepared: true,
-        alwaysPrepared: true,
-        ability: ability && ability !== castingAbility ? ability : undefined,
-        grant: owner.key,
-        ...own,
-      }),
-    );
+    alwaysPrepared.add(id);
+    put(def, caster, () => ({
+      prepared: true,
+      alwaysPrepared: true,
+      ability: ability && ability !== primary?.sheet.ability ? ability : undefined,
+      grant: owner.key,
+      ...own,
+    }));
   }
 
   // A feature that is on stays on only while the sheet still has it (a level given back takes it).
@@ -1028,8 +1101,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   const spellDamage = ofType('spellDamage');
   if (spellDamage.length > 0) {
     for (const [id, entry] of spells) {
-      const def = findSpell(id);
-      if (!def) continue;
+      const def = defs.get(id)!;
       const bonus = spellDamage
         .filter(
           (e) =>
@@ -1044,8 +1116,8 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     }
   }
 
-  const maxPreparedSpells = { ...character.maxPreparedSpells };
-  if (casterCtx && (casting?.mode === 'prepared' || casting?.mode === 'spellbook')) maxPreparedSpells.total = resolveAmount(casting.prepared, casterCtx);
+  // The limits of prepared spells are the classes' (in `casters`); one kept for the whole sheet goes.
+  const { [TOTAL_PREPARED]: _classLimit, ...maxPreparedSpells } = character.maxPreparedSpells;
 
   // Names shown on the sheet.
   const lineage = collected.choices.find((c) => c.key.startsWith('species:') && c.choice.id === 'lineage' && c.picked.length > 0);
@@ -1072,7 +1144,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     darkvision: form ? form.darkvision : darkvision,
     initiativeBonus: initiative || undefined,
     halfProficiency,
-    ritualsFromBook: casting?.mode === 'spellbook' || undefined,
+    ritualsFromBook: casters.some((c) => c.casting.mode === 'spellbook') || undefined,
     critRange: critRange < 20 ? critRange : undefined,
     attacksPerAction: attacksPerAction > 1 ? attacksPerAction : undefined,
     advantageOn: advantageOn.length > 0 ? advantageOn : undefined,
@@ -1096,12 +1168,12 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
     abilities: [...abilities, ...character.abilities.filter((a) => !a.grant)],
     activeFeatures: stillActive.length > 0 ? stillActive : undefined,
     traits: [...traits, ...character.traits.filter((t) => !t.grant)],
-    spells: [...spells.values(), ...character.spells.filter((s) => !s.grant && !spells.has(s.id.replace(/^spell-/, '')))],
+    spells: [...spells.values(), ...character.spells.filter((s) => !s.grant && !spells.has(s.id))],
     maxPreparedSpells,
-    spellcastingDifficultyName: casting ? 'СЛ заклинаний' : character.spellcastingDifficultyName,
-    spellcastingDifficultyValue: casting
-      ? 8 + proficiency + abilityModifier(scores[castingAbility] ?? 10) + ofType('spellSaveDC').reduce((sum, e) => sum + e.amount, 0)
-      : character.spellcastingDifficultyValue,
+    // The sheet's own DC is the first casting class's; each class has its own in casters.
+    spellcastingDifficultyName: primary ? 'СЛ заклинаний' : character.spellcastingDifficultyName,
+    spellcastingDifficultyValue: primary ? primary.sheet.saveDC : character.spellcastingDifficultyValue,
+    casters: casters.length > 0 ? casters.map((c) => c.sheet) : undefined,
     attacks: [
       ...(form ? beastAttacks(form, character.attacks) : []),
       ...grantedAttacks(collected, character.attacks, scores, proficiency),

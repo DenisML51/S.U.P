@@ -389,6 +389,7 @@ const profaneSoul: SubclassDef = {
     ability: 'key',
     list: 'warlock',
     progression: 'pact',
+    pactShare: 'third',
     pact: [
       { count: 0, level: 1 }, { count: 0, level: 1 }, { count: 1, level: 1 }, { count: 1, level: 1 }, { count: 1, level: 1 },
       { count: 2, level: 1 }, { count: 2, level: 2 }, { count: 2, level: 2 }, { count: 2, level: 2 }, { count: 2, level: 2 },

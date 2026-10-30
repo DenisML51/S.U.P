@@ -35,7 +35,7 @@ describe('wizard', () => {
     expect(c.traits.find((t) => t.id === 'g-proficiencies')?.description).toContain('Простое оружие');
     expect(resource(c, 'wizard.arcane-recovery')).toMatchObject({ max: 1, recovery: 'long' });
     expect(resource(c, 'slot-1')?.max).toBe(2);
-    expect(c.maxPreparedSpells.total).toBe(4);
+    expect(c.casters?.[0]?.prepared).toBe(4);
     expect(c.spellcastingDifficultyValue).toBe(8 + 2 + 3);
     expect(DND.classes.find((k) => k.id === 'wizard')?.startingEquipment[0]?.items.some((i) => i.ref === 'spellbook')).toBe(true);
   });
@@ -55,7 +55,7 @@ describe('wizard', () => {
   });
 
   it('prepares spells by the class table', () => {
-    const prepared = (level: number) => apply(build({ level })).maxPreparedSpells.total;
+    const prepared = (level: number) => apply(build({ level })).casters?.[0]?.prepared;
     expect([1, 5, 12, 13, 15, 16, 20].map(prepared)).toEqual([4, 9, 16, 17, 19, 21, 25]);
     const slots = apply(build({ level: 20 })).resources.filter((r) => r.id.startsWith('slot-')).map((r) => r.max);
     expect(slots).toEqual([4, 3, 3, 3, 3, 2, 2, 1, 1]);
