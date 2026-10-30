@@ -9,11 +9,15 @@ import {
   applyBuild,
   classAtLevel,
   collect,
+  createDndHero,
   describeGrant,
   dropLastLevel,
   heroLevel,
   levelPlan,
   multiclassBlocker,
+  preparedSpellsChoices,
+  setHeroLevel,
+  setLevelClass,
   setPicks,
   setSubclass,
 } from '../src/dnd';
@@ -330,5 +334,48 @@ describe('hit points of a level and giving it back from the sheet', () => {
     expect(back.level).toBe(2);
     expect(back.class).toBe('Воин');
     expect(DND_2024.lastLevel?.describe(hero([{ class: 'fighter', levels: [1] }]))).toBeUndefined();
+  });
+});
+describe('a hero made at a higher level', () => {
+  it('gives a level to another class, its picks forgotten and the classes kept in the order of their first levels', () => {
+    let b = hero([{ class: 'fighter', levels: [1, 2, 3, 4] }]);
+    b = setPicks(b, 'class:fighter.asi-4/feat', ['ability-score-improvement']);
+    b = setLevelClass(b, 2, 'wizard');
+    expect(b.classes).toEqual([
+      { class: 'fighter', levels: [1, 3, 4] },
+      { class: 'wizard', levels: [2] },
+    ]);
+    // The fighter's 4th level is now its 3rd: the feat of the 4th is no longer asked for.
+    expect(collect(b).choices.some((c) => c.key === 'class:fighter.asi-4/feat')).toBe(false);
+    expect(setLevelClass(b, 1, 'wizard')).toBe(b);
+  });
+
+  it('takes a subclass away from a class that no longer reaches its level', () => {
+    const champion = setSubclass(hero([{ class: 'fighter', levels: [1, 2, 3] }]), 'fighter', 'champion');
+    expect(setLevelClass(champion, 3, 'rogue').classes).toEqual([
+      { class: 'fighter', subclass: undefined, levels: [1, 2] },
+      { class: 'rogue', levels: [3] },
+    ]);
+  });
+
+  it('goes to a start level: given back from the last, new levels in the class of the last', () => {
+    const b = hero([{ class: 'fighter', levels: [1, 2] }, { class: 'wizard', levels: [3] }]);
+    expect(setHeroLevel(b, 5).classes).toEqual([
+      { class: 'fighter', levels: [1, 2] },
+      { class: 'wizard', levels: [3, 4, 5] },
+    ]);
+    expect(setHeroLevel(b, 2).classes).toEqual([{ class: 'fighter', levels: [1, 2] }]);
+  });
+
+  it('asks for the starting prepared spells of each class that prepares, and prepares them as that class’s', () => {
+    const b = hero([{ class: 'cleric', levels: [1] }, { class: 'druid', levels: [2] }]);
+    const choices = preparedSpellsChoices(b);
+    expect(choices.map((c) => [c.key, c.count])).toEqual([
+      ['creation:prepared/cleric', 4],
+      ['creation:prepared/druid', 4],
+    ]);
+    const picked = setPicks(setPicks(b, choices[0]!.key, ['cure-wounds']), choices[1]!.key, ['cure-wounds']);
+    const created = createDndHero({ name: 'Т', build: picked });
+    expect(created.spells.filter((s) => s.prepared && !s.alwaysPrepared).map((s) => s.id).sort()).toEqual(['spell-cure-wounds', 'spell-cure-wounds-druid']);
   });
 });

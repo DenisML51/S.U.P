@@ -148,6 +148,13 @@ const pactAt = (casting: SpellcastingDef | undefined, classLevel: number): { cou
 export const maxSpellLevel = (casting: SpellcastingDef | undefined, classLevel: number): number =>
   pactAt(casting, classLevel)?.level ?? slotsAt(casting, classLevel).length;
 
+/**
+ * Id of a spell's entry on the sheet, as a class casts it: a spell two classes cast is an entry of
+ * each, the first casting class keeping the plain id (a hero who took one class keeps theirs).
+ */
+export const classSpellId = (build: Pick<DndBuild, 'classes'>, spell: string, caster: string | undefined): string =>
+  !caster || caster === castersOf(build)[0]?.def.id ? `spell-${spell}` : `spell-${spell}-${caster}`;
+
 /** Id of the Pact Magic pool a warlock casts their spells with. */
 export const PACT_SLOTS_ID = 'pact-slots';
 
@@ -1041,8 +1048,7 @@ export function applyBuild<C extends CharacterDraft>(character: C, build: DndBui
   const previousSpells = new Map(character.spells.map((s) => [s.id, s]));
   const spells = new Map<string, Spell>();
   const defs = new Map<string, SpellDef>();
-  const sheetId = (def: SpellDef, caster: string | undefined) =>
-    !caster || caster === primary?.def.id ? `spell-${def.id}` : `spell-${def.id}-${caster}`;
+  const sheetId = (def: SpellDef, caster: string | undefined) => classSpellId(build, def.id, caster);
   const put = (def: SpellDef, caster: string | undefined, patch: (previous: Spell | undefined) => Partial<Spell>) => {
     const id = sheetId(def, caster);
     const previous = previousSpells.get(id);
@@ -1593,18 +1599,53 @@ export function dropLastLevel(build: DndBuild): DndBuild {
   const level = heroLevel(build);
   const at = classAtLevel(build, level);
   if (!at || level <= 1) return build;
+  return withoutLevel(forgetLevel(build, level), at.entry.def.id, level);
+}
+
+/**
+ * Character level `level` taken in another class (a hero in the making changes their mind): the
+ * picks and hit points of the level are forgotten, the classes stay in the order of their first
+ * levels, and a class left below its subclass level loses its subclass.
+ */
+export function setLevelClass(build: DndBuild, level: number, classId: string): DndBuild {
+  const at = classAtLevel(build, level);
+  if (level <= 1 || !at || at.entry.def.id === classId) return build;
+  const moved = withoutLevel(forgetLevel(build, level), at.entry.def.id, level);
+  const classes = moved.classes.some((c) => c.class === classId)
+    ? moved.classes.map((c) => (c.class === classId ? { ...c, levels: [...c.levels, level].sort((a, b) => a - b) } : c))
+    : [...moved.classes, { class: classId, levels: [level] }];
+  return { ...moved, classes: classes.sort((a, b) => a.levels[0]! - b.levels[0]!) };
+}
+
+/**
+ * The build taken to character `level`: levels above it given back, from the last; new ones taken
+ * in the class of the last level (a hero made at a higher level).
+ */
+export function setHeroLevel(build: DndBuild, level: number): DndBuild {
+  let next = build;
+  while (heroLevel(next) > Math.max(1, level)) next = dropLastLevel(next);
+  for (let last = classAtLevel(next, heroLevel(next)); last && heroLevel(next) < level; ) next = addLevel(next, last.entry.def.id);
+  return next;
+}
+
+/** The picks made on a character level, the picks that depended on them, and the level's hit points, forgotten. */
+function forgetLevel(build: DndBuild, level: number): DndBuild {
   const keys = collect(build, level).choices.filter((c) => c.level === level).map((c) => c.key);
   const forgotten = (key: string) => keys.some((k) => key === k || key.startsWith(`${k}=`) || key.startsWith(`${k}:`) || key.startsWith(`${k}#`));
-  const belowSubclass = at.classLevel - 1 < at.entry.def.subclassLevel;
-  const lowered = belowSubclass && at.entry.subclass ? setSubclass(build, at.entry.def.id, undefined) : build;
   return {
-    ...lowered,
-    classes: lowered.classes
-      .map((c) => (c.class === at.entry.def.id ? { ...c, levels: c.levels.filter((l) => l !== level) } : c))
-      .filter((c) => c.levels.length > 0),
-    choices: Object.fromEntries(Object.entries(lowered.choices).filter(([key]) => !forgotten(key))),
-    hitPoints: lowered.hitPoints.filter((entry) => entry.level !== level),
+    ...build,
+    choices: Object.fromEntries(Object.entries(build.choices).filter(([key]) => !forgotten(key))),
+    hitPoints: build.hitPoints.filter((entry) => entry.level !== level),
   };
+}
+
+/** A class's level taken off it: the class leaves the list with none left, and loses its subclass below the subclass level. */
+function withoutLevel(build: DndBuild, classId: string, level: number): DndBuild {
+  const classes = build.classes.map((c) => (c.class === classId ? { ...c, levels: c.levels.filter((l) => l !== level) } : c)).filter((c) => c.levels.length > 0);
+  const entry = classes.find((c) => c.class === classId);
+  const def = findClass(classId);
+  const next = { ...build, classes };
+  return entry?.subclass && def && entry.levels.length < def.subclassLevel ? setSubclass(next, classId, undefined) : next;
 }
 
 export interface OptionView {

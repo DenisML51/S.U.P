@@ -7,8 +7,9 @@ import {
   createDndHero,
   emptyBuild,
   findBackground,
-  findClass,
   heroLevel,
+  setHeroLevel,
+  setLevelClass,
   validBackgroundBonuses,
   withoutPicks,
 } from '@itd/game-logic/dnd';
@@ -109,17 +110,16 @@ export function useDndCreation(setting: Setting, onCreated: () => void) {
       setBuild((b) => ({ ...withoutPicks(b, 'class', 'subclass', 'casting', 'swap'), classes: [] }));
       setClassKitId(undefined);
     },
-    /** Lowering the start level forgets the hit points and the subclass of the levels above it. */
+    /**
+     * The start level: levels above it are given back from the last, with their picks, hit points
+     * and a subclass left out of reach; new ones go to the class of the last level.
+     */
     setLevel: (next: number) => {
       setStartLevel(next);
-      setBuild((b) => {
-        const [entry] = b.classes;
-        if (!entry) return b;
-        const classDef = findClass(entry.class);
-        const subclass = classDef && next < classDef.subclassLevel ? undefined : entry.subclass;
-        return { ...b, classes: [{ ...entry, subclass, levels: upTo(next) }], hitPoints: b.hitPoints.filter((e) => e.level <= next) };
-      });
+      setBuild((b) => (b.classes.length > 0 ? setHeroLevel(b, next) : b));
     },
+    /** A level after the first taken in another class (multiclassing); its picks start over. */
+    setLevelClass: (level: number, id: string) => setBuild((b) => setLevelClass(b, level, id)),
     rolls,
     setRolls,
     classKitId,

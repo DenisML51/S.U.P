@@ -7,7 +7,7 @@ import { equipItem } from '../rules/inventory';
 import { rollDie } from '../rules/dice';
 import { experienceForLevel } from '../rules/progression';
 import { maxSanityOf } from '../rules/sanity';
-import { SPELLBOOK_POOL, applyBuild, buildContext, castersOf, classLevelAt, collect, findBackground, findClass, heroLevel, maxSpellLevel, type OpenChoice } from './build';
+import { SPELLBOOK_POOL, applyBuild, buildContext, castersOf, classLevelAt, classSpellId, collect, findBackground, findClass, heroLevel, maxSpellLevel, type OpenChoice } from './build';
 import { DND } from './content';
 import { DND_ICONS, armorIcon, gearIcon } from './content/icons';
 import type { KitOption } from './types';
@@ -130,54 +130,62 @@ export function createDndHero({ name, build, classKitId, backgroundKitId }: DndH
   for (const item of worn) hero = equipItem(hero as Character, item.id);
   // Attack bonuses of the new weapon attacks follow the build; the spells chosen at creation start prepared.
   const result = applyBuild(hero, build).character;
-  const prepared = new Set(build.choices[PREPARED_AT_CREATION] ?? []);
+  const prepared = new Set(
+    castersOf(build).flatMap((caster) => (build.choices[preparedAtCreationKey(caster.def.id)] ?? []).map((spell) => classSpellId(build, spell, caster.def.id))),
+  );
   return {
     ...result,
     sanity: maxSanityOf(result),
-    spells: result.spells.map((s) => (prepared.has(s.id.replace(/^spell-/, '')) ? { ...s, prepared: true } : s)),
+    spells: result.spells.map((s) => (prepared.has(s.id) ? { ...s, prepared: true } : s)),
   };
 }
 
 /**
- * Key in `build.choices` of the spells a preparing caster (paladin) starts with prepared. They are
- * not part of the build's rules: after creation the player changes them on the sheet.
+ * Key in `build.choices` of the spells a preparing class (a paladin, a wizard) starts with prepared.
+ * They are not part of the build's rules: after creation the player changes them on the sheet.
  */
-export const PREPARED_AT_CREATION = 'creation:prepared';
+export const preparedAtCreationKey = (classId: string): string => `creation:prepared/${classId}`;
 
 /**
- * The pick of starting prepared spells, as a choice the creation screen can show: from the class
- * list for a preparing caster, from the spellbook for a wizard.
+ * The picks of starting prepared spells, one for each class that prepares, as choices the creation
+ * screen can show: from the class list (up to the level the class casts alone), from the spellbook
+ * for a wizard.
  */
-export function preparedSpellsChoice(build: DndBuild): OpenChoice | null {
-  const caster = castersOf(build)[0];
-  const casting = caster?.casting;
-  if (!caster || (casting?.mode !== 'prepared' && casting?.mode !== 'spellbook')) return null;
+export function preparedSpellsChoices(build: DndBuild): OpenChoice[] {
   const level = heroLevel(build);
-  const count = applyBuild(skeleton('—'), build).character.casters?.find((c) => c.id === caster.def.id)?.prepared ?? 0;
-  const maxLevel = maxSpellLevel(casting, classLevelAt(caster, level));
-  const book =
-    casting.mode === 'spellbook'
-      ? collect(build).poolPicks.filter((p) => p.pool === SPELLBOOK_POOL && p.active).map((p) => p.id)
-      : undefined;
-  const feature = { id: 'creation.prepared', name: 'Использование заклинаний', description: '' };
-  return {
-    key: PREPARED_AT_CREATION,
-    count,
-    picked: build.choices[PREPARED_AT_CREATION] ?? [],
-    level,
-    choice: {
-      id: 'prepared',
-      label: 'Подготовленные заклинания',
-      count,
-      options: { from: 'spells', lists: [casting.list], minLevel: 1, maxLevel, ids: book },
-      hint: book
-        ? 'Из заклинаний вашей книги. Список можно менять после продолжительного отдыха, на листе в разделе «Магия».'
-        : 'Список можно менять после продолжительного отдыха, на листе в разделе «Магия».',
-    },
-    owner: { key: 'creation', feature, level, source: 'class', classId: caster.def.id, classLevel: classLevelAt(caster, level), ctx: buildContext(build, caster) },
-  };
+  const casters = castersOf(build);
+  const sheet = applyBuild(skeleton('—'), build).character;
+  return casters.flatMap((caster): OpenChoice[] => {
+    const { casting } = caster;
+    if (casting.mode !== 'prepared' && casting.mode !== 'spellbook') return [];
+    const key = preparedAtCreationKey(caster.def.id);
+    const count = sheet.casters?.find((c) => c.id === caster.def.id)?.prepared ?? 0;
+    const maxLevel = maxSpellLevel(casting, classLevelAt(caster, level));
+    const book =
+      casting.mode === 'spellbook'
+        ? collect(build).poolPicks.filter((p) => p.pool === SPELLBOOK_POOL && p.active).map((p) => p.id)
+        : undefined;
+    const feature = { id: 'creation.prepared', name: 'Использование заклинаний', description: '' };
+    return [
+      {
+        key,
+        count,
+        picked: build.choices[key] ?? [],
+        level,
+        choice: {
+          id: 'prepared',
+          label: casters.length > 1 ? `Подготовленные заклинания: ${caster.def.name}` : 'Подготовленные заклинания',
+          count,
+          options: { from: 'spells', lists: [casting.list], minLevel: 1, maxLevel, ids: book },
+          hint: book
+            ? 'Из заклинаний вашей книги. Список можно менять после продолжительного отдыха, на листе в разделе «Магия».'
+            : 'Список можно менять после продолжительного отдыха, на листе в разделе «Магия».',
+        },
+        owner: { key: 'creation', feature, level, source: 'class', classId: caster.def.id, classLevel: classLevelAt(caster, level), ctx: buildContext(build, caster) },
+      },
+    ];
+  });
 }
-
 /** An empty first-level sheet the build is written onto. */
 const skeleton = (name: string) =>
   buildNewCharacter({
