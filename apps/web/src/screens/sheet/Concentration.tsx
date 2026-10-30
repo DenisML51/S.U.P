@@ -6,7 +6,8 @@ import { useCharacterStore } from '../../store/useCharacterStore';
 import { ConfirmDialog, Dialog } from '../../ui/Dialog';
 import { CatalogIcon, GameIcon } from '../../ui/GameIcon';
 import { Button, IconButton, cx } from '../../ui/primitives';
-import { IconClose, IconDice } from '../../ui/icons';
+import { IconClose } from '../../ui/icons';
+import { DieGlyph, LandedValue, RollingDice, type ThrownDie } from '../../ui/RollingDie';
 import { useRolls } from './useRolls';
 
 interface ConcentrationPromptState {
@@ -100,12 +101,17 @@ export const ConcentrationBadge: React.FC<{ character: Character; className?: st
   );
 };
 
-/** The Constitution save after damage: roll it here, or say how it went at the table. */
+/**
+ * The Constitution save after damage: the d20 waits in the middle of the window, as a die the master
+ * calls for does; a click throws it there, it lands green or red against the DC and the total shows
+ * under it. A die thrown at the table is told with the buttons instead.
+ */
 const SaveDialog: React.FC<{ character: Character; damage: number; onClose: () => void }> = ({ character, damage, onClose }) => {
   const roll = useRolls();
   const end = useEndConcentration();
   const logHistory = useCharacterStore((s) => s.logHistory);
-  const [result, setResult] = useState<number | null>(null);
+  const [thrown, setThrown] = useState<{ total: number; dice: ThrownDie[] } | null>(null);
+  const [landed, setLanded] = useState(false);
   const dc = concentrationSaveDC(damage);
   const bonus = savingThrowModifier(character, 'constitution');
   const name = character.concentratingOn?.name ?? '';
@@ -119,6 +125,18 @@ const SaveDialog: React.FC<{ character: Character; damage: number; onClose: () =
     onClose();
   };
 
+  const throwDie = () => {
+    const result = roll.roll20(`Концентрация (СЛ ${dc})`, bonus, { inPlace: true, test: { kind: 'save', attribute: 'constitution' } });
+    // Of two d20 (advantage, disadvantage) the one that counts takes the outcome's colour, the other is set aside.
+    const keptAt = result.dice.findIndex((die) => die.sides === 20 && die.value === result.die);
+    const tone = result.total >= dc ? 'success' : 'danger';
+    setThrown({
+      total: result.total,
+      dice: result.dice.map((die, index) => (die.sides !== 20 ? die : index === keptAt ? { ...die, tone } : { ...die, dropped: true })),
+    });
+  };
+  const made = thrown !== null && thrown.total >= dc;
+
   return (
     <Dialog
       open
@@ -126,15 +144,6 @@ const SaveDialog: React.FC<{ character: Character; damage: number; onClose: () =
       width="sm"
       eyebrow="Спасбросок концентрации"
       title={name}
-      footerStart={
-        <Button
-          variant="secondary"
-          icon={<IconDice width={16} height={16} />}
-          onClick={() => setResult(roll.check(`Концентрация (СЛ ${dc})`, bonus, { test: { kind: 'save', attribute: 'constitution' } }))}
-        >
-          Бросить
-        </Button>
-      }
       footer={
         <>
           <Button variant="danger" onClick={lost}>
@@ -150,16 +159,29 @@ const SaveDialog: React.FC<{ character: Character; damage: number; onClose: () =
         Урон {damage}: спасбросок Телосложения <span className="text-ink">СЛ {dc}</span>, ваш бонус{' '}
         <span className="text-ink">{formatModifier(bonus)}</span>.
       </p>
-      {result !== null && (
-        <p className="mt-4 flex items-baseline gap-3">
-          <span className={cx('ui-display ui-numeric text-[2.4rem] leading-none', result >= dc ? 'text-success' : 'text-danger')}>
-            {result}
-          </span>
-          <span className="text-sm text-ink-muted">
-            к20 {result - bonus} {formatModifier(bonus)} — {result >= dc ? 'концентрация удержана' : 'концентрация потеряна'}
-          </span>
-        </p>
-      )}
+      <div className="mt-5 flex min-h-[8.5rem] flex-col items-center justify-center gap-3">
+        {thrown ? (
+          <RollingDice dice={thrown.dice} size="4.5rem" className="justify-center gap-3" onLanded={() => setLanded(true)} />
+        ) : (
+          <button type="button" className="ui-check__die-button" onClick={throwDie} aria-label="Бросить кубик" title="Бросить кубик">
+            <span className="ui-check__idle-die h-[4.5rem] w-[4.5rem]">
+              <DieGlyph sides={20} spin={0.5} />
+            </span>
+          </button>
+        )}
+        {!thrown ? (
+          <span className="text-sm text-ink-faint">Нажмите на кубик</span>
+        ) : (
+          <LandedValue landed={landed}>
+            <span className="flex items-baseline gap-3">
+              <span className={cx('ui-display ui-numeric text-[2.4rem] leading-none', made ? 'text-success' : 'text-danger')}>
+                {thrown.total}
+              </span>
+              <span className="text-sm text-ink-muted">{made ? 'концентрация удержана' : 'концентрация потеряна'}</span>
+            </span>
+          </LandedValue>
+        )}
+      </div>
     </Dialog>
   );
 };
